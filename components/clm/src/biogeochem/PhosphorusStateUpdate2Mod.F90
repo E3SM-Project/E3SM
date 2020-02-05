@@ -6,12 +6,12 @@ module PhosphorusStateUpdate2Mod
   ! X.YANG
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_time_manager    , only : get_step_size
+  !#py use clm_time_manager    , only : get_step_size
   use clm_varpar          , only : nlevsoi, nlevdecomp
   use clm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl          , only : iulog
-  use PhosphorusStateType , only : phosphorusstate_type
-  use PhosphorusFLuxType  , only : phosphorusflux_type
+  !use PhosphorusStateType , only : phosphorusstate_type
+  !use PhosphorusFLuxType  , only : phosphorusflux_type
   use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
   use tracer_varcon       , only : is_active_betr_bgc
@@ -32,8 +32,7 @@ module PhosphorusStateUpdate2Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       phosphorusflux_vars, phosphorusstate_vars)
+  subroutine PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosporus state
@@ -42,26 +41,23 @@ contains
     ! no science equations. This increases readability and maintainability
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
+    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    real(r8), intent(in) :: dt      ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,l ! indices
     integer  :: fp,fc   ! lake filter indices
-    real(r8) :: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
-         pf => phosphorusflux_vars  , &
-         ps => phosphorusstate_vars   &
-         )
-
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
@@ -120,13 +116,10 @@ contains
 
       end do
 
-    end associate
-
   end subroutine PhosphorusStateUpdate2
 
   !-----------------------------------------------------------------------
-  subroutine PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       phosphorusflux_vars, phosphorusstate_vars)
+  subroutine PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
     !
     ! !DESCRIPTION:
     ! Update all the prognostic phosphorus state
@@ -135,27 +128,28 @@ contains
     ! no science equations. This increases readability and maintainability
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
+    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    real(r8),     intent(in)     :: dt      ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l ! indices
     integer :: fp,fc   ! lake filter indices
-    real(r8):: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
-         ivt => veg_pp%itype           , & ! Input:  [integer  (:) ]  pft vegetation type
-         pf => phosphorusflux_vars  , &
-         ps => phosphorusstate_vars   &
+    associate(                      &
+         ivt => veg_pp%itype            & ! Input:  [integer  (:) ]  pft vegetation type
+
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed

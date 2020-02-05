@@ -5,7 +5,7 @@ Module HydrologyNoDrainageMod
   ! Calculate snow and soil temperatures including phase change
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use clm_varctl        , only : iulog, use_vichydro
   use clm_varcon        , only : e_ice, denh2o, denice, rpi, spval
@@ -13,15 +13,12 @@ Module HydrologyNoDrainageMod
   use AerosolType       , only : aerosol_type
   use EnergyFluxType    , only : energyflux_type
   use CanopyStateType  , only : canopystate_type
-  use TemperatureType   , only : temperature_type
-  use SoilHydrologyType , only : soilhydrology_type  
+  use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
-  use WaterfluxType     , only : waterflux_type
-  use WaterstateType    , only : waterstate_type
-  use LandunitType      , only : lun_pp                
+  use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ws                
-  use VegetationType    , only : veg_pp                
+  use ColumnDataType    , only : col_es, col_ws
+  use VegetationType    , only : veg_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -41,12 +38,11 @@ contains
        num_urbanc, filter_urbanc, &
        num_snowc, filter_snowc, &
        num_nosnowc, filter_nosnowc, canopystate_vars, &
-       atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
-       waterflux_vars, waterstate_vars, &
+       atm2lnd_vars, soilstate_vars, energyflux_vars, &
        soilhydrology_vars, aerosol_vars, &
-       soil_water_retention_curve, ep_betr, &
-       alm_fates)
-    !
+       dtime)
+   !#betr_py soil_water_retention_curve, ep_betr, &
+   !#fates_py alm_fates)    !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
     ! hydrology
@@ -62,26 +58,27 @@ contains
     !    -> DivideSnowLayers:      subdivide snow layers that are thicker than maximum
     !
     ! !USES:
+      !$acc routine seq
     use clm_varcon           , only : denh2o, denice, hfus, grav, tfrz
-    use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak 
+    use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
     use clm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
-    use clm_time_manager     , only : get_step_size, get_nstep
+    !#py use clm_time_manager     , only : get_step_size
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
-    use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
+    use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter
     use SoilHydrologyMod     , only : CLMVICMap, SurfaceRunoff, Infiltration, WaterTable
-    use SoilWaterMovementMod , only : SoilWater 
+    use SoilWaterMovementMod , only : SoilWater
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink
-    use CLMFatesInterfaceMod , only : hlm_fates_interface_type
-    use BeTRSimulationALM    , only : betr_simulation_alm_type
+    !#py use CLMFatesInterfaceMod , only : hlm_fates_interface_type
+    !#betr_py use BeTRSimulationALM    , only : betr_simulation_alm_type
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds               
+    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_nolakec          ! number of column non-lake points in column filter
     integer                  , intent(in)    :: filter_nolakec(:)    ! column filter for non-lake points
     integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
@@ -98,19 +95,16 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(canopystate_type)   , intent(in)  :: canopystate_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(aerosol_type)       , intent(inout) :: aerosol_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
-    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-    class(betr_simulation_alm_type), intent(inout) :: ep_betr
-    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
+    !#betr_py class(betr_simulation_alm_type), intent(inout) :: ep_betr
+    real(r8), intent(in) :: dtime                         ! land model time step (sec)
+
+    !#py type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                    ! indices
     integer  :: nlevbed                       ! # layers to bedrock
-    real(r8) :: dtime                         ! land model time step (sec)
     real(r8) :: psi,vwc,fsattmp,psifrz        ! temporary variables for soilpsi calculation
     real(r8) :: watdry                        ! temporary
     real(r8) :: rwat(bounds%begc:bounds%endc) ! soil water wgted by depth to maximum depth of 0.5 m
@@ -122,60 +116,60 @@ contains
     real(r8) :: s_node                        ! soil wetness (-)
     real(r8) :: icefrac(bounds%begc:bounds%endc,1:nlevgrnd)
     !-----------------------------------------------------------------------
-    
-    associate(                                                          & 
-         z                  => col_pp%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
-         dz                 => col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
-         zi                 => col_pp%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
-         snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
-         nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
-         ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
-         t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
+    associate(                                                          &
+         z                  => col_pp%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)
+         dz                 => col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)
+         zi                 => col_pp%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)
+         snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers
+         nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock
+         ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type
+
+         t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature
          dTdz_top           => col_es%dTdz_top          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
-         snot_top           => col_es%snot_top          , & ! Output: [real(r8) (:)   ]  snow temperature in top layer (col) [K]  
-         t_soisno           => col_es%t_soisno          , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
-         t_grnd             => col_es%t_grnd            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)             
-         t_grnd_u           => col_es%t_grnd_u          , & ! Output: [real(r8) (:)   ]  Urban ground temperature (Kelvin)       
-         t_grnd_r           => col_es%t_grnd_r          , & ! Output: [real(r8) (:)   ]  Rural ground temperature (Kelvin)       
+         snot_top           => col_es%snot_top          , & ! Output: [real(r8) (:)   ]  snow temperature in top layer (col) [K]
+         t_soisno           => col_es%t_soisno          , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)
+         t_grnd             => col_es%t_grnd            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)
+         t_grnd_u           => col_es%t_grnd_u          , & ! Output: [real(r8) (:)   ]  Urban ground temperature (Kelvin)
+         t_grnd_r           => col_es%t_grnd_r          , & ! Output: [real(r8) (:)   ]  Rural ground temperature (Kelvin)
          t_soi_10cm         => col_es%t_soi10cm         , & ! Output: [real(r8) (:)   ]  soil temperature in top 10cm of soil (Kelvin)
-         tsoi17             => col_es%t_soi17cm         , & ! Output: [real(r8) (:)   ]  soil temperature in top 17cm of soil (Kelvin) 
+         tsoi17             => col_es%t_soi17cm         , & ! Output: [real(r8) (:)   ]  soil temperature in top 17cm of soil (Kelvin)
 
-         snow_depth         => col_ws%snow_depth         , & ! Input:  [real(r8) (:)   ]  snow height of snow covered area (m)     
-         snowdp             => col_ws%snowdp             , & ! Input:  [real(r8) (:)   ]  gridcell averaged snow height (m)       
-         frac_sno_eff       => col_ws%frac_sno_eff       , & ! Input:  [real(r8) (:)   ]  eff.  snow cover fraction (col) [frc]    
+         snow_depth         => col_ws%snow_depth         , & ! Input:  [real(r8) (:)   ]  snow height of snow covered area (m)
+         snowdp             => col_ws%snowdp             , & ! Input:  [real(r8) (:)   ]  gridcell averaged snow height (m)
+         frac_sno_eff       => col_ws%frac_sno_eff       , & ! Input:  [real(r8) (:)   ]  eff.  snow cover fraction (col) [frc]
          frac_h2osfc        => col_ws%frac_h2osfc        , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-         begwb              => col_ws%begwb              , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
-         snw_rds            => col_ws%snw_rds            , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
-         snw_rds_top        => col_ws%snw_rds_top        , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer(col) [microns] 
-         sno_liq_top        => col_ws%sno_liq_top        , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer (col) [frc] 
-         snowice            => col_ws%snowice            , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
-         snowliq            => col_ws%snowliq            , & ! Output: [real(r8) (:)   ]  average snow liquid water               
+         begwb              => col_ws%begwb              , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step
+         snw_rds            => col_ws%snw_rds            , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6]
+         snw_rds_top        => col_ws%snw_rds_top        , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer(col) [microns]
+         sno_liq_top        => col_ws%sno_liq_top        , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer (col) [frc]
+         snowice            => col_ws%snowice            , & ! Output: [real(r8) (:)   ]  average snow ice lens
+         snowliq            => col_ws%snowliq            , & ! Output: [real(r8) (:)   ]  average snow liquid water
          snow_persistence   => col_ws%snow_persistence   , & ! Output: [real(r8) (:)   ]  counter for length of time snow-covered
          h2osoi_liqice_10cm => col_ws%h2osoi_liqice_10cm , & ! Output: [real(r8) (:)   ]  liquid water + ice lens in top 10cm of soil (kg/m2)
-         h2osoi_ice         => col_ws%h2osoi_ice         , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq         => col_ws%h2osoi_liq         , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_ice         => col_ws%h2osoi_ice         , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq         => col_ws%h2osoi_liq         , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
          h2osoi_vol         => col_ws%h2osoi_vol         , & ! Output: [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osno_top         => col_ws%h2osno_top         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]    
-         wf                 => col_ws%wf                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
-         wf2                => col_ws%wf2                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
+         h2osno_top         => col_ws%h2osno_top         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]
+         wf                 => col_ws%wf                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m
+         wf2                => col_ws%wf2                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m
          h2osoi_liqvol      => col_ws%h2osoi_liqvol      , & ! Output: [real(r8) (:,:) ]  volumetric liquid water content
-         h2osoi_icevol      => col_ws%h2osoi_icevol      , & ! Output: [real(r8) (:,:) ]  volumetric liquid water content         
+         h2osoi_icevol      => col_ws%h2osoi_icevol      , & ! Output: [real(r8) (:,:) ]  volumetric liquid water content
          air_vol            => col_ws%air_vol            , & ! Output: [real(r8) (:,:) ]  volumetric air porosity
          eff_porosity       => soilstate_vars%eff_porosity_col        , & ! Output: [real(r8) (:,:) ]  effective soil porosity
 
 
          watsat             => soilstate_vars%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-         sucsat             => soilstate_vars%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
-         bsw                => soilstate_vars%bsw_col                 , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"              
-         smp_l              => soilstate_vars%smp_l_col               , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]            
+         sucsat             => soilstate_vars%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
+         bsw                => soilstate_vars%bsw_col                 , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
+         smp_l              => soilstate_vars%smp_l_col               , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
          smpmin             => soilstate_vars%smpmin_col              , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
          soilpsi            => soilstate_vars%soilpsi_col               & ! Output: [real(r8) (:,:) ]  soil water potential in each soil layer (MPa)
          )
 
       ! Determine step size
 
-      dtime = get_step_size()
+      !#py dtime = get_step_size()
 
       ! Determine initial snow/no-snow filters (will be modified possibly by
       ! routines CombineSnowLayers and DivideSnowLayers below
@@ -183,92 +177,87 @@ contains
       call BuildSnowFilter(bounds, num_nolakec, filter_nolakec, &
            num_snowc, filter_snowc, num_nosnowc, filter_nosnowc)
 
-         
+
       ! Determine the change of snow mass and the snow water onto soil
 
       call SnowWater(bounds, num_snowc, filter_snowc, num_nosnowc, filter_nosnowc, &
-           atm2lnd_vars, waterflux_vars, waterstate_vars, aerosol_vars)
+           atm2lnd_vars, aerosol_vars, dtime)
 
       ! mapping soilmoist from CLM to VIC layers for runoff calculations
       if (use_vichydro) then
          call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
-              soilhydrology_vars, waterstate_vars)
+              soilhydrology_vars)
       end if
 
       call SurfaceRunoff(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-           soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars)
+           soilhydrology_vars, soilstate_vars, dtime)
 
       !------------------------------------------------------------------------------------
       if (use_pflotran .and. pf_hmode) then
 
         call Infiltration(bounds, num_hydrononsoic, filter_hydrononsoic, &
              num_urbanc, filter_urbanc, &
-             energyflux_vars, soilhydrology_vars, soilstate_vars, temperature_vars,  &
-             waterflux_vars, waterstate_vars)
+             energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       else
       !------------------------------------------------------------------------------------
 
         call Infiltration(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-             energyflux_vars, soilhydrology_vars, soilstate_vars, temperature_vars, &
-             waterflux_vars, waterstate_vars)
+             energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       !------------------------------------------------------------------------------------
       end if
       !------------------------------------------------------------------------------------
 
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
-        call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
+        !#betr_py call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        !#betr_py call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
-      
+
       if (use_vsfm) then
          call DrainageVSFM(bounds, num_hydrologyc, filter_hydrologyc, &
               num_urbanc, filter_urbanc,&
-              temperature_vars, soilhydrology_vars, soilstate_vars, &
-              waterstate_vars, waterflux_vars)
+              soilhydrology_vars, soilstate_vars, dtime)
       endif
 
       call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
-           filter_hydrologyc, soilstate_vars, canopystate_vars, waterflux_vars,energyflux_vars)
+           filter_hydrologyc, soilstate_vars, canopystate_vars,energyflux_vars)
 
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
-      if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
-                                                      soilstate_vars, waterflux_vars)
+      !#py if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
+                                                      !#fates_py soilstate_vars, waterflux_vars)
 
       !------------------------------------------------------------------------------------
       if (use_pflotran .and. pf_hmode) then
 
         call SoilWater(bounds, num_hydrononsoic, filter_hydrononsoic, &
             num_urbanc, filter_urbanc, &
-            soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
-            soil_water_retention_curve)
+            soilhydrology_vars, soilstate_vars, dtime)
 
       else
       !------------------------------------------------------------------------------------
 
         call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-            soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
-            soil_water_retention_curve)
+            soilhydrology_vars, soilstate_vars, dtime)
 
       !------------------------------------------------------------------------------------
       end if
       !------------------------------------------------------------------------------------
 
-            
-      if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
-           waterflux_vars=waterflux_vars, soilhydrology_vars = soilhydrology_vars)
 
-        call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
+      !#betr_py if (use_betr) then
+        !#betr_py call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
+           !#betr_py waterflux_vars=waterflux_vars, soilhydrology_vars = soilhydrology_vars)
 
-        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)  
-      endif
-             
+        !#betr_py call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
+
+        !#betr_py call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
+      !#betr_py endif
+
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations
          call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
-              soilhydrology_vars, waterstate_vars)
+              soilhydrology_vars)
       end if
 
       !------------------------------------------------------------------------------------
@@ -276,13 +265,13 @@ contains
 
         call WaterTable(bounds, num_hydrononsoic, filter_hydrononsoic, &
            num_urbanc, filter_urbanc, &
-           soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars)
+           soilhydrology_vars, soilstate_vars, dtime)
 
       else
       !------------------------------------------------------------------------------------
 
         call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-           soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars) 
+           soilhydrology_vars, soilstate_vars, dtime)
 
       !------------------------------------------------------------------------------------
       end if
@@ -292,19 +281,18 @@ contains
       if (use_betr) then
          !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
          !Jinyun Tang, Feb 4, 2015
-         call ep_betr%CalcDewSubFlux(bounds, col_pp, num_hydrologyc, filter_hydrologyc)
-      endif           
+         !#betr_py call ep_betr%CalcDewSubFlux(bounds, col_pp, num_hydrologyc, filter_hydrologyc)
+      endif
       ! Natural compaction and metamorphosis.
-      call SnowCompaction(bounds, num_snowc, filter_snowc, &
-           temperature_vars, waterstate_vars)
+      call SnowCompaction(bounds, num_snowc, filter_snowc, dtime)
 
       ! Combine thin snow elements
       call CombineSnowLayers(bounds, num_snowc, filter_snowc, &
-           aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
+           aerosol_vars, dtime)
 
       ! Divide thick snow elements
       call DivideSnowLayers(bounds, num_snowc, filter_snowc, &
-           aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
+           aerosol_vars, is_lake=.false.)
 
       ! Set empty snow layers to zero
       do j = -nlevsno+1,0
@@ -320,7 +308,7 @@ contains
             end if
          end do
       end do
-       
+
       ! Build new snow filter
 
       call BuildSnowFilter(bounds, num_nolakec, filter_nolakec, &
@@ -376,7 +364,7 @@ contains
       end do
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
-	 nlevbed = nlev2bed(c)
+	       nlevbed = nlev2bed(c)
          do j = 1, nlevbed
             l = col_pp%landunit(c)
             if (.not. lun_pp%urbpoi(l)) then
@@ -385,7 +373,7 @@ contains
                   fracl = 1._r8
                   tsoi17(c) = tsoi17(c) + t_soisno(c,j)*dz(c,j)*fracl
                else
-                  if (zi(c,j) > 0.17_r8 .and. zi(c,j-1) < 0.17_r8) then 
+                  if (zi(c,j) > 0.17_r8 .and. zi(c,j-1) < 0.17_r8) then
                      fracl = (0.17_r8 - zi(c,j-1))/dz(c,j)
                      tsoi17(c) = tsoi17(c) + t_soisno(c,j)*dz(c,j)*fracl
                   end if
@@ -410,7 +398,7 @@ contains
          end do
       end do
 
-      ! TODO - if this block of code is moved out of here - the SoilHydrology 
+      ! TODO - if this block of code is moved out of here - the SoilHydrology
       ! will NOT effect t_grnd, t_grnd_u or t_grnd_r
 
       do fc = 1, num_nolakec
@@ -450,7 +438,7 @@ contains
                h2osoi_icevol(c,j) = h2osoi_ice(c,j)/(dz(c,j)*denice)
                air_vol(c,j)       = max(1.e-4_r8,watsat(c,j) - h2osoi_vol(c,j))
                eff_porosity(c,j)  = max(0.01_r8,watsat(c,j) - h2osoi_ice(c,j)/(dz(c,j)*denice))
-               
+
             end if
          end do
       end do
@@ -467,7 +455,7 @@ contains
 
                   vwc = h2osoi_liq(c,j)/(dz(c,j)*denh2o)
 
-                  ! the following limit set to catch very small values of 
+                  ! the following limit set to catch very small values of
                   ! fractional saturation that can crash the calculation of psi
 
                   ! use the same contants used in the supercool so that psi for frozen soils is consistent
@@ -475,7 +463,7 @@ contains
                   psi = sucsat(c,j) * (-9.8e-6_r8) * (fsattmp)**(-bsw(c,j))  ! Mpa
                   soilpsi(c,j) = min(max(psi,-15.0_r8),0._r8)
 
-               else 
+               else
                   soilpsi(c,j) = -15.0_r8
                end if
             end do
@@ -555,7 +543,7 @@ contains
       ! Zero variables in columns without snow
       do fc = 1, num_nosnowc
          c = filter_nosnowc(fc)
-            
+
          h2osno_top(c)      = 0._r8
          snw_rds(c,:)       = 0._r8
 

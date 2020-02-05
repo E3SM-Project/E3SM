@@ -3,24 +3,24 @@ module LandunitDataType
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Landunit data type allocation and initialization
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use clm_varcon     , only : spval, ispval
   use clm_varctl     , only : use_vancouver, use_mexicocity
-  use histFileMod    , only : hist_addfld1d
-  use ncdio_pio      , only : file_desc_t, ncd_double
+   use histFileMod    , only : hist_addfld1d
+   use ncdio_pio      , only : file_desc_t, ncd_double
   use decompMod      , only : bounds_type
-  use restUtilMod
+   use restUtilMod
   use LandunitType   , only : lun_pp
   !
   ! !PUBLIC TYPES:
   implicit none
   save
   private
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy state information at the landunit level.
   !-----------------------------------------------------------------------
@@ -31,10 +31,10 @@ module LandunitDataType
 
   contains
     procedure, public :: Init    => lun_es_init
-    procedure, public :: Restart => lun_es_restart
+     procedure, public :: Restart => lun_es_restart
     procedure, public :: Clean   => lun_es_clean
   end type landunit_energy_state
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy flux information at the landunit level.
   !-----------------------------------------------------------------------
@@ -48,7 +48,7 @@ module LandunitDataType
     procedure, public :: Init    => lun_ef_init
     procedure, public :: Clean   => lun_ef_clean
   end type landunit_energy_flux
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds water state information at the landunit level.
   !-----------------------------------------------------------------------
@@ -58,17 +58,19 @@ module LandunitDataType
 
   contains
     procedure, public :: Init    => lun_ws_init
-    procedure, public :: Restart => lun_ws_restart
+     procedure, public :: Restart => lun_ws_restart
     procedure, public :: Clean   => lun_ws_clean
   end type landunit_water_state
-  
+
   !-----------------------------------------------------------------------
   ! declare the public instances of landunit-level data types
   !-----------------------------------------------------------------------
-  type(landunit_energy_state)          , public, target :: lun_es    ! landunit energy state
-  type(landunit_energy_flux )          , public, target :: lun_ef    ! landunit energy flux
-  type(landunit_water_state )          , public, target :: lun_ws    ! landunit water state
-
+  type(landunit_energy_state)  , public, target :: lun_es    ! landunit energy state
+  type(landunit_energy_flux)  , public, target :: lun_ef    ! landunit energy flux
+  type(landunit_water_state)  , public, target :: lun_ws    ! landunit water state
+  !$acc declare create(lun_es)
+  !$acc declare create(lun_ef)
+  !$acc declare create(lun_ws)
   !------------------------------------------------------------------------
 
 contains
@@ -88,21 +90,21 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of lun_es
     !-----------------------------------------------------------------------
-    allocate(this%t_building            (begl:endl))                      ; this%t_building            (:)   = nan
-    allocate(this%taf                   (begl:endl))                      ; this%taf                   (:)   = nan
+    allocate(this%t_building            (begl:endl))                      ; this%t_building            (:)   =spval
+    allocate(this%taf                   (begl:endl))                      ; this%taf                   (:)   =spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of lun_es
     !-----------------------------------------------------------------------
     this%t_building(begl:endl) = spval
-    call hist_addfld1d(fname='TBUILD', units='K',  &
-         avgflag='A', long_name='internal urban building temperature', &
-         ptr_lunit=this%t_building, set_nourb=spval, l2g_scale_type='unity')
-    
+     call hist_addfld1d(fname='TBUILD', units='K',  &
+          avgflag='A', long_name='internal urban building temperature', &
+           ptr_lunit=this%t_building, set_nourb=spval, l2g_scale_type='unity')
+
     !-----------------------------------------------------------------------
     ! cold-start initial conditions for lun_es
     !-----------------------------------------------------------------------
-    do l = begl, endl 
+    do l = begl, endl
        if (lun_pp%urbpoi(l)) then
           if (use_vancouver) then
              this%taf(l) = 297.56_r8
@@ -113,32 +115,32 @@ contains
           end if
        end if
     end do
-    
+
 
   end subroutine lun_es_init
 
   !------------------------------------------------------------------------
-  subroutine lun_es_restart(this, bounds, ncid, flag)
-    ! 
-    ! !DESCRIPTION:
-    ! Read/Write landunit energy state information to/from restart file.
-    !
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    class(landunit_energy_state) :: this
-    type(bounds_type), intent(in)    :: bounds 
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
-    !
-    ! !LOCAL VARIABLES:
-    logical :: readvar   ! determine if variable is on initial file
-    !-----------------------------------------------------------------------
+   subroutine lun_es_restart(this, bounds, ncid, flag)
+     !
+     ! !DESCRIPTION:
+     ! Read/Write landunit energy state information to/from restart file.
+     !
+     ! !USES:
+     !
+     ! !ARGUMENTS:
+     class(landunit_energy_state) :: this
+     type(bounds_type), intent(in)    :: bounds
+     type(file_desc_t), intent(inout) :: ncid
+     character(len=*) , intent(in)    :: flag
+     !
+     ! !LOCAL VARIABLES:
+     logical :: readvar   ! determine if variable is on initial file
+     !-----------------------------------------------------------------------
 
-    call restartvar(ncid=ncid, flag=flag, varname='taf', xtype=ncd_double, dim1name='landunit',                       &
-         long_name='urban canopy air temperature', units='K',                                                         &
-         interpinic_flag='interp', readvar=readvar, data=this%taf)
-  end subroutine lun_es_restart
+     call restartvar(ncid=ncid, flag=flag, varname='taf', xtype=ncd_double, dim1name='landunit',                       &
+          long_name='urban canopy air temperature', units='K',                                                         &
+          interpinic_flag='interp', readvar=readvar, data=this%taf)
+     end subroutine lun_es_restart
 
   !------------------------------------------------------------------------
   subroutine lun_es_clean(this)
@@ -148,7 +150,7 @@ contains
     !------------------------------------------------------------------------
     deallocate(this%t_building)
     deallocate(this%taf)
-    
+
   end subroutine lun_es_clean
 
   !------------------------------------------------------------------------
@@ -166,14 +168,14 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of lun_ef
     !-----------------------------------------------------------------------
-    allocate( this%eflx_heat_from_ac   (begl:endl))             ; this%eflx_heat_from_ac   (:)   = nan
-    allocate( this%eflx_traffic        (begl:endl))             ; this%eflx_traffic        (:)   = nan
-    allocate( this%eflx_wasteheat      (begl:endl))             ; this%eflx_wasteheat      (:)   = nan
+    allocate( this%eflx_heat_from_ac   (begl:endl))             ; this%eflx_heat_from_ac   (:)   =spval
+    allocate( this%eflx_traffic        (begl:endl))             ; this%eflx_traffic        (:)   =spval
+    allocate( this%eflx_wasteheat      (begl:endl))             ; this%eflx_wasteheat      (:)   =spval
 
     !-----------------------------------------------------------------------
     ! cold-start initial conditions for lun_ef
     !-----------------------------------------------------------------------
-    do l = begl, endl 
+    do l = begl, endl
        if (lun_pp%urbpoi(l)) then
           this%eflx_traffic(l)   = spval
           this%eflx_wasteheat(l) = spval
@@ -191,9 +193,9 @@ contains
     deallocate(this%eflx_heat_from_ac)
     deallocate(this%eflx_traffic)
     deallocate(this%eflx_wasteheat)
-    
+
   end subroutine lun_ef_clean
-  
+
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean landunit water state data structure
   !------------------------------------------------------------------------
@@ -209,12 +211,12 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of lun_ws
     !-----------------------------------------------------------------------
-    allocate(this%qaf          (begl:endl))               ; this%qaf         (:)   = nan
+    allocate(this%qaf          (begl:endl))               ; this%qaf         (:)   =spval
 
     !-----------------------------------------------------------------------
     ! cold-start initial conditions for lun_ws
     !-----------------------------------------------------------------------
-    do l = begl, endl 
+    do l = begl, endl
        if (lun_pp%urbpoi(l)) then
           if (use_vancouver) then
              this%qaf(l) = 0.0111_r8
@@ -229,28 +231,28 @@ contains
   end subroutine lun_ws_init
 
   !------------------------------------------------------------------------
-  subroutine lun_ws_restart(this, bounds, ncid, flag)
-    ! 
-    ! !DESCRIPTION:
-    ! Read/Write landunit water state information to/from restart file.
-    !
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    class(landunit_water_state)      :: this
-    type(bounds_type), intent(in)    :: bounds 
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
-    !
-    ! !LOCAL VARIABLES:
-    logical :: readvar   ! determine if variable is on initial file
-    !-----------------------------------------------------------------------
+   subroutine lun_ws_restart(this, bounds, ncid, flag)
+     !
+     ! !DESCRIPTION:
+     ! Read/Write landunit water state information to/from restart file.
+     !
+     ! !USES:
+     !
+     ! !ARGUMENTS:
+     class(landunit_water_state)      :: this
+     type(bounds_type), intent(in)    :: bounds
+     type(file_desc_t), intent(inout) :: ncid
+     character(len=*) , intent(in)    :: flag
+     !
+     ! !LOCAL VARIABLES:
+     logical :: readvar   ! determine if variable is on initial file
+     !-----------------------------------------------------------------------
 
-    call restartvar(ncid=ncid, flag=flag, varname='qaf', xtype=ncd_double, dim1name='landunit',                       &
-         long_name='urban canopy specific humidity', units='kg/kg',                                                   &
-         interpinic_flag='interp', readvar=readvar, data=this%qaf)
+     call restartvar(ncid=ncid, flag=flag, varname='qaf', xtype=ncd_double, dim1name='landunit',                       &
+          long_name='urban canopy specific humidity', units='kg/kg',                                                   &
+          interpinic_flag='interp', readvar=readvar, data=this%qaf)
 
-  end subroutine lun_ws_restart
+     end subroutine lun_ws_restart
 
   !------------------------------------------------------------------------
   subroutine lun_ws_clean(this)
@@ -259,11 +261,10 @@ contains
     class(landunit_water_state) :: this
     !------------------------------------------------------------------------
     deallocate(this%qaf)
-    
+
   end subroutine lun_ws_clean
 
 
-  
+
 
 end module LandunitDataType
-

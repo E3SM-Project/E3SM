@@ -355,10 +355,8 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(lib, lid))
         my_file = os.path.join(cimeroot, "src", "build_scripts", "buildlib.{}".format(lib))
         logger.info("Building {} with output to file {}".format(lib,file_build))
-
         run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
                        [full_lib_path, os.path.join(exeroot, sharedpath), case], logfile=file_build)
-
         analyze_build_log(lib, file_build, compiler)
         logs.append(file_build)
         if lib == "pio":
@@ -496,7 +494,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 ###############################################################################
 
     t1 = time.time()
-
     expect(not (sharedlib_only and model_only),
            "Contradiction: both sharedlib_only and model_only")
     expect(not (dry_run and not model_only),
@@ -560,7 +557,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mali_use_albany     = case.get_value("MALI_USE_ALBANY")
     mach                = case.get_value("MACH")
-
     # Load some params into env
     os.environ["BUILD_THREADED"]       = stringify_bool(build_threaded)
 
@@ -607,13 +603,12 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                use_esmf_lib, debug, compiler, mpilib,
                                complist, ninst_build, smp_value, model_only, buildlist)
 
+
     t2 = time.time()
     logs = []
-
     if not model_only:
         logs = _build_libraries(case, exeroot, sharedpath, caseroot,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
-
     if not sharedlib_only:
         if get_model() == "e3sm" and not use_old:
             logs.extend(_build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
@@ -664,6 +659,7 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False, ninja=False, dry_run=False):
 ###############################################################################
+    
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                        save_build_provenance, use_old, ninja, dry_run)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)

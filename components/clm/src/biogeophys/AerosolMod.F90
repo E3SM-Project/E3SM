@@ -2,16 +2,16 @@ module AerosolMod
 
   !-----------------------------------------------------------------------
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use shr_log_mod      , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type
-  use clm_varpar       , only : nlevsno 
-  use clm_time_manager , only : get_step_size
+  use clm_varpar       , only : nlevsno
+  !#py use clm_time_manager , only : get_step_size
   use atm2lndType      , only : atm2lnd_type
   use WaterfluxType    , only : waterflux_type
   use WaterstateType   , only : waterstate_type
   use AerosolType      , only : aerosol_type
   use ColumnType       , only : col_pp
-  use ColumnDataType   , only : col_ws, col_wf  
+  use ColumnDataType   , only : col_ws, col_wf
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -29,24 +29,24 @@ module AerosolMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine AerosolMasses(bounds, num_on, filter_on, num_off, filter_off, &
-       waterflux_vars, waterstate_vars, aerosol_vars)
+  subroutine AerosolMasses(bounds, num_on, filter_on, num_off, filter_off, aerosol_vars)
     !
     ! !DESCRIPTION:
     ! Calculate column-integrated aerosol masses, and
     ! mass concentrations for radiative calculations and output
     ! (based on new snow level state, after SnowFilter is rebuilt.
-    ! NEEDS TO BE AFTER SnowFiler is rebuilt in Hydrology2, otherwise there 
+    ! NEEDS TO BE AFTER SnowFiler is rebuilt in Hydrology2, otherwise there
     ! can be zero snow layers but an active column in filter)
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)     , intent(in )   :: bounds
     integer               , intent(in)    :: num_on         ! number of column filter-ON points
     integer               , intent(in)    :: filter_on(:)   ! column filter for filter-ON points
     integer               , intent(in)    :: num_off        ! number of column non filter-OFF points
     integer               , intent(in)    :: filter_off(:)  ! column filter for filter-OFF points
-    type(waterflux_type)  , intent(in)    :: waterflux_vars 
-    type(waterstate_type) , intent(inout) :: waterstate_vars
+    !type(waterflux_type)  , intent(in)    :: waterflux_vars
+    !type(waterstate_type) , intent(inout) :: waterstate_vars
     type(aerosol_type)    , intent(inout) :: aerosol_vars
     !
     ! !LOCAL VARIABLES:
@@ -56,16 +56,16 @@ contains
     real(r8) :: snowcap_scl_fct ! temporary factor used to correct for snow capping
     !-----------------------------------------------------------------------
 
-    associate(                                                & 
-         snl           => col_pp%snl                           , & ! Input:  [integer  (:)   ]  number of snow layers                    
+    associate(                                                &
+         snl           => col_pp%snl                           , & ! Input:  [integer  (:)   ]  number of snow layers
 
-         do_capsnow    => col_ws%do_capsnow    , & ! Input:  [logical  (:)   ]  true => do snow capping                  
-         h2osoi_ice    => col_ws%h2osoi_ice    , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq    => col_ws%h2osoi_liq    , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         qflx_snwcp_ice=> col_wf%qflx_snwcp_ice , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]          
+         do_capsnow    => col_ws%do_capsnow    , & ! Input:  [logical  (:)   ]  true => do snow capping
+         h2osoi_ice    => col_ws%h2osoi_ice    , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq    => col_ws%h2osoi_liq    , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         qflx_snwcp_ice=> col_wf%qflx_snwcp_ice , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
 
          h2osno_top    => col_ws%h2osno_top    , & ! Output: [real(r8) (:)   |  top-layer mass of snow  [kg]
-         snw_rds       => col_ws%snw_rds       , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
+         snw_rds       => col_ws%snw_rds       , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6]
 
          mss_bcpho     => aerosol_vars%mss_bcpho_col        , & ! Output: [real(r8) (:,:) ]  mass of hydrophobic BC in snow (col,lyr) [kg]
          mss_bcphi     => aerosol_vars%mss_bcphi_col        , & ! Output: [real(r8) (:,:) ]  mass of hydrophillic BC in snow (col,lyr) [kg]
@@ -94,7 +94,7 @@ contains
          mss_cnc_dst4  => aerosol_vars%mss_cnc_dst4_col       & ! Output: [real(r8) (:,:) ]  mass concentration of dust species 4 (col,lyr) [kg/kg]
          )
 
-      dtime = get_step_size()
+      !#py dtime = get_step_size()
 
       do fc = 1, num_on
          c = filter_on(fc)
@@ -109,12 +109,12 @@ contains
             ! layer mass of snow:
             snowmass = h2osoi_ice(c,j) + h2osoi_liq(c,j)
 
-            ! Correct the top layer aerosol mass to account for snow capping. 
+            ! Correct the top layer aerosol mass to account for snow capping.
             ! This approach conserves the aerosol mass concentration
             ! (but not the aerosol amss) when snow-capping is invoked
 
             if (j == snl(c)+1) then
-               if (do_capsnow(c)) then 
+               if (do_capsnow(c)) then
 
                   snowcap_scl_fct = snowmass / (snowmass + (qflx_snwcp_ice(c)*dtime))
 
@@ -190,7 +190,7 @@ contains
          c = filter_off(fc)
 
          mss_bc_top(c)      = 0._r8
-         mss_bc_col(c)      = 0._r8    
+         mss_bc_col(c)      = 0._r8
          mss_bcpho(c,:)     = 0._r8
          mss_bcphi(c,:)     = 0._r8
          mss_bctot(c,:)     = 0._r8
@@ -198,7 +198,7 @@ contains
          mss_cnc_bcpho(c,:) = 0._r8
 
          mss_oc_top(c)      = 0._r8
-         mss_oc_col(c)      = 0._r8    
+         mss_oc_col(c)      = 0._r8
          mss_ocpho(c,:)     = 0._r8
          mss_ocphi(c,:)     = 0._r8
          mss_octot(c,:)     = 0._r8
@@ -232,6 +232,7 @@ contains
     ! Compute aerosol fluxes through snowpack and aerosol deposition fluxes into top layere
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)  , intent(in)    :: bounds
     integer            , intent(in)    :: num_snowc       ! number of snow points in column filter
     integer            , intent(in)    :: filter_snowc(:) ! column filter for snow points
@@ -243,8 +244,8 @@ contains
     integer  :: c,g,j,fc
     !-----------------------------------------------------------------------
 
-    associate(                                                   & 
-         snl              => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
+    associate(                                                   &
+         snl              => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers
 
          forc_aer         => atm2lnd_vars%forc_aer_grc         , & ! Input:  [real(r8) (:,:) ] aerosol deposition from atmosphere model (grd,aer) [kg m-1 s-1]
 
@@ -257,14 +258,14 @@ contains
          mss_dst3         => aerosol_vars%mss_dst3_col         , & ! Output: [real(r8) (:,:) ] mass of dust species 3 in snow (col,lyr) [kg]
          mss_dst4         => aerosol_vars%mss_dst4_col         , & ! Output: [real(r8) (:,:) ] mass of dust species 4 in snow (col,lyr) [kg]
 
-         flx_bc_dep       => aerosol_vars%flx_bc_dep_col       , & ! Output: [real(r8) (:)   ] total BC deposition (col) [kg m-2 s-1]  
-         flx_bc_dep_wet   => aerosol_vars%flx_bc_dep_wet_col   , & ! Output: [real(r8) (:)   ] wet BC deposition (col) [kg m-2 s-1]    
-         flx_bc_dep_dry   => aerosol_vars%flx_bc_dep_dry_col   , & ! Output: [real(r8) (:)   ] dry BC deposition (col) [kg m-2 s-1]    
+         flx_bc_dep       => aerosol_vars%flx_bc_dep_col       , & ! Output: [real(r8) (:)   ] total BC deposition (col) [kg m-2 s-1]
+         flx_bc_dep_wet   => aerosol_vars%flx_bc_dep_wet_col   , & ! Output: [real(r8) (:)   ] wet BC deposition (col) [kg m-2 s-1]
+         flx_bc_dep_dry   => aerosol_vars%flx_bc_dep_dry_col   , & ! Output: [real(r8) (:)   ] dry BC deposition (col) [kg m-2 s-1]
          flx_bc_dep_phi   => aerosol_vars%flx_bc_dep_phi_col   , & ! Output: [real(r8) (:)   ] hydrophillic BC deposition (col) [kg m-1 s-1]
          flx_bc_dep_pho   => aerosol_vars%flx_bc_dep_pho_col   , & ! Output: [real(r8) (:)   ] hydrophobic BC deposition (col) [kg m-1 s-1]
-         flx_oc_dep       => aerosol_vars%flx_oc_dep_col       , & ! Output: [real(r8) (:)   ] total OC deposition (col) [kg m-2 s-1]  
-         flx_oc_dep_wet   => aerosol_vars%flx_oc_dep_wet_col   , & ! Output: [real(r8) (:)   ] wet OC deposition (col) [kg m-2 s-1]    
-         flx_oc_dep_dry   => aerosol_vars%flx_oc_dep_dry_col   , & ! Output: [real(r8) (:)   ] dry OC deposition (col) [kg m-2 s-1]    
+         flx_oc_dep       => aerosol_vars%flx_oc_dep_col       , & ! Output: [real(r8) (:)   ] total OC deposition (col) [kg m-2 s-1]
+         flx_oc_dep_wet   => aerosol_vars%flx_oc_dep_wet_col   , & ! Output: [real(r8) (:)   ] wet OC deposition (col) [kg m-2 s-1]
+         flx_oc_dep_dry   => aerosol_vars%flx_oc_dep_dry_col   , & ! Output: [real(r8) (:)   ] dry OC deposition (col) [kg m-2 s-1]
          flx_oc_dep_phi   => aerosol_vars%flx_oc_dep_phi_col   , & ! Output: [real(r8) (:)   ] hydrophillic OC deposition (col) [kg m-1 s-1]
          flx_oc_dep_pho   => aerosol_vars%flx_oc_dep_pho_col   , & ! Output: [real(r8) (:)   ] hydrophobic OC deposition (col) [kg m-1 s-1]
          flx_dst_dep      => aerosol_vars%flx_dst_dep_col      , & ! Output: [real(r8) (:)   ] total dust deposition (col) [kg m-2 s-1]
@@ -279,7 +280,7 @@ contains
          )
 
       !  set aerosol deposition fluxes from forcing array
-      !  The forcing array is either set from an external file 
+      !  The forcing array is either set from an external file
       !  or from fluxes received from the atmosphere model
 !mgf++
 #ifdef MODAL_AER
@@ -359,7 +360,7 @@ contains
       ! is in the top layer after deposition, and is not immediately
       ! washed out before radiative calculations are done
 
-      dtime = get_step_size()
+      !#py dtime = get_step_size()
 
       do fc = 1, num_snowc
          c = filter_snowc(fc)

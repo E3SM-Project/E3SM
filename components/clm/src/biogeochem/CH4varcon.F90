@@ -29,6 +29,7 @@ module CH4varcon
                                      ! Note: switching this off turns off ALL lake methane biogeochem. However, 0 values
                                      ! will still be averaged into the concentration _sat history fields.
 
+
   logical :: usephfact = .false. ! Switch to use pH factor in methane production
 
   logical :: replenishlakec = .true. ! Switch for keeping carbon storage under lakes constant
@@ -69,6 +70,20 @@ module CH4varcon
                                     ! Causes slight increase in emissions in the fall and decrease in the spring.
                                     ! Currently hardwired off; small impact.
 
+  !-----------------------------------------------------------------------
+
+  !$acc declare copyin(allowlakeprod)
+  !$acc declare copyin(replenishlakec)
+  !$acc declare copyin(fin_use_fsat)
+  !$acc declare copyin(ch4offline)
+  !$acc declare copyin(ch4rmcnlim)
+  !$acc declare copyin(anoxicmicrosites)
+  !$acc declare copyin(ch4frzout)
+  !$acc declare copyin(usefrootc)
+  !$acc declare copyin(transpirationloss)
+  !$acc declare copyin(use_aereoxid_prog)
+  !$acc declare copyin(usephfact)
+
   public :: CH4conrd ! Read and initialize CH4 constants
   !-----------------------------------------------------------------------
 
@@ -104,7 +119,7 @@ contains
 
     ! Production
     namelist /ch4par_in/ &
-         usephfact 
+         usephfact
 
     ! Methane
     namelist /ch4par_in/ &
@@ -133,13 +148,13 @@ contains
     end if ! masterproc
 
 
-    call mpi_bcast ( use_aereoxid_prog, 1 , MPI_LOGICAL, 0, mpicom, ierr )          
-    call mpi_bcast (allowlakeprod, 1 , MPI_LOGICAL, 0, mpicom, ierr)            
-    call mpi_bcast (usephfact, 1 , MPI_LOGICAL, 0, mpicom, ierr)            
-    call mpi_bcast (replenishlakec, 1 , MPI_LOGICAL, 0, mpicom, ierr)            
-    call mpi_bcast (fin_use_fsat, 1 , MPI_LOGICAL, 0, mpicom, ierr)            
-    call mpi_bcast (usefrootc, 1 , MPI_LOGICAL, 0, mpicom, ierr)            
-    call mpi_bcast (ch4offline, 1 , MPI_LOGICAL, 0, mpicom, ierr)            
+    call mpi_bcast ( use_aereoxid_prog, 1 , MPI_LOGICAL, 0, mpicom, ierr )
+    call mpi_bcast (allowlakeprod, 1 , MPI_LOGICAL, 0, mpicom, ierr)
+    call mpi_bcast (usephfact, 1 , MPI_LOGICAL, 0, mpicom, ierr)
+    call mpi_bcast (replenishlakec, 1 , MPI_LOGICAL, 0, mpicom, ierr)
+    call mpi_bcast (fin_use_fsat, 1 , MPI_LOGICAL, 0, mpicom, ierr)
+    call mpi_bcast (usefrootc, 1 , MPI_LOGICAL, 0, mpicom, ierr)
+    call mpi_bcast (ch4offline, 1 , MPI_LOGICAL, 0, mpicom, ierr)
 
     if (masterproc) then
        write(iulog,*) 'Successfully read CH4 namelist'
@@ -153,7 +168,7 @@ contains
 
        if (ch4offline) write(iulog,*)'CH4 Model will be running offline and not affect fluxes to atmosphere'
 
-       write(iulog,*)'use_aereoxid_prog = ', use_aereoxid_prog 
+       write(iulog,*)'use_aereoxid_prog = ', use_aereoxid_prog
        if ( .not. use_aereoxid_prog ) then
           write(iulog,*) 'Aerenchyma oxidation (aereoxid) value is being read from '//&
             ' the parameters file'
@@ -172,4 +187,3 @@ contains
   end subroutine CH4conrd
 
 end module CH4varcon
-

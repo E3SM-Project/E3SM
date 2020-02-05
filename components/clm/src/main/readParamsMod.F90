@@ -86,7 +86,7 @@ contains
     use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
     use GapMortalityMod          , only : readGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
-    use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
+    use NitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
     use clm_varctl               , only : paramfile, iulog, use_betr, use_hydrstress

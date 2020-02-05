@@ -9,10 +9,10 @@ module PhenologyFLuxLimitMod
   use shr_kind_mod                , only : r8 => shr_kind_r8
   use VegetationType              , only : veg_pp
   use VegetationPropertiesType    , only : veg_vp
-  use clm_time_manager            , only : get_step_size
+  !#py use clm_time_manager            , only : get_step_size
   use pftvarcon                   , only : npcropmin
   use clm_varctl                  , only : iulog
-  use abortutils                  , only : endrun
+  !#py use abortutils                  , only : endrun
 implicit none
   private
 
@@ -41,6 +41,30 @@ implicit none
   integer :: s_grainc_storage
   integer :: s_gresp_xfer
   integer :: s_gresp_storage
+!$acc declare create(s_cpool          )
+!$acc declare create(s_leafc              )
+!$acc declare create(s_leafc_xfer         )
+!$acc declare create(s_leafc_storage      )
+!$acc declare create(s_frootc             )
+!$acc declare create(s_frootc_xfer        )
+!$acc declare create(s_frootc_sotrage     )
+!$acc declare create(s_livestemc          )
+!$acc declare create(s_livestemc_xfer     )
+!$acc declare create(s_livestemc_storage  )
+!$acc declare create(s_livecrootc         )
+!$acc declare create(s_livecrootc_xfer    )
+!$acc declare create(s_livecrootc_storage )
+!$acc declare create(s_deadstemc          )
+!$acc declare create(s_deadstemc_xfer     )
+!$acc declare create(s_deadstemc_storage  )
+!$acc declare create(s_deadcrootc         )
+!$acc declare create(s_deadcrootc_xfer    )
+!$acc declare create(s_deadcrootc_storage )
+!$acc declare create(s_grainc             )
+!$acc declare create(s_grainc_xfer        )
+!$acc declare create(s_grainc_storage     )
+!$acc declare create(s_gresp_xfer         )
+!$acc declare create(s_gresp_storage      )
 !---------------------------------------------
   !carbon flux indices
   integer :: f_cpool_to_leafc
@@ -81,6 +105,44 @@ implicit none
   integer :: f_grainc_xfer_to_grainc
   integer :: f_grainc_storage_to_xfer
   integer :: f_gresp_storage_to_xfer
+  !$acc declare create(f_cpool_to_leafc                )
+  !$acc declare create(f_cpool_to_leafc_storage        )
+  !$acc declare create(f_cpool_to_frootc               )
+  !$acc declare create(f_cpool_to_frootc_storage       )
+  !$acc declare create(f_cpool_to_xsmrpool             )
+  !$acc declare create(f_cpool_to_gresp_storage        )
+  !$acc declare create(f_cpool_to_ar                   )
+  !$acc declare create(f_cpool_to_livestemc            )
+  !$acc declare create(f_cpool_to_livestemc_storage    )
+  !$acc declare create(f_cpool_to_deadstemc            )
+  !$acc declare create(f_cpool_to_deadstemc_storage    )
+  !$acc declare create(f_cpool_to_livecrootc           )
+  !$acc declare create(f_cpool_to_livecrootc_storage   )
+  !$acc declare create(f_cpool_to_deadcrootc           )
+  !$acc declare create(f_cpool_to_deadcrootc_storage   )
+  !$acc declare create(f_cpool_to_grainc               )
+  !$acc declare create(f_cpool_to_grainc_storage       )
+  !$acc declare create(f_leafc_to_litter               )
+  !$acc declare create(f_leafc_xfer_to_leafc           )
+  !$acc declare create(f_leafc_storage_to_xfer         )
+  !$acc declare create(f_frootc_to_litter              )
+  !$acc declare create(f_frootc_xfer_to_frootc         )
+  !$acc declare create(f_frootc_storage_to_xfer        )
+  !$acc declare create(f_livestemc_to_deadstemc        )
+  !$acc declare create(f_livestemc_xfer_to_livestemc   )
+  !$acc declare create(f_livestemc_storage_to_xfer     )
+  !$acc declare create(f_livestemc_to_litter           )
+  !$acc declare create(f_deadstemc_xfer_to_deadstemc   )
+  !$acc declare create(f_deadstemc_storage_to_xfer     )
+  !$acc declare create(f_livecrootc_xfer_to_livecrootc )
+  !$acc declare create(f_livecrootc_storage_to_xfer    )
+  !$acc declare create(f_livecrootc_to_deadcrootc      )
+  !$acc declare create(f_deadcrootc_xfer_to_deadcrootc )
+  !$acc declare create(f_deadcrootc_storage_to_xfer    )
+  !$acc declare create(f_grainc_to_food                )
+  !$acc declare create(f_grainc_xfer_to_grainc         )
+  !$acc declare create(f_grainc_storage_to_xfer        )
+  !$acc declare create(f_gresp_storage_to_xfer         )
 !---------------------------------------------
   !nutrient state indices (N & P use the same indices)
   integer :: s_npool
@@ -106,6 +168,30 @@ implicit none
   integer :: s_grainn
   integer :: s_grainn_xfer
   integer :: s_grainn_storage
+
+  !$acc declare create(s_npool              )
+  !$acc declare create(s_leafn              )
+  !$acc declare create(s_leafn_xfer         )
+  !$acc declare create(s_leafn_storage      )
+  !$acc declare create(s_frootn             )
+  !$acc declare create(s_frootn_xfer        )
+  !$acc declare create(s_frootn_sotrage     )
+  !$acc declare create(s_livestemn          )
+  !$acc declare create(s_livestemn_xfer     )
+  !$acc declare create(s_livestemn_storage  )
+  !$acc declare create(s_deadstemn          )
+  !$acc declare create(s_deadstemn_xfer     )
+  !$acc declare create(s_deadstemn_storage  )
+  !$acc declare create(s_livecrootn         )
+  !$acc declare create(s_livecrootn_xfer    )
+  !$acc declare create(s_livecrootn_storage )
+  !$acc declare create(s_deadcrootn         )
+  !$acc declare create(s_deadcrootn_xfer    )
+  !$acc declare create(s_deadcrootn_storage )
+  !$acc declare create(s_retransn           )
+  !$acc declare create(s_grainn             )
+  !$acc declare create(s_grainn_xfer        )
+  !$acc declare create(s_grainn_storage     )
 !---------------------------------------------
   !nutrient flux indices (N & P use the same indices)
   integer :: f_npool_to_leafn
@@ -152,10 +238,57 @@ implicit none
   integer :: num_nutrient_fluxes
   integer :: num_carbon_states
   integer :: num_nutrient_states
+  !$acc declare create(f_npool_to_leafn       )
+  !$acc declare create(f_npool_to_leafn_storage      )
+  !$acc declare create(f_npool_to_frootn             )
+  !$acc declare create(f_npool_to_frootn_storage     )
+  !$acc declare create(f_npool_to_livestemn_storage  )
+  !$acc declare create(f_npool_to_liverootn_storage  )
+  !$acc declare create(f_npool_to_livestemn          )
+  !$acc declare create(f_npool_to_livecrootn         )
+  !$acc declare create(f_npool_to_livecrootn_storage )
+  !$acc declare create(f_npool_to_deadstemn          )
+  !$acc declare create(f_npool_to_deadcrootn         )
+  !$acc declare create(f_npool_to_deadstemn_storage  )
+  !$acc declare create(f_npool_to_deadcrootn_storage )
+  !$acc declare create(f_npool_to_grainn             )
+  !$acc declare create(f_npool_to_grainn_storage     )
+  !$acc declare create(f_leafn_to_retransn           )
+  !$acc declare create(f_leafn_to_litter             )
+  !$acc declare create(f_leafn_xfer_to_leafn         )
+  !$acc declare create(f_leafn_storage_to_xfer       )
+  !$acc declare create(f_frootn_xfer_to_frootn       )
+  !$acc declare create(f_frootn_storage_to_xfer      )
+  !$acc declare create(f_frootn_to_retransn          )
+  !$acc declare create(f_frootn_to_litter            )
+  !$acc declare create(f_livestemn_to_litter         )
+  !$acc declare create(f_livestemn_storage_to_xfer   )
+  !$acc declare create(f_livestemn_xfer_to_livestemn )
+  !$acc declare create(f_livestemn_to_retransn       )
+  !$acc declare create(f_livestemn_to_deadstemn      )
+  !$acc declare create(f_livecrootn_storage_to_xfer  )
+  !$acc declare create(f_livecrootn_xfer_to_livecrootn)
+  !$acc declare create(f_livecrootn_to_deadcrootn    )
+  !$acc declare create(f_livecrootn_to_retransn      )
+  !$acc declare create(f_deadstemn_storage_to_xfer   )
+  !$acc declare create(f_deadstemn_xfer_to_deadstem  )
+  !$acc declare create(f_deadcrootn_storage_to_xfer  )
+  !$acc declare create(f_deadcrootn_xfer_to_deadcrootn)
+  !$acc declare create(f_grainn_xfer_to_grainn       )
+  !$acc declare create(f_grainn_to_food              )
+  !$acc declare create(f_retransn_to_npool           )
+  !$acc declare create(f_supplement_to_plantn        )
+  !$acc declare create(num_carbon_fluxes             )
+  !$acc declare create(num_nutrient_fluxes           )
+  !$acc declare create(num_carbon_states             )
+  !$acc declare create(num_nutrient_states           )
 
   class(sparseMat_type), pointer :: spm_carbon_p,spm_carbon_d
+  !$acc declare create(spm_carbon_p, spm_carbon_d)
   class(sparseMat_type), pointer :: spm_nutrient_p,spm_nutrient_d
+  !$acc declare create(spm_nutrient_p, spm_nutrient_d)
   type(spm_list_type), pointer :: spm_list
+  !$acc declare create(spm_list)
   public :: InitPhenoFluxLimiter
   public :: phenology_flux_limiter
 contains
@@ -164,6 +297,7 @@ contains
 
   !DESCRIPTION
   !a = a * b
+      !$acc routine seq
   implicit none
   real(r8), intent(inout) :: a
   real(r8), intent(in) :: b
@@ -175,6 +309,7 @@ contains
   !
   ! DESCRIPTION
   ! b=max(a,0._r8)
+      !$acc routine seq
   implicit none
   real(r8), intent(in) :: a
   real(r8), intent(out):: b
@@ -397,7 +532,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_gresp_storage_to_xfer        , s_gresp_storage,nelms)
   !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_d, nelms, f_gresp_storage_to_xfer)
-  
+
   !initialize stoichiometric relationship between carbon production flux and corresponding state varaibles
   call spm_list_init(spm_list, 1._r8, f_cpool_to_leafc             , s_leafc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafc_xfer_to_leafc        , s_leafc, nelms)
@@ -432,7 +567,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_gresp_storage_to_xfer      , s_gresp_xfer,nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_gresp_storage     , s_gresp_storage, nelms)
 
-   
+
   !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_p, nelms, f_gresp_storage_to_xfer)
   !initialize stoichiometry relationship between nutrient consumption and corresponding state variables
@@ -474,7 +609,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainn_to_food               , s_grainn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
-  !turn the list into sparse matrix form  
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_plantn)
   !initialize stoichiometry relationship between nutrient production and corresponding state variables
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
@@ -512,7 +647,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_frootn_to_retransn             , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_to_retransn          , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_retransn         , s_retransn, nelms)
-  !turn the list into sparse matrix form  
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, f_supplement_to_plantn)
   end subroutine InitPhenoFluxLimiter
 !---------------------------------------------------------------------------
@@ -524,6 +659,7 @@ contains
     !
     ! DESCRIPTION
     !  apply the phenology flux limiter to avoid potential negative fluxes.
+      !$acc routine seq
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
     use CNStateType               , only : cnstate_type
@@ -591,6 +727,7 @@ contains
     !
     ! DESCRIPTION
     ! the flux limiter for phenology carbon fluxes
+      !$acc routine seq
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
     use VegetationDataType, only : vegetation_carbon_flux
@@ -617,7 +754,7 @@ contains
          harvdate              =>    crop_vars%harvdate_patch   & ! Input:  [integer  (:)     ]  harvest date
          )
   ! set time steps
-  dt = real( get_step_size(), r8 )
+  !#py dt = real( get_step_size(), r8 )
 
   do fp = 1,num_soilp
     p = filter_soilp(fp)
@@ -826,6 +963,7 @@ contains
     !
     ! DESCRIPTION
     ! the flux limiter for phenology nitrogen fluxes
+      !$acc routine seq
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
     use VegetationDataType, only : vegetation_nitrogen_flux
@@ -852,7 +990,7 @@ contains
          ns                    => veg_ns               &
   )
   ! set time steps
-  dt = real( get_step_size(), r8 )
+  !#py dt = real( get_step_size(), r8 )
   do fp = 1,num_soilp
     p = filter_soilp(fp)
     ystates(:) = 0._r8
@@ -1008,6 +1146,7 @@ contains
       veg_pf, veg_ps)
     ! DESCRIPTION
     ! the flux limiter for phenology phosphorus  fluxes
+      !$acc routine seq
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
     use VegetationDataType, only : vegetation_phosphorus_flux
@@ -1037,7 +1176,7 @@ contains
   )
 
   ! set time steps
-  dt = real( get_step_size(), r8 )
+  !#py dt = real( get_step_size(), r8 )
   do fp = 1,num_soilp
     p = filter_soilp(fp)
     ystates(:) = 0._r8

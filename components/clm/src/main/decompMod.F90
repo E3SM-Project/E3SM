@@ -8,7 +8,7 @@ module decompMod
   ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   ! Must use shr_sys_abort rather than endrun here to avoid circular dependency
-  use shr_sys_mod , only : shr_sys_abort 
+  use shr_sys_mod , only : shr_sys_abort
   use clm_varctl  , only : iulog
   use clm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
   use mct_mod     , only : mct_gsMap
@@ -51,6 +51,7 @@ module decompMod
      module procedure get_proc_bounds_new
   end interface
   public get_proc_bounds    ! this processor beg and end gridcell,landunit,column,pft
+  public get_clump_bounds_gpu
 
   ! !PRIVATE MEMBER FUNCTIONS:
   !
@@ -165,6 +166,7 @@ module decompMod
   public clump_type
   type(clump_type),public, allocatable :: clumps(:)
 
+
   !---global information on each pe
   !--- glo = 1d global sn ordered
   !--- gdc = 1d global dc ordered compressed
@@ -182,6 +184,9 @@ module decompMod
   type(mct_gsMap)  ,public,target :: gsMap_patch_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_cohort_gdc2glo
   !------------------------------------------------------------------------------
+
+  !$acc declare create(clumps)
+  !$acc declare create(procinfo)
 
 contains
 
@@ -269,7 +274,7 @@ contains
 
   !------------------------------------------------------------------------------
    subroutine get_clump_bounds_new (n, bounds)
-     !
+
      ! !DESCRIPTION:
      ! Determine clump bounds
      !
@@ -309,6 +314,21 @@ contains
      bounds%begg = clumps(cid)%begg
      bounds%endg = clumps(cid)%endg
 
+  !   print *, procinfo%cid(n)
+  !   print *, clumps(cid)%begp
+  !   print *, clumps(cid)%endp
+  !   print *, clumps(cid)%begc
+  !   print *, clumps(cid)%endc
+  !   print *, clumps(cid)%begl
+  !   print *, clumps(cid)%endl
+  !   print *, clumps(cid)%begt
+  !   print *, clumps(cid)%endt
+  !   print *, clumps(cid)%begg
+  !   print *, clumps(cid)%endg
+
+
+
+
      ! clumps have no ghost quantites
      bounds%begp_ghost = 0
      bounds%endp_ghost = 0
@@ -335,7 +355,7 @@ contains
 
      bounds%begCohort = clumps(cid)%begCohort
      bounds%endCohort = clumps(cid)%endCohort
-     
+
      bounds%level = BOUNDS_LEVEL_CLUMP
      bounds%clump_index = n
 
@@ -629,5 +649,62 @@ contains
      nCohorts_ghost = procinfo%nCohorts_ghost
 
    end subroutine get_proc_total_ghosts
+
+   subroutine get_clump_bounds_gpu (n, bounds)
+     !$acc routine seq
+     ! !DESCRIPTION:
+     ! Determine clump bounds
+     !
+     ! !ARGUMENTS:
+     integer, intent(in)  :: n                ! processor clump index
+     type(bounds_type), intent(inout) :: bounds ! clump bounds
+     !
+     ! !LOCAL VARIABLES:
+     integer :: cid                                                ! clump id
+
+     cid  = procinfo%cid(n)
+
+     bounds%begp = clumps(cid)%begp
+     bounds%endp = clumps(cid)%endp
+     bounds%begc = clumps(cid)%begc
+     bounds%endc = clumps(cid)%endc
+     bounds%begl = clumps(cid)%begl
+     bounds%endl = clumps(cid)%endl
+     bounds%begt = clumps(cid)%begt
+     bounds%endt = clumps(cid)%endt
+     bounds%begg = clumps(cid)%begg
+     bounds%endg = clumps(cid)%endg
+
+     ! clumps have no ghost quantites
+     bounds%begp_ghost = 0
+     bounds%endp_ghost = 0
+     bounds%begc_ghost = 0
+     bounds%endc_ghost = 0
+     bounds%begl_ghost = 0
+     bounds%endl_ghost = 0
+     bounds%begt_ghost = 0
+     bounds%endt_ghost = 0
+     bounds%begg_ghost = 0
+     bounds%endg_ghost = 0
+
+     ! Since clumps have no ghost quantites, all = local
+     bounds%begp_all = clumps(cid)%begp
+     bounds%endp_all = clumps(cid)%endp
+     bounds%begc_all = clumps(cid)%begc
+     bounds%endc_all = clumps(cid)%endc
+     bounds%begl_all = clumps(cid)%begl
+     bounds%endl_all = clumps(cid)%endl
+     bounds%begt_all = clumps(cid)%begt
+     bounds%endt_all = clumps(cid)%endt
+     bounds%begg_all = clumps(cid)%begg
+     bounds%endg_all = clumps(cid)%endg
+
+     bounds%begCohort = clumps(cid)%begCohort
+     bounds%endCohort = clumps(cid)%endCohort
+
+     bounds%level = BOUNDS_LEVEL_CLUMP
+     bounds%clump_index = n
+
+   end subroutine get_clump_bounds_gpu
 
 end module decompMod

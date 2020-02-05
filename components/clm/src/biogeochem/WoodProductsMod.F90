@@ -17,7 +17,7 @@ module WoodProductsMod
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  
+
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf
@@ -34,10 +34,7 @@ module WoodProductsMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine WoodProducts(num_soilc, filter_soilc, &
-       cs, c13_cs, c14_cs, ns, &
-       cf, c13_cf, c14_cf, nf,&
-       ps, pf)
+  subroutine WoodProducts(num_soilc, filter_soilc, dt)
     !
     ! !DESCRIPTION:
     ! Update all loss fluxes from wood product pools, and update product pool state variables
@@ -45,25 +42,16 @@ contains
     ! with changes in landcover, and in CNHarvest(), for gains associated with wood harvest.
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type)     , intent(inout) :: cs
-    type(carbonstate_type)     , intent(inout) :: c13_cs
-    type(carbonstate_type)     , intent(inout) :: c14_cs
-    type(nitrogenstate_type)   , intent(inout) :: ns
-    type(carbonflux_type)      , intent(inout) :: cf
-    type(carbonflux_type)      , intent(inout) :: c13_cf
-    type(carbonflux_type)      , intent(inout) :: c14_cf
-    type(nitrogenflux_type)    , intent(inout) :: nf
+    real(r8) , intent(in)   :: dt       ! time step (seconds)
 
-    type(phosphorusstate_type) , intent(in)    :: ps
-    type(phosphorusflux_type)  , intent(inout) :: pf
 
     !
     ! !LOCAL VARIABLES:
     integer  :: fc       ! lake filter indices
     integer  :: c        ! indices
-    real(r8) :: dt       ! time step (seconds)
     real(r8) :: kprod10  ! decay constant for 10-year product pool
     real(r8) :: kprod100 ! decay constant for 100-year product pool
     !-----------------------------------------------------------------------
@@ -99,7 +87,7 @@ contains
     end do
 
     ! set time steps
-    dt = real( get_step_size(), r8 )
+    !#py dt = real( get_step_size(), r8 )
 
     ! update wood product state variables
     do fc = 1,num_soilc

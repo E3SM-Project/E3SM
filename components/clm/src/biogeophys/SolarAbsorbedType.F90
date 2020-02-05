@@ -16,63 +16,62 @@ module SolarAbsorbedType
   type, public :: solarabs_type
 
      ! Solar reflected
-     real(r8), pointer :: fsr_patch              (:)   ! patch solar radiation reflected (W/m**2)         
-     
+     real(r8), pointer :: fsr_patch              (:)   => null()! patch solar radiation reflected (W/m**2)
+
      ! Solar Absorbed
-     real(r8), pointer :: fsa_patch              (:)   ! patch solar radiation absorbed (total) (W/m**2)  
-     real(r8), pointer :: fsa_u_patch            (:)   ! patch urban solar radiation absorbed (total) (W/m**2)
-     real(r8), pointer :: fsa_r_patch            (:)   ! patch rural solar radiation absorbed (total) (W/m**2)
-     real(r8), pointer :: parsun_z_patch         (:,:) ! patch absorbed PAR for sunlit leaves in canopy layer (W/m**2) 
-     real(r8), pointer :: parsha_z_patch         (:,:) ! patch absorbed PAR for shaded leaves in canopy layer (W/m**2) 
+     real(r8), pointer :: fsa_patch              (:)   => null() ! patch solar radiation absorbed (total) (W/m**2)
+     real(r8), pointer :: fsa_u_patch            (:)   => null() ! patch urban solar radiation absorbed (total) (W/m**2)
+     real(r8), pointer :: fsa_r_patch            (:)   => null() ! patch rural solar radiation absorbed (total) (W/m**2)
+     real(r8), pointer :: parsun_z_patch         (:,:) => null() ! patch absorbed PAR for sunlit leaves in canopy layer (W/m**2)
+     real(r8), pointer :: parsha_z_patch         (:,:) => null() ! patch absorbed PAR for shaded leaves in canopy layer (W/m**2)
 
-     real(r8), pointer :: sabg_soil_patch        (:)   ! patch solar radiation absorbed by soil (W/m**2)       
-     real(r8), pointer :: sabg_snow_patch        (:)   ! patch solar radiation absorbed by snow (W/m**2)       
-     real(r8), pointer :: sabg_patch             (:)   ! patch solar radiation absorbed by ground (W/m**2)     
-     real(r8), pointer :: sabg_chk_patch         (:)   ! patch fsno weighted sum (W/m**2)                                   
-     real(r8), pointer :: sabg_lyr_patch         (:,:) ! patch absorbed radiation in each snow layer and top soil layer (pft,lyr) [W/m2]
-     real(r8), pointer :: sabg_pen_patch         (:)   ! patch (rural) shortwave radiation penetrating top soisno layer [W/m2]
+     real(r8), pointer :: sabg_soil_patch        (:)   => null() ! patch solar radiation absorbed by soil (W/m**2)
+     real(r8), pointer :: sabg_snow_patch        (:)   => null() ! patch solar radiation absorbed by snow (W/m**2)
+     real(r8), pointer :: sabg_patch             (:)   => null() ! patch solar radiation absorbed by ground (W/m**2)
+     real(r8), pointer :: sabg_chk_patch         (:)   => null() ! patch fsno weighted sum (W/m**2)
+     real(r8), pointer :: sabg_lyr_patch         (:,:) => null() ! patch absorbed radiation in each snow layer and top soil layer (pft,lyr) [W/m2]
+     real(r8), pointer :: sabg_pen_patch         (:)   => null() ! patch (rural) shortwave radiation penetrating top soisno layer [W/m2]
 
-     real(r8), pointer :: sub_surf_abs_SW_col    (:)   ! col percent of solar radiation absorbed below first snow layer
-     real(r8), pointer :: sabv_patch             (:)   ! patch solar radiation absorbed by vegetation (W/m**2) 
+     real(r8), pointer :: sub_surf_abs_SW_col    (:) => null()  ! col percent of solar radiation absorbed below first snow layer
+     real(r8), pointer :: sabv_patch             (:) => null()  ! patch solar radiation absorbed by vegetation (W/m**2)
 
-     real(r8), pointer :: sabs_roof_dir_lun      (:,:) ! lun direct solar absorbed by roof per unit ground area per unit incident flux
-     real(r8), pointer :: sabs_roof_dif_lun      (:,:) ! lun diffuse solar absorbed by roof per unit ground area per unit incident flux
-     real(r8), pointer :: sabs_sunwall_dir_lun   (:,:) ! lun direct  solar absorbed by sunwall per unit wall area per unit incident flux
-     real(r8), pointer :: sabs_sunwall_dif_lun   (:,:) ! lun diffuse solar absorbed by sunwall per unit wall area per unit incident flux
-     real(r8), pointer :: sabs_shadewall_dir_lun (:,:) ! lun direct  solar absorbed by shadewall per unit wall area per unit incident flux
-     real(r8), pointer :: sabs_shadewall_dif_lun (:,:) ! lun diffuse solar absorbed by shadewall per unit wall area per unit incident flux
-     real(r8), pointer :: sabs_improad_dir_lun   (:,:) ! lun direct  solar absorbed by impervious road per unit ground area per unit incident flux
-     real(r8), pointer :: sabs_improad_dif_lun   (:,:) ! lun diffuse solar absorbed by impervious road per unit ground area per unit incident flux
-     real(r8), pointer :: sabs_perroad_dir_lun   (:,:) ! lun direct  solar absorbed by pervious road per unit ground area per unit incident flux
-     real(r8), pointer :: sabs_perroad_dif_lun   (:,:) ! lun diffuse solar absorbed by pervious road per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_roof_dir_lun      (:,:) => null() ! lun direct solar absorbed by roof per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_roof_dif_lun      (:,:) => null() ! lun diffuse solar absorbed by roof per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_sunwall_dir_lun   (:,:) => null() ! lun direct  solar absorbed by sunwall per unit wall area per unit incident flux
+     real(r8), pointer :: sabs_sunwall_dif_lun   (:,:) => null() ! lun diffuse solar absorbed by sunwall per unit wall area per unit incident flux
+     real(r8), pointer :: sabs_shadewall_dir_lun (:,:) => null() ! lun direct  solar absorbed by shadewall per unit wall area per unit incident flux
+     real(r8), pointer :: sabs_shadewall_dif_lun (:,:) => null() ! lun diffuse solar absorbed by shadewall per unit wall area per unit incident flux
+     real(r8), pointer :: sabs_improad_dir_lun   (:,:) => null() ! lun direct  solar absorbed by impervious road per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_improad_dif_lun   (:,:) => null() ! lun diffuse solar absorbed by impervious road per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_perroad_dir_lun   (:,:) => null() ! lun direct  solar absorbed by pervious road per unit ground area per unit incident flux
+     real(r8), pointer :: sabs_perroad_dif_lun   (:,:) => null() ! lun diffuse solar absorbed by pervious road per unit ground area per unit incident flux
 
-     ! Currently needed by lake code 
+     ! Currently needed by lake code
      ! TODO (MV 8/20/2014) should be moved in the future
-     real(r8), pointer :: fsds_nir_d_patch       (:)   ! patch incident direct beam nir solar radiation (W/m**2)
-     real(r8), pointer :: fsds_nir_i_patch       (:)   ! patch incident diffuse nir solar radiation (W/m**2)    
-     real(r8), pointer :: fsds_nir_d_ln_patch    (:)   ! patch incident direct beam nir solar radiation at local noon (W/m**2)
-     real(r8), pointer :: fsr_nir_d_patch        (:)   ! patch reflected direct beam nir solar radiation (W/m**2) 
-     real(r8), pointer :: fsr_nir_i_patch        (:)   ! patch reflected diffuse nir solar radiation (W/m**2)     
-     real(r8), pointer :: fsr_nir_d_ln_patch     (:)   ! patch reflected direct beam nir solar radiation at local noon (W/m**2)
+     real(r8), pointer :: fsds_nir_d_patch       (:)  => null() ! patch incident direct beam nir solar radiation (W/m**2)
+     real(r8), pointer :: fsds_nir_i_patch       (:)  => null() ! patch incident diffuse nir solar radiation (W/m**2)
+     real(r8), pointer :: fsds_nir_d_ln_patch    (:)  => null() ! patch incident direct beam nir solar radiation at local noon (W/m**2)
+     real(r8), pointer :: fsr_nir_d_patch        (:)  => null() ! patch reflected direct beam nir solar radiation (W/m**2)
+     real(r8), pointer :: fsr_nir_i_patch        (:)  => null() ! patch reflected diffuse nir solar radiation (W/m**2)
+     real(r8), pointer :: fsr_nir_d_ln_patch     (:)  => null() ! patch reflected direct beam nir solar radiation at local noon (W/m**2)
 
    contains
 
-     procedure, public  :: Init         
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory  
-     procedure, private :: InitCold     
-     procedure, public  :: Restart      
+     procedure, public  :: Init
+     procedure, private :: InitAllocate
+     procedure, private :: InitHistory
+     procedure, private :: InitCold
+     procedure, public  :: Restart
 
   end type solarabs_type
   !-----------------------------------------------------------------------
-
 contains
 
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
     class(solarabs_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
@@ -86,12 +85,11 @@ contains
     ! Allocate module variables and data structures
     !
     ! !USES:
-    use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
     use clm_varpar    , only : nlevcan, nlevcan, numrad, nlevsno
     !
     ! !ARGUMENTS:
     class(solarabs_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
@@ -103,38 +101,39 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begl = bounds%begl; endl = bounds%endl
 
-    allocate(this%fsa_patch              (begp:endp))              ; this%fsa_patch              (:)   = nan
-    allocate(this%fsa_u_patch            (begp:endp))              ; this%fsa_u_patch            (:)   = nan
-    allocate(this%fsa_r_patch            (begp:endp))              ; this%fsa_r_patch            (:)   = nan
-    allocate(this%parsun_z_patch         (begp:endp,1:nlevcan))    ; this%parsun_z_patch         (:,:) = nan
-    allocate(this%parsha_z_patch         (begp:endp,1:nlevcan))    ; this%parsha_z_patch         (:,:) = nan     
-    allocate(this%sabv_patch             (begp:endp))              ; this%sabv_patch             (:)   = nan
-    allocate(this%sabg_patch             (begp:endp))              ; this%sabg_patch             (:)   = nan
-    allocate(this%sabg_lyr_patch         (begp:endp,-nlevsno+1:1)) ; this%sabg_lyr_patch         (:,:) = nan
-    allocate(this%sabg_pen_patch         (begp:endp))              ; this%sabg_pen_patch         (:)   = nan
-    allocate(this%sabg_soil_patch        (begp:endp))              ; this%sabg_soil_patch        (:)   = nan
-    allocate(this%sabg_snow_patch        (begp:endp))              ; this%sabg_snow_patch        (:)   = nan
-    allocate(this%sabg_chk_patch         (begp:endp))              ; this%sabg_chk_patch         (:)   = nan
-    allocate(this%sabs_roof_dir_lun      (begl:endl,1:numrad))     ; this%sabs_roof_dir_lun      (:,:) = nan
-    allocate(this%sabs_roof_dif_lun      (begl:endl,1:numrad))     ; this%sabs_roof_dif_lun      (:,:) = nan
-    allocate(this%sabs_sunwall_dir_lun   (begl:endl,1:numrad))     ; this%sabs_sunwall_dir_lun   (:,:) = nan
-    allocate(this%sabs_sunwall_dif_lun   (begl:endl,1:numrad))     ; this%sabs_sunwall_dif_lun   (:,:) = nan
-    allocate(this%sabs_shadewall_dir_lun (begl:endl,1:numrad))     ; this%sabs_shadewall_dir_lun (:,:) = nan
-    allocate(this%sabs_shadewall_dif_lun (begl:endl,1:numrad))     ; this%sabs_shadewall_dif_lun (:,:) = nan
-    allocate(this%sabs_improad_dir_lun   (begl:endl,1:numrad))     ; this%sabs_improad_dir_lun   (:,:) = nan
-    allocate(this%sabs_improad_dif_lun   (begl:endl,1:numrad))     ; this%sabs_improad_dif_lun   (:,:) = nan
-    allocate(this%sabs_perroad_dir_lun   (begl:endl,1:numrad))     ; this%sabs_perroad_dir_lun   (:,:) = nan
-    allocate(this%sabs_perroad_dif_lun   (begl:endl,1:numrad))     ; this%sabs_perroad_dif_lun   (:,:) = nan 
-    allocate(this%sub_surf_abs_SW_col    (begc:endc))              ; this%sub_surf_abs_SW_col    (:)   = nan
-    allocate(this%fsr_patch              (begp:endp))              ; this%fsr_patch              (:)   = nan
-    allocate(this%fsr_nir_d_patch        (begp:endp))              ; this%fsr_nir_d_patch        (:)   = nan
-    allocate(this%fsr_nir_i_patch        (begp:endp))              ; this%fsr_nir_i_patch        (:)   = nan
-    allocate(this%fsr_nir_d_ln_patch     (begp:endp))              ; this%fsr_nir_d_ln_patch     (:)   = nan
-    allocate(this%fsds_nir_d_patch       (begp:endp))              ; this%fsds_nir_d_patch       (:)   = nan
-    allocate(this%fsds_nir_i_patch       (begp:endp))              ; this%fsds_nir_i_patch       (:)   = nan
-    allocate(this%fsds_nir_d_ln_patch    (begp:endp))              ; this%fsds_nir_d_ln_patch    (:)   = nan
+    allocate(this%fsa_patch              (begp:endp))              ; this%fsa_patch              (:)   = spval
+    allocate(this%fsa_u_patch            (begp:endp))              ; this%fsa_u_patch            (:)   = spval
+    allocate(this%fsa_r_patch            (begp:endp))              ; this%fsa_r_patch            (:)   = spval
+    allocate(this%parsun_z_patch         (begp:endp,1:nlevcan))    ; this%parsun_z_patch         (:,:) = spval
+    allocate(this%parsha_z_patch         (begp:endp,1:nlevcan))    ; this%parsha_z_patch         (:,:) = spval
+    allocate(this%sabv_patch             (begp:endp))              ; this%sabv_patch             (:)   = spval
+    allocate(this%sabg_patch             (begp:endp))              ; this%sabg_patch             (:)   = spval
+    allocate(this%sabg_lyr_patch         (begp:endp,-nlevsno+1:1)) ; this%sabg_lyr_patch         (:,:) = spval
+    allocate(this%sabg_pen_patch         (begp:endp))              ; this%sabg_pen_patch         (:)   = spval
+    allocate(this%sabg_soil_patch        (begp:endp))              ; this%sabg_soil_patch        (:)   = spval
+    allocate(this%sabg_snow_patch        (begp:endp))              ; this%sabg_snow_patch        (:)   = spval
+    allocate(this%sabg_chk_patch         (begp:endp))              ; this%sabg_chk_patch         (:)   = spval
+    allocate(this%sabs_roof_dir_lun      (begl:endl,1:numrad))     ; this%sabs_roof_dir_lun      (:,:) = spval
+    allocate(this%sabs_roof_dif_lun      (begl:endl,1:numrad))     ; this%sabs_roof_dif_lun      (:,:) = spval
+    allocate(this%sabs_sunwall_dir_lun   (begl:endl,1:numrad))     ; this%sabs_sunwall_dir_lun   (:,:) = spval
+    allocate(this%sabs_sunwall_dif_lun   (begl:endl,1:numrad))     ; this%sabs_sunwall_dif_lun   (:,:) = spval
+    allocate(this%sabs_shadewall_dir_lun (begl:endl,1:numrad))     ; this%sabs_shadewall_dir_lun (:,:) = spval
+    allocate(this%sabs_shadewall_dif_lun (begl:endl,1:numrad))     ; this%sabs_shadewall_dif_lun (:,:) = spval
+    allocate(this%sabs_improad_dir_lun   (begl:endl,1:numrad))     ; this%sabs_improad_dir_lun   (:,:) = spval
+    allocate(this%sabs_improad_dif_lun   (begl:endl,1:numrad))     ; this%sabs_improad_dif_lun   (:,:) = spval
+    allocate(this%sabs_perroad_dir_lun   (begl:endl,1:numrad))     ; this%sabs_perroad_dir_lun   (:,:) = spval
+    allocate(this%sabs_perroad_dif_lun   (begl:endl,1:numrad))     ; this%sabs_perroad_dif_lun   (:,:) = spval
+    allocate(this%sub_surf_abs_SW_col    (begc:endc))              ; this%sub_surf_abs_SW_col    (:)   = spval
+    allocate(this%fsr_patch              (begp:endp))              ; this%fsr_patch              (:)   = spval
+    allocate(this%fsr_nir_d_patch        (begp:endp))              ; this%fsr_nir_d_patch        (:)   = spval
+    allocate(this%fsr_nir_i_patch        (begp:endp))              ; this%fsr_nir_i_patch        (:)   = spval
+    allocate(this%fsr_nir_d_ln_patch     (begp:endp))              ; this%fsr_nir_d_ln_patch     (:)   = spval
+    allocate(this%fsds_nir_d_patch       (begp:endp))              ; this%fsds_nir_d_patch       (:)   = spval
+    allocate(this%fsds_nir_i_patch       (begp:endp))              ; this%fsds_nir_i_patch       (:)   = spval
+    allocate(this%fsds_nir_d_ln_patch    (begp:endp))              ; this%fsds_nir_d_ln_patch    (:)   = spval
 
   end subroutine InitAllocate
+
 
   !-----------------------------------------------------------------------
   subroutine InitHistory(this, bounds)
@@ -143,14 +142,14 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl    , only : use_snicar_frc 
+    use clm_varctl    , only : use_snicar_frc
     use clm_varpar    , only : nlevsno
     use histFileMod   , only : hist_addfld1d, hist_addfld2d
     use histFileMod   , only : no_snow_normal
     !
     ! !ARGUMENTS:
     class(solarabs_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
@@ -253,7 +252,7 @@ contains
     !
     ! !ARGUMENTS:
     class(solarabs_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begl, endl
@@ -261,8 +260,8 @@ contains
 
     begl = bounds%begl; endl = bounds%endl
 
-    this%sabs_roof_dir_lun      (begl:endl, :) = 0._r8    
-    this%sabs_roof_dif_lun      (begl:endl, :) = 0._r8    
+    this%sabs_roof_dir_lun      (begl:endl, :) = 0._r8
+    this%sabs_roof_dif_lun      (begl:endl, :) = 0._r8
     this%sabs_sunwall_dir_lun   (begl:endl, :) = 0._r8
     this%sabs_sunwall_dif_lun   (begl:endl, :) = 0._r8
     this%sabs_shadewall_dir_lun (begl:endl, :) = 0._r8
@@ -276,13 +275,13 @@ contains
 
   !---------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !DESCRIPTION:
     ! Read/Write module information to/from restart file.
     !
     ! !USES:
     use shr_infnan_mod , only : shr_infnan_isnan
-    use clm_varctl     , only : use_snicar_frc, iulog 
+    use clm_varctl     , only : use_snicar_frc, iulog
     use spmdMod        , only : masterproc
     use abortutils     , only : endrun
     use ncdio_pio      , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
@@ -290,7 +289,7 @@ contains
     !
     ! !ARGUMENTS:
     class(solarabs_type) :: this
-    type(bounds_type), intent(in)    :: bounds 
+    type(bounds_type), intent(in)    :: bounds
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
     !
@@ -299,56 +298,57 @@ contains
     integer :: p
     !---------------------------------------------------------------------
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_roof_dir', xtype=ncd_double,  dim1name='landunit',            & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_roof_dir', xtype=ncd_double,  dim1name='landunit',            &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='direct solar absorbed by roof per unit ground area per unit incident flux', units='',             &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dir_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_roof_dif', xtype=ncd_double,  dim1name='landunit',            & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_roof_dif', xtype=ncd_double,  dim1name='landunit',            &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='diffuse solar absorbed by roof per unit ground area per unit incident flux', units='',            &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_roof_dif_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_sunwall_dir', xtype=ncd_double,  dim1name='landunit',         & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_sunwall_dir', xtype=ncd_double,  dim1name='landunit',         &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='direct solar absorbed by sunwall per unit wall area per unit incident flux', units='',            &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_sunwall_dir_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_sunwall_dif', xtype=ncd_double,  dim1name='landunit',         & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_sunwall_dif', xtype=ncd_double,  dim1name='landunit',         &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='diffuse solar absorbed by sunwall per unit wall area per unit incident flux', units='',           &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_sunwall_dif_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_shadewall_dir', xtype=ncd_double,  dim1name='landunit',       & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_shadewall_dir', xtype=ncd_double,  dim1name='landunit',       &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='direct solar absorbed by shadewall per unit wall area per unit incident flux', units='',          &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_shadewall_dir_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_shadewall_dif', xtype=ncd_double,  dim1name='landunit',       & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_shadewall_dif', xtype=ncd_double,  dim1name='landunit',       &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='diffuse solar absorbed by shadewall per unit wall area per unit incident flux', units='',         &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_shadewall_dif_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_improad_dir', xtype=ncd_double,  dim1name='landunit',         & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_improad_dir', xtype=ncd_double,  dim1name='landunit',         &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='direct solar absorbed by impervious road per unit ground area per unit incident flux', units='',  &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_improad_dir_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_improad_dif', xtype=ncd_double,  dim1name='landunit',         & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_improad_dif', xtype=ncd_double,  dim1name='landunit',         &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='diffuse solar absorbed by impervious road per unit ground area per unit incident flux', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_improad_dif_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_perroad_dir', xtype=ncd_double,  dim1name='landunit',         & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_perroad_dir', xtype=ncd_double,  dim1name='landunit',         &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='direct solar absorbed by pervious road per unit ground area per unit incident flux', units='',    &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_perroad_dir_lun)
 
-    call restartvar(ncid=ncid, flag=flag, varname='sabs_perroad_dif', xtype=ncd_double,  dim1name='landunit',         & 
+    call restartvar(ncid=ncid, flag=flag, varname='sabs_perroad_dif', xtype=ncd_double,  dim1name='landunit',         &
          dim2name='numrad', switchdim=.true.,                                                                         &
          long_name='diffuse solar absorbed by pervious road per unit ground area per unit incident flux', units='',   &
          interpinic_flag='interp', readvar=readvar, data=this%sabs_perroad_dif_lun)
 
   end subroutine Restart
+
 
 end module SolarAbsorbedType

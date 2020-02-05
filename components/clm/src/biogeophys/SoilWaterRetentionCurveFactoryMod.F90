@@ -39,19 +39,19 @@ contains
     ! namelist read outside this module and pass the method in as a parameter (appropriate
     ! if the 'method' is part of a larger namelist group).
     character(len=*), parameter :: method = "clapphornberg_1978"
-    
+
     character(len=*), parameter :: subname = 'create_soil_water_retention_curve'
     !-----------------------------------------------------------------------
-    
+
     select case (method)
-       
+
     case ("clapphornberg_1978")
        allocate(soil_water_retention_curve, &
             source=soil_water_retention_curve_clapp_hornberg_1978_type())
 
     case default
-       write(iulog,*) subname//' ERROR: unknown method: ', method
-       call endrun(msg=errMsg(__FILE__, __LINE__))
+       !#py write(iulog,*) subname//' ERROR: unknown method: ', method
+       !#py call endrun(msg=errMsg(__FILE__, __LINE__))
 
     end select
 

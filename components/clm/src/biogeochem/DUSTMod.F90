@@ -1,20 +1,20 @@
 module DUSTMod
 
-  !----------------------------------------------------------------------- 
-  ! !DESCRIPTION: 
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
   ! Routines in this module calculate Dust mobilization and dry deposition for dust.
-  ! Simulates dust mobilization due to wind from the surface into the 
-  ! lowest atmospheric layer. On output flx_mss_vrt_dst(ndst) is the surface dust 
+  ! Simulates dust mobilization due to wind from the surface into the
+  ! lowest atmospheric layer. On output flx_mss_vrt_dst(ndst) is the surface dust
   ! emission (kg/m**2/s) [ + = to atm].
-  ! Calculates the turbulent component of dust dry deposition, (the turbulent deposition 
-  ! velocity through the lowest atmospheric layer). CAM will calculate the settling 
-  ! velocity through the whole atmospheric column. The two calculations will determine 
+  ! Calculates the turbulent component of dust dry deposition, (the turbulent deposition
+  ! velocity through the lowest atmospheric layer). CAM will calculate the settling
+  ! velocity through the whole atmospheric column. The two calculations will determine
   ! the dust dry deposition flux to the surface.
-  !                              
+  !
   ! !USES:
-  use shr_kind_mod         , only : r8 => shr_kind_r8 
+  use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_log_mod          , only : errMsg => shr_log_errMsg
-  use shr_infnan_mod       , only : nan => shr_infnan_nan, assignment(=)
+  use shr_infnan_mod       , only : nan => shr_infnan_nan
   use clm_varpar           , only : dst_src_nbr, ndst, sz_nbr
   use clm_varcon           , only : grav, spval
   use landunit_varcon      , only : istcrop, istice_mec, istsoil
@@ -32,7 +32,7 @@ module DUSTMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
-  !  
+  !
   ! !PUBLIC TYPES
   implicit none
   save
@@ -40,36 +40,42 @@ module DUSTMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   !
-  public DustEmission   ! Dust mobilization 
+  public DustEmission   ! Dust mobilization
   public DustDryDep     ! Turbulent dry deposition for dust
   !
   ! !PUBLIC DATA:
   !
   real(r8) , allocatable :: ovr_src_snk_mss(:,:)
-  real(r8) , allocatable :: dmt_vwr(:) ![m] Mass-weighted mean diameter resolved
-  real(r8) , allocatable :: stk_crc(:) ![frc] Correction to Stokes settling velocity
+  real(r8) , allocatable :: dmt_vwr(:)           ![m] Mass-weighted mean diameter resolved
+  real(r8) , allocatable :: stk_crc(:)           ![frc] Correction to Stokes settling velocity
   real(r8) tmp1                        !Factor in saltation computation (named as in Charlie's code)
   real(r8) dns_aer                     ![kg m-3] Aerosol density
+  !$acc declare create(ovr_src_snk_mss(:,:))
+  !$acc declare create(dmt_vwr(:)          )
+  !$acc declare create(stk_crc(:)          )
+  !$acc declare create(tmp1)
+  !$acc declare create(dns_aer)
+
   !
   ! !PUBLIC DATA TYPES:
   !
   type, public :: dust_type
 
-     real(r8), pointer, PUBLIC  :: flx_mss_vrt_dst_patch     (:,:) ! surface dust emission (kg/m**2/s) [ + = to atm] (ndst) 
-     real(r8), pointer, private :: flx_mss_vrt_dst_tot_patch (:)   ! total dust flux into atmosphere
-     real(r8), pointer, private :: vlc_trb_patch             (:,:) ! turbulent deposition velocity  (m/s) (ndst) 
-     real(r8), pointer, private :: vlc_trb_1_patch           (:)   ! turbulent deposition velocity 1(m/s)
-     real(r8), pointer, private :: vlc_trb_2_patch           (:)   ! turbulent deposition velocity 2(m/s)
-     real(r8), pointer, private :: vlc_trb_3_patch           (:)   ! turbulent deposition velocity 3(m/s)
-     real(r8), pointer, private :: vlc_trb_4_patch           (:)   ! turbulent deposition velocity 4(m/s)
-     real(r8), pointer, private :: mbl_bsn_fct_col           (:)   ! basin factor
+     real(r8), pointer  :: flx_mss_vrt_dst_patch     (:,:) => null() ! surface dust emission (kg/m**2/s) [ + = to atm] (ndst)
+     real(r8), pointer  :: flx_mss_vrt_dst_tot_patch (:)   => null() ! total dust flux into atmosphere
+     real(r8), pointer  :: vlc_trb_patch             (:,:) => null() ! turbulent deposition velocity  (m/s) (ndst)
+     real(r8), pointer  :: vlc_trb_1_patch           (:)   => null() ! turbulent deposition velocity 1(m/s)
+     real(r8), pointer  :: vlc_trb_2_patch           (:)   => null() ! turbulent deposition velocity 2(m/s)
+     real(r8), pointer  :: vlc_trb_3_patch           (:)   => null() ! turbulent deposition velocity 3(m/s)
+     real(r8), pointer  :: vlc_trb_4_patch           (:)   => null() ! turbulent deposition velocity 4(m/s)
+     real(r8), pointer  :: mbl_bsn_fct_col           (:)   => null() ! basin factor
 
    contains
 
      procedure , public  :: Init
-     procedure , private :: InitAllocate 
-     procedure , private :: InitHistory  
-     procedure , private :: InitCold     
+     procedure , private :: InitAllocate
+     procedure , private :: InitHistory
+     procedure , private :: InitCold
      procedure , private :: InitDustVars ! Initialize variables used in subroutine Dust
 
   end type dust_type
@@ -81,7 +87,7 @@ contains
   subroutine Init(this, bounds)
 
     class(dust_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate (bounds)
     call this%InitHistory  (bounds)
@@ -95,7 +101,7 @@ contains
     !
     ! !ARGUMENTS:
     class (dust_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begp,endp
@@ -105,67 +111,67 @@ contains
     begp = bounds%begp ; endp = bounds%endp
     begc = bounds%begc ; endc = bounds%endc
 
-    allocate(this%flx_mss_vrt_dst_patch     (begp:endp,1:ndst)) ; this%flx_mss_vrt_dst_patch     (:,:) = nan
-    allocate(this%flx_mss_vrt_dst_tot_patch (begp:endp))        ; this%flx_mss_vrt_dst_tot_patch (:)   = nan
-    allocate(this%vlc_trb_patch             (begp:endp,1:ndst)) ; this%vlc_trb_patch             (:,:) = nan
-    allocate(this%vlc_trb_1_patch           (begp:endp))        ; this%vlc_trb_1_patch           (:)   = nan
-    allocate(this%vlc_trb_2_patch           (begp:endp))        ; this%vlc_trb_2_patch           (:)   = nan 
-    allocate(this%vlc_trb_3_patch           (begp:endp))        ; this%vlc_trb_3_patch           (:)   = nan
-    allocate(this%vlc_trb_4_patch           (begp:endp))        ; this%vlc_trb_4_patch           (:)   = nan
-    allocate(this%mbl_bsn_fct_col           (begc:endc))        ; this%mbl_bsn_fct_col     (:)   = nan
+    allocate(this%flx_mss_vrt_dst_patch     (begp:endp,1:ndst)) ; this%flx_mss_vrt_dst_patch     (:,:) = spval
+    allocate(this%flx_mss_vrt_dst_tot_patch (begp:endp))        ; this%flx_mss_vrt_dst_tot_patch (:)   = spval
+    allocate(this%vlc_trb_patch             (begp:endp,1:ndst)) ; this%vlc_trb_patch             (:,:) = spval
+    allocate(this%vlc_trb_1_patch           (begp:endp))        ; this%vlc_trb_1_patch           (:)   = spval
+    allocate(this%vlc_trb_2_patch           (begp:endp))        ; this%vlc_trb_2_patch           (:)   = spval
+    allocate(this%vlc_trb_3_patch           (begp:endp))        ; this%vlc_trb_3_patch           (:)   = spval
+    allocate(this%vlc_trb_4_patch           (begp:endp))        ; this%vlc_trb_4_patch           (:)   = spval
+    allocate(this%mbl_bsn_fct_col           (begc:endc))        ; this%mbl_bsn_fct_col     (:)   = spval
 
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
-  subroutine InitHistory(this, bounds)
-    !
-    ! !USES:
-    use histFileMod, only : hist_addfld1d
-    !
-    !
-    ! !ARGUMENTS:
-    class (dust_type) :: this
-    type(bounds_type), intent(in) :: bounds  
-    !
-    ! !LOCAL VARIABLES:
-    integer :: begp,endp
-    !------------------------------------------------------------------------
+   subroutine InitHistory(this, bounds)
+     !
+     ! !USES:
+     use histFileMod, only : hist_addfld1d
+     !
+     !
+     ! !ARGUMENTS:
+     class (dust_type) :: this
+     type(bounds_type), intent(in) :: bounds
+     !
+     ! !LOCAL VARIABLES:
+     integer :: begp,endp
+     !------------------------------------------------------------------------
 
-    begp = bounds%begp; endp = bounds%endp
+     begp = bounds%begp; endp = bounds%endp
 
-    this%flx_mss_vrt_dst_tot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DSTFLXT', units='kg/m2/s',  &
-         avgflag='A', long_name='total surface dust emission', &
-         ptr_patch=this%flx_mss_vrt_dst_tot_patch, set_lake=0._r8, set_urb=0._r8)
+     this%flx_mss_vrt_dst_tot_patch(begp:endp) = spval
+     call hist_addfld1d (fname='DSTFLXT', units='kg/m2/s',  &
+          avgflag='A', long_name='total surface dust emission', &
+          ptr_patch=this%flx_mss_vrt_dst_tot_patch, set_lake=0._r8, set_urb=0._r8)
 
-    this%vlc_trb_1_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DPVLTRB1', units='m/s',  &
-         avgflag='A', long_name='turbulent deposition velocity 1', &
-         ptr_patch=this%vlc_trb_1_patch, default='inactive')
+     this%vlc_trb_1_patch(begp:endp) = spval
+     call hist_addfld1d (fname='DPVLTRB1', units='m/s',  &
+          avgflag='A', long_name='turbulent deposition velocity 1', &
+          ptr_patch=this%vlc_trb_1_patch, default='inactive')
 
-    this%vlc_trb_2_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DPVLTRB2', units='m/s',  &
-         avgflag='A', long_name='turbulent deposition velocity 2', &
-         ptr_patch=this%vlc_trb_2_patch, default='inactive')
+     this%vlc_trb_2_patch(begp:endp) = spval
+     call hist_addfld1d (fname='DPVLTRB2', units='m/s',  &
+          avgflag='A', long_name='turbulent deposition velocity 2', &
+          ptr_patch=this%vlc_trb_2_patch, default='inactive')
 
-    this%vlc_trb_3_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DPVLTRB3', units='m/s',  &
-         avgflag='A', long_name='turbulent deposition velocity 3', &
-         ptr_patch=this%vlc_trb_3_patch, default='inactive')
+     this%vlc_trb_3_patch(begp:endp) = spval
+     call hist_addfld1d (fname='DPVLTRB3', units='m/s',  &
+          avgflag='A', long_name='turbulent deposition velocity 3', &
+          ptr_patch=this%vlc_trb_3_patch, default='inactive')
 
-    this%vlc_trb_4_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DPVLTRB4', units='m/s',  &
-         avgflag='A', long_name='turbulent deposition velocity 4', &
-         ptr_patch=this%vlc_trb_4_patch, default='inactive')
+     this%vlc_trb_4_patch(begp:endp) = spval
+     call hist_addfld1d (fname='DPVLTRB4', units='m/s',  &
+          avgflag='A', long_name='turbulent deposition velocity 4', &
+          ptr_patch=this%vlc_trb_4_patch, default='inactive')
 
-  end subroutine InitHistory
+   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds)
     !
     ! !ARGUMENTS:
     class (dust_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: c,l
@@ -186,28 +192,27 @@ contains
   !------------------------------------------------------------------------
   subroutine DustEmission (bounds, &
        num_nolakep, filter_nolakep, &
-       atm2lnd_vars, soilstate_vars, canopystate_vars, waterstate_vars, &
+       atm2lnd_vars, soilstate_vars, canopystate_vars, &
        frictionvel_vars, dust_vars)
     !
-    ! !DESCRIPTION: 
+    ! !DESCRIPTION:
     ! Dust mobilization. This code simulates dust mobilization due to wind
     ! from the surface into the lowest atmospheric layer
-    ! On output flx_mss_vrt_dst(ndst) is the surface dust emission 
+    ! On output flx_mss_vrt_dst(ndst) is the surface dust emission
     ! (kg/m**2/s) [ + = to atm]
     ! Source: C. Zender's dust model
     !
     ! !USES
+      !$acc routine seq
     use shr_const_mod, only : SHR_CONST_RHOFW
-    use subgridaveMod, only : p2g
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds                      
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_nolakep                 ! number of column non-lake points in pft filter
     integer                , intent(in)    :: filter_nolakep(num_nolakep) ! patch filter for non-lake points
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
     type(canopystate_type) , intent(in)    :: canopystate_vars
-    type(waterstate_type)  , intent(in)    :: waterstate_vars
     type(frictionvel_type) , intent(in)    :: frictionvel_vars
     type(dust_type)        , intent(inout) :: dust_vars
 
@@ -234,7 +239,7 @@ contains
     real(r8) :: sumwt(bounds%begl:bounds%endl) ! sum of weights
     logical  :: found                          ! temporary for error check
     integer  :: index
-    !    
+    !
     ! constants
     !
     real(r8), parameter :: cst_slt = 2.61_r8           ! [frc] Saltation constant
@@ -242,26 +247,26 @@ contains
     real(r8), parameter :: vai_mbl_thr = 0.3_r8        ! [m2 m-2] VAI threshold quenching dust mobilization
     !------------------------------------------------------------------------
 
-    associate(                                                         & 
-         forc_rho            => top_as%rhobot                        , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
-         
+    associate(                                                         &
+         forc_rho            => top_as%rhobot                        , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)
+
          gwc_thr             => soilstate_vars%gwc_thr_col           , & ! Input:  [real(r8) (:)   ]  threshold gravimetric soil moisture based on clay content
-         mss_frc_cly_vld     => soilstate_vars%mss_frc_cly_vld_col   , & ! Input:  [real(r8) (:)   ]  [frc] Mass fraction clay limited to 0.20          
-         watsat              => soilstate_vars%watsat_col            , & ! Input:  [real(r8) (:,:) ]  saturated volumetric soil water                 
-         
-         tlai                => canopystate_vars%tlai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index, no burying by snow     
-         tsai                => canopystate_vars%tsai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided stem area index, no burying by snow     
-         
-         frac_sno            => col_ws%frac_sno         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
-         h2osoi_vol          => col_ws%h2osoi_vol       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat)   
-         h2osoi_liq          => col_ws%h2osoi_liq       , & ! Input:  [real(r8) (:,:) ]  liquid soil water (kg/m2)                       
-         h2osoi_ice          => col_ws%h2osoi_ice       , & ! Input:  [real(r8) (:,:) ]  frozen soil water (kg/m2)                       
-         
-         fv                  => frictionvel_vars%fv_patch            , & ! Input:  [real(r8) (:)   ]  friction velocity (m/s) (for dust model)          
-         u10                 => frictionvel_vars%u10_patch           , & ! Input:  [real(r8) (:)   ]  10-m wind (m/s) (created for dust model)          
-         
-         mbl_bsn_fct         => dust_vars%mbl_bsn_fct_col            , & ! Input:  [real(r8) (:)   ]  basin factor                                      
-         flx_mss_vrt_dst     => dust_vars%flx_mss_vrt_dst_patch      , & ! Output: [real(r8) (:,:) ]  surface dust emission (kg/m**2/s)               
+         mss_frc_cly_vld     => soilstate_vars%mss_frc_cly_vld_col   , & ! Input:  [real(r8) (:)   ]  [frc] Mass fraction clay limited to 0.20
+         watsat              => soilstate_vars%watsat_col            , & ! Input:  [real(r8) (:,:) ]  saturated volumetric soil water
+
+         tlai                => canopystate_vars%tlai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index, no burying by snow
+         tsai                => canopystate_vars%tsai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided stem area index, no burying by snow
+
+         frac_sno            => col_ws%frac_sno         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         h2osoi_vol          => col_ws%h2osoi_vol       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat)
+         h2osoi_liq          => col_ws%h2osoi_liq       , & ! Input:  [real(r8) (:,:) ]  liquid soil water (kg/m2)
+         h2osoi_ice          => col_ws%h2osoi_ice       , & ! Input:  [real(r8) (:,:) ]  frozen soil water (kg/m2)
+
+         fv                  => frictionvel_vars%fv_patch            , & ! Input:  [real(r8) (:)   ]  friction velocity (m/s) (for dust model)
+         u10                 => frictionvel_vars%u10_patch           , & ! Input:  [real(r8) (:)   ]  10-m wind (m/s) (created for dust model)
+
+         mbl_bsn_fct         => dust_vars%mbl_bsn_fct_col            , & ! Input:  [real(r8) (:)   ]  basin factor
+         flx_mss_vrt_dst     => dust_vars%flx_mss_vrt_dst_patch      , & ! Output: [real(r8) (:,:) ]  surface dust emission (kg/m**2/s)
          flx_mss_vrt_dst_tot => dust_vars%flx_mss_vrt_dst_tot_patch    & ! Output: [real(r8) (:)   ]  total dust flux back to atmosphere (pft)
          )
 
@@ -294,8 +299,8 @@ contains
          end if
       end do
       if (found) then
-         write(iulog,*) 'p2l_1d error: sumwt is greater than 1.0 at l= ',index
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+         !#py write(iulog,*) 'p2l_1d error: sumwt is greater than 1.0 at l= ',index
+         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 
       ! Loop through patches
@@ -322,16 +327,16 @@ contains
                lnd_frc_mbl(p) = 0.0_r8
             endif
             lnd_frc_mbl(p) = lnd_frc_mbl(p) * (1.0_r8 - frac_sno(c))
-         else          
-            lnd_frc_mbl(p) = 0.0_r8   
+         else
+            lnd_frc_mbl(p) = 0.0_r8
          end if
       end do
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          if (lnd_frc_mbl(p)>1.0_r8 .or. lnd_frc_mbl(p)<0.0_r8) then
-            write(iulog,*)'Error dstmbl: pft= ',p,' lnd_frc_mbl(p)= ',lnd_frc_mbl(p)
-            call endrun(msg=errMsg(__FILE__, __LINE__))
+            !#py write(iulog,*)'Error dstmbl: pft= ',p,' lnd_frc_mbl(p)= ',lnd_frc_mbl(p)
+            !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end do
 
@@ -355,7 +360,7 @@ contains
          t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
-         ! only perform the following calculations if lnd_frc_mbl is non-zero 
+         ! only perform the following calculations if lnd_frc_mbl is non-zero
 
          if (lnd_frc_mbl(p) > 0.0_r8) then
 
@@ -402,7 +407,7 @@ contains
 
             wnd_rfr_thr_slt = u10(p) * wnd_frc_thr_slt / fv(p)
 
-            ! the following if-block comes from subr. wnd_frc_slt_get 
+            ! the following if-block comes from subr. wnd_frc_slt_get
             ! purpose: compute the saltating friction velocity
             ! theory: saltation roughens the boundary layer, AKA "Owen's effect"
 
@@ -422,7 +427,7 @@ contains
 
                ! the following loop originates from subr. dst_mbl
                ! purpose: apply land sfc and veg limitations and global tuning factor
-               ! slevis: multiply flx_mss_hrz_slt_ttl by liqfrac to incude the effect 
+               ! slevis: multiply flx_mss_hrz_slt_ttl by liqfrac to incude the effect
                ! of frozen soil
 
                flx_mss_hrz_slt_ttl = flx_mss_hrz_slt_ttl * lnd_frc_mbl(p) * mbl_bsn_fct(c) * &
@@ -471,12 +476,12 @@ contains
   subroutine DustDryDep (bounds, &
        atm2lnd_vars, frictionvel_vars, dust_vars)
     !
-    ! !DESCRIPTION: 
+    ! !DESCRIPTION:
     !
-    ! Determine Turbulent dry deposition for dust. Calculate the turbulent 
-    ! component of dust dry deposition, (the turbulent deposition velocity 
-    ! through the lowest atmospheric layer. CAM will calculate the settling 
-    ! velocity through the whole atmospheric column. The two calculations 
+    ! Determine Turbulent dry deposition for dust. Calculate the turbulent
+    ! component of dust dry deposition, (the turbulent deposition velocity
+    ! through the lowest atmospheric layer. CAM will calculate the settling
+    ! velocity through the whole atmospheric column. The two calculations
     ! will determine the dust dry deposition flux to the surface.
     ! Note: Same process should occur over oceans. For the coupled CESM,
     ! we may find it more efficient to let CAM calculate the turbulent dep
@@ -487,10 +492,11 @@ contains
     ! Source: C. Zender's dry deposition code
     !
     ! !USES
+      !$acc routine seq
     use shr_const_mod, only : SHR_CONST_PI, SHR_CONST_RDAIR, SHR_CONST_BOLTZ
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds 
+    type(bounds_type)      , intent(in)    :: bounds
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(frictionvel_type) , intent(in)    :: frictionvel_vars
     type(dust_type)        , intent(inout) :: dust_vars
@@ -508,23 +514,23 @@ contains
     real(r8) :: slp_crc(bounds%begp:bounds%endp,ndst) ! [frc] Slip correction factor
     real(r8) :: vlc_grv(bounds%begp:bounds%endp,ndst) ! [m s-1] Settling velocity
     real(r8) :: rss_lmn(bounds%begp:bounds%endp,ndst) ! [s m-1] Quasi-laminar layer resistance
-    real(r8) :: tmp                                   ! temporary 
+    real(r8) :: tmp                                   ! temporary
     real(r8), parameter::shm_nbr_xpn_lnd=-2._r8/3._r8 ![frc] shm_nbr_xpn over land
     !------------------------------------------------------------------------
 
-    associate(                                                   & 
-         forc_pbot =>    top_as%pbot                           , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
-         forc_rho  =>    top_as%rhobot                         , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
-         forc_t    =>    top_as%tbot                           , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
-         
-         ram1      =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8)  (:)   ]  aerodynamical resistance (s/m)                    
-         fv        =>    frictionvel_vars%fv_patch             , & ! Input:  [real(r8)  (:)   ]  friction velocity (m/s)                           
-         
-         vlc_trb   =>    dust_vars%vlc_trb_patch               , & ! Output:  [real(r8) (:,:) ]  Turbulent deposn velocity (m/s)                 
-         vlc_trb_1 =>    dust_vars%vlc_trb_1_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 1                   
-         vlc_trb_2 =>    dust_vars%vlc_trb_2_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 2                   
-         vlc_trb_3 =>    dust_vars%vlc_trb_3_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 3                   
-         vlc_trb_4 =>    dust_vars%vlc_trb_4_patch               & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 4                   
+    associate(                                                   &
+         forc_pbot =>    top_as%pbot                           , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)
+         forc_rho  =>    top_as%rhobot                         , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)
+         forc_t    =>    top_as%tbot                           , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)
+
+         ram1      =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8)  (:)   ]  aerodynamical resistance (s/m)
+         fv        =>    frictionvel_vars%fv_patch             , & ! Input:  [real(r8)  (:)   ]  friction velocity (m/s)
+
+         vlc_trb   =>    dust_vars%vlc_trb_patch               , & ! Output:  [real(r8) (:,:) ]  Turbulent deposn velocity (m/s)
+         vlc_trb_1 =>    dust_vars%vlc_trb_1_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 1
+         vlc_trb_2 =>    dust_vars%vlc_trb_2_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 2
+         vlc_trb_3 =>    dust_vars%vlc_trb_3_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 3
+         vlc_trb_4 =>    dust_vars%vlc_trb_4_patch               & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 4
          )
 
       do p = bounds%begp,bounds%endp
@@ -575,7 +581,7 @@ contains
                ! Schmidt number exponent is -2/3 over solid surfaces and
                ! -1/2 over liquid surfaces SlS80 p. 1014
                ! if (oro(i)==0.0) shm_nbr_xpn=shm_nbr_xpn_ocn else shm_nbr_xpn=shm_nbr_xpn_lnd
-               ! [frc] Surface-dependent exponent for aerosol-diffusion dependence on Schmidt # 
+               ! [frc] Surface-dependent exponent for aerosol-diffusion dependence on Schmidt #
 
                tmp = shm_nbr**shm_nbr_xpn + 10.0_r8**(-3.0_r8/stk_nbr)
                rss_lmn(p,m) = 1.0_r8 / (tmp * fv(p)) ![s m-1] SeP97 p.972,965
@@ -610,7 +616,7 @@ contains
    !------------------------------------------------------------------------
    subroutine InitDustVars(this, bounds)
      !
-     ! !DESCRIPTION: 
+     ! !DESCRIPTION:
      !
      ! Compute source efficiency factor from topography
      ! Initialize other variables used in subroutine Dust:
@@ -623,12 +629,12 @@ contains
      !
      ! !USES
      use shr_const_mod , only: SHR_CONST_PI, SHR_CONST_RDAIR
-     use shr_spfn_mod  , only: erf => shr_spfn_erf
+     !#py use shr_spfn_mod  , only: erf => shr_spfn_erf
      use decompMod     , only : get_proc_bounds
      !
      ! !ARGUMENTS:
      class(dust_type)  :: this
-     type(bounds_type), intent(in) :: bounds  
+     type(bounds_type), intent(in) :: bounds
      !
      ! !LOCAL VARIABLES
     integer  :: fc,c,l,m,n              ! indices
@@ -650,7 +656,7 @@ contains
     real(r8) :: vlc_grv(ndst)           ! [m s-1] Settling velocity
     real(r8) :: ryn_nbr_grv(ndst)       ! [frc] Reynolds number at terminal velocity
     real(r8) :: cff_drg_grv(ndst)       ! [frc] Drag coefficient at terminal velocity
-    real(r8) :: tmp                     ! temporary 
+    real(r8) :: tmp                     ! temporary
     real(r8) :: ln_gsd                  ! [frc] ln(gsd)
     real(r8) :: gsd_anl                 ! [frc] Geometric standard deviation
     real(r8) :: dmt_vma                 ! [m] Mass median diameter analytic She84 p.75 Tabl.1
@@ -670,7 +676,7 @@ contains
     real(r8) :: sz_max(sz_nbr)          ! [m] Size Bin maxima
     real(r8) :: sz_ctr(sz_nbr)          ! [m] Size Bin centers
     real(r8) :: sz_dlt(sz_nbr)          ! [m] Size Bin widths
-    
+
     ! constants
     real(r8), allocatable :: dmt_vma_src(:) ! [m] Mass median diameter       BSM96 p. 73 Table 2
     real(r8), allocatable :: gsd_anl_src(:) ! [frc] Geometric std deviation  BSM96 p. 73 Table 2
@@ -682,23 +688,23 @@ contains
     real(r8), parameter :: dns_slt = 2650.0_r8         ! [kg m-3] Density of optimal saltation particles
     !------------------------------------------------------------------------
 
-    associate(& 
-         mbl_bsn_fct  =>  this%mbl_bsn_fct_col   & ! Output:  [real(r8) (:)] basin factor                                       
+    associate(&
+         mbl_bsn_fct  =>  this%mbl_bsn_fct_col   & ! Output:  [real(r8) (:)] basin factor
          )
 
       ! allocate module variable
-      allocate (ovr_src_snk_mss(dst_src_nbr,ndst))  
+      allocate (ovr_src_snk_mss(dst_src_nbr,ndst))
       allocate (dmt_vwr(ndst))
       allocate (stk_crc(ndst))
 
       ! allocate local variable
-      allocate (dmt_vma_src(dst_src_nbr))  
-      allocate (gsd_anl_src(dst_src_nbr))  
-      allocate (mss_frc_src(dst_src_nbr))  
+      allocate (dmt_vma_src(dst_src_nbr))
+      allocate (gsd_anl_src(dst_src_nbr))
+      allocate (mss_frc_src(dst_src_nbr))
 
-      dmt_vma_src(:) = (/ 0.832e-6_r8 , 4.82e-6_r8 , 19.38e-6_r8 /)        
-      gsd_anl_src(:) = (/ 2.10_r8     , 1.90_r8    , 1.60_r8     /)        
-      mss_frc_src(:) = (/ 0.036_r8    , 0.957_r8   , 0.007_r8 /)                  
+      dmt_vma_src(:) = (/ 0.832e-6_r8 , 4.82e-6_r8 , 19.38e-6_r8 /)
+      gsd_anl_src(:) = (/ 2.10_r8     , 1.90_r8    , 1.60_r8     /)
+      mss_frc_src(:) = (/ 0.036_r8    , 0.957_r8   , 0.007_r8 /)
 
       ! the following comes from (1) szdstlgn.F subroutine ovr_src_snk_frc_get
       !                      and (2) dstszdst.F subroutine dst_szdst_ini
@@ -718,14 +724,14 @@ contains
          end do
       end do
 
-      ! The following code from subroutine wnd_frc_thr_slt_get was placed 
+      ! The following code from subroutine wnd_frc_thr_slt_get was placed
       ! here because tmp1 needs to be defined just once
 
       ryn_nbr_frc_thr_prx_opt = 0.38_r8 + 1331.0_r8 * (100.0_r8*dmt_slt_opt)**1.56_r8
 
       if (ryn_nbr_frc_thr_prx_opt < 0.03_r8) then
-         write(iulog,*) 'dstmbl: ryn_nbr_frc_thr_prx_opt < 0.03'
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+          write(iulog,*) 'dstmbl: ryn_nbr_frc_thr_prx_opt < 0.03'
+         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
       else if (ryn_nbr_frc_thr_prx_opt < 10.0_r8) then
          ryn_nbr_frc_thr_opt_fnc = -1.0_r8 + 1.928_r8 * (ryn_nbr_frc_thr_prx_opt**0.0922_r8)
          ryn_nbr_frc_thr_opt_fnc = 0.1291_r8 * 0.1291_r8 / ryn_nbr_frc_thr_opt_fnc
@@ -761,8 +767,8 @@ contains
             dmt_dlt(n) = dmt_max(n)-dmt_min(n)            ![m] Width of size bin
          end do
       else
-         write(iulog,*) 'Dustini error: ndst must equal to 4 with current code'
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+         !#py write(iulog,*) 'Dustini error: ndst must equal to 4 with current code'
+         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
          !see more comments above end if ndst == 4
       end if
 
@@ -886,16 +892,16 @@ contains
             else if (ryn_nbr_grv(m) < 2.0e5_r8) then
                cff_drg_grv(m) = 0.44_r8                         !Sep97 p.463 (8.32)
             else
-               write(iulog,'(a,es9.2)') "ryn_nbr_grv(m) = ",ryn_nbr_grv(m)
-               write(iulog,*)'Dustini error: Reynolds number too large in stk_crc_get()'
-               call endrun(msg=errMsg(__FILE__, __LINE__))
+               !#py write(iulog,'(a,es9.2)') "ryn_nbr_grv(m) = ",ryn_nbr_grv(m)
+               !#py write(iulog,*)'Dustini error: Reynolds number too large in stk_crc_get()'
+               !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
             end if
 
             ! Update terminal velocity based on new Reynolds number and drag coeff
             ! [m s-1] Terminal veloc SeP97 p.467 (8.44)
 
             vlc_grv(m) = sqrt(4.0_r8 * grav * dmt_vwr(m) * slp_crc(m) * dns_aer / &
-                 (3.0_r8*cff_drg_grv(m)*dns_mdp))   
+                 (3.0_r8*cff_drg_grv(m)*dns_mdp))
             eps_crr = abs((vlc_grv(m)-vlc_grv_old)/vlc_grv(m)) !Relative convergence
             if (itr_idx == 12) then
                ! Numerical pingpong may occur when Re = 0.1, 2.0, or 500.0
@@ -903,8 +909,8 @@ contains
                vlc_grv(m) = 0.5_r8 * (vlc_grv(m)+vlc_grv_old)  ! [m s-1]
             end if
             if (itr_idx > 20) then
-               write(iulog,*) 'Dustini error: Terminal velocity not converging ',&
-                    ' in stk_crc_get(), breaking loop...'
+               !#py write(iulog,*) 'Dustini error: Terminal velocity not converging ',&
+                    !#py ' in stk_crc_get(), breaking loop...'
                goto 100                                        !to next iteration
             end if
             itr_idx = itr_idx + 1
@@ -920,8 +926,12 @@ contains
       do m = 1, ndst
          stk_crc(m) = vlc_grv(m) / vlc_stk(m)
       end do
-
-    end associate 
+      !$acc update device(ovr_src_snk_mss(:,:))
+      !$acc update device(dmt_vwr(:)          )
+      !$acc update device(stk_crc(:)          )
+      !$acc update device(tmp1)
+      !$acc update device(dns_aer)
+    end associate
 
   end subroutine InitDustVars
 

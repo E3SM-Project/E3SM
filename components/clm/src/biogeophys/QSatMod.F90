@@ -8,7 +8,7 @@ module QSatMod
   use shr_kind_mod , only: r8 => shr_kind_r8
   implicit none
   save
-  private 
+  private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: QSat
@@ -54,14 +54,14 @@ module QSatMod
     real(r8), parameter :: d5 =  0.257180651e-08_r8
     real(r8), parameter :: d6 =  0.133268878e-10_r8
     real(r8), parameter :: d7 =  0.394116744e-13_r8
-    real(r8), parameter :: d8 =  0.498070196e-16_r8  
+    real(r8), parameter :: d8 =  0.498070196e-16_r8
 contains
 
 
 
   !-----------------------------------------------------------------------
   subroutine QSat (T, p, es, esdT, qs, qsdT)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Computes saturation mixing ratio and the change in saturation
     ! mixing ratio with respect to temperature.
@@ -95,7 +95,7 @@ contains
     if (td >= 0.0_r8) then
        es   = a0 + td*(a1 + td*(a2 + td*(a3 + td*(a4 &
             + td*(a5 + td*(a6 + td*(a7 + td*a8)))))))
-            
+
       esdT = b0 + td*(b1 + td*(b2 + td*(b3 + td*(b4 &
             + td*(b5 + td*(b6 + td*(b7 + td*b8)))))))
 
@@ -112,7 +112,7 @@ contains
 
     esdT  = esdT  * 100._r8            ! pa/K
 
-    
+
     vp    = 1.0_r8   / (p - 0.378_r8*es)
     vp1   = 0.622_r8 * vp
     vp2   = vp1   * vp
@@ -124,7 +124,7 @@ contains
   end subroutine QSat
 
 
-  
+
 !-------------------------------------------------------------------------------
   subroutine rhoSat(T, rho, rhodT)
     ! compute the saturated vapor pressure density and its derivative against the temperature

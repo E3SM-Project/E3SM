@@ -33,23 +33,23 @@ module CropType
   type, public :: crop_type
 
      ! Note that cropplant and harvdate could be 2D to facilitate rotation
-     integer , pointer :: nyrs_crop_active_patch  (:)   ! number of years this crop patch has been active (0 for non-crop patches)
-     logical , pointer :: croplive_patch          (:)   ! patch Flag, true if planted, not harvested
-     logical , pointer :: cropplant_patch         (:)   ! patch Flag, true if planted
-     integer , pointer :: harvdate_patch          (:)   ! patch harvest date
-     real(r8), pointer :: fertnitro_patch         (:)   ! patch fertilizer nitrogen
+     integer , pointer :: nyrs_crop_active_patch  (:) => null()  ! number of years this crop patch has been active (0 for non-crop patches)
+     logical , pointer :: croplive_patch          (:) => null()  ! patch Flag, true if planted, not harvested
+     logical , pointer :: cropplant_patch         (:) => null()  ! patch Flag, true if planted
+     integer , pointer :: harvdate_patch          (:) => null()  ! patch harvest date
+     real(r8), pointer :: fertnitro_patch         (:) => null()  ! patch fertilizer nitrogen
 
-     real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
-     real(r8), pointer :: gddtsoi_patch           (:)   ! patch growing degree-days from planting (top two soil layers) (ddays)
-     real(r8), pointer :: crpyld_patch            (:)   ! patch crop yield (bu/acre)
-     real(r8), pointer :: dmyield_patch           (:)   ! patch crop yield (t/ha)
+     real(r8), pointer :: gddplant_patch          (:) => null()  ! patch accum gdd past planting date for crop       (ddays)
+     real(r8), pointer :: gddtsoi_patch           (:) => null()  ! patch growing degree-days from planting (top two soil layers) (ddays)
+     real(r8), pointer :: crpyld_patch            (:) => null()  ! patch crop yield (bu/acre)
+     real(r8), pointer :: dmyield_patch           (:) => null()  ! patch crop yield (t/ha)
 
-     real(r8), pointer :: vf_patch                (:)   ! patch vernalization factor for cereal
-     real(r8), pointer :: cphase_patch            (:)   ! phenology phase
-     real(r8), pointer :: latbaset_patch          (:)   ! Latitude vary baset for gddplant (degree C)
-     character(len=20) :: baset_mapping
-     real(r8)          :: baset_latvary_intercept
-     real(r8)          :: baset_latvary_slope
+     real(r8), pointer :: vf_patch                (:) => null()  ! patch vernalization factor for cereal
+     real(r8), pointer :: cphase_patch            (:) => null()  ! phenology phase
+     real(r8), pointer :: latbaset_patch          (:) => null()  ! Latitude vary baset for gddplant (degree C)
+     character(len=20), pointer :: baset_mapping            => null()
+     real(r8), pointer          :: baset_latvary_intercept  => null()
+     real(r8), pointer          :: baset_latvary_slope      => null()
 
      real(r8), pointer :: cvt_patch               (:)   ! patch temperture coefficient of variance
      real(r8), pointer :: cvp_patch               (:)   ! patch precipitation coefficient of variance
@@ -76,7 +76,7 @@ module CropType
      procedure, public  :: UpdateAccVars
      procedure, public  :: CropIncrementYear
 
-     procedure, private :: InitAllocate 
+     procedure, public :: InitAllocate
      procedure, private :: InitHistory
      procedure, private, nopass :: checkDates
 
@@ -94,10 +94,10 @@ contains
     type(bounds_type), intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
-    
+
     call this%InitAllocate(bounds)
 
     if (crop_prog) then
@@ -115,16 +115,20 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
-    
+
     character(len=*), parameter :: subname = 'InitAllocate'
     !-----------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
 
+    allocate(this%baset_mapping          )
+    allocate(this%baset_latvary_intercept)
+    allocate(this%baset_latvary_slope    )
+
     allocate(this%nyrs_crop_active_patch (begp:endp)) ; this%nyrs_crop_active_patch (:) = 0
     allocate(this%croplive_patch         (begp:endp)) ; this%croplive_patch         (:) = .false.
     allocate(this%cropplant_patch        (begp:endp)) ; this%cropplant_patch        (:) = .false.
-    allocate(this%harvdate_patch         (begp:endp)) ; this%harvdate_patch         (:) = huge(1) 
+    allocate(this%harvdate_patch         (begp:endp)) ; this%harvdate_patch         (:) = huge(1)
     allocate(this%fertnitro_patch        (begp:endp)) ; this%fertnitro_patch        (:) = spval
     allocate(this%gddplant_patch         (begp:endp)) ; this%gddplant_patch         (:) = spval
     allocate(this%gddtsoi_patch          (begp:endp)) ; this%gddtsoi_patch          (:) = spval
@@ -164,10 +168,10 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
-    
+
     character(len=*), parameter :: subname = 'InitHistory'
     !-----------------------------------------------------------------------
-    
+
     begp = bounds%begp; endp = bounds%endp
 
     this%gddplant_patch(begp:endp) = spval
@@ -272,121 +276,117 @@ contains
 
   end subroutine InitHistory
 
+      !-----------------------------------------------------------------------
+    subroutine InitAccBuffer (this, bounds)
+      !
+      ! !DESCRIPTION:
+      ! Initialize accumulation buffer for all required module accumulated fields
+      ! This routine set defaults values that are then overwritten by the
+      ! restart file for restart or branch runs
+      ! Each interval and accumulation type is unique to each field processed.
+      ! Routine [initAccBuffer] defines the fields to be processed
+      ! and the type of accumulation.
+      ! Routine [updateAccVars] does the actual accumulation for a given field.
+      ! Fields are accumulated by calls to subroutine [update_accum_field].
+      ! To accumulate a field, it must first be defined in subroutine [initAccVars]
+      ! and then accumulated by calls to [updateAccVars].
+      !
+      ! Should only be called if crop_prog is true
+      !
+      ! !USES
+      use accumulMod       , only : init_accum_field
+      !
+      ! !ARGUMENTS:
+      class(crop_type) , intent(in) :: this
+      type(bounds_type), intent(in) :: bounds
+
+      !
+      ! !LOCAL VARIABLES:
+      integer, parameter :: not_used = huge(1)
+
+      !---------------------------------------------------------------------
+
+      call init_accum_field (name='GDDPLANT', units='K', &
+           desc='growing degree-days from planting', accum_type='runaccum', accum_period=not_used,  &
+           subgrid_type='pft', numlev=1, init_value=0._r8)
+
+      call init_accum_field (name='GDDTSOI', units='K', &
+           desc='growing degree-days from planting (top two soil layers)', accum_type='runaccum', accum_period=not_used,  &
+           subgrid_type='pft', numlev=1, init_value=0._r8)
+
+    end subroutine InitAccBuffer
 
     !-----------------------------------------------------------------------
-  subroutine InitAccBuffer (this, bounds)
-    !
-    ! !DESCRIPTION:
-    ! Initialize accumulation buffer for all required module accumulated fields
-    ! This routine set defaults values that are then overwritten by the
-    ! restart file for restart or branch runs
-    ! Each interval and accumulation type is unique to each field processed.
-    ! Routine [initAccBuffer] defines the fields to be processed
-    ! and the type of accumulation. 
-    ! Routine [updateAccVars] does the actual accumulation for a given field.
-    ! Fields are accumulated by calls to subroutine [update_accum_field]. 
-    ! To accumulate a field, it must first be defined in subroutine [initAccVars] 
-    ! and then accumulated by calls to [updateAccVars].
-    !
-    ! Should only be called if crop_prog is true
-    !
-    ! !USES 
-    use accumulMod       , only : init_accum_field
-    !
-    ! !ARGUMENTS:
-    class(crop_type) , intent(in) :: this
-    type(bounds_type), intent(in) :: bounds  
+    subroutine InitAccVars(this, bounds)
+      !
+      ! !DESCRIPTION:
+      ! Initialize module variables that are associated with
+      ! time accumulated fields. This routine is called for both an initial run
+      ! and a restart run (and must therefore must be called after the restart file
+      ! is read in and the accumulation buffer is obtained)
+      !
+      ! !USES:
+      use accumulMod       , only : extract_accum_field
+      use clm_time_manager , only : get_nstep
+      !
+      ! !ARGUMENTS:
+      class(crop_type),  intent(inout) :: this
+      type(bounds_type), intent(in)    :: bounds
+      !
+      ! !LOCAL VARIABLES:
+      integer  :: begp, endp
+      integer  :: nstep
+      integer  :: ier
+      real(r8), pointer :: rbufslp(:)  ! temporary
 
-    !
-    ! !LOCAL VARIABLES:
-    integer, parameter :: not_used = huge(1)
+      character(len=*), parameter :: subname = 'InitAccVars'
+      !-----------------------------------------------------------------------
 
-    !---------------------------------------------------------------------
+      begp = bounds%begp; endp = bounds%endp
 
-    call init_accum_field (name='GDDPLANT', units='K', &
-         desc='growing degree-days from planting', accum_type='runaccum', accum_period=not_used,  &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
+      ! Allocate needed dynamic memory for single level pft field
+      allocate(rbufslp(begp:endp), stat=ier)
+      if (ier/=0) then
+         write(iulog,*)' in '
+         call endrun(msg=" allocation error for rbufslp"//&
+              errMsg(__FILE__, __LINE__))
+      endif
 
-    call init_accum_field (name='GDDTSOI', units='K', &
-         desc='growing degree-days from planting (top two soil layers)', accum_type='runaccum', accum_period=not_used,  &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
+      nstep = get_nstep()
 
-  end subroutine InitAccBuffer
+      call extract_accum_field ('GDDPLANT', rbufslp, nstep)
+      this%gddplant_patch(begp:endp) = rbufslp(begp:endp)
 
-  !-----------------------------------------------------------------------
-  subroutine InitAccVars(this, bounds)
-    !
-    ! !DESCRIPTION:
-    ! Initialize module variables that are associated with
-    ! time accumulated fields. This routine is called for both an initial run
-    ! and a restart run (and must therefore must be called after the restart file 
-    ! is read in and the accumulation buffer is obtained)
-    !
-    ! !USES:
-    use accumulMod       , only : extract_accum_field
-    use clm_time_manager , only : get_nstep
-    !
-    ! !ARGUMENTS:
-    class(crop_type),  intent(inout) :: this
-    type(bounds_type), intent(in)    :: bounds
-    !
-    ! !LOCAL VARIABLES:
-    integer  :: begp, endp
-    integer  :: nstep
-    integer  :: ier
-    real(r8), pointer :: rbufslp(:)  ! temporary
-    
-    character(len=*), parameter :: subname = 'InitAccVars'
+      call extract_accum_field ('GDDTSOI', rbufslp, nstep)
+      this%gddtsoi_patch(begp:endp)  = rbufslp(begp:endp)
+
+      deallocate(rbufslp)
+
+    end subroutine InitAccVars
+
     !-----------------------------------------------------------------------
-    
-    begp = bounds%begp; endp = bounds%endp
+    subroutine Restart(this, bounds, ncid, flag)
+      !
+      ! !USES:
+      use restUtilMod
+      use ncdio_pio
+      use VegetationType , only : veg_pp
+      use pftvarcon      , only : npcropmin, npcropmax
+      !
+      ! !ARGUMENTS:
+      class(crop_type), intent(inout)  :: this
+      type(bounds_type), intent(in)    :: bounds
+      type(file_desc_t), intent(inout) :: ncid
+      character(len=*) , intent(in)    :: flag
+      !
+      ! !LOCAL VARIABLES:
+      integer, pointer :: temp1d(:) ! temporary
+      integer :: restyear
+      integer :: p
+      logical :: readvar   ! determine if variable is on initial file
 
-    ! Allocate needed dynamic memory for single level pft field
-    allocate(rbufslp(begp:endp), stat=ier)
-    if (ier/=0) then
-       write(iulog,*)' in '
-       call endrun(msg=" allocation error for rbufslp"//&
-            errMsg(__FILE__, __LINE__))
-    endif
-
-    nstep = get_nstep()
-
-    call extract_accum_field ('GDDPLANT', rbufslp, nstep) 
-    this%gddplant_patch(begp:endp) = rbufslp(begp:endp)
-
-    call extract_accum_field ('GDDTSOI', rbufslp, nstep) 
-    this%gddtsoi_patch(begp:endp)  = rbufslp(begp:endp)
-
-    deallocate(rbufslp)
-
-  end subroutine InitAccVars
-
-  !-----------------------------------------------------------------------
-  subroutine Restart(this, bounds, ncid, flag)
-    !
-    ! !USES:
-    use restUtilMod
-    use ncdio_pio
-    use VegetationType , only : veg_pp                
-    use pftvarcon      , only : npcropmin, npcropmax
-    !
-    ! !ARGUMENTS:
-    class(crop_type), intent(inout)  :: this
-    type(bounds_type), intent(in)    :: bounds 
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
-    !
-    ! !LOCAL VARIABLES:
-    integer, pointer :: temp1d(:) ! temporary
-    integer :: restyear
-    integer :: p
-    logical :: readvar   ! determine if variable is on initial file
-    real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
-    real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
-
-    character(len=*), parameter :: subname = 'Restart'
-    !-----------------------------------------------------------------------
-
+      character(len=*), parameter :: subname = 'Restart'
+      !-----------------------------------------------------------------------
     if (use_crop) then
        call restartvar(ncid=ncid, flag=flag, varname='nyrs_crop_active', xtype=ncd_int, &
             dim1name='pft', &
@@ -597,10 +597,7 @@ contains
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     
     character(len=*), parameter :: subname = 'UpdateAccVars'
-    !-----------------------------------------------------------------------
-    
     begp = bounds%begp; endp = bounds%endp
-
     dtime = get_step_size()
     nstep = get_nstep()
 
@@ -751,4 +748,3 @@ contains
   end subroutine checkDates
 
 end module CropType
-

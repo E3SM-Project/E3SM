@@ -1,17 +1,17 @@
-module CNNitrifDenitrifMod
+module NitrifDenitrifMod
 
   !-----------------------------------------------------------------------
   ! Calculate nitrification and denitrification rates
   !
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_const_mod       , only : SHR_CONST_TKFRZ
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
+    use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_const_mod       , only : SHR_CONST_TKFRZ
   use clm_varpar          , only : nlevgrnd,nlevdecomp
   use clm_varcon          , only : rpi, denh2o, dzsoi, zisoi, grav
   use clm_varcon          , only : d_con_g, d_con_w, spval, secspday
   use clm_varctl          , only : use_lch4, iulog
-  use abortutils          , only : endrun
+   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
@@ -20,17 +20,17 @@ module CNNitrifDenitrifMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use ch4Mod              , only : ch4_type
-  use ColumnType          , only : col_pp 
-  use ColumnDataType      , only : col_es, col_ws, col_cf, col_ns, col_nf  
+  use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_es, col_ws, col_cf, col_ns, col_nf
   !
   implicit none
   save
   private
   !
   public :: nitrif_denitrif
-  public :: readNitrifDenitrifParams
+   public :: readNitrifDenitrifParams
   !
-  type, private :: NitrifDenitrifParamsType
+  type, public :: NitrifDenitrifParamsType
    real(r8) :: k_nitr_max               !  maximum nitrification rate constant (1/s)
    real(r8) :: surface_tension_water    !  surface tension of water(J/m^2), Arah an and Vinten 1995
    real(r8) :: rij_kro_a                !  Arah and Vinten 1995)
@@ -40,91 +40,92 @@ module CNNitrifDenitrifMod
    real(r8) :: rij_kro_delta            !  (Arah and Vinten 1995)
   end type NitrifDenitrifParamsType
 
-  type(NitrifDenitrifParamsType),private ::  NitrifDenitrifParamsInst
+  type(NitrifDenitrifParamsType) , public ::  NitrifDenitrifParamsInst
+  !$acc declare create(NitrifDenitrifParamsInst)
 
   logical, public :: no_frozen_nitrif_denitrif = .false.  ! stop nitrification and denitrification in frozen soils
+  !$acc declare create(no_frozen_nitrif_denitrif)
   !-----------------------------------------------------------------------
 
 contains
 
-  !-----------------------------------------------------------------------  
-  subroutine readNitrifDenitrifParams ( ncid )
-    !
-    use ncdio_pio    , only: file_desc_t,ncd_io
-    !
-    ! !ARGUMENTS:
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'NitrifDenitrifParamsType'
-    character(len=100) :: errCode = '-Error reading in parameters file:'
-    logical            :: readv ! has variable been read in or not
-    real(r8)           :: tempr ! temporary to read in constant
-    character(len=100) :: tString ! temp. var for reading
-    !-----------------------------------------------------------------------
-    !
-    ! read in constants
-    !
-    tString='k_nitr_max'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%k_nitr_max=tempr
+  !-----------------------------------------------------------------------
+   subroutine readNitrifDenitrifParams ( ncid )
+     !
+     use ncdio_pio    , only: file_desc_t,ncd_io
+     !
+     ! !ARGUMENTS:
+     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+     !
+     ! !LOCAL VARIABLES:
+     character(len=32)  :: subname = 'NitrifDenitrifParamsType'
+     character(len=100) :: errCode = '-Error reading in parameters file:'
+     logical            :: readv ! has variable been read in or not
+     real(r8)           :: tempr ! temporary to read in constant
+     character(len=100) :: tString ! temp. var for reading
+     !-----------------------------------------------------------------------
+     !
+     ! read in constants
+     !
+     tString='k_nitr_max'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%k_nitr_max=tempr
 
-    tString='surface_tension_water'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%surface_tension_water=tempr
+     tString='surface_tension_water'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%surface_tension_water=tempr
 
-    tString='rij_kro_a'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%rij_kro_a=tempr
+     tString='rij_kro_a'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%rij_kro_a=tempr
 
-    tString='rij_kro_alpha'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%rij_kro_alpha=tempr
+     tString='rij_kro_alpha'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%rij_kro_alpha=tempr
 
-    tString='rij_kro_beta'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%rij_kro_beta=tempr
+     tString='rij_kro_beta'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%rij_kro_beta=tempr
 
-    tString='rij_kro_gamma'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%rij_kro_gamma=tempr
+     tString='rij_kro_gamma'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%rij_kro_gamma=tempr
 
-    tString='rij_kro_delta'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NitrifDenitrifParamsInst%rij_kro_delta=tempr
+     tString='rij_kro_delta'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     NitrifDenitrifParamsInst%rij_kro_delta=tempr
 
-  end subroutine readNitrifDenitrifParams
+   end subroutine readNitrifDenitrifParams
 
   !-----------------------------------------------------------------------
   subroutine nitrif_denitrif(bounds, num_soilc, filter_soilc, &
-       soilstate_vars, waterstate_vars, temperature_vars, ch4_vars, &
-       carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+       soilstate_vars, ch4_vars)
     !
     ! !DESCRIPTION:
     !  calculate nitrification and denitrification rates
     !
     ! !USES:
-    use clm_time_manager  , only : get_curr_date, get_step_size
+      !$acc routine seq
     use SharedParamsMod , only : anoxia_wtsat,ParamsShareInst
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds  
+    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
+    !type(waterstate_type)    , intent(in)    :: waterstate_vars
+    !type(temperature_type)   , intent(in)    :: temperature_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    type(carbonflux_type)    , intent(in)    :: carbonflux_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !type(carbonflux_type)    , intent(in)    :: carbonflux_vars
+    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: c, fc, reflev, j
@@ -153,64 +154,64 @@ contains
     real(r8) :: anaerobic_frac_sat, r_psi_sat, r_min_sat ! scalar values in sat portion for averaging
     real(r8) :: organic_max              ! organic matter content (kg/m3) where
                                          ! soil is assumed to act like peat
-    character(len=32) :: subname='nitrif_denitrif' ! subroutine name
+    !character(len=32) :: subname='nitrif_denitrif' ! subroutine name
     !-----------------------------------------------------------------------
 
-    associate(                                                                                     & 
+    associate(                                                                                     &
          watsat                        =>    soilstate_vars%watsat_col                           , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity) (nlevgrnd)
-         bd                            =>    soilstate_vars%bd_col                               , & ! Input:  [real(r8) (:,:)  ]  bulk density of dry soil material [kg/m3]       
+         bd                            =>    soilstate_vars%bd_col                               , & ! Input:  [real(r8) (:,:)  ]  bulk density of dry soil material [kg/m3]
          watfc                         =>    soilstate_vars%watfc_col                            , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at field capacity (nlevsoi)
-         bsw                           =>    soilstate_vars%bsw_col                              , & ! Input:  [real(r8) (:,:)  ]  Clapp and Hornberger "b" (nlevgrnd)             
-         cellorg                       =>    soilstate_vars%cellorg_col                          , & ! Input:  [real(r8) (:,:)  ]  column 3D org (kg/m3 organic matter) (nlevgrnd) 
-         sucsat                        =>    soilstate_vars%sucsat_col                           , & ! Input:  [real(r8) (:,:)  ]  minimum soil suction (mm)                       
-         soilpsi                       =>    soilstate_vars%soilpsi_col                          , & ! Input:  [real(r8) (:,:)  ]  soil water potential in each soil layer (MPa)   
-         
+         bsw                           =>    soilstate_vars%bsw_col                              , & ! Input:  [real(r8) (:,:)  ]  Clapp and Hornberger "b" (nlevgrnd)
+         cellorg                       =>    soilstate_vars%cellorg_col                          , & ! Input:  [real(r8) (:,:)  ]  column 3D org (kg/m3 organic matter) (nlevgrnd)
+         sucsat                        =>    soilstate_vars%sucsat_col                           , & ! Input:  [real(r8) (:,:)  ]  minimum soil suction (mm)
+         soilpsi                       =>    soilstate_vars%soilpsi_col                          , & ! Input:  [real(r8) (:,:)  ]  soil water potential in each soil layer (MPa)
+
          h2osoi_vol                    =>    col_ws%h2osoi_vol                      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
          h2osoi_liq                    =>    col_ws%h2osoi_liq                      , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-         
+
          t_soisno                      =>    col_es%t_soisno                       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
-         
+
          o2_decomp_depth_unsat         =>    ch4_vars%o2_decomp_depth_unsat_col                  , & ! Input:  [real(r8) (:,:)  ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         conc_o2_unsat                 =>    ch4_vars%conc_o2_unsat_col                          , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)   
+         conc_o2_unsat                 =>    ch4_vars%conc_o2_unsat_col                          , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
          o2_decomp_depth_sat           =>    ch4_vars%o2_decomp_depth_sat_col                    , & ! Input:  [real(r8) (:,:)  ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         conc_o2_sat                   =>    ch4_vars%conc_o2_sat_col                            , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)   
+         conc_o2_sat                   =>    ch4_vars%conc_o2_sat_col                            , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
          finundated                    =>    ch4_vars%finundated_col                             , & ! Input:  [real(r8) (:)    ]  fractional inundated area in soil column (excluding dedicated wetland columns)
-         
-         phr_vr                        =>    col_cf%phr_vr                          , & ! Input:  [real(r8) (:,:)  ]  potential hr (not N-limited)                    
-         w_scalar                      =>    col_cf%w_scalar                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp                    
-         t_scalar                      =>    col_cf%t_scalar                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp                   
 
-         smin_nh4_vr                   =>    col_ns%smin_nh4_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool                   
-         smin_no3_vr                   =>    col_ns%smin_no3_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool                   
+         phr_vr                        =>    col_cf%phr_vr                          , & ! Input:  [real(r8) (:,:)  ]  potential hr (not N-limited)
+         w_scalar                      =>    col_cf%w_scalar                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp
+         t_scalar                      =>    col_cf%t_scalar                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp
 
-         r_psi                         =>    col_nf%r_psi                         , & ! Output:  [real(r8) (:,:)  ]                                                  
-         anaerobic_frac                =>    col_nf%anaerobic_frac                , & ! Output:  [real(r8) (:,:)  ]                                                  
+         smin_nh4_vr                   =>    col_ns%smin_nh4_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool
+         smin_no3_vr                   =>    col_ns%smin_no3_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool
+
+         r_psi                         =>    col_nf%r_psi                         , & ! Output:  [real(r8) (:,:)  ]
+         anaerobic_frac                =>    col_nf%anaerobic_frac                , & ! Output:  [real(r8) (:,:)  ]
          ! ! subsets of the n flux calcs (for diagnostic/debugging purposes)
-         smin_no3_massdens_vr          =>    col_nf%smin_no3_massdens_vr          , & ! Output:  [real(r8) (:,:) ]  (ugN / g soil) soil nitrate concentration       
-         k_nitr_t_vr                   =>    col_nf%k_nitr_t_vr                   , & ! Output:  [real(r8) (:,:) ]                                                  
-         k_nitr_ph_vr                  =>    col_nf%k_nitr_ph_vr                  , & ! Output:  [real(r8) (:,:) ]                                                  
-         k_nitr_h2o_vr                 =>    col_nf%k_nitr_h2o_vr                 , & ! Output:  [real(r8) (:,:) ]                                                  
-         k_nitr_vr                     =>    col_nf%k_nitr_vr                     , & ! Output:  [real(r8) (:,:) ]                                                  
-         wfps_vr                       =>    col_nf%wfps_vr                       , & ! Output:  [real(r8) (:,:) ]                                                  
-         fmax_denit_carbonsubstrate_vr =>    col_nf%fmax_denit_carbonsubstrate_vr , & ! Output:  [real(r8) (:,:) ]                                                  
-         fmax_denit_nitrate_vr         =>    col_nf%fmax_denit_nitrate_vr         , & ! Output:  [real(r8) (:,:) ]                                                  
-         f_denit_base_vr               =>    col_nf%f_denit_base_vr               , & ! Output:  [real(r8) (:,:) ]                                                  
+         smin_no3_massdens_vr          =>    col_nf%smin_no3_massdens_vr          , & ! Output:  [real(r8) (:,:) ]  (ugN / g soil) soil nitrate concentration
+         k_nitr_t_vr                   =>    col_nf%k_nitr_t_vr                   , & ! Output:  [real(r8) (:,:) ]
+         k_nitr_ph_vr                  =>    col_nf%k_nitr_ph_vr                  , & ! Output:  [real(r8) (:,:) ]
+         k_nitr_h2o_vr                 =>    col_nf%k_nitr_h2o_vr                 , & ! Output:  [real(r8) (:,:) ]
+         k_nitr_vr                     =>    col_nf%k_nitr_vr                     , & ! Output:  [real(r8) (:,:) ]
+         wfps_vr                       =>    col_nf%wfps_vr                       , & ! Output:  [real(r8) (:,:) ]
+         fmax_denit_carbonsubstrate_vr =>    col_nf%fmax_denit_carbonsubstrate_vr , & ! Output:  [real(r8) (:,:) ]
+         fmax_denit_nitrate_vr         =>    col_nf%fmax_denit_nitrate_vr         , & ! Output:  [real(r8) (:,:) ]
+         f_denit_base_vr               =>    col_nf%f_denit_base_vr               , & ! Output:  [real(r8) (:,:) ]
          diffus                        =>    col_nf%diffus                        , & ! Output:  [real(r8) (:,:) ] diffusivity (unitless fraction of total diffusivity)
-         ratio_k1                      =>    col_nf%ratio_k1                      , & ! Output:  [real(r8) (:,:) ]                                                  
-         ratio_no3_co2                 =>    col_nf%ratio_no3_co2                 , & ! Output:  [real(r8) (:,:) ]                                                  
-         soil_co2_prod                 =>    col_nf%soil_co2_prod                 , & ! Output:  [real(r8) (:,:) ]  (ug C / g soil / day)                           
-         fr_WFPS                       =>    col_nf%fr_WFPS                       , & ! Output:  [real(r8) (:,:) ]                                                  
+         ratio_k1                      =>    col_nf%ratio_k1                      , & ! Output:  [real(r8) (:,:) ]
+         ratio_no3_co2                 =>    col_nf%ratio_no3_co2                 , & ! Output:  [real(r8) (:,:) ]
+         soil_co2_prod                 =>    col_nf%soil_co2_prod                 , & ! Output:  [real(r8) (:,:) ]  (ug C / g soil / day)
+         fr_WFPS                       =>    col_nf%fr_WFPS                       , & ! Output:  [real(r8) (:,:) ]
          soil_bulkdensity              =>    col_nf%soil_bulkdensity              , & ! Output:  [real(r8) (:,:) ]  (kg soil / m3) bulk density of soil (including water)
-         pot_f_nit_vr                  =>    col_nf%pot_f_nit_vr                  , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux     
-         pot_f_denit_vr                =>    col_nf%pot_f_denit_vr                , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux   
+         pot_f_nit_vr                  =>    col_nf%pot_f_nit_vr                  , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+         pot_f_denit_vr                =>    col_nf%pot_f_denit_vr                , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
          n2_n2o_ratio_denit_vr         =>    col_nf%n2_n2o_ratio_denit_vr           & ! Output:  [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
          )
 
-      ! Set maximum nitrification rate constant 
-      k_nitr_max =  0.1_r8 / secspday   ! [1/sec] 10%/day  Parton et al., 2001 
+      ! Set maximum nitrification rate constant
+      k_nitr_max =  0.1_r8 / secspday   ! [1/sec] 10%/day  Parton et al., 2001
 
       ! Todo:  FIX(SPM,032414) - the explicit divide gives different results than when that
-      ! value is placed in the parameters netcdf file.  To get bfb, keep the 
+      ! value is placed in the parameters netcdf file.  To get bfb, keep the
       ! divide in source.
       !k_nitr_max = NitrifDenitrifParamsInst%k_nitr_max
 
@@ -250,7 +251,7 @@ contains
                end if
                diffus (c,j) = (d_con_g(2,1) + d_con_g(2,2)*t_soisno(c,j)) * 1.e-4_r8 * &
                     (om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2 + &
-                    (1._r8-om_frac) * eps**2 * f_a**(3._r8 / bsw(c,j)) ) 
+                    (1._r8-om_frac) * eps**2 * f_a**(3._r8 / bsw(c,j)) )
 
                ! calculate anoxic fraction of soils
                ! use rijtema and kroess model after Riley et al., 2000
@@ -261,7 +262,7 @@ contains
                ratio_diffusivity_water_gas(c,j) = (d_con_g(2,1) + d_con_g(2,2)*t_soisno(c,j) ) * 1.e-4_r8 / &
                     ((d_con_w(2,1) + d_con_w(2,2)*t_soisno(c,j) + d_con_w(2,3)*t_soisno(c,j)**2) * 1.e-9_r8)
 
-               if (o2_decomp_depth_unsat(c,j) /= spval .and. conc_o2_unsat(c,j) /= spval .and.  & 
+               if (o2_decomp_depth_unsat(c,j) /= spval .and. conc_o2_unsat(c,j) /= spval .and.  &
                     o2_decomp_depth_unsat(c,j) > 0._r8) then
                   anaerobic_frac(c,j) = exp(-rij_kro_a * r_psi(c,j)**(-rij_kro_alpha) * &
                        o2_decomp_depth_unsat(c,j)**(-rij_kro_beta) * &
@@ -287,7 +288,7 @@ contains
                end if
 
             else
-               ! NITRIF_DENITRIF requires Methane model to be active, 
+               ! NITRIF_DENITRIF requires Methane model to be active,
                ! otherwise diffusivity will be zeroed out here. EBK CDK 10/18/2011
                anaerobic_frac(c,j) = 0._r8
                diffus (c,j) = 0._r8
@@ -328,7 +329,7 @@ contains
             soil_hr_vr(c,j) = phr_vr(c,j)
 
             ! CENTURY papers give denitrification in units of per gram soil; need to convert from volumetric to mass-based units here
-            soil_bulkdensity(c,j) = bd(c,j) + h2osoi_liq(c,j)/col_pp%dz(c,j)         
+            soil_bulkdensity(c,j) = bd(c,j) + h2osoi_liq(c,j)/col_pp%dz(c,j)
 
             g_per_m3__to__ug_per_gsoil = 1.e3_r8 / soil_bulkdensity(c,j)
 
@@ -338,16 +339,16 @@ contains
 
             soil_co2_prod(c,j) = (soil_hr_vr(c,j) * (g_per_m3_sec__to__ug_per_gsoil_day))
 
-            !! maximum potential denitrification rates based on heterotrophic respiration rates or nitrate concentrations, 
+            !! maximum potential denitrification rates based on heterotrophic respiration rates or nitrate concentrations,
             !! from (del Grosso et al., 2000)
             fmax_denit_carbonsubstrate_vr(c,j) = (0.1_r8 * (soil_co2_prod(c,j)**1.3_r8)) &
                  / g_per_m3_sec__to__ug_per_gsoil_day
-            !  
+            !
             fmax_denit_nitrate_vr(c,j) = (1.15_r8 * smin_no3_massdens_vr(c,j)**0.57_r8)  &
                  / g_per_m3_sec__to__ug_per_gsoil_day
 
             ! find limiting denitrification rate
-            f_denit_base_vr(c,j) = max(min(fmax_denit_carbonsubstrate_vr(c,j), fmax_denit_nitrate_vr(c,j)),0._r8) 
+            f_denit_base_vr(c,j) = max(min(fmax_denit_carbonsubstrate_vr(c,j), fmax_denit_nitrate_vr(c,j)),0._r8)
 
             ! limit to non-frozen soil layers
             if ( t_soisno(c,j) <= SHR_CONST_TKFRZ .and. no_frozen_nitrif_denitrif ) then
@@ -378,7 +379,7 @@ contains
                end if
             end if
 
-            ! final ratio expression 
+            ! final ratio expression
             n2_n2o_ratio_denit_vr(c,j) = max(0.16*ratio_k1(c,j), ratio_k1(c,j)*exp(-0.8 * ratio_no3_co2(c,j))) * fr_WFPS(c,j)
 
          end do
@@ -389,4 +390,4 @@ contains
 
  end subroutine nitrif_denitrif
 
-end module CNNitrifDenitrifMod
+end module NitrifDenitrifMod

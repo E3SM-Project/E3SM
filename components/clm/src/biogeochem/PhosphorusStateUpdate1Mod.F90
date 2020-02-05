@@ -5,7 +5,7 @@ module PhosphorusStateUpdate1Mod
   ! X.YANG
   ! !USES:
   use shr_kind_mod           , only: r8 => shr_kind_r8
-  use clm_time_manager       , only : get_step_size
+  !#py use clm_time_manager       , only : get_step_size
   use clm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use clm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl             , only : iulog, use_nitrif_denitrif
@@ -23,7 +23,7 @@ module PhosphorusStateUpdate1Mod
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
   ! forest fertilization experiment
-  use clm_time_manager       , only : get_curr_date
+  !#py use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
   use clm_varctl             , only : NFIX_PTASE_plant
@@ -33,7 +33,7 @@ module PhosphorusStateUpdate1Mod
   use GridcellDataType       , only : grc_ps, grc_pf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
-  
+
   !
   implicit none
   save
@@ -45,8 +45,8 @@ module PhosphorusStateUpdate1Mod
   !-----------------------------------------------------------------------
 
 contains
-  subroutine PhosphorusStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       phosphorusflux_vars, phosphorusstate_vars)
+  subroutine PhosphorusStateUpdateDynPatch(bounds, num_soilc_with_inactive,&
+     filter_soilc_with_inactive, dt)
     !
     ! !DESCRIPTION:
     ! Update phosphorus states based on fluxes from dyn_cnbal_patch
@@ -55,25 +55,19 @@ contains
     type(bounds_type)          , intent(in)    :: bounds
     integer                    , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                    , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
+    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
+    real(r8)                   , intent(in)   :: dt
     ! !LOCAL VARIABLES:
     integer                                    :: c                             ! column index
     integer                                    :: fc                            ! column filter index
     integer                                    :: g                             ! gridcell index
     integer                                    :: j                             ! level index
-    real(r8)                                   :: dt                            ! time step (seconds)
 
-    character(len=*)           , parameter     :: subname = 'PhosphorusStateUpdateDynPatch'
+    !character(len=*)           , parameter     :: subname = 'PhosphorusStateUpdateDynPatch'
     !-----------------------------------------------------------------------
-
-    associate( &
-         pf => phosphorusflux_vars  , &
-         ps => phosphorusstate_vars   &
-         )
-
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       if (.not.use_fates) then
 
@@ -101,40 +95,40 @@ contains
          end do
       end if
 
-    end associate
 
   end subroutine PhosphorusStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
+    real(r8)                 , intent(in)    :: dt !radiation time step
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
-    real(r8):: dt        ! radiation time step (seconds)
 
-    integer:: kyr                     ! current year 
+    integer:: kyr                     ! current year
     integer:: kmo                     ! month of year  (1, ..., 12)
-    integer:: kda                     ! day of month   (1, ..., 31) 
+    integer:: kda                     ! day of month   (1, ..., 31)
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day)
     !-----------------------------------------------------------------------
 
-    associate(                                                                                           & 
-         ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+    associate(                                                                                           &
+         ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type
 
          woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
@@ -142,15 +136,12 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          !!! N deposition profile, will weathering profile be needed?  -X.YANG
-         ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
+         ndep_prof             => cnstate_vars%ndep_prof_col               & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
 !         nfixation_prof        => cnstate_vars%nfixation_prof_col          , & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
-         
-         pf                    => phosphorusflux_vars                        , &
-         ps                    => phosphorusstate_vars &
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       ! column-level fluxes
 
@@ -218,9 +209,9 @@ contains
       end do
       endif ! if (.not. is_active_betr_bgc))
       !------------------------------------------------------------------
-     
+
       ! forest fertilization
-      call get_curr_date(kyr, kmo, kda, mcsec)
+      !#py call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)

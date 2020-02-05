@@ -6,7 +6,7 @@ module NitrogenStateUpdate2Mod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_time_manager    , only : get_step_size
+  !#py use clm_time_manager    , only : get_step_size
   use clm_varpar          , only : nlevsoi, nlevdecomp
   use clm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl          , only : iulog
@@ -31,8 +31,7 @@ module NitrogenStateUpdate2Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       nitrogenflux_vars, nitrogenstate_vars)
+  subroutine NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp,dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic nitrogen state
@@ -40,28 +39,25 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    real(r8) , intent(in)   :: dt      ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,l ! indices
     integer  :: fp,fc   ! lake filter indices
-    real(r8) :: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
-         nf => nitrogenflux_vars  , &
-         ns => nitrogenstate_vars   &
-         )
-
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
 
       ! column-level nitrogen fluxes from gap-phase mortality
@@ -70,7 +66,7 @@ contains
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               
+
                col_ns%decomp_npools_vr(c,j,i_met_lit) = &
                     col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%gap_mortality_n_to_litr_met_n(c,j) * dt
                col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
@@ -117,13 +113,10 @@ contains
 
       end do
 
-    end associate
-
   end subroutine NitrogenStateUpdate2
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       nitrogenflux_vars, nitrogenstate_vars)
+  subroutine NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
     !
     ! !DESCRIPTION:
     ! Update all the prognostic nitrogen state
@@ -131,29 +124,29 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    real(r8)                 , intent(in)    :: dt      ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l ! indices
     integer :: fp,fc   ! lake filter indices
-    real(r8):: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
-         ivt => veg_pp%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
-         nf => nitrogenflux_vars  , &
-         ns => nitrogenstate_vars   &
+    associate(                      &
+         ivt => veg_pp%itype        & ! Input:  [integer  (:) ]  pft vegetation type
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       if (.not. is_active_betr_bgc .and. &
            .not.(use_pflotran .and. pf_cmode)) then

@@ -23,16 +23,16 @@ module clm_varpar
   integer, parameter :: toplev_equalspace =  6
   integer            :: nlevsoi               ! number of hydrologically active soil layers
   integer            :: nlevsoifl             ! number of soil layers on input file
-  integer            :: nlevgrnd              ! number of ground layers 
+  integer            :: nlevgrnd              ! number of ground layers
                                               ! (includes lower layers that are hydrologically inactive)
   integer            :: nlevurb               ! number of urban layers
   integer            :: nlevlak               ! number of lake layers
   integer            :: nlevdecomp            ! number of biogeochemically active soil layers
-  integer            :: nlevdecomp_full       ! number of biogeochemical layers 
+  integer            :: nlevdecomp_full       ! number of biogeochemical layers
                                               ! (includes lower layers that are biogeochemically inactive)
   integer            :: nlevtrc_soil
   integer            :: nlevtrc_full
-  
+
   integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
@@ -55,23 +55,26 @@ module clm_varpar
   integer :: numpft      = mxpft   ! actual # of patches (without bare)
   integer :: numcft      =  10     ! actual # of crops
   logical :: crop_prog   = .true.  ! If prognostic crops is turned on
+  !$acc declare create(crop_prog)
   integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
 
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
-
+  !$acc declare create(maxpatch_pft)
   integer, parameter :: nsoilorder  =  15     ! number of soil orders
 
   integer, parameter :: nlevslp = 11          ! number of slope percentile levels
 
   ! constants for decomposition cascade
 
-  integer :: i_met_lit 
-  integer :: i_cel_lit 
-  integer :: i_lig_lit 
-  integer :: i_cwd 
+  integer :: i_met_lit
+  integer :: i_cel_lit
+  integer :: i_lig_lit
+  integer :: i_cwd
 
   integer :: ndecomp_pools
   integer :: ndecomp_cascade_transitions
+  !$acc declare create(ndecomp_pools)
+  !$acc declare create(ndecomp_cascade_transitions)
 
   ! Indices used in surface file read and set in clm_varpar_init
 
@@ -91,6 +94,47 @@ module clm_varpar
   public clm_varpar_init          ! set parameters
   !
   !-----------------------------------------------------------------------
+  !$acc declare create(more_vertlayers)
+
+
+  !$acc declare copyin(nlev_equalspace  )
+  !$acc declare copyin(toplev_equalspace)
+  !$acc declare copyin(nlevsno    )
+  !$acc declare copyin(ngases     )
+  !$acc declare copyin(nlevcan    )
+  !$acc declare copyin(numwat     )
+  !$acc declare copyin(numrad     )
+  !$acc declare copyin(ivis       )
+  !$acc declare copyin(inir       )
+  !$acc declare copyin(numsolar   )
+  !$acc declare copyin(ndst       )
+  !$acc declare copyin(dst_src_nbr)
+  !$acc declare copyin(sz_nbr     )
+  !$acc declare copyin(mxpft      )
+  !$acc declare create(nlevsoi        )
+  !$acc declare create(nlevsoifl      )
+  !$acc declare create(nlevurb        )
+  !$acc declare create(nlevlak        )
+  !$acc declare create(nlevdecomp     )
+  !$acc declare create(nlevdecomp_full)
+  !$acc declare create(nlevtrc_soil   )
+  !$acc declare create(nlevtrc_full   )
+  !$acc declare create(nlevgrnd)
+  !$acc declare create(natpft_lb  )
+  !$acc declare create(natpft_ub  )
+  !$acc declare create(natpft_size)
+  !$acc declare create(cft_lb     )
+  !$acc declare create(cft_ub     )
+  !$acc declare create(cft_size   )
+  !$acc declare create(i_met_lit  )
+  !$acc declare create(i_cel_lit  )
+  !$acc declare create(i_lig_lit  )
+  !$acc declare create(i_cwd      )
+  !$acc declare create(maxpatch_glcmec )
+  !$acc declare create(max_patch_per_col)
+  !$acc declare create(mach_eps)
+
+  !$acc declare create(nlayert)
 
 contains
 
@@ -98,7 +142,7 @@ contains
   subroutine clm_varpar_init()
     !
     ! !DESCRIPTION:
-    ! Initialize module variables 
+    ! Initialize module variables
     !
     ! !ARGUMENTS:
     implicit none
@@ -119,7 +163,7 @@ contains
        numcft      =   2     ! actual # of crops
        crop_prog   = .false. ! If prognostic crops is turned on
     end if
-
+    print *, "nlevcan:",nlevcan
     ! For arrays containing all Patches (natural veg & crop), determine lower and upper bounds
     ! for (1) Patches on the natural vegetation landunit (includes bare ground, and includes
     ! crops if create_crop_landunit=false), and (2) CFTs on the crop landunit (no elements
@@ -164,7 +208,7 @@ contains
        nlevdecomp      = 1
        nlevdecomp_full = 1
     end if
-    
+
     nlevtrc_full   = nlevsoi
     if(use_betr) then
       nlevtrc_soil = nlevsoi
@@ -188,7 +232,7 @@ contains
           ndecomp_pools = 7
           ndecomp_cascade_transitions = 7
        end if
-       
+
     else
 
        if (use_century_decomp) then
@@ -208,8 +252,11 @@ contains
        end if
 
     endif
-    
-
+    !$acc update device(nlevurb)
+    !$acc update device(nlayert)
+    !$acc update device(ndecomp_pools)
+    !$acc update device(ndecomp_cascade_transitions)
+    !$acc update device(crop_prog)
 
   end subroutine clm_varpar_init
 

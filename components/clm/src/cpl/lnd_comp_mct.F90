@@ -1,5 +1,5 @@
 module lnd_comp_mct
-  
+
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
   !  Interface of the active land model component of CESM the CLM (Community Land Model)
@@ -99,7 +99,7 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
-    character(len=8)           :: c_inst_index       ! instance number           
+    character(len=8)           :: c_inst_index       ! instance number
     character(len=8)           :: c_npes             ! number of pes
     integer :: nsrest                                ! clm restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
@@ -115,6 +115,8 @@ contains
     type(bounds_type) :: bounds                      ! bounds
     character(len=32), parameter :: sub = 'lnd_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+    integer :: spin
     !-----------------------------------------------------------------------
 
     ! Set cdata data
@@ -126,16 +128,21 @@ contains
 
     call clm_cpl_indices_set()
 
-    ! Initialize clm MPI communicator 
+    ! Initialize clm MPI communicator
 
     call spmd_init( mpicom_lnd, LNDID )
+    call acc_initialization()
 
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
        call memmon_dump_fort('memmon.out','lnd_init_mct:start::',lbnum)
     endif
-#endif                      
+#endif
+  !   spin = 1
+  !  do while (0 < spin)
+  !    spin = spin + 0
+  !  end do
 
     inst_name   = seq_comm_name(LNDID)
     inst_index  = seq_comm_inst(LNDID)
@@ -144,6 +151,7 @@ contains
     ! Initialize io log unit
 
     call shr_file_getLogUnit (shrlogunit)
+
     if (masterproc) then
        inquire(file='lnd_modelio.nml'//trim(inst_suffix),exist=exists)
        if (exists) then
@@ -157,7 +165,7 @@ contains
 
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (iulog)
-    
+
     ! Identify SMP nodes and process/SMP mapping for this instance
     ! (Assume that processor names are SMP node names on SMP clusters.)
     write(c_inst_index,'(i8)') inst_index
@@ -201,13 +209,13 @@ contains
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
 
-    ! Consistency check on namelist filename	
+    ! Consistency check on namelist filename
 
     call control_setNL("lnd_in"//trim(inst_suffix))
 
     ! Initialize clm
-    ! initialize1 reads namelist, grid and surface data (need this to initialize gsmap) 
-    ! initialize2 performs rest of initialization	
+    ! initialize1 reads namelist, grid and surface data (need this to initialize gsmap)
+    ! initialize2 performs rest of initialization
 
     call seq_timemgr_EClockGetData(EClock,                               &
                                    start_ymd=start_ymd,                  &
@@ -265,7 +273,7 @@ contains
 
     call get_proc_bounds( bounds )
 
-    call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd ) 	
+    call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd )
     lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
@@ -295,9 +303,9 @@ contains
        call endrun( sub//' ERROR: time out of sync' )
     end if
 
-    ! Create land export state 
+    ! Create land export state
 
-    if (atm_present) then 
+    if (atm_present) then
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
     endif
 
@@ -311,7 +319,7 @@ contains
     call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
     call set_nextsw_cday(nextsw_cday)
 
-    if (.not. atm_present) then 
+    if (.not. atm_present) then
       !Calculate next radiation calendar day (since atm model did not run to set
       !this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
@@ -436,14 +444,14 @@ contains
     dtime = get_step_size()
 
     call seq_infodata_GetData(infodata, atm_present=atm_present)
-    if (.not. atm_present) then 
+    if (.not. atm_present) then
       !Calcualte next radiation calendar day (since atm model did not run to set this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
       nstep = get_nstep()
-      nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8 
+      nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8
       call set_nextsw_cday( nextsw_cday )
     end if
- 
+
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend_sync = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr_sync = seq_timemgr_RestartAlarmIsOn( EClock )
@@ -451,7 +459,7 @@ contains
     ! Map MCT to land data type
     ! Perform downscaling if appropriate
 
-    
+
     ! Map to clm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
@@ -482,11 +490,11 @@ contains
        nstep = get_nstep()
        caldayp1 = get_curr_calday(offset=dtime)
        if (nstep == 0) then
-	  doalb = .false. 	
-       else if (nstep == 1) then 
-          doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8) 
+	        doalb = .false.
+       else if (nstep == 1) then
+          doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8)
        else
-          doalb = (nextsw_cday >= -0.5_r8) 
+          doalb = (nextsw_cday >= -0.5_r8)
        end if
        call update_rad_dtime(doalb)
 
@@ -497,8 +505,7 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
-       ! Run clm 
-
+       ! Run clm
        call t_barrierf('sync_clm_run1', mpicom)
        call t_startf ('clm_run')
        call t_startf ('shr_orb_decl')
@@ -511,14 +518,14 @@ contains
 
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
 
-#ifndef CPL_BYPASS       
+#ifndef CPL_BYPASS
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
 #endif
 
        ! Advance clm time step
-       
+
        call t_startf ('lc_clm2_adv_timestep')
        call advance_timestep()
        call t_stopf ('lc_clm2_adv_timestep')
@@ -536,12 +543,12 @@ contains
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
        call endrun( sub//":: CLM clock not in sync with Master Sync clock" )
     end if
-    
+
     ! Reset shr logging to my original values
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-  
+
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
@@ -609,7 +616,7 @@ contains
     ! Build the land grid numbering for MCT
     ! NOTE:  Numbering scheme is: West to East and South to North
     ! starting at south pole.  Should be the same as what's used in SCRIP
-    
+
     allocate(gindex(bounds%begg:bounds%endg),stat=ier)
 
     ! number the local grid
@@ -641,7 +648,7 @@ contains
     use mct_mod     , only: mct_gGrid_importRAttr, mct_gGrid_init, mct_gsMap_orderedPoints
     use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
     !
-    ! !ARGUMENTS: 
+    ! !ARGUMENTS:
     type(bounds_type), intent(in)  :: bounds  ! bounds
     integer        , intent(in)    :: lsz     ! land model domain data size
     type(mct_gsMap), intent(inout) :: gsMap_l ! Output land model MCT GS map
@@ -656,7 +663,7 @@ contains
     ! Initialize mct domain type
     ! lat/lon in degrees,  area in radians^2, mask is 1 (land), 0 (non-land)
     ! Note that in addition land carries around landfrac for the purposes of domain checking
-    ! 
+    !
     call mct_gGrid_init( GGrid=dom_l, CoordChars=trim(seq_flds_dom_coord), &
        OtherChars=trim(seq_flds_dom_other), lsize=lsz )
     !
@@ -672,12 +679,12 @@ contains
     ! Determine domain (numbering scheme is: West to East and South to North to South pole)
     ! Initialize attribute vector with special value
     !
-    data(:) = -9999.0_R8 
+    data(:) = -9999.0_R8
     call mct_gGrid_importRAttr(dom_l,"lat"  ,data,lsz)
     call mct_gGrid_importRAttr(dom_l,"lon"  ,data,lsz)
     call mct_gGrid_importRAttr(dom_l,"area" ,data,lsz)
     call mct_gGrid_importRAttr(dom_l,"aream",data,lsz)
-    data(:) = 0.0_R8     
+    data(:) = 0.0_R8
     call mct_gGrid_importRAttr(dom_l,"mask" ,data,lsz)
     !
     ! Fill in correct values for domain components
@@ -717,5 +724,22 @@ contains
     deallocate(idata)
 
   end subroutine lnd_domain_mct
+
+
+        subroutine acc_initialization()
+                use openacc
+                use spmdMod,  only : iam
+
+                integer :: mygpu
+                integer :: ngpus
+
+                call acc_init(acc_device_nvidia)
+
+                ngpus = acc_get_num_devices(acc_device_nvidia)
+                call acc_set_device_num(mod(iam,ngpus),acc_device_nvidia)
+
+                mygpu = acc_get_device_num(acc_device_nvidia)
+                print *, "iam, mygpu: ", iam, mygpu
+        end subroutine
 
 end module lnd_comp_mct

@@ -25,7 +25,7 @@ module dynSubgridDriverMod
   use EnergyFluxType      , only : energyflux_type
   use LakeStateType       , only : lakestate_type
   use PhotosynthesisType  , only : photosyns_type
-  use SoilHydrologyType   , only : soilhydrology_type  
+  use SoilHydrologyType   , only : soilhydrology_type
   use SoilStateType       , only : soilstate_type
   use WaterfluxType       , only : waterflux_type
   use WaterstateType      , only : waterstate_type
@@ -73,7 +73,7 @@ contains
     ! Determine initial subgrid weights for prescribed transient Patches and/or
     ! dynamic landunits. Note that these weights will be overwritten in a restart run.
     !
-    ! This should be called from initialization. 
+    ! This should be called from initialization.
     !
     ! Note that dynpft_init / dynpft_interp need to be called from outside any loops over
     ! clumps - so this routine needs to be called from outside any loops over clumps.
@@ -139,7 +139,7 @@ contains
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
     end do
     !$OMP END PARALLEL DO
-    
+
   end subroutine dynSubgrid_init
 
   !-----------------------------------------------------------------------
@@ -218,6 +218,7 @@ contains
     integer           :: nclumps      ! number of clumps on this processor
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
+    real*8 :: dt
 
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
@@ -225,7 +226,7 @@ contains
     SHR_ASSERT(bounds_proc%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     nclumps = get_proc_clumps()
-    
+
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -314,15 +315,15 @@ contains
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               grc_cs, grc_cf, col_cs, col_cf)
+               grc_cs, grc_cf, col_cs, col_cf, dt)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               nitrogenflux_vars, nitrogenstate_vars)
+               dt)
 
           call PhosphorusStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               phosphorusflux_vars, phosphorusstate_vars)
+               dt)
 
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &

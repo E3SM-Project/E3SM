@@ -5,19 +5,17 @@ module VegStructUpdateMod
   !
   ! !USES:
   use shr_kind_mod         , only: r8 => shr_kind_r8
-  use shr_sys_mod          , only : shr_sys_flush
+  !#py use shr_sys_mod          , only : shr_sys_flush
   use shr_const_mod        , only : SHR_CONST_PI
   use clm_varctl           , only : iulog
   use VegetationPropertiesType     , only : veg_vp
-  use WaterStateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
   use CNStateType          , only : cnstate_type
-  use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
   use CropType             , only : crop_type
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_cs  
+  use VegetationDataType   , only : veg_cs
   !
   implicit none
   save
@@ -31,28 +29,29 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine VegStructUpdate(num_soilp, filter_soilp, &
-       waterstate_vars, frictionvel_vars, cnstate_vars, &
-       carbonstate_vars, canopystate_vars, crop_vars)
+       frictionvel_vars, cnstate_vars, &
+       canopystate_vars, crop_vars, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, use C state variables and epc to diagnose
     ! vegetation structure (LAI, SAI, height)
     !
     ! !USES:
+      !$acc routine seq
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
-    use clm_time_manager , only : get_rad_step_size
+    !#py use clm_time_manager , only : get_rad_step_size
     use clm_varctl       , only : spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of column soil points in pft filter
     integer                , intent(in)    :: filter_soilp(:) ! patch filter for soil points
-    type(waterstate_type)  , intent(in)    :: waterstate_vars
     type(frictionvel_type) , intent(in)    :: frictionvel_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
-    type(carbonstate_type) , intent(in)    :: carbonstate_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
     type(crop_type)        , intent(inout) :: crop_vars
+    real(r8), intent(in)     :: dt         ! radiation time step (sec)
+
     !
     ! !REVISION HISTORY:
     ! 10/28/03: Created by Peter Thornton
@@ -69,7 +68,6 @@ contains
     real(r8) :: tsai_old   ! for use in Zeng tsai formula
     real(r8) :: tsai_min   ! PATCH derived minimum tsai
     real(r8) :: tsai_alpha ! monthly decay rate of tsai
-    real(r8) :: dt         ! radiation time step (sec)
 
     real(r8), parameter :: dtsmonth = 2592000._r8 ! number of seconds in a 30 day month (60x60x24x30)
     !-----------------------------------------------------------------------
@@ -83,39 +81,39 @@ contains
     !   crop    tsai_alpha,tsai_min = 0.0,0.1
     !   noncrop tsai_alpha,tsai_min = 0.5,1.0  (includes bare soil and urban)
     !-------------------------------------------------------------------------------
-    
-    associate(                                                            & 
-         ivt                =>  veg_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type                                
+
+    associate(                                                            &
+         ivt                =>  veg_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type
          woody              =>  veg_vp%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
          slatop             =>  veg_vp%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
-         dsladlai           =>  veg_vp%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]           
+         dsladlai           =>  veg_vp%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]
          z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
          displar            =>  veg_vp%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
-         dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)                          
+         dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)
 
-         snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
+         snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)
 
-         forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
+         forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]
 
-         leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
-         deadstemc          =>  veg_cs%deadstemc  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
+         leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C
+         deadstemc          =>  veg_cs%deadstemc  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C
 
-         farea_burned       =>  cnstate_vars%farea_burned_col     ,       & ! Input:  [real(r8) (:) ] F. Li and S. Levis                                 
-         harvdate           =>  crop_vars%harvdate_patch          ,       & ! Input:  [integer  (:) ] harvest date                                       
-         htmx               =>  cnstate_vars%htmx_patch           ,       & ! Output: [real(r8) (:) ] max hgt attained by a crop during yr (m)          
-         peaklai            =>  cnstate_vars%peaklai_patch        ,       & ! Output: [integer  (:) ] 1: max allowed lai; 0: not at max                  
+         farea_burned       =>  cnstate_vars%farea_burned_col     ,       & ! Input:  [real(r8) (:) ] F. Li and S. Levis
+         harvdate           =>  crop_vars%harvdate_patch          ,       & ! Input:  [integer  (:) ] harvest date
+         htmx               =>  cnstate_vars%htmx_patch           ,       & ! Output: [real(r8) (:) ] max hgt attained by a crop during yr (m)
+         peaklai            =>  cnstate_vars%peaklai_patch        ,       & ! Output: [integer  (:) ] 1: max allowed lai; 0: not at max
 
          ! *** Key Output from CN***
-         tlai               =>  canopystate_vars%tlai_patch       ,       & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow      
-         tsai               =>  canopystate_vars%tsai_patch       ,       & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow      
-         htop               =>  canopystate_vars%htop_patch       ,       & ! Output: [real(r8) (:) ] canopy top (m)                                     
-         hbot               =>  canopystate_vars%hbot_patch       ,       & ! Output: [real(r8) (:) ] canopy bottom (m)                                  
-         elai               =>  canopystate_vars%elai_patch       ,       & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow    
-         esai               =>  canopystate_vars%esai_patch       ,       & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow    
-         frac_veg_nosno_alb =>  canopystate_vars%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] frac of vegetation not covered by snow [-]         
+         tlai               =>  canopystate_vars%tlai_patch       ,       & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow
+         tsai               =>  canopystate_vars%tsai_patch       ,       & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow
+         htop               =>  canopystate_vars%htop_patch       ,       & ! Output: [real(r8) (:) ] canopy top (m)
+         hbot               =>  canopystate_vars%hbot_patch       ,       & ! Output: [real(r8) (:) ] canopy bottom (m)
+         elai               =>  canopystate_vars%elai_patch       ,       & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
+         esai               =>  canopystate_vars%esai_patch       ,       & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow
+         frac_veg_nosno_alb =>  canopystate_vars%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] frac of vegetation not covered by snow [-]
          )
 
-      dt = real( get_rad_step_size(), r8 )
+      !#py dt = real( get_rad_step_size(), r8 )
 
       ! constant allometric parameters
       taper = 200._r8
@@ -136,7 +134,7 @@ contains
             tsai_old = tsai(p) ! n-1 value
 
             ! update the leaf area index based on leafC and SLA
-            ! Eq 3 from Thornton and Zimmerman, 2007, J Clim, 20, 3902-3923. 
+            ! Eq 3 from Thornton and Zimmerman, 2007, J Clim, 20, 3902-3923.
             if (dsladlai(ivt(p)) > 0._r8) then
                tlai(p) = (slatop(ivt(p))*(exp(leafc(p)*dsladlai(ivt(p))) - 1._r8))/dsladlai(ivt(p))
             else
@@ -166,7 +164,7 @@ contains
 
                ! trees and shrubs
 
-               ! if shrubs have a squat taper 
+               ! if shrubs have a squat taper
                if (ivt(p) >= nbrdlf_evr_shrub .and. ivt(p) <= nbrdlf_dcd_brl_shrub) then
                   taper = 10._r8
                   ! otherwise have a tall taper
@@ -176,7 +174,7 @@ contains
 
                ! trees and shrubs for now have a very simple allometry, with hard-wired
                ! stem taper (height:radius) and hard-wired stocking density (#individuals/area)
-               if (spinup_state >= 1) then 
+               if (spinup_state >= 1) then
                  htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper * taper)/ &
                       (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
                else
@@ -246,7 +244,7 @@ contains
 
          end if
 
-         ! adjust lai and sai for burying by snow. 
+         ! adjust lai and sai for burying by snow.
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007.
          if (ivt(p) > noveg .and. ivt(p) <= nbrdlf_dcd_brl_shrub ) then
@@ -269,7 +267,7 @@ contains
 
       end do
 
-    end associate 
+    end associate
 
  end subroutine VegStructUpdate
 

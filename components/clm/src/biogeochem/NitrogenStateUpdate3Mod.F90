@@ -8,7 +8,7 @@ module NitrogenStateUpdate3Mod
   ! !USES:
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use clm_varpar          , only: nlevdecomp, ndecomp_pools
-  use clm_time_manager    , only : get_step_size
+  !#py use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use clm_varctl          , only : use_erosion, ero_ccycle
@@ -31,8 +31,7 @@ module NitrogenStateUpdate3Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       nitrogenflux_vars, nitrogenstate_vars)
+  subroutine NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic nitrogen state
@@ -41,35 +40,31 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability.
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    real(r8)                  , intent(in)   :: dt         ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
-    real(r8):: dt         ! radiation time step (seconds)
     !-----------------------------------------------------------------------
-
-    associate(                      & 
-         nf => nitrogenflux_vars  , &
-         ns => nitrogenstate_vars   &
-         )
-
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       if (.not. is_active_betr_bgc) then
          do j = 1, nlevdecomp
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               
+
                if (.not. use_nitrif_denitrif) then
                   ! mineral N loss due to leaching
                   col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_leached_vr(c,j) * dt
@@ -77,13 +72,13 @@ contains
                   ! mineral N loss due to leaching and runoff
                   col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
                        ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
-                  
+
                   col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
-                  if (use_pflotran .and. pf_cmode) then 
+                  if (use_pflotran .and. pf_cmode) then
                         col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
                   end if
                end if
-               
+
                if (.not.(use_pflotran .and. pf_cmode)) then
                    ! column level nitrogen fluxes from fire
                    ! pft-level wood to column-level CWD (uncombusted wood)
@@ -100,7 +95,7 @@ contains
                end if !(.not.(use_pflotran .and. pf_cmode))
             end do ! end of column loop
          end do
-         
+
          ! litter and CWD losses to fire
          do l = 1, ndecomp_pools
             do j = 1, nlevdecomp
@@ -128,11 +123,11 @@ contains
          end do
       end if
 
-      ! patch-level nitrogen fluxes 
-      
+      ! patch-level nitrogen fluxes
+
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         
+
          !from fire displayed pools
          veg_ns%leafn(p)              =  veg_ns%leafn(p)      - veg_nf%m_leafn_to_fire(p)      * dt
          veg_ns%frootn(p)             =  veg_ns%frootn(p)     - veg_nf%m_frootn_to_fire(p)     * dt
@@ -184,9 +179,9 @@ contains
          veg_ns%retransn(p)           =  veg_ns%retransn(p) - veg_nf%m_retransn_to_litter_fire(p) * dt
          veg_ns%npool(p)              =  veg_ns%npool(p)    - veg_nf%m_npool_to_fire(p)           * dt
          veg_ns%npool(p)              =  veg_ns%npool(p)    - veg_nf%m_npool_to_litter_fire(p)    * dt
+
       end do
 
-    end associate 
 
   end subroutine NitrogenStateUpdate3
 
