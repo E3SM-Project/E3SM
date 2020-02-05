@@ -49,7 +49,7 @@ nlines=`cat itag.tmp | wc -l`
 echo $nlines
 
 # Run post to process all output files one by one
-lst=`find ./${dyn_prefix}f*.nemsio  -printf "%f\n"`
+lst=`find ./${dyn_prefix}f*.$file_ext  -printf "%f\n"`
 for f in $lst
 do
   # Query time before starting post
@@ -57,7 +57,7 @@ do
 
   # Query time step and create new date for cycle
   time_step=`echo $f | tr -d "${dyn_prefix}f"`
-  time_step=`echo $time_step | tr -d ".nemsio"`
+  time_step=`echo $time_step | tr -d ".$file_ext"`
   time_step_num=`expr $time_step + 0`
   date_str_cycle=`date -d "$date_str $time_step_num hours" +%Y-%m-%d_%H:%M:%S`
 
