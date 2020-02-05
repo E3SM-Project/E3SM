@@ -499,15 +499,15 @@ struct P3UpdatePrognosticLiqData
   Real th, qv, qc, nc, qr, nr;
 };
 
-  void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
+void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
 
-  extern "C"{
+extern "C"{
 
-    void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
-				     Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
-				     Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
-				     Real* qc, Real* nc, Real* qr, Real* nr);
-  }
+void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
+Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+Real* qc, Real* nc, Real* qr, Real* nr);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff

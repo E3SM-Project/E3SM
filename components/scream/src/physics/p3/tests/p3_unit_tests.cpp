@@ -647,11 +647,11 @@ TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_bfb();
 }
 
-  TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
+TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
 }
 
-  TEST_CASE("p3_update_prognostic_liquid_test", "[p3_update_prognostic_liquid_test]"){
+TEST_CASE("p3_update_prognostic_liquid_test", "[p3_update_prognostic_liquid_test]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
 }
 

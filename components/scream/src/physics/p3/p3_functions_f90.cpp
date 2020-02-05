@@ -78,8 +78,6 @@ void update_prognostic_liquid_c(
   Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
 
-
-
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
@@ -193,7 +191,6 @@ void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
 			      d.inv_rho, d.exner, d.xxlv, d.dt, &d.th, &d.qv,
 			      &d.qc, &d.nc, &d.qr, &d.nr);
   }
-
 
 CalcUpwindData::CalcUpwindData(
   Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
@@ -755,7 +752,6 @@ void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncau
   *qr_    = t_h(4);
   *nr_    = t_h(5);
 }
-
 
 template <int N, typename T>
 Kokkos::Array<T*, N> ptr_to_arr(T** data)
