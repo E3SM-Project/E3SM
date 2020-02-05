@@ -184,7 +184,7 @@ class SystemTestsCommon(object):
                 overall_status = self._test_status.get_overall_test_status(ignore_namelists=True)
                 if overall_status != TEST_PASS_STATUS:
                     srcroot = self._case.get_value("CIMEROOT")
-                    worked_before, last_pass, last_fail = \
+                    worked_before, last_pass, last_fail_transition = \
                         get_test_success(baseline_root, srcroot, self._casebaseid)
 
                     if worked_before:
@@ -196,9 +196,9 @@ class SystemTestsCommon(object):
                             else:
                                 logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
                     else:
-                        if last_pass is not None and last_fail is not None:
-                            # commits between last_pass and last_fail broke things
-                            stat, out, err = run_cmd("git rev-list --first-parent {}..{}".format(last_pass, last_fail), from_dir=srcroot)
+                        if last_pass is not None and last_fail_transition is not None:
+                            # commits between last_pass and last_fail_transition broke things
+                            stat, out, err = run_cmd("git rev-list --first-parent {}..{}".format(last_pass, last_fail_transition), from_dir=srcroot)
                             if stat == 0:
                                 append_testlog("OLD FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
                             else:
