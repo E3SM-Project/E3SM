@@ -531,6 +531,32 @@ void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 }
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3UpdatePrognosticIceData
+{
+  // Inputs
+  Real qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt,
+    nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xxls, xlf;
+  bool log_predictNc, log_wetgrowth;
+  Real dt, nmltratio, rhorime_c;
+
+  // In/outs
+  Real th, qv, qitot, nitot, qirim, birim, qc, nc, qr, nr;
+};
+
+void update_prognostic_ice(P3UpdatePrognosticIceData& d);
+
+extern "C"{
+
+void update_prognostic_ice_f( Real qcheti,Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
+Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr, Real qimlt, Real nimlt, Real qisub,
+Real qidep, Real qinuc, Real ninuc, Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
+bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio, Real rhorime_c, Real* th, Real* qv,
+Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
+
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff

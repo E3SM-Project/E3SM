@@ -5,7 +5,7 @@ module interp_mod
   use interpolate_mod,     only: interpdata_t
   use interpolate_mod,     only: interp_lat => lat, interp_lon => lon
   use interpolate_mod,     only: interp_gweight => gweight
-  use dyn_grid,            only: elem
+  use dyn_grid,            only: elem,fv_nphys
   use spmd_utils,          only: masterproc, iam, npes
   use cam_history_support, only: fillvalue
   use hybrid_mod,          only: hybrid_t, hybrid_create
@@ -74,6 +74,11 @@ CONTAINS
           write(iulog,*) 'Atmopshere MPI tasks:  atm_ntasks=',npes
           write(iulog,*) 'SE dycore MPI tasks, number of elements:',par%nprocs,nelem
           call endrun('setup_history_interpolation: interpolated output not supported if atm_ntasks>dyn_npes')
+       endif
+       if (fv_nphys /= 0  ) then
+          write(iulog,*) 'Atmopshere MPI tasks:  atm_ntasks=',npes
+          write(iulog,*) 'SE dycore MPI tasks, number of elements:',par%nprocs,nelem
+          call endrun('setup_history_interpolation: interpolated output not supported with physgrid')
        endif
     endif
 

@@ -1179,7 +1179,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
+  <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -1198,7 +1198,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="cori-knl" COMPILER="intel">
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
+  <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
@@ -1477,6 +1477,9 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="melvin" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1500,6 +1503,9 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="melvin" COMPILER="intel">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1711,6 +1717,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_20190904/albany-build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -2015,7 +2024,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <append DEBUG="TRUE"> -g -traceback -fpe1 -O0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>
@@ -2041,7 +2050,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <append DEBUG="TRUE"> -g -traceback  -fpe1 -O0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>

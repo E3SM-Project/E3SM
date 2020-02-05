@@ -412,7 +412,8 @@ contains
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
 
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,110) "   min dz/w (CFL condition) = ",1/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
+          write(iulog,110) "   min dz/w (CFL condition) = ",1/max(1d-12,w_over_dz_max_local(1)),&
+               " (",nint(w_over_dz_max_local(2)),")"
        endif
 
        do q=1,qsize

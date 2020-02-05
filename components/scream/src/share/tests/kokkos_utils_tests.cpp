@@ -58,8 +58,8 @@ TEST_CASE("team_policy", "[kokkos_utils]") {
   }
 }
 
-TEST_CASE("team_utils", "[kokkos_utils]") {
-
+TEST_CASE("team_utils_omp", "[kokkos_utils]")
+{
 #ifdef KOKKOS_ENABLE_OPENMP
   using namespace scream::util;
   using namespace scream;
@@ -141,6 +141,70 @@ TEST_CASE("team_utils", "[kokkos_utils]") {
     }
   }
 #endif
+}
+
+void test_utils_large_ni(const double saturation_multiplier)
+{
+  using namespace scream::util;
+  using namespace scream;
+
+  using Device = DefaultDevice;
+  using ExeSpace = typename KokkosTypes<Device>::ExeSpace;
+  using MemberType = typename KokkosTypes<Device>::MemberType;
+
+  const int nk = 128;
+  const Real overprov_factor = 1.5;
+  const auto temp_policy = ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  TeamUtils<ExeSpace> tu_temp(temp_policy);
+  const int num_conc = tu_temp.get_max_concurrent_threads() / temp_policy.team_size();
+
+  int ni = num_conc*saturation_multiplier;
+  if (ni == 0) ni = 1;
+  const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
+  TeamUtils<ExeSpace> tu(p, overprov_factor);
+
+  REQUIRE(p.league_size() == ni);
+  if (saturation_multiplier <= 1.0) {
+    REQUIRE(tu.get_num_ws_slots() == ni);
+  }
+  else if (!OnGpu<ExeSpace>::value) {
+    REQUIRE(tu.get_num_ws_slots() == num_conc);
+  }
+  else {
+    REQUIRE(tu.get_num_ws_slots() == num_conc*overprov_factor);
+  }
+
+  int max_workspace_idx = 0;
+  typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", tu.get_num_ws_slots());
+  Kokkos::parallel_reduce("unique_token_check", p, KOKKOS_LAMBDA(MemberType team_member, int& max_ws_idx) {
+    const int wi = tu.get_workspace_idx(team_member);
+
+    if (wi > max_ws_idx) { max_ws_idx = wi; }
+
+    Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
+      int volatile* const data = &test_data(wi);
+      *data += 1;
+    });
+
+    tu.release_workspace_idx(team_member, wi);
+  }, Kokkos::Max<int>(max_workspace_idx));
+
+  const auto test_data_h = Kokkos::create_mirror_view(test_data);
+  Kokkos::deep_copy(test_data_h, test_data);
+
+  int sum = 0;
+  for(int i = 0; i < tu.get_num_ws_slots(); ++i) {
+    sum += test_data_h(i);
+  }
+
+  REQUIRE(sum == ni);
+}
+
+TEST_CASE("team_utils_large_ni", "[kokkos_utils]")
+{
+  test_utils_large_ni(10);
+  test_utils_large_ni(1);
+  test_utils_large_ni(.5);
 }
 
 } // anonymous namespace

@@ -1400,6 +1400,7 @@
     </desc>
     <values>
       <value>$EPS_AGRID</value>
+      <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
     </values>
   </entry>
 

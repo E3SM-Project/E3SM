@@ -8,7 +8,7 @@ foreach(ITEM IN LISTS SSOBJS)
 endforeach()
 
 if (compile_threaded)
-  e3sm_add_flags("share/util/shr_reprosum_mod.F90" "-qsmp=noauto:noomp")
+  e3sm_add_flags("${CIMESRC_PATH}/share/util/shr_reprosum_mod.F90" "-qsmp=noauto:noomp")
 endif()
 
 # These routines benefit from -qnostrict without violating the bfb test

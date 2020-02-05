@@ -21,6 +21,18 @@ def buildnml(case, caseroot, compname):
 ###############################################################################
     expect(compname == "scream", compname)
 
+    # Copy data inputs to a place where they are convenient to find the run
+    # area.
+    rundir = case.get_value("RUNDIR")
+    target = os.path.join(rundir, "data")
+    src    = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+
+    if not os.path.isdir(target):
+        os.mkdir(target)
+
+    for item in os.listdir(src):
+        safe_copy(os.path.join(src, item), target)
+
 ###############################################################################
 def _main_func():
 ###############################################################################

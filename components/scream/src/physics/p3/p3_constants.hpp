@@ -35,6 +35,9 @@ struct Constants
   static constexpr bool   masterproc  = true;
   static constexpr Scalar RHOW        = RhoH2O;
   static constexpr Scalar INV_RHOW    = 1.0/RHOW;
+  static constexpr Scalar RHO_RIMEMIN =  50.0;  //Min limit for rime density [kg m-3]
+  static constexpr Scalar RHO_RIMEMAX = 900.0;  //Max limit for rime density [kg m-3]
+  static constexpr Scalar INV_RHO_RIMEMAX  =  1.0/RHO_RIMEMAX; // Inverse for limits for rime density [kg m-3]
   static constexpr Scalar THIRD       = 1.0/3.0;
   static constexpr Scalar SXTH        = 1.0/6.0;
   static constexpr Scalar PIOV3       = Pi*THIRD;

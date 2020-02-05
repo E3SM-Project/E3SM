@@ -1,7 +1,7 @@
 #ifndef INCLUDE_SCREAM_KOKKOS_META
 #define INCLUDE_SCREAM_KOKKOS_META
 
-#include <Kokkos_Core.hpp>
+#include "share/scream_kokkos.hpp"
 
 namespace scream {
 namespace ko {

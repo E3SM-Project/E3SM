@@ -43,7 +43,7 @@ struct Functions
     };
 
     static constexpr ScalarT lookup_table_1a_dum1_c =  4.135985029041767e+00; // 1.0/(0.1*log10(261.7))
-    static constexpr const char* p3_lookup_base = "p3_lookup_table_1.dat-v";
+    static constexpr const char* p3_lookup_base = "./data/p3_lookup_table_1.dat-v";
     static constexpr const char* p3_version = "4"; // TODO: Change this so that the table version and table path is a runtime option.
   };
 
@@ -247,7 +247,8 @@ struct Functions
     const view_dnu_table& dnu,
     const MemberType& team,
     const Workspace& workspace,
-    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt, const bool& log_predictNc,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const bool& log_predictNc,
     const uview_1d<Spack>& qc,
     const uview_1d<Spack>& nc,
     const uview_1d<Spack>& nc_incld,
@@ -378,6 +379,22 @@ struct Functions
     const Smask& qr_gt_small, const view_2d_table& vn_table, const view_2d_table& vm_table,
     const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, Spack& nr,
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr);
+
+  //---------------------------------------------------------------------------------
+  // update prognostic microphysics and thermodynamics variables
+  //---------------------------------------------------------------------------------
+  //-- ice-phase dependent processes:
+  KOKKOS_FUNCTION
+  static void update_prognostic_ice(const Spack& qcheti, const Spack& qccol,
+    const Spack& qcshd,  const Spack& nccol,  const Spack& ncheti, const Spack& ncshdc,
+    const Spack& qrcol,  const Spack& nrcol,  const Spack& qrheti, const Spack& nrheti,
+    const Spack& nrshdr, const Spack& qimlt,  const Spack& nimlt,  const Spack& qisub,
+    const Spack& qidep,  const Spack& qinuc,  const Spack& ninuc,  const Spack& nislf,
+    const Spack& nisub,  const Spack& qiberg, const Spack& exner,  const Spack& xxls,
+    const Spack& xlf,    const bool log_predictNc, const bool log_wetgrowth, const Scalar dt,
+    const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
+    Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
+    Spack& nr);
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -406,6 +423,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
+# include "p3_functions_update_prognostics_impl.hpp"
 #endif
 
 #endif
