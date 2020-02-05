@@ -5,12 +5,12 @@ module clm_interface_bgcType
 ! update: 9/16/2016, 2/2/2017, May-2017, June-2017
 !=================================================================================================
   ! USES:
-  use shr_log_mod           , only : errMsg => shr_log_errMsg
+  !use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
-  use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
+  !use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
 
   implicit none
-!
+
   private
 
   type, public :: clm_interface_bgc_datatype
@@ -37,7 +37,7 @@ module clm_interface_bgcType
 
      ! cnstate_vars:
      real(r8) , pointer :: rf_decomp_cascade_col                    (:,:,:) ! col respired fraction in decomposition step (frac)
-     real(r8) , pointer :: pathfrac_decomp_cascade_col              (:,:,:) ! col what fraction of C leaving a given pool passes through a given 
+     real(r8) , pointer :: pathfrac_decomp_cascade_col              (:,:,:) ! col what fraction of C leaving a given pool passes through a given
 
      ! carbonstate_vars:
      real(r8), pointer :: decomp_cpools_vr_col                      (:,:,:) ! col (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
@@ -104,14 +104,14 @@ module clm_interface_bgcType
      real(r8), pointer :: actual_immob_p_vr_col                     (:,:)   ! col vertically-resolved actual P immobilization (gP/m3/s) at each level
      real(r8), pointer :: sminp_to_plant_vr_col                     (:,:)   ! col vertically-resolved plant uptake of soil mineral P (gP/m3/s)
      real(r8), pointer :: supplement_to_sminp_vr_col                (:,:)   ! col vertically-resolved supplemental P supply (gP/m3/s)
-     
+
      real(r8), pointer :: gross_pmin_vr_col                         (:,:)   ! col vertically-resolved gross rate of P mineralization (gP/m3/s)
      real(r8), pointer :: net_pmin_vr_col                           (:,:)   ! col vertically-resolved net rate of P mineralization (gP/m3/s)
 
      real(r8), pointer :: potential_immob_p_col                     (:)     ! col vert-int (diagnostic) potential P immobilization (gP/m2/s)
      real(r8), pointer :: actual_immob_p_col                        (:)     ! col vert-int (diagnostic) actual P immobilization (gP/m2/s)
      real(r8), pointer :: sminp_to_plant_col                        (:)     ! col vert-int (diagnostic) plant uptake of soil mineral P (gP/m2/s)
-     
+
      ! nitrification / denitrification flux:
      real(r8), pointer :: f_nit_vr_col                              (:,:)   ! col (gN/m3/s) soil nitrification flux
      real(r8), pointer :: f_denit_vr_col                            (:,:)   ! col (gN/m3/s) soil denitrification flux
@@ -131,7 +131,7 @@ module clm_interface_bgcType
 
      ! gases
      real(r8), pointer :: hr_vr_col                                 (:,:)   ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-     
+
      real(r8), pointer :: f_co2_soil_vr_col                         (:,:)   ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
      real(r8), pointer :: f_n2o_soil_vr_col                         (:,:)   ! col flux of N2o from soil-N processes [gN/m^3/s]
      real(r8), pointer :: f_n2_soil_vr_col                          (:,:)   ! col flux of N2 from soil-N processes [gN/m^3/s]
@@ -158,7 +158,7 @@ module clm_interface_bgcType
      real(r8), pointer :: decomp_k_pools                            (:)     ! rate constant for each decomposition pool (1./sec)
      real(r8), pointer :: sitefactor_kd_vr_col                      (:,:)   ! a site factor for adjusting rate constant of all decomposition pools (-) (c,j)
      real(r8), pointer :: adfactor_kd_pools                         (:)     ! a speed-up factor for adjusting rate constant of individual decomposition pool (-) (k)
-     
+
      ! bgc rates/fluxes (previous time-step) to nh4 / no3
      real(r8), pointer :: externaln_to_nh4_col                      (:,:)   ! col (gN/m3/s) net N fluxes to nh4 pool: deposition + fertilization + supplement + nfix + soyfixn
      real(r8), pointer :: externaln_to_no3_col                      (:,:)   ! col (gN/m3/s) net N fluxes to no3 pool: deposition + fertilization + supplement
@@ -205,7 +205,7 @@ module clm_interface_bgcType
   end type clm_interface_bgc_datatype
 !-------------------------------------------------------------------------------------------------
 
-  
+
 contains
 
 
@@ -246,24 +246,24 @@ contains
     allocate(this%decomp_pool_name      (1:ndecomp_pools))                  ; this%decomp_pool_name         (:)   = ''
     allocate(this%floating_cn_ratio     (1:ndecomp_pools))                  ; this%floating_cn_ratio        (:)   = .false.
     allocate(this%floating_cp_ratio     (1:ndecomp_pools))                  ; this%floating_cp_ratio        (:)   = .false.
-    allocate(this%initial_cn_ratio      (0:ndecomp_pools))                  ; this%initial_cn_ratio         (:)   = nan
-    allocate(this%initial_cp_ratio      (0:ndecomp_pools))                  ; this%initial_cp_ratio         (:)   = nan
+    allocate(this%initial_cn_ratio      (0:ndecomp_pools))                  ; this%initial_cn_ratio         (:)   = spval
+    allocate(this%initial_cp_ratio      (0:ndecomp_pools))                  ; this%initial_cp_ratio         (:)   = spval
 
     ! ch4
-    allocate(this%finundated_col                (begc:endc))                ; this%finundated_col               (:)   = nan
-    allocate(this%o2stress_unsat_col            (begc:endc,1:nlevgrnd))     ; this%o2stress_unsat_col           (:,:) = nan
-    allocate(this%o2stress_sat_col              (begc:endc,1:nlevgrnd))     ; this%o2stress_sat_col             (:,:) = nan
-    allocate(this%conc_o2_sat_col               (begc:endc,1:nlevgrnd))     ; this%conc_o2_sat_col              (:,:) = nan
-    allocate(this%conc_o2_unsat_col             (begc:endc,1:nlevgrnd))     ; this%conc_o2_unsat_col            (:,:) = nan
-    allocate(this%o2_decomp_depth_sat_col       (begc:endc,1:nlevgrnd))     ; this%o2_decomp_depth_sat_col      (:,:) = nan
-    allocate(this%o2_decomp_depth_unsat_col     (begc:endc,1:nlevgrnd))     ; this%o2_decomp_depth_unsat_col    (:,:) = nan
+    allocate(this%finundated_col                (begc:endc))                ; this%finundated_col               (:)   = spval
+    allocate(this%o2stress_unsat_col            (begc:endc,1:nlevgrnd))     ; this%o2stress_unsat_col           (:,:) = spval
+    allocate(this%o2stress_sat_col              (begc:endc,1:nlevgrnd))     ; this%o2stress_sat_col             (:,:) = spval
+    allocate(this%conc_o2_sat_col               (begc:endc,1:nlevgrnd))     ; this%conc_o2_sat_col              (:,:) = spval
+    allocate(this%conc_o2_unsat_col             (begc:endc,1:nlevgrnd))     ; this%conc_o2_unsat_col            (:,:) = spval
+    allocate(this%o2_decomp_depth_sat_col       (begc:endc,1:nlevgrnd))     ; this%o2_decomp_depth_sat_col      (:,:) = spval
+    allocate(this%o2_decomp_depth_unsat_col     (begc:endc,1:nlevgrnd))     ; this%o2_decomp_depth_unsat_col    (:,:) = spval
 
     ! cnstate_vars:
-    allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); 
-    this%rf_decomp_cascade_col(:,:,:) = nan
+    allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions));
+    this%rf_decomp_cascade_col(:,:,:) = spval
 
-    allocate(this%pathfrac_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions));     
-    this%pathfrac_decomp_cascade_col(:,:,:) = nan
+    allocate(this%pathfrac_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions));
+    this%pathfrac_decomp_cascade_col(:,:,:) = spval
 
     ! carbonstate_vars:
     allocate(this%decomp_cpools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_cpools_vr_col(:,:,:)= ival
@@ -291,11 +291,11 @@ contains
     allocate(this%plant_pdemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_pdemand_vr_col         (:,:)  = ival
 
     ! decomposition flux:
-    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               
+    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_cpools_sourcesink_col     (:,:,:) = ival
-    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              
+    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_npools_sourcesink_col     (:,:,:) = ival
-    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              
+    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_ppools_sourcesink_col     (:,:,:) = ival
 
     allocate(this%decomp_cascade_ctransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
@@ -353,8 +353,8 @@ contains
     ! nitrification / denitrification flux
     allocate(this%f_nit_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%f_nit_vr_col                 (:,:) = ival
     allocate(this%f_denit_vr_col            (begc:endc,1:nlevdecomp_full))  ; this%f_denit_vr_col               (:,:) = ival
-    allocate(this%pot_f_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%pot_f_nit_vr_col             (:,:) = nan
-    allocate(this%pot_f_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%pot_f_denit_vr_col           (:,:) = nan
+    allocate(this%pot_f_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%pot_f_nit_vr_col             (:,:) = spval
+    allocate(this%pot_f_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%pot_f_denit_vr_col           (:,:) = spval
     allocate(this%n2_n2o_ratio_denit_vr_col (begc:endc,1:nlevdecomp_full))  ; this%n2_n2o_ratio_denit_vr_col    (:,:) = ival
     allocate(this%f_n2o_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_denit_vr_col           (:,:) = ival
     allocate(this%f_n2o_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_nit_vr_col             (:,:) = ival
@@ -373,17 +373,17 @@ contains
     allocate(this%f_co2_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_co2_soil_vr_col            (:,:) = ival
     allocate(this%f_n2o_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_soil_vr_col            (:,:) = ival
     allocate(this%f_n2_soil_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2_soil_vr_col             (:,:) = ival
-    
-    allocate(this%phr_vr_col                (begc:endc,1:nlevdecomp_full))  ; this%phr_vr_col                   (:,:) = nan
-    allocate(this%fphr_col                  (begc:endc,1:nlevgrnd))         ; this%fphr_col                     (:,:) = nan
+
+    allocate(this%phr_vr_col                (begc:endc,1:nlevdecomp_full))  ; this%phr_vr_col                   (:,:) = spval
+    allocate(this%fphr_col                  (begc:endc,1:nlevgrnd))         ; this%fphr_col                     (:,:) = spval
 
     ! fpi, fpg
-    allocate(this%fpi_vr_col                (begc:endc,1:nlevdecomp_full))  ; this%fpi_vr_col                   (:,:) = nan
-    allocate(this%fpi_col                   (begc:endc))                    ; this%fpi_col                      (:)   = nan
-    allocate(this%fpg_col                   (begc:endc))                    ; this%fpg_col                      (:)   = nan
-    allocate(this%fpi_p_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%fpi_p_vr_col                 (:,:) = nan
-    allocate(this%fpi_p_col                 (begc:endc))                    ; this%fpi_p_col                    (:)   = nan
-    allocate(this%fpg_p_col                 (begc:endc))                    ; this%fpg_p_col                    (:)   = nan
+    allocate(this%fpi_vr_col                (begc:endc,1:nlevdecomp_full))  ; this%fpi_vr_col                   (:,:) = spval
+    allocate(this%fpi_col                   (begc:endc))                    ; this%fpi_col                      (:)   = spval
+    allocate(this%fpg_col                   (begc:endc))                    ; this%fpg_col                      (:)   = spval
+    allocate(this%fpi_p_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%fpi_p_vr_col                 (:,:) = spval
+    allocate(this%fpi_p_col                 (begc:endc))                    ; this%fpi_p_col                    (:)   = spval
+    allocate(this%fpg_p_col                 (begc:endc))                    ; this%fpg_p_col                    (:)   = spval
 
     !------------------------------------------------------------------------------------------
     ! pflotran variables: BEGIN
@@ -391,13 +391,13 @@ contains
     ! bgc rates/fluxes to decomposition pools
     allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%externalc_to_decomp_cpools_col(:,:,:) = spval
-    allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); 
+    allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
     this%externaln_to_decomp_npools_col(:,:,:) = spval
-    allocate(this%externalp_to_decomp_ppools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); 
+    allocate(this%externalp_to_decomp_ppools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
     this%externalp_to_decomp_ppools_col(:,:,:) = spval
-    allocate(this%decomp_k_pools                (1:ndecomp_pools))                            ; 
+    allocate(this%decomp_k_pools                (1:ndecomp_pools))                            ;
     this%decomp_k_pools                (:)     = spval
-    allocate(this%adfactor_kd_pools             (1:ndecomp_pools))                            ; 
+    allocate(this%adfactor_kd_pools             (1:ndecomp_pools))                            ;
     this%adfactor_kd_pools             (:)     = spval
 
     allocate(this%sitefactor_kd_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%sitefactor_kd_vr_col         (:,:) = spval

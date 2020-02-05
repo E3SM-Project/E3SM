@@ -1,12 +1,12 @@
 module FatesBGCDynMod
-   
+
    ! ==============================================================================================
-   ! This module creates a pathway to call the belowground biogeochemistry 
-   ! code as driven by the FATES vegetation model but bypassing the aboveground 
-   ! CN vegetation code.  It is modeled after the CNDriverMod in its call sequence and 
+   ! This module creates a pathway to call the belowground biogeochemistry
+   ! code as driven by the FATES vegetation model but bypassing the aboveground
+   ! CN vegetation code.  It is modeled after the CNDriverMod in its call sequence and
    ! functionality.
    ! ==============================================================================================
-   
+
    use shr_kind_mod       , only : r8 => shr_kind_r8
    use perf_mod           , only : t_startf, t_stopf
    use shr_log_mod        , only : errMsg => shr_log_errMsg
@@ -15,17 +15,17 @@ module FatesBGCDynMod
    use ColumnDataType     , only : col_cf, c13_col_cf, c14_col_cf
    use VegetationDataType , only : veg_cs
    use VegetationDataType , only : veg_cf, c13_veg_cf, c14_veg_cf
-   
+
    implicit none
 
    public :: FatesBGCDyn
-   
+
    character(len=*), parameter, private :: sourcefile = &
          __FILE__
-   
+
 contains
-   
-   
+
+
    !-----------------------------------------------------------------------
    subroutine FatesBGCDyn(bounds,        &
          num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -36,11 +36,11 @@ contains
          ch4_vars, nitrogenflux_vars, nitrogenstate_vars, &
          phosphorusstate_vars, phosphorusflux_vars, &
          alm_fates, crop_vars)
-      
+
       use clm_varctl             , only : use_c13, use_c14, use_fates
       use decompMod              , only : bounds_type
-      use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
-      use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
+      use clm_varpar             , only : nlevgrnd, nlevdecomp_full
+      use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
       use clm_varctl             , only : use_century_decomp
       use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
       use DecompCascadeCNMod   , only : decomp_rate_constants_cn
@@ -64,7 +64,7 @@ contains
 
     !
     ! !ARGUMENTS:
-    type(bounds_type)         , intent(in)    :: bounds  
+    type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                   , intent(in)    :: num_soilp         ! number of soil patches in filter
@@ -78,7 +78,7 @@ contains
     type(carbonstate_type)    , intent(inout) :: c14_carbonstate_vars
     type(canopystate_type)    , intent(in)    :: canopystate_vars
     type(soilstate_type)      , intent(in)    :: soilstate_vars
-    type(temperature_type)    , intent(inout) :: temperature_vars 
+    type(temperature_type)    , intent(inout) :: temperature_vars
     type(ch4_type)            , intent(in)    :: ch4_vars
     type(nitrogenflux_type)   , intent(inout) :: nitrogenflux_vars
     type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
@@ -86,7 +86,7 @@ contains
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
     type(hlm_fates_interface_type),intent(inout) :: alm_fates
     type(crop_type)          , intent(inout)  :: crop_vars
-    
+
     !
     ! !LOCAL VARIABLES:
     integer :: k,j,fc,c
@@ -94,32 +94,34 @@ contains
           1:nlevdecomp,1:ndecomp_cascade_transitions)       !potential C loss from one pool to another
     ! For methane code
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)  !sum of HR (gC/m2/s)
+    real(r8) :: dt, dayspyr
+    integer :: year, mon, day, sec
     !-----------------------------------------------------------------------
-
+    
     associate( &
-      ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)       
-      phr_vr                      => col_cf%phr_vr, &       
+      ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
+      phr_vr                      => col_cf%phr_vr, &
       ! Input:  [real(r8) (:,:,:) ]  respired fraction in decomposition step (frac)
-      rf_decomp_cascade           => cnstate_vars%rf_decomp_cascade_col, & 
+      rf_decomp_cascade           => cnstate_vars%rf_decomp_cascade_col, &
       ! Input:  [real(r8) (:,:,:) ]
       ! vertically-resolved decomposing (litter, cwd, soil) c pools (gC/m3)
-      decomp_cpools_vr            => col_cs%decomp_cpools_vr, & 
-      ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec) 
+      decomp_cpools_vr            => col_cs%decomp_cpools_vr, &
+      ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
       decomp_k                    => col_cf%decomp_k, &
-      ! Input:  [real(r8) (:,:,:) ]  what fraction of 
-      ! C leaving a given pool passes through a 
-      ! given transition (frac)  
-      pathfrac_decomp_cascade     => cnstate_vars%pathfrac_decomp_cascade_col, &  
+      ! Input:  [real(r8) (:,:,:) ]  what fraction of
+      ! C leaving a given pool passes through a
+      ! given transition (frac)
+      pathfrac_decomp_cascade     => cnstate_vars%pathfrac_decomp_cascade_col, &
       ! Output:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
-      w_scalar                    => col_cf%w_scalar, &   
+      w_scalar                    => col_cf%w_scalar, &
       ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-      decomp_cascade_hr_vr        => col_cf%decomp_cascade_hr_vr, & 
+      decomp_cascade_hr_vr        => col_cf%decomp_cascade_hr_vr, &
       ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-      decomp_cascade_ctransfer_vr => col_cf%decomp_cascade_ctransfer_vr, & 
-      ! Input:  [integer  (:)     ]  which pool is C taken from for a given 
+      decomp_cascade_ctransfer_vr => col_cf%decomp_cascade_ctransfer_vr, &
+      ! Input:  [integer  (:)     ]  which pool is C taken from for a given
       ! decomposition  step
-      cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool, & 
-      ! Input:  [integer  (:)     ]  which pool is C addedto for a given 
+      cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool, &
+      ! Input:  [integer  (:)     ]  which pool is C addedto for a given
       ! decomposition step
       cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool )
 
@@ -127,7 +129,7 @@ contains
     ! --------------------------------------------------
     ! zero the column-level C and N fluxes
     ! --------------------------------------------------
-    
+
     call t_startf('BGCZero')
 
     call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
@@ -165,14 +167,18 @@ contains
     !--------------------------------------------
     if (use_century_decomp) then
        call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
+               canopystate_vars, soilstate_vars, ch4_vars, cnstate_vars, &
+               dt, dayspyr,year, mon, day, sec)
     else
-       call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-             canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
+       call decomp_rate_constants_cn(bounds, &
+            num_soilc, filter_soilc, &
+            canopystate_vars, soilstate_vars, ch4_vars, cnstate_vars,&
+            dt, year, mon, day, sec)
+
     end if
 
     ! SoilBiogeochemPotential() in CLM
-    ! Add up potential hr for methane calculations 
+    ! Add up potential hr for methane calculations
 
     do k = 1, ndecomp_cascade_transitions
        do j = 1,nlevdecomp
@@ -200,8 +206,8 @@ contains
 
 
     !--------------------------------------------
-    ! Resolve the competition between plants and soil heterotrophs 
-    ! for available soil mineral N resource 
+    ! Resolve the competition between plants and soil heterotrophs
+    ! for available soil mineral N resource
     !--------------------------------------------
     ! will add this back in when integrtating hte nutirent cycles
 
@@ -227,7 +233,7 @@ contains
           end do
        end do
     end do
-      
+
     call t_stopf('SoilBiogeochemDecomp')
 
 
@@ -241,13 +247,13 @@ contains
     ! -------------------------------------------------------
     ! Pass in FATES boundary conditions, ie litter fluxes
     ! -------------------------------------------------------
-    
+
     call alm_fates%UpdateLitterFluxes(bounds,carbonflux_vars)
 
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
     call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, col_cs, veg_cs, col_cf, veg_cf)
+            crop_vars, col_cs, veg_cs, col_cf, veg_cf,dt)
 
     call t_stopf('BNGCUpdate1')
 
@@ -259,25 +265,18 @@ contains
 
     call SoilLittVertTransp(bounds, &
           num_soilc, filter_soilc, &
-          canopystate_vars, cnstate_vars,                               &
-          carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
-          carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,    &
-          nitrogenstate_vars, nitrogenflux_vars,&
-          phosphorusstate_vars,phosphorusflux_vars)
+          canopystate_vars, cnstate_vars, dt, year, mon, day, sec )
 
     call t_stopf('SoilBiogeochemLittVertTransp')
 
     call t_startf('BGCsum')
-    
-    ! Set controls on very low values in critical state variables 
+
+    ! Set controls on very low values in critical state variables
     ! Added some new logical filters to prevent
     ! above ground precision control calculations with use_fates, as well
     ! bypass on nitrogen calculations
-    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-          carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,       &
-          nitrogenstate_vars,phosphorusstate_vars)
+    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-    
     call FatesBGCSummary(bounds, num_soilc, filter_soilc,carbonflux_vars, carbonstate_vars)
 
     ! ----------------------------------------------
@@ -301,10 +300,10 @@ contains
     use CNCarbonFluxType       , only : carbonflux_type
     use CNCarbonStateType      , only : carbonstate_type
     use clm_varcon             , only : dzsoi_decomp, zisoi
-    use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
+    use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
     use CNDecompCascadeConType , only : decomp_cascade_con
-    
-    type(bounds_type)         , intent(in)    :: bounds  
+
+    type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     type(carbonflux_type)     , intent(inout) :: carbonflux_vars
@@ -324,7 +323,7 @@ contains
        c = filter_soilc(fc)
        col_cf%som_c_leached(c) = 0._r8
     end do
-    
+
     ! vertically integrate HR and decomposition cascade fluxes
     do k = 1, ndecomp_cascade_transitions
        do j = 1,nlevdecomp
@@ -332,15 +331,15 @@ contains
              c = filter_soilc(fc)
              col_cf%decomp_cascade_hr(c,k) = &
                   col_cf%decomp_cascade_hr(c,k) + &
-                  col_cf%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j) 
-             
+                  col_cf%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+
              col_cf%decomp_cascade_ctransfer(c,k) = &
                   col_cf%decomp_cascade_ctransfer(c,k) + &
-                  col_cf%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j) 
+                  col_cf%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j)
           end do
        end do
     end do
-    
+
     ! total heterotrophic respiration, vertically resolved (HR)
     do j = 1,nlevdecomp
        do fc = 1,num_soilc
@@ -379,8 +378,8 @@ contains
        end do
     end do
 
-    ! soil organic matter heterotrophic respiration 
-    associate(is_soil => decomp_cascade_con%is_soil) ! TRUE => pool is a soil pool  
+    ! soil organic matter heterotrophic respiration
+    associate(is_soil => decomp_cascade_con%is_soil) ! TRUE => pool is a soil pool
       do k = 1, ndecomp_cascade_transitions
          if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
             do fc = 1,num_soilc
@@ -408,11 +407,11 @@ contains
     ! total heterotrophic respiration (HR)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       
+
           col_cf%hr(c) = &
                col_cf%lithr(c) + &
                col_cf%somhr(c)
-       
+
     end do
 
 
@@ -549,7 +548,7 @@ contains
           end do
        end if
     end do
-    
+
     return
   end subroutine FatesBGCSummary
 

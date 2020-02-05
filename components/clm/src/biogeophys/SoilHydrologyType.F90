@@ -5,13 +5,13 @@ Module SoilHydrologyType
   use decompMod             , only : bounds_type
   use spmdMod               , only : masterproc, mpicom
   use abortutils            , only : endrun
-  use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
-  use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
+  use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi
+  use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace
   use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
-  use clm_varctl            , only : iulog 
+  use clm_varctl            , only : iulog
   use SharedParamsMod     , only : ParamsShareInst
-  use LandunitType          , only : lun_pp                
-  use ColumnType            , only : col_pp                
+  use LandunitType          , only : lun_pp
+  use ColumnType            , only : col_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -21,72 +21,73 @@ Module SoilHydrologyType
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: initSoilParVIC    ! Convert default CLM soil properties to VIC parameters
   private :: initCLMVICMap     ! Initialize map from VIC to CLM layers
-  private :: linear_interp     ! function for linear interperation 
+  private :: linear_interp     ! function for linear interperation
   !
   type, public :: soilhydrology_type
 
-     integer :: h2osfcflag              ! true => surface water is active (namelist)       
-     integer :: origflag                ! used to control soil hydrology properties (namelist)
-
+     integer, pointer :: h2osfcflag             ! true => surface water is active (namelist)
+     integer, pointer :: origflag               ! used to control soil hydrology properties (namelist)
+     
      ! NON-VIC
-     real(r8), pointer :: frost_table_col   (:)     ! col frost table depth                    
-     real(r8), pointer :: zwt_col           (:)     ! col water table depth
-     real(r8), pointer :: zwts_col          (:)     ! col water table depth, the shallower of the two water depths     
-     real(r8), pointer :: zwt_perched_col   (:)     ! col perched water table depth
-     real(r8), pointer :: wa_col            (:)     ! col water in the unconfined aquifer (mm)
-     real(r8), pointer :: beg_wa_grc        (:)     ! grid-level water in the unconfined aquifer at beginning of the time step (mm)
-     real(r8), pointer :: end_wa_grc        (:)     ! grid-level water in the unconfined aquifer at end of the time step (mm)
-     real(r8), pointer :: qflx_bot_col      (:)
-     real(r8), pointer :: qcharge_col       (:)     ! col aquifer recharge rate (mm/s) 
-     real(r8), pointer :: fracice_col       (:,:)   ! col fractional impermeability (-)
-     real(r8), pointer :: icefrac_col       (:,:)   ! col fraction of ice       
-     real(r8), pointer :: fcov_col          (:)     ! col fractional impermeable area
-     real(r8), pointer :: fsat_col          (:)     ! col fractional area with water table at surface
-     real(r8), pointer :: h2osfc_thresh_col (:)     ! col level at which h2osfc "percolates"   (time constant)
+     real(r8), pointer :: frost_table_col   (:)    => null() ! col frost table depth
+     real(r8), pointer :: zwt_col           (:)    => null() ! col water table depth
+     real(r8), pointer :: zwts_col          (:)    => null() ! col water table depth, the shallower of the two water depths
+     real(r8), pointer :: zwt_perched_col   (:)    => null() ! col perched water table depth
+     real(r8), pointer :: wa_col            (:)    => null() ! col water in the unconfined aquifer (mm)
+     real(r8), pointer :: beg_wa_grc        (:)    => null() ! grid-level water in the unconfined aquifer at beginning of the time step (mm)
+     real(r8), pointer :: end_wa_grc        (:)    => null() ! grid-level water in the unconfined aquifer at end of the time step (mm)
+     real(r8), pointer :: qflx_bot_col      (:)    => null()
+     real(r8), pointer :: qcharge_col       (:)    => null() ! col aquifer recharge rate (mm/s)
+     real(r8), pointer :: fracice_col       (:,:)  => null() ! col fractional impermeability (-)
+     real(r8), pointer :: icefrac_col       (:,:)  => null() ! col fraction of ice
+     real(r8), pointer :: fcov_col          (:)    => null() ! col fractional impermeable area
+     real(r8), pointer :: fsat_col          (:)    => null() ! col fractional area with water table at surface
+     real(r8), pointer :: h2osfc_thresh_col (:)    => null() ! col level at which h2osfc "percolates"   (time constant)
 
-     ! VIC 
-     real(r8), pointer :: hkdepth_col       (:)     ! col VIC decay factor (m) (time constant)                    
-     real(r8), pointer :: b_infil_col       (:)     ! col VIC b infiltration parameter (time constant)                    
-     real(r8), pointer :: ds_col            (:)     ! col VIC fracton of Dsmax where non-linear baseflow begins (time constant)                    
-     real(r8), pointer :: dsmax_col         (:)     ! col VIC max. velocity of baseflow (mm/day) (time constant)
-     real(r8), pointer :: Wsvic_col         (:)     ! col VIC fraction of maximum soil moisutre where non-liear base flow occurs (time constant)
-     real(r8), pointer :: porosity_col      (:,:)   ! col VIC porosity (1-bulk_density/soil_density)
-     real(r8), pointer :: vic_clm_fract_col (:,:,:) ! col VIC fraction of VIC layers in CLM layers 
-     real(r8), pointer :: depth_col         (:,:)   ! col VIC layer depth of upper layer  
-     real(r8), pointer :: c_param_col       (:)     ! col VIC baseflow exponent (Qb) 
-     real(r8), pointer :: expt_col          (:,:)   ! col VIC pore-size distribution related paramter(Q12) 
-     real(r8), pointer :: ksat_col          (:,:)   ! col VIC Saturated hydrologic conductivity 
-     real(r8), pointer :: phi_s_col         (:,:)   ! col VIC soil moisture dissusion parameter 
-     real(r8), pointer :: moist_col         (:,:)   ! col VIC soil moisture (kg/m2) for VIC soil layers 
-     real(r8), pointer :: moist_vol_col     (:,:)   ! col VIC volumetric soil moisture for VIC soil layers 
-     real(r8), pointer :: max_moist_col     (:,:)   ! col VIC max layer moist + ice (mm) 
-     real(r8), pointer :: max_infil_col     (:)     ! col VIC maximum infiltration rate calculated in VIC
-     real(r8), pointer :: i_0_col           (:)     ! col VIC average saturation in top soil layers 
-     real(r8), pointer :: ice_col           (:,:)   ! col VIC soil ice (kg/m2) for VIC soil layers
+     ! VIC
+     real(r8), pointer :: hkdepth_col       (:)     => null()! col VIC decay factor (m) (time constant)
+     real(r8), pointer :: b_infil_col       (:)     => null()! col VIC b infiltration parameter (time constant)
+     real(r8), pointer :: ds_col            (:)     => null()! col VIC fracton of Dsmax where non-linear baseflow begins (time constant)
+     real(r8), pointer :: dsmax_col         (:)     => null()! col VIC max. velocity of baseflow (mm/day) (time constant)
+     real(r8), pointer :: Wsvic_col         (:)     => null()! col VIC fraction of maximum soil moisutre where non-liear base flow occurs (time constant)
+     real(r8), pointer :: porosity_col      (:,:)   => null()! col VIC porosity (1-bulk_density/soil_density)
+     real(r8), pointer :: vic_clm_fract_col (:,:,:) => null()! col VIC fraction of VIC layers in CLM layers
+     real(r8), pointer :: depth_col         (:,:)   => null()! col VIC layer depth of upper layer
+     real(r8), pointer :: c_param_col       (:)     => null()! col VIC baseflow exponent (Qb)
+     real(r8), pointer :: expt_col          (:,:)   => null()! col VIC pore-size distribution related paramter(Q12)
+     real(r8), pointer :: ksat_col          (:,:)   => null()! col VIC Saturated hydrologic conductivity
+     real(r8), pointer :: phi_s_col         (:,:)   => null()! col VIC soil moisture dissusion parameter
+     real(r8), pointer :: moist_col         (:,:)   => null()! col VIC soil moisture (kg/m2) for VIC soil layers
+     real(r8), pointer :: moist_vol_col     (:,:)   => null()! col VIC volumetric soil moisture for VIC soil layers
+     real(r8), pointer :: max_moist_col     (:,:)   => null()! col VIC max layer moist + ice (mm)
+     real(r8), pointer :: max_infil_col     (:)     => null()! col VIC maximum infiltration rate calculated in VIC
+     real(r8), pointer :: i_0_col           (:)     => null()! col VIC average saturation in top soil layers
+     real(r8), pointer :: ice_col           (:,:)   => null()! col VIC soil ice (kg/m2) for VIC soil layers
 
    contains
 
      procedure, public  :: Init
      procedure, private :: ReadNL
-     procedure, private :: InitAllocate
+     procedure, public :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
      procedure, public  :: Restart
 
   end type soilhydrology_type
+
   !-----------------------------------------------------------------------
 
 contains
-  
+
   !------------------------------------------------------------------------
   subroutine Init(this, bounds, NLFilename)
 
     class(soilhydrology_type) :: this
-    type(bounds_type), intent(in)    :: bounds  
+    type(bounds_type), intent(in)    :: bounds
     character(len=*), intent(in) :: NLFilename
 
     call this%ReadNL(NLFilename)
-    call this%InitAllocate(bounds) 
+    call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
     call this%InitCold(bounds)
 
@@ -99,12 +100,12 @@ contains
     ! Initialize module data structure
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    !use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
@@ -115,41 +116,42 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+    allocate(this%h2osfcflag) ;  this%h2osfcflag = 0
+    allocate(this%origflag);     this%origflag = 0
+    allocate(this%frost_table_col   (begc:endc))                 ; this%frost_table_col   (:)     = spval
+    allocate(this%zwt_col           (begc:endc))                 ; this%zwt_col           (:)     = spval
+    allocate(this%qflx_bot_col      (begc:endc))                 ; this%qflx_bot_col      (:)     = spval
+    allocate(this%zwt_perched_col   (begc:endc))                 ; this%zwt_perched_col   (:)     = spval
+    allocate(this%zwts_col          (begc:endc))                 ; this%zwts_col          (:)     = spval
 
-    allocate(this%frost_table_col   (begc:endc))                 ; this%frost_table_col   (:)     = nan
-    allocate(this%zwt_col           (begc:endc))                 ; this%zwt_col           (:)     = nan
-    allocate(this%qflx_bot_col      (begc:endc))                 ; this%qflx_bot_col      (:)     = nan
-    allocate(this%zwt_perched_col   (begc:endc))                 ; this%zwt_perched_col   (:)     = nan
-    allocate(this%zwts_col          (begc:endc))                 ; this%zwts_col          (:)     = nan
+    allocate(this%wa_col            (begc:endc))                 ; this%wa_col            (:)     = spval
+    allocate(this%beg_wa_grc        (begg:endg))                 ; this%beg_wa_grc        (:)     = spval
+    allocate(this%end_wa_grc        (begg:endg))                 ; this%end_wa_grc        (:)     = spval
+    allocate(this%qcharge_col       (begc:endc))                 ; this%qcharge_col       (:)     = spval
+    allocate(this%fracice_col       (begc:endc,nlevgrnd))        ; this%fracice_col       (:,:)   = spval
+    allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = spval
+    allocate(this%fcov_col          (begc:endc))                 ; this%fcov_col          (:)     = spval
+    allocate(this%fsat_col          (begc:endc))                 ; this%fsat_col          (:)     = spval
+    allocate(this%h2osfc_thresh_col (begc:endc))                 ; this%h2osfc_thresh_col (:)     = spval
 
-    allocate(this%wa_col            (begc:endc))                 ; this%wa_col            (:)     = nan
-    allocate(this%beg_wa_grc        (begg:endg))                 ; this%beg_wa_grc        (:)     = nan
-    allocate(this%end_wa_grc        (begg:endg))                 ; this%end_wa_grc        (:)     = nan
-    allocate(this%qcharge_col       (begc:endc))                 ; this%qcharge_col       (:)     = nan
-    allocate(this%fracice_col       (begc:endc,nlevgrnd))        ; this%fracice_col       (:,:)   = nan
-    allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = nan
-    allocate(this%fcov_col          (begc:endc))                 ; this%fcov_col          (:)     = nan   
-    allocate(this%fsat_col          (begc:endc))                 ; this%fsat_col          (:)     = nan
-    allocate(this%h2osfc_thresh_col (begc:endc))                 ; this%h2osfc_thresh_col (:)     = nan
-
-    allocate(this%hkdepth_col       (begc:endc))                 ; this%hkdepth_col       (:)     = nan
-    allocate(this%b_infil_col       (begc:endc))                 ; this%b_infil_col       (:)     = nan
-    allocate(this%ds_col            (begc:endc))                 ; this%ds_col            (:)     = nan
-    allocate(this%dsmax_col         (begc:endc))                 ; this%dsmax_col         (:)     = nan
-    allocate(this%Wsvic_col         (begc:endc))                 ; this%Wsvic_col         (:)     = nan
-    allocate(this%depth_col         (begc:endc,nlayert))         ; this%depth_col         (:,:)   = nan
-    allocate(this%porosity_col      (begc:endc,nlayer))          ; this%porosity_col      (:,:)   = nan
-    allocate(this%vic_clm_fract_col (begc:endc,nlayer, nlevsoi)) ; this%vic_clm_fract_col (:,:,:) = nan
-    allocate(this%c_param_col       (begc:endc))                 ; this%c_param_col       (:)     = nan
-    allocate(this%expt_col          (begc:endc,nlayer))          ; this%expt_col          (:,:)   = nan
-    allocate(this%ksat_col          (begc:endc,nlayer))          ; this%ksat_col          (:,:)   = nan
-    allocate(this%phi_s_col         (begc:endc,nlayer))          ; this%phi_s_col         (:,:)   = nan
-    allocate(this%moist_col         (begc:endc,nlayert))         ; this%moist_col         (:,:)   = nan
-    allocate(this%moist_vol_col     (begc:endc,nlayert))         ; this%moist_vol_col     (:,:)   = nan
-    allocate(this%max_moist_col     (begc:endc,nlayer))          ; this%max_moist_col     (:,:)   = nan
-    allocate(this%max_infil_col     (begc:endc))                 ; this%max_infil_col     (:)     = nan
-    allocate(this%i_0_col           (begc:endc))                 ; this%i_0_col           (:)     = nan
-    allocate(this%ice_col           (begc:endc,nlayert))         ; this%ice_col           (:,:)   = nan
+    allocate(this%hkdepth_col       (begc:endc))                 ; this%hkdepth_col       (:)     = spval
+    allocate(this%b_infil_col       (begc:endc))                 ; this%b_infil_col       (:)     = spval
+    allocate(this%ds_col            (begc:endc))                 ; this%ds_col            (:)     = spval
+    allocate(this%dsmax_col         (begc:endc))                 ; this%dsmax_col         (:)     = spval
+    allocate(this%Wsvic_col         (begc:endc))                 ; this%Wsvic_col         (:)     = spval
+    allocate(this%depth_col         (begc:endc,nlayert))         ; this%depth_col         (:,:)   = spval
+    allocate(this%porosity_col      (begc:endc,nlayer))          ; this%porosity_col      (:,:)   = spval
+    allocate(this%vic_clm_fract_col (begc:endc,nlayer, nlevsoi)) ; this%vic_clm_fract_col (:,:,:) = spval
+    allocate(this%c_param_col       (begc:endc))                 ; this%c_param_col       (:)     = spval
+    allocate(this%expt_col          (begc:endc,nlayer))          ; this%expt_col          (:,:)   = spval
+    allocate(this%ksat_col          (begc:endc,nlayer))          ; this%ksat_col          (:,:)   = spval
+    allocate(this%phi_s_col         (begc:endc,nlayer))          ; this%phi_s_col         (:,:)   = spval
+    allocate(this%moist_col         (begc:endc,nlayert))         ; this%moist_col         (:,:)   = spval
+    allocate(this%moist_vol_col     (begc:endc,nlayert))         ; this%moist_vol_col     (:,:)   = spval
+    allocate(this%max_moist_col     (begc:endc,nlayer))          ; this%max_moist_col     (:,:)   = spval
+    allocate(this%max_infil_col     (begc:endc))                 ; this%max_infil_col     (:)     = spval
+    allocate(this%i_0_col           (begc:endc))                 ; this%i_0_col           (:)     = spval
+    allocate(this%ice_col           (begc:endc,nlayert))         ; this%ice_col           (:,:)   = spval
 
   end subroutine InitAllocate
 
@@ -159,12 +161,12 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varpar     , only : nlevsno, crop_prog 
+    use clm_varpar     , only : nlevsno, crop_prog
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer           :: begp, endp
@@ -217,7 +219,7 @@ contains
   subroutine InitCold(this, bounds)
     !
     ! !DESCRIPTION:
-    ! Initialize time constant variables and cold start conditions 
+    ! Initialize time constant variables and cold start conditions
     !
     ! !USES:
     use shr_const_mod   , only : shr_const_pi, SHR_CONST_TKFRZ
@@ -226,46 +228,46 @@ contains
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use clm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
-    use clm_varcon      , only : denice, denh2o, sb, bdsno 
+    use clm_varcon      , only : denice, denh2o, sb, bdsno
     use clm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
     use clm_varcon      , only : nlvic, dzvic, pc, mu, grlnd
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
     use column_varcon   , only : icol_shadewall, icol_road_perv
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use fileutils       , only : getfil
-    use organicFileMod  , only : organicrd 
+    use organicFileMod  , only : organicrd
     use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
-    type(bounds_type) , intent(in)    :: bounds                                    
+    type(bounds_type) , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer            :: p,c,j,l,g,lev,nlevs 
+    integer            :: p,c,j,l,g,lev,nlevs
     integer            :: nlevbed
-    integer            :: ivic,ivicstrt,ivicend   
+    integer            :: ivic,ivicstrt,ivicend
     real(r8)           :: maxslope, slopemax, minslope
     real(r8)           :: d, fd, dfdd, slope0,slopebeta
-    real(r8) ,pointer  :: tslope(:)  
-    logical            :: readvar 
-    type(file_desc_t)  :: ncid        
-    character(len=256) :: locfn       
+    real(r8) ,pointer  :: tslope(:)
+    logical            :: readvar
+    type(file_desc_t)  :: ncid
+    character(len=256) :: locfn
     real(r8)           :: clay,sand        ! temporaries
     real(r8)           :: om_frac          ! organic matter fraction
-    real(r8)           :: organic_max      ! organic matter (kg/m3) where soil is assumed to act like peat 
-    real(r8) ,pointer  :: b2d        (:)   ! read in - VIC b  
-    real(r8) ,pointer  :: ds2d       (:)   ! read in - VIC Ds 
-    real(r8) ,pointer  :: dsmax2d    (:)   ! read in - VIC Dsmax 
-    real(r8) ,pointer  :: ws2d       (:)   ! read in - VIC Ws 
+    real(r8)           :: organic_max      ! organic matter (kg/m3) where soil is assumed to act like peat
+    real(r8) ,pointer  :: b2d        (:)   ! read in - VIC b
+    real(r8) ,pointer  :: ds2d       (:)   ! read in - VIC Ds
+    real(r8) ,pointer  :: dsmax2d    (:)   ! read in - VIC Dsmax
+    real(r8) ,pointer  :: ws2d       (:)   ! read in - VIC Ws
     real(r8), pointer  :: sandcol    (:,:) ! column level sand fraction for calculating VIC parameters
     real(r8), pointer  :: claycol    (:,:) ! column level clay fraction for calculating VIC parameters
     real(r8), pointer  :: om_fraccol (:,:) ! column level organic matter fraction for calculating VIC parameters
-    real(r8) ,pointer  :: sand3d     (:,:) ! read in - soil texture: percent sand 
-    real(r8) ,pointer  :: clay3d     (:,:) ! read in - soil texture: percent clay 
-    real(r8) ,pointer  :: organic3d  (:,:) ! read in - organic matter: kg/m3 
-    real(r8) ,pointer  :: zisoifl    (:)   ! original soil interface depth 
-    real(r8) ,pointer  :: zsoifl     (:)   ! original soil midpoint 
-    real(r8) ,pointer  :: dzsoifl    (:)   ! original soil thickness 
+    real(r8) ,pointer  :: sand3d     (:,:) ! read in - soil texture: percent sand
+    real(r8) ,pointer  :: clay3d     (:,:) ! read in - soil texture: percent clay
+    real(r8) ,pointer  :: organic3d  (:,:) ! read in - organic matter: kg/m3
+    real(r8) ,pointer  :: zisoifl    (:)   ! original soil interface depth
+    real(r8) ,pointer  :: zsoifl     (:)   ! original soil midpoint
+    real(r8) ,pointer  :: dzsoifl    (:)   ! original soil thickness
     real(r8) ,pointer  :: fdrain     (:)   ! top-model drainage parameter
     !-----------------------------------------------------------------------
 
@@ -413,11 +415,11 @@ contains
        call ncd_pio_openfile (ncid, locfn, 0)
        call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
-          call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+          call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(__FILE__, __LINE__))
        end if
        call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
-          call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+          call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__))
        end if
        call ncd_pio_closefile(ncid)
 
@@ -457,13 +459,13 @@ contains
                       if (lev .eq. 1) then
                          clay    = clay3d(g,1)
                          sand    = sand3d(g,1)
-                         om_frac = organic3d(g,1)/organic_max 
+                         om_frac = organic3d(g,1)/organic_max
                       else if (lev <= nlevsoi) then
                          do j = 1,nlevsoifl-1
                             if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                                clay    = clay3d(g,j+1)
                                sand    = sand3d(g,j+1)
-                               om_frac = organic3d(g,j+1)/organic_max    
+                               om_frac = organic3d(g,j+1)/organic_max
                             endif
                          end do
                       else
@@ -504,7 +506,7 @@ contains
                    call initCLMVICMap(c, this)
                    call initSoilParVIC(c, claycol, sandcol, om_fraccol, this)
                 end if
-             else 
+             else
                 this%depth_col(c, 1:nlayer) = dzvic
                 this%depth_col(c, nlayer+1:nlayert) = col_pp%dz(c, nlevsoi+1:nlevgrnd)
 
@@ -534,10 +536,10 @@ contains
 
     associate(micro_sigma => col_pp%micro_sigma)
       do c = bounds%begc, bounds%endc
-         
+
          ! determine h2osfc threshold ("fill & spill" concept)
          ! set to zero for no h2osfc (w/frac_infclust =large)
-         
+
          this%h2osfc_thresh_col(c) = 0._r8
          if (micro_sigma(c) > 1.e-6_r8 .and. (this%h2osfcflag /= 0)) then
             d = 0.0
@@ -547,13 +549,13 @@ contains
                d    = d - fd/dfdd
             enddo
             this%h2osfc_thresh_col(c) = 0.5*d*(1.0_r8+shr_spfn_erf(d/(micro_sigma(c)*sqrt(2.0)))) + &
-                 micro_sigma(c)/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*micro_sigma(c)**2))         
+                 micro_sigma(c)/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*micro_sigma(c)**2))
             this%h2osfc_thresh_col(c) = 1.e3_r8 * this%h2osfc_thresh_col(c) !convert to mm from meters
          else
             this%h2osfc_thresh_col(c) = 0._r8
          endif
 
-         if (this%h2osfcflag == 0) then 
+         if (this%h2osfcflag == 0) then
             this%h2osfc_thresh_col(c) = 0._r8    ! set to zero for no h2osfc (w/frac_infclust =large)
          endif
 
@@ -569,14 +571,14 @@ contains
 
   !------------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !USES:
     use ncdio_pio  , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
-    type(bounds_type) , intent(in)    :: bounds 
+    type(bounds_type) , intent(in)    :: bounds
     type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
     character(len=*)  , intent(in)    :: flag   ! 'read' or 'write'
     !
@@ -585,7 +587,7 @@ contains
     logical :: readvar      ! determine if variable is on initial file
     !-----------------------------------------------------------------------
 
-    call restartvar(ncid=ncid, flag=flag, varname='FROST_TABLE', xtype=ncd_double,  & 
+    call restartvar(ncid=ncid, flag=flag, varname='FROST_TABLE', xtype=ncd_double,  &
          dim1name='column', &
          long_name='frost table depth', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%frost_table_col)
@@ -593,17 +595,17 @@ contains
        this%frost_table_col(bounds%begc:bounds%endc) = col_pp%zi(bounds%begc:bounds%endc,nlevsoi)
     end if
 
-    call restartvar(ncid=ncid, flag=flag, varname='WA', xtype=ncd_double,  & 
+    call restartvar(ncid=ncid, flag=flag, varname='WA', xtype=ncd_double,  &
          dim1name='column', &
          long_name='water in the unconfined aquifer', units='mm', &
          interpinic_flag='interp', readvar=readvar, data=this%wa_col)
 
-    call restartvar(ncid=ncid, flag=flag, varname='ZWT', xtype=ncd_double,  & 
+    call restartvar(ncid=ncid, flag=flag, varname='ZWT', xtype=ncd_double,  &
          dim1name='column', &
          long_name='water table depth', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%zwt_col)
 
-    call restartvar(ncid=ncid, flag=flag, varname='ZWT_PERCH', xtype=ncd_double,  & 
+    call restartvar(ncid=ncid, flag=flag, varname='ZWT_PERCH', xtype=ncd_double,  &
          dim1name='column', &
          long_name='perched water table depth', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%zwt_perched_col)
@@ -623,7 +625,7 @@ contains
     !
     ! !USES:
     use clm_varcon  , only : denh2o, denice
-    use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+    use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: c               ! column index
@@ -640,7 +642,7 @@ contains
     real(r8) :: om_csol      = 2.5_r8             ! heat capacity of peat soil *10^6 (J/K m3) (Farouki, 1986)
     real(r8) :: om_tkd       = 0.05_r8            ! thermal conductivity of dry organic soil (Farouki, 1981)
     real(r8) :: om_b         = 2.7_r8             ! Clapp Hornberger paramater for oragnic soil (Letts, 2000)
-    real(r8) :: om_expt      = 3._r8+2._r8*2.7_r8 ! soil expt for VIC        
+    real(r8) :: om_expt      = 3._r8+2._r8*2.7_r8 ! soil expt for VIC
     real(r8) :: csol_bedrock = 2.0e6_r8           ! vol. heat capacity of granite/sandstone  J/(m3 K)(Shabbir, 2000)
     real(r8) :: pc           = 0.5_r8             ! percolation threshold
     real(r8) :: pcbeta       = 0.139_r8           ! percolation exponent
@@ -656,7 +658,7 @@ contains
     integer  :: i, j                              ! indices
     !-------------------------------------------------------------------------------------------
 
-    ! soilhydrology_vars%depth_col(:,:)           Output: layer depth of upper layer(m) 
+    ! soilhydrology_vars%depth_col(:,:)           Output: layer depth of upper layer(m)
     ! soilhydrology_vars%vic_clm_fract_col(:,:,:) Output: fraction of VIC layers in CLM layers
     ! soilhydrology_vars%c_param_col(:)           Output: baseflow exponent (Qb)
     ! soilhydrology_vars%expt_col(:,:)            Output: pore-size distribution related paramter(Q12)
@@ -668,17 +670,17 @@ contains
     !  map parameters between VIC layers and CLM layers
     soilhydrology_vars%c_param_col(c) = 2._r8
 
-    ! map the CLM layers to VIC layers 
-    do i = 1, nlayer      
+    ! map the CLM layers to VIC layers
+    do i = 1, nlayer
 
        sandvic(i)    = 0._r8
-       clayvic(i)    = 0._r8   
-       om_fracvic(i) = 0._r8  
-       temp_sum_frac = 0._r8     
+       clayvic(i)    = 0._r8
+       om_fracvic(i) = 0._r8
+       temp_sum_frac = 0._r8
        do j = 1, nlevsoi
           sandvic(i)    = sandvic(i)    + sandcol(c,j)    * soilhydrology_vars%vic_clm_fract_col(c,i,j)
           clayvic(i)    = clayvic(i)    + claycol(c,j)    * soilhydrology_vars%vic_clm_fract_col(c,i,j)
-          om_fracvic(i) = om_fracvic(i) + om_fraccol(c,j) * soilhydrology_vars%vic_clm_fract_col(c,i,j) 
+          om_fracvic(i) = om_fracvic(i) + om_fraccol(c,j) * soilhydrology_vars%vic_clm_fract_col(c,i,j)
           temp_sum_frac = temp_sum_frac +                   soilhydrology_vars%vic_clm_fract_col(c,i,j)
        end do
 
@@ -687,7 +689,7 @@ contains
        clayvic(i) = clayvic(i)/temp_sum_frac
        om_fracvic(i) = om_fracvic(i)/temp_sum_frac
 
-       !make sure sand, clay and om fractions are between 0 and 100% 
+       !make sure sand, clay and om fractions are between 0 and 100%
        sandvic(i)    = min(100._r8 , sandvic(i))
        clayvic(i)    = min(100._r8 , clayvic(i))
        om_fracvic(i) = min(100._r8 , om_fracvic(i))
@@ -700,11 +702,11 @@ contains
        soilhydrology_vars%expt_col(c, i)     = 3._r8+ 2._r8*(2.91_r8 + 0.159_r8*clayvic(i))
        xksat = 0.0070556 *( 10.**(-0.884+0.0153*sandvic(i)) )
 
-       !consider organic matter, M.Huang 
+       !consider organic matter, M.Huang
        soilhydrology_vars%expt_col(c, i)    = &
-            (1._r8 - om_fracvic(i))*soilhydrology_vars%expt_col(c, i)    + om_fracvic(i)*om_expt 
+            (1._r8 - om_fracvic(i))*soilhydrology_vars%expt_col(c, i)    + om_fracvic(i)*om_expt
        soilhydrology_vars%porosity_col(c,i) = &
-            (1._r8 - om_fracvic(i))*soilhydrology_vars%porosity_col(c,i) + om_watsat*om_fracvic(i) 
+            (1._r8 - om_fracvic(i))*soilhydrology_vars%porosity_col(c,i) + om_watsat*om_fracvic(i)
 
        ! perc_frac is zero unless perf_frac greater than percolation threshold
        if (om_fracvic(i) > pc) then
@@ -743,13 +745,13 @@ contains
      !
      ! !DESCRIPTION:
      ! This subroutine calculates mapping between CLM and VIC layers
-     ! added by AWang, modified by M.Huang for CLM4 
+     ! added by AWang, modified by M.Huang for CLM4
      ! NOTE: in CLM h2osoil_liq unit is kg/m2, in VIC moist is mm
      ! h2osoi_ice is actually water equavlent ice content.
      !
      ! !USES:
      use clm_varcon  , only : denh2o, denice
-     use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+     use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd
      !
      ! !ARGUMENTS:
      integer , intent(in)  :: c
@@ -757,7 +759,7 @@ contains
      !
      ! !REVISION HISTORY:
      ! Created by Maoyi Huang
-     ! 11/13/2012, Maoyi Huang: rewrite the mapping modules in CLM4VIC 
+     ! 11/13/2012, Maoyi Huang: rewrite the mapping modules in CLM4VIC
      !
      ! !LOCAL VARIABLES
      real(r8) :: sum_frac(1:nlayer)                  ! sum of fraction for each layer
@@ -768,12 +770,12 @@ contains
      integer :: i, j, fc
      !-----------------------------------------------------------------------
 
-     associate(                                                    & 
-          dz            =>    col_pp%dz    ,                          & ! Input:  [real(r8) (:,:)   ]  layer depth (m)                       
-          zi            =>    col_pp%zi    ,                          & ! Input:  [real(r8) (:,:)   ]  interface level below a "z" level (m) 
-          z             =>    col_pp%z     ,                          & ! Input:  [real(r8) (:,:)   ]  layer thickness (m)                   
+     associate(                                                    &
+          dz            =>    col_pp%dz    ,                          & ! Input:  [real(r8) (:,:)   ]  layer depth (m)
+          zi            =>    col_pp%zi    ,                          & ! Input:  [real(r8) (:,:)   ]  interface level below a "z" level (m)
+          z             =>    col_pp%z     ,                          & ! Input:  [real(r8) (:,:)   ]  layer thickness (m)
 
-          depth         =>    soilhydrology_vars%depth_col ,       & ! Input:  [real(r8) (:,:)   ]  layer depth of VIC (m)                
+          depth         =>    soilhydrology_vars%depth_col ,       & ! Input:  [real(r8) (:,:)   ]  layer depth of VIC (m)
           vic_clm_fract =>    soilhydrology_vars%vic_clm_fract_col & ! Output: [real(r8) (:,:,:) ]  fraction of VIC layers in clm layers
           )
 
@@ -810,9 +812,9 @@ contains
              sum_frac(i) = sum_frac(i) + vic_clm_fract(c,i,j)
           end do                           ! end CLM layer calculation
           lsum = lsum + deltal(i)
-       end do                             ! end VIC layer calcultion 
+       end do                             ! end VIC layer calcultion
 
-     end associate 
+     end associate
 
    end subroutine initCLMVICMap
 
@@ -859,8 +861,8 @@ contains
 
      ! preset values
 
-     origflag = 0          
-     h2osfcflag = 1        
+     origflag = 0
+     h2osfcflag = 1
 
      if ( masterproc )then
 

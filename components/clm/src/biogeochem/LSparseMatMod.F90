@@ -3,8 +3,8 @@ module LSparseMatMod
 
   ! !USES:
   ! sparse matrix capability
-  use bshr_kind_mod , only : r8 => shr_kind_r8
-  use bshr_log_mod  , only : errMsg => shr_log_errMsg
+  use shr_kind_mod , only : r8 => shr_kind_r8
+  !#py !#py use shr_log_mod  , only : errMsg => shr_log_errMsg
   use clm_varctl    , only : iulog
 implicit none
   private
@@ -15,12 +15,15 @@ implicit none
     type(spm_list_type), pointer :: next => null()
   end type spm_list_type
 
-  type :: lom_type
-  contains
-    procedure :: calc_state_pscal
-    procedure :: calc_reaction_rscal
-    procedure :: apply_reaction_rscal
-  end type lom_type
+  !type :: lom_type
+  !contains
+  !  procedure :: calc_state_pscal
+  !  procedure :: calc_reaction_rscal
+  !  procedure :: apply_reaction_rscal
+  !end type lom_type
+  public :: calc_state_pscal
+  public :: calc_reaction_rscal
+  public :: apply_reaction_rscal
   type, public :: sparseMat_type
     real(r8), pointer :: val(:)      !nonzero val
     integer , pointer :: icol(:)     !col id for each val
@@ -141,7 +144,8 @@ contains
   !
   ! DESCRIPTION
   ! y=y+a*spm*x
-  ! with x, y being vectors, and a a scalar, and spm a sparse matrix. 
+  ! with x, y being vectors, and a a scalar, and spm a sparse matrix.
+      !$acc routine seq
   implicit none
   real(r8), intent(in) :: a
   integer , intent(in) :: nx
@@ -192,7 +196,7 @@ contains
 !---------------------------------------------------------------
 
   subroutine spm_list_insert(self, val, icol, irow, nelms)
-  ! 
+  !
   ! DESCRIPTION
   ! add a specified element to sparse matrix
   implicit none
@@ -283,16 +287,16 @@ contains
 
 
   !-------------------------------------------------------------------------------
-  subroutine calc_state_pscal(this, nprimvars, dtime, ystate, p_dt,  d_dt, pscal, lneg, errinfo)
-    !
+  subroutine calc_state_pscal(nprimvars, dtime, ystate, p_dt,  d_dt, pscal, lneg, errinfo)
+    !$acc routine seq
     ! !DESCRIPTION:
     ! calculate limiting factor from each primary state variable
     !
-    use BetrstatusType     , only : betr_status_type
-    use betr_constants     , only : betr_errmsg_len
+    !#betr_py use BetrstatusType     , only : betr_status_type
+    !#betr_py use betr_constants     , only : betr_errmsg_len
     implicit none
     ! !ARGUMENTS:
-    class(lom_type), intent(in) :: this
+    !class(lom_type), intent(in) :: this
     integer,  intent(in)  :: nprimvars
     real(r8), intent(in)  :: dtime
     real(r8), intent(in)  :: ystate(1:nprimvars)
@@ -301,7 +305,6 @@ contains
     real(r8), intent(out) :: pscal(1:nprimvars)
     logical,  intent(out) :: lneg
     integer,  intent(out) :: errinfo
-    character(len=betr_errmsg_len) :: msg
 
     ! !LOCAL VARIABLES:
     real(r8) :: yt
@@ -319,7 +322,7 @@ contains
           if(abs(pscal(j))<1.e-14)pscal(j)=0._r8
           lneg=.true.
           if(pscal(j)<0._r8)then
-             write(iulog,*)'pscal',pscal(j),p_dt(j),ystate(j),d_dt(j)
+             !#py write(iulog,*)'pscal',pscal(j),p_dt(j),ystate(j),d_dt(j)
              errinfo=-1
              return
           endif
@@ -330,15 +333,15 @@ contains
   end subroutine calc_state_pscal
 
   !-------------------------------------------------------------------------------
-  subroutine calc_reaction_rscal(this, nprimvars, nr, pscal, spm_d, rscal)
-    !
+  subroutine calc_reaction_rscal( nprimvars, nr, pscal, spm_d, rscal)
+    !$acc routine seq
     ! !DESCRIPTION:
     ! calculate limiting factor for each reaction
     ! !USES:
-    use BetrstatusType     , only : betr_status_type
+    !#betr_py use BetrstatusType     , only : betr_status_type
     implicit none
     ! !ARGUMENTS:
-    class(lom_type), intent(in) :: this
+    !class(lom_type), intent(in) :: this
     integer , intent(in) :: nprimvars
     integer , intent(in) :: nr
     real(r8), intent(in) :: pscal(1:nprimvars)
@@ -358,14 +361,14 @@ contains
   end subroutine calc_reaction_rscal
 
   !-------------------------------------------------------------------------------
-  subroutine apply_reaction_rscal(this, nr, rscal, reaction_rates)
-    !
+  subroutine apply_reaction_rscal( nr, rscal, reaction_rates)
+    !$acc routine seq
     ! !DESCRIPTION:
     ! reduce reaction rates using input scalar
     !
     implicit none
     ! !ARGUMENTS:
-    class(lom_type), intent(in) :: this
+    !class(lom_type), intent(in) :: this
     integer , intent(in)    :: nr
     real(r8), intent(in)    :: rscal(1:nr)
     real(r8), intent(inout) :: reaction_rates(1:nr)
@@ -375,7 +378,7 @@ contains
     do j = 1, nr
        reaction_rates(j) = reaction_rates(j)*rscal(j)
     enddo
-  end subroutine  apply_reaction_rscal
+  end subroutine apply_reaction_rscal
 
   !-------------------------------------------------------------------------------
   subroutine flux_correction(nvars, nreactions, spm_p, spm_d, dtime, ystates, rfluxes)
@@ -383,7 +386,8 @@ contains
   ! DESCRIPTION
   ! correcting the fluxes to avoid negative state variables
   ! Reference: Tang and Riley, Biogeosciences, 2016, doi: 10.5194/bg-13-723-2016
-  use abortutils             , only : endrun
+  !#py use abortutils             , only : endrun
+      !$acc routine seq
   implicit none
   integer, intent(in) :: nvars
   integer, intent(in) :: nreactions
@@ -399,11 +403,11 @@ contains
   real(r8) :: d_dt(nvars)
   real(r8) :: p_dt(nvars)
   integer :: errinfo
-  type(lom_type) :: lom
+  !type(lom_type) :: lom
   logical :: lneg
   integer, parameter :: itmax=40
 
-  !initialize the iterator and adjustment scalar vector for the destruction fluxes 
+  !initialize the iterator and adjustment scalar vector for the destruction fluxes
   it=0
   rscal=0._r8
   do
@@ -412,32 +416,32 @@ contains
     call spm_axpy(spm_d%szrow, spm_d%szcol, 1._r8, rfluxes, spm_d, d_dt, errinfo)
 
     if(errinfo<0)then
-      call endrun(msg='ERROR:: in spm_axpy'//errMsg(__FILE__, __LINE__))
+      !#py !#py call endrun(msg='ERROR:: in spm_axpy'//errMsg(__FILE__, __LINE__))
     endif
     !obtain the production fluxes
     p_dt(:)=0._r8
     call spm_axpy(spm_p%szrow, spm_d%szcol, 1._r8, rfluxes, spm_p, p_dt, errinfo)
 
     if(errinfo<0)then
-      call endrun(msg='ERROR:: in spm_axpy '//errMsg(__FILE__, __LINE__))
+      !#py !#py call endrun(msg='ERROR:: in spm_axpy '//errMsg(__FILE__, __LINE__))
     endif
     !obtain flux reducing scalar for all primary variables
-    call lom%calc_state_pscal(spm_d%szrow, dtime, ystates, p_dt,  d_dt, &
+    call calc_state_pscal(spm_d%szrow, dtime, ystates, p_dt,  d_dt, &
       pscal, lneg, errinfo)
     if(errinfo<0)then
-      call endrun(msg='ERROR:: in calc_state_pscal '//errMsg(__FILE__, __LINE__))
+      !#py !#py call endrun(msg='ERROR:: in calc_state_pscal '//errMsg(__FILE__, __LINE__))
     endif
 
     !obtain the adjustment scalar for each destruction flux based on the stoichiometry matrix
     if(lneg .and. it<=itmax)then
-      call lom%calc_reaction_rscal(spm_d%szrow, spm_d%szcol,  pscal, &
+      call calc_reaction_rscal(spm_d%szrow, spm_d%szcol,  pscal, &
         spm_d,rscal)
 
-      call lom%apply_reaction_rscal(spm_d%szcol, rscal, rfluxes)
+      call apply_reaction_rscal(spm_d%szcol, rscal, rfluxes)
     else
       !terminate the loop and write a warning if maximum iteration is reached.
-      if(it==itmax)write(iulog,*)'maximum iterations reached in flux_correction in LSparseMatMod'
-      exit
+      !if(it==itmax)write(iulog,*)'maximum iterations reached in flux_correction in LSparseMatMod'
+      !exit
     endif
     it = it + 1
   enddo

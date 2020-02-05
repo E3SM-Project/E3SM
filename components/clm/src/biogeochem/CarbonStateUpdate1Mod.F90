@@ -5,9 +5,9 @@ module CarbonStateUpdate1Mod
   !
   ! !USES:
   use shr_kind_mod            , only : r8 => shr_kind_r8
-  use shr_log_mod             , only : errMsg => shr_log_errMsg
-  use abortutils              , only : endrun
-  use clm_time_manager        , only : get_step_size
+  !#py !#py use shr_log_mod        , only : errMsg => shr_log_errMsg
+  !#py use abortutils              , only : endrun
+  !#py use clm_time_manager        , only : get_step_size
   use decompMod               , only : bounds_type
   use clm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use clm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
@@ -19,7 +19,7 @@ module CarbonStateUpdate1Mod
   use CNStateType             , only : cnstate_type
   use CNDecompCascadeConType  , only : decomp_cascade_con
   use CropType                , only : crop_type
-                              
+
   use GridcellDataType        , only : gridcell_carbon_state, gridcell_carbon_flux
   use ColumnDataType          , only : column_carbon_state, column_carbon_flux
   use VegetationType          , only : veg_pp
@@ -40,7 +40,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       grc_cs, grc_cf, col_cs, col_cf)
+       grc_cs, grc_cf, col_cs, col_cf, dt)
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
@@ -53,18 +53,19 @@ contains
     type(gridcell_carbon_flux) , intent(inout)  :: grc_cf
     type(column_carbon_state)  , intent(inout)  :: col_cs
     type(column_carbon_flux)   , intent(in)     :: col_cf
+    real(r8), intent(in) :: dt  ! time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c   ! column index
     integer  :: fc  ! column filter index
     integer  :: g   ! gridcell index
     integer  :: j   ! level index
-    real(r8) :: dt  ! time step (seconds)
 
     character(len=*), parameter :: subname = 'CarbonStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
-    dt = real( get_step_size(), r8 )
+    !#py dt = real( get_step_size(), r8 )
 
     if (.not.use_fates) then
 
@@ -94,26 +95,27 @@ contains
   end subroutine CarbonStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine CarbonStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf)
+  subroutine CarbonStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state
     !
 
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(vegetation_carbon_state),intent(inout) :: veg_cs
     type(vegetation_carbon_flux) ,intent(inout) :: veg_cf
+    real(r8),     intent(in)    :: dt
     !
     ! !LOCAL VARIABLES:
     integer :: p  ! indices
     integer :: fp ! lake filter indices
-    real(r8):: dt ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
     ! set time steps
-    dt = real( get_step_size(), r8 )
+    !#py dt = real( get_step_size(), r8 )
 
     ! patch loop
     do fp = 1,num_soilp
@@ -129,17 +131,18 @@ contains
   subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       crop_vars, col_cs, veg_cs, col_cf, veg_cf)
+       crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
+      !$acc routine seq
     use tracer_varcon       , only : is_active_betr_bgc
     use subgridAveMod       , only : p2c
-    use decompMod           , only : bounds_type    
+    use decompMod           , only : bounds_type
     ! !ARGUMENTS:
-    type(bounds_type)            , intent(in)    :: bounds  
+    type(bounds_type)            , intent(in)    :: bounds
     integer                      , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                      , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                      , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -149,23 +152,24 @@ contains
     type(vegetation_carbon_state), intent(inout) :: veg_cs
     type(column_carbon_flux)     , intent(inout) :: col_cf
     type(vegetation_carbon_flux) , intent(inout) :: veg_cf
+    real(r8), intent(in) :: dt        ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l ! indices
     integer  :: fp,fc     ! lake filter indices
-    real(r8) :: dt        ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                                                                                 & 
-         ivt                   =>    veg_pp%itype                               , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+    associate(                                                                                 &
+         ivt                   =>    veg_pp%itype                               , & ! Input:  [integer  (:)     ]  pft vegetation type
          woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
          cascade_donor_pool    =>    decomp_cascade_con%cascade_donor_pool      , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool =>    decomp_cascade_con%cascade_receiver_pool   , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
-         harvdate              =>    crop_vars%harvdate_patch                     & ! Input:  [integer  (:)     ]  harvest date                                       
+         harvdate              =>    crop_vars%harvdate_patch                     & ! Input:  [integer  (:)     ]  harvest date
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       ! column level fluxes
 
@@ -175,7 +179,7 @@ contains
             col_cs%decomp_som2c_vr(c,1:nlevdecomp) = col_cs%decomp_cpools_vr(c,1:nlevdecomp,6)
          end do
       end if
-      
+
       if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_fates ) then
 
          ! plant to litter fluxes
@@ -254,7 +258,7 @@ contains
    endif   !end if is_active_betr_bgc()
 
    if (.not.use_fates) then
-    
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -449,8 +453,8 @@ contains
 
    end if
 
- end associate
+  end associate
 
-end subroutine CarbonStateUpdate1
+  end subroutine CarbonStateUpdate1
 
 end module CarbonStateUpdate1Mod

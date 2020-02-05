@@ -14,11 +14,11 @@ module decompInitMod
   use clm_varctl      , only : iulog, use_fates
   use clm_varcon      , only : grlnd
   use GridcellType    , only : grc_pp
-  use LandunitType    , only : lun_pp                
-  use TopounitType    , only : top_pp                
-  use ColumnType      , only : col_pp                
+  use LandunitType    , only : lun_pp
+  use TopounitType    , only : top_pp
+  use ColumnType      , only : col_pp
   use FatesInterfaceMod, only : fates_maxElementsPerSite
-  use VegetationType  , only : veg_pp                
+  use VegetationType  , only : veg_pp
   use decompMod
   use mct_mod
   !
@@ -88,8 +88,8 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! allocate and initialize procinfo (from decompMod.F90) and clumps 
-    ! beg and end indices initialized for simple addition of cells later 
+    ! allocate and initialize procinfo (from decompMod.F90) and clumps
+    ! beg and end indices initialized for simple addition of cells later
 
     allocate(procinfo%cid(clump_pproc), stat=ier)
     if (ier /= 0) then
@@ -142,7 +142,7 @@ contains
     clumps(:)%endp    = 0
     clumps(:)%endCohort    = 0
 
-    ! assign clumps to proc round robin 
+    ! assign clumps to proc round robin
     cid = 0
     do n = 1,nclumps
        pid = mod(n-1,npes)
@@ -219,7 +219,7 @@ contains
 
           !--- give gridcell cell to pe that owns cid ---
           !--- this needs to be done to subsequently use function
-          !--- get_proc_bounds(begg,endg) 
+          !--- get_proc_bounds(begg,endg)
           if (iam == clumps(cid)%owner) then
              procinfo%ncells  = procinfo%ncells  + 1
           endif
@@ -378,7 +378,7 @@ contains
     integer :: ntest
     character(len=32), parameter :: subname = 'decompInit_clumps'
     !------------------------------------------------------------------------------
-    
+
     !--- assign order of subgrid levels in allvecl and allvecg arrays ---
     nlev=6  ! number of subgrid levels
     glev=1  ! gridcell
@@ -394,8 +394,8 @@ contains
     allocate(allvecl(nclumps,nlev))   ! local  clumps [gcells,topounits,lunits,cols,pfts,cohs]
     allocate(allvecg(nclumps,nlev))   ! global clumps [gcells,topounits,lunits,cols,pfts,cohs]
 
-    ! Determine the number of gridcells, topounits, landunits, columns, pfts, and cohorts 
-    ! on this processor 
+    ! Determine the number of gridcells, topounits, landunits, columns, pfts, and cohorts
+    ! on this processor
     ! Determine number of topounits, landunits, columns and pfts for each global
     ! gridcell index (an) that is associated with the local gridcell index (ln)
     ! More detail: an is the row-major order 1d-index into the global ixj grid.
@@ -404,7 +404,7 @@ contains
     ilunits=0
     icols=0
     ipfts=0
-    icohorts=0 
+    icohorts=0
 
     allvecg= 0
     allvecl= 0
@@ -418,15 +418,18 @@ contains
           call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
               ncohorts=icohorts, glcmask=glcmask(ln))
        else
+          write(*,*) "subgrid_get_gcellinfo",ln,itopounits,ilunits,icols,ipfts,icohorts
           call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                ncohorts=icohorts )
        endif
+ 
+       write(*,*) "subgrid_get_gcellinfo",ln,itopounits,ilunits,icols,ipfts,icohorts
        allvecl(cid,glev) = allvecl(cid,glev) + 1           ! number of gridcells for local clump cid
        allvecl(cid,tlev) = allvecl(cid,tlev) + itopounits  ! number of topographic units for local clump cid
        allvecl(cid,llev) = allvecl(cid,llev) + ilunits     ! number of landunits for local clump cid
        allvecl(cid,clev) = allvecl(cid,clev) + icols       ! number of columns for local clump cid
-       allvecl(cid,plev) = allvecl(cid,plev) + ipfts       ! number of pfts for local clump cid 
-       allvecl(cid,hlev) = allvecl(cid,hlev) + icohorts    ! number of cohorts for local clump cid 
+       allvecl(cid,plev) = allvecl(cid,plev) + ipfts       ! number of pfts for local clump cid
+       allvecl(cid,hlev) = allvecl(cid,hlev) + icohorts    ! number of cohorts for local clump cid
     enddo
     call mpi_allreduce(allvecl,allvecg,size(allvecg),MPI_INTEGER,MPI_SUM,mpicom,ier)
 
@@ -457,8 +460,8 @@ contains
        numCohort = numCohort + icohorts       ! total number of cohorts
 
        !--- give gridcell to cid ---
-       clumps(cid)%ntopounits  = clumps(cid)%ntopounits  + itopounits  
-       clumps(cid)%nlunits     = clumps(cid)%nlunits  + ilunits  
+       clumps(cid)%ntopounits  = clumps(cid)%ntopounits  + itopounits
+       clumps(cid)%nlunits     = clumps(cid)%nlunits  + ilunits
        clumps(cid)%ncols       = clumps(cid)%ncols    + icols
        clumps(cid)%npfts       = clumps(cid)%npfts    + ipfts
        clumps(cid)%nCohorts    = clumps(cid)%nCohorts + icohorts
@@ -495,6 +498,8 @@ contains
     do cid = 1,nclumps
        proc_nXXX(clumps(cid)%owner) = &
         proc_nXXX(clumps(cid)%owner) + clumps(cid)%ntopounits
+        print *,"cid, ntopounits", cid, proc_nXXX(clumps(cid)%owner)
+
     enddo
 
     ! determine offset (begt) for all processes,
@@ -573,6 +578,7 @@ contains
     do cid = 1,nclumps
        proc_nXXX(clumps(cid)%owner) = &
         proc_nXXX(clumps(cid)%owner) + clumps(cid)%npfts
+        print *, "cid, num pfts", cid, proc_nXXX(clumps(cid)%owner)
     enddo
 
     ! determine offset (begp) for all processes,
@@ -705,7 +711,7 @@ contains
     character(len=32), parameter :: subname = 'decompInit_gtlcp'
     !------------------------------------------------------------------------------
 
-    !init 
+    !init
 
     call get_proc_bounds(begg, endg, begt, endt, begl, endl, begc, endc, begp, endp, &
          begCohort, endCohort)
@@ -739,7 +745,7 @@ contains
     endif
     allocate(coCount(begg:endg))
     coCount(:) = 0
-    allocate(ioff(begg:endg)) 
+    allocate(ioff(begg:endg))
     ioff(:) = 0
 
     ! Determine gcount, tcount, lcount, ccount and pcount
@@ -783,7 +789,7 @@ contains
     endif
     call scatter_data_from_master(gstart, arrayglob, grlnd)
 
-    ! tstart for gridcell (n) is the total number of the topounits 
+    ! tstart for gridcell (n) is the total number of the topounits
     ! over gridcells 1->n-1
 
     arrayglob(:) = 0
@@ -798,8 +804,8 @@ contains
        enddo
     endif
     call scatter_data_from_master(tstart, arrayglob, grlnd)
-    
-    ! lstart for gridcell (n) is the total number of the landunits 
+
+    ! lstart for gridcell (n) is the total number of the landunits
     ! over gridcells 1->n-1
 
     arrayglob(:) = 0
@@ -891,7 +897,7 @@ contains
     do ti = begt,endt
        gi = top_pp%gridcell(ti) !===this is determined internally from how landunits are spread out in memory
        gindex(ti) = tstart(gi) + ioff(gi) !=== the output gindex is ALWAYS the same regardless of how landuntis are spread out in memory
-       ioff(gi)  = ioff(gi) + 1 
+       ioff(gi)  = ioff(gi) + 1
        ! check that this is less than [tstart(gi) + tcount(gi)]
     enddo
     locsize = endt-begt+1
@@ -906,7 +912,7 @@ contains
     do li = begl,endl
        gi = lun_pp%gridcell(li) !===this is determined internally from how landunits are spread out in memory
        gindex(li) = lstart(gi) + ioff(gi) !=== the output gindex is ALWAYS the same regardless of how landuntis are spread out in memory
-       ioff(gi)  = ioff(gi) + 1 
+       ioff(gi)  = ioff(gi) + 1
        ! check that this is less than [lstart(gi) + lcount(gi)]
     enddo
     locsize = endl-begl+1
@@ -921,7 +927,7 @@ contains
     do ci = begc,endc
        gi = col_pp%gridcell(ci)
        gindex(ci) = cstart(gi) + ioff(gi)
-       ioff(gi) = ioff(gi) + 1 
+       ioff(gi) = ioff(gi) + 1
        ! check that this is less than [cstart(gi) + ccount(gi)]
     enddo
     locsize = endc-begc+1
@@ -936,7 +942,7 @@ contains
     do pi = begp,endp
        gi = veg_pp%gridcell(pi)
        gindex(pi) = pstart(gi) + ioff(gi)
-       ioff(gi) = ioff(gi) + 1 
+       ioff(gi) = ioff(gi) + 1
        ! check that this is less than [pstart(gi) + pcount(gi)]
     enddo
     locsize = endp-begp+1
@@ -996,7 +1002,7 @@ contains
        write(iulog,*)
     end if
 
-    ! Write out clump and proc info, one pe at a time, 
+    ! Write out clump and proc info, one pe at a time,
     ! barrier to control pes overwriting each other on stdout
 
     call shr_sys_flush(iulog)

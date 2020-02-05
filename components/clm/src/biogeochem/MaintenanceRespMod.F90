@@ -23,7 +23,7 @@ module MaintenanceRespMod
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnDataType      , only : col_es
-  use VegetationType      , only : veg_pp                
+  use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es, veg_cs, veg_cf, veg_ns
   !
   implicit none
@@ -34,68 +34,70 @@ module MaintenanceRespMod
   public :: MaintenanceResp
   public :: readMaintenanceRespParams
 
-  type, private :: MaintenanceRespParamsType
-     real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
-  end type MaintenanceRespParamsType
+   type, private :: MaintenanceRespParamsType
+      real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
+   end type MaintenanceRespParamsType
 
-  type(MaintenanceRespParamsType),private ::  MaintenanceRespParamsInst
+  !type(MaintenanceRespParamsType),private ::  MaintenanceRespParamsInst
+  real(r8), public :: br_mr_Inst
+  !$acc declare create(br_mr_Inst)
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readMaintenanceRespParams ( ncid )
-    !
-    ! !DESCRIPTION:
-    ! Read parameters
-    !
-    ! !USES:
-    use ncdio_pio , only : file_desc_t,ncd_io
-    !
-    ! !ARGUMENTS:
-    implicit none
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'MaintenanceRespParamsType'
-    character(len=100) :: errCode = '-Error reading in parameters file:'
-    logical            :: readv ! has variable been read in or not
-    real(r8)           :: tempr ! temporary to read in constant
-    character(len=100) :: tString ! temp. var for reading
-    !-----------------------------------------------------------------------
+   subroutine readMaintenanceRespParams ( ncid )
+     !
+     ! !DESCRIPTION:
+     ! Read parameters
+     !
+     ! !USES:
+     use ncdio_pio , only : file_desc_t,ncd_io
+     !
+     ! !ARGUMENTS:
+     implicit none
+     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+     !
+     ! !LOCAL VARIABLES:
+     character(len=32)  :: subname = 'MaintenanceRespParamsType'
+     character(len=100) :: errCode = '-Error reading in parameters file:'
+     logical            :: readv ! has variable been read in or not
+     real(r8)           :: tempr ! temporary to read in constant
+     character(len=100) :: tString ! temp. var for reading
+     !-----------------------------------------------------------------------
 
-    tString='br_mr'
-    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    MaintenanceRespParamsInst%br_mr=tempr
+     tString='br_mr'
+     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     br_mr_Inst = tempr
 
-  end subroutine readMaintenanceRespParams
+   end subroutine readMaintenanceRespParams
 
   !-----------------------------------------------------------------------
   ! FIX(SPM,032414) this shouldn't even be called with ED on.
   !
   subroutine MaintenanceResp(bounds, &
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
-       carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
+       canopystate_vars, soilstate_vars, photosyns_vars)
     !
     ! !DESCRIPTION:
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds          
+      !$acc routine seq
+    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil points in column filter
     integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
     integer                  , intent(in)    :: num_soilp       ! number of soil points in patch filter
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
+  !  type(temperature_type)   , intent(in)    :: temperature_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j ! indices
@@ -107,34 +109,34 @@ contains
     real(r8):: tcsoi(bounds%begc:bounds%endc,nlevgrnd) ! temperature correction by soil layer (unitless)
     !-----------------------------------------------------------------------
 
-    associate(                                                        &    
-         ivt            =>    veg_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
+    associate(                                                        &
+         ivt            =>    veg_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type
          woody          =>    veg_vp%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
          br_xr          =>    veg_vp%br_xr                      , & ! Input:  [real(r8) (:)   ]  base rate for excess respiration
          frac_veg_nosno =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
-         laisun         =>    canopystate_vars%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index                  
-         laisha         =>    canopystate_vars%laisha_patch         , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index                  
+         laisun         =>    canopystate_vars%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index
+         laisha         =>    canopystate_vars%laisha_patch         , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index
 
          rootfr         =>    soilstate_vars%rootfr_patch           , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
 
          t_soisno       =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
-         t_ref2m        =>    veg_es%t_ref2m          , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
+         t_ref2m        =>    veg_es%t_ref2m          , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
 
          lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
          lmrsha         =>    photosyns_vars%lmrsha_patch           , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
 
          cpool          =>    veg_cs%cpool          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
 
-         leaf_mr        =>    veg_cf%leaf_mr         , & ! Output: [real(r8) (:)   ]                                                    
-         froot_mr       =>    veg_cf%froot_mr        , & ! Output: [real(r8) (:)   ]                                                    
-         livestem_mr    =>    veg_cf%livestem_mr     , & ! Output: [real(r8) (:)   ]                                                    
-         livecroot_mr   =>    veg_cf%livecroot_mr    , & ! Output: [real(r8) (:)   ]                                                    
-         grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]                                                    
+         leaf_mr        =>    veg_cf%leaf_mr         , & ! Output: [real(r8) (:)   ]
+         froot_mr       =>    veg_cf%froot_mr        , & ! Output: [real(r8) (:)   ]
+         livestem_mr    =>    veg_cf%livestem_mr     , & ! Output: [real(r8) (:)   ]
+         livecroot_mr   =>    veg_cf%livecroot_mr    , & ! Output: [real(r8) (:)   ]
+         grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]
          xr             =>    veg_cf%xr              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
 
-         frootn         =>    veg_ns%frootn       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
-         livestemn      =>    veg_ns%livestemn    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
-         livecrootn     =>    veg_ns%livecrootn   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
+         frootn         =>    veg_ns%frootn       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N
+         livestemn      =>    veg_ns%livestemn    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N
+         livecrootn     =>    veg_ns%livecrootn   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N
          grainn         =>    veg_ns%grainn         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
          )
 
@@ -144,9 +146,9 @@ contains
       ! Original expression is br = 0.0106 molC/(molN h)
       ! Conversion by molecular weights of C and N gives 2.525e-6 gC/(gN s)
       ! set constants
-      br_mr = MaintenanceRespParamsInst%br_mr
+      br_mr = br_mr_Inst
 
-      ! Peter Thornton: 3/13/09 
+      ! Peter Thornton: 3/13/09
       ! Q10 was originally set to 2.0, an arbitrary choice, but reduced to 1.5 as part of the tuning
       ! to improve seasonal cycle of atmospheric CO2 concentration in global
       ! simulatoins

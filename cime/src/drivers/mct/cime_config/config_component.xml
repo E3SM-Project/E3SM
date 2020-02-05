@@ -678,7 +678,7 @@
   <entry id="DEBUG">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+    <default_value>TRUE</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>TRUE implies turning on run and compile time debugging

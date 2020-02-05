@@ -5,25 +5,27 @@ module CarbonIsoFluxMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use shr_log_mod            , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
   use clm_varpar             , only : max_patch_per_col, maxpatch_pft
-  use abortutils             , only : endrun
+  !#py use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use CNCarbonFluxType       , only : carbonflux_type
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use ColumnType             , only : col_pp 
+  use ColumnType             , only : col_pp
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
-  use ColumnDataType         , only : col_cs, col_cf  
-  use VegetationType         , only : veg_pp                
-  use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux 
-  use VegetationDataType     , only : veg_cs, veg_cf  
+  use ColumnDataType         , only : col_cs, col_cf
+  use VegetationType         , only : veg_pp
+  use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
+  use VegetationDataType     , only : veg_cs, veg_cf
   !
   implicit none
   save
   private
+  integer, parameter :: c13 = 0
+  integer, parameter :: c14 = 1
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public  :: CarbonIsoFlux1
@@ -42,13 +44,13 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
+       cnstate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic flux
     ! variables (except for gap-phase mortality and fire fluxes)
-    use tracer_varcon, only : is_active_betr_bgc  
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -56,11 +58,8 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    type(carbonstate_type) , intent(in)    :: isotopestate_vars
-    character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+  
+    integer                , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     type(column_carbon_flux),intent(inout)    :: isocol_cf
@@ -71,17 +70,17 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-    cascade_donor_pool  =>  decomp_cascade_con%cascade_donor_pool  & !  [integer (:)]  which pool is C taken from for a given decomposition step 
+    cascade_donor_pool  =>  decomp_cascade_con%cascade_donor_pool  & !  [integer (:)]  which pool is C taken from for a given decomposition step
     )
 
       ! patch-level non-mortality fluxes
-   
+
       ! Note: if the variables which are arguments to CarbonIsoFluxCalc are ever changed to NOT be
       ! pointers, then the CarbonIsoFluxCalc routine will need to be changed to declare the bounds
       ! of each argument, these bounds will need to be passed in, and - importantly for
       ! threading to work properly - the subroutine calls will need to be changed so that
       ! instead of 'call CarbonIsoFluxCalc(foo, ...)' we have 'call CarbonIsoFluxCalc(foo(begp:endp), ...)'.
-      
+
       call CarbonIsoFluxCalc(&
            isoveg_cf%leafc_xfer_to_leafc           , veg_cf%leafc_xfer_to_leafc, &
            isoveg_cs%leafc_xfer                   , veg_cs%leafc_xfer, &
@@ -155,7 +154,7 @@ contains
       call CarbonIsoFluxCalc(&
            isoveg_cf%xr                            , veg_cf%xr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
-           num_soilp                                            , filter_soilp, 1._r8, 0, isotope)  
+           num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CarbonIsoFluxCalc(&
            isoveg_cf%leaf_xsmr                     , veg_cf%leaf_xsmr, &
@@ -374,10 +373,10 @@ contains
 
       ! call routine to shift patch-level litterfall fluxes to column, for isotopes
       ! the non-isotope version of this routine is called in PhenologyMod.F90.F90
-      ! For later clean-up, it would be possible to generalize this function to operate on a single 
+      ! For later clean-up, it would be possible to generalize this function to operate on a single
       ! patch-to-column flux.
 
-      call CNCIsoLitterToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars, isocol_cf, isoveg_cf)
+      call CNCIsoLitterToColumn(num_soilc, filter_soilc, cnstate_vars, isocol_cf, isoveg_cf)
 
       if (.not. is_active_betr_bgc) then
 
@@ -421,24 +420,24 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
+       cnstate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    type(carbonstate_type) , intent(in)    :: isotopestate_vars
-    character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    !type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    !type(carbonstate_type) , intent(in)    :: carbonstate_vars
+    !type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
+    !type(carbonstate_type) , intent(in)    :: isotopestate_vars
+    integer       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     type(column_carbon_flux),intent(inout)    :: isocol_cf
@@ -449,7 +448,7 @@ contains
     !-----------------------------------------------------------------------
 
     ! patch-level gap mortality fluxes
-   
+
     call CarbonIsoFluxCalc(&
          isoveg_cf%m_leafc_to_litter                    , veg_cf%m_leafc_to_litter, &
          isoveg_cs%leafc                               , veg_cs%leafc, &
@@ -553,34 +552,34 @@ contains
     call CarbonIsoFluxCalc(&
          isoveg_cf%m_cpool_to_litter               , veg_cf%m_cpool_to_litter, &
          isoveg_cs%cpool                          , veg_cs%cpool, &
-         num_soilp                                              , filter_soilp, 1._r8, 0, isotope)            
+         num_soilp                                              , filter_soilp, 1._r8, 0, isotope)
 
     ! call routine to shift patch-level gap mortality fluxes to column , for isotopes
     ! the non-isotope version of this routine is in GapMortalityMod.F90.
 
-    call CNCIsoGapPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars, isocol_cf, isoveg_cf)
+    call CNCIsoGapPftToColumn(num_soilc, filter_soilc, cnstate_vars, isocol_cf, isoveg_cf)
 
   end subroutine CarbonIsoFlux2
 
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2h(num_soilc , filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
+       cnstate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! set the carbon isotopic fluxes for harvest mortality
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    type(carbonstate_type) , intent(in)    :: isotopestate_vars
-    character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    !type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    !type(carbonstate_type) , intent(in)    :: carbonstate_vars
+    !type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
+    !type(carbonstate_type) , intent(in)    :: isotopestate_vars
+    integer                , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     type(column_carbon_flux),intent(inout)    :: isocol_cf
@@ -588,7 +587,7 @@ contains
     !-----------------------------------------------------------------------
 
     ! patch-level gap mortality fluxes
-   
+
 
     call CarbonIsoFluxCalc(&
          isoveg_cf%hrv_leafc_to_litter                  , veg_cf%hrv_leafc_to_litter, &
@@ -691,35 +690,35 @@ contains
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
     call CarbonIsoFluxCalc(&
-         isoveg_cf%hrv_gresp_xfer_to_litter             , veg_cf%hrv_gresp_xfer_to_litter, &
-         isoveg_cs%gresp_xfer                          , veg_cs%gresp_xfer, &
-         num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
+         isoveg_cf%hrv_gresp_xfer_to_litter    , veg_cf%hrv_gresp_xfer_to_litter, &
+         isoveg_cs%gresp_xfer                 , veg_cs%gresp_xfer, &
+         num_soilp                         , filter_soilp, 1._r8, 0, isotope)
 
     call CarbonIsoFluxCalc(&
-         isoveg_cf%hrv_xsmrpool_to_atm                  , veg_cf%hrv_xsmrpool_to_atm, &
-         isoveg_cs%totvegc                             , veg_cs%totvegc, &
-         num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
+         isoveg_cf%hrv_xsmrpool_to_atm   , veg_cf%hrv_xsmrpool_to_atm, &
+         isoveg_cs%totvegc   , veg_cs%totvegc, &
+         num_soilp           , filter_soilp, 1._r8, 0, isotope)
 
     call CarbonIsoFluxCalc(&
-         isoveg_cf%hrv_cpool_to_litter                  , veg_cf%hrv_cpool_to_litter, &
-         isoveg_cs%cpool                               , veg_cs%cpool, &
-         num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
+         isoveg_cf%hrv_cpool_to_litter  , veg_cf%hrv_cpool_to_litter, &
+         isoveg_cs%cpool               , veg_cs%cpool, &
+         num_soilp                , filter_soilp, 1._r8, 0, isotope)
 
     ! call routine to shift patch-level gap mortality fluxes to column, for isotopes
     ! the non-isotope version of this routine is in GapMortalityMod.F90.
 
-    call CNCIsoHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars, isocol_cf, isoveg_cf)
+    call CNCIsoHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars, isocol_cf, isoveg_cf)
 
   end subroutine CarbonIsoFlux2h
 
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
+       cnstate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
-    use tracer_varcon, only : is_active_betr_bgc  
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -727,11 +726,11 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    type(carbonstate_type) , intent(in)    :: isotopestate_vars
-    character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    !type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    !type(carbonstate_type) , intent(in)    :: carbonstate_vars
+    !type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
+    !type(carbonstate_type) , intent(in)    :: isotopestate_vars
+    integer                , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     type(column_carbon_flux),intent(inout)    :: isocol_cf
@@ -742,9 +741,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                           &
-         croot_prof =>   cnstate_vars%croot_prof_patch , & !  [real(r8) (:,:) ]  (1/m) profile of coarse roots                          
-         stem_prof  =>   cnstate_vars%stem_prof_patch,   & !  [real(r8) (:,:) ]  (1/m) profile of stems                                 
-         leaf_prof  =>   cnstate_vars%leaf_prof_patch    & !  [real(r8) (:,:) ]  (1/m) profile of leaves      
+         croot_prof =>   cnstate_vars%croot_prof_patch , & !  [real(r8) (:,:) ]  (1/m) profile of coarse roots
+         stem_prof  =>   cnstate_vars%stem_prof_patch,   & !  [real(r8) (:,:) ]  (1/m) profile of stems
+         leaf_prof  =>   cnstate_vars%leaf_prof_patch    & !  [real(r8) (:,:) ]  (1/m) profile of leaves
          )
 
       ! patch-level fire mortality fluxes
@@ -862,12 +861,12 @@ contains
      call CarbonIsoFluxCalc(&
            isoveg_cf%m_cpool_to_fire              , veg_cf%m_cpool_to_fire, &
            isoveg_cs%cpool                       , veg_cs%cpool, &
-           num_soilp                                           , filter_soilp, 1._r8, 0, isotope)   
+           num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
      call CarbonIsoFluxCalc(&
            isoveg_cf%m_cpool_to_litter_fire       , veg_cf%m_cpool_to_litter_fire, &
            isoveg_cs%cpool                       , veg_cs%cpool, &
-           num_soilp                                           , filter_soilp, 1._r8, 0, isotope) 
+           num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
 
       if (.not. is_active_betr_bgc) then
@@ -918,17 +917,18 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNCIsoLitterToColumn (num_soilc, filter_soilc, &
-       cnstate_vars, carbonflux_vars, col_cf, veg_cf)
+       cnstate_vars, col_cf, veg_cf)
     !
     ! !DESCRIPTION:
     ! called at the end of cn_phenology to gather all patch-level litterfall fluxes
     ! to the column level and assign them to the three litter pools
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
+    !type(carbonflux_type)  , intent(inout) :: carbonflux_vars
      type(column_carbon_flux), intent(inout) :: col_cf
      type(vegetation_carbon_flux), intent(inout) :: veg_cf
     !
@@ -936,22 +936,22 @@ contains
     integer :: fc,c,pi,p,j
     !-----------------------------------------------------------------------
 
-    associate(                                                                           & 
-         ivt                       =>    veg_pp%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-         wtcol                     =>    veg_pp%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
-         
-         lf_flab                   =>    veg_vp%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-         lf_fcel                   =>    veg_vp%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-         lf_flig                   =>    veg_vp%lf_flig                            , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-         fr_flab                   =>    veg_vp%fr_flab                            , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-         fr_fcel                   =>    veg_vp%fr_fcel                            , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-         fr_flig                   =>    veg_vp%fr_flig                            , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+    associate(                                                                           &
+         ivt                       =>    veg_pp%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type
+         wtcol                     =>    veg_pp%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)
 
-         leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
-         froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
-         
-         leafc_to_litter           =>    veg_cf%leafc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-         frootc_to_litter          =>    veg_cf%frootc_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
+         lf_flab                   =>    veg_vp%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction
+         lf_fcel                   =>    veg_vp%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction
+         lf_flig                   =>    veg_vp%lf_flig                            , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction
+         fr_flab                   =>    veg_vp%fr_flab                            , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction
+         fr_fcel                   =>    veg_vp%fr_fcel                            , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction
+         fr_flig                   =>    veg_vp%fr_flig                            , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction
+
+         leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
+         froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
+
+         leafc_to_litter           =>    veg_cf%leafc_to_litter         , & ! Input:  [real(r8) (:)   ]
+         frootc_to_litter          =>    veg_cf%frootc_to_litter        , & ! Input:  [real(r8) (:)   ]
          phenology_c_to_litr_met_c =>    col_cf%phenology_c_to_litr_met_c , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
          phenology_c_to_litr_cel_c =>    col_cf%phenology_c_to_litr_cel_c , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
          phenology_c_to_litr_lig_c =>    col_cf%phenology_c_to_litr_lig_c   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
@@ -993,17 +993,18 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine CNCIsoGapPftToColumn (num_soilc, filter_soilc, &
-        cnstate_vars, carbonflux_vars, col_cf, veg_cf)
+        cnstate_vars, col_cf, veg_cf)
      !
      ! !DESCRIPTION:
      ! gather all patch-level gap mortality fluxes
      ! to the column level and assign them to the three litter pools (+ cwd pool)
      !
      ! !ARGUMENTS:
+      !$acc routine seq
      integer               , intent(in)    :: num_soilc         ! number of soil columns in filter
      integer               , intent(in)    :: filter_soilc(:)   ! soil column filter
      type(cnstate_type)    , intent(in)    :: cnstate_vars
-     type(carbonflux_type) , intent(inout) :: carbonflux_vars
+     !type(carbonflux_type) , intent(inout) :: carbonflux_vars
      type(column_carbon_flux), intent(inout) :: col_cf
      type(vegetation_carbon_flux), intent(inout) :: veg_cf
      !
@@ -1011,49 +1012,49 @@ contains
      integer :: fc,c,pi,p,j               ! indices
      !-----------------------------------------------------------------------
 
-     associate(                                                                                       & 
-          ivt                            =>    veg_pp%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-          wtcol                          =>    veg_pp%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
-          
-          lf_flab                        =>    veg_vp%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-          lf_fcel                        =>    veg_vp%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-          lf_flig                        =>    veg_vp%lf_flig                                   , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-          fr_flab                        =>    veg_vp%fr_flab                                   , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-          fr_fcel                        =>    veg_vp%fr_fcel                                   , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-          fr_flig                        =>    veg_vp%fr_flig                                   , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+     associate(                                                                                       &
+          ivt                            =>    veg_pp%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type
+          wtcol                          =>    veg_pp%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)
 
-          leaf_prof                      =>    cnstate_vars%leaf_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
-          froot_prof                     =>    cnstate_vars%froot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
-          croot_prof                     =>    cnstate_vars%croot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
-          stem_prof                      =>    cnstate_vars%stem_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems                          
-          
-          m_leafc_to_litter              =>    veg_cf%m_leafc_to_litter              , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_to_litter             =>    veg_cf%m_frootc_to_litter             , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_to_litter          =>    veg_cf%m_livestemc_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_to_litter          =>    veg_cf%m_deadstemc_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_to_litter         =>    veg_cf%m_livecrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_to_litter         =>    veg_cf%m_deadcrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_leafc_storage_to_litter      =>    veg_cf%m_leafc_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_storage_to_litter     =>    veg_cf%m_frootc_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_storage_to_litter  =>    veg_cf%m_livestemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_storage_to_litter  =>    veg_cf%m_deadstemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_storage_to_litter =>    veg_cf%m_livecrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_storage_to_litter =>    veg_cf%m_deadcrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
-          m_gresp_storage_to_litter      =>    veg_cf%m_gresp_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
-          m_leafc_xfer_to_litter         =>    veg_cf%m_leafc_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_xfer_to_litter        =>    veg_cf%m_frootc_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_xfer_to_litter     =>    veg_cf%m_livestemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_xfer_to_litter     =>    veg_cf%m_deadstemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_xfer_to_litter    =>    veg_cf%m_livecrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_xfer_to_litter    =>    veg_cf%m_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
-          m_gresp_xfer_to_litter         =>    veg_cf%m_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_cpool_to_litter              =>    veg_cf%m_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]  
+          lf_flab                        =>    veg_vp%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction
+          lf_fcel                        =>    veg_vp%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction
+          lf_flig                        =>    veg_vp%lf_flig                                   , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction
+          fr_flab                        =>    veg_vp%fr_flab                                   , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction
+          fr_fcel                        =>    veg_vp%fr_fcel                                   , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction
+          fr_flig                        =>    veg_vp%fr_flig                                   , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction
+
+          leaf_prof                      =>    cnstate_vars%leaf_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
+          froot_prof                     =>    cnstate_vars%froot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
+          croot_prof                     =>    cnstate_vars%croot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots
+          stem_prof                      =>    cnstate_vars%stem_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems
+
+          m_leafc_to_litter              =>    veg_cf%m_leafc_to_litter              , & ! Input:  [real(r8) (:)   ]
+          m_frootc_to_litter             =>    veg_cf%m_frootc_to_litter             , & ! Input:  [real(r8) (:)   ]
+          m_livestemc_to_litter          =>    veg_cf%m_livestemc_to_litter          , & ! Input:  [real(r8) (:)   ]
+          m_deadstemc_to_litter          =>    veg_cf%m_deadstemc_to_litter          , & ! Input:  [real(r8) (:)   ]
+          m_livecrootc_to_litter         =>    veg_cf%m_livecrootc_to_litter         , & ! Input:  [real(r8) (:)   ]
+          m_deadcrootc_to_litter         =>    veg_cf%m_deadcrootc_to_litter         , & ! Input:  [real(r8) (:)   ]
+          m_leafc_storage_to_litter      =>    veg_cf%m_leafc_storage_to_litter      , & ! Input:  [real(r8) (:)   ]
+          m_frootc_storage_to_litter     =>    veg_cf%m_frootc_storage_to_litter     , & ! Input:  [real(r8) (:)   ]
+          m_livestemc_storage_to_litter  =>    veg_cf%m_livestemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]
+          m_deadstemc_storage_to_litter  =>    veg_cf%m_deadstemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]
+          m_livecrootc_storage_to_litter =>    veg_cf%m_livecrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]
+          m_deadcrootc_storage_to_litter =>    veg_cf%m_deadcrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]
+          m_gresp_storage_to_litter      =>    veg_cf%m_gresp_storage_to_litter      , & ! Input:  [real(r8) (:)   ]
+          m_leafc_xfer_to_litter         =>    veg_cf%m_leafc_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]
+          m_frootc_xfer_to_litter        =>    veg_cf%m_frootc_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]
+          m_livestemc_xfer_to_litter     =>    veg_cf%m_livestemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]
+          m_deadstemc_xfer_to_litter     =>    veg_cf%m_deadstemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]
+          m_livecrootc_xfer_to_litter    =>    veg_cf%m_livecrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]
+          m_deadcrootc_xfer_to_litter    =>    veg_cf%m_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]
+          m_gresp_xfer_to_litter         =>    veg_cf%m_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]
+          m_cpool_to_litter              =>    veg_cf%m_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]
           gap_mortality_c_to_litr_met_c  =>    col_cf%gap_mortality_c_to_litr_met_c    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
           gap_mortality_c_to_litr_cel_c  =>    col_cf%gap_mortality_c_to_litr_cel_c    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
           gap_mortality_c_to_litr_lig_c  =>    col_cf%gap_mortality_c_to_litr_lig_c    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
           gap_mortality_c_to_cwdc        =>    col_cf%gap_mortality_c_to_cwdc            & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
           )
-          
+
        do j = 1, nlevdecomp
           do pi = 1,maxpatch_pft
              do fc = 1,num_soilc
@@ -1140,17 +1141,18 @@ contains
    !-----------------------------------------------------------------------
    subroutine CNCIsoHarvestPftToColumn (&
         num_soilc, filter_soilc, &
-        cnstate_vars, carbonflux_vars, col_cf, veg_cf)
+        cnstate_vars, col_cf, veg_cf)
      !
      ! !DESCRIPTION:
      ! gather all patch-level harvest mortality fluxes
      ! to the column level and assign them to the litter, cwd, and wood product pools
      !
      ! !ARGUMENTS:
+      !$acc routine seq
      integer               , intent(in)    :: num_soilc         ! number of soil columns in filter
      integer               , intent(in)    :: filter_soilc(:)   ! soil column filter
      type(cnstate_type)    , intent(in)    :: cnstate_vars
-     type(carbonflux_type) , intent(inout) :: carbonflux_vars
+     !type(carbonflux_type) , intent(inout) :: carbonflux_vars
      type(column_carbon_flux), intent(inout) :: col_cf
      type(vegetation_carbon_flux), intent(inout) :: veg_cf
      !
@@ -1158,47 +1160,47 @@ contains
      integer :: fc,c,pi,p,j               ! indices
      !-----------------------------------------------------------------------
 
-     associate(                                                                                           & 
-          ivt                              =>    veg_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-          wtcol                            =>    veg_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
-          
-          lf_flab                          =>    veg_vp%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-          lf_fcel                          =>    veg_vp%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-          lf_flig                          =>    veg_vp%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-          fr_flab                          =>    veg_vp%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-          fr_fcel                          =>    veg_vp%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-          fr_flig                          =>    veg_vp%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
-          
-          leaf_prof                        =>    cnstate_vars%leaf_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
-          froot_prof                       =>    cnstate_vars%froot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
-          croot_prof                       =>    cnstate_vars%croot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
-          stem_prof                        =>    cnstate_vars%stem_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems                          
-          
-          hrv_leafc_to_litter              =>    veg_cf%hrv_leafc_to_litter              , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_to_litter             =>    veg_cf%hrv_frootc_to_litter             , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_to_litter          =>    veg_cf%hrv_livestemc_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
-          phrv_deadstemc_to_prod10c        =>    veg_cf%hrv_deadstemc_to_prod10c         , & ! Input:  [real(r8) (:)   ]                                                    
-          phrv_deadstemc_to_prod100c       =>    veg_cf%hrv_deadstemc_to_prod100c        , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_to_litter         =>    veg_cf%hrv_livecrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_to_litter         =>    veg_cf%hrv_deadcrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_leafc_storage_to_litter      =>    veg_cf%hrv_leafc_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_storage_to_litter     =>    veg_cf%hrv_frootc_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_storage_to_litter  =>    veg_cf%hrv_livestemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadstemc_storage_to_litter  =>    veg_cf%hrv_deadstemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_storage_to_litter =>    veg_cf%hrv_livecrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_storage_to_litter =>    veg_cf%hrv_deadcrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_gresp_storage_to_litter      =>    veg_cf%hrv_gresp_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_leafc_xfer_to_litter         =>    veg_cf%hrv_leafc_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_xfer_to_litter        =>    veg_cf%hrv_frootc_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_xfer_to_litter     =>    veg_cf%hrv_livestemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadstemc_xfer_to_litter     =>    veg_cf%hrv_deadstemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_xfer_to_litter    =>    veg_cf%hrv_livecrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_xfer_to_litter    =>    veg_cf%hrv_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_gresp_xfer_to_litter         =>    veg_cf%hrv_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_cpool_to_litter              =>    veg_cf%hrv_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]      
+     associate(                                                                                           &
+          ivt                              =>    veg_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type
+          wtcol                            =>    veg_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)
 
-          chrv_deadstemc_to_prod10c        =>    col_cf%hrv_deadstemc_to_prod10c           , & ! InOut:  [real(r8) (:)   ]                                                    
-          chrv_deadstemc_to_prod100c       =>    col_cf%hrv_deadstemc_to_prod100c          , & ! InOut:  [real(r8) (:)   ]                                                    
+          lf_flab                          =>    veg_vp%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction
+          lf_fcel                          =>    veg_vp%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction
+          lf_flig                          =>    veg_vp%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction
+          fr_flab                          =>    veg_vp%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction
+          fr_fcel                          =>    veg_vp%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction
+          fr_flig                          =>    veg_vp%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction
+
+          leaf_prof                        =>    cnstate_vars%leaf_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
+          froot_prof                       =>    cnstate_vars%froot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
+          croot_prof                       =>    cnstate_vars%croot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots
+          stem_prof                        =>    cnstate_vars%stem_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems
+
+          hrv_leafc_to_litter              =>    veg_cf%hrv_leafc_to_litter              , & ! Input:  [real(r8) (:)   ]
+          hrv_frootc_to_litter             =>    veg_cf%hrv_frootc_to_litter             , & ! Input:  [real(r8) (:)   ]
+          hrv_livestemc_to_litter          =>    veg_cf%hrv_livestemc_to_litter          , & ! Input:  [real(r8) (:)   ]
+          phrv_deadstemc_to_prod10c        =>    veg_cf%hrv_deadstemc_to_prod10c         , & ! Input:  [real(r8) (:)   ]
+          phrv_deadstemc_to_prod100c       =>    veg_cf%hrv_deadstemc_to_prod100c        , & ! Input:  [real(r8) (:)   ]
+          hrv_livecrootc_to_litter         =>    veg_cf%hrv_livecrootc_to_litter         , & ! Input:  [real(r8) (:)   ]
+          hrv_deadcrootc_to_litter         =>    veg_cf%hrv_deadcrootc_to_litter         , & ! Input:  [real(r8) (:)   ]
+          hrv_leafc_storage_to_litter      =>    veg_cf%hrv_leafc_storage_to_litter      , & ! Input:  [real(r8) (:)   ]
+          hrv_frootc_storage_to_litter     =>    veg_cf%hrv_frootc_storage_to_litter     , & ! Input:  [real(r8) (:)   ]
+          hrv_livestemc_storage_to_litter  =>    veg_cf%hrv_livestemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]
+          hrv_deadstemc_storage_to_litter  =>    veg_cf%hrv_deadstemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]
+          hrv_livecrootc_storage_to_litter =>    veg_cf%hrv_livecrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]
+          hrv_deadcrootc_storage_to_litter =>    veg_cf%hrv_deadcrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]
+          hrv_gresp_storage_to_litter      =>    veg_cf%hrv_gresp_storage_to_litter      , & ! Input:  [real(r8) (:)   ]
+          hrv_leafc_xfer_to_litter         =>    veg_cf%hrv_leafc_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]
+          hrv_frootc_xfer_to_litter        =>    veg_cf%hrv_frootc_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]
+          hrv_livestemc_xfer_to_litter     =>    veg_cf%hrv_livestemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]
+          hrv_deadstemc_xfer_to_litter     =>    veg_cf%hrv_deadstemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]
+          hrv_livecrootc_xfer_to_litter    =>    veg_cf%hrv_livecrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]
+          hrv_deadcrootc_xfer_to_litter    =>    veg_cf%hrv_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]
+          hrv_gresp_xfer_to_litter         =>    veg_cf%hrv_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]
+          hrv_cpool_to_litter              =>    veg_cf%hrv_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]
+
+          chrv_deadstemc_to_prod10c        =>    col_cf%hrv_deadstemc_to_prod10c           , & ! InOut:  [real(r8) (:)   ]
+          chrv_deadstemc_to_prod100c       =>    col_cf%hrv_deadstemc_to_prod100c          , & ! InOut:  [real(r8) (:)   ]
           harvest_c_to_litr_met_c          =>    col_cf%harvest_c_to_litr_met_c            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
           harvest_c_to_litr_cel_c          =>    col_cf%harvest_c_to_litr_cel_c            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
           harvest_c_to_litr_lig_c          =>    col_cf%harvest_c_to_litr_lig_c            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
@@ -1209,7 +1211,7 @@ contains
           do pi = 1,maxpatch_pft
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                
+
                 if (pi <=  col_pp%npfts(c)) then
                    p = col_pp%pfti(c) + pi - 1
 
@@ -1297,7 +1299,7 @@ contains
           end do
        end do
 
-     end associate 
+     end associate
 
    end subroutine CNCIsoHarvestPftToColumn
 
@@ -1312,6 +1314,7 @@ contains
      ! variables (except for gap-phase mortality and fire fluxes)
      !
      ! !ARGUMENTS:
+      !$acc routine seq
      real(r8)         , intent(inout), pointer :: ciso_flux(:)  ! isoC flux
      real(r8)         , intent(in)   , pointer :: ctot_flux(:)  ! totC flux
      real(r8)         , intent(in)   , pointer :: ciso_state(:) ! isoC state, upstream pool
@@ -1320,7 +1323,8 @@ contains
      integer          , intent(in)             :: num           ! number of filter members
      integer          , intent(in)             :: filter(:)     ! filter indices
      integer          , intent(in)             :: diag          ! 0=no diagnostics, 1=print diagnostics
-     character(len=*) , intent(in)             :: isotope       ! 'c13' or 'c14'
+     integer , intent(in)             :: isotope       ! 'c13' or 'c14'
+
      !
      ! ! LOCAL VARIABLES:
      integer  :: i,f     ! indices
@@ -1330,12 +1334,12 @@ contains
 
      ! if C14, double the fractionation
      select case (isotope)
-     case ('c14')
+     case (c14)
         frax = 1._r8 + (1._r8 - frax_c13) * 2._r8
-     case ('c13')
+     case (c13)
         frax = frax_c13
      case default
-        call endrun(msg='CarbonIsoFluxMod: iso must be either c13 or c14'//errMsg(__FILE__, __LINE__))
+        !#py !#py call endrun(msg='CarbonIsoFluxMod: iso must be either c13 or c14'//errMsg(__FILE__, __LINE__))
      end select
 
      ! loop over the supplied filter

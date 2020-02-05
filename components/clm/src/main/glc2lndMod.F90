@@ -17,14 +17,14 @@ module glc2lndMod
   use decompMod      , only : bounds_type
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : maxpatch_glcmec
   use clm_varctl     , only : iulog, glc_smb
+  use clm_varcon     , only : spval
   use abortutils     , only : endrun
   use GridcellType   , only : grc_pp
   use TopounitType   , only : top_pp
   use LandunitType   , only : lun_pp
-  use ColumnType     , only : col_pp 
+  use ColumnType     , only : col_pp
   !
   ! !REVISION HISTORY:
   ! Created by William Lipscomb, Dec. 2007, based on clm_atmlnd.F90.
@@ -68,7 +68,7 @@ module glc2lndMod
      procedure, public  :: Restart
      procedure, public  :: update_glc2lnd
 
-     procedure, private :: InitAllocate
+     procedure, public :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
      procedure, private :: check_glc2lnd_icemask  ! sanity-check icemask from GLC
@@ -87,12 +87,12 @@ contains
   subroutine Init(this, bounds)
 
     class(glc2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
     call this%InitCold(bounds)
-    
+
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -103,7 +103,7 @@ contains
     !
     ! !ARGUMENTS:
     class (glc2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begg,endg
@@ -111,11 +111,11 @@ contains
 
     begg = bounds%begg; endg = bounds%endg
 
-    allocate(this%frac_grc    (begg:endg,0:maxpatch_glcmec)) ;   this%frac_grc    (:,:) = nan
-    allocate(this%topo_grc    (begg:endg,0:maxpatch_glcmec)) ;   this%topo_grc    (:,:) = nan
-    allocate(this%hflx_grc    (begg:endg,0:maxpatch_glcmec)) ;   this%hflx_grc    (:,:) = nan
-    allocate(this%icemask_grc (begg:endg))                   ;   this%icemask_grc (:)   = nan
-    allocate(this%icemask_coupled_fluxes_grc (begg:endg))    ;   this%icemask_coupled_fluxes_grc (:)   = nan
+    allocate(this%frac_grc    (begg:endg,0:maxpatch_glcmec)) ;   this%frac_grc    (:,:) = spval
+    allocate(this%topo_grc    (begg:endg,0:maxpatch_glcmec)) ;   this%topo_grc    (:,:) = spval
+    allocate(this%hflx_grc    (begg:endg,0:maxpatch_glcmec)) ;   this%hflx_grc    (:,:) = spval
+    allocate(this%icemask_grc (begg:endg))                   ;   this%icemask_grc (:)   = spval
+    allocate(this%icemask_coupled_fluxes_grc (begg:endg))    ;   this%icemask_coupled_fluxes_grc (:)   = spval
     allocate(this%glc_dyn_runoff_routing_grc (begg:endg))    ;   this%glc_dyn_runoff_routing_grc (:)   = .false.
 
   end subroutine InitAllocate
@@ -124,7 +124,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use histFileMod, only : hist_addfld1d
+      use histFileMod, only : hist_addfld1d
     use clm_varcon , only : spval
     !
     ! !ARGUMENTS:
@@ -133,18 +133,18 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: begg, endg
-    
+
     character(len=*), parameter :: subname = 'InitHistory'
     !-----------------------------------------------------------------------
 
     begg = bounds%begg
     endg = bounds%endg
-    
+
     if (maxpatch_glcmec > 0) then
        this%icemask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='ICE_MASK',  units='unitless',  &
-            avgflag='I', long_name='Ice sheet mask coverage', &
-            ptr_gcell=this%icemask_grc)
+         call hist_addfld1d (fname='ICE_MASK',  units='unitless',  &
+              avgflag='I', long_name='Ice sheet mask coverage', &
+                ptr_gcell=this%icemask_grc)
     end if
 
   end subroutine InitHistory
@@ -153,7 +153,7 @@ contains
   subroutine InitCold(this, bounds)
     !
     ! !USES:
-    use domainMod      , only : ldomain
+      use domainMod      , only : ldomain
     !
     ! !ARGUMENTS:
     class(glc2lnd_type) :: this
@@ -167,7 +167,7 @@ contains
 
     begg = bounds%begg
     endg = bounds%endg
-    
+
     this%frac_grc(begg:endg, :) = 0.0_r8
     this%topo_grc(begg:endg, :) = 0.0_r8
     this%hflx_grc(begg:endg, :) = 0.0_r8
@@ -175,46 +175,46 @@ contains
     ! glcmask (from a file) provides a rough guess of the icemask (from CISM); thus, in
     ! initialization, set icemask equal to glcmask; icemask will later get updated at
     ! the start of the run loop, as soon as we have data from CISM
-    this%icemask_grc(begg:endg) = ldomain%glcmask(begg:endg)
+      this%icemask_grc(begg:endg) = ldomain%glcmask(begg:endg)
 
     ! initialize icemask_coupled_fluxes to 0; this seems safest in case we aren't coupled
     ! to CISM (to ensure that we use the uncoupled form of runoff routing)
     this%icemask_coupled_fluxes_grc(begg:endg) = 0.0_r8
-    
+
     call this%update_glc2lnd_dyn_runoff_routing(bounds)
 
   end subroutine InitCold
 
 
   !-----------------------------------------------------------------------
-  subroutine Restart(this, bounds, ncid, flag)
-    !
-    ! !DESCRIPTION:
-    ! Read/Write glc2lnd information to/from restart file.
-    !
-    ! !USES:
-    use ncdio_pio , only : ncd_double, file_desc_t
-    use decompMod , only : bounds_type
-    use restUtilMod
-    !
-    ! !ARGUMENTS:
-    class(glc2lnd_type) , intent(inout) :: this
-    type(bounds_type)   , intent(in)    :: bounds 
-    type(file_desc_t)   , intent(inout) :: ncid ! netcdf id
-    character(len=*)    , intent(in)    :: flag ! 'read' or 'write'
-    !
-    ! !LOCAL VARIABLES:
-    logical :: readvar      ! determine if variable is on initial file
-    
-    character(len=*), parameter :: subname = 'Restart'
-    !-----------------------------------------------------------------------
+    subroutine Restart(this, bounds, ncid, flag)
+      !
+      ! !DESCRIPTION:
+      ! Read/Write glc2lnd information to/from restart file.
+      !
+      ! !USES:
+        use ncdio_pio , only : ncd_double, file_desc_t
+      use decompMod , only : bounds_type
+        use restUtilMod
+      !
+      ! !ARGUMENTS:
+      class(glc2lnd_type) , intent(inout) :: this
+      type(bounds_type)   , intent(in)    :: bounds
+      type(file_desc_t)   , intent(inout) :: ncid ! netcdf id
+      character(len=*)    , intent(in)    :: flag ! 'read' or 'write'
+      !
+      ! !LOCAL VARIABLES:
+      logical :: readvar      ! determine if variable is on initial file
 
-    call restartvar(ncid=ncid, flag=flag, varname='icemask', xtype=ncd_double, &
-         dim1name='gridcell', &
-         long_name='total ice-sheet grid coverage mask', units='fraction', &
-         interpinic_flag='skip', readvar=readvar, data=this%icemask_grc)
+      character(len=*), parameter :: subname = 'Restart'
+      !-----------------------------------------------------------------------
 
-  end subroutine Restart
+      call restartvar(ncid=ncid, flag=flag, varname='icemask', xtype=ncd_double, &
+           dim1name='gridcell', &
+           long_name='total ice-sheet grid coverage mask', units='fraction', &
+           interpinic_flag='skip', readvar=readvar, data=this%icemask_grc)
+
+        end subroutine Restart
 
 
   !-----------------------------------------------------------------------
@@ -264,7 +264,7 @@ contains
     ! Do a sanity check on the icemask received from CISM via coupler.
     !
     ! !USES:
-    use domainMod , only : ldomain
+      use domainMod , only : ldomain
     use clm_varcon, only : nameg
     !
     ! !ARGUMENTS:
@@ -273,23 +273,23 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g  ! grid cell index
-    
+
     character(len=*), parameter :: subname = 'check_glc2lnd_icemask'
     !-----------------------------------------------------------------------
-    
+
     do g = bounds%begg, bounds%endg
 
        ! Ensure that icemask is a subset of glcmask. This is needed because we allocated
        ! memory based on glcmask, so it is a problem if the ice sheet tries to expand
        ! beyond the area defined by glcmask.
 
-       if (this%icemask_grc(g) > 0._r8 .and. ldomain%glcmask(g) == 0._r8) then
-          write(iulog,*) subname//' ERROR: icemask must be a subset of glcmask.'
-          write(iulog,*) 'You can fix this problem by adding more grid cells'
-          write(iulog,*) 'to the mask defined by the fglcmask file.'
-          write(iulog,*) '(Change grid cells to 1 everywhere that CISM can operate.)'
-          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
-       end if
+         if (this%icemask_grc(g) > 0._r8 .and. ldomain%glcmask(g) == 0._r8) then
+            write(iulog,*) subname//' ERROR: icemask must be a subset of glcmask.'
+            write(iulog,*) 'You can fix this problem by adding more grid cells'
+            write(iulog,*) 'to the mask defined by the fglcmask file.'
+            write(iulog,*) '(Change grid cells to 1 everywhere that CISM can operate.)'
+              call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+         end if
     end do
 
   end subroutine check_glc2lnd_icemask
@@ -309,7 +309,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g  ! grid cell index
-    
+
     character(len=*), parameter :: subname = 'check_glc2lnd_icemask_coupled_fluxes'
     !-----------------------------------------------------------------------
 
@@ -321,8 +321,8 @@ contains
        ! future can rely on it.
 
        if (this%icemask_coupled_fluxes_grc(g) > 0._r8 .and. this%icemask_grc(g) == 0._r8) then
-          write(iulog,*) subname//' ERROR: icemask_coupled_fluxes must be a subset of icemask.'
-          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+            write(iulog,*) subname//' ERROR: icemask_coupled_fluxes must be a subset of icemask.'
+              call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -342,7 +342,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g  ! grid cell index
-    
+
     character(len=*), parameter :: subname = 'update_glc2lnd_dyn_runoff_routing'
     !-----------------------------------------------------------------------
 
@@ -378,7 +378,7 @@ contains
     use clm_varcon        , only : ispval
     use landunit_varcon   , only : istice_mec
     use column_varcon     , only : col_itype_to_icemec_class
-    use subgridWeightsMod , only : set_landunit_weight
+      use subgridWeightsMod , only : set_landunit_weight
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -391,21 +391,21 @@ contains
     integer :: icemec_class                     ! current icemec class (1..maxpatch_glcmec)
     logical :: frac_assigned(1:maxpatch_glcmec) ! whether this%frac has been assigned for each elevation class
     logical :: error                            ! if an error was found
-    
+
     character(len=*), parameter :: subname = 'update_glc2lnd_fracs'
     !-----------------------------------------------------------------------
-    
+
     do g = bounds%begg, bounds%endg
        ! Values from GLC are only valid within the icemask, so we only update CLM's areas there
        if (this%icemask_grc(g) > 0._r8) then
           do t = grc_pp%topi(g), grc_pp%topf(g)
 
-             ! For now, all topounits on the gridcell will have identical settings for 
+             ! For now, all topounits on the gridcell will have identical settings for
              ! the fractional area of the glacier landunit. This makes sense for max_topounits = 1,
              ! but should not break for max_topounits > 1. Revisit this code during the update for glacier_mec.
              ! Set total icemec landunit area
              area_ice_mec = sum(this%frac_grc(g, 1:maxpatch_glcmec))
-             call set_landunit_weight(t, istice_mec, area_ice_mec)
+               call set_landunit_weight(t, istice_mec, area_ice_mec)
 
              ! If new landunit area is greater than 0, then update column areas
              ! (If new landunit area is 0, col_pp%wtlunit is arbitrary, so we might as well keep the existing values)
@@ -413,10 +413,10 @@ contains
                 ! Determine index of the glc_mec landunit
                 l_ice_mec = top_pp%landunit_indices(istice_mec, t)
                 if (l_ice_mec == ispval) then
-                   write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
-                   call endrun()
+                     write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
+                     call endrun()
                 end if
-             
+
                 frac_assigned(1:maxpatch_glcmec) = .false.
                 do c = lun_pp%coli(l_ice_mec), lun_pp%colf(l_ice_mec)
                    icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
@@ -434,13 +434,13 @@ contains
                    end if
                 end do
                 if (error) then
-                   write(iulog,*) subname//' ERROR: at least one glc_mec column has non-zero area from the coupler,'
-                   write(iulog,*) 'but there was no slot in memory for this column; g = ', g
-                   write(iulog,*) 'this%frac_grc(g, 1:maxpatch_glcmec) = ', &
-                        this%frac_grc(g, 1:maxpatch_glcmec)
-                   write(iulog,*) 'frac_assigned(1:maxpatch_glcmec) = ', &
-                        frac_assigned(1:maxpatch_glcmec)
-                   call endrun()
+                     write(iulog,*) subname//' ERROR: at least one glc_mec column has non-zero area from the coupler,'
+                     write(iulog,*) 'but there was no slot in memory for this column; g = ', g
+                     write(iulog,*) 'this%frac_grc(g, 1:maxpatch_glcmec) = ', &
+                          this%frac_grc(g, 1:maxpatch_glcmec)
+                     write(iulog,*) 'frac_assigned(1:maxpatch_glcmec) = ', &
+                          frac_assigned(1:maxpatch_glcmec)
+                     call endrun()
                 end if  ! error
              end if  ! area_ice_mec > 0
           end do ! loop over topounits on this gridcell
@@ -469,7 +469,7 @@ contains
 
     character(len=*), parameter :: subname = 'update_glc2lnd_topo'
     !-----------------------------------------------------------------------
-    
+
     ! It is tempting to use the do_smb_c filter here, since we only need glc_topo inside
     ! this filter. But the problem with using the filter is that this routine is called
     ! before the filters are updated to reflect the updated weights. As long as
@@ -483,7 +483,7 @@ contains
     !     updated  - but that leads to greater complexity in the driver loop.
     ! So it seems simplest just to take the minor performance hit of setting glc_topo
     ! over all columns, even those outside the do_smb_c filter.
-    
+
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
@@ -504,4 +504,3 @@ contains
   end subroutine update_glc2lnd_topo
 
 end module glc2lndMod
-

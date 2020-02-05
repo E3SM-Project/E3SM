@@ -6,9 +6,9 @@ module clm_interface_dataType
 ! update: 9/16/2016, 2/2/2017, May-2017, June-2017
 !=================================================================================================
   ! USES:
-  use shr_log_mod           , only : errMsg => shr_log_errMsg
+  !use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
-  use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
+  !use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
 
   use clm_interface_thType
   use clm_interface_bgcType
@@ -56,7 +56,7 @@ module clm_interface_dataType
      procedure , private :: InitAllocate
   end type clm_interface_data_type
 !-------------------------------------------------------------------------------------------------
-  
+
 
 contains
 
@@ -98,28 +98,28 @@ contains
     begp = bounds%begp; endp= bounds%endp
 
     ! col:
-    allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd))      ; this%z                    (:,:) = nan
-    allocate(this%zi                    (begc:endc,-nlevsno+0:nlevgrnd))      ; this%zi                   (:,:) = nan
-    allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd))      ; this%dz                   (:,:) = nan
+    allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd))      ; this%z                    (:,:) = spval
+    allocate(this%zi                    (begc:endc,-nlevsno+0:nlevgrnd))      ; this%zi                   (:,:) = spval
+    allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd))      ; this%dz                   (:,:) = spval
 
     ! soilstate_vars:
-    allocate(this%bd_col                (begc:endc,1:nlevgrnd))               ; this%bd_col               (:,:) = nan
+    allocate(this%bd_col                (begc:endc,1:nlevgrnd))               ; this%bd_col               (:,:) = spval
     allocate(this%hksat_col             (begc:endc,1:nlevgrnd))               ; this%hksat_col            (:,:) = spval
-    allocate(this%bsw_col               (begc:endc,1:nlevgrnd))               ; this%bsw_col              (:,:) = nan
-    allocate(this%watsat_col            (begc:endc,1:nlevgrnd))               ; this%watsat_col           (:,:) = nan
-    allocate(this%watmin_col            (begc:endc,1:nlevgrnd))               ; this%watmin_col           (:,:) = nan
+    allocate(this%bsw_col               (begc:endc,1:nlevgrnd))               ; this%bsw_col              (:,:) = spval
+    allocate(this%watsat_col            (begc:endc,1:nlevgrnd))               ; this%watsat_col           (:,:) = spval
+    allocate(this%watmin_col            (begc:endc,1:nlevgrnd))               ; this%watmin_col           (:,:) = spval
     allocate(this%sucsat_col            (begc:endc,1:nlevgrnd))               ; this%sucsat_col           (:,:) = spval
     allocate(this%sucmin_col            (begc:endc,1:nlevgrnd))               ; this%sucmin_col           (:,:) = spval
-    allocate(this%watfc_col             (begc:endc,1:nlevgrnd))               ; this%watfc_col            (:,:) = nan
+    allocate(this%watfc_col             (begc:endc,1:nlevgrnd))               ; this%watfc_col            (:,:) = spval
     allocate(this%porosity_col          (begc:endc,1:nlevgrnd))               ; this%porosity_col         (:,:) = spval
     allocate(this%eff_porosity_col      (begc:endc,1:nlevgrnd))               ; this%eff_porosity_col     (:,:) = spval
-    allocate(this%cellorg_col           (begc:endc,1:nlevgrnd))               ; this%cellorg_col          (:,:) = nan
-    allocate(this%rootfr_col            (begc:endc,1:nlevgrnd))               ; this%rootfr_col           (:,:) = nan
+    allocate(this%cellorg_col           (begc:endc,1:nlevgrnd))               ; this%cellorg_col          (:,:) = spval
+    allocate(this%rootfr_col            (begc:endc,1:nlevgrnd))               ; this%rootfr_col           (:,:) = spval
 
-    allocate(this%tkwet_col             (begc:endc,1:nlevgrnd))               ; this%tkwet_col            (:,:) = nan
-    allocate(this%tkdry_col             (begc:endc,1:nlevgrnd))               ; this%tkdry_col            (:,:) = nan
-    allocate(this%tkfrz_col             (begc:endc,1:nlevgrnd))               ; this%tkfrz_col            (:,:) = nan
-    allocate(this%csol_col              (begc:endc,1:nlevgrnd))               ; this%csol_col             (:,:) = nan
+    allocate(this%tkwet_col             (begc:endc,1:nlevgrnd))               ; this%tkwet_col            (:,:) = spval
+    allocate(this%tkdry_col             (begc:endc,1:nlevgrnd))               ; this%tkdry_col            (:,:) = spval
+    allocate(this%tkfrz_col             (begc:endc,1:nlevgrnd))               ; this%tkfrz_col            (:,:) = spval
+    allocate(this%csol_col              (begc:endc,1:nlevgrnd))               ; this%csol_col             (:,:) = spval
 
   end subroutine InitAllocate
 !-------------------------------------------------------------------------------------------------

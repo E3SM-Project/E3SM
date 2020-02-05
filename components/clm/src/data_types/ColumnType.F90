@@ -3,13 +3,13 @@ module ColumnType
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Column data type allocation and initialization
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   ! column types can have values of
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   !   1  => (istsoil)          soil (vegetated or bare soil)
   !   2  => (istcrop)          crop (only for crop configuration)
   !   3  => (istice)           land ice
-  !   4  => (istice_mec)       land ice (multiple elevation classes)   
+  !   4  => (istice_mec)       land ice (multiple elevation classes)
   !   5  => (istdlak)          deep lake
   !   6  => (istwet)           wetland
   !   71 => (icol_roof)        urban roof
@@ -27,7 +27,7 @@ module ColumnType
   implicit none
   save
   private
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds physical property information at the column level.
   !-----------------------------------------------------------------------
@@ -47,7 +47,7 @@ module ColumnType
 
      ! topological mapping functionality
      integer , pointer :: itype        (:) => null() ! column type
-     logical , pointer :: active       (:) => null() ! true=>do computations on this column 
+     logical , pointer :: active       (:) => null() ! true=>do computations on this column
 
      ! topography
      real(r8), pointer :: glc_topo     (:) => null() ! surface elevation (m)
@@ -61,13 +61,13 @@ module ColumnType
 
      ! vertical levels
      integer , pointer :: snl          (:)   => null() ! number of snow layers
-     real(r8), pointer :: dz           (:,:) => null() ! layer thickness (m)  (-nlevsno+1:nlevgrnd) 
-     real(r8), pointer :: z            (:,:) => null() ! layer depth (m) (-nlevsno+1:nlevgrnd) 
-     real(r8), pointer :: zi           (:,:) => null() ! interface level below a "z" level (m) (-nlevsno+0:nlevgrnd) 
+     real(r8), pointer :: dz           (:,:) => null() ! layer thickness (m)  (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: z            (:,:) => null() ! layer depth (m) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: zi           (:,:) => null() ! interface level below a "z" level (m) (-nlevsno+0:nlevgrnd)
      real(r8), pointer :: zii          (:)   => null() ! convective boundary height [m]
      real(r8), pointer :: dz_lake      (:,:) => null() ! lake layer thickness (m)  (1:nlevlak)
      real(r8), pointer :: z_lake       (:,:) => null() ! layer depth for lake (m)
-     real(r8), pointer :: lakedepth    (:)   => null() ! variable lake depth (m)                             
+     real(r8), pointer :: lakedepth    (:)   => null() ! variable lake depth (m)
 
      ! other column characteristics
      logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
@@ -75,20 +75,20 @@ module ColumnType
    contains
 
      procedure, public :: Init => col_pp_init
-     procedure, public :: Clean => col_pp_clean
 
   end type column_physical_properties
 
- 
+
   !-----------------------------------------------------------------------
   ! declare the public instance of column-level meta-data type
   !-----------------------------------------------------------------------
   type(column_physical_properties)   , public, target :: col_pp    ! column physical properties
+  !$acc declare create(col_pp)
 
   !------------------------------------------------------------------------
 
 contains
-  
+
   !------------------------------------------------------------------------
   subroutine col_pp_init(this, begc, endc)
     !
@@ -99,11 +99,11 @@ contains
 
     ! The following is set in initGridCellsMod
     allocate(this%gridcell    (begc:endc))                     ; this%gridcell    (:)   = ispval
-    allocate(this%wtgcell     (begc:endc))                     ; this%wtgcell     (:)   = nan
+    allocate(this%wtgcell     (begc:endc))                     ; this%wtgcell     (:)   =  spval
     allocate(this%topounit    (begc:endc))                     ; this%topounit    (:)   = ispval
-    allocate(this%wttopounit  (begc:endc))                     ; this%wttopounit  (:)   = nan
+    allocate(this%wttopounit  (begc:endc))                     ; this%wttopounit  (:)   =  spval
     allocate(this%landunit    (begc:endc))                     ; this%landunit    (:)   = ispval
-    allocate(this%wtlunit     (begc:endc))                     ; this%wtlunit     (:)   = nan
+    allocate(this%wtlunit     (begc:endc))                     ; this%wtlunit     (:)   =  spval
     allocate(this%pfti        (begc:endc))                     ; this%pfti        (:)   = ispval
     allocate(this%pftf        (begc:endc))                     ; this%pftf        (:)   = ispval
     allocate(this%npfts       (begc:endc))                     ; this%npfts       (:)   = ispval
@@ -116,18 +116,19 @@ contains
     allocate(this%z           (begc:endc,-nlevsno+1:nlevgrnd)) ; this%z           (:,:) = nan
     allocate(this%zi          (begc:endc,-nlevsno+0:nlevgrnd)) ; this%zi          (:,:) = nan
     allocate(this%zii         (begc:endc))                     ; this%zii         (:)   = nan
-    allocate(this%lakedepth   (begc:endc))                     ; this%lakedepth   (:)   = spval  
+    allocate(this%lakedepth   (begc:endc))                     ; this%lakedepth   (:)   = spval
     allocate(this%dz_lake     (begc:endc,nlevlak))             ; this%dz_lake     (:,:) = nan
     allocate(this%z_lake      (begc:endc,nlevlak))             ; this%z_lake      (:,:) = nan
 
     allocate(this%glc_topo    (begc:endc))                     ; this%glc_topo    (:)   = nan
     allocate(this%micro_sigma (begc:endc))                     ; this%micro_sigma (:)   = nan
-    allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = nan 
+    allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = nan
     allocate(this%topo_slope  (begc:endc))                     ; this%topo_slope  (:)   = nan
     allocate(this%topo_std    (begc:endc))                     ; this%topo_std    (:)   = nan
     allocate(this%hslp_p10    (begc:endc,nlevslp))             ; this%hslp_p10    (:,:) = nan
+
     allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
-    allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = nan
+    allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   =  spval
 
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
 
@@ -170,6 +171,5 @@ contains
     deallocate(this%hydrologically_active)
 
   end subroutine col_pp_clean
-  
-end module ColumnType
 
+end module ColumnType

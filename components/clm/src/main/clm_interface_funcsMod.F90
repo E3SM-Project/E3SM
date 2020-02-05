@@ -29,7 +29,7 @@ module clm_interface_funcsMod
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf 
+  use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType        , only : col_cs, col_cf
   use ColumnDataType        , only : col_ns, col_nf
   use ColumnDataType        , only : col_ps, col_pf
@@ -1382,6 +1382,7 @@ contains
 
     type(clm_interface_data_type)       , intent(inout) :: clm_interface_data
 
+    real(r8) :: dt
     !-------------------------------------------------------------
     ! STEP-2: (i) pass data from clm_bgc_data to SoilLittDecompAlloc
     call clm_bgc_get_data(clm_interface_data, bounds,       &
@@ -1397,11 +1398,7 @@ contains
     call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                num_soilp, filter_soilp,                     &
                canopystate_vars, soilstate_vars,            &
-               temperature_vars, waterstate_vars,           &
-               cnstate_vars, ch4_vars,                      &
-               carbonstate_vars, carbonflux_vars,           &
-               nitrogenstate_vars, nitrogenflux_vars,       &
-               phosphorusstate_vars,phosphorusflux_vars)
+               cnstate_vars, ch4_vars, dt)
 
     ! STEP-2: (iii) update clm_bgc_data from SoilLittDecompAlloc
     call clm_bgc_update_data(clm_interface_data%bgc, bounds, &
@@ -1755,4 +1752,3 @@ contains
 
 
 end module clm_interface_funcsMod
-

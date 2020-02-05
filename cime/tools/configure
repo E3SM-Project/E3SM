@@ -28,7 +28,7 @@ from CIME.BuildTools.configure import configure
 from CIME.XML.machines import Machines
 
 logger = logging.getLogger(__name__)
-
+print "inside configure!!!!!!"
 def parse_command_line(args):
     """Command line argument parser for configure."""
     description = __doc__
@@ -87,9 +87,9 @@ def parse_command_line(args):
         else:
             expect(False, "Either --mach-dir or the CIME_MODEL environment "
                    "variable must be specified!")
-
+    
     opts['machobj'] = machobj
-
+    print opts['machobj']
     if args.macros_format is None:
         opts['macros_format'] = []
     else:
@@ -114,7 +114,9 @@ def parse_command_line(args):
     opts['compiler'] = compiler
     opts['os'] = machobj.get_value('OS')
     opts['comp_interface'] = args.comp_interface
-
+    
+    print "opts[compiler]" opts['compiler']
+    
     if args.clean:
         files = ["Macros.make", "Macros.cmake", "env_mach_specific.xml", ".env_mach_specific.sh",
                  ".env_mach_specific.csh", "Depends.%s"%compiler, "Depends.%s"%args.machine,
@@ -140,18 +142,19 @@ def parse_command_line(args):
            "Invalid MPI library name given in MPILIB environment variable: %s" %
            mpilib)
     opts['mpilib'] = mpilib
-
+    print os.environ["DEBUG"]
     # Set DEBUG flag.
     if "DEBUG" in os.environ:
         expect(os.environ["DEBUG"].lower() in ('true', 'false'),
                "Invalid DEBUG environment variable value (must be 'TRUE' or "
                "'FALSE'): %s" % os.environ["DEBUG"])
         debug = os.environ["DEBUG"].lower() == "true"
+        print "debug is on"
     else:
         debug = False
         os.environ["DEBUG"] = "FALSE"
     opts['debug'] = debug
-
+    print "opts " opts
     return opts
 
 def _main():

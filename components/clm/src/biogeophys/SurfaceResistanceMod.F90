@@ -1,6 +1,6 @@
 module SurfaceResistanceMod
 
-#include "shr_assert.h"
+!#py #include "shr_assert.h"
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -13,14 +13,15 @@ module SurfaceResistanceMod
   use clm_varctl    , only : iulog
   use SoilStateType , only : soilstate_type
   use WaterStateType, only : waterstate_type
-  use ColumnDataType, only : col_ws  
-  
+  use ColumnDataType, only : col_ws
+
   implicit none
   save
   private
   integer :: soil_stress_method   !choose the method for soil resistance calculation
-  
   integer, parameter :: leepielke_1992 = 0 !
+  !$acc declare create(soil_stress_method)
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: calc_soilevap_stress
@@ -31,7 +32,7 @@ module SurfaceResistanceMod
   ! !REVISION HISTORY:
   ! 6/25/2013 Created by Jinyun Tang
   !-----------------------------------------------------------------------
-  
+
 contains
 
   !-----------------------------------------------------------------------
@@ -40,65 +41,67 @@ contains
    !DESCRIPTIONS
    ! initialize method for soil stress calculation
    implicit none
-   
+
    soil_stress_method = leepielke_1992
-   
+
    end subroutine init_soil_stress
-   
-   !------------------------------------------------------------------------------   
+
+   !------------------------------------------------------------------------------
    subroutine calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, &
-        soilstate_vars, waterstate_vars)
+        soilstate_vars)
      !
      ! DESCRIPTIONS
      ! compute the stress factor for soil evaporation calculation
      !
-     use shr_kind_mod  , only : r8 => shr_kind_r8     
-     use shr_const_mod , only : SHR_CONST_PI  
+      !$acc routine seq
+     use shr_kind_mod  , only : r8 => shr_kind_r8
+     use shr_const_mod , only : SHR_CONST_PI
      use decompMod     , only : bounds_type
      use ColumnType    , only : col_pp
      use LandunitType  , only : lun_pp
-     use abortutils    , only : endrun      
+     !#py use abortutils    , only : endrun
      !
      ! !ARGUMENTS:
      implicit none
-     type(bounds_type)     , intent(in)    :: bounds    ! bounds   
+     type(bounds_type)     , intent(in)    :: bounds    ! bounds
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
      type(soilstate_type)  , intent(inout) :: soilstate_vars
-     type(waterstate_type) , intent(in)    :: waterstate_vars
+     !type(waterstate_type) , intent(in)    :: waterstate_vars
 
-     character(len=32) :: subname = 'calc_soilevap_stress'  ! subroutine name
+     !character(len=32) :: subname = 'calc_soilevap_stress'  ! subroutine name
      associate(                &
           soilbeta =>  soilstate_vars%soilbeta_col  & ! Output: [real(r8) (:)] factor that reduces ground evaporation
           )
-   
+
        !select the right method and do the calculation
        select case (soil_stress_method)
 
        case (leepielke_1992)
           call calc_beta_leepielke1992(bounds, num_nolakec, filter_nolakec, &
-               soilstate_vars, waterstate_vars, soilbeta(bounds%begc:bounds%endc))
+               soilstate_vars, soilbeta)
 
        case default
-          call endrun(subname // ':: a soilevap stress function must be specified!')     
+          !#py call endrun(subname // ':: a soilevap stress function must be specified!')
        end select
 
      end associate
 
    end subroutine calc_soilevap_stress
-   
-   !------------------------------------------------------------------------------   
+
+   !------------------------------------------------------------------------------
    subroutine calc_beta_leepielke1992(bounds, num_nolakec, filter_nolakec, &
-        soilstate_vars, waterstate_vars, soilbeta)
+        soilstate_vars, soilbeta)
      !
      ! DESCRIPTION
      ! compute the lee-pielke beta factor to scal actual soil evaporation from potential evaporation
      !
      ! USES
-     use shr_kind_mod    , only : r8 => shr_kind_r8     
+      !$acc routine seq
+     use shr_kind_mod    , only : r8 => shr_kind_r8
      use shr_const_mod   , only : SHR_CONST_PI
-     use shr_log_mod     , only : errMsg => shr_log_errMsg   
-     use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
+     !#py !#py use shr_log_mod     , only : errMsg => shr_log_errMsg
+     !#py !#py use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
      use decompMod       , only : bounds_type
      use clm_varcon      , only : denh2o, denice
      use landunit_varcon , only : istice, istice_mec, istwet, istsoil, istcrop
@@ -109,18 +112,17 @@ contains
      use clm_varctl      , only : use_vsfm
      !
      implicit none
-     type(bounds_type)     , intent(in)    :: bounds    ! bounds   
+     type(bounds_type)     , intent(in)    :: bounds    ! bounds
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
      type(soilstate_type)  , intent(in)    :: soilstate_vars
-     type(waterstate_type) , intent(in)    :: waterstate_vars
+     !type(waterstate_type) , intent(in)    :: waterstate_vars
      real(r8)              , intent(inout) :: soilbeta(bounds%begc:bounds%endc)
 
      !local variables
      real(r8) :: fac, fac_fc, wx      !temporary variables
      integer  :: c, l, fc     !indices
 
-     SHR_ASSERT_ALL((ubound(soilbeta)    == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
      associate(                                              &
           watsat      =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
@@ -128,16 +130,16 @@ contains
           watmin      =>    soilstate_vars%watmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
           sucmin      =>    soilstate_vars%sucmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
           soilp_col   =>    col_ws%soilp      , & ! Input:  [real(r8) (:,:)] soil water pressure (Pa)
-          
-          h2osoi_ice  =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
-          h2osoi_liq  =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
+
+          h2osoi_ice  =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)
+          h2osoi_liq  =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)
           frac_sno    =>    col_ws%frac_sno   , & ! Input:  [real(r8) (:)] fraction of ground covered by snow (0 to 1)
           frac_h2osfc =>    col_ws%frac_h2osfc  & ! Input:  [real(r8) (:)]  fraction of ground covered by surface water (0 to 1)
           )
 
        do fc = 1,num_nolakec
           c = filter_nolakec(fc)
-          l = col_pp%landunit(c)   
+          l = col_pp%landunit(c)
           if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
                .AND. lun_pp%itype(l)/=istice_mec) then
              if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
@@ -155,7 +157,7 @@ contains
                 else   !when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
                 end if
-                if ( use_vsfm ) then 
+                if ( use_vsfm ) then
                    if ((wx < watmin(c,1)) .or. (soilp_col(c,1) < sucmin(c,1))) then
                       soilbeta(c) = 0._r8
                    end if
@@ -183,7 +185,7 @@ contains
                    end if
                 endif
              else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
-                soilbeta(c) = 0._r8          
+                soilbeta(c) = 0._r8
              else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
                 soilbeta(c) = 0._r8
              endif
@@ -195,10 +197,10 @@ contains
      end associate
 
    end subroutine calc_beta_leepielke1992
-   
-   !------------------------------------------------------------------------------   
+
+   !------------------------------------------------------------------------------
    function do_soilevap_beta()result(lres)
-     !
+     !$acc routine seq
      !DESCRIPTION
      ! return true if the moisture stress for soil evaporation is computed as beta factor
      ! otherwise false
@@ -214,9 +216,10 @@ contains
 
    end function do_soilevap_beta
 
-    !------------------------------------------------------------------------------   
-  
+    !------------------------------------------------------------------------------
+
    function getlblcef(rho,temp)result(cc)
+     !$acc routine seq
      !compute the scaling paramter for laminar boundary resistance
      !the laminar boundary layer resistance is formulated as
      !Rb=2/(k*ustar)*(Sci/Pr)^(2/3)
@@ -246,5 +249,5 @@ contains
      cc      = 2._r8/vkc*(Sc/Prandtl)**(2._r8/3._r8)
 
      return
-   end function getlblcef    
+   end function getlblcef
 end module SurfaceResistanceMod

@@ -1967,6 +1967,71 @@
     </environment_variables>
   </machine>
 
+
+  <machine MACH="excl">
+    <DESC> Nvidia DGX, OS is Linux, 1 CPU/6 GPU Tesla/TPU </DESC>
+    <NODENAME_REGEX>none</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>pgi</COMPILERS>
+    <MPILIBS>openmpi,mpi-serieal</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/project_e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/project_e3sm/e3sm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/project_e3sm/e3sm-inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/project_e3sm/archives/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/project_e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{HOME}/project_e3sm/tools/cprnc.excl</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>yuanf -at- ornl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="openmpi" compiler="pgi">
+      <executable>$ENV{MPI_ROOT}/bin/mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable> </executable>
+    </mpirun>
+    <module_system type="none"/>
+<!-- The following should be working, but NOT. 
+      Otherwise commentint out the line above this. And mannually load PGI or GNU
+    <module_system type="module" allow_error="true">
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+      </modules>
+      <modules compiler="pgi">
+        <command name="unload">gcc</command>
+        <command name="load">pgi</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="unload">pgi</command>
+        <command name="load">gcc</command>
+      </modules>
+    </module_system>
+-->
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <!-- the following ENVs must be pre-defined in .bashrc or manually setting -->
+      <env name="CC_ROOT">$ENV{CC_ROOT}</env>
+      <env name="FC_ROOT">$ENV{FC_ROOT}</env>
+      <env name="MPI_ROOT">$ENV{MPI_ROOT}</env>
+      <env name="HDF5_PATH">$ENV{HDF5_PATH}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
+      <env name="BLASLAPACK_DIR">$ENV{BLASLAPACK_DIR}</env>
+      <env name="PROF">--annotate-mpi openmpi --openmp-profiling off</env>
+    </environment_variables>
+  </machine>
+
+
   <machine MACH="oic5">
     <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>oic5</NODENAME_REGEX>

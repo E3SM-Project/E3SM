@@ -23,7 +23,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_sr (bounds, lbj, ubj, jtop, numf, filter, a, b, c, r, u, is_col_active)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A x = r
@@ -102,7 +102,7 @@ contains
   end subroutine Tridiagonal_sr
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_mr (bounds, lbj, ubj, jtop, numf, filter, ntrcs, a, b, c, r, u, is_col_active)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A X = R
@@ -189,7 +189,7 @@ contains
 
 !----------------
   subroutine Trisim(bounds, lbj, ubj, numf, filter, a1,b1,c1,d1,e1,a2,b2,c2,d2,e2,w1, w2)
-     !
+     !$acc routine seq
      !DESCRIPTIONS
      ! This subroutine solves two coupled tridiagonal equations
      ! A1*W1(J-1)+B1*W1(j)+C1*W1(J+1) = D1*W2(j) + E1 AND
@@ -325,7 +325,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_sr_with_var_bottom (bounds, lbj, ubj, jtop, jbot, numf, filter, a, b, c, r, u, is_col_active)
-    !
+    !$acc routine seq 
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A x = r

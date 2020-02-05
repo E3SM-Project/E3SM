@@ -1,14 +1,15 @@
 module AerosolType
 
-#include "shr_assert.h"
 
+#include "shr_assert.h"
   !-----------------------------------------------------------------------
   ! !USES:
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use shr_log_mod    , only : errMsg => shr_log_errMsg
   use clm_varpar     , only : nlevsno, nlevgrnd
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
+  use clm_varcon     , only : spval, ispval
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -71,36 +72,36 @@ module AerosolType
 
    contains
 
-     procedure, public  :: Init         
-     procedure, public  :: Restart      
-     procedure, public  :: Reset 
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory  
-     procedure, private :: InitCold     
-       
+     procedure, public  :: Init
+     procedure, public  :: Restart
+     procedure, public  :: Reset
+     procedure, private :: InitAllocate
+     procedure, private :: InitHistory
+     procedure, private :: InitCold
+
+
   end type aerosol_type
   !-----------------------------------------------------------------------
-         
+
 contains
 
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   subroutine Init(this, bounds)
 
     class(aerosol_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
     call this%InitCold(bounds)
 
   end subroutine Init
-
   !-----------------------------------------------------------------------
   subroutine InitAllocate(this, bounds)
     !
     ! !ARGUMENTS:
     class(aerosol_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begc, endc
@@ -108,58 +109,59 @@ contains
 
     begc = bounds%begc; endc= bounds%endc
 
-    allocate(this%flx_dst_dep_dry1_col (begc:endc))              ; this%flx_dst_dep_dry1_col (:)   = nan
-    allocate(this%flx_dst_dep_wet1_col (begc:endc))              ; this%flx_dst_dep_wet1_col (:)   = nan
-    allocate(this%flx_dst_dep_dry2_col (begc:endc))              ; this%flx_dst_dep_dry2_col (:)   = nan
-    allocate(this%flx_dst_dep_wet2_col (begc:endc))              ; this%flx_dst_dep_wet2_col (:)   = nan
-    allocate(this%flx_dst_dep_dry3_col (begc:endc))              ; this%flx_dst_dep_dry3_col (:)   = nan
-    allocate(this%flx_dst_dep_wet3_col (begc:endc))              ; this%flx_dst_dep_wet3_col (:)   = nan
-    allocate(this%flx_dst_dep_dry4_col (begc:endc))              ; this%flx_dst_dep_dry4_col (:)   = nan
-    allocate(this%flx_dst_dep_wet4_col (begc:endc))              ; this%flx_dst_dep_wet4_col (:)   = nan
-    allocate(this%flx_dst_dep_col      (begc:endc))              ; this%flx_dst_dep_col      (:)   = nan
+    allocate(this%flx_dst_dep_dry1_col (begc:endc))              ; this%flx_dst_dep_dry1_col (:)   = spval
+    allocate(this%flx_dst_dep_wet1_col (begc:endc))              ; this%flx_dst_dep_wet1_col (:)   = spval
+    allocate(this%flx_dst_dep_dry2_col (begc:endc))              ; this%flx_dst_dep_dry2_col (:)   = spval
+    allocate(this%flx_dst_dep_wet2_col (begc:endc))              ; this%flx_dst_dep_wet2_col (:)   = spval
+    allocate(this%flx_dst_dep_dry3_col (begc:endc))              ; this%flx_dst_dep_dry3_col (:)   = spval
+    allocate(this%flx_dst_dep_wet3_col (begc:endc))              ; this%flx_dst_dep_wet3_col (:)   = spval
+    allocate(this%flx_dst_dep_dry4_col (begc:endc))              ; this%flx_dst_dep_dry4_col (:)   = spval
+    allocate(this%flx_dst_dep_wet4_col (begc:endc))              ; this%flx_dst_dep_wet4_col (:)   = spval
+    allocate(this%flx_dst_dep_col      (begc:endc))              ; this%flx_dst_dep_col      (:)   = spval
 
-    allocate(this%flx_bc_dep_dry_col   (begc:endc))              ; this%flx_bc_dep_dry_col   (:)   = nan
-    allocate(this%flx_bc_dep_wet_col   (begc:endc))              ; this%flx_bc_dep_wet_col   (:)   = nan
-    allocate(this%flx_bc_dep_pho_col   (begc:endc))              ; this%flx_bc_dep_pho_col   (:)   = nan
-    allocate(this%flx_bc_dep_phi_col   (begc:endc))              ; this%flx_bc_dep_phi_col   (:)   = nan
-    allocate(this%flx_bc_dep_col       (begc:endc))              ; this%flx_bc_dep_col       (:)   = nan
+    allocate(this%flx_bc_dep_dry_col   (begc:endc))              ; this%flx_bc_dep_dry_col   (:)   = spval
+    allocate(this%flx_bc_dep_wet_col   (begc:endc))              ; this%flx_bc_dep_wet_col   (:)   = spval
+    allocate(this%flx_bc_dep_pho_col   (begc:endc))              ; this%flx_bc_dep_pho_col   (:)   = spval
+    allocate(this%flx_bc_dep_phi_col   (begc:endc))              ; this%flx_bc_dep_phi_col   (:)   = spval
+    allocate(this%flx_bc_dep_col       (begc:endc))              ; this%flx_bc_dep_col       (:)   = spval
 
-    allocate(this%flx_oc_dep_dry_col   (begc:endc))              ; this%flx_oc_dep_dry_col   (:)   = nan
-    allocate(this%flx_oc_dep_wet_col   (begc:endc))              ; this%flx_oc_dep_wet_col   (:)   = nan
-    allocate(this%flx_oc_dep_pho_col   (begc:endc))              ; this%flx_oc_dep_pho_col   (:)   = nan
-    allocate(this%flx_oc_dep_phi_col   (begc:endc))              ; this%flx_oc_dep_phi_col   (:)   = nan
-    allocate(this%flx_oc_dep_col       (begc:endc))              ; this%flx_oc_dep_col       (:)   = nan
+    allocate(this%flx_oc_dep_dry_col   (begc:endc))              ; this%flx_oc_dep_dry_col   (:)   = spval
+    allocate(this%flx_oc_dep_wet_col   (begc:endc))              ; this%flx_oc_dep_wet_col   (:)   = spval
+    allocate(this%flx_oc_dep_pho_col   (begc:endc))              ; this%flx_oc_dep_pho_col   (:)   = spval
+    allocate(this%flx_oc_dep_phi_col   (begc:endc))              ; this%flx_oc_dep_phi_col   (:)   = spval
+    allocate(this%flx_oc_dep_col       (begc:endc))              ; this%flx_oc_dep_col       (:)   = spval
 
-    allocate(this%mss_bcpho_col        (begc:endc,-nlevsno+1:0)) ; this%mss_bcpho_col        (:,:) = nan
-    allocate(this%mss_bcphi_col        (begc:endc,-nlevsno+1:0)) ; this%mss_bcphi_col        (:,:) = nan
-    allocate(this%mss_bctot_col        (begc:endc,-nlevsno+1:0)) ; this%mss_bctot_col        (:,:) = nan
-    allocate(this%mss_bc_col_col       (begc:endc))              ; this%mss_bc_col_col       (:)   = nan
-    allocate(this%mss_bc_top_col       (begc:endc))              ; this%mss_bc_top_col       (:)   = nan
+    allocate(this%mss_bcpho_col        (begc:endc,-nlevsno+1:0)) ; this%mss_bcpho_col        (:,:) = spval
+    allocate(this%mss_bcphi_col        (begc:endc,-nlevsno+1:0)) ; this%mss_bcphi_col        (:,:) = spval
+    allocate(this%mss_bctot_col        (begc:endc,-nlevsno+1:0)) ; this%mss_bctot_col        (:,:) = spval
+    allocate(this%mss_bc_col_col       (begc:endc))              ; this%mss_bc_col_col       (:)   = spval
+    allocate(this%mss_bc_top_col       (begc:endc))              ; this%mss_bc_top_col       (:)   = spval
 
-    allocate(this%mss_ocpho_col        (begc:endc,-nlevsno+1:0)) ; this%mss_ocpho_col        (:,:) = nan
-    allocate(this%mss_ocphi_col        (begc:endc,-nlevsno+1:0)) ; this%mss_ocphi_col        (:,:) = nan
-    allocate(this%mss_octot_col        (begc:endc,-nlevsno+1:0)) ; this%mss_octot_col        (:,:) = nan
-    allocate(this%mss_oc_col_col       (begc:endc))              ; this%mss_oc_col_col       (:)   = nan
-    allocate(this%mss_oc_top_col       (begc:endc))              ; this%mss_oc_top_col       (:)   = nan
+    allocate(this%mss_ocpho_col        (begc:endc,-nlevsno+1:0)) ; this%mss_ocpho_col        (:,:) = spval
+    allocate(this%mss_ocphi_col        (begc:endc,-nlevsno+1:0)) ; this%mss_ocphi_col        (:,:) = spval
+    allocate(this%mss_octot_col        (begc:endc,-nlevsno+1:0)) ; this%mss_octot_col        (:,:) = spval
+    allocate(this%mss_oc_col_col       (begc:endc))              ; this%mss_oc_col_col       (:)   = spval
+    allocate(this%mss_oc_top_col       (begc:endc))              ; this%mss_oc_top_col       (:)   = spval
 
-    allocate(this%mss_dst1_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst1_col         (:,:) = nan
-    allocate(this%mss_dst2_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst2_col         (:,:) = nan
-    allocate(this%mss_dst3_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst3_col         (:,:) = nan
-    allocate(this%mss_dst4_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst4_col         (:,:) = nan
-    allocate(this%mss_dsttot_col       (begc:endc,-nlevsno+1:0)) ; this%mss_dsttot_col       (:,:) = nan
-    allocate(this%mss_dst_col_col      (begc:endc))              ; this%mss_dst_col_col      (:)   = nan
-    allocate(this%mss_dst_top_col      (begc:endc))              ; this%mss_dst_top_col      (:)   = nan
+    allocate(this%mss_dst1_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst1_col         (:,:) = spval
+    allocate(this%mss_dst2_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst2_col         (:,:) = spval
+    allocate(this%mss_dst3_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst3_col         (:,:) = spval
+    allocate(this%mss_dst4_col         (begc:endc,-nlevsno+1:0)) ; this%mss_dst4_col         (:,:) = spval
+    allocate(this%mss_dsttot_col       (begc:endc,-nlevsno+1:0)) ; this%mss_dsttot_col       (:,:) = spval
+    allocate(this%mss_dst_col_col      (begc:endc))              ; this%mss_dst_col_col      (:)   = spval
+    allocate(this%mss_dst_top_col      (begc:endc))              ; this%mss_dst_top_col      (:)   = spval
 
-    allocate(this%mss_cnc_bcphi_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_bcphi_col    (:,:) = nan
-    allocate(this%mss_cnc_bcpho_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_bcpho_col    (:,:) = nan
-    allocate(this%mss_cnc_ocphi_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_ocphi_col    (:,:) = nan
-    allocate(this%mss_cnc_ocpho_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_ocpho_col    (:,:) = nan
-    allocate(this%mss_cnc_dst1_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst1_col     (:,:) = nan
-    allocate(this%mss_cnc_dst2_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst2_col     (:,:) = nan
-    allocate(this%mss_cnc_dst3_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst3_col     (:,:) = nan
-    allocate(this%mss_cnc_dst4_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst4_col     (:,:) = nan
+    allocate(this%mss_cnc_bcphi_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_bcphi_col    (:,:) = spval
+    allocate(this%mss_cnc_bcpho_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_bcpho_col    (:,:) = spval
+    allocate(this%mss_cnc_ocphi_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_ocphi_col    (:,:) = spval
+    allocate(this%mss_cnc_ocpho_col    (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_ocpho_col    (:,:) = spval
+    allocate(this%mss_cnc_dst1_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst1_col     (:,:) = spval
+    allocate(this%mss_cnc_dst2_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst2_col     (:,:) = spval
+    allocate(this%mss_cnc_dst3_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst3_col     (:,:) = spval
+    allocate(this%mss_cnc_dst4_col     (begc:endc,-nlevsno+1:0)) ; this%mss_cnc_dst4_col     (:,:) = spval
 
   end subroutine InitAllocate
+  !-----------------------------------------------------------------------
 
   !-----------------------------------------------------------------------
   subroutine InitHistory(this, bounds)
@@ -169,13 +171,13 @@ contains
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
     use clm_varcon    , only: spval
-    use clm_varpar    , only: nlevsno 
+    use clm_varpar    , only: nlevsno
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     use histFileMod   , only: no_snow_normal, no_snow_zero
     !
     ! !ARGUMENTS:
     class(aerosol_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begc, endc
@@ -194,7 +196,7 @@ contains
          avgflag='A', long_name='total BC deposition (dry+wet) from atmosphere', &
          ptr_col=this%flx_bc_dep_col, set_urb=spval)
 
-    this%flx_oc_dep_col(begc:endc) = spval    
+    this%flx_oc_dep_col(begc:endc) = spval
     call hist_addfld1d (fname='OCDEP', units='kg/m^2/s', &
          avgflag='A', long_name='total OC deposition (dry+wet) from atmosphere', &
          ptr_col=this%flx_oc_dep_col, set_urb=spval)
@@ -238,7 +240,7 @@ contains
     !
     ! !ARGUMENTS:
     class(aerosol_type) :: this
-    type(bounds_type) , intent(in) :: bounds                                   
+    type(bounds_type) , intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: c       ! index
@@ -274,14 +276,14 @@ contains
   !------------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag, &
        h2osoi_ice_col, h2osoi_liq_col)
-    ! 
+    !
     ! !DESCRIPTION:
     ! Read/Write module information to/from restart file.
     !
     ! !USES:
     use clm_varpar , only : nlevsno, nlevsoi
     use clm_varcon , only : spval
-    use clm_varctl , only : iulog  
+    use clm_varctl , only : iulog
     use clm_varpar , only : nlevsno
     use spmdMod    , only : masterproc
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
@@ -289,7 +291,7 @@ contains
     !
     ! !ARGUMENTS:
     class(aerosol_type) :: this
-    type(bounds_type)   , intent(in)    :: bounds                                   
+    type(bounds_type)   , intent(in)    :: bounds
     type(file_desc_t)   , intent(inout) :: ncid                                         ! netcdf id
     character(len=*)    , intent(in)    :: flag                                         ! 'read' or 'write'
     real(r8)            , intent(in)    :: h2osoi_ice_col( bounds%begc: , -nlevsno+1: ) ! ice content (col,lyr) [kg/m2]
@@ -347,7 +349,7 @@ contains
        ! initial run, not restart: initialize mss_dst1 to zero
        this%mss_dst1_col(bounds%begc:bounds%endc,-nlevsno+1:0) = 0._r8
     end if
-    
+
     call restartvar(ncid=ncid, flag=flag, varname='mss_dst2', xtype=ncd_double,  &
          dim1name='column', dim2name='levsno', switchdim=.true., lowerb2=-nlevsno+1, upperb2=0, &
          long_name='snow layer dust species 2 mass', units='kg m-2', &
@@ -375,7 +377,7 @@ contains
        this%mss_dst4_col(bounds%begc:bounds%endc,-nlevsno+1:0) = 0._r8
     end if
 
-    ! initialize other variables that are derived from those stored in the restart buffer (SNICAR variables) 
+    ! initialize other variables that are derived from those stored in the restart buffer (SNICAR variables)
     if (flag == 'read' ) then
        do j = -nlevsno+1,0
           do c = bounds%begc, bounds%endc
@@ -407,9 +409,8 @@ contains
 
   end subroutine Restart
 
-  !-----------------------------------------------------------------------
   subroutine Reset(this, column)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Intitialize SNICAR variables for fresh snow column
     !

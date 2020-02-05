@@ -7,13 +7,13 @@ module FrictionVelocityType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use clm_varctl     , only : use_cn
-  use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi  
+  use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi
   use clm_varcon     , only : spval
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
   use spmdMod        , only : masterproc
-  use LandunitType   , only : lun_pp                
-  use ColumnType     , only : col_pp                
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -37,28 +37,28 @@ module FrictionVelocityType
      real(r8), pointer :: z0mv_patch       (:)   ! patch roughness length over vegetation, momentum [m]
      real(r8), pointer :: z0hv_patch       (:)   ! patch roughness length over vegetation, sensible heat [m]
      real(r8), pointer :: z0qv_patch       (:)   ! patch roughness length over vegetation, latent heat [m]
-     real(r8), pointer :: z0mg_col         (:)   ! col roughness length over ground, momentum  [m] 
+     real(r8), pointer :: z0mg_col         (:)   ! col roughness length over ground, momentum  [m]
      real(r8), pointer :: z0hg_col         (:)   ! col roughness length over ground, sensible heat [m]
      real(r8), pointer :: z0qg_col         (:)   ! col roughness length over ground, latent heat [m]
 
    contains
 
-     procedure, public  :: Init         
-     procedure, public  :: Restart      
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory  
-     procedure, private :: InitCold     
+     procedure, public  :: Init
+     procedure, public  :: Restart
+     procedure, private :: InitAllocate
+     procedure, private :: InitHistory
+     procedure, private :: InitCold
+
 
   end type frictionvel_type
   !------------------------------------------------------------------------------
-
 contains
 
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
     class(frictionvel_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
@@ -73,11 +73,10 @@ contains
     ! Initialize module data structure
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     !
     ! !ARGUMENTS:
     class(frictionvel_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
@@ -87,27 +86,28 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
 
-    allocate(this%forc_hgt_u_patch (begp:endp)) ; this%forc_hgt_u_patch (:)   = nan
-    allocate(this%forc_hgt_t_patch (begp:endp)) ; this%forc_hgt_t_patch (:)   = nan
-    allocate(this%forc_hgt_q_patch (begp:endp)) ; this%forc_hgt_q_patch (:)   = nan
-    allocate(this%u10_patch        (begp:endp)) ; this%u10_patch        (:)   = nan
-    allocate(this%u10_clm_patch    (begp:endp)) ; this%u10_clm_patch    (:)   = nan
-    allocate(this%va_patch         (begp:endp)) ; this%va_patch         (:)   = nan
-    allocate(this%vds_patch        (begp:endp)) ; this%vds_patch        (:)   = nan
-    allocate(this%fv_patch         (begp:endp)) ; this%fv_patch         (:)   = nan
-    allocate(this%rb1_patch        (begp:endp)) ; this%rb1_patch        (:)   = nan
-    allocate(this%ram1_patch       (begp:endp)) ; this%ram1_patch       (:)   = nan
-    allocate(this%z0m_patch        (begp:endp)) ; this%z0m_patch        (:)   = nan
-    allocate(this%z0mv_patch       (begp:endp)) ; this%z0mv_patch       (:)   = nan
-    allocate(this%z0hv_patch       (begp:endp)) ; this%z0hv_patch       (:)   = nan
-    allocate(this%z0qv_patch       (begp:endp)) ; this%z0qv_patch       (:)   = nan
-    allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = nan
-    allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
-    allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
+    allocate(this%forc_hgt_u_patch (begp:endp)) ; this%forc_hgt_u_patch (:)   = spval
+    allocate(this%forc_hgt_t_patch (begp:endp)) ; this%forc_hgt_t_patch (:)   = spval
+    allocate(this%forc_hgt_q_patch (begp:endp)) ; this%forc_hgt_q_patch (:)   = spval
+    allocate(this%u10_patch        (begp:endp)) ; this%u10_patch        (:)   = spval
+    allocate(this%u10_clm_patch    (begp:endp)) ; this%u10_clm_patch    (:)   = spval
+    allocate(this%va_patch         (begp:endp)) ; this%va_patch         (:)   = spval
+    allocate(this%vds_patch        (begp:endp)) ; this%vds_patch        (:)   = spval
+    allocate(this%fv_patch         (begp:endp)) ; this%fv_patch         (:)   = spval
+    allocate(this%rb1_patch        (begp:endp)) ; this%rb1_patch        (:)   = spval
+    allocate(this%ram1_patch       (begp:endp)) ; this%ram1_patch       (:)   = spval
+    allocate(this%z0m_patch        (begp:endp)) ; this%z0m_patch        (:)   = spval
+    allocate(this%z0mv_patch       (begp:endp)) ; this%z0mv_patch       (:)   = spval
+    allocate(this%z0hv_patch       (begp:endp)) ; this%z0hv_patch       (:)   = spval
+    allocate(this%z0qv_patch       (begp:endp)) ; this%z0qv_patch       (:)   = spval
+    allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = spval
+    allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = spval
+    allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = spval
 
   end subroutine InitAllocate
-
   !-----------------------------------------------------------------------
+
+
   subroutine InitHistory(this, bounds)
     !
     ! History fields initialization
@@ -118,7 +118,7 @@ contains
     !
     ! !ARGUMENTS:
     class(frictionvel_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begc, endc
@@ -211,7 +211,7 @@ contains
     !
     ! !ARGUMENTS:
     class(frictionvel_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: p, c, l                         ! indices
@@ -220,8 +220,8 @@ contains
     ! Added 5/4/04, PET: initialize forc_hgt_u (gridcell-level),
     ! since this is not initialized before first call to VegStructUpdate,
     ! and it is required to set the upper bound for canopy top height.
-    ! Changed 3/21/08, KO: still needed but don't have sufficient information 
-    ! to set this properly (e.g., patch-level displacement height and roughness 
+    ! Changed 3/21/08, KO: still needed but don't have sufficient information
+    ! to set this properly (e.g., patch-level displacement height and roughness
     ! length). So leave at 30m.
 
     if (use_cn) then
@@ -236,12 +236,12 @@ contains
           this%z0mg_col(c) = 0.0004_r8
        end if
     end do
-   
+
   end subroutine InitCold
 
   !------------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !DESCRIPTION:
     ! Read/Write module information to/from restart file.
     !
@@ -252,7 +252,7 @@ contains
     !
     ! !ARGUMENTS:
     class(frictionvel_type) :: this
-    type(bounds_type) , intent(in)    :: bounds 
+    type(bounds_type) , intent(in)    :: bounds
     type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
     character(len=*)  , intent(in)    :: flag   ! 'read' or 'write'
     !
@@ -269,5 +269,5 @@ contains
   end subroutine Restart
 
 
-end module FrictionVelocityType
 
+end module FrictionVelocityType

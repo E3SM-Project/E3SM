@@ -432,7 +432,6 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     True
     """
     import subprocess # Not safe to do globally, module not available in older pythons
-
     # Real defaults for these value should be subprocess.PIPE
     if arg_stdout is _hack:
         arg_stdout = subprocess.PIPE
@@ -446,12 +445,11 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         logger.info("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
-
     if (input_str is not None):
         stdin = subprocess.PIPE
     else:
         stdin = None
-
+    
     proc = subprocess.Popen(cmd,
                             shell=True,
                             stdout=arg_stdout,

@@ -1,16 +1,16 @@
 module WaterBudgetMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use shr_sys_mod       , only : shr_sys_abort
+      use shr_log_mod       , only : errMsg => shr_log_errMsg
+    use shr_sys_mod       , only : shr_sys_abort
   use decompMod         , only : bounds_type
-  use abortutils        , only : endrun
+    use abortutils        , only : endrun
   use clm_varctl        , only : iulog
   use atm2lndType       , only : atm2lnd_type
   use lnd2atmType       , only : lnd2atm_type
   use WaterstateType    , only : waterstate_type
   use WaterfluxType     , only : waterflux_type
-  use spmdMod           , only : masterproc
+    use spmdMod           , only : masterproc
   use SoilHydrologyType , only : soilhydrology_type
   use GridcellDataType  , only : grc_ws
   use ColumnDataType    , only : col_ws
@@ -24,7 +24,7 @@ module WaterBudgetMod
   public :: WaterBudget_Accum
   !public :: WaterBudget_Sum_Local
   public :: WaterBudget_Print
-  public :: WaterBudget_Restart
+    public :: WaterBudget_Restart
   public :: WaterBudget_SetBeginningMonthlyStates
   public :: WaterBudget_SetEndingMonthlyStates
 
@@ -121,7 +121,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine WaterBudget_Reset(mode)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date
+      use clm_time_manager, only : get_curr_date, get_prev_date
     !
     implicit none
     !
@@ -132,8 +132,8 @@ contains
     character(*),parameter :: subName = '(WaterBudget_Reset) '
 
     if (.not.present(mode)) then
-       call get_curr_date(year, mon, day, sec)
-       call get_prev_date(year, mon, day, sec)
+         call get_curr_date(year, mon, day, sec)
+         call get_prev_date(year, mon, day, sec)
 
        do ip = 1,p_size
           if (ip == p_inst) then
@@ -197,7 +197,7 @@ contains
           budg_stateL (:,:)        = 0.0_r8
           budg_stateG (:,:)        = 0.0_r8
        else
-          call shr_sys_abort(subname//' ERROR in mode '//trim(mode))
+            call shr_sys_abort(subname//' ERROR in mode '//trim(mode))
        endif
     endif
 
@@ -206,7 +206,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine WaterBudget_Accum()
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
+      use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
     !
     implicit none
     !
@@ -216,8 +216,8 @@ contains
     character(*),parameter :: subName = '(WaterBudget_Accum)'
     logical                :: update_state_beg, update_state_end
 
-    call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
-    call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
+      call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
+      call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
 
     do ip = p_inst+1, p_size
        budg_fluxL(:,ip) = budg_fluxL(:,ip) + budg_fluxL(:,p_inst)
@@ -235,7 +235,7 @@ contains
           if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) update_state_beg = .true.
           if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) update_state_end = .true.
        case (p_inf)
-          if (get_nstep() == 1) update_state_beg = .true.
+            if (get_nstep() == 1) update_state_beg = .true.
           update_state_end = .true.
        end select
 
@@ -261,7 +261,7 @@ contains
        nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + budg_stateL(nf, p_inst)
     end do
     budg_fluxN(:,:) = budg_fluxN(:,:) + 1._r8
-    
+
   end subroutine WaterBudget_Accum
 
   !-----------------------------------------------------------------------
@@ -270,7 +270,7 @@ contains
     !
     ! !DESCRIPTION:
     !
-    use domainMod, only : ldomain
+      use domainMod, only : ldomain
     use clm_varcon, only : re
     !
     implicit none
@@ -318,8 +318,8 @@ contains
 
       do g = bounds%begg, bounds%endg
 
-         af   = (ldomain%area(g) * one_over_re2) * & ! area (converting km**2 to radians**2)
-                ldomain%frac(g)                      ! land fraction
+          af   = (ldomain%area(g) * one_over_re2) * & ! area (converting km**2 to radians**2)
+                 ldomain%frac(g)                      ! land fraction
 
          nf = f_rain; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_rain(g)*af
          nf = f_snow; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_snow(g)*af
@@ -352,37 +352,37 @@ contains
   end subroutine WaterBudget_Run
 
 !-----------------------------------------------------------------------
-  subroutine WaterBudget_Sum0()
-    !
-    use spmdMod    , only : mpicom
-    use shr_mpi_mod, only : shr_mpi_sum
-    !
-    implicit none
-    !
-    real(r8)               :: budg_fluxGtmp(f_size,p_size) ! temporary sum
-    real(r8)               :: budg_stateGtmp(s_size,p_size) ! temporary sum
-    character(*),parameter :: subName = '(WaterBudget_Sum0)'
+    subroutine WaterBudget_Sum0()
+      !
+      use spmdMod    , only : mpicom
+      use shr_mpi_mod, only : shr_mpi_sum
+      !
+      implicit none
+      !
+      real(r8)               :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+      real(r8)               :: budg_stateGtmp(s_size,p_size) ! temporary sum
+      character(*),parameter :: subName = '(WaterBudget_Sum0)'
 
-    budg_fluxGtmp = 0._r8
-    budg_stateGtmp = 0._r8
+      budg_fluxGtmp = 0._r8
+      budg_stateGtmp = 0._r8
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+      call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+      call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
 
-    budg_fluxG  = budg_fluxG + budg_fluxGtmp
-    budg_stateG = budg_stateGtmp
+      budg_fluxG  = budg_fluxG + budg_fluxGtmp
+      budg_stateG = budg_stateGtmp
 
-    budg_fluxL            = 0._r8 ! reset all fluxes
-    budg_stateL(:,p_inst) = 0._r8 ! only reset instantaneous states
-    
-  end subroutine WaterBudget_Sum0
+      budg_fluxL            = 0._r8 ! reset all fluxes
+      budg_stateL(:,p_inst) = 0._r8 ! only reset instantaneous states
+
+    end subroutine WaterBudget_Sum0
 
   !-----------------------------------------------------------------------
 
   subroutine WaterBudget_Print(budg_print_inst,  budg_print_daily,  budg_print_month,  &
-       budg_print_ann,  budg_print_ltann,  budg_print_ltend)
+       budg_print_ann,  budg_print_ltann,  budg_print_ltend )
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+      use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
     use shr_const_mod   , only : shr_const_pi
     !
     implicit none
@@ -393,11 +393,13 @@ contains
     integer , intent(in) :: budg_print_ann
     integer , intent(in) :: budg_print_ltann
     integer , intent(in) :: budg_print_ltend
+    integer  :: year, mon, day, sec
+    !!Nstep Dependence!!
     !
     ! !LOCAL VARIABLES:
     integer :: s,f,ic,nf,ip,is ! data array indicies
     integer :: plev        ! print level
-    integer :: year, mon, day, sec
+
     integer :: cdate
     logical :: sumdone
     real(r8) :: unit_conversion
@@ -405,11 +407,11 @@ contains
 
     sumdone = .false.
 
-    if (get_nstep() <= 1) then
-       call get_prev_date(year, mon, day, sec);
-    else
-       call get_curr_date(year, mon, day, sec);
-    end if
+      if (get_nstep() <= 1) then
+         call get_prev_date(year, mon, day, sec);
+      else
+           call get_curr_date(year, mon, day, sec);
+      end if
 
     cdate = year*10000 + mon*100 + day
 
@@ -435,236 +437,236 @@ contains
           unit_conversion = 1.d0/(4.0_r8*shr_const_pi)*1.0e6_r8
           if (.not.sumdone) then
              sumdone = .true.
-             call WaterBudget_Sum0()
+               call WaterBudget_Sum0()
              budg_fluxGpr = budg_fluxG
              budg_fluxGpr = budg_fluxGpr*unit_conversion
              budg_fluxGpr = budg_fluxGpr/budg_fluxN
           end if
 
-          if (ip == p_day .and. get_nstep() == 1) cycle
-          if (ip == p_mon .and. get_nstep() == 1) cycle
-          if (ip == p_ann .and. get_nstep() == 1) cycle
-          if (ip == p_inf .and. get_nstep() == 1) cycle
+            if (ip == p_day .and. get_nstep() == 1) cycle
+            if (ip == p_mon .and. get_nstep() == 1) cycle
+            if (ip == p_ann .and. get_nstep() == 1) cycle
+            if (ip == p_inf .and. get_nstep() == 1) cycle
 
-          if (masterproc) then
-             write(iulog,*)''
-             write(iulog,*)'NET WATER FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
-             write(iulog,FA0)'  Time  ','  Time    '
-             write(iulog,FA0)'averaged','integrated'
-             write(iulog,FA0)'kg/m2s*1e6','kg/m2*1e6'
-             write(iulog,'(32("-"),"|",20("-"))')
-             do f = 1, f_size
-                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
-             end do
-             write(iulog,'(32("-"),"|",20("-"))')
-             write(iulog,FF)'   *SUM*', &
-                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
-             write(iulog,'(32("-"),"|",20("-"))')
+            if (masterproc) then
+               write(iulog,*)''
+               write(iulog,*)'NET WATER FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
+               write(iulog,FA0)'  Time  ','  Time    '
+               write(iulog,FA0)'averaged','integrated'
+               write(iulog,FA0)'kg/m2s*1e6','kg/m2*1e6'
+               write(iulog,'(32("-"),"|",20("-"))')
+               do f = 1, f_size
+                     write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
+               end do
+               write(iulog,'(32("-"),"|",20("-"))')
+               write(iulog,FF)'   *SUM*', &
+                    sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
+               write(iulog,'(32("-"),"|",20("-"))')
 
-             write(iulog,*)''
-             write(iulog,*)'WATER STATES (kg/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
-             write(iulog,FS0) &
-                  '       Canopy  ', &
-                  '       Snow    ', &
-                  '       SFC     ', &
-                  '     Soil Liq  ', &
-                  '     Soil Ice  ', &
-                  '      Aquifer  ', &
-                  ' Grid-level Err', &
-                  '       TOTAL   '
-             write(iulog,'(143("-"),"|",23("-"))')
-             write(iulog,FS) '         beg', &
-                  budg_stateG(s_wcan_beg  , ip)*unit_conversion, &
-                  budg_stateG(s_wsno_beg  , ip)*unit_conversion, &
-                  budg_stateG(s_wsfc_beg  , ip)*unit_conversion, &
-                  budg_stateG(s_wsliq_beg , ip)*unit_conversion, &
-                  budg_stateG(s_wsice_beg , ip)*unit_conversion, &
-                  budg_stateG(s_wwa_beg   , ip)*unit_conversion, &
-                  budg_stateG(s_w_beg     , ip)*unit_conversion
-             write(iulog,FS) '         end', &
-                  budg_stateG(s_wcan_end  , ip)*unit_conversion, &
-                  budg_stateG(s_wsno_end  , ip)*unit_conversion, &
-                  budg_stateG(s_wsfc_end  , ip)*unit_conversion, &
-                  budg_stateG(s_wsliq_end , ip)*unit_conversion, &
-                  budg_stateG(s_wsice_end , ip)*unit_conversion, &
-                  budg_stateG(s_wwa_end   , ip)*unit_conversion, &
-                  budg_stateG(s_w_end     , ip)*unit_conversion
-             write(iulog,FS3)'*NET CHANGE*', &
-                  (budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip))*unit_conversion, &
-                  (budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip))*unit_conversion, &
-                  (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion, &
-                  (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion, &
-                  (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion, &
-                  (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion, &
-                  budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
-                  (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
-             write(iulog,'(143("-"),"|",23("-"))')
-             write(iulog,FS2)'   *SUM*    ', &
-                  (budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip))*unit_conversion + &
-                  (budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip))*unit_conversion + &
-                  (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion + &
-                  (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion + &
-                  (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion + &
-                  (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion - &
-                   budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
-                  (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
-             write(iulog,'(143("-"),"|",23("-"))')
-          end if
+               write(iulog,*)''
+               write(iulog,*)'WATER STATES (kg/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
+               write(iulog,FS0) &
+                    '       Canopy  ', &
+                    '       Snow    ', &
+                    '       SFC     ', &
+                    '     Soil Liq  ', &
+                    '     Soil Ice  ', &
+                    '      Aquifer  ', &
+                    ' Grid-level Err', &
+                    '       TOTAL   '
+               write(iulog,'(143("-"),"|",23("-"))')
+               write(iulog,FS) '         beg', &
+                    budg_stateG(s_wcan_beg  , ip)*unit_conversion, &
+                    budg_stateG(s_wsno_beg  , ip)*unit_conversion, &
+                    budg_stateG(s_wsfc_beg  , ip)*unit_conversion, &
+                    budg_stateG(s_wsliq_beg , ip)*unit_conversion, &
+                    budg_stateG(s_wsice_beg , ip)*unit_conversion, &
+                    budg_stateG(s_wwa_beg   , ip)*unit_conversion, &
+                    budg_stateG(s_w_beg     , ip)*unit_conversion
+               write(iulog,FS) '         end', &
+                    budg_stateG(s_wcan_end  , ip)*unit_conversion, &
+                    budg_stateG(s_wsno_end  , ip)*unit_conversion, &
+                    budg_stateG(s_wsfc_end  , ip)*unit_conversion, &
+                    budg_stateG(s_wsliq_end , ip)*unit_conversion, &
+                    budg_stateG(s_wsice_end , ip)*unit_conversion, &
+                    budg_stateG(s_wwa_end   , ip)*unit_conversion, &
+                    budg_stateG(s_w_end     , ip)*unit_conversion
+               write(iulog,FS3)'*NET CHANGE*', &
+                    (budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip))*unit_conversion, &
+                    (budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip))*unit_conversion, &
+                    (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion, &
+                    (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion, &
+                    (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion, &
+                    (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion, &
+                    budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
+                    (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
+               write(iulog,'(143("-"),"|",23("-"))')
+               write(iulog,FS2)'   *SUM*    ', &
+                    (budg_stateG(s_wcan_end  ,ip) - budg_stateG(s_wcan_beg  ,ip))*unit_conversion + &
+                    (budg_stateG(s_wsno_end  ,ip) - budg_stateG(s_wsno_beg  ,ip))*unit_conversion + &
+                    (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion + &
+                    (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion + &
+                    (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion + &
+                    (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion - &
+                     budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
+                    (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
+               write(iulog,'(143("-"),"|",23("-"))')
+            end if
        end if
     end do
 
   end subroutine WaterBudget_Print
 
   !-----------------------------------------------------------------------
-  subroutine WaterBudget_Restart(bounds, ncid, flag)
-    !
-    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
-    use ncdio_pio, only : ncd_defvar
-    !
-    implicit none
-    !
-    type(bounds_type), intent(in)    :: bounds
-    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
-    !
-    character(len=*),parameter :: subname = 'WaterBudget_Restart'
+    subroutine WaterBudget_Restart(bounds, ncid, flag)
+      !
+      use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
+      use ncdio_pio, only : ncd_defvar
+      !
+      implicit none
+      !
+      type(bounds_type), intent(in)    :: bounds
+      type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+      character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+      !
+      character(len=*),parameter :: subname = 'WaterBudget_Restart'
 
-    select case (trim(flag))
-    case ('define')
-       call WaterBudget_Restart_Define(bounds, ncid)
-    case ('write')
-       call WaterBudget_Restart_Write(bounds, ncid, flag)
-    case ('read')
-       call WaterBudget_Restart_Read(bounds, ncid, flag)
-    case default
-       write(iulog,*) trim(subname),' ERROR: unknown flag = ',flag
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end select
+      select case (trim(flag))
+      case ('define')
+         call WaterBudget_Restart_Define(bounds, ncid)
+      case ('write')
+         call WaterBudget_Restart_Write(bounds, ncid, flag)
+      case ('read')
+         call WaterBudget_Restart_Read(bounds, ncid, flag)
+      case default
+         write(iulog,*) trim(subname),' ERROR: unknown flag = ',flag
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end select
 
-  end subroutine WaterBudget_Restart
-
-  !-----------------------------------------------------------------------
-  subroutine WaterBudget_Restart_Define(bounds, ncid)
-    !
-    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_defvar
-    !
-    implicit none
-    !
-    type(bounds_type), intent(in)    :: bounds
-    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-
-    call ncd_defvar(varname='budg_fluxG', xtype=ncd_double, &
-         dim1name='budg_flux', &
-         long_name='budg_fluxG', units='mm', ncid=ncid)
-
-    call ncd_defvar(varname='budg_fluxN', xtype=ncd_double, &
-         dim1name='budg_flux', &
-         long_name='budg_fluxN', units='-', ncid=ncid)
-
-    call ncd_defvar(varname='budg_stateG', xtype=ncd_double, &
-         dim1name='budg_state', &
-         long_name='budg_stateG', units='mm', ncid=ncid)
-
-  end subroutine WaterBudget_Restart_Define
+    end subroutine WaterBudget_Restart
 
   !-----------------------------------------------------------------------
-  subroutine WaterBudget_Restart_Write(bounds, ncid, flag)
-    !
-    use ncdio_pio   , only : file_desc_t, ncd_io, ncd_double, ncd_int
-    use ncdio_pio   , only : ncd_defvar
-    use spmdMod     , only : mpicom
-    use shr_mpi_mod , only : shr_mpi_sum
-    !
-    implicit none
-    !
-    type(bounds_type), intent(in)    :: bounds
-    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: budg_fluxGtmp(f_size,p_size) ! temporary sum
-    real(r8) :: budg_stateGtmp(s_size,p_size) ! temporary sum
-    real(r8) :: budg_fluxG_1D (f_size*p_size)
-    real(r8) :: budg_fluxN_1D (f_size*p_size)
-    real(r8) :: budg_stateG_1D(s_size*p_size)
-    integer  :: f, s, p, count
-    character(*),parameter :: subName = '(WaterBudget_Restart_Write) '
+    subroutine WaterBudget_Restart_Define(bounds, ncid)
+      !
+      use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_defvar
+      !
+      implicit none
+      !
+      type(bounds_type), intent(in)    :: bounds
+      type(file_desc_t), intent(inout) :: ncid   ! netcdf id
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+      call ncd_defvar(varname='budg_fluxG', xtype=ncd_double, &
+           dim1name='budg_flux', &
+           long_name='budg_fluxG', units='mm', ncid=ncid)
 
-    ! Copy data from 2D into 1D array
-    count = 0
-    do f = 1, f_size
-       do p = 1, p_size
-          count = count + 1
-          budg_fluxG_1D(count) = budg_fluxG(f,p) + budg_fluxGtmp(f,p)
-          budg_fluxN_1D(count) = budg_fluxN(f,p)
-       end do
-    end do
+      call ncd_defvar(varname='budg_fluxN', xtype=ncd_double, &
+           dim1name='budg_flux', &
+           long_name='budg_fluxN', units='-', ncid=ncid)
 
-    ! Copy data from 2D into 1D array
-    count = 0
-    do s = 1, s_size
-       do p = 1, p_size
-          count = count + 1
-          budg_stateG_1D(count) = budg_stateGtmp(s,p)
-       end do
-    end do
+      call ncd_defvar(varname='budg_stateG', xtype=ncd_double, &
+           dim1name='budg_state', &
+           long_name='budg_stateG', units='mm', ncid=ncid)
 
-    call ncd_io(flag=flag, varname='budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='budg_stateG', data=budg_stateG_1D, ncid=ncid)
-
-  end subroutine WaterBudget_Restart_Write
+    end subroutine WaterBudget_Restart_Define
 
   !-----------------------------------------------------------------------
-  subroutine WaterBudget_Restart_Read(bounds, ncid, flag)
-    !
-    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
-    use ncdio_pio, only : ncd_defvar
-    !
-    implicit none
-    !
-    type(bounds_type), intent(in)    :: bounds
-    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: budg_fluxG_1D (f_size*p_size)
-    real(r8) :: budg_fluxN_1D (f_size*p_size)
-    real(r8) :: budg_stateG_1D(s_size*p_size)
-    integer  :: f, s, p, count
+    subroutine WaterBudget_Restart_Write(bounds, ncid, flag)
+      !
+      use ncdio_pio   , only : file_desc_t, ncd_io, ncd_double, ncd_int
+      use ncdio_pio   , only : ncd_defvar
+      use spmdMod     , only : mpicom
+      use shr_mpi_mod , only : shr_mpi_sum
+      !
+      implicit none
+      !
+      type(bounds_type), intent(in)    :: bounds
+      type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+      character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+      !
+      ! !LOCAL VARIABLES:
+      real(r8) :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+      real(r8) :: budg_stateGtmp(s_size,p_size) ! temporary sum
+      real(r8) :: budg_fluxG_1D (f_size*p_size)
+      real(r8) :: budg_fluxN_1D (f_size*p_size)
+      real(r8) :: budg_stateG_1D(s_size*p_size)
+      integer  :: f, s, p, count
+      character(*),parameter :: subName = '(WaterBudget_Restart_Write) '
 
-    call ncd_io(flag=flag, varname='budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='budg_stateG', data=budg_stateG_1D, ncid=ncid)
+      call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+      call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
 
-    ! Copy data from 1D into 2D array
-    count = 0
-    do f = 1, f_size
-       do p = 1, p_size
-          count = count + 1
-          budg_fluxG(f,p) = budg_fluxG_1D(count)
-          budg_fluxN(f,p) = budg_fluxN_1D(count)
-       end do
-    end do
+      ! Copy data from 2D into 1D array
+      count = 0
+      do f = 1, f_size
+         do p = 1, p_size
+            count = count + 1
+            budg_fluxG_1D(count) = budg_fluxG(f,p) + budg_fluxGtmp(f,p)
+            budg_fluxN_1D(count) = budg_fluxN(f,p)
+         end do
+      end do
 
-    ! Copy data from 1D into 2D array
-    if (masterproc) then
-       count = 0
-       do s = 1, s_size
-          do p = 1, p_size
-             count = count + 1
-             budg_stateL(s,p) = budg_stateG_1D(count)
-          end do
-       end do
-    end if
+      ! Copy data from 2D into 1D array
+      count = 0
+      do s = 1, s_size
+         do p = 1, p_size
+            count = count + 1
+            budg_stateG_1D(count) = budg_stateGtmp(s,p)
+         end do
+      end do
 
-  end subroutine WaterBudget_Restart_Read
+      call ncd_io(flag=flag, varname='budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+      call ncd_io(flag=flag, varname='budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+      call ncd_io(flag=flag, varname='budg_stateG', data=budg_stateG_1D, ncid=ncid)
+
+    end subroutine WaterBudget_Restart_Write
+
+  !-----------------------------------------------------------------------
+    subroutine WaterBudget_Restart_Read(bounds, ncid, flag)
+      !
+      use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
+      use ncdio_pio, only : ncd_defvar
+      !
+      implicit none
+      !
+      type(bounds_type), intent(in)    :: bounds
+      type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+      character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+      !
+      ! !LOCAL VARIABLES:
+      real(r8) :: budg_fluxG_1D (f_size*p_size)
+      real(r8) :: budg_fluxN_1D (f_size*p_size)
+      real(r8) :: budg_stateG_1D(s_size*p_size)
+      integer  :: f, s, p, count
+
+      call ncd_io(flag=flag, varname='budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+      call ncd_io(flag=flag, varname='budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+      call ncd_io(flag=flag, varname='budg_stateG', data=budg_stateG_1D, ncid=ncid)
+
+      ! Copy data from 1D into 2D array
+      count = 0
+      do f = 1, f_size
+         do p = 1, p_size
+            count = count + 1
+            budg_fluxG(f,p) = budg_fluxG_1D(count)
+            budg_fluxN(f,p) = budg_fluxN_1D(count)
+         end do
+      end do
+
+      ! Copy data from 1D into 2D array
+      if (masterproc) then
+         count = 0
+         do s = 1, s_size
+            do p = 1, p_size
+               count = count + 1
+               budg_stateL(s,p) = budg_stateG_1D(count)
+            end do
+         end do
+      end if
+
+    end subroutine WaterBudget_Restart_Read
 
    !-----------------------------------------------------------------------
-  subroutine WaterBudget_SetBeginningMonthlyStates(bounds, waterstate_vars)
+  subroutine WaterBudget_SetBeginningMonthlyStates(bounds )
     !
     ! !DESCRIPTION:
     ! Set grid-level water states at the beginning of a month
@@ -673,46 +675,48 @@ contains
     use subgridAveMod    , only : p2c, c2g
     use clm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
     use clm_varcon       , only : spval
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
+    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
-    type(waterstate_type)     , intent(inout) :: waterstate_vars
+    !TODO CHANGE
+    integer :: nstep
     !
     ! !LOCAL VARIABLES:
     integer :: year_prev, month_prev, day_prev, sec_prev
     integer :: year_curr, month_curr, day_curr, sec_curr
     !-----------------------------------------------------------------------
 
-    associate(                                                       & 
+    associate(                                                       &
          begwb             =>    col_ws%begwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          tws_month_beg_grc =>    grc_ws%tws_month_beg   & ! Output: [real(r8) (:)   ]  grid-level water mass at the begining of a month
          )
 
+      nstep = get_nstep()
       ! Get current and previous dates to determine if a new month started
       call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
       call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
 
       ! If at the beginning of a simulation, save grid-level TWS based on
       ! 'begwb' from the current time step
-      if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
+      if ( day_curr == 1 .and. sec_curr == 0 .and. nstep <= 1 ) then
          call c2g( bounds, &
               begwb(bounds%begc:bounds%endc), &
               tws_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+              c2l_scale_type= 1, l2g_scale_type=0 )
       endif
 
       ! If multiple steps into a simulation and the last time step was the
       ! end of a month, save grid-level TWS based on 'endwb' from the last
       ! time step
-      if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
+      if (nstep > 1 .and. day_prev == 1 .and. sec_prev == 0) then
          call c2g( bounds, &
               endwb(bounds%begc:bounds%endc), &
               tws_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+              c2l_scale_type= 1, l2g_scale_type=0 )
       endif
 
     end associate
@@ -720,37 +724,37 @@ contains
   end subroutine WaterBudget_SetBeginningMonthlyStates
 
    !-----------------------------------------------------------------------
-  subroutine WaterBudget_SetEndingMonthlyStates(bounds, waterstate_vars)
+  subroutine WaterBudget_SetEndingMonthlyStates(bounds, nstep, year, mon, day, sec)
     !
     ! !DESCRIPTION:
     ! Set grid-level water states at the end of a month
     !
     ! !USES:
+      !$acc routine seq
     use subgridAveMod    , only : c2g
     use clm_varcon       , only : spval
-    use clm_time_manager , only : get_curr_date, get_nstep
+    !#py use clm_time_manager , only : get_curr_date, get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
-    type(waterstate_type)     , intent(inout) :: waterstate_vars
+    integer, intent(in)  :: nstep, year, mon, day, sec
     !
     ! !LOCAL VARIABLES:
-    integer  :: year, mon, day, sec
     !-----------------------------------------------------------------------
 
-    associate(                                                       & 
+    associate(                                                       &
          endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass at end of the time step
          tws_month_end_grc =>    grc_ws%tws_month_end   & ! Output: [real(r8) (:)   ]  grid-level water mass at the end of a month
          )
 
       ! If this is the end of a month, save grid-level total water storage
-      call get_curr_date(year, mon, day, sec);
+      !#py call get_curr_date(year, mon, day, sec);
 
-      if (get_nstep() >= 1 .and. (day == 1 .and. sec == 0)) then
+      if (nstep >= 1 .and. (day == 1 .and. sec == 0)) then
          call c2g( bounds, &
-              endwb(bounds%begc:bounds%endc), &
-              tws_month_end_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+              endwb, &
+              tws_month_end_grc, &
+              c2l_scale_type= 1, l2g_scale_type=0 )
       else
          tws_month_end_grc(bounds%begg:bounds%endg) = spval
       end if

@@ -2,10 +2,10 @@ module VegetationType
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Vegetation data type allocation 
-  ! -------------------------------------------------------- 
+  ! Vegetation data type allocation
+  ! --------------------------------------------------------
   ! Vegetation types can have values of
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   !   0  => not vegetated
   !   1  => needleleaf evergreen temperate tree
   !   2  => needleleaf evergreen boreal tree
@@ -31,33 +31,35 @@ module VegetationType
   !   22 => irrigated winter temperate cereal
   !   23 => soybean
   !   24 => irrigated soybean
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varcon     , only : ispval
+
   use clm_varctl     , only : use_fates
   !
   ! !PUBLIC TYPES:
   implicit none
   save
   private
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds physical property information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_physical_properties
      ! indices and weights for higher subgrid levels (column, landunit, topounit, gridcell)
      integer , pointer :: gridcell      (:) => null() ! index into gridcell level quantities
-     real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell) 
+     real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell)
      integer , pointer :: topounit      (:) => null() ! index into topounit level quantities
      real(r8), pointer :: wttopounit    (:) => null() ! weight (relative to topounit)
      integer , pointer :: landunit      (:) => null() ! index into landunit level quantities
-     real(r8), pointer :: wtlunit       (:) => null() ! weight (relative to landunit) 
+     real(r8), pointer :: wtlunit       (:) => null() ! weight (relative to landunit)
      integer , pointer :: column        (:) => null() ! index into column level quantities
-     real(r8), pointer :: wtcol         (:) => null() ! weight (relative to column) 
+     real(r8), pointer :: wtcol         (:) => null() ! weight (relative to column)
 
      ! topological mapping functionality
-     integer , pointer :: itype         (:) => null() ! patch vegetation 
+     integer , pointer :: itype         (:) => null() ! patch vegetation
      integer , pointer :: mxy           (:) => null() ! m index for laixy(i,j,m),etc. (undefined for special landunits)
      logical , pointer :: active        (:) => null() ! true=>do computations on this patch
 
@@ -67,7 +69,7 @@ module VegetationType
      real(r8), pointer :: wt_ed         (:) => null() ! TODO mv ? can this be removed
      logical , pointer :: is_fates      (:) => null() ! true for patch vector space reserved
                                                       ! for FATES.
-                                                      ! this is static and is true for all 
+                                                      ! this is static and is true for all
                                                       ! patches within fates jurisdiction
                                                       ! including patches which are not currently
                                                       ! associated with a FATES linked-list patch
@@ -75,7 +77,8 @@ module VegetationType
 
      procedure, public :: Init => veg_pp_init
      procedure, public :: Clean => veg_pp_clean
-     
+
+
   end type vegetation_physical_properties
 
   !-----------------------------------------------------------------------
@@ -83,10 +86,11 @@ module VegetationType
   !-----------------------------------------------------------------------
   type(vegetation_physical_properties)   , public, target :: veg_pp    ! vegetation physical properties
 
+  !$acc declare create(veg_pp)
   !------------------------------------------------------------------------
 
 contains
-  
+
   !------------------------------------------------------------------------
   subroutine veg_pp_init(this, begp, endp)
     !
@@ -99,13 +103,13 @@ contains
 
     ! The following is set in InitGridCells
     allocate(this%gridcell  (begp:endp)); this%gridcell    (:) = ispval
-    allocate(this%wtgcell   (begp:endp)); this%wtgcell     (:) = nan
+    allocate(this%wtgcell   (begp:endp)); this%wtgcell     (:) =  spval
     allocate(this%topounit  (begp:endp)); this%topounit    (:) = ispval
-    allocate(this%wttopounit(begp:endp)); this%wttopounit  (:) = nan
+    allocate(this%wttopounit(begp:endp)); this%wttopounit  (:) =  spval
     allocate(this%landunit  (begp:endp)); this%landunit    (:) = ispval
-    allocate(this%wtlunit   (begp:endp)); this%wtlunit     (:) = nan
+    allocate(this%wtlunit   (begp:endp)); this%wtlunit     (:) =  spval
     allocate(this%column    (begp:endp)); this%column      (:) = ispval
-    allocate(this%wtcol     (begp:endp)); this%wtcol       (:) = nan
+    allocate(this%wtcol     (begp:endp)); this%wtcol       (:) =  spval
     allocate(this%itype     (begp:endp)); this%itype       (:) = ispval
     allocate(this%mxy       (begp:endp)); this%mxy         (:) = ispval
     allocate(this%active    (begp:endp)); this%active      (:) = .false.
@@ -114,7 +118,7 @@ contains
     if (use_fates) then
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
-       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan 
+       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan
     end if
 
 	end subroutine veg_pp_init

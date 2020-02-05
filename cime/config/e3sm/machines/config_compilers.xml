@@ -423,16 +423,17 @@ flags should be captured within MPAS CMake files.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
+	  <base>  -i4 -g -time -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03</base>
     <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
-    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append COMP_NAME="datm"> -Mnovect </append>
-    <append COMP_NAME="dlnd"> -Mnovect </append>
-    <append COMP_NAME="drof"> -Mnovect </append>
-    <append COMP_NAME="dwav"> -Mnovect </append>
-    <append COMP_NAME="dice"> -Mnovect </append>
-    <append COMP_NAME="docn"> -Mnovect </append>
+    <append DEBUG="TRUE"> -Mnovect </append>
+    <append MODEL="datm"> -Mnovect </append>
+    <append MODEL="dlnd"> -Mnovect </append>
+    <append MODEL="drof"> -Mnovect </append>
+    <append MODEL="dwav"> -Mnovect </append>
+    <append MODEL="dice"> -Mnovect </append>
+    <append MODEL="docn"> -Mnovect </append>
+    <append MODEL="clm">-O0 -ta=tesla:deepcopy,cc70,debug -Mcuda</append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -450,7 +451,7 @@ flags should be captured within MPAS CMake files.
        the "contiguous" attribute is incompatible with "intent".-->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <base> -time -Wl,--allow-multiple-definition </base>
+    <base> -time -Wl,--allow-multiple-definition -acc -Mcuda </base>
     <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
@@ -944,6 +945,29 @@ flags should be captured within MPAS CMake files.
     <append> -rpath $ENV{NETCDFROOT}/lib </append>
   </SLIBS>
 </compiler>
+
+
+<compiler MACH="excl" COMPILER="pgi">
+   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+   <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH> 	
+   <LDFLAGS>
+    <append MODEL="driver">-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
+    <append MODEL="driver">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
+    <append MODEL="driver">-L$ENV{BLASLAPACK_DIR} -llapack -lblas</append>
+    <append MODEL="driver">-acc -Mcuda</append>
+  </LDFLAGS>
+  <FFLAGS>
+	  <append MODEL="clm"></append>
+  </FFLAGS>
+  <SFC>$(FC_ROOT)/bin/pgfortran</SFC>
+  <SCC>$(CC_ROOT)/bin/pgcc</SCC>
+  <SCXX>$(CC_ROOT)/bin/pgc++</SCXX>
+  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
+  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
+  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
+</compiler>
+
+
 
 <compiler MACH="cades" COMPILER="gnu">
   <CFLAGS>

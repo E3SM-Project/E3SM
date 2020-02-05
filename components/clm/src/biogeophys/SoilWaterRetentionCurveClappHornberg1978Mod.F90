@@ -14,7 +14,7 @@ module SoilWaterRetentionCurveClappHornberg1978Mod
   !
   ! !PUBLIC TYPES:
   public :: soil_water_retention_curve_clapp_hornberg_1978_type
-  
+
   type, extends(soil_water_retention_curve_type) :: &
        soil_water_retention_curve_clapp_hornberg_1978_type
      private
@@ -26,7 +26,7 @@ module SoilWaterRetentionCurveClappHornberg1978Mod
 
   interface soil_water_retention_curve_clapp_hornberg_1978_type
      ! initialize a new soil_water_retention_curve_clapp_hornberg_1978_type object
-     module procedure constructor  
+     module procedure constructor
   end interface soil_water_retention_curve_clapp_hornberg_1978_type
 
 contains
@@ -38,7 +38,7 @@ contains
     ! Creates an object of type soil_water_retention_curve_clapp_hornberg_1978_type.
     ! For now, this is simply a place-holder.
     !-----------------------------------------------------------------------
-
+    
   end function constructor
 
   !-----------------------------------------------------------------------
@@ -59,10 +59,10 @@ contains
     real(r8), optional, intent(out):: dhkds    !d[hk]/ds   [mm/s]
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'soil_hk'
     !-----------------------------------------------------------------------
-    
+
     !compute hydraulic conductivity
     hk=imped*hksat*s**(2._r8*bsw+3._r8)
 
@@ -90,10 +90,10 @@ contains
     real(r8), optional, intent(out) :: dsmpds   !d[smp]/ds, [mm]
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'soil_suction'
     !-----------------------------------------------------------------------
-    
+
     !compute soil suction potential, negative
     smp = -smpsat*s**(-bsw)
 
@@ -121,14 +121,13 @@ contains
     real(r8) , intent(out) :: s_target   ! relative saturation at which smp = smp_target [0,1]
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'soil_suction_inverse'
     !-----------------------------------------------------------------------
-    
+
     s_target = (-smp_target/smpsat)**(-1/bsw)
 
   end subroutine soil_suction_inverse
 
 
 end module SoilWaterRetentionCurveClappHornberg1978Mod
-

@@ -1,18 +1,18 @@
 module landunit_varcon
+  #include "shr_assert.h"
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module containing landunit indices and associated variables and routines.
   !
   ! !USES:
-#include "shr_assert.h"
   !
   !
   ! !PUBLIC TYPES:
   implicit none
   save
   private
-  
+
   !------------------------------------------------------------------
   ! Initialize landunit type constants
   !------------------------------------------------------------------
@@ -44,14 +44,25 @@ module landunit_varcon
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: landunit_varcon_init  ! initialize constants in this module
   public :: landunit_is_special   ! returns true if this is a special landunit
-  
+
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: set_landunit_names   ! set the landunit_names vector
 !-----------------------------------------------------------------------
-
+!$acc declare copyin(istsoil    )
+!$acc declare copyin(istcrop    )
+!$acc declare copyin(istice     )
+!$acc declare copyin(istice_mec )
+!$acc declare copyin(istdlak    )
+!$acc declare copyin(istwet     )
+!$acc declare copyin(isturb_MIN )
+!$acc declare copyin(isturb_tbd )
+!$acc declare copyin(isturb_hd  )
+!$acc declare copyin(isturb_md  )
+!$acc declare copyin(isturb_MAX )
+!$acc declare copyin(max_lunit  )
 contains
-  
+
   !-----------------------------------------------------------------------
   subroutine landunit_varcon_init()
     !
@@ -63,14 +74,14 @@ contains
     ! !ARGUMENTS:
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'landunit_varcon_init'
     !-----------------------------------------------------------------------
-    
+
     call set_landunit_names()
 
   end subroutine landunit_varcon_init
-  
+
   !-----------------------------------------------------------------------
   function landunit_is_special(ltype) result(is_special)
     !
@@ -88,8 +99,6 @@ contains
     character(len=*), parameter :: subname = 'landunit_is_special'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT((ltype >= 1 .and. ltype <= max_lunit), subname//': ltype out of bounds')
-
     if (ltype == istsoil .or. ltype == istcrop) then
        is_special = .false.
     else
@@ -106,11 +115,12 @@ contains
     !
     ! !USES:
     use shr_sys_mod, only : shr_sys_abort
+
     !
     character(len=*), parameter :: not_set = 'NOT_SET'
     character(len=*), parameter :: subname = 'set_landunit_names'
     !-----------------------------------------------------------------------
-    
+
     landunit_names(:) = not_set
 
     landunit_names(istsoil) = 'vegetated_or_bare_soil'
@@ -124,8 +134,9 @@ contains
     landunit_names(isturb_md) = 'urban_md'
 
     if (any(landunit_names == not_set)) then
-       call shr_sys_abort(trim(subname)//': Not all landunit names set')
+         call shr_sys_abort(trim(subname)//': Not all landunit names set')
     end if
+
 
   end subroutine set_landunit_names
 

@@ -1,8 +1,8 @@
 module quadraticMod
 
-  use abortutils  ,   only: endrun
+  !#py use abortutils  ,   only: endrun
   use shr_kind_mod,   only: r8 => shr_kind_r8
-  use shr_log_mod ,   only: errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod ,   only: errMsg => shr_log_errMsg
   use clm_varctl  ,   only: iulog
 
   implicit none
@@ -24,6 +24,7 @@ contains
      ! 4/5/10: Adapted from /home/bonan/ecm/psn/An_gs_iterative.f90 by Keith Oleson
      !
      ! !USES:
+      !$acc routine seq 
      implicit none
      !
      ! !ARGUMENTS:
@@ -35,8 +36,8 @@ contains
      !------------------------------------------------------------------------------
     
      if (a == 0._r8) then
-        write (iulog,*) 'Quadratic solution error: a = ',a
-        call endrun(msg=errmsg(__FILE__, __LINE__))
+        !#py write (iulog,*) 'Quadratic solution error: a = ',a
+        !#py !#py call endrun(msg=errmsg(__FILE__, __LINE__))
      end if
    
      if (b >= 0._r8) then

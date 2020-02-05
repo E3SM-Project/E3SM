@@ -6,9 +6,9 @@ module clm_interface_thType
 ! updated: 9/16/2016, 2/2/2017, June-2017
 !=================================================================================================
   ! USES:
-  use shr_log_mod           , only : errMsg => shr_log_errMsg
+  !use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
-  use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
+  !use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
 
   implicit none
 
@@ -73,7 +73,7 @@ module clm_interface_thType
      procedure , private :: InitAllocate
   end type clm_interface_th_datatype
 !-------------------------------------------------------------------------------------------------
-  
+
 
 contains
 
@@ -110,20 +110,20 @@ contains
     begp = bounds%begp; endp= bounds%endp
 
     !soilstate_vars:
-    allocate(this%soilpsi_col           (begc:endc, 1:nlevgrnd))            ; this%soilpsi_col          (:,:) = nan
+    allocate(this%soilpsi_col           (begc:endc, 1:nlevgrnd))            ; this%soilpsi_col          (:,:) = spval
 
     ! waterstate_vars:
-    allocate(this%frac_sno_eff_col      (begc:endc))                        ; this%frac_sno_eff_col     (:)   = nan
-    allocate(this%frac_h2osfc_col       (begc:endc))                        ; this%frac_h2osfc_col      (:)   = nan
-    allocate(this%h2osoi_liq_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_liq_col       (:,:) = nan
-    allocate(this%h2osoi_ice_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_ice_col       (:,:) = nan
-    allocate(this%h2osoi_vol_col        (begc:endc, 1:nlevgrnd))            ; this%h2osoi_vol_col       (:,:) = nan
+    allocate(this%frac_sno_eff_col      (begc:endc))                        ; this%frac_sno_eff_col     (:)   = spval
+    allocate(this%frac_h2osfc_col       (begc:endc))                        ; this%frac_h2osfc_col      (:)   = spval
+    allocate(this%h2osoi_liq_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_liq_col       (:,:) = spval
+    allocate(this%h2osoi_ice_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_ice_col       (:,:) = spval
+    allocate(this%h2osoi_vol_col        (begc:endc, 1:nlevgrnd))            ; this%h2osoi_vol_col       (:,:) = spval
 
     ! temperature_vars:
-    allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd))    ; this%t_soisno_col         (:,:) = nan
-    allocate(this%t_grnd_col            (begc:endc))                        ; this%t_grnd_col           (:)   = nan
-    allocate(this%t_h2osfc_col          (begc:endc))                        ; this%t_h2osfc_col         (:)   = nan
-    allocate(this%t_nearsurf_col        (begc:endc))                        ; this%t_nearsurf_col       (:)   = nan
+    allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd))    ; this%t_soisno_col         (:,:) = spval
+    allocate(this%t_grnd_col            (begc:endc))                        ; this%t_grnd_col           (:)   = spval
+    allocate(this%t_h2osfc_col          (begc:endc))                        ; this%t_h2osfc_col         (:)   = spval
+    allocate(this%t_nearsurf_col        (begc:endc))                        ; this%t_nearsurf_col       (:)   = spval
 
     ! canopystate_vars:
     allocate(this%alt_indx_col          (begc:endc))                        ; this%alt_indx_col         (:)   = huge(1)

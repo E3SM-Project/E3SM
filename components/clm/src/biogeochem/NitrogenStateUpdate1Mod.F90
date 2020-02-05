@@ -5,7 +5,7 @@ module NitrogenStateUpdate1Mod
   !
   ! !USES:
   use shr_kind_mod           , only: r8 => shr_kind_r8
-  use clm_time_manager       , only : get_step_size
+  !#py use clm_time_manager       , only : get_step_size
   use clm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use clm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl             , only : iulog, use_nitrif_denitrif
@@ -24,7 +24,7 @@ module NitrogenStateUpdate1Mod
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
-  use clm_time_manager       , only : get_curr_date
+  !#py use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
   use clm_varctl             , only : nu_com
@@ -45,8 +45,8 @@ module NitrogenStateUpdate1Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       nitrogenflux_vars, nitrogenstate_vars)
+  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive,&
+     filter_soilc_with_inactive, dt)
     !
     ! !DESCRIPTION:
     ! Update nitrogen states based on fluxes from dyn_cnbal_patch
@@ -55,25 +55,22 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                  , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    real(r8), intent(in)                      :: dt                            ! time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer                                  :: c                             ! column index
     integer                                  :: fc                            ! column filter index
     integer                                  :: g                             ! gridcell index
     integer                                  :: j                             ! level index
-    real(r8)                                 :: dt                            ! time step (seconds)
 
-    character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
+    !character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
-    associate( &
-         nf => nitrogenflux_vars  , &
-         ns => nitrogenstate_vars   &
-         )
 
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       if (.not.use_fates) then
 
@@ -101,42 +98,42 @@ contains
          end do
       end if
 
-    end associate
-
   end subroutine NitrogenStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
   subroutine NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
+       cnstate_vars, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic nitrogen state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    real(r8)                  , intent(in)    :: dt        ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
-    real(r8):: dt        ! radiation time step (seconds)
     real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
 
-    integer:: kyr                     ! current year 
+    integer:: kyr                     ! current year
     integer:: kmo                     ! month of year  (1, ..., 12)
-    integer:: kda                     ! day of month   (1, ..., 31) 
-    integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
+    integer:: kda                     ! day of month   (1, ..., 31)
+    integer:: mcsec                   ! seconds of day (0, ..., seconds/day)
     !-----------------------------------------------------------------------
 
-    associate(                                                                                           & 
-         ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+    associate(                                                                                           &
+         ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type
 
          woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
@@ -144,14 +141,12 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
-         nfixation_prof        => cnstate_vars%nfixation_prof_col          , & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
-         
-         nf                    => nitrogenflux_vars                        , &
-         ns                    => nitrogenstate_vars &
+         nfixation_prof        => cnstate_vars%nfixation_prof_col           & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
+
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       ! column-level fluxes
 
@@ -160,57 +155,57 @@ contains
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               
+
                if (.not. use_nitrif_denitrif) then
-                  
+
                   ! N deposition and fixation
                   col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
                   col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
-                  
+
                else
 
                   ! N deposition and fixation (put all into NH4 pool)
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
-                  
+
                end if
 
                ! plant to litter fluxes
                ! phenology and dynamic landcover fluxes
                col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
                     col_nf%phenology_n_to_litr_met_n(c,j) * dt
-               
+
                col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
                     col_nf%phenology_n_to_litr_cel_n(c,j) * dt
-               
+
                col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
                     col_nf%phenology_n_to_litr_lig_n(c,j) * dt
             end do
          end do
-         
+
          ! repeating N dep and fixation for crops
          if ( crop_prog )then
             do j = 1, nlevdecomp
-               
+
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   if (.not. use_nitrif_denitrif) then
-                     
+
                      ! N deposition and fixation
                      col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
                      col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
                   else
-                     
+
                      ! N deposition and fixation (put all into NH4 pool)
                      col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
                      col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-                     
+
                   end if
                end do
             end do
          end if
-         
+
          ! decomposition fluxes
          do k = 1, ndecomp_cascade_transitions
             do j = 1, nlevdecomp
@@ -231,7 +226,7 @@ contains
                   ! column loop
                   do fc = 1,num_soilc
                      c = filter_soilc(fc)
-                     
+
                      col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) = &
                           col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) + &
                           (col_nf%decomp_cascade_ntransfer_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
@@ -249,13 +244,13 @@ contains
                end do
             end if
          end do
-         
+
          if (.not. use_nitrif_denitrif) then
-            
+
             !--------------------------------------------------------
             !-------------    NITRIF_DENITRIF OFF -------------------
             !--------------------------------------------------------
-            
+
             ! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes and denitrification fluxes
             do k = 1, ndecomp_cascade_transitions
                if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
@@ -273,75 +268,75 @@ contains
                      do fc = 1,num_soilc
                         c = filter_soilc(fc)
                         col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) - col_nf%sminn_to_denit_decomp_cascade_vr(c,j,k)* dt
-                        
+
                         col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)* dt
-                        
+
                      end do
                   end do
                endif
             end do
-            
+
             do j = 1, nlevdecomp
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   ! "bulk denitrification"
                   col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_to_denit_excess_vr(c,j) * dt
-                  
+
                   ! total plant uptake from mineral N
                   col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_to_plant_vr(c,j)*dt
-                  
+
                   ! flux that prevents N limitation (when Carbon_only is set)
                   col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
                end do
             end do
-            
-         else   
-            
+
+         else
+
             !--------------------------------------------------------
             !-------------    NITRIF_DENITRIF ON --------------------
             !--------------------------------------------------------
-            
+
             do j = 1, nlevdecomp
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  
+
                   ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
-                  
+
                   ! immobilization fluxes
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
-                  
+
                   col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%actual_immob_no3_vr(c,j)*dt
-                  
+
                   ! plant uptake fluxes
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%smin_nh4_to_plant_vr(c,j)*dt
-                  
+
                   col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%smin_no3_to_plant_vr(c,j)*dt
-                  
+
                   ! Account for nitrification fluxes
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%f_nit_vr(c,j) * dt
-                  
+
                   col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_nf%f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
-                  
+
                   ! Account for denitrification fluxes
                   col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
-                  
+
                   ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
-                  
+
                   ! update diagnostic total
                   col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
-                  
+
                end do ! end of column loop
             end do
-            
+
          end if
-      endif  !end if is_active_betr_bgc 
+      endif  !end if is_active_betr_bgc
 
       ! forest fertilization
-      call get_curr_date(kyr, kmo, kda, mcsec)
+      !#py call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -364,7 +359,7 @@ contains
       end if
 
       ! patch loop
-      
+
       do fp = 1,num_soilp
          p = filter_soilp(fp)
 

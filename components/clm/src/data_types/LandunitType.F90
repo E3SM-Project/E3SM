@@ -2,14 +2,14 @@ module LandunitType
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Landunit data type allocation 
-  ! -------------------------------------------------------- 
+  ! Landunit data type allocation
+  ! --------------------------------------------------------
   ! landunits types can have values of (see landunit_varcon.F90)
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   !   1  => (istsoil)    soil (vegetated or bare soil landunit)
   !   2  => (istcrop)    crop (only for crop configuration)
   !   3  => (istice)     land ice
-  !   4  => (istice_mec) land ice (multiple elevation classes) 
+  !   4  => (istice_mec) land ice (multiple elevation classes)
   !   5  => (istdlak)    deep lake
   !   6  => (istwet)     wetland
   !   7  => (isturb_tbd) urban tbd
@@ -17,8 +17,7 @@ module LandunitType
   !   9  => (isturb_md)  urban md
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varcon     , only : ispval
+  use clm_varcon     , only : ispval, spval
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -26,13 +25,13 @@ module LandunitType
   private
   !
   type, public :: landunit_physical_properties
-     
+
      ! indices and weights for higher subgrid levels (topounit, gridcell)
      integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
      real(r8), pointer :: wtgcell      (:) => null() ! weight (relative to gridcell)
      integer , pointer :: topounit     (:) => null() ! index into topounit level quantities
      real(r8), pointer :: wttopounit   (:) => null() ! weight (relative to topounit)
-     
+
      ! Starting and ending indices for all subgrid types below the landunit level
      integer , pointer :: coli         (:) => null() ! beginning column index per landunit
      integer , pointer :: colf         (:) => null() ! ending column index for each landunit
@@ -47,10 +46,10 @@ module LandunitType
      logical , pointer :: lakpoi       (:) => null() ! true=>lake point
      logical , pointer :: urbpoi       (:) => null() ! true=>urban point
      logical , pointer :: glcmecpoi    (:) => null() ! true=>glacier_mec point
-     logical , pointer :: active       (:) => null() ! true=>do computations on this landunit 
+     logical , pointer :: active       (:) => null() ! true=>do computations on this landunit
 
      ! urban properties
-     real(r8), pointer :: canyon_hwr   (:) => null() ! urban landunit canyon height to width ratio (-)   
+     real(r8), pointer :: canyon_hwr   (:) => null() ! urban landunit canyon height to width ratio (-)
      real(r8), pointer :: wtroad_perv  (:) => null() ! urban landunit weight of pervious road column to total road (-)
      real(r8), pointer :: wtlunit_roof (:) => null() ! weight of roof with respect to urban landunit (-)
      real(r8), pointer :: ht_roof      (:) => null() ! height of urban roof (m)
@@ -61,13 +60,15 @@ module LandunitType
 
      procedure, public :: Init => lun_pp_init
      procedure, public :: Clean => lun_pp_clean
-     
+
   end type landunit_physical_properties
+  
   type(landunit_physical_properties), public, target :: lun_pp  !geomorphological landunits
+  !$acc declare create(lun_pp)
   !------------------------------------------------------------------------
 
 contains
-  
+
   !------------------------------------------------------------------------
   subroutine lun_pp_Init(this, begl, endl)
     !
@@ -78,16 +79,16 @@ contains
 
     ! The following is set in InitGridCellsMod
     allocate(this%gridcell     (begl:endl)); this%gridcell  (:) = ispval
-    allocate(this%wtgcell      (begl:endl)); this%wtgcell   (:) = nan
+    allocate(this%wtgcell      (begl:endl)); this%wtgcell   (:) = spval
     allocate(this%topounit     (begl:endl)); this%topounit  (:) = ispval
-    allocate(this%wttopounit   (begl:endl)); this%wttopounit(:) = nan
+    allocate(this%wttopounit   (begl:endl)); this%wttopounit(:) = spval
     allocate(this%coli         (begl:endl)); this%coli      (:) = ispval
     allocate(this%colf         (begl:endl)); this%colf      (:) = ispval
     allocate(this%ncolumns     (begl:endl)); this%ncolumns  (:) = ispval
     allocate(this%pfti         (begl:endl)); this%pfti      (:) = ispval
     allocate(this%pftf         (begl:endl)); this%pftf      (:) = ispval
     allocate(this%npfts        (begl:endl)); this%npfts     (:) = ispval
-    allocate(this%itype        (begl:endl)); this%itype     (:) = ispval 
+    allocate(this%itype        (begl:endl)); this%itype     (:) = ispval
     allocate(this%ifspecial    (begl:endl)); this%ifspecial (:) = .false.
     allocate(this%lakpoi       (begl:endl)); this%lakpoi    (:) = .false.
     allocate(this%urbpoi       (begl:endl)); this%urbpoi    (:) = .false.
@@ -97,12 +98,12 @@ contains
     allocate(this%active       (begl:endl))
 
     ! The following is set in routine urbanparams_vars%Init in module UrbanParamsMod
-    allocate(this%canyon_hwr   (begl:endl)); this%canyon_hwr   (:) = nan
-    allocate(this%wtroad_perv  (begl:endl)); this%wtroad_perv  (:) = nan
-    allocate(this%wtlunit_roof (begl:endl)); this%wtlunit_roof (:) = nan
-    allocate(this%ht_roof      (begl:endl)); this%ht_roof      (:) = nan
-    allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = nan
-    allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = nan
+    allocate(this%canyon_hwr   (begl:endl)); this%canyon_hwr   (:) = spval
+    allocate(this%wtroad_perv  (begl:endl)); this%wtroad_perv  (:) = spval
+    allocate(this%wtlunit_roof (begl:endl)); this%wtlunit_roof (:) = spval
+    allocate(this%ht_roof      (begl:endl)); this%ht_roof      (:) = spval
+    allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = spval
+    allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = spval
 
   end subroutine lun_pp_init
 

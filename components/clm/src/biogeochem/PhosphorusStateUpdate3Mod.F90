@@ -9,21 +9,19 @@ module PhosphorusStateUpdate3Mod
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use clm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
-  use clm_time_manager    , only : get_step_size
+  !#py use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use clm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
   use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
-  use VegetationPropertiesType      , only : veg_vp 
+  use VegetationPropertiesType      , only : veg_vp
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf
   !
@@ -39,7 +37,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars, dt )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
@@ -49,40 +47,38 @@ contains
     ! no science equatiops. This increases readability and maintainability.
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columps in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columps
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(phosphorusflux_type)  , intent(inout)    :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(cnstate_type)         , intent(in)    :: cnstate_vars
+    real(r8), intent(in) :: dt         ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
-    real(r8):: dt         ! radiation time step (seconds)
 
    real(r8):: smax_c       ! parameter(gP/m2), maximum amount of sorbed P in equilibrium with solution P
-   real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P 
+   real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
    real(r8):: flux_mineralization(bounds%begc:bounds%endc,1:nlevdecomp)   !! local temperary variable
    real(r8):: temp_solutionp(bounds%begc:bounds%endc,1:nlevdecomp)
    real(r8):: aa,bb,cc ! solve quadratic function
 
     !-----------------------------------------------------------------------
 
-    associate(& 
+    associate(&
          isoilorder     => cnstate_vars%isoilorder ,&
          pdep_prof      => cnstate_vars%pdep_prof_col ,&
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,&
-         pf => phosphorusflux_vars  , &
-         ps => phosphorusstate_vars , &
          vmax_minsurf_p_vr => veg_vp%vmax_minsurf_p_vr , &
          km_minsurf_p_vr   => veg_vp%km_minsurf_p_vr     &
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
+      !#py dt = real( get_step_size(), r8 )
 
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       !! - X.YANG
@@ -124,7 +120,7 @@ contains
              end do
            endif
         end do
-   
+
 
         do j = 1, nlevdecomp
               ! column loop
@@ -156,13 +152,13 @@ contains
                     + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt &
                     - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%sminp_leached_vr(c,j)*dt ) / &
                     ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
-                             
+
                col_pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) &
                                 + col_pf%secondp_to_labilep_vr(c,j) &
                                 + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
                                 - col_pf%labilep_to_secondp_vr(c,j) - col_pf%sminp_leached_vr(c,j) ) / &
                                 (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
-            
+
                col_pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                              ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) + col_pf%secondp_to_labilep_vr(c,j) &
                              + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
@@ -170,7 +166,7 @@ contains
                              ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
              end do
            end do
-        else ! ECA  
+        else ! ECA
           do j = 1, nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
@@ -247,11 +243,11 @@ contains
                col_ps%primp_vr_cur(c,j)   = col_ps%primp_vr(c,j)
             end do
          enddo
-         
+
          ! phosphorus pools do not change during RG spinup, but fluxes are still calculated to drive soil/plant P cycles
          ! rationale: observed P pools should be our best representation of present-day soil P conditions
          ! If we use observed P to initialize regular spinup, soil P pools will dramatically deplete during the spinup
-         ! Then, the transient simulation will start with a much lower soil phosphorus availability that is inconsistent with obs 
+         ! Then, the transient simulation will start with a much lower soil phosphorus availability that is inconsistent with obs
          if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin ) then
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
@@ -314,7 +310,7 @@ contains
       end do
     end if
 
-      ! patch-level phosphorus fluxes 
+      ! patch-level phosphorus fluxes
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -372,7 +368,7 @@ contains
          veg_ps%ppool(p)              =  veg_ps%ppool(p) - veg_pf%m_ppool_to_litter_fire(p)       * dt
       end do
 
-    end associate 
+    end associate
 
   end subroutine PhosphorusStateUpdate3
 
