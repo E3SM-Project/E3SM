@@ -135,7 +135,12 @@ flags should be captured within MPAS CMake files.
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
     <append compile_threaded="TRUE"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0, 8.2.0, 8.3.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
