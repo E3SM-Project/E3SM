@@ -1855,7 +1855,8 @@ subroutine shoc_length(&
         ! Look for cloud base in this column
 	if (cldin(i,k) .gt. cldthresh .and. cldin(i,k+1) .le. cldthresh) then 
 	  ku=k
-	  conv_var=conv_vel(i,k)**(1._r8/3._r8)
+	  conv_var=max(0._r8,conv_vel(i,k))
+	  conv_var=conv_var**(1._r8/3._r8)
 	endif
 	
 	! Compute the mixing length for the layer just determined
