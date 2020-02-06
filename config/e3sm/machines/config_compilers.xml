@@ -1860,7 +1860,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
     <append> -qspillsize=2500 -qextname=flush </append>
-    <append COMP_NAME="cice"> -qsmp=omp:noopt </append>
+    <append COMP_NAME="cice" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </FFLAGS>
   <LDFLAGS>
     <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
