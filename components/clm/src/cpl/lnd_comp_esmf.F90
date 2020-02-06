@@ -269,7 +269,7 @@ contains
          hostname_in=hostname, username_in=username )
 
     call initialize1( )
-
+    write(*,*) "Done with initialize1"
     ! If no land then exit out of initialization
 
     if ( noland) then

@@ -170,7 +170,7 @@ module CNStateType
      real(r8), pointer :: secp_col             (:) => null()  ! secondary phosphorus g/m2
      real(r8), pointer :: occp_col             (:) => null()  ! occluded phosphorus g/m2
      real(r8), pointer :: prip_col             (:) => null()  ! parent material phosphorus g/m2
-     logical, pointer  :: pdatasets_present  => null()        ! surface dataset has p pools info
+     logical           :: pdatasets_present                   ! surface dataset has p pools info
      !!! annual mortality rate dynamically calcaulted at patch
      real(r8), pointer :: r_mort_cal_patch     (:) => null()  ! patch annual mortality rate
 

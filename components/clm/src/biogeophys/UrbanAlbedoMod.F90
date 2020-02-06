@@ -16,7 +16,6 @@ module UrbanAlbedoMod
   use clm_varctl        , only : iulog
   !#py use abortutils        , only : endrun
   use UrbanParamsType   , only : urbanparams_type
-  use WaterstateType    , only : waterstate_type
   use SolarAbsorbedType , only : solarabs_type
   use SurfaceAlbedoType , only : surfalb_type
   use LandunitType      , only : lun_pp
@@ -55,8 +54,7 @@ contains
     ! only computed over active points.
     !
     ! !USES:
-      !$acc routine seq
-    use shr_orb_mod   , only : shr_orb_decl, shr_orb_cosz
+    !$acc routine seq
     use clm_varcon    , only : sb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv

@@ -200,7 +200,7 @@ contains
 
     ! Determine isgrid2d flag for domain
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
-
+        
     ! Determine type of file - old style grid file or new style domain file
     call check_var(ncid=ncid, varname='LONGXY', vardesc=vardesc, readvar=readvar) 
     if (readvar) istype_domain = .false.

@@ -25,8 +25,8 @@ Module SoilHydrologyType
   !
   type, public :: soilhydrology_type
 
-     integer, pointer :: h2osfcflag             ! true => surface water is active (namelist)
-     integer, pointer :: origflag               ! used to control soil hydrology properties (namelist)
+     integer    :: h2osfcflag             ! true => surface water is active (namelist)
+     integer    :: origflag               ! used to control soil hydrology properties (namelist)
      
      ! NON-VIC
      real(r8), pointer :: frost_table_col   (:)    => null() ! col frost table depth
@@ -116,8 +116,6 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
-    allocate(this%h2osfcflag) ;  this%h2osfcflag = 0
-    allocate(this%origflag);     this%origflag = 0
     allocate(this%frost_table_col   (begc:endc))                 ; this%frost_table_col   (:)     = spval
     allocate(this%zwt_col           (begc:endc))                 ; this%zwt_col           (:)     = spval
     allocate(this%qflx_bot_col      (begc:endc))                 ; this%qflx_bot_col      (:)     = spval
@@ -882,6 +880,7 @@ contains
 
      call shr_mpi_bcast(h2osfcflag, mpicom)
      call shr_mpi_bcast(origflag,   mpicom)
+     
 
      this%h2osfcflag = h2osfcflag
      this%origflag   = origflag

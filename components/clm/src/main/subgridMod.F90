@@ -6,19 +6,12 @@ module subgridMod
   !
   ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
-  !use spmdMod     , only : masterproc
-  !use abortutils  , only : endrun
+  use spmdMod     , only : masterproc
+  use abortutils  , only : endrun
   use clm_varctl  , only : iulog
 
   implicit none
-
-  real *8, public, allocatable     :: wt_lunit(:,:)
-  integer, public, allocatable     :: urban_valid(:)
-  real*8  ,public, dimension(1,1)  :: wt_glc_mec = reshape((/1.6127168011336070D-312/),shape(wt_glc_mec))
-
-  integer :: fates_maxElementsPerSite = 1
-
-  private
+  private   
   save
 
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -48,11 +41,11 @@ contains
     ! !USES
     use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use clm_varctl  , only : create_crop_landunit
-    !use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
     use topounit_varcon  , only : max_topounits
-    !use FatesInterfaceMod, only : fates_maxElementsPerSite
+    use FatesInterfaceMod, only : fates_maxElementsPerSite
 
     !
     ! !ARGUMENTS
@@ -60,9 +53,9 @@ contains
     integer , intent(in)  :: gi                   ! grid cell index
     integer , optional, intent(out) :: ntopounits ! number of topographic units
     integer , optional, intent(out) :: nlunits    ! number of landunits
-    integer , optional, intent(out) :: ncols      ! number of columns
-    integer , optional, intent(out) :: npfts      ! number of pfts
-    integer , optional, intent(out) :: ncohorts   ! number of cohorts
+    integer , optional, intent(out) :: ncols      ! number of columns 
+    integer , optional, intent(out) :: npfts      ! number of pfts 
+    integer , optional, intent(out) :: ncohorts   ! number of cohorts 
     integer , optional, intent(out) :: nveg       ! number of vegetated pfts in naturally vegetated landunit
     integer , optional, intent(out) :: ncrop      ! number of crop pfts in crop landunit
     integer , optional, intent(out) :: nurban_tbd ! number of urban pfts (columns) in urban TBD landunit
@@ -84,8 +77,6 @@ contains
     integer  :: icohorts         ! number of cohorts in gridcell
     integer  :: npfts_per_lunit  ! number of pfts in landunit
     integer  :: ntopounits_per_gcell  ! number of topounits in this gridcell
-
-
     !------------------------------------------------------------------------------
 
     ! -------------------------------------------------------------------------
@@ -97,7 +88,7 @@ contains
     icols      = 0
     ipfts      = 0
     icohorts   = 0
-
+    
     ! -------------------------------------------------------------------------
     ! Initialize other optional counters for gridcell
     ! -------------------------------------------------------------------------
@@ -110,20 +101,20 @@ contains
     if (present(nglacier)) nglacier = 0
     if (present(nglacier_mec)) nglacier_mec = 0
     if (present(ncrop)) ncrop = 0
-
+    
     ! -------------------------------------------------------------------------
     ! Loop through topographic units
     ! -------------------------------------------------------------------------
-
+    
     ! as a start, everything that used to be allocated on a gridcell will now be allocated
-    ! for each topographic unit on each gridcell. That will be wasteful in many cases, but
+    ! for each topographic unit on each gridcell. That will be wasteful in many cases, but 
     ! is a simple way to make the transition to topounits. We should return to this to see
     ! if there is a smarter way to allocate space that does not preclude land area transitions
     ! of interest.
     ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
                                           ! that sets the number of topounits uniquely for each gridcell.
     do t = 1, ntopounits_per_gcell
-
+       
        itopounits = itopounits + 1
 
        ! -------------------------------------------------------------------------
@@ -139,7 +130,7 @@ contains
 
        ! Assume that the vegetated landunit has one column
        ilunits = ilunits + 1
-       icols = icols + 1
+       icols = icols + 1  
 
        ipfts = ipfts + npfts_per_lunit
 
@@ -147,7 +138,7 @@ contains
        ! Number of cohorts is set here
        ! ED cohorts (via FATES) populate all natural vegetation columns.
        ! Current implementations mostly assume that only one column contains
-       ! natural vegetation, which is synonymous with the soil column.
+       ! natural vegetation, which is synonymous with the soil column. 
        ! Because of the single natural vegetation paradigm currently in place,
        ! fates cohort allocations are based off a multiplier on grid-cells.
        ! -------------------------------------------------------------------------
@@ -262,7 +253,7 @@ contains
        ! the grid cell is 0. This is needed for coupling to CISM. In addition, this is
        ! currently sufficient to ensure that we have glaciers everywhere they might be
        ! needed with dynamic landunits, since CISM won't be able to create glaciers outside
-       ! of the area specified by glcmask.
+       ! of the area specified by glcmask. 
 
        npfts_per_lunit = 0
        do m = 1, maxpatch_glcmec
@@ -272,9 +263,9 @@ contains
              npfts_per_lunit = npfts_per_lunit + 1
 
           elseif (present(glcmask)) then
-             if (glcmask == 1) then      ! create a virtual column
+             if (glcmask == 1) then      ! create a virtual column 
                 npfts_per_lunit = npfts_per_lunit + 1
-             endif  ! glcmask = 1
+             endif  ! glcmask = 1 
           endif  ! wt > 0
        enddo   ! maxpatch_glcmec
        if (npfts_per_lunit > 0) then
@@ -299,7 +290,7 @@ contains
           ipfts = ipfts + npfts_per_lunit
        end if
        if (present(ncrop)) ncrop = ncrop + npfts_per_lunit
-
+    
     enddo ! end of ntopounits loop
 
     ! -------------------------------------------------------------------------
@@ -332,10 +323,10 @@ contains
     ! !USES
     use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use clm_varctl  , only : create_crop_landunit
-    !use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
-    !use FatesInterfaceMod, only : fates_maxElementsPerSite
+    use FatesInterfaceMod, only : fates_maxElementsPerSite
 
     !
     ! !ARGUMENTS
@@ -344,9 +335,9 @@ contains
     integer , intent(in)  :: gi  ! gridcell index for this topounit. Needed in development while
                                  ! each topounit is being given the same properties as the original gridcell.
     integer , optional, intent(out) :: nlunits    ! number of landunits
-    integer , optional, intent(out) :: ncols      ! number of columns
-    integer , optional, intent(out) :: npfts      ! number of pfts
-    integer , optional, intent(out) :: ncohorts   ! number of cohorts
+    integer , optional, intent(out) :: ncols      ! number of columns 
+    integer , optional, intent(out) :: npfts      ! number of pfts 
+    integer , optional, intent(out) :: ncohorts   ! number of cohorts 
     integer , optional, intent(out) :: nveg       ! number of vegetated pfts in naturally vegetated landunit
     integer , optional, intent(out) :: ncrop      ! number of crop pfts in crop landunit
     integer , optional, intent(out) :: nurban_tbd ! number of urban pfts (columns) in urban TBD landunit
@@ -376,7 +367,7 @@ contains
     icols      = 0
     ipfts      = 0
     icohorts   = 0
-
+    
     ! -------------------------------------------------------------------------
     ! Initialize other optional counters for gridcell
     ! -------------------------------------------------------------------------
@@ -389,7 +380,7 @@ contains
     if (present(nglacier)) nglacier = 0
     if (present(nglacier_mec)) nglacier_mec = 0
     if (present(ncrop)) ncrop = 0
-
+    
     ! -------------------------------------------------------------------------
     ! Set naturally vegetated landunit
     ! -------------------------------------------------------------------------
@@ -403,7 +394,7 @@ contains
 
     ! Assume that the vegetated landunit has one column
     ilunits = ilunits + 1
-    icols = icols + 1
+    icols = icols + 1  
 
     ipfts = ipfts + npfts_per_lunit
 
@@ -411,7 +402,7 @@ contains
     ! Number of cohorts is set here
     ! ED cohorts (via FATES) populate all natural vegetation columns.
     ! Current implementations mostly assume that only one column contains
-    ! natural vegetation, which is synonymous with the soil column.
+    ! natural vegetation, which is synonymous with the soil column. 
     ! Because of the single natural vegetation paradigm currently in place,
     ! fates cohort allocations are based off a multiplier on grid-cells.
     ! -------------------------------------------------------------------------
@@ -526,7 +517,7 @@ contains
     ! the grid cell is 0. This is needed for coupling to CISM. In addition, this is
     ! currently sufficient to ensure that we have glaciers everywhere they might be
     ! needed with dynamic landunits, since CISM won't be able to create glaciers outside
-    ! of the area specified by glcmask.
+    ! of the area specified by glcmask. 
 
     npfts_per_lunit = 0
     do m = 1, maxpatch_glcmec
@@ -536,9 +527,9 @@ contains
           npfts_per_lunit = npfts_per_lunit + 1
 
        elseif (present(glcmask)) then
-          if (glcmask == 1) then      ! create a virtual column
+          if (glcmask == 1) then      ! create a virtual column 
              npfts_per_lunit = npfts_per_lunit + 1
-          endif  ! glcmask = 1
+          endif  ! glcmask = 1 
        endif  ! wt > 0
     enddo   ! maxpatch_glcmec
     if (npfts_per_lunit > 0) then
@@ -574,5 +565,5 @@ contains
     if (present(ncohorts))     ncohorts = icohorts
 
   end subroutine subgrid_get_topounitinfo
-
+  
 end module subgridMod
