@@ -144,6 +144,8 @@ contains
    call ncd_pio_openfile (ncid, trim(locfn), 0)
    call ncd_inqdid(ncid,'soilorder',dimid)
    call ncd_inqdlen(ncid,dimid,nsoil)
+   
+   call ncd_io('soilordername',soilordername, 'read', ncid, readvar=readv,posNOTonfile=.true.)
    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order parameter'//errMsg(__FILE__, __LINE__))
    call ncd_io('k_s3_biochem',k_s3_biochem, 'read', ncid, readvar=readv)
    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order parameter'//errMsg(__FILE__, __LINE__))

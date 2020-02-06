@@ -335,6 +335,7 @@ contains
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
           if (ierr /= 0) then
+             print *, "errcode :",ierr
              call endrun(msg='ERROR reading clm_inparm namelist'//errMsg(__FILE__, __LINE__))
           end if
        end if

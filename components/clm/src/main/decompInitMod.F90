@@ -647,7 +647,7 @@ contains
 
        endif
     enddo
-
+    print *, "end of decomp_init_clumps"
     deallocate(allvecg,allvecl)
     deallocate(lcid)
 

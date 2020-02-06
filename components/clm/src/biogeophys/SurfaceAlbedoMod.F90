@@ -208,9 +208,8 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use shr_orb_mod
-    use clm_time_manager   , only : get_nstep
     use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
+    use shr_orb_mod_elm
     !#py use abortutils         , only : endrun
     !#fates_py use CLMFatesInterfaceMod, only : hlm_fates_interface_type
 

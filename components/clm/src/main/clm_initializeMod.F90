@@ -169,7 +169,6 @@ contains
 
     select case (trim(domain_decomp_type))
     case ("round_robin")
-       write(*,*) "calling decompInit_lnd:",ni,nj,amask
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
     case ("graph_partitioning")
@@ -201,15 +200,17 @@ contains
        call shr_sys_flush(iulog)
     endif
     if (create_glacier_mec_landunit) then
+        print *,"surfrd_get_grid"
        call surfrd_get_grid(begg, endg, ldomain, fatmlndfrc, fglcmask)
     else
+       print *,"else surfrd_get_grid"
        call surfrd_get_grid(begg, endg, ldomain, fatmlndfrc)
     endif
     if (masterproc) then
        call domain_check(ldomain)
     endif
     ldomain%mask = 1  !!! TODO - is this needed?
-
+    print *, "finished ldomain read"
     ! Get topo if appropriate (set ldomain%topo)
 
     if (flndtopo /= " ") then
@@ -223,9 +224,9 @@ contains
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban
-
+    print *, "urban input"
     call UrbanInput(begg, endg, mode='initialize')
-
+    print*,"allocated surface grid"
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
     allocate (wt_lunit     (begg:endg, max_lunit           ))
@@ -279,21 +280,9 @@ contains
     ! ------------------------------------------------------------------------
 
     if (create_glacier_mec_landunit) then
-       write(*,*) "calling decompInit_clumps witg glcmask:",ldomain%glcmask
        call decompInit_clumps(ldomain%glcmask)
        call decompInit_ghosts(ldomain%glcmask)
     else
-       write(*,*) "no glcmask:"
-      
-      write(*,*) "wt_lunit    ", shape( wt_lunit    ),  wt_lunit     
-      write(*,*) "urban_valid ", shape( urban_valid ),  urban_valid  
-      write(*,*) "wt_nat_patch", shape( wt_nat_patch),  wt_nat_patch 
-      write(*,*) "wt_cft      ", shape( wt_cft      ),  wt_cft       
-      write(*,*) "fert_cft    ", shape( fert_cft    ),  fert_cft
-      write(*,*) " wt_glc_mec ", shape( wt_glc_mec  ),  wt_glc_mec  
-      write(*,*) " topo_glc_mec",shape( topo_glc_mec),  topo_glc_mec
-       
-      write(*,*) "FATES_MAXELEMENTSPERSITE ",fates_maxElementsPerSite
        call decompInit_clumps()
        call decompInit_ghosts()
     endif
@@ -352,11 +341,6 @@ contains
 
     nclumps = get_proc_clumps()
 
-  !!  do nc = 1, nclumps
-  !!     call get_clump_bounds(nc, bounds_clump)
-  !!     call print_grid(bounds_clump)
-  !!  end do
-
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -404,7 +388,7 @@ contains
        end if
     end do
 
-
+    
 
   end subroutine initialize1
 

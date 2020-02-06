@@ -47,20 +47,28 @@ module seq_drydep_mod
   character(16),public,parameter :: DD_XLND = 'xactive_lnd'! dry-dep land
   character(16),public,parameter :: DD_TABL = 'table'      ! dry-dep table (atm and lnd)
   character(16),public :: drydep_method = DD_XLND          ! Which option choosen
+  !$acc declare copyin(drydep_method)
 
   real(r8), public, parameter :: ph     = 1.e-5_r8         ! measure of the acidity (dimensionless)
 
   logical, public  :: lnd_drydep                           ! If dry-dep fields passed
   integer, public  :: n_drydep = 0                         ! Number in drypdep list
+
   character(len=32), public, dimension(maxspc) :: drydep_list = ''   ! List of dry-dep species
+  !$acc declare create(drydep_list)
 
   character(len=CS), public :: drydep_fields_token = ''   ! First drydep fields token
 
   real(r8), public, allocatable, dimension(:) :: foxd      ! reactivity factor for oxidation (dimensioness)
   real(r8), public, allocatable, dimension(:) :: drat      ! ratio of molecular diffusivity (D_H2O/D_species; dimensionless)
   integer,  public, allocatable, dimension(:) :: mapping   ! mapping to species table
+  !$acc declare create(foxd   )
+  !$acc declare create(drat   )
+  !$acc declare create(mapping)
+
   ! --- Indices for each species ---
   integer,  public :: h2_ndx, ch4_ndx, co_ndx, pan_ndx, mpan_ndx, so2_ndx, o3_ndx, o3a_ndx, xpan_ndx
+  !$acc declare create(h2_ndx, ch4_ndx, co_ndx, pan_ndx, mpan_ndx, so2_ndx, o3_ndx, o3a_ndx, xpan_ndx)
 
   !---------------------------------------------------------------------------
   ! Table 1 from Wesely, Atmos. Environment, 1989, p1293
@@ -304,7 +312,13 @@ module seq_drydep_mod
        /)
 
   ! PRIVATE DATA:
-
+  !$acc declare copyin(rac)
+  !$acc declare copyin(rlu)
+  !$acc declare copyin(rgso)
+  !$acc declare copyin(rcls)
+  !$acc declare copyin(rgss)
+  !$acc declare copyin(rclo)
+  !$acc declare create(n_drydep)
   Interface seq_drydep_setHCoeff                      ! overload subroutine
      Module Procedure set_hcoeff_scalar
      Module Procedure set_hcoeff_vector
@@ -634,9 +648,6 @@ CONTAINS
     !  2009-Feb-20 - E. Kluzek - Move namelist read to separate subroutine
     !========================================================================
 
-    use shr_log_mod, only : s_logunit => shr_log_Unit
-    use shr_infnan_mod, only: shr_infnan_posinf, assignment(=)
-
     implicit none
 
     !----- local -----
@@ -657,8 +668,8 @@ CONTAINS
        allocate( mapping(n_drydep) )
 
        ! This initializes these variables to infinity.
-       foxd = shr_infnan_posinf
-       drat = shr_infnan_posinf
+       foxd = huge(1d0)!shr_infnan_posinf
+       drat = huge(1d0)!shr_infnan_posinf
 
        mapping(:) = 0
 
@@ -766,9 +777,7 @@ CONTAINS
                 end if
              end do
           else
-             if ( s_loglev > 0 ) write(s_logunit,F00) trim(drydep_list(i)), &
-                  ' not in tables; will have dep vel = 0'
-             call shr_sys_abort( subName//': '//trim(drydep_list(i))//' is not in tables' )
+            stop
           end if
        end if
 
@@ -804,7 +813,7 @@ CONTAINS
   !====================================================================================
 
   subroutine set_hcoeff_scalar( sfc_temp, heff )
-
+    !$acc routine seq
     !========================================================================
     ! Interface to seq_drydep_setHCoeff when input is scalar
     ! wrapper routine used when surface temperature is a scalar (single column) rather
@@ -830,7 +839,7 @@ CONTAINS
   !====================================================================================
 
   subroutine set_hcoeff_vector( ncol, sfc_temp, heff )
-
+    !$acc routine seq
     !========================================================================
     ! Interface to seq_drydep_setHCoeff when input is vector
     ! sets dry depositions coefficients -- used by both land and atmosphere models
@@ -838,7 +847,6 @@ CONTAINS
     !  2008-Nov-12 - F. Vitt - first version
     !========================================================================
 
-    use shr_log_mod, only : s_logunit => shr_log_Unit
 
     implicit none
 
@@ -855,10 +863,6 @@ CONTAINS
     real(r8) :: dk1s(ncol)     ! DK Work array 1
     real(r8) :: dk2s(ncol)     ! DK Work array 2
     real(r8) :: wrk(ncol)      ! Work array
-
-    !----- formats -----
-    character(*),parameter :: subName = '(seq_drydep_set_hcoeff) '
-    character(*),parameter :: F00   = "('(seq_drydep_set_hcoeff) ',8a)"
 
     !-------------------------------------------------------------------------------
     ! notes:
@@ -884,7 +888,7 @@ CONTAINS
        end if
        !--- For coefficients that are non-zero AND CO2 or NH3 handle things this way ---
        if( dheff(id+5) /= 0._r8 ) then
-          if( trim( drydep_list(m) ) == 'CO2' .or. trim( drydep_list(m) ) == 'NH3' ) then
+          if( drydep_list(m) == 'CO2' .or. drydep_list(m)  == 'NH3' ) then
              e298 = dheff(id+3)
              dhr  = dheff(id+4)
              dk1s(:) = e298*exp( dhr*wrk(:) )
@@ -892,15 +896,14 @@ CONTAINS
              dhr  = dheff(id+6)
              dk2s(:) = e298*exp( dhr*wrk(:) )
              !--- For Carbon dioxide ---
-             if( trim(drydep_list(m)) == 'CO2' ) then
+             if( drydep_list(m) == 'CO2' ) then
                 heff(:,m) = heff(:,m)*(1._r8 + dk1s(:)*ph_inv)*(1._r8 + dk2s(:)*ph_inv)
                 !--- For NH3 ---
-             else if( trim( drydep_list(m) ) == 'NH3' ) then
+             else if( drydep_list(m) == 'NH3' ) then
                 heff(:,m) = heff(:,m)*(1._r8 + dk1s(:)*ph/dk2s(:))
-                !--- This can't happen ---
+                !--- This can't happeng ---
              else
-                write(s_logunit,F00) 'Bad species ',drydep_list(m)
-                call shr_sys_abort( subName//'ERROR: in assigning coefficients' )
+                stop
              end if
           end if
        end if

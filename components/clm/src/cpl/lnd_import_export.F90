@@ -416,7 +416,7 @@ contains
             !if(ierr.ne. 0) atm2lnd_vars%scale_factors(v) = 1.0d0
 
             ierr = nf90_get_att(met_ncids(v), varid, 'add_offset', atm2lnd_vars%add_offsets(v))
-            !get the met data         
+            !get the met data
             starti(1) = 1
             starti(2) = gtoget
             counti(1) = atm2lnd_vars%timelen_spinup(v)
