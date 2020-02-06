@@ -47,10 +47,11 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   # Set environment variables
   export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
 
+  LID=`date +%y%m%d-%H%M%S`
   # Run chgres
   runcmd='{{ mpirun }}'
   mpirun=`echo $runcmd | awk '{print $1}'`
-  eval "$mpirun $NCEP_LIBS/bin/chgres_cube.exe"
+  eval "$mpirun $NCEP_LIBS/bin/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
 
   # Move output files to input directory
   mv -f gfs_ctrl.nc INPUT/${prefix}.gfs_ctrl.nc

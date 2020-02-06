@@ -301,51 +301,43 @@ This allows using a different mpirun command to launch unit tests
 
   <machine MACH="homebrew">
     <DESC>
-
       Customize these fields as appropriate for your system,
       particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
-      number of cores on your machine.  You may also want to change
-      instances of '$ENV{HOME}/projects' to your desired directory
-      organization.  You can use this in either of two ways: (1)
-      Without making any changes, by adding `--machine homebrew` to
-      create_newcase or create_test (2) Copying this into a
-      config_machines.xml file in your personal .cime directory and
-      then changing the machine name (MACH="homebrew") to
-      your machine name and the NODENAME_REGEX to something matching
-      your machine's hostname.  With (2), you should not need the
-      `--machine` argument, because the machine should be determined
-      automatically.  However, with (2), you will also need to copy the
-      homebrew-specific settings in config_compilers.xml into a
-      config_compilers.xml file in your personal .cime directory, again
-      changing the machine name (MACH="homebrew") to your machine name.
-
+      number of cores on your machine. 
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
+    <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
 	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-	<arg name="labelstdout">-prepend-rank</arg>
+	<arg name="labelstdout">-tag-output</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>
     <environment_variables>
-      <env name="NETCDF_PATH">/usr/local</env>
+      <env name="NCEP_LIBS">$ENV{NCEPLIBS_DIR}</env>
+      <env name="NEMSIO_INC">$ENV{NCEPLIBS_DIR}/include</env>
+      <env name="NEMSIO_LIB">$ENV{NCEPLIBS_DIR}/lib/libnemsio_v2.2.3.a</env>
+      <env name="BACIO_LIB4">$ENV{NCEPLIBS_DIR}/lib/libbacio_v2.1.0_4.a</env>
+      <env name="SP_LIBd">$ENV{NCEPLIBS_DIR}/lib/libsp_v2.0.2_d.a</env>
+      <env name="W3EMC_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3emc_v2.2.0_d.a</env>
+      <env name="W3NCO_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3nco_v2.0.6_d.a</env>
+      <env name="ESMFMKFILE">$ENV{NCEPLIBS_DIR}/lib/esmf.mk</env>
+      <env name="NETCDF">$ENV{NCEPLIBS_DIR}</env>
     </environment_variables>
   </machine>
 
