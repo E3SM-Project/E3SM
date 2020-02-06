@@ -1341,6 +1341,8 @@
 
 <zmconv_trigmem                                                       >.false. </zmconv_trigmem>
 <zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
+<zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
+<zmconv_trig_ull_only                                                 >.false. </zmconv_trig_ull_only>
 <zmconv_tiedke_add                                                    >0.5D0   </zmconv_tiedke_add>
 <zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>

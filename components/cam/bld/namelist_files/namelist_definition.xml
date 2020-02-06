@@ -2543,6 +2543,19 @@ DCAPE trigger along with unrestricted launching level for ZM deep convection sch
 Default: FALSE
 </entry>
 
+<entry id="zmconv_trig_dcape_only" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+DCAPE only trigger for ZM deep convection scheme.
+Default: FALSE
+</entry>
+
+<entry id="zmconv_trig_ull_only" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Use unrestricted launching level (ULL) only trigger  for ZM deep convection scheme. This is on top of standard CAPE-based ZM trigger
+This is in contrast with zmconv_trigdcape_ull which uses both DCAPE and ULL for trigger
+Default: FALSE
+</entry>
+
 <entry id="zmconv_tiedke_add" type="real" category="conv"
        group="zmconv_nl" valid_values="" >
 A ZM deep convection parameter
