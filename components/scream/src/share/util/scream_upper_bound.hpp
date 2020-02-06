@@ -1,7 +1,7 @@
 #ifndef SCREAM_UPPER_BOUND_HPP
 #define SCREAM_UPPER_BOUND_HPP
 
-#include <Kokkos_Core.hpp>
+#include "share/scream_kokkos.hpp"
 
 #ifndef KOKKOS_ENABLE_CUDA
 # include <algorithm>

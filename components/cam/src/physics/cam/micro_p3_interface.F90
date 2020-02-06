@@ -494,8 +494,8 @@ end subroutine micro_p3_readnl
    ! Record of inputs/outputs from p3_main
    call add_hist_coord('P3_input_dim',  16, 'Input field dimension for p3_main subroutine',  'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 /))
    call add_hist_coord('P3_output_dim', 32, 'Output field dimension for p3_main subroutine', 'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 /))
-   call addfld('P3_input', (/ 'ilev', 'P3_input_dim' /),  'I', 'N/A', 'Inputs for p3_main subroutine')
-   call addfld('P3_output', (/ 'ilev', 'P3_output_dim' /), 'I', 'N/A', 'Outputs for p3_main subroutine')
+   call addfld('P3_input',  (/ 'ilev         ', 'P3_input_dim ' /),  'I', 'N/A', 'Inputs for p3_main subroutine')
+   call addfld('P3_output', (/ 'ilev         ', 'P3_output_dim' /), 'I', 'N/A', 'Outputs for p3_main subroutine')
    ! Record of microphysics tendencies
    ! warm-phase process rates
    call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
