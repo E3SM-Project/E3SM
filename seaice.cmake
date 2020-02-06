@@ -72,6 +72,7 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_column.F
   core_seaice/shared/mpas_seaice_diagnostics.F
   core_seaice/shared/mpas_seaice_error.F
+  core_seaice/shared/mpas_seaice_prescribed.F
 )
 
 # analysis members
