@@ -345,33 +345,17 @@
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
     />
-    <nml_option name="config_REDI_half_slope" type="real" default_value="0.004" units="non-dimensional"
+    <nml_option name="config_Redi_half_slope" type="real" default_value="0.004" units="non-dimensional"
         description="value of slope where set to half max"
         possible_values="positive real numbers less than slope max"
     />
-    <nml_option name="config_REDI_half_width" type="real" default_value="0.001" units="non-dimensional"
+    <nml_option name="config_Redi_half_width" type="real" default_value="0.001" units="non-dimensional"
         description="value of half width of tanh function limiter"
         possible_values="very small positive real numbers"
     />
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
-		/>
-		<nml_option name="config_Redi_surface_taper_layers" type="integer" default_value="3" units="non-dimensional"
-					description="Number of layers below surface over which Redi coefficient is tapered."
-					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering, and Redi will be 0 at k=1 and full at k=2."
-		/>
-		<nml_option name="config_Redi_bottom_taper_layers" type="integer" default_value="3" units="non-dimensional"
-					description="Number of layers above bottom over which Redi coefficient is tapered."
-					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering, and Redi will be 0 at bottom and full one layer up."
-		/>
-		<nml_option name="config_Redi_zero_in_boundary_layer" type="logical" default_value=".true." units="unitless"
-					description="If true, Redi kappa is set to zero above the boundary layer depth"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_BLD_taper_layers" type="integer" default_value="3" units="non-dimensional"
-					description="Number of layers below boundary layer depth, over which Redi coefficient is tapered." 
-					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering."
 		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
@@ -2702,7 +2686,11 @@
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
-		/>
+    />
+    <var name="rediRossbyRadius" type="real" dimensions="nEdges Time" units="m"
+       description="Rossby radius of deformation used to compute Redi limiting near surface"
+       packages="forwardMode;analysisMode"
+    />
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
