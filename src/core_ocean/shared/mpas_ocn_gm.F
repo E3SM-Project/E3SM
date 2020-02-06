@@ -106,16 +106,18 @@ contains
          layerThickness, &
          areaCellSum, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, kappaGM3D
 
-      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed, bottomDepth, indexBoundaryLayerDepth
+      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
+      real(kind=RKIND), dimension(:), pointer :: rediRossbyRadius
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
-      real(kind=RKIND)                 :: bottomAv, sumN2, countN2, maxN, kappaSum, ltSum
+      real(kind=RKIND)                 :: sumN2, countN2, maxN, kappaSum, ltSum
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
-      real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, surfaceTaperCoef, bottomTaperCoef, bldEdge
+      real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown
+      real(kind=RKIND) :: verticalDisplacement, rValue, zEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       
       ! Dimensions
@@ -164,9 +166,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-      call mpas_pool_get_array(diagnosticsPool, 'indexBoundaryLayerDepth', indexBoundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'rediRossbyRadius', rediRossbyRadius)
 
-      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop',  maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell',  maxLevelCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge',  cellsOnEdge)
@@ -453,16 +454,29 @@ contains
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
                slopeTaperUp = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
-                  config_REDI_half_slope)/config_REDI_half_width))
+                  config_Redi_half_slope)/config_Redi_half_width))
                slopeTaperDown = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
-                  config_REDI_half_slope)/config_REDI_half_width))
+                  config_Redi_half_slope)/config_Redi_half_width))
+
+               zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
+               verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
+               rValue = zEdge / verticalDisplacement
+
+               sfcTaperUp = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+               sfcTaperUp = max(0.0_RKIND, min(sfcTaperUp, 1.0_RKIND))
+
+               verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadDown(k,iCellSelf,iEdge))
+               rValue = zEdge / verticalDisplacement
+
+               sfcTaperDown = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+               sfcTaperDown = max(0.0_RKIND, min(sfcTaperDown, 1.0_RKIND))
 
                ! Slope can be unbounded in regions of neutral stability.
                ! Reset slope to maximum slope limit.
                slopeTriadUp(k,iCellSelf,iEdge) = &
-                  slopeTaperUp * slopeTriadUp(k,iCellSelf,iEdge)
+                  slopeTaperUp * sfcTaperUp * slopeTriadUp(k,iCellSelf,iEdge)
                slopeTriadDown(k,iCellSelf,iEdge) = &
-                  slopeTaperDown * slopeTriadDown(k,iCellSelf,iEdge)
+                  slopeTaperDown * sfcTaperDown * slopeTriadDown(k,iCellSelf,iEdge)
 
                ! Griffies 1998 eqn 34
                k33(k  ,iCell) = k33(k  ,iCell) + areaEdge*dzTop(k  )*slopeTriadUp(k,iCellSelf,iEdge)**2
@@ -769,7 +783,7 @@ contains
       integer :: iEdge
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
-      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
+      real(kind=RKIND), dimension(:), pointer   :: fEdge, gmBolusKappa, rediRossbyRadius
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell
 
       err = 0
@@ -785,20 +799,13 @@ contains
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(diagnosticsPool, 'rediRossbyRadius', rediRossbyRadius)
+         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
-         if ((config_Redi_surface_taper_layers <= 0).or. &
-             (config_Redi_surface_taper_layers > nVertLevels )) then
-            call mpas_log_write( 'config_Redi_surface_taper_layers must be between 1 and nVertLevels. ', MPAS_LOG_CRIT)
-            err = 1
-            call mpas_dmpar_finalize(domain % dminfo)
-         end if
-
-         if ((config_Redi_bottom_taper_layers <= 0).or. &
-             (config_Redi_bottom_taper_layers > nVertLevels )) then
-            call mpas_log_write( 'config_Redi_bottom_taper_layers must be between 1 and nVertLevels. ', MPAS_LOG_CRIT)
-            err = 1
-            call mpas_dmpar_finalize(domain % dminfo)
-         end if
+         !Impose tapering of Large et al. 1997, wrap in if statement later
+         do iEdge=1,nEdges
+           rediRossbyRadius(iEdge) = max(15000.0_RKIND,min(100000.0_RKIND,2.0_RKIND / fEdge(iEdge)))
+         enddo
 
          if (config_GM_closure == 'constant') then
             !$omp do schedule(runtime)
