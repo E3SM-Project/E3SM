@@ -627,7 +627,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    use microphysics,  only: iqv, iqci, iqr, iqs, iqg, incl, inci, inr, ing, ins   !!!!!! BE CAUIOUS, these indices can only defined before call to crm.
 #endif
    use phys_grid,       only: get_rlat_all_p, get_rlon_all_p, get_gcol_p
-   !!!use aerosol_intr,    only: aerosol_wet_intr
+   !use aerosol_intr,    only: aerosol_wet_intr
 
 #if defined( MMF_ORIENT_RAND )
    use RNG_MT            ! random number generator for randomly rotating CRM orientation (MMF_ORIENT_RAND)
@@ -728,7 +728,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
    integer :: icol(pcols)
 
-   !!! variables for changing CRM orientation
+   ! variables for changing CRM orientation
    real(crm_rknd), parameter        :: pi   = 3.14159265359
    real(crm_rknd), parameter        :: pix2 = 6.28318530718
    real(crm_rknd), dimension(pcols) :: crm_angle
@@ -801,20 +801,20 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
       do i=1,ncol
 
-         !!! set the seed based on the chunk and column index (duplicate seeds are ok)
+         ! set the seed based on the chunk and column index (duplicate seeds are ok)
          seed = lchnk + i + nstep
 
          call RNG_MT_set_seed(seed)
 
-         !!! Generate a pair of uniform random numbers
+         ! Generate a pair of uniform random numbers
          call RNG_MT_gen_rand(unif_rand1)
          call RNG_MT_gen_rand(unif_rand2)
 
-         !!! Box-Muller (1958) method of obtaining a Gaussian distributed random number
+         ! Box-Muller (1958) method of obtaining a Gaussian distributed random number
          norm_rand = sqrt(-2.*log(unif_rand1))*cos(pix2*unif_rand2)
          crm_angle(i) = crm_angle(i) + norm_rand * crm_rotation_std + crm_rotation_offset
 
-         !!! Adjust CRM orientation angle to be between 0 and 2*pi
+         ! Adjust CRM orientation angle to be between 0 and 2*pi
          if ( crm_angle(i) .lt. 0. ) then
             crm_angle(i) = crm_angle(i) + pix2
          endif
@@ -892,7 +892,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    prec_pcw = 0
    snow_pcw = 0.
    
-   !!! Initialize stuff:
+   ! Initialize stuff:
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
 
@@ -1008,7 +1008,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
          
          cs(1:ncol,1:pver) = state%pmid(1:ncol,1:pver) / (287.15*state%t(1:ncol,1:pver))
 
-         !!! initialize turbulence for ECPP calculations
+         ! initialize turbulence for ECPP calculations
          ifld = pbuf_get_index('TKE_CRM')
          call pbuf_set_field(pbuf, ifld, 0.0_r8, start=(/1,1/), kount=(/pcols, pver/) )
 
@@ -1186,18 +1186,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       crm_output%precl(:ncol)  = 0
       crm_output%precsl(:ncol) = 0
 
-      !!! these precip pointer variables are used by coupler
-      !!! TODO: do we need to zero out the elements beyond ncol here?
+      ! these precip pointer variables are used by coupler
+      ! TODO: do we need to zero out the elements beyond ncol here?
       prec_dp(1:ncol) = crm_output%precc(1:ncol)
       snow_dp(1:ncol) = crm_output%precsc(1:ncol)
-
-      !!! These are needed elsewhere in the model when SP_PHYS_BYPASS is used
-      ! ifld = pbuf_get_index('AST'   )
-      ! call pbuf_set_field(pbuf,ifld, cld   (:ncol,:pver),start=(/1,1/), kount=(/pcols,pver/) )
-      ! ifld = pbuf_get_index('PRAIN' )
-      ! call pbuf_set_field(pbuf,ifld, crm_output%qp_src(:ncol,:pver),start=(/1,1/), kount=(/pcols,pver/) )
-      ! ifld = pbuf_get_index('NEVAPR')
-      ! call pbuf_set_field(pbuf,ifld, crm_output%qp_evp(:ncol,:pver),start=(/1,1/), kount=(/pcols,pver/) )
 
 #ifdef MAML
       ! Set pbuf variables needed for MAML
@@ -1325,7 +1317,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       ! be zero in the CRM, So add radiation tendencies to these levels 
       ptend%s(:ncol, :pver-crm_nz+2) = qrs(:ncol,:pver-crm_nz+2) + qrl(:ncol,:pver-crm_nz+2)
 
-      !!! This will be used to check energy conservation
+      ! This will be used to check energy conservation
       sp_rad_flux(:ncol) = 0.0_r8
       do k=1, pver
          do i=1, ncol
@@ -1333,7 +1325,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
          end do
       end do
 
-      !!! Subtract radiative heating for SPDT output
+      ! Subtract radiative heating for SPDT output
       ftem(:ncol,:pver) = ( ptend%s(:ncol,:pver) - qrs(:ncol,:pver) - qrl(:ncol,:pver) )/cpair
 
       !---------------------------------------------------------------------------------------------
@@ -1515,7 +1507,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       ptend%lu = .TRUE.
       ptend%lv = .TRUE.
       
-      !!! rotate resolved CRM momentum tendencies back
+      ! rotate resolved CRM momentum tendencies back
       do i = 1, ncol 
          ptend%u(i) = crm_output%ultend(i) * cos( -1.*crm_angle(i) ) + crm_output%vltend(i) * sin( -1.*crm_angle(i) )
          ptend%v(i) = crm_output%vltend(i) * cos( -1.*crm_angle(i) ) - crm_output%ultend(i) * sin( -1.*crm_angle(i) )
@@ -1628,12 +1620,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    ! Aerosol stuff
    !------------------------------------------------------------------------------------------------
     
-   !!! Calculate aerosol water at CRM domain using water vapor at CRM domain
-   !!!call aerosol_wet_intr (state, ptend, ztodt, pbuf, cam_out, dlf)
+   ! Calculate aerosol water at CRM domain using water vapor at CRM domain
+   ! call aerosol_wet_intr (state, ptend, ztodt, pbuf, cam_out, dlf)
 
    !------------------------------------------------------------------------------------------------
 
-   !!! Free memory in derived types
+   ! Free memory in derived types
    call crm_state%finalize()
    call crm_rad_finalize(crm_rad)
    call crm_input%finalize()
@@ -1676,13 +1668,13 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
 
    ncol  = state%ncol
 
-   !!! initialize ptend
+   ! initialize ptend
    lq(:) = .false.
    lq(1) = .true.
    call physics_ptend_init(ptend, state%psetcols, 'MMF_FLUX_BYPASS', &
                            lu=.false., lv=.false., ls=.true., lq=lq)
 
-   !!! apply fluxes to bottom layer
+   ! apply fluxes to bottom layer
    do ii = 1,ncol
       g_dp = gravit * state%rpdel(ii,pver)             ! note : rpdel = 1./pdel
       ptend%s(ii,:)   = 0.
@@ -1732,21 +1724,21 @@ subroutine crm_save_state_tend(state,tend,pbuf)
    ncol  = state%ncol
    itim  = pbuf_old_tim_idx()
 
-   !!! Save the state and tend variables 
-   !!! Overwrite conventional physics effects before calling the crm. 
-   !!! Non-CRM physics routines are allowed to compute diagnostic tendencies.
-   !!! Note that state_save and tend_save get allocated in the copy routines
+   ! Save the state and tend variables 
+   ! Overwrite conventional physics effects before calling the crm. 
+   ! Non-CRM physics routines are allowed to compute diagnostic tendencies.
+   ! Note that state_save and tend_save get allocated in the copy routines
    if ( allocated(state_save%t) ) call physics_state_dealloc(state_save)
    if ( allocated(tend_save%dtdt) ) call physics_tend_dealloc(tend_save)
 
    call physics_state_copy(state,state_save)
    call physics_tend_copy(tend,tend_save)
    
-   !!! save the old cloud fraction
+   ! save the old cloud fraction
    call pbuf_get_field(pbuf, cldo_idx, cldo, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
    cldo_save(:ncol, :) = cldo(:ncol, :)
 
-   !!! other things relevant for aerosols
+   ! other things relevant for aerosols
    if (use_ECPP) then
       ifld = pbuf_get_index('CLD')
       call pbuf_get_field(pbuf, ifld, cld, (/1,1,itim/),(/pcols,pver,1/))
@@ -1821,7 +1813,7 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
    ! (i.e. when dropmixnuc is called in cldwat2m.F90, the tendency is set to zero)
    q_aero = state%q
 
-   !!! Restore state and tend (from beginning of tphysbc)
+   ! Restore state and tend (from beginning of tphysbc)
    if ( allocated(state%t) ) call physics_state_dealloc(state)
    if ( allocated(tend%dtdt) ) call physics_tend_dealloc(tend)
 
@@ -1843,7 +1835,7 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
       end if
    endif
 
-   !!! whannah - not sure why we do this...
+   ! whannah - not sure why we do this...
    if(is_first_step())then
       do m=1,dyn_time_lvls
          call pbuf_get_field(pbuf, cldo_idx, cldo, start=(/1,1,m/), kount=(/pcols,pver,1/) )
@@ -1851,7 +1843,7 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
       enddo
    endif
 
-   !!! Restore cloud fraction
+   ! Restore cloud fraction
    cldo(:ncol, :) = cldo_save(:ncol, :)
 
 #if ( defined MODAL_AERO )
@@ -1886,7 +1878,7 @@ subroutine m2005_effradius(ql, nl,qi,ni,qs, ns, cld, pres, tk, &
    use shr_spfn_mod,    only: gamma => shr_spfn_gamma
    implicit none
 
-   !!! input arguments
+   ! input arguments
    real(r8), intent(in)    :: ql          ! Mean LWC of pixels [ kg/kg ]
    real(r8), intent(in)    :: nl          ! Grid-mean number concentration of cloud liquid droplet [#/kg]
    real(r8), intent(in)    :: qi          ! Mean IWC of pixels [ kg/kg ]
@@ -1897,7 +1889,7 @@ subroutine m2005_effradius(ql, nl,qi,ni,qs, ns, cld, pres, tk, &
    real(r8), intent(in)    :: pres        ! Air pressure [Pa] 
    real(r8), intent(in)    :: tk          ! air temperature [K]
 
-   !!! output arguments
+   ! output arguments
    real(r8), intent(out)   :: effl        ! Effective radius of cloud liquid droplet [micro-meter]
    real(r8), intent(out)   :: effi        ! Effective radius of cloud ice    droplet [micro-meter]
    real(r8), intent(out)   :: effl_fn     ! effl for fixed number concentration of nlic = 1.e8
@@ -1906,7 +1898,7 @@ subroutine m2005_effradius(ql, nl,qi,ni,qs, ns, cld, pres, tk, &
    real(r8), intent(out)   :: lamcrad     ! slope of droplet distribution for optics (radiation)
    real(r8), intent(out)   :: des         ! snow effective diameter for optics (radiation) [micro-meter]
 
-   !!! local variables
+   ! local variables
    real(r8)  qlic        ! In-cloud LWC [kg/m3]
    real(r8)  qiic        ! In-cloud IWC [kg/m3]
    real(r8)  nlic        ! In-cloud liquid number concentration [#/kg]
@@ -1945,7 +1937,7 @@ subroutine m2005_effradius(ql, nl,qi,ni,qs, ns, cld, pres, tk, &
    ci = rhoi * pi/6.
    di = 3.
 
-   !!! for snow water
+   ! for snow water
    rhos = 100.      ! in both SAM and CAM5 
    cs = rhos*pi/6.
    ds = 3.

@@ -109,17 +109,17 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
     real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
 
-    !!! These should all be inputs
+    ! These should all be inputs
     integer         :: igstep            ! GCM time steps
     integer         :: iseed             ! seed for random perturbation
-    !!! variables for radiation grouping method
+    ! variables for radiation grouping method
     real(crm_rknd) :: crm_nx_rad_fac
     real(crm_rknd) :: crm_ny_rad_fac
     integer        :: i_rad
     integer        :: j_rad
     logical :: crm_accel_ceaseflag   ! indicates if accelerate_crm needs to be aborted for remainder of crm call
 
-    !!! Arrays
+    ! Arrays
     real(crm_rknd), allocatable :: t00(:,:)
     real(crm_rknd), allocatable :: tln  (:,:)
     real(crm_rknd), allocatable :: qln  (:,:)
@@ -728,7 +728,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
       !       Large-scale and surface forcing:
       call forcing(ncrms)
 
-      !!! Apply radiative tendency
+      ! Apply radiative tendency
       !$acc parallel loop collapse(4) async(asyncid)
       do k=1,nzm
         do j=1,ny
@@ -937,8 +937,8 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
-            !!! Reduced radiation method allows for fewer radiation calculations
-            !!! by collecting statistics and doing radiation over column groups
+            ! Reduced radiation method allows for fewer radiation calculations
+            ! by collecting statistics and doing radiation over column groups
             i_rad = (i-1) / (nx/crm_nx_rad) + 1
             j_rad = (j-1) / (ny/crm_ny_rad) + 1
 
@@ -1156,11 +1156,11 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
   !$acc wait(asyncid)
   do icrm=1,ncrms
-    !!! resolved convective momentum transport (CMT) tendencies
+    ! resolved convective momentum transport (CMT) tendencies
     crm_output%ultend(icrm,:) = (uln(icrm,:) - crm_input%ul(icrm,:))*icrm_run_time
     crm_output%vltend(icrm,:) = (vln(icrm,:) - crm_input%vl(icrm,:))*icrm_run_time
 
-    !!! don't use tendencies from two top levels
+    ! don't use tendencies from two top levels
     crm_output%ultend(icrm,ptop:ptop+1) = 0.
     crm_output%vltend(icrm,ptop:ptop+1) = 0.
   enddo
@@ -1194,8 +1194,8 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
     crm_output%precstend(icrm) = (colprecs(icrm)-crm_output%precstend(icrm))/ggr*factor_xy * icrm_run_time
   enddo
 
-  !!! don't use CRM tendencies from two crm top levels
-  !!! radiation tendencies are added back after the CRM call (see crm_physics_tend)
+  ! don't use CRM tendencies from two crm top levels
+  ! radiation tendencies are added back after the CRM call (see crm_physics_tend)
   !$acc parallel loop collapse(2) async(asyncid)
   do k = ptop,ptop+1
     do icrm = 1 , ncrms
@@ -1616,7 +1616,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
   crm_output%timing_factor(:) = crm_output%timing_factor(:) / nstop
 
 #ifdef ECPP
-  !!! Deallocate ECPP variables
+  ! Deallocate ECPP variables
   call ecpp_crm_cleanup ()
 #endif
 

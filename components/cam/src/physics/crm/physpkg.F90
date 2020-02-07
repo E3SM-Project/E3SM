@@ -1619,7 +1619,7 @@ end if ! l_tracer_aero
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
-#ifndef SP_FLUX_BYPASS
+#ifndef MMF_FLUX_BYPASS
     if(.not.use_qqflx_fixer) then 
 
        ! Check if latent heat flux exceeds the total moisture content of the
@@ -2183,7 +2183,7 @@ subroutine tphysbc (ztodt,               &
 
     type(crm_ecpp_output_type)      :: crm_ecpp_output   ! CRM output data for ECPP calculations
 #if defined( ECPP )
-    !!! ECPP variables
+    ! ECPP variables
     real(r8),pointer,dimension(:)   :: pblh              ! PBL height (for ECPP)
     real(r8),pointer,dimension(:,:) :: acldy_cen_tbeg    ! cloud fraction
     real(r8)                        :: dtstep_pp         ! ECPP time step (seconds)
@@ -2322,7 +2322,7 @@ subroutine tphysbc (ztodt,               &
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
-#if defined(SP_FLUX_BYPASS)
+#if defined(MMF_FLUX_BYPASS)
     if(.not.use_qqflx_fixer) then 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
@@ -2845,9 +2845,9 @@ end if
       call crm_recall_state_tend(state, tend, pbuf)
 
       !-------------------------------------------------------------------------
-      ! Apply surface fluxes if using SP_FLUX_BYPASS
+      ! Apply surface fluxes if using MMF_FLUX_BYPASS
       !-------------------------------------------------------------------------
-#if defined( SP_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS )
       call crm_surface_flux_bypass_tend(state, cam_in, ptend)
       call physics_update(state, ptend, ztodt, tend)  
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
@@ -2922,7 +2922,7 @@ end if
             call physics_update(state, ptend, dtstep_pp, tend)
             call t_stopf('crmclouds_mixnuc')
 
-            !!! ECPP interface
+            ! ECPP interface
             call t_startf('ecpp')
             call parampollu_driver2(state, ptend, pbuf, dtstep_pp, dtstep_pp,   &
                                     crm_ecpp_output%acen,       crm_ecpp_output%abnd,         &
