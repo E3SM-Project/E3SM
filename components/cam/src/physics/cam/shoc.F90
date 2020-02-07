@@ -1835,6 +1835,15 @@ subroutine shoc_length(&
       conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
+  
+  ! computed quantity above is wstar3
+  ! clip, to avoid negative values and take the cubed 
+  !   root to get the convective velocity scale
+  do k=1,nlev
+    do i=1,shcol
+      conv_vel(i,k) = max(0._r8,conv_vel(i,k))**(1._r8/3._r8) 
+    enddo
+  enddo
  
   if (doclouddef) then
  
@@ -1855,7 +1864,7 @@ subroutine shoc_length(&
         ! Look for cloud base in this column
 	if (cldin(i,k) .gt. cldthresh .and. cldin(i,k+1) .le. cldthresh) then 
 	  ku=k
-	  conv_var=conv_vel(i,k)**(1._r8/3._r8)
+	  conv_var=conv_vel(i,k)
 	endif
 	
 	! Compute the mixing length for the layer just determined
