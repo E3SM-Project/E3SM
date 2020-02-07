@@ -97,7 +97,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir %s does not exist " %user_xml_dir)
 
     # NOTE: User definition *replaces* existing definition.
-    namelist_xml_dir = os.path.join(cimeroot, "src", "components", "data_comps", compname, "cime_config")
+    namelist_xml_dir = os.path.join(cimeroot, "src", "components", "data_comps_mct", compname, "cime_config")
     definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_desp.xml")]
     user_definition = os.path.join(user_xml_dir, "namelist_definition_desp.xml")
     if os.path.isfile(user_definition):
