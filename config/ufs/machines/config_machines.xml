@@ -308,7 +308,7 @@ This allows using a different mpirun command to launch unit tests
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
     <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
@@ -324,7 +324,7 @@ This allows using a different mpirun command to launch unit tests
       <executable>mpirun</executable>
       <arguments>
 	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-	<arg name="labelstdout">-tag-output</arg>
+	<arg name="labelstdout">-prepend-rank</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>
