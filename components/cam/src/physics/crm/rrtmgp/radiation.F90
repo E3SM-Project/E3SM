@@ -30,7 +30,7 @@ module radiation
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
                               handle_error
 
-   ! For SPCAM/MMF
+   ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
 
    implicit none
@@ -428,7 +428,7 @@ contains
       integer :: dtime  ! time step
       integer :: cldfsnow_idx = 0 
 
-      logical :: use_MMF  ! SPCAM flag
+      logical :: use_MMF  ! MMF flag
       character(len=16) :: MMF_microphysics_scheme
 
       character(len=128) :: error_message

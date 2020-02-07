@@ -445,8 +445,8 @@ end function radiation_nextsw_cday
     integer :: err
     integer :: dtime                        ! time step
 
-    logical :: use_MMF                      ! SPCAM flag
-    character(len=16) :: MMF_microphysics_scheme  ! SPCAM microphysics scheme
+    logical :: use_MMF                      ! MMF flag
+    character(len=16) :: MMF_microphysics_scheme  ! MMF microphysics scheme
 
     !variables for pergro_mods
     character (len=250) :: errstr
@@ -1280,7 +1280,7 @@ end function radiation_nextsw_cday
     integer aod400_idx, aod700_idx, cld_tau_idx
 
     character(*), parameter :: name = 'radiation_tend'
-    character(len=16)       :: MMF_microphysics_scheme  ! SPCAM_microphysics scheme
+    character(len=16)       :: MMF_microphysics_scheme  ! MMF_microphysics scheme
 !----------------------------------------------------------------------
   
     call phys_getopts( use_MMF_out           = use_MMF )
@@ -1554,7 +1554,7 @@ end function radiation_nextsw_cday
          qaerwat_save = qaerwat
 #endif /*MODAL_AERO*/
       end if ! dosw .or. dolw
-    endif ! SPCAM
+    endif ! MMF
 
     if (dosw .or. dolw) then
 
