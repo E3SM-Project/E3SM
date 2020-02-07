@@ -281,7 +281,6 @@ subroutine crm_physics_init(species_class)
                                                  'cloud scale droplet size distribution shape parameter for radiation')
       call addfld ('CRM_LAMBDA',(/'crm_nx','crm_ny','crm_nz'/), 'A', 'micrometers',  &
                                                  'cloud scale slope of droplet distribution for radiation')
-      call addfld ('CRM_TAU  ', (/'crm_nx','crm_ny','crm_nz'/), 'A', '1',           'cloud scale cloud optical depth'  )
       call addfld ('CRM_WVAR' , (/'crm_nx','crm_ny','crm_nz'/), 'A', 'm/s',         'vertical velocity variance from CRM')
    end if  ! MMF_microphysics_scheme .eq. 'm2005'
 
