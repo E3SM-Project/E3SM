@@ -192,10 +192,8 @@ subroutine phys_register
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods)
-!-- mdb spcam
     call phys_getopts( use_MMF_out = use_MMF )
     call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-!-- mdb spcam
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -329,7 +327,6 @@ subroutine phys_register
        !  shallow convection
        call convect_shallow_register
 
-       ! Register MMF variables
        if (use_MMF) call crm_physics_register
 
        ! radiation
@@ -423,7 +420,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
     else    
        if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
-                                       sgh, sgh30, land m using data from file.'
+                                      &sgh, sgh30, land m using data from file.'
        fh_topo=>topo_file_get_id()
        call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
             sgh, found, gridname='physgrid')
@@ -709,6 +706,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use ref_pres,           only: pref_edge, pref_mid
 
     use carma_intr,         only: carma_init
+    use cloud_rad_props,    only: cloud_rad_props_init
     use cam_control_mod,    only: nsrest  ! restart flag
     use check_energy,       only: check_energy_init
     use chemistry,          only: chem_init
@@ -762,6 +760,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
     use dyn_grid,           only: fv_nphys
+
+
     use cam_history,        only: addfld, add_default, horiz_only 
     use crm_physics,        only: crm_physics_init 
 
@@ -835,6 +835,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Initialize rad constituents and their properties
     call rad_cnst_init()
     call aer_rad_props_init()
+    call cloud_rad_props_init()
 
     ! initialize carma
     call carma_init()
@@ -913,7 +914,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
 
-    ! Initialize CRM physics for MMF
     if (use_MMF) call crm_physics_init(species_class)
 
     call qbo_init
@@ -956,7 +956,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Initialize Nudging Parameters
     !--------------------------------
     if(Nudge_Model) call nudging_init
-
     
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
@@ -1445,7 +1444,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use cam_history,        only: outfld 
     use crm_physics,        only: crm_physics_tend
 
-
     implicit none
 
     !
@@ -1621,7 +1619,7 @@ end if ! l_tracer_aero
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
-#ifndef MMF_FLUX_BYPASS
+#ifndef SP_FLUX_BYPASS
     if(.not.use_qqflx_fixer) then 
 
        ! Check if latent heat flux exceeds the total moisture content of the
@@ -1834,11 +1832,7 @@ if (l_ac_energy_chk) then
 
     end if
 
-
-    !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
-    !*** BAB's FV heating kludge *** modify the temperature in the state structure
     tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
-    state%t(:ncol,:pver) = tini(:ncol,:pver) + ztodt*tend%dtdt(:ncol,:pver)
 
     ! store dse after tphysac in buffer
     do k = 1,pver
@@ -1992,17 +1986,21 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+
+    ! CRM modules
     use crmdims,         only: crm_nz, crm_nx, crm_ny, crm_dx, crm_dy, crm_dt
     use crm_physics,     only: crm_physics_tend, crm_surface_flux_bypass_tend, &
                                crm_save_state_tend, crm_recall_state_tend
     use crm_ecpp_output_module, only: crm_ecpp_output_type
+
 #if defined( ECPP )
-    use module_ecpp_ppdriver2,  only: parampollu_driver2
-    use module_data_ecpp1,      only: dtstep_pp_input
-    use crmclouds_camaerosols,  only: crmclouds_mixnuc_tend
+   use module_ecpp_ppdriver2,  only: parampollu_driver2
+   use module_data_ecpp1,      only: dtstep_pp_input
+   use crmclouds_camaerosols,  only: crmclouds_mixnuc_tend
 #endif
+
 #ifdef MAML
-    use seq_comm_mct,       only : num_inst_atm
+   use seq_comm_mct,       only : num_inst_atm
 #endif
 
     implicit none
@@ -2174,8 +2172,6 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mic
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
-
-    real(r8) :: qexcess(pcols)
     
     logical           :: use_MMF
     logical           :: use_ECPP
@@ -2187,18 +2183,17 @@ subroutine tphysbc (ztodt,               &
 
     type(crm_ecpp_output_type)      :: crm_ecpp_output   ! CRM output data for ECPP calculations
 #if defined( ECPP )
-    ! ECPP variables
+    !!! ECPP variables
     real(r8),pointer,dimension(:)   :: pblh              ! PBL height (for ECPP)
     real(r8),pointer,dimension(:,:) :: acldy_cen_tbeg    ! cloud fraction
     real(r8)                        :: dtstep_pp         ! ECPP time step (seconds)
     integer                         :: necpp             ! number of GCM time steps in which ECPP is called once
-#endif /* ECPP */
 
+#endif /* ECPP */
 
     call phys_getopts( use_MMF_out           = use_MMF )
     call phys_getopts( use_ECPP_out            = use_ECPP)
     call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-!-- mdb spcam
 
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
@@ -2327,21 +2322,20 @@ subroutine tphysbc (ztodt,               &
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
-#if defined(MMF_FLUX_BYPASS)
+#if defined(SP_FLUX_BYPASS)
     if(.not.use_qqflx_fixer) then 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
 #ifdef MAML
        call qneg4('TPHYSBC '       ,lchnk               ,ncol  ,ztodt ,               &
             num_inst_atm,state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf(:,:) ,         &
-            cam_in%lhf(:,:) , cam_in%cflx ,qexcess)
+            cam_in%lhf(:,:) , cam_in%cflx )
 #else
        call qneg4('TPHYSBC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
-            cam_in%lhf , cam_in%cflx ,qexcess)
+            cam_in%lhf , cam_in%cflx )
 #endif
     end if 
-    call outfld('QEXCESS',qexcess,pcols,lchnk)
 #endif
 
     if(use_mass_borrower) then 
@@ -2432,7 +2426,6 @@ if (l_bc_energy_fix) then
 
     call t_startf('energy_fixer')
 
-    !*** BAB's FV heating kludge *** save the initial temperature
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     if (dycore_is('LR') .or. dycore_is('SE'))  then
        call check_energy_fix(state, ptend, nstep, flx_heat)
@@ -2839,39 +2832,38 @@ end if
 
      end if !microp_scheme
 
-   !======================================================================================
-   !--------------------------------------------------------------------------------------
+   !================================================================================================
+   !------------------------------------------------------------------------------------------------
    ! CRM Physics
-   !--------------------------------------------------------------------------------------
-   !======================================================================================
-
+   !------------------------------------------------------------------------------------------------
+   !================================================================================================
    if (use_MMF) then
       crm_run_time = ztodt
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       ! Recall the state after dynamics
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       call crm_recall_state_tend(state, tend, pbuf)
 
-      !---------------------------------------------------------------------------
-      ! Apply surface fluxes if using MMF_FLUX_BYPASS
-      !---------------------------------------------------------------------------
-#if defined( MMF_FLUX_BYPASS )
+      !-------------------------------------------------------------------------
+      ! Apply surface fluxes if using SP_FLUX_BYPASS
+      !-------------------------------------------------------------------------
+#if defined( SP_FLUX_BYPASS )
       call crm_surface_flux_bypass_tend(state, cam_in, ptend)
       call physics_update(state, ptend, ztodt, tend)  
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
                              cam_in%shf(:), zero, zero, cam_in%cflx(:,1)) 
 #endif
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       ! Initialize variabale for ECPP data
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 #if defined( ECPP )
       if (use_ECPP) then
          call crm_ecpp_output%initialize(pcols,pver)
       end if ! use_ECPP
 #endif
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       ! Run the CRM 
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                             species_class, crm_ecpp_output,                     &
                             sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
@@ -2881,15 +2873,15 @@ end if
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
                              zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
 
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       ! Modal aerosol wet radius for radiative calculation
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 #if defined(MODAL_AERO)  
-      !!! temporarily turn on all lq, so it is allocated
+      ! temporarily turn on all lq, so it is allocated
       lq(:) = .true.
       call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
 
-      !!! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
+      ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
       ptend%lq(:) = .false.
       call modal_aero_calcsize_sub (state, ptend, ztodt, pbuf)
       call modal_aero_wateruptake_dr(state, pbuf)
@@ -2902,9 +2894,9 @@ end if
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time, zero, zero, zero, zero)
 #endif /* MODAL_AERO */
 
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       ! ECPP - Explicit-Cloud Parameterized-Pollutant
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 #if defined( ECPP )
       if (use_ECPP) then
 
@@ -2916,9 +2908,9 @@ end if
 
          if (nstep.ne.0 .and. mod(nstep, necpp).eq.0) then
 
-            !!! aerosol tendency from droplet activation and mixing
-            !!! cldo and cldn are set to be the same in crmclouds_mixnuc_tend,
-            !!! So only turbulence mixing is done here.
+            ! aerosol tendency from droplet activation and mixing
+            ! cldo and cldn are set to be the same in crmclouds_mixnuc_tend,
+            ! So only turbulence mixing is done here.
             call t_startf('crmclouds_mixnuc')
             call crmclouds_mixnuc_tend(state, ptend, dtstep_pp,           &
                                        cam_in%cflx, pblh, pbuf,           &
@@ -2949,9 +2941,9 @@ end if
       end if ! use_ECPP
 #endif /* ECPP */
 
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
       ifld = pbuf_get_index('CLDO')
       call pbuf_get_field(pbuf, ifld, cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
@@ -2961,13 +2953,12 @@ end if
 
       cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
 
-      !---------------------------------------------------------------------------
-      !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
    end if ! use_MMF
-
-   !======================================================================================
-   !--------------------------------------------------------------------------------------
-   !======================================================================================
+   !================================================================================================
+   !------------------------------------------------------------------------------------------------
+   !================================================================================================
 
     if (l_tracer_aero) then
 
@@ -3046,7 +3037,6 @@ end if ! l_tracer_aero
    endif
 !>songxl 2011-09-20---------------------------------
 
-
     !===================================================
     ! Moist physical parameteriztions complete: 
     ! send dynamical variables, and derived variables to history file
@@ -3085,22 +3075,18 @@ if (l_rad) then
        tend%flx_net(i) = net_flx(i)
     end do
     
-    !-- mdb spcam
     ! don't add radiative tendency to GCM temperature in case of superparameterization
     ! as it was added above as part of crm tendency.
     if (use_MMF) ptend%s = 0.
-    !-- mdb spcam
 
     call physics_update(state, ptend, ztodt, tend)
     
-    !-- mdb spcam
     !call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
     if (use_MMF) then
       call check_energy_chng(state, tend, "spradheat", nstep, ztodt, zero, zero, zero, zero) 
     else 
       call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
     endif
-    !-- mdb spcam
 
     call t_stopf('radiation')
 

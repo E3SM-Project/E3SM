@@ -22,7 +22,6 @@ module radiation
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
    use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
-   use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -392,9 +391,7 @@ contains
       use cam_history_support, only: add_hist_coord
       use constituents,       only: cnst_get_ind
       use phys_control,       only: phys_getopts
-      use rad_constituents,   only: N_DIAG, &
-                                    rad_cnst_get_call_list, rad_cnst_get_info, &
-                                    liqcldoptics, icecldoptics
+      use rad_constituents,   only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
       use cospsimulator_intr, only: docosp, cospsimulator_intr_init
       use hirsbt,             only: hirsbt_init
       use hirsbtpar,          only: hirsname, msuname
@@ -409,6 +406,8 @@ contains
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
+      use ebert_curry, only: ec_rad_props_init
+      use slingo, only: slingo_rad_props_init
 
       ! Physics state is going to be needed for perturbation growth tests, but we
       ! have yet to implement this in RRTMGP. It is a vector because at the point
@@ -446,22 +445,14 @@ contains
 
       !-----------------------------------------------------------------------
 
-      ! Make sure we are using the correct optics for SPCAM. For sam1mom, we
-      ! have to use the simpler cloud optics because we do not have information
-      ! about particle size.
-      call phys_getopts(use_MMF_out           = use_MMF          )
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
-         if (trim(liqcldoptics) /= 'slingo') then
-            call endrun(subname // ': must use slingo liquid optics with sam1mom')
-         end if
-         if (trim(icecldoptics) /= 'ebertcurry')  then
-            call endrun(subname // ': must use ebertcurry ice optics with sam1mom')
-         end if
-      end if
-
       ! Initialize cloud optics
       call cloud_rad_props_init()
+      call phys_getopts(use_MMF_out           = use_MMF          )
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      if (use_MMF .and. trim(MMF_microphysics_scheme) == 'sam1mom') then
+         call ec_rad_props_init()
+         call slingo_rad_props_init()
+      end if
 
       ! Initialize output fields for offline driver.
       ! TODO: do we need to keep this functionality? Where is the offline driver?
@@ -1005,18 +996,20 @@ contains
    subroutine set_available_gases(gases, gas_concentrations)
 
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_util_string, only: lower_case
-      use mo_rte_kind, only: wp
+      use mo_rrtmgp_util_string, only: lower_case
 
       type(ty_gas_concs), intent(inout) :: gas_concentrations
       character(len=*), intent(in) :: gases(:)
+      character(len=32), dimension(size(gases)) :: gases_lowercase
       integer :: igas
 
-      ! Use set_vmr method to set gas names. This just sets the vmr to zero, since
-      ! this routine is just used to build a list of available gas names.
+      ! Initialize with lowercase gas names; we should work in lowercase
+      ! whenever possible because we cannot trust string comparisons in RRTMGP
+      ! to be case insensitive
       do igas = 1,size(gases)
-         call handle_error(gas_concentrations%set_vmr(trim(lower_case(gases(igas))), 0._wp))
+         gases_lowercase(igas) = trim(lower_case(gases(igas)))
       end do
+      call handle_error(gas_concentrations%init(gases_lowercase))
 
    end subroutine set_available_gases
 
@@ -1086,13 +1079,11 @@ contains
       use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_optical_props, only: ty_optical_props, &
-                                  ty_optical_props_1scl, &
+      use mo_optical_props, only: ty_optical_props_1scl, & 
                                   ty_optical_props_2str
       use mo_fluxes_byband, only: ty_fluxes_byband
-      use mo_util_string, only: lower_case
+      use mo_rrtmgp_util_string, only: lower_case
 
       ! CAM history module provides subroutine to send output data to the history
       ! buffer to be aggregated and written to disk
@@ -1841,11 +1832,11 @@ contains
                                   tsi_scaling)
 
       use perf_mod, only: t_startf, t_stopf
-      use mo_rrtmgp_clr_all_sky, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_util_string, only: lower_case
+      use mo_rrtmgp_util_string, only: lower_case
+      use mo_rrtmgp_clr_all_sky, only: rte_sw
       use cam_optics, only: free_optics_sw
 
       character(len=*), intent(in) :: gas_names(:)
@@ -1869,6 +1860,10 @@ contains
       type(ty_gas_concs) :: gas_concs
       integer :: ncol, nday, nlev, igas, iday, icol
       integer, dimension(size(coszrs)) :: day_indices, night_indices
+
+      ! Character array to hold lowercase gas names
+      character(len=32), allocatable :: gas_names_lower(:)
+
 
       ncol = size(pmid,1)
       nlev = size(pmid,2)
@@ -1924,13 +1919,24 @@ contains
          aer_optics_day%g  (iday,:,:) = aer_optics%g  (icol,:,:)
       end do
 
+      ! Check incoming optical properties
+      call handle_error(cld_optics_day%validate())
+      call handle_error(aer_optics_day%validate())
+
+      ! Initialize gas concentrations with lower case names
+      allocate(gas_names_lower(size(gas_names)))
+      do igas = 1,size(gas_names)
+         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
+      end do
+      call handle_error(gas_concs%init(gas_names_lower))
+
       ! Populate gas concentrations
-      call gas_concs%reset()
       do igas = 1,size(gas_names)
          call handle_error(gas_concs%set_vmr( &
-            trim(lower_case(gas_names(igas))), gas_vmr_day(igas,1:nday,:) &
+            gas_names_lower(igas), gas_vmr_day(igas,1:nday,:) &
          ))
       end do
+      deallocate(gas_names_lower)
 
       call handle_error(cld_optics_day%validate())
       call handle_error(aer_optics_day%validate())
@@ -1991,7 +1997,7 @@ contains
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_util_string, only: lower_case
+      use mo_rrtmgp_util_string, only: lower_case
 
       character(len=*), intent(in) :: gas_names(:)
       real(r8), intent(in) :: gas_vmr(:,:,:)
@@ -2003,15 +2009,27 @@ contains
       type(ty_gas_concs) :: gas_concs
       integer :: ncol, nlev, igas
 
+      ! Character array to hold lowercase gas names
+      character(len=32), allocatable :: gas_names_lower(:)
+
       ncol = size(pmid,1)
       nlev = size(pmid,2)
 
-      ! Populate gas concentrations object
+      ! Initialize gas concentrations with lower case names
+      allocate(gas_names_lower(size(gas_names)))
+      do igas = 1,size(gas_names)
+         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
+      end do
+      call handle_error(gas_concs%init(gas_names_lower))
+
+      ! Populate gas concentrations
       do igas = 1,size(gas_names)
          call handle_error(gas_concs%set_vmr( &
-            trim(lower_case(gas_names(igas))), gas_vmr(igas,:,:)) & 
-         )
+            gas_names_lower(igas), gas_vmr(igas,:,:) &
+         ))
       end do
+      deallocate(gas_names_lower)
+
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_rte_lw')
@@ -2619,7 +2637,7 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use rad_constituents, only: rad_cnst_get_gas
-      use mo_util_string, only: lower_case, string_loc_in_array
+      use mo_rrtmgp_util_string, only: lower_case, string_loc_in_array
 
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state
