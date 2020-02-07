@@ -248,7 +248,6 @@ contains
     deallocate(rstate%tlay)
     deallocate(rstate%tlev)
 
-    deallocate( rstate )
     nullify(rstate)
 
   endsubroutine rrtmg_state_destroy
