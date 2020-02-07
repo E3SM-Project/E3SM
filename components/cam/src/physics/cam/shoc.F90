@@ -257,7 +257,7 @@ subroutine shoc_main ( &
          shcol,nlev,nlevi,&                   ! Input
 	 zt_grid,zi_grid,pdel,&               ! Input
          dz_zt,dz_zi,rho_zt)  		      ! Output
-  
+
   ! Update the turbulent length scale	 
   call shoc_length(&
          shcol,nlev,nlevi, tke,&              ! Input
@@ -275,7 +275,7 @@ subroutine shoc_main ( &
 	 uw_sfc,vw_sfc,&                      ! Input
 	 zt_grid,zi_grid,&                    ! Input
          tke,tk,tkh,&		              ! Input/Output
-	 isotropy)                            ! Output 
+	 isotropy)                            ! Output
   
   ! If implicit diffusion solver is used, 
   !  update SHOC prognostic variables here
@@ -336,7 +336,7 @@ subroutine shoc_main ( &
 	 wqw_sec,qwthl_sec,w3,pres,&          ! Input
 	 zt_grid,zi_grid,&                    ! Input
 	 shoc_cldfrac,shoc_ql,&               ! Output
-         wqls_sec,wthv_sec)                   ! Output	 
+         wqls_sec,wthv_sec)                   ! Output
 
   ! Check TKE to make sure values lie within acceptable 
   !  bounds after vertical advection, etc.
@@ -487,7 +487,7 @@ subroutine update_prognostics( &
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
 
   do i=1,shcol
-    do k=1,nlev 
+    do k=1,nlev
       kb=k+1
 
       ! define air densities on various levels for mass weighted 
@@ -1209,7 +1209,7 @@ subroutine shoc_assumed_pdf(&
   call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
   call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,0._r8)  
-  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)  
+  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)
   
   do k=1,nlev
     do i=1,shcol
@@ -1479,7 +1479,7 @@ subroutine shoc_assumed_pdf(&
       wqls(i,k)=a*((w1_1-w_first)*ql1)+(1._r8-a)*((w1_2-w_first)*ql2)
       ! Compute the SGS buoyancy flux
       wthv_sec(i,k)=wthlsec+((1._r8-epsterm)/epsterm)*basetemp*wqwsec &
-        +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)       
+        +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)
      	
     enddo  ! end i loop here
   enddo	  ! end k loop here
@@ -1818,7 +1818,7 @@ subroutine shoc_length(&
     
       tkes=sqrt(tke(i,k))
       
-      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k) 
+      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
       shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
         +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)     
