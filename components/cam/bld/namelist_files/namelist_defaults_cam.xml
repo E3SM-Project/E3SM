@@ -477,8 +477,8 @@
 <liqopticsfile rad="rrtmgp">atm/cam/physprops/F_nwvl200_mu20_lam50_res64_t298_c080428.nc</liqopticsfile>
 
 <!-- Gas absorption coefficients for RRTMGP -->
-<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_c181004.nc</rrtmgp_coefficients_file_lw>
-<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_c181004.nc</rrtmgp_coefficients_file_sw>
+<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_20181204.nc</rrtmgp_coefficients_file_lw>
+<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_20181204.nc</rrtmgp_coefficients_file_sw>
 
 <!-- CAM-RT absorptivity/emissivity lookup table -->
 <absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>
