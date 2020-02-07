@@ -30,8 +30,8 @@ module gllfvremap_mod
   !   This module supports all ftype values 0 to 4.
   !   We find in practice that pg1 is too coarse. To see this, run the
   ! Homme-standalone test dcmip2016_test1_pg1 and compare results with
-  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are nearly
-  ! identical out to day 30, whereas pg1 fields differ visibly.
+  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are
+  ! nearly identical out to day 30, whereas pg1 fields differ visibly.
   !
   ! AMB 2019/07 Initial
 
@@ -95,8 +95,8 @@ module gllfvremap_mod
           ! Remap FV nphys <-> GLL np
           g2f_remapd(np,np,nphys_max*nphys_max), &
           f2g_remapd(nphys_max*nphys_max,np,np)
-     ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
      real(kind=real_kind), allocatable :: &
+          ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
           fv_metdet(:,:), & ! (nphys*nphys,nelemd)
           ! Vector on ref elem -> vector on sphere
           D_f(:,:,:,:,:), &   ! (nphys,nphys,2,2,nelemd)
