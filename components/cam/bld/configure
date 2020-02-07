@@ -278,9 +278,7 @@ OPTIONS
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
      -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
-     -clubb_crm         CRM with clubb treatment
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols 
-     -use_crm_cldfrac   use fractional cloudiness in CRM
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
@@ -354,7 +352,6 @@ GetOptions(
     "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
     "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
-    "clubb_crm"                 => \$opts{'clubb_crm'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
@@ -1918,8 +1915,6 @@ if (defined $opts{'crm_ny_rad'}) {
     $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
 }
 
-if ( defined $opts{'clubb_crm'})    { $cfg_cppdefs .= " -DCLUBB_CRM -DCLUBB_REAL_TYPE=dp"; }
-
 # Configure CAM to produce IOP files for SCAM
 if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
 
@@ -2671,20 +2666,11 @@ sub write_filepath
         if ($MMF_microphysics_scheme eq 'sam1mom') {
             print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
         } elsif ($MMF_microphysics_scheme eq 'm2005') {
-            if(defined $opts{'use_crm_cldfrac'}) {
-                print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005FRAC\n";
-            } else {
-                print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
-            }
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
         }
 
         # turbulence closure
-        if ( defined $opts{'clubb_crm'}) {
-            print $fh "$camsrcdir/cam/src/physics/CLUBB_core\n";
-            print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_CLUBBkvhkvm\n";
-        } else {
-            print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
-        }
+        print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
 
         if ( defined $opts{'use_ECPP'}) {
             print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
