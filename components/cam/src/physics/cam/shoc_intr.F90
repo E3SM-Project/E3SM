@@ -530,19 +530,7 @@ end function shoc_implements_cnst
    real(r8) :: dtime                            ! SHOC time step                              [s]   
    real(r8) :: edsclr_in(pcols,pver,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
    real(r8) :: edsclr_out(pcols,pver,edsclr_dim)
-   real(r8) :: tke_in(pcols,pver)
-   real(r8) :: thlm_in(pcols,pver)
-   real(r8) :: thv_in(pcols,pver)
-   real(r8) :: temp_in(pcols,pver)
-   real(r8) :: qv_in(pcols,pver)
    real(r8) :: rcm_in(pcols,pver)
-   real(r8) :: rvm_in(pcols,pver)
-   real(r8) :: rtm_in(pcols,pver)
-   real(r8) :: wthv_in(pcols,pver)
-   real(r8) :: pres_in(pcols,pver)
-   real(r8) :: um_in(pcols,pver)
-   real(r8) :: vm_in(pcols,pver)
-   real(r8) :: pdel_in(pcols,pver)
    real(r8) :: cloudfrac_shoc(pcols,pver)
    real(r8) :: rcm_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
@@ -553,7 +541,6 @@ end function shoc_implements_cnst
    real(r8) :: rvm(pcols,pver)
    real(r8) :: rtm(pcols,pver)
    real(r8) :: rcm(pcols,pver)
-!   real(r8) :: tke(pcols,pver)
    real(r8) :: ksrftms(pcols)                   ! Turbulent mountain stress surface drag        [kg/s/m2]
    real(r8) :: tautmsx(pcols)                   ! U component of turbulent mountain stress      [N/m2]
    real(r8) :: tautmsy(pcols)                   ! V component of turbulent mountain stress      [N/m2]
@@ -573,12 +560,6 @@ end function shoc_implements_cnst
    real(r8) :: wtke_sec_out(pcols,pverp), uw_sec_out(pcols,pverp)
    real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pverp)
    real(r8) :: wqls_out(pcols,pver), brunt_out(pcols,pver)
-   real(r8) :: shoc_mix(pcols,pver)
-   real(r8) :: w_sec(pcols,pver), thl_sec(pcols,pverp)
-   real(r8) :: qw_sec(pcols,pverp), qwthl_sec(pcols,pverp)
-   real(r8) :: wthl_sec(pcols,pverp), wqw_sec(pcols,pverp)
-   real(r8) :: wtke_sec(pcols,pverp), uw_sec(pcols,pverp)
-   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pverp), wqls(pcols,pver), brunt(pcols,pver)
 
    real(r8) :: wthl_output(pcols,pverp)
    real(r8) :: wqw_output(pcols,pverp)
@@ -812,18 +793,18 @@ end function shoc_implements_cnst
    enddo
    
    !  Define the SHOC thermodynamic grid (in units of m)
-   wm_zt(:,1) = 0._r8
+   wm_zt(:,pver) = 0._r8
    do k=1,pver
      do i=1,ncol
-       zt_g(i,k) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
-       rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(i,pver-k+1))
-       wm_zt(i,k) = -1._r8*state1%omega(i,pver-k+1)/(rrho(i,k)*gravit)
+       zt_g(i,k) = state1%zm(i,k)-state1%zi(i,pver+1)
+       rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,k)/dz_g(i,k))
+       wm_zt(i,k) = -1._r8*state1%omega(i,k)/(rrho(i,k)*gravit)
      enddo
    enddo
      
    do k=1,pverp
      do i=1,ncol
-       zi_g(i,k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
+       zi_g(i,k) = state1%zi(i,k)-state1%zi(i,pver+1)
      enddo
    enddo
 
@@ -834,10 +815,10 @@ end function shoc_implements_cnst
    do i=1,ncol
       !  Surface fluxes provided by host model
 
-      wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho_i(i,1))       ! Sensible heat flux
-      wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho_i(i,1))      ! Latent heat flux
-      upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,1)               ! Surface meridional momentum flux
-      vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,1)               ! Surface zonal momentum flux  
+      wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho_i(i,pverp))       ! Sensible heat flux
+      wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho_i(i,pverp))      ! Latent heat flux
+      upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,pverp)               ! Surface meridional momentum flux
+      vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,pverp)               ! Surface zonal momentum flux  
       wtracer_sfc(i,:) = 0._r8  ! in E3SM tracer fluxes are done elsewhere
    enddo   
       
@@ -846,30 +827,10 @@ end function shoc_implements_cnst
    ! ------------------------------------------------- !    
    if ( do_tms) then
      do i=1,ncol
-       upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho_i(i,1))
-       vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho_i(i,1))
+       upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho_i(i,pverp))
+       vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho_i(i,pverp))
      enddo 
-   endif           
-
-   ! Need to flip arrays around for SHOC 
-   do k=1,pver
-     do i=1,ncol
-       um_in(i,k)      = um(i,pver-k+1)
-       vm_in(i,k)      = vm(i,pver-k+1)   
-       rvm_in(i,k)     = rvm(i,pver-k+1)
-       rcm_in(i,k)     = rcm(i,pver-k+1)
-       rtm_in(i,k)     = rtm(i,pver-k+1)
-       thlm_in(i,k)    = thlm(i,pver-k+1)
-       thv_in(i,k)     = thv(i,pver-k+1)
-       temp_in(i,k)    = state%t(i,pver-k+1)
-       tke_in(i,k)     = tke(i,pver-k+1)
-       wthv_in(i,k)    = wthv(i,pver-k+1)
-       tkh_in(i,k)     = tkh(i,pver-k+1)
-       tk_in(i,k)      = tk(i,pver-k+1)
-       pdel_in(i,k)    = state1%pdel(i,pver-k+1)
-       pres_in(i,k)    = state1%pmid(i,pver-k+1)
-     enddo  
-   enddo   
+   endif             
    
    !  Do the same for tracers 
    icnt=0
@@ -878,7 +839,7 @@ end function shoc_implements_cnst
        icnt=icnt+1
        do k=1,pver
          do i=1,ncol
-           edsclr_in(i,k,icnt) = state1%q(i,pver-k+1,ixind)
+           edsclr_in(i,k,icnt) = state1%q(i,k,ixind)
          enddo
        enddo
      end if
@@ -892,14 +853,14 @@ end function shoc_implements_cnst
 
      call shoc_main( &
           ncol, pver, pverp, dtime, & ! Input
-	  host_dx_in(:ncol), host_dy_in(:ncol), thv_in(:ncol,:),rcm_in(:ncol,:),& ! Input
-          zt_g(:ncol,:), zi_g(:ncol,:), pres_in(:ncol,:), pdel_in(:ncol,:),& ! Input
+	  host_dx_in(:ncol), host_dy_in(:ncol), thv(:ncol,:),rcm(:ncol,:),& ! Input
+          zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state1%pdel(:ncol,:pver),& ! Input
 	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
 	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
-	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), & ! Input/Ouput
-	  um_in(:ncol,:), vm_in(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
-	  wthv_in(:ncol,:),tkh_in(:ncol,:),tk_in(:ncol,:), & ! Input/Output
-          cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), & ! Output
+	  tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
+	  um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
+	  wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
+          cloud_frac(:ncol,:), rcm_shoc(:ncol,:), & ! Output
           shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
           wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
@@ -910,47 +871,18 @@ end function shoc_implements_cnst
 
    enddo  ! end time loop
    
-   ! Arrays need to be "flipped" to E3SM grid
+   ! Transfer back to pbuf variables
    
    do k=1,pver
      do i=1,ncol 
-       um(i,k) = um_in(i,pver-k+1)
-       vm(i,k) = vm_in(i,pver-k+1)
-       thlm(i,k) = thlm_in(i,pver-k+1)
-       rtm(i,k) = rtm_in(i,pver-k+1)
-       rcm(i,k) = rcm_shoc(i,pver-k+1)
-       cloud_frac(i,k) = min(cloudfrac_shoc(i,pver-k+1),1._r8)
-       wthv(i,k) = wthv_in(i,pver-k+1)
-       tke(i,k) = tke_in(i,pver-k+1)
+     
+       rcm(i,k) = rcm_shoc(i,k)
+       cloud_frac(i,k) = min(cloud_frac(i,k),1._r8)
        
        do ixind=1,edsclr_dim
-         edsclr_out(i,k,ixind) = edsclr_in(i,pver-k+1,ixind)
+         edsclr_out(i,k,ixind) = edsclr_in(i,k,ixind)
        enddo      
-
-       shoc_mix(i,k) = shoc_mix_out(i,pver-k+1)
-       tk(i,k) = tk_in(i,pver-k+1)
-       tkh(i,k) = tkh_in(i,pver-k+1)
-       isotropy(i,k) = isotropy_out(i,pver-k+1)
-       w_sec(i,k) = w_sec_out(i,pver-k+1)
-       wqls(i,k) = wqls_out(i,pver-k+1)
-       brunt(i,k) = brunt_out(i,pver-k+1)
  
-     enddo
-   enddo
-
-   do k=1,pverp
-     do i=1,ncol
-
-       w3(i,k) = w3_out(i,pverp-k+1)
-       thl_sec(i,k) = thl_sec_out(i,pverp-k+1)
-       qw_sec(i,k) = qw_sec_out(i,pverp-k+1)
-       qwthl_sec(i,k) = qwthl_sec_out(i,pverp-k+1)
-       wthl_sec(i,k) = wthl_sec_out(i,pverp-k+1)
-       wqw_sec(i,k) = wqw_sec_out(i,pverp-k+1)
-       wtke_sec(i,k) = wtke_sec_out(i,pverp-k+1)
-       uw_sec(i,k) = uw_sec_out(i,pverp-k+1)
-       vw_sec(i,k) = vw_sec_out(i,pverp-k+1)
-
      enddo
    enddo
 
@@ -1243,37 +1175,37 @@ end function shoc_implements_cnst
 
     do k=1,pverp
       do i=1,ncol
-        wthl_output(i,k) = wthl_sec(i,k) * rrho_i(i,pverp-k+1) * cpair
-        wqw_output(i,k) = wqw_sec(i,k) * rrho_i(i,pverp-k+1) * latvap 
+        wthl_output(i,k) = wthl_sec_out(i,k) * rrho_i(i,k) * cpair
+        wqw_output(i,k) = wqw_sec_out(i,k) * rrho_i(i,k) * latvap 
       enddo
     enddo
 
     do k=1,pver
       do i=1,ncol
-        wthv_output(i,k) = wthv(i,k) * rrho(i,pver-k+1) * cpair
-        wql_output(i,k) = wqls(i,k) * rrho(i,pver-k+1) * latvap 
+        wthv_output(i,k) = wthv(i,k) * rrho(i,k) * cpair
+        wql_output(i,k) = wqls_out(i,k) * rrho(i,k) * latvap 
       enddo
     enddo
 
     call outfld('SHOC_TKE', tke, pcols, lchnk)
     call outfld('WTHV_SEC', wthv_output, pcols, lchnk)
-    call outfld('SHOC_MIX', shoc_mix, pcols, lchnk)
+    call outfld('SHOC_MIX', shoc_mix_out, pcols, lchnk)
     call outfld('TK', tk, pcols, lchnk)
     call outfld('TKH', tkh, pcols, lchnk)
-    call outfld('W_SEC', w_sec, pcols, lchnk)
-    call outfld('THL_SEC', thl_sec, pcols, lchnk)
-    call outfld('QW_SEC', qw_sec, pcols, lchnk)
-    call outfld('QWTHL_SEC', qwthl_sec, pcols, lchnk)
+    call outfld('W_SEC', w_sec_out, pcols, lchnk)
+    call outfld('THL_SEC', thl_sec_out, pcols, lchnk)
+    call outfld('QW_SEC', qw_sec_out, pcols, lchnk)
+    call outfld('QWTHL_SEC', qwthl_sec_out, pcols, lchnk)
     call outfld('WTHL_SEC', wthl_output, pcols, lchnk)
     call outfld('WQW_SEC', wqw_output, pcols, lchnk)
-    call outfld('WTKE_SEC', wtke_sec, pcols, lchnk)
-    call outfld('UW_SEC', uw_sec, pcols, lchnk)
-    call outfld('VW_SEC', vw_sec, pcols, lchnk)
-    call outfld('W3', w3, pcols, lchnk)
+    call outfld('WTKE_SEC', wtke_sec_out, pcols, lchnk)
+    call outfld('UW_SEC', uw_sec_out, pcols, lchnk)
+    call outfld('VW_SEC', vw_sec_out, pcols, lchnk)
+    call outfld('W3', w3_out, pcols, lchnk)
     call outfld('WQL_SEC',wql_output, pcols, lchnk)
-    call outfld('ISOTROPY',isotropy, pcols,lchnk)
+    call outfld('ISOTROPY',isotropy_out, pcols,lchnk)
     call outfld('CONCLD',concld,pcols,lchnk)
-    call outfld('BRUNT',brunt,pcols,lchnk)
+    call outfld('BRUNT',brunt_out,pcols,lchnk)
 
 #endif    
     return         
