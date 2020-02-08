@@ -1612,31 +1612,7 @@ contains
          kVonKarman = 0.4_RKIND, &      ! the von Karman constant
          xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
 
-
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if ( trim(config_land_ice_flux_mode) .ne. 'off' ) then
-
-         ! we need to compute the landiceMask regardless of which mode we're in so it can be
-         ! added to the restart file
-
-         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
-
-         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         ! compute landIceMask from landIceFraction
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            if (landIceFraction(iCell) >= 0.5_RKIND) then
-               landIceMask(iCell) = 1
-            else
-               landIceMask(iCell) = 0
-               ! don't allow land-ice fluxes if land ice is masked out
-               landIceFraction(iCell) = 0.0_RKIND
-            end if
-         end do
-         !$omp end do
-
-      end if
 
       if ( trim(config_land_ice_flux_mode) .ne. 'standalone' .and. trim(config_land_ice_flux_mode) .ne. 'coupled' ) then
          return
@@ -1686,6 +1662,7 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexS)
 
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
 
