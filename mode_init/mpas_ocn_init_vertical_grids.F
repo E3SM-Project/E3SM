@@ -790,7 +790,8 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: zMid, layerThickness, restingThickness, zInterface, &
                                                     verticalStretch, goalStretch, goalWeight, rx1Edge
-      real (kind=RKIND), dimension(:), pointer :: ssh, bottomDepth, refBottomDepth, zTop, zBot, zBotNew, landIceFraction, &
+      integer, dimension(:), pointer :: landIceMask
+      real (kind=RKIND), dimension(:), pointer :: ssh, bottomDepth, refBottomDepth, zTop, zBot, zBotNew, &
                                         refLayerThickness
 
       real (kind=RKIND), pointer :: globalRx1Max, globalVerticalStretchMax, globalVerticalStretchMin
@@ -807,8 +808,6 @@ contains
                            localStretchMax, localStretchMin
 
       logical :: moveInterface
-
-      real (kind=RKIND), parameter :: eps=1e-6_RKIND
 
       iErr = 0
 
@@ -855,7 +854,7 @@ contains
         call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-        call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+        call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
         call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
 
         maxLevelCell(nCells+1) = -1
@@ -870,7 +869,7 @@ contains
 
         ! initialize the smoothing mask to valid cells under land ice
         smoothingMask(:) = 0
-        where((maxLevelCell(:) > 0) .and. (landIceFraction(:) > eps))
+        where((maxLevelCell(:) > 0) .and. (landIceMask(:) == 1))
           smoothingMask(:) = 1
         end where
 
