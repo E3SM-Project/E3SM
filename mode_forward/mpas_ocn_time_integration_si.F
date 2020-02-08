@@ -829,7 +829,7 @@ module ocn_time_integration_si
                endif
    
                do iCell = 1, nCells
-                          sshCur(iCell) = 0.5*sshNew(iCell) + 0.5*sshCur(iCell)
+                          sshCur(iCell) = 0.5*sshSubcycleCur(iCell) + 0.5*sshCur(iCell)
                   sshSubcycleCur(iCell) = sshCur(iCell)
                end do
 
@@ -2812,7 +2812,7 @@ module ocn_time_integration_si
 
 
             do iCell = 1,nCells
-               sshNew(iCell) = sshSubcycleCur(iCell) 
+               sshNew(iCell) = 0.5 * (sshCur(iCell) + sshSubcycleCur(iCell))
             end do
 
             ! #Iteration  check
