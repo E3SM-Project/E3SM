@@ -45,7 +45,6 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
     cimeroot  = case.get_value("CIMEROOT")
     compclass = compname[1:]
     comp_interface = case.get_value("COMP_INTERFACE")
-    print "DEBUG: comp_interface is ",comp_interface
 
     with open(os.path.join(bldroot,'Filepath'), 'w') as out:
         out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
