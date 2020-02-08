@@ -28,7 +28,6 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 import os
-import os.path
 import subprocess
 from optparse import OptionParser
 import xarray
@@ -73,6 +72,7 @@ fcLandCoverage = fcLandCoverage.difference(fcSouthMask)
 if options.with_cavities:
     fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
                               featureNames=['AntarcticGroundedIceCoverage'])
+
 else:
     fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
                               featureNames=['AntarcticIceCoverage'])
@@ -135,6 +135,7 @@ else:
                                        dsPreserve=dsBaseMesh)
     else:
         dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask)
+    fcCritPassages = None
 
 # create a mask for the flood fill seed points
 dsSeedMask = conversion.mask(dsCulledMesh, fcSeed=fcSeed)
@@ -150,11 +151,34 @@ if options.with_critical_passages:
     write_netcdf(dsCritPassMask, 'critical_passages_mask_final.nc',
                  format=netcdfFormat)
 
+if options.with_cavities:
+    fcAntarcticIce = gf.read(componentName='bedmap2', objectType='region',
+                             featureNames=['AntarcticIceCoverage'])
+    dsMask = conversion.mask(dsCulledMesh, fcMask=fcAntarcticIce)
+    landIceMask = dsMask.regionCellMasks.isel(nRegions=0)
+    dsLandIceMask = xarray.Dataset()
+    dsLandIceMask['landIceMask'] = landIceMask
+
+    write_netcdf(dsLandIceMask, 'land_ice_mask.nc', format=netcdfFormat)
+
+    dsLandIceCulledMesh = conversion.cull(dsCulledMesh, dsMask=dsMask)
+    write_netcdf(dsLandIceCulledMesh, 'no_ISC_culled_mesh.nc',
+                 format=netcdfFormat)
+
 args = ['paraview_vtk_field_extractor.py',
         '--ignore_time',
         '-d', 'maxEdges=',
         '-v', 'allOnCells',
         '-f', 'culled_mesh.nc',
         '-o', 'culled_mesh_vtk']
+print("running", ' '.join(args))
+subprocess.check_call(args, env=os.environ.copy())
+
+args = ['paraview_vtk_field_extractor.py',
+        '--ignore_time',
+        '-d', 'maxEdges=',
+        '-v', 'allOnCells',
+        '-f', 'no_ISC_culled_mesh.nc',
+        '-o', 'no_ISC_culled_mesh_vtk']
 print("running", ' '.join(args))
 subprocess.check_call(args, env=os.environ.copy())
