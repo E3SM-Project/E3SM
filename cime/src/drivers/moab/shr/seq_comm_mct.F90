@@ -206,6 +206,8 @@ module seq_comm_mct
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
 
+  integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
+
   !=======================================================================
 contains
   !======================================================================
@@ -534,6 +536,7 @@ contains
     mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
+    num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
 
