@@ -175,62 +175,14 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">cmake</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/19.0.2</command>
-	<command name="load">esmf_libs</command>
+	<command name="load">intel/18.0.5</command>
 	<command name="load">mkl</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
-      </modules>
-
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
-      </modules>
-
-      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
-      </modules>
-
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/9.1.0</command>
+        <command name="load">gnu/8.3.0</command>
         <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
@@ -240,7 +192,7 @@ This allows using a different mpirun command to launch unit tests
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
 	<!-- known failure in parallel netcdf with mpt, use serial -->
-	<command name="load">netcdf/4.7.1</command>
+	<command name="load">netcdf/4.7.3</command>
 	<command name="load">pnetcdf/1.11.1</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
@@ -259,13 +211,13 @@ This allows using a different mpirun command to launch unit tests
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
-      <modules mpilib="mpt" compiler="gnu" comp_interface="nuopc">
-	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/gnu/9.1.0/</command>
-	<command name="load">NCEPLIBS/1.0.0</command>
+      <modules mpilib="mpt" compiler="gnu">
+	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/gnu-8.3.0/mpt-2.19</command>
+	<command name="load">NCEPlibs/1.0.0alpha01</command>
       </modules>
-      <modules mpilib="mpt" compiler="intel" comp_interface="nuopc">
-	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/intel/19.0.2/</command>
-	<command name="load">NCEPLIBS/1.0.0</command>
+      <modules mpilib="mpt" compiler="intel">
+	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-18.0.5/mpt-2.19</command>
+	<command name="load">NCEPlibs/1.0.0alpha01</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
@@ -303,7 +255,7 @@ This allows using a different mpirun command to launch unit tests
     <DESC>
       Customize these fields as appropriate for your system,
       particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
-      number of cores on your machine. 
+      number of cores on your machine.
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
     <OS>Darwin</OS>
