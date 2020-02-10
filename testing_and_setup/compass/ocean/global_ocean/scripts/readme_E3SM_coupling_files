@@ -1,3 +1,9 @@
+***********************WARNING***************************
+The e3sm_coupling step is a work in progress, and is not
+fully functional. Use at this point is intended only for
+testing purposes.
+*********************************************************
+
 After running run.py, the directory assembled_files_for_upload is populated
 with links. The directory structure is identical to the E3SM inputdata
 directory found here:
@@ -9,8 +15,10 @@ them all, you can use the commands:
    tar cvf inputdata.tar inputdata -h
 and then copy the tar file to another machine.
 
-E3SM members may add files to the data serves by following instructions here:
+E3SM members should consult with an expert from the team to get help and
+approval before moving files to the data server.  Currently, the files produced
+here are not ready for includsion in E3SM and should not be uploaded. In the
+future, when this process produces a usable set of input files, experts may
+upload the data to the LCRC inputdata server by following instructions here:
 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/707002387/E3SM+Input+Data+Servers
 
-The data server path on blues is:
-/lcrc/group/acme/public_html/inputdata/
