@@ -25,6 +25,7 @@ module ocn_tracer_surface_flux_to_tend
    use mpas_pool_routines
 
    use ocn_constants
+   use ocn_config
    use ocn_forcing
 
    implicit none
@@ -214,11 +215,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_tr_sflux
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_sflux', config_disable_tr_sflux)
 
       surfaceTracerFluxOn = .true.
 

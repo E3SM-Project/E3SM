@@ -26,6 +26,7 @@ module ocn_surface_bulk_forcing
    use mpas_pool_routines
    use mpas_timekeeping
    use ocn_constants
+   use ocn_config
    use ocn_equation_of_state
 
    implicit none
@@ -322,12 +323,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_bulk_wind_stress, config_use_bulk_thickness_flux
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_bulk_thickness_flux', config_use_bulk_thickness_flux)
 
       bulkWindStressOn = config_use_bulk_wind_stress
       bulkThicknessFluxOn = config_use_bulk_thickness_flux

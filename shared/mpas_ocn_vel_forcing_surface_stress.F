@@ -25,6 +25,7 @@ module ocn_vel_forcing_surface_stress
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
    use ocn_forcing
 
    implicit none
@@ -204,10 +205,6 @@ contains
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err !< Output: error flag
-
-      logical, pointer :: config_disable_vel_surface_stress
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_surface_stress', config_disable_vel_surface_stress)
 
       surfaceStressOn = .true.
 

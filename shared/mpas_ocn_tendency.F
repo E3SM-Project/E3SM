@@ -27,6 +27,7 @@ module ocn_tendency
    use mpas_threading
    use ocn_diagnostics
    use ocn_constants
+   use ocn_config
 
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
@@ -91,6 +92,19 @@ module ocn_tendency
 
    integer :: apply_Dhf_to_hhf, use_highFreqThick_restore
 
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   ! subroutine ocn_tend_tracer
+   ! normalThicknessFlux: Flux of thickness through an edge
+   !               units: m^{2} s^{-1}
+   real (kind=RKIND), dimension(:,:), allocatable :: normalThicknessFlux
+
 !***********************************************************************
 
 contains
@@ -122,10 +136,6 @@ contains
 
       integer, pointer :: nCells
       integer :: err, iCell
-
-      logical, pointer :: config_disable_thick_all_tend
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
@@ -242,27 +252,11 @@ contains
       integer, pointer :: indexTemperature, indexSalinity, nEdges, nCells
       integer, dimension(:), pointer :: maxLevelCell
 
-      logical, pointer :: config_disable_vel_all_tend
-      logical, pointer :: config_use_wetting_drying
-      logical, pointer :: config_prevent_drying
-      logical, pointer :: config_use_tidal_potential_forcing
-      character (len=StrKIND), pointer :: config_pressure_gradient_type
-      character (len=StrKIND), pointer :: config_time_integrator
-      real (kind=RKIND), pointer :: config_self_attraction_and_loading_beta 
-
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
          timeLevel = 1
       end if
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
-      call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
-      call mpas_pool_get_config(ocnConfigs, 'config_prevent_drying', config_prevent_drying)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
-      call mpas_pool_get_config(ocnConfigs, 'config_self_attraction_and_loading_beta',config_self_attraction_and_loading_beta)
-      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -456,16 +450,12 @@ contains
       ! scalar pointers
       integer :: nTracerGroup
       integer, pointer :: nVertLevels, nEdges, nCells, nCellsSolve, indexTemperature, indexSalinity
-      logical, pointer :: config_disable_tr_all_tend, config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup, config_use_tracerGroup_surface_bulk_forcing, &
                           config_use_tracerGroup_surface_restoring, config_use_tracerGroup_interior_restoring, &
                           config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
-                          config_use_tracerGroup_ttd_forcing, config_use_surface_salinity_monthly_restoring
+                          config_use_tracerGroup_ttd_forcing
 
-      logical, pointer :: config_compute_active_tracer_budgets, &
-                          config_cvmix_kpp_nonlocal_with_implicit_mix
-      real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
-      integer, dimension(:,:), pointer :: rediLimiterCount
+     real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
 
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
@@ -487,7 +477,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
-        normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
+        tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
         fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
         tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, RediKappaScaling, RediKappaSfcTaper
 
@@ -512,11 +502,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         temperatureShortWaveTendency
-
-      !
-      ! Field pointers
-      !
-      type (field2DReal), pointer :: normalThicknessFluxField
 
       !
       ! local integers/reals/logicals
@@ -557,14 +542,6 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       !
-      ! get configure options
-      !
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_nonlocal_with_implicit_mix', &
-                                config_cvmix_kpp_nonlocal_with_implicit_mix)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
-      !
       ! get arrays
       !
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -604,11 +581,10 @@ contains
 
       call mpas_timer_start("ocn_tend_tracer")
 
-      !allocate(normalThicknessFlux(nVertLevels, nEdges+1))
-      call mpas_pool_get_field(scratchPool, 'normalThicknessFlux', normalThicknessFluxField)
-      call mpas_allocate_scratch_field(normalThicknessFluxField, .true.)
-
-      normalThicknessFlux => normalThicknessFluxField % array
+      !$omp master
+      allocate(normalThicknessFlux(nVertLevels, nEdges+1))
+      !$omp end master
+      !$omp barrier
 
       !
       ! transport velocity for the tracer.
@@ -764,10 +740,6 @@ contains
                      call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, trim(modifiedGroupName), &
                                               tracerGroupSurfaceRestoringValue)
                      ! Note: monthly surface salinity restoring is a special case for tracer restoring
-                     call mpas_pool_get_config(ocnConfigs, 'config_use_surface_salinity_monthly_restoring',  &
-                                                            config_use_surface_salinity_monthly_restoring)
-                     call MPAS_pool_get_config(ocnConfigs, 'config_salinity_restoring_constant_piston_velocity',  &
-                                                                salinity_restoring_constant_piston_velocity)
                      call ocn_tracer_surface_restoring_compute(groupItr % memberName, nTracerGroup, nCells, tracerGroup,  &
                         tracerGroupPistonVelocity, tracerGroupSurfaceRestoringValue, tracerGroupSurfaceFlux, indexSalinity, &
                         config_use_surface_salinity_monthly_restoring, &
@@ -986,7 +958,10 @@ contains
          end if
       end do
 
-      call mpas_deallocate_scratch_field(normalThicknessFluxField, .true.)
+      !$omp barrier
+      !$omp master
+      deallocate(normalThicknessFlux)
+      !$omp end master
 
       call mpas_timer_stop("ocn_tend_tracer")
 
@@ -1028,8 +1003,6 @@ contains
          tend_lowFreqDivergence, tend_highFreqThickness
       real (kind=RKIND), dimension(:), allocatable:: div_hu
 
-      real (kind=RKIND), pointer :: config_thickness_filter_timescale, config_highFreqThick_restore_time
-
       call mpas_timer_start("ocn_tend_freq_filtered_thickness")
 
       err = 0
@@ -1039,9 +1012,6 @@ contains
       else
          timeLevel = 1
       end if
-
-      call mpas_pool_get_config(ocnConfigs, 'config_thickness_filter_timescale', config_thickness_filter_timescale)
-      call mpas_pool_get_config(ocnConfigs, 'config_highFreqThick_restore_time', config_highFreqThick_restore_time)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -1134,11 +1104,7 @@ contains
     subroutine ocn_tendency_init(err)!{{{
         integer, intent(out) :: err !< Output: Error flag
 
-        logical, pointer :: config_use_highFreqThick_restore
-
         err = 0
-
-        call mpas_pool_get_config(ocnConfigs, 'config_use_highFreqThick_restore', config_use_highFreqThick_restore)
 
         if (config_use_highFreqThick_restore) then
            use_highFreqThick_restore = 1
