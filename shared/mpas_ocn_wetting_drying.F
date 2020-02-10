@@ -28,6 +28,7 @@ module ocn_wetting_drying
    use mpas_io_units
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics
    use ocn_gm
 
@@ -118,7 +119,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: lonCell, latCell
       real (kind=RKIND) :: minThickness, layerThick
       character (len=StrKIND) :: debugFilename
-      character (len=StrKIND), pointer :: config_time_integrator
 
       !-----------------------------------------------------------------
       !
@@ -137,7 +137,6 @@ contains
       call mpas_pool_get_array(tendPool, 'layerThickness', layerThicknessTend)
       call mpas_pool_get_array(statePool, 'sshSubcycle', sshSubcycleNew, 2)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
@@ -389,14 +388,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
-      real (kind=RKIND), pointer :: config_drying_min_cell_height, config_drying_safety_height
-      logical, pointer :: config_zero_drying_velocity
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_drying_min_cell_height', config_drying_min_cell_height)
-      call mpas_pool_get_config(ocnConfigs, 'config_zero_drying_velocity', config_zero_drying_velocity)
-      call mpas_pool_get_config(ocnConfigs, 'config_drying_safety_height', config_drying_safety_height)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)

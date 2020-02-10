@@ -28,6 +28,7 @@ module ocn_vel_pressure_grad
    use mpas_log
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -54,8 +55,8 @@ module ocn_vel_pressure_grad
    !
    !--------------------------------------------------------------------
 
-   character (len=StrKIND), pointer :: config_pressure_gradient_type
-   real (kind=RKIND), pointer :: config_common_level_weight
+!   character (len=StrKIND), pointer :: config_pressure_gradient_type
+!   real (kind=RKIND), pointer :: config_common_level_weight
    logical :: pgradOn
    real (kind=RKIND) :: density0Inv, gdensity0Inv, inv12
 
@@ -661,13 +662,8 @@ contains
       ! call individual init routines for each parameterization
       !
       !-----------------------------------------------------------------
-      logical, pointer :: config_disable_vel_pgrad
 
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_common_level_weight', config_common_level_weight)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_pgrad', config_disable_vel_pgrad)
 
       pgradOn = .true.
 

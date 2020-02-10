@@ -25,6 +25,7 @@ module ocn_thick_ale
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -123,17 +124,10 @@ contains
          restingThickness   !>  Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
 
       logical, pointer :: thicknessFilterActive
-      logical, pointer :: config_use_min_max_thickness
-      real (kind=RKIND), pointer :: config_max_thickness_factor
-      real (kind=RKIND), pointer :: config_min_thickness
 
       err = 0
 
       call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_min_max_thickness', config_use_min_max_thickness)
-      call mpas_pool_get_config(ocnConfigs, 'config_max_thickness_factor', config_max_thickness_factor)
-      call mpas_pool_get_config(ocnConfigs, 'config_min_thickness', config_min_thickness)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
@@ -263,9 +257,6 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_thick_ale_init(err)!{{{
       integer, intent(out) :: err !< Output: Error flag
-      character (len=StrKIND), pointer :: config_ALE_thickness_proportionality
-
-      call mpas_pool_get_config(ocnConfigs,'config_ALE_thickness_proportionality',config_ALE_thickness_proportionality)
 
       if (config_ALE_thickness_proportionality=='restingThickness_times_weights') then
           configALEthicknessProportionality = 1

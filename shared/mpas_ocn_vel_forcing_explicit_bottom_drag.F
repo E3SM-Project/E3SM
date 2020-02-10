@@ -25,6 +25,7 @@ module ocn_vel_forcing_explicit_bottom_drag
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
    use ocn_forcing
 
    implicit none
@@ -179,15 +180,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_vel_explicit_bottom_drag
-      logical, pointer :: config_use_explicit_bottom_drag
-      real (kind=RKIND), pointer :: config_explicit_bottom_drag_coeff
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_explicit_bottom_drag', config_use_explicit_bottom_drag)
-      call mpas_pool_get_config(ocnConfigs, 'config_explicit_bottom_drag_coeff', config_explicit_bottom_drag_coeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_explicit_bottom_drag', config_disable_vel_explicit_bottom_drag)
 
       explicitBottomDragCoef = 0.0_RKIND
 

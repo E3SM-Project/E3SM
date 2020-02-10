@@ -28,6 +28,7 @@ module ocn_tracer_hmix_Redi
 
    use ocn_config
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -54,10 +55,7 @@ module ocn_tracer_hmix_Redi
    !
    !--------------------------------------------------------------------
 
-   real(kind=RKIND) :: term1TaperFactor
-   real(kind=RKIND), dimension(:), allocatable :: rediKappaCell
-   real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
-   real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
+   logical :: rediOn
 
 !***********************************************************************
 
@@ -165,8 +163,13 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      nCells = nCellsArray(size(nCellsArray))
-      nEdges = nEdgesArray(size(nEdgesArray))
+      !
+      ! COMPUTE the extra terms arising due to mismatch between the constant coordinate surfaces and the
+      ! isopycnal surfaces.
+      !
+
+      nCells = nCellsArray( size(nCellsArray) )
+      nEdges = nEdgesArray( size(nEdgesArray) )
 
       allocate (minimumVal(nTracers))
       allocate (fluxRediZTop(nTracers, nVertLevels + 1))
@@ -422,7 +425,6 @@ contains
       deallocate (redi_term2_edge)
       deallocate (redi_term3_topOfCell)
       !$omp end master
-      !$omp barrier
 
       call mpas_timer_stop("tracer redi")
 

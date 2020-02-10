@@ -30,6 +30,7 @@ module ocn_diagnostics
    use mpas_io_units
 
    use ocn_constants
+   use ocn_config
    use ocn_gm
    use ocn_equation_of_state
    use ocn_thick_ale
@@ -72,33 +73,6 @@ module ocn_diagnostics
    real (kind=RKIND) ::  fCoef
    real (kind=RKIND), pointer ::  coef_3rd_order
 
-   !--------------------------------------------------------------------
-   !
-   ! Config variables moved from subroutines to module level so calls to 
-   ! mpas_pool_get_config only needs to be called during init
-   !
-   !--------------------------------------------------------------------
-
-   logical, pointer :: config_use_cvmix_kpp
-   logical, pointer :: config_use_wetting_drying
-   real (kind=RKIND), pointer :: config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
-   character (len=StrKIND), pointer :: config_pressure_gradient_type
-   character (len=StrKIND), pointer :: config_thickness_flux_type
-
-   real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
-   real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
-
-   character (len=StrKIND), pointer :: config_vert_coord_movement
-
-   character (len=StrKIND), pointer :: config_land_ice_flux_mode
-   character (len=StrKIND), pointer :: config_land_ice_flux_formulation
-   real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerThickness
-   real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerNeighborWeight
-   real (kind=RKIND), pointer :: config_land_ice_flux_topDragCoeff
-   real (kind=RKIND), pointer :: config_land_ice_flux_rms_tidal_velocity
-   real (kind=RKIND), pointer :: config_land_ice_flux_jenkins_heat_transfer_coefficient
-   real (kind=RKIND), pointer :: config_land_ice_flux_jenkins_salt_transfer_coefficient
-   real (kind=RKIND), pointer :: config_land_ice_flux_attenuation_coefficient
    logical :: jenkinsOn, hollandJenkinsOn
 
    !--------------------------------------------------------------------
@@ -110,22 +84,53 @@ module ocn_diagnostics
    !--------------------------------------------------------------------
 
    ! Subroutine ocn_diagnostic_solve
-   real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertex, kineticEnergyVertexOnCells
+   ! kineticEnergyVertex: kinetic energy of horizontal velocity defined at vertices
+   !               units: m^2 s^{-2}
+   real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertex
+   ! kineticEnergyVertexOnCells: kinetic energy of horizontal velocity defined at vertices
+   !                      units: m^2 s^{-2}
+   real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertexOnCells
+   ! normalizedPlanetaryVorticityVertex: earth's rotational rate (Coriolis parameter, f)
+   !                                     divided by layer thickness, defined at vertices
+   !                              units: s^{-1}
    real (kind=RKIND), dimension(:,:), allocatable :: normalizedPlanetaryVorticityVertex
+   ! normalizedRelativeVorticityVertex: curl of horizontal velocity divided by layer thickness,
+   !                                    defined at vertices
+   !                             units: s^{-1}
    real (kind=RKIND), dimension(:,:), allocatable :: normalizedRelativeVorticityVertex
+   ! vorticityGradientNormalComponent: gradient of vorticity in the normal direction
+   !                                   (positive points from cell1 to cell2)
+   !                            units: s^{-1} m^{-1}
    real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientNormalComponent
+   ! vorticityGradientTangentialComponent: gradient of vorticity in the tangent direction
+   !                                       (positive points from vertex1 to vertex2)
+   !                                units: s^{-1} m^{-1}
    real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientTangentialComponent
 
    ! Subroutine ocn_vert_transport_velocity_top
-   real (kind=RKIND), dimension(:), allocatable :: &
-      projectedSSH       !> projected SSH at new time
-   real (kind=RKIND), dimension(:,:), allocatable :: &
-      ALE_Thickness, & !> ALE thickness at new time
-      div_hu           !> divergence of (thickness*velocity)
+   ! projectedSSH: projected SSH at a new time
+   !        units: none
+   real (kind=RKIND), dimension(:), allocatable ::  projectedSSH
+   ! div_hu: divergence of (thickness*velocity)
+   !  units: none
+   real (kind=RKIND), dimension(:,:), allocatable :: div_hu
+   ! ALE_Thickness: ALE thickness at new time
+   !         units: none
+   real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
 
    ! subroutine ocn_compute_KPP_input_fields
-   real (kind=RKIND), dimension(:,:), allocatable ::  &
-        densitySurfaceDisplaced, thermalExpansionCoeff, salineContractionCoeff
+   ! densitySurfaceDisplaced: Density computed by displacing SST and SSS to every vertical
+   !                          layer within the column
+   !                   units: kg m^{-3}
+   real (kind=RKIND), dimension(:,:), allocatable :: densitySurfaceDisplaced
+   ! thermalExpansionCoeff: Thermal expansion coefficient (alpha), defined as $-1/\rho
+   !                        d\rho/dT$ (note negative sign)
+   !                 units: C^{-1}
+   real (kind=RKIND), dimension(:,:), allocatable :: thermalExpansionCoeff
+   ! salineContractionCoeff: Saline contraction coefficient (beta), defined as $1/\rho
+   !                         d\rho/dS$.  This is also called the haline contraction coefficient.
+   !                  units: PSU^{-1}
+   real (kind=RKIND), dimension(:,:), allocatable :: salineContractionCoeff
 
    ! subroutine ocn_compute_land_ice_flux_input_fields
    real (kind=RKIND), dimension(:), allocatable ::  blTempScratch, blSaltScratch
@@ -1325,13 +1330,7 @@ contains
    subroutine ocn_diagnostics_init(err)!{{{
       integer, intent(out) :: err !< Output: Error flag
 
-      logical, pointer :: config_include_KE_vertex
-      character (len=StrKIND), pointer :: config_time_integrator
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
 
       jenkinsOn = .false.
       hollandJenkinsOn = .false.
@@ -1340,38 +1339,6 @@ contains
       else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
          hollandJenkinsOn = .true.
       end if
-
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_topDragCoeff', config_land_ice_flux_topDragCoeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerThickness', &
-                                config_land_ice_flux_boundaryLayerThickness)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerNeighborWeight', &
-                                config_land_ice_flux_boundaryLayerNeighborWeight)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rms_tidal_velocity', config_land_ice_flux_rms_tidal_velocity)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_attenuation_coefficient', &
-                                config_land_ice_flux_attenuation_coefficient)
-
-      if(jenkinsOn) then
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_heat_transfer_coefficient', &
-                                   config_land_ice_flux_jenkins_heat_transfer_coefficient)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_salt_transfer_coefficient', &
-                                   config_land_ice_flux_jenkins_salt_transfer_coefficient)
-      end if
-
-      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
-      call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
-      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',  &
-                                             config_flux_attenuation_coefficient_runoff)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
-      call mpas_pool_get_config(ocnConfigs, 'config_thickness_flux_type', config_thickness_flux_type)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_include_KE_vertex', config_include_KE_vertex)
-      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
       if(config_include_KE_vertex) then
          ke_vertex_flag = 1
@@ -1459,8 +1426,6 @@ contains
       integer, pointer :: indexTempFlux, indexSaltFlux
       real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
       real (kind=RKIND) :: sumSurfaceStressSquared
-
-      type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
 
       call mpas_timer_start('KPP input fields')
 

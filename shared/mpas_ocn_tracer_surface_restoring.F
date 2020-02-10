@@ -27,6 +27,7 @@ module ocn_tracer_surface_restoring
    use mpas_forcing
    use mpas_stream_manager
    use ocn_constants
+   use ocn_config
    use ocn_framework_forcing
 
    implicit none
@@ -211,7 +212,6 @@ contains
         character(len=strKind) :: timeStamp
 
         logical, intent(in) :: firstTimeStep
-        character(len=strKind), pointer :: config_surface_salinity_monthly_restoring_compute_interval
         real(kind=RKIND) :: dt, sumAreaDeltaS, sumArea, avgDeltaS, deltaS, sumAreaDeltaSGlobal, sumAreaGlobal
         real(kind=RKIND) :: avgDeltaS1
         type (block_type), pointer :: block
@@ -225,8 +225,6 @@ contains
         type (mpas_pool_type), pointer :: tracersPool
         type (mpas_pool_type), pointer :: surfaceSalinityMonthlyForcing
         type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool
-
-        real (kind=RKIND), pointer :: salinity_restoring_max_difference, salinity_restoring_constant_piston_velocity
 
         real (kind=RKIND), dimension(:), pointer :: &
            surfaceSalinityMonthlyClimatologyValue, iceFraction, areaCell, salinitySurfaceRestoringTendency
@@ -245,15 +243,11 @@ contains
            forcingReferenceTimeMonthly
 
         integer :: ierr
-        logical, pointer :: &
-           config_do_restart, config_salinity_restoring_under_sea_ice
 
         integer, parameter :: nSums = 2
         real (kind=RKIND), dimension(nSums) :: reductions, sums
 
         ! initialize monthly forcing to be read from file
-
-        call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
         if (firstTimeStep) then
 
@@ -291,15 +285,6 @@ contains
 
            return
         endif  !  first timestep
-
-        call MPAS_pool_get_config(domain%configs, 'config_surface_salinity_monthly_restoring_compute_interval', &
-                                                   config_surface_salinity_monthly_restoring_compute_interval)
-        call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_max_difference',  &
-                                                          salinity_restoring_max_difference)
-        call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_under_sea_ice', &
-                                                   config_salinity_restoring_under_sea_ice)
-        call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
-                                                          salinity_restoring_constant_piston_velocity)
 
         call MPAS_set_timeInterval(timeStepSurfaceSalinity,timeString=config_surface_salinity_monthly_restoring_compute_interval)
         call MPAS_get_timeInterval(timeStepSurfaceSalinity,dt=dt)
@@ -358,8 +343,8 @@ contains
               else
                 ! Turn on salinity restoring in this cell
                 deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
-                if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
-                if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+                if (deltaS >  config_salinity_restoring_max_difference) deltaS =  config_salinity_restoring_max_difference
+                if (deltaS < -config_salinity_restoring_max_difference) deltaS = -config_salinity_restoring_max_difference
 
                 ! Salinity restoring below sea ice is always on, regardless of iceFraction value
                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
@@ -376,8 +361,8 @@ contains
               else
                 ! Turn on salinity restoring in this cell
                 deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
-                if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
-                if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+                if (deltaS >  config_salinity_restoring_max_difference) deltaS =  config_salinity_restoring_max_difference
+                if (deltaS < -config_salinity_restoring_max_difference) deltaS = -config_salinity_restoring_max_difference
 
                 ! Salinity restoring below sea ice tapers below partial sea ice
                 ! coverage, from full in the open ocean to zero when iceFraction=1.0
@@ -395,8 +380,8 @@ contains
             ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.true.
             do iCell = 1, nCells
               deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
-              if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
-              if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+              if (deltaS >  config_salinity_restoring_max_difference) deltaS =  config_salinity_restoring_max_difference
+              if (deltaS < -config_salinity_restoring_max_difference) deltaS = -config_salinity_restoring_max_difference
 
               ! Salinity restoring below sea ice is always on, regardless of iceFraction value
               activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
@@ -407,8 +392,8 @@ contains
             ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.false. (default)
             do iCell = 1, nCells
               deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
-              if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
-              if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
+              if (deltaS >  config_salinity_restoring_max_difference) deltaS =  config_salinity_restoring_max_difference
+              if (deltaS < -config_salinity_restoring_max_difference) deltaS = -config_salinity_restoring_max_difference
 
               ! Salinity restoring below sea ice tapers below partial sea ice
               ! coverage, from full in the open ocean to zero when iceFraction=1.0
@@ -464,7 +449,7 @@ contains
                 deltaS - avgDeltaS
              salinitySurfaceRestoringTendency(iCell) = &
                 activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) &
-                * salinity_restoring_constant_piston_velocity
+                * config_salinity_restoring_constant_piston_velocity
           else
              salinitySurfaceRestoringTendency(iCell) = 0.0_RKIND
           endif

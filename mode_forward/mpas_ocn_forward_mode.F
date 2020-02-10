@@ -265,9 +265,6 @@ module ocn_forward_mode
       call ocn_forcing_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
-      call ocn_high_freq_thickness_hmix_del2_init(err_tmp)
-      ierr = ior(ierr,err_tmp)
-
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
       call ocn_sea_ice_init(nVertLevels, err_tmp)
       ierr = ior(ierr, err_tmp)

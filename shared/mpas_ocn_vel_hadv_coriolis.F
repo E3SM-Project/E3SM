@@ -25,6 +25,7 @@ module ocn_vel_hadv_coriolis
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -211,13 +212,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_vel_coriolis
-      character (len=StrKIND), pointer :: config_time_integrator
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_coriolis', config_disable_vel_coriolis)
-      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
       hadvAndCoriolisOn = .true.
 
