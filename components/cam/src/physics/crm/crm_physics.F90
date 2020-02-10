@@ -171,6 +171,8 @@ subroutine crm_physics_register()
   call pbuf_add_field('CRM_PCP',   'physpkg', dtype_r8, (/pcols,crm_nx,crm_ny/), crm_pcp_idx)
   call pbuf_add_field('CRM_SNW',   'physpkg', dtype_r8, (/pcols,crm_nx,crm_ny/), crm_snw_idx)
 #endif
+  ! CRM orientation angle needs to persist for MAML (to pass crm info to coupler) and MMF_ORIENT_RAND
+  call pbuf_add_field('CRM_ANGLE', 'global', dtype_r8, (/pcols/), idx)
 
 end subroutine crm_physics_register
 
@@ -731,6 +733,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    real(crm_rknd), parameter        :: pi   = 3.14159265359
    real(crm_rknd), parameter        :: pix2 = 6.28318530718
    real(crm_rknd), dimension(pcols) :: crm_angle
+   integer :: crm_angle_idx
 
    ! CRM types
    type(crm_state_type)  :: crm_state
@@ -791,12 +794,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
+   crm_angle(:) = 0
 
 #if defined( MMF_ORIENT_RAND )
    !------------------------------------------------------------------------------------------------
    ! Rotate the CRM using a random walk
    !------------------------------------------------------------------------------------------------
    if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
+
+      crm_angle_idx = pbuf_get_index('CRM_ANGLE')
+      if (.not. is_first_step()) then
+         ! get current crm angle from pbuf, except on first step
+         call pbuf_get_field(pbuf, crm_angle_idx, crm_angle)
+      endif
 
       do i=1,ncol
 
@@ -823,6 +833,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
       enddo
 
+      ! write current crm_angle to pbuf
+      call pbuf_set_field(pbuf, crm_angle_idx, crm_angle)
    endif
 #else /* MMF_ORIENT_RAND */
    !------------------------------------------------------------------------------------------------
@@ -841,7 +853,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 #endif /* MMF_ORIENT_RAND */
 
    !------------------------------------------------------------------------------------------------
-   ! Retreive pbuf fields
+   ! Retrieve pbuf fields
    !------------------------------------------------------------------------------------------------
    if (MMF_microphysics_scheme .eq. 'm2005') then
      call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC_RAD'), crm_rad%nc, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
@@ -1016,7 +1028,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       endif 
 #endif
 
-
+      ! only need to do this once when crm_angle is static
+      call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
+      
    else  ! not is_first_step
 
       ptend%q(:,:,1) = 0.  ! necessary?
