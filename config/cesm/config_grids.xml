@@ -33,7 +33,7 @@
       <grid name="rof"       compset="DWAV"        >rx1</grid>
       <grid name="rof"       compset="RTM"	   >r05</grid>
       <grid name="rof"       compset="MOSART"      >r05</grid>
-      <grid name="mizuroute" compset="MIZUROUTE"   >HDMA</grid>
+      <grid name="rof"       compset="MIZUROUTE"   >HDMA</grid>
       <grid name="rof"       compset="DROF"        >rx1</grid>
       <grid name="rof"       compset="DROF%CPLHIST">r05</grid>
       <grid name="rof"       compset="XROF"        >r05</grid>
