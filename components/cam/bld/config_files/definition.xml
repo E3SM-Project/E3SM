@@ -13,6 +13,9 @@ Directory where CAM executable will be created.
 <entry id="cam_root" value="">
 Root directory of CAM source distribution.
 </entry>
+<entry id="caseroot" value="">
+Root directory of the case.
+</entry>
 <entry id="usr_src" value="" list="1">
 User source directories to prepend to the filepath.  Multiple directories
 are specified as a comma separated list with no embedded white space.

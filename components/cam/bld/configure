@@ -309,6 +309,7 @@ GetOptions(
     "cam_bld=s"                 => \$opts{'cam_bld'},
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
+    "caseroot=s"                => \$opts{'caseroot'},
     "e3smreplay"                => \$opts{'e3smreplay'},
     "cc=s"                      => \$opts{'cc'},
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
@@ -609,6 +610,10 @@ EOF
     }
 
     if ($print>=2) { print "CAM executable will be created in: $cam_exedir$eol"; }
+}
+
+if (defined $opts{'caseroot'}) {
+    $cfg_ref->set('caseroot', $opts{'caseroot'})
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -2231,6 +2236,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 #-----------------------------------------------------------------------------------------------
 # COSP library.
+# JGF: We can get rid of this stuff once the legacy build system is removed
 if ($cosp) {
 
     # Set the directory used to build cosp.  Add location and library name
@@ -2502,6 +2508,7 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
+    my $caseroot      = $cfg_ref->get('caseroot');
 
     # Root directory
     my $camsrcdir = "$cam_root/components";
@@ -2523,8 +2530,7 @@ sub write_filepath
 
     # CESM has a standard source mods location.
     if ($ccsm_seq) {
-	my $CASEROOT = "$ENV{'CASEROOT'}";
-	print $fh "$CASEROOT/SourceMods/src.cam\n";
+	print $fh "$caseroot/SourceMods/src.cam\n";
     }
 
     # offline unit driver (defaults to stub)
