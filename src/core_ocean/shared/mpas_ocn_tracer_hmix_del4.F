@@ -27,6 +27,7 @@ module ocn_tracer_hmix_del4
    use mpas_pool_routines
    use mpas_threading
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -57,6 +58,16 @@ module ocn_tracer_hmix_del4
 
    real (kind=RKIND) :: eddyDiff4
 
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   ! subroutine ocn_vel_hmix_del4_tensor_tend
+   real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
 
 !***********************************************************************
 
@@ -127,10 +138,6 @@ contains
 
       real (kind=RKIND) :: invAreaCell1, invAreaCell2, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
 
-      !real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
-      real (kind=RKIND), dimension(:,:,:), pointer :: delsq_tracer
-      type (field3DReal), pointer :: delsq_tracerField
-
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
 
@@ -168,12 +175,10 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      !allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
-      call mpas_pool_get_field(scratchPool, 'delsq_tracer', delsq_tracerField)
-
-      call mpas_allocate_scratch_field(delsq_tracerField, .true.)
-
-      delsq_tracer => delsq_tracerField % array
+      !$omp master
+      allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
+      !$omp end master
+      !$omp barrier
 
       ! Need 1 halo around owned cells
       nCells = nCellsArray( 2 )
@@ -230,7 +235,10 @@ contains
       end do
       !$omp end do
 
-      call mpas_deallocate_scratch_field(delsq_tracerField, .true.)
+      !$omp barrier
+      !$omp master
+      deallocate(delsq_tracer)
+      !$omp end master
 
       call mpas_timer_stop("tracer del4")
 
@@ -263,13 +271,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_tracer_del4
-      real (kind=RKIND), pointer :: config_tracer_del4
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tracer_del4', config_use_tracer_del4)
-      call mpas_pool_get_config(ocnConfigs, 'config_tracer_del4', config_tracer_del4)
 
       del4on = .false.
 

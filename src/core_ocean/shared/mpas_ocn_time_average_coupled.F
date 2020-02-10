@@ -24,6 +24,7 @@ module ocn_time_average_coupled
     use mpas_derived_types
     use mpas_pool_routines
     use ocn_constants
+    use ocn_config
     use ocn_tracer_ecosys
     use ocn_tracer_DMS
     use ocn_tracer_MacroMolecules
@@ -52,14 +53,9 @@ module ocn_time_average_coupled
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
 
         real (kind=RKIND), dimension(:), pointer :: avgEffectiveDensityInLandIce
-        character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
         integer :: iCell
         integer, pointer :: nAccumulatedCoupled, nCells
-
-        logical, pointer :: config_use_ecosysTracers, &
-                            config_use_DMSTracers,    &
-                            config_use_MacroMoleculesTracers
 
         type (mpas_pool_type), pointer :: ecosysAuxiliary
 
@@ -98,7 +94,6 @@ module ocn_time_average_coupled
         end do
         !$omp end do
 
-        call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
         if(trim(config_land_ice_flux_mode) == 'coupled') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
@@ -114,10 +109,6 @@ module ocn_time_average_coupled
         end if
 
         !  set up BGC coupling fields if necessary
-        call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers', config_use_ecosysTracers)
-        call mpas_pool_get_config(ocnConfigs, 'config_use_DMSTracers', config_use_DMSTracers)
-        call mpas_pool_get_config(ocnConfigs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
-
         if (config_use_ecosysTracers) then
 
            call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
@@ -213,11 +204,6 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities, &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce
-        character (len=StrKIND), pointer :: config_land_ice_flux_mode
-
-        logical, pointer :: config_use_ecosysTracers, &
-                            config_use_DMSTracers,    &
-                            config_use_MacroMoleculesTracers
 
         type (mpas_pool_type), pointer :: tracersPool
 
@@ -279,7 +265,6 @@ module ocn_time_average_coupled
         end do
         !$omp end do
 
-        call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
         if(trim(config_land_ice_flux_mode) == 'coupled') then
            call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
            call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
@@ -302,10 +287,6 @@ module ocn_time_average_coupled
         end if
 
         !  accumulate BGC coupling fields if necessary
-        call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers', config_use_ecosysTracers)
-        call mpas_pool_get_config(ocnConfigs, 'config_use_DMSTracers', config_use_DMSTracers)
-        call mpas_pool_get_config(ocnConfigs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
-
         if (config_use_ecosysTracers) then
 
          call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)

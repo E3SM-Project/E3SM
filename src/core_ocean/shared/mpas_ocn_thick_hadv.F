@@ -24,6 +24,7 @@ module ocn_thick_hadv
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -192,11 +193,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_thick_hadv
-
       thickHadvOn = .true.
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_hadv', config_disable_thick_hadv)
 
       if(config_disable_thick_hadv) thickHadvOn = .false.
 
