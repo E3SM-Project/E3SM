@@ -1627,7 +1627,6 @@ add_default($nl, 'rad_climate', 'val'=>$radval);
 if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
     if ($cfg->get('use_MMF')) {
         if ($cfg->get('MMF_microphysics_scheme') eq 'sam1mom') {
-            add_default($nl, 'oldcldoptics', 'val' => '.true.');
             add_default($nl, 'liqcldoptics', 'val' => 'slingo');
             add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
         } else {
