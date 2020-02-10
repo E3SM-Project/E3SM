@@ -338,6 +338,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="W3NCO_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3nco_v2.0.6_d.a</env>
       <env name="ESMFMKFILE">$ENV{NCEPLIBS_DIR}/lib/esmf.mk</env>
       <env name="NETCDF">$ENV{NCEPLIBS_DIR}</env>
+      <env name="PATH">$ENV{PATH}:$ENV{NCEPLIBS_DIR}/bin</env>
     </environment_variables>
   </machine>
 
