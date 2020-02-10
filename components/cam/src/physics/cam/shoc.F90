@@ -46,6 +46,8 @@ real(r8), parameter :: qwthl2tune=1.0_r8
 real(r8), parameter :: w2tune=1.0_r8 
 ! third moment of vertical velocity
 real(r8), parameter :: w3clip=1.2_r8 
+! mixing length scaling parameter
+real(r8), parameter :: length_fac=1.0_r8
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -1821,7 +1823,7 @@ subroutine shoc_length(&
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
       shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
-        +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)     
+        +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/length_fac)     
       
     enddo  ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
@@ -1881,7 +1883,7 @@ subroutine shoc_length(&
 	    
             shoc_mix(i,ku:kl)=min(mmax,sqrt(1._r8/(((conv_var)/ &
               (depth*sqrt(tke(i,ku:kl))))**2+0.01_r8* &
-              (brunt2(i,ku:kl)/tke(i,ku:kl))))/0.3_r8)	
+              (brunt2(i,ku:kl)/tke(i,ku:kl))))/length_fac)	
 	      
 	  endif
 	    
