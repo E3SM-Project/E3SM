@@ -28,64 +28,32 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3Func
 {
-
-  KOKKOS_FUNCTION static Scalar condition_number_polysvp1(const Spack& temperature, const bool ice){
-
-    const auto sat0 = Functions::polysvp1(temperature, ice);
-    const auto sat1 = Functions::polysvp1(temperature + 1e-4, ice);
-
-    const auto cond = (abs(sat1 - sat0)/abs(sat0)) /(abs(1e-4)/abs(temperature));
-
-
-    return 1.25 * cond[0];
-  }
-
-  KOKKOS_FUNCTION static Spack condition_number_qv_sat(const Spack& temperature, const Spack& pressure, const bool ice){
-
-    const Scalar deltap = 1e0;
-    const Scalar deltat = 1e-2;
-
-    const auto qv_sat0 = Functions::qv_sat(temperature, pressure, ice);
-    const auto qv_sat_t1 = Functions::qv_sat(temperature + deltat, pressure, ice);
-    const auto qv_sat_p1 = Functions::qv_sat(temperature, pressure + deltap , ice);
-
-    Spack  jac[2];
-    jac[0] = (qv_sat_t1 - qv_sat0)/deltat;
-    jac[1] = (qv_sat_p1 - qv_sat0)/deltap;
-
-    auto cond = jac[0][0] * temperature/qv_sat0;
-    const auto  set_mask = jac[0][0] * temperature/qv_sat0  < jac[1][0] * pressure/qv_sat0; 
-    cond.set(set_mask, jac[1][0] * pressure[0]/qv_sat0[0]);
-
-    return cond*1.25;
-
-  }
-
   KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure, const Scalar& correct_sat_ice_p,
     const Scalar& correct_sat_liq_p, const Scalar&  correct_mix_ice_r, const Scalar& correct_mix_liq_r, int& errors ){
 
     const Spack temps(temperature);
     const Spack pres(pressure);
 
-    const auto sat_ice_p = Functions::polysvp1(temps, true);
-    const auto cond_ice_p = condition_number_polysvp1(temps, true);
-    const auto sat_liq_p = Functions::polysvp1(temps, false);
-    const auto cond_liq_p = condition_number_polysvp1(temps, false);
+    Spack sat_ice_p = Functions::polysvp1(temps, true);
+    Spack sat_liq_p = Functions::polysvp1(temps, false);
 
-    const auto mix_ice_r = Functions::qv_sat(temps, pres, true);
-    const auto cond_ice_r  = condition_number_qv_sat(temps, pres, true);
-    const auto mix_liq_r = Functions::qv_sat(temps, pres, false);
-    const auto cond_liq_r = condition_number_qv_sat(temps, pres, false);
+    Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
+    Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
+
+    // The correct results were computed with double precision, so we need
+    // significantly greater tolerance for single precision.
+
+    Scalar tol = (util::is_single_precision<Scalar>::value || util::OnGpu<ExeSpace>::value) ? C::Tol*100 : C::Tol;
 
     for(int s = 0; s < sat_ice_p.n; ++s){
-      // Test vapor pressure note that we multipy by numerically computed realtive condition number 
-      if (abs(sat_ice_p[s] - correct_sat_ice_p) >  cond_ice_p*C::Tol * abs(correct_sat_ice_p)){errors++;}
-      if (abs(sat_liq_p[s] - correct_sat_liq_p) >  cond_liq_p*C::Tol * abs(correct_sat_liq_p)){errors++;}
+      // Test vapor pressure
+      if (abs(sat_ice_p[s] - correct_sat_ice_p) > tol ) {errors++;}
+      if (abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {errors++;}
       //Test mixing-ratios
-      if (abs(mix_ice_r[s] -  correct_mix_ice_r) >   cond_ice_r[s] * C::Tol * abs(correct_mix_ice_r)) {errors++;}
-      if (abs(mix_liq_r[s] -  correct_mix_liq_r) >   cond_liq_r[s] * C::Tol * abs(correct_mix_liq_r)) {errors++;}
+      if (abs(mix_ice_r[s] -  correct_mix_ice_r) > tol ) {errors++;}
+      if (abs(mix_liq_r[s] -  correct_mix_liq_r) > tol ) {errors++;}
     }
-  }
+   }
 
   static void run()
   {
@@ -96,16 +64,16 @@ struct UnitWrap::UnitTest<D>::TestP3Func
       errors = 0;
       const auto tmelt = C::Tmelt;
       // Test values @ the melting point of H20 @ 1e5 Pa
-      saturation_tests(tmelt, sp(1e5), sp(610.7960763188032), sp(610.7960763188032),
-         sp(0.003822318507864685),  sp(0.003822318507864685), errors);
+      saturation_tests(tmelt, 1e5, 610.7960763188032, 610.7960763188032,
+         0.003822318507864685,  0.003822318507864685, errors);
 
       //Test vaules @ 243.15K @ 1e5 Pa
-      saturation_tests(sp(243.15), sp(1e5), sp(37.98530141245404), sp(50.98455924912173),
-         sp(0.00023634717905493638),  sp(0.0003172707211143376), errors);
+      saturation_tests(243.15, 1e5, 37.98530141245404, 50.98455924912173,
+         0.00023634717905493638,  0.0003172707211143376, errors);
 
       //Test values @ 303.15 @ 1e5 Pa
-      saturation_tests(sp(303.15), sp(1e5), sp(4242.757341329608), sp(4242.757341329608),
-        sp(0.0275579183092878), sp(0.0275579183092878), errors);
+      saturation_tests(303.15, 1e5, 4242.757341329608, 4242.757341329608,
+        0.0275579183092878, 0.0275579183092878, errors);
 
     }, nerr);
 
@@ -118,8 +86,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3Conservation
 {
 
-
-   static void cloud_water_conservation_tests_device(){
+static void cloud_water_conservation_tests_device(){
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -975,7 +942,7 @@ TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_bfb();
 }
 
-  TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
+TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
 }
 

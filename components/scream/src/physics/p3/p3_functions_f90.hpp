@@ -558,6 +558,63 @@ Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr
 }
 
 
+struct IceCldliqCollectionData
+{
+  // Inputs
+  Real rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld;
+  Real nitot_incld, nc_incld;
+  
+  // Outputs
+  Real qccol, nccol, qcshd, ncshdc;
+  
+};
+void ice_cldliq_collection(IceCldliqCollectionData& d);
+
+extern "C" {
+
+void ice_cldliq_collection_f(Real rho, Real temp, Real rhofaci, Real f1pr04,
+                             Real qitot_incld,Real qc_incld, Real nitot_incld, Real nc_incld,
+                             Real* qccol, Real* nccol, Real* qcshd, Real* ncshdc);
+}
+
+struct IceRainCollectionData
+{
+  // Inputs
+  Real rho, temp, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld;
+  Real nitot_incld, qr_incld;
+
+  // Outputs
+  Real qrcol, nrcol;
+
+};
+void ice_rain_collection(IceRainCollectionData& d);
+
+extern "C" {
+
+void ice_rain_collection_f(Real rho, Real temp, Real rhofaci, Real logn0r, Real f1pr07, Real f1pr08,
+                         Real qitot_incld, Real nitot_incld, Real qr_incld, Real* qrcol, Real* nrcol);
+
+}
+
+struct IceSelfCollectionData
+{
+  // Inputs
+  Real rho, rhofaci, f1pr03, eii, qirim_incld;
+  Real qitot_incld, nitot_incld;
+
+  // Outputs
+  Real nislf;
+
+};
+void ice_self_collection(IceSelfCollectionData& d);
+
+extern "C" {
+
+void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
+                           Real qirim_incld, Real qitot_incld, Real nitot_incld, Real* nislf);
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////

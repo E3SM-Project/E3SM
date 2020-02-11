@@ -46,7 +46,7 @@ module micro_p3_utils
 
     real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,cp,g,rd,rv,ep_2,inv_cp,   &
+       inv_rhow,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep
@@ -76,7 +76,7 @@ module micro_p3_utils
 
     real(rtype), parameter, public :: mincld=0.0001_rtype
     real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
-
+    real(rtype), parameter, public :: dropmass = 5.2e-7_rtype
 
 ! particle mass-diameter relationship
 ! currently we assume spherical particles for cloud ice/snow
@@ -165,6 +165,7 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
     rhow   = rhoh2o ! Density of liquid water (STP) !997.
     cpw    = cpliq  ! specific heat of fresh h2o (J/K/kg) !4218.
     inv_rhow = 1._rtype/rhow  !inverse of (max.) density of liquid water
+    inv_dropmass = 1._rtype/dropmass  !inverse of dropmass
 
     xxlv = latvap           ! latent heat of vaporization
     xxls = latvap + latice  ! latent heat of sublimation

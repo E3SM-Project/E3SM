@@ -59,7 +59,7 @@ module micro_p3
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
+       inv_rhow,inv_dropmass,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
@@ -2061,6 +2061,9 @@ contains
    ! for T < 273.15, assume collected cloud water is instantly frozen
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_cldliq_collection_f
+#endif
 
    implicit none
 
@@ -2079,6 +2082,14 @@ contains
    real(rtype), intent(out) :: qcshd
    real(rtype), intent(out) :: ncshdc
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call ice_cldliq_collection_f(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                                    nc_incld, qccol, nccol, qcshd, ncshdc)
+       return
+    endif
+#endif
+
    if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall) then
       if  (t .le.zerodegc) then
          qccol = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
@@ -2089,7 +2100,7 @@ contains
          qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
          nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
          ! source for rain number, assume 1 mm drops are shed
-         ncshdc = qcshd*1.923e+6_rtype
+         ncshdc = qcshd*inv_dropmass
       end if
    end if
 
@@ -2115,6 +2126,10 @@ contains
 
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_rain_collection_f, cxx_pow
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2130,11 +2145,19 @@ contains
    real(rtype), intent(out) :: qrcol
    real(rtype), intent(out) :: nrcol
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call ice_rain_collection_f(rho, t, rhofaci, logn0r, f1pr07, f1pr08, &
+                                  qitot_incld, nitot_incld, qr_incld, qrcol,nrcol)
+       return
+    endif
+#endif
+
    if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall) then
       if (t.le.zerodegc) then
          ! note: f1pr08 and logn0r are already calculated as log_10
-         qrcol = 10._rtype**(f1pr08+logn0r)*rho*rhofaci*eri*nitot_incld
-         nrcol = 10._rtype**(f1pr07+logn0r)*rho*rhofaci*eri*nitot_incld
+         qrcol = bfb_pow(10._rtype,(f1pr08+logn0r))*rho*rhofaci*eri*nitot_incld
+         nrcol = bfb_pow(10._rtype,(f1pr07+logn0r))*rho*rhofaci*eri*nitot_incld
       else if (t .gt. zerodegc) then
          ! rain number sink due to collection
          ! for T > 273.15, assume collected rain number is shed as
@@ -2142,7 +2165,7 @@ contains
          ! note that melting of ice number is scaled to the loss
          ! rate of ice mass due to melting
          ! collection of rain above freezing does not impact total rain mass
-         nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld
+         nrcol  = bfb_pow(10._rtype,(f1pr07 + logn0r))*rho*rhofaci*eri*nitot_incld
          ! for now neglect shedding of ice collecting rain above freezing, since snow is
          ! not expected to shed in these conditions (though more hevaily rimed ice would be
          ! expected to lead to shedding)
@@ -2163,6 +2186,9 @@ contains
    ! and air density correction factor since these are not included
    ! in the lookup table calculations
    ! note 'f1pr' values are normalized, so we need to multiply by N
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_self_collection_f
+#endif
 
    implicit none
 
@@ -2177,6 +2203,14 @@ contains
    real(rtype), intent(out) :: nislf
 
    real(rtype) :: tmp1, Eii_fact
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call ice_self_collection_f(rho, rhofaci, f1pr03, eii, qirim_incld, &
+                                  qitot_incld, nitot_incld, nislf)
+       return
+    endif
+#endif
 
    if (qitot_incld.ge.qsmall) then
       ! Determine additional collection efficiency factor to be applied to ice-ice collection.

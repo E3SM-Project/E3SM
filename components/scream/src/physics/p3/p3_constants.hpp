@@ -49,6 +49,8 @@ struct Constants
   static constexpr Scalar QTENDSMALL = 1e-20;
   static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;
+  static constexpr Scalar ZERO        = 0.0;
+  static constexpr Scalar ONE         = 1.0;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
@@ -60,6 +62,9 @@ struct Constants
   static constexpr Scalar bcn         = 2.;
   static constexpr Scalar rho_rimeMin = 50.;
   static constexpr Scalar rho_rimeMax = 900.;
+  static constexpr Scalar eci         = 0.5;
+  static constexpr Scalar eri         = 1.0;
+  static constexpr Scalar dropmass    = 5.2e-7;
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
@@ -75,6 +80,9 @@ constexpr Scalar Constants<Scalar>::QSMALL;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::QTENDSMALL;
+
+template<typename Scalar>
+constexpr Scalar Constants<Scalar>::ZERO;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;
