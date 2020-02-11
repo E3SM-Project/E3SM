@@ -130,8 +130,8 @@ manual edits to these file will be lost!
         unlock_file(os.path.basename(env_batch.filename))
         lock_file(os.path.basename(env_batch.filename))
 
+        case.check_case()
         if job == case.get_primary_job():
-            case.check_case()
             case.check_DA_settings()
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
