@@ -3988,6 +3988,10 @@ end subroutine calc_first_order_upwind_step
 subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: homogeneous_freezing_f
+#endif
+
    !.......................................
    ! homogeneous freezing of cloud and rain
 
@@ -4008,9 +4012,18 @@ subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
    real(rtype), intent(inout), dimension(kts:kte) :: qirim
    real(rtype), intent(inout), dimension(kts:kte) :: birim
    real(rtype), intent(inout), dimension(kts:kte) :: th
+
    real(rtype) :: Q_nuc
    real(rtype) :: N_nuc
    integer :: k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call homogeneous_freezing_f(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+            qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
+       return
+    endif
+#endif
 
    k_loop_fz:  do k = kbot,ktop,kdir
       if (qc(k).ge.qsmall .and. t(k).lt.homogfrze) then

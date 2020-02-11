@@ -135,7 +135,7 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_cld_exchange
 
     real(kind=c_real), dimension(its:ite,3) :: col_location
-    integer :: i,k
+    integer :: i
     do i = its,ite
       col_location(i,:) = real(i)
     end do
@@ -429,6 +429,31 @@ contains
 
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
+
+  subroutine homogeneous_freezing_c(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+    use micro_p3, only: homogeneous_freezing
+
+    ! arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: exner
+    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+
+    call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+         qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
+  end subroutine homogeneous_freezing_c
 
   subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use micro_p3, only: compute_rain_fall_velocity
