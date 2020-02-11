@@ -29,8 +29,8 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
   static void run_ice_cldliq_bfb()
   {
     // Read in tables
-    view_2d_table vn_table; 
-    view_2d_table vm_table; 
+    view_2d_table vn_table;
+    view_2d_table vm_table;
     view_1d_table mu_r_table; view_dnu_table dnu;
     Functions::init_kokkos_tables(vn_table, vm_table, mu_r_table, dnu);
 
@@ -61,16 +61,16 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       {1.352E+01, 8.00E+04, 1.069E+00, 0.123E+00, 1.221E-02, 9.952E-07, 6.596E+05, 1.734E+08}
     };
 
-    // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
-      ice_cldliq_collection(cldliq[i]);
-    }
-
     // Sync to device
     view_1d<IceCldliqCollectionData> cldliq_device("cldliq", Spack::n);
     const auto cldliq_host = Kokkos::create_mirror_view(cldliq_device);
     std::copy(&cldliq[0], &cldliq[0] + Spack::n, cldliq_host.data());
     Kokkos::deep_copy(cldliq_device, cldliq_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < Spack::n; ++i) {
+      ice_cldliq_collection(cldliq[i]);
+    }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
@@ -152,16 +152,16 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       {1.352E+01, 8.00E+04, 1.069E+00, 0.123E+00, 1.221E-02, 9.952E-07, 6.596E-05, 1.734E+03, 5.100E-03}
     };
 
-    // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
-      ice_rain_collection(rain[i]);
-    }
-
     // Sync to device
     KTH::view_1d<IceRainCollectionData> rain_host("rain_host", Spack::n);
     view_1d<IceRainCollectionData> rain_device("rain_host", Spack::n);
     std::copy(&rain[0], &rain[0] + Spack::n, rain_host.data());
     Kokkos::deep_copy(rain_device, rain_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < Spack::n; ++i) {
+      ice_rain_collection(rain[i]);
+    }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
@@ -180,7 +180,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       }
 
       Spack qrcol(0.0), nrcol(0.0);
-      Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,  
+      Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,
                                      qitot_incld, nitot_incld, qr_incld,
                                      qrcol, nrcol);
 
@@ -234,19 +234,20 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       {1.002E+01, 1.069E+00, 0.174E+00, 1.221E-02, 6.952E-06, 6.596E-05, 1.734E+04},
       {1.152E+01, 1.069E+00, 0.374E+00, 1.221E-02, 3.952E-06, 6.596E-05, 1.734E+04},
       {1.252E+01, 1.069E+00, 0.123E+00, 1.221E-02, 1.952E-06, 6.596E-05, 1.734E+04},
-      {1.352E+01, 1.069E+00, 0.123E+00, 1.221E-02, 9.952E-07, 6.596E-05, 1.734E+04}     
+      {1.352E+01, 1.069E+00, 0.123E+00, 1.221E-02, 9.952E-07, 6.596E-05, 1.734E+04}
     };
-    // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
-      ice_self_collection(self[i]);
-     }
-    
+
     // Sync to device
     KTH::view_1d<IceSelfCollectionData> self_host("self_host", Spack::n);
     view_1d<IceSelfCollectionData> self_device("self_host", Spack::n);
     std::copy(&self[0], &self[0] + Spack::n, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
-   
+
+    // Get data from fortran
+    for (Int i = 0; i < Spack::n; ++i) {
+      ice_self_collection(self[i]);
+    }
+
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
     // Init pack inputs
@@ -263,8 +264,8 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
 
       Spack nislf{0.0};
       Functions::ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld,
-                                     nislf); 
-   
+                                     nislf);
+
       for (Int s = 0; s < Spack::n; ++s) {
         self_device(s).nislf = nislf[s];
       }
@@ -306,7 +307,7 @@ TEST_CASE("p3_ice_rain", "[p3_functions]")
   TD::run_ice_rain_bfb();
 }
 
-TEST_CASE("p3_ice_self", "[p3_functions]") 
+TEST_CASE("p3_ice_self", "[p3_functions]")
 {
   using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
   TD::run_ice_self_phys();
