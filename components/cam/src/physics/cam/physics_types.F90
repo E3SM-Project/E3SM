@@ -504,7 +504,7 @@ contains
                               shr_infnan_posinf, shr_infnan_neginf
     use shr_assert_mod, only: shr_assert, shr_assert_in_domain
     use physconst,      only: pi
-    use constituents,   only: pcnst, qmin
+    use constituents,   only: pcnst
 
 !------------------------------Arguments--------------------------------
     ! State to check.
@@ -677,7 +677,7 @@ contains
 
     ! 3-D variables
     do m = 1,pcnst
-       call shr_assert_in_domain(state%q(:ncol,:,m),    lt=posinf_r8, ge=qmin(m), &
+       call shr_assert_in_domain(state%q(:ncol,:,m),    lt=posinf_r8, gt=neginf_r8, &
             varname="state%q ("//trim(cnst_name(m))//")", msg=msg)
     end do
 
@@ -1433,41 +1433,61 @@ end subroutine set_state_pdry
 
 !===============================================================================
 
-subroutine set_wet_to_dry (state)
+subroutine set_wet_to_dry (state, cnst_type_in)
 
   use constituents,  only: pcnst, cnst_type
 
   type(physics_state), intent(inout) :: state
+  character(len=3), intent(in), optional :: cnst_type_in(pcnst)  ! use a specified cnst_type instead
+                                                                 ! of that in the module constituents
 
   integer m, ncol
   
   ncol = state%ncol
 
-  do m = 1,pcnst
-     if (cnst_type(m).eq.'dry') then
-        state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdel(:ncol,:)/state%pdeldry(:ncol,:)
-     endif
-  end do
+  if ( present(cnst_type_in) ) then
+     do m = 1,pcnst
+        if (cnst_type_in(m).eq.'dry') then
+           state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdel(:ncol,:)/state%pdeldry(:ncol,:)
+        endif
+     end do
+  else
+     do m = 1,pcnst
+        if (cnst_type(m).eq.'dry') then
+           state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdel(:ncol,:)/state%pdeldry(:ncol,:)
+        endif
+     end do
+  endif
 
 end subroutine set_wet_to_dry 
 
 !===============================================================================
 
-subroutine set_dry_to_wet (state)
+subroutine set_dry_to_wet (state, cnst_type_in)
 
   use constituents,  only: pcnst, cnst_type
 
   type(physics_state), intent(inout) :: state
+  character(len=3), intent(in), optional :: cnst_type_in(pcnst)  ! use a specified cnst_type instead
+                                                                 ! of that in the module constituents
 
   integer m, ncol
   
   ncol = state%ncol
 
-  do m = 1,pcnst
-     if (cnst_type(m).eq.'dry') then
-        state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)/state%pdel(:ncol,:)
-     endif
-  end do
+  if ( present(cnst_type_in) ) then
+     do m = 1,pcnst
+        if (cnst_type_in(m).eq.'dry') then
+           state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)/state%pdel(:ncol,:)
+        endif
+     end do
+  else
+     do m = 1,pcnst
+        if (cnst_type(m).eq.'dry') then
+           state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)/state%pdel(:ncol,:)
+        endif
+     end do
+  endif
 
 end subroutine set_dry_to_wet
 

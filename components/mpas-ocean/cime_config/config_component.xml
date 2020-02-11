@@ -61,14 +61,17 @@
            <value compset="20TR_DATM.*_MPASO%OIECO">diagnostic</value>
            <value compset="2000_CAM5.*_MPASO%OIECO">constant</value>
            <value compset="1850_CAM5.*_MPASO%OIECO">constant</value>
+           <value compset="1850_CAM5.*_MPASO%OIECO.*_BGC%BPRP">prognostic</value>
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+           <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BPRP">prognostic</value>
            <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
            <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
            <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
            <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+           <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BPRP">prognostic</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
