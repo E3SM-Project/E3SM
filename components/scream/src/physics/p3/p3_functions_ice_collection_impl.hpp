@@ -80,7 +80,6 @@ void Functions<S,D>
    // expected to lead to shedding)
 }
 
-
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
@@ -130,7 +129,6 @@ void Functions<S,D>
                 f1pr03*rho*eii*Eii_fact*rhofaci*nitot_incld);
    }
 }
-
 
 } // namespace p3
 } // namespace scream
