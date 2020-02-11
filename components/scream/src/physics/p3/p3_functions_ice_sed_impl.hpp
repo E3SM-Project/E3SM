@@ -224,21 +224,20 @@ void Functions<S,D>
     const auto t_lt_homogf   = t(pk) < homogfrze;
     const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;
     const auto qr_gt_small   = range_mask && t_lt_homogf && qr(pk) > qsmall;
-    const auto qc_precedence = qc_gt_small && !qr_gt_small;
-    const auto any_gt_small  = qc_gt_small || qr_gt_small;
 
-    Spack Q_nuc, N_nuc;
+    Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(pack::max(nc(pk), nsmall)), Nr_nuc(pack::max(nr(pk), nsmall));
 
-    Q_nuc.set(qc_precedence, qc(pk));
-    Q_nuc.set(qr_gt_small,   qr(pk));
-    N_nuc.set(qc_precedence, pack::max(nc(pk), nsmall));
-    N_nuc.set(qr_gt_small,   pack::max(nr(pk), nsmall));
+    qirim(pk).set(qc_gt_small, qirim(pk) + Qc_nuc);
+    qitot(pk).set(qc_gt_small, qitot(pk) + Qc_nuc);
+    birim(pk).set(qc_gt_small, birim(pk) + Qc_nuc*inv_rho_rimeMax);
+    nitot(pk).set(qc_gt_small, nitot(pk) + Nc_nuc);
+    th(pk).set   (qc_gt_small, th(pk) + exner(pk)*Qc_nuc*xlf(pk)*inv_cp);
 
-    qirim(pk).set(any_gt_small, qirim(pk) + Q_nuc);
-    qitot(pk).set(any_gt_small, qitot(pk) + Q_nuc);
-    birim(pk).set(any_gt_small, birim(pk) + Q_nuc*inv_rho_rimeMax);
-    nitot(pk).set(any_gt_small, nitot(pk) + N_nuc);
-    th(pk).set(any_gt_small, th(pk) + exner(pk)*Q_nuc*xlf(pk)*inv_cp);
+    qirim(pk).set(qr_gt_small, qirim(pk) + Qr_nuc);
+    qitot(pk).set(qr_gt_small, qitot(pk) + Qr_nuc);
+    birim(pk).set(qr_gt_small, birim(pk) + Qr_nuc*inv_rho_rimeMax);
+    nitot(pk).set(qr_gt_small, nitot(pk) + Nr_nuc);
+    th(pk).set   (qr_gt_small, th(pk) + exner(pk)*Qr_nuc*xlf(pk)*inv_cp);
 
     qc(pk).set(qc_gt_small, 0);
     nc(pk).set(qc_gt_small, 0);

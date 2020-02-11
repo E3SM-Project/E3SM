@@ -430,7 +430,7 @@ contains
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
 
-  subroutine homogeneous_freezing_c(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+  subroutine homogeneous_freezing_c(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
     use micro_p3, only: homogeneous_freezing
 
@@ -451,7 +451,7 @@ contains
     real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
     real(kind=c_real), intent(inout), dimension(kts:kte) :: th
 
-    call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+    call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
          qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
   end subroutine homogeneous_freezing_c
 

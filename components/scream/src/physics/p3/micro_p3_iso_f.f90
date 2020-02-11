@@ -193,7 +193,7 @@ interface
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
 
-  subroutine homogeneous_freezing_f(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+  subroutine homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
     use iso_c_binding
 

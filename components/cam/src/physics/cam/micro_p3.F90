@@ -1177,7 +1177,7 @@ contains
        !.......................................
        ! homogeneous freezing of cloud and rain
 
-       call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t(i,:),exner(i,:),xlf(i,:),  &
+       call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t(i,:),exner(i,:),xlf(i,:),  &
          qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:))
 
 
@@ -3985,7 +3985,7 @@ subroutine calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, r
 
 end subroutine calc_first_order_upwind_step
 
-subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -4019,7 +4019,7 @@ subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
-       call homogeneous_freezing_f(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
+       call homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
             qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
        return
     endif
