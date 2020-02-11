@@ -59,7 +59,7 @@ module micro_p3
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
+       inv_rhow,inv_dropmass,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
@@ -2100,7 +2100,7 @@ contains
          qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
          nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
          ! source for rain number, assume 1 mm drops are shed
-         ncshdc = qcshd*1.923e+6_rtype
+         ncshdc = qcshd*inv_dropmass
       end if
    end if
 
