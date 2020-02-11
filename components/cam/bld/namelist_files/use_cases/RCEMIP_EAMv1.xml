@@ -69,7 +69,7 @@
 <!-- <prescribed_ozone_name    > OZONE                 </prescribed_ozone_name> -->
 <!-- <prescribed_ozone_cycle_yr> 1990                  </prescribed_ozone_cycle_yr> -->
 
-<prescribed_ozone_file    > RCEMIP_ozone.c190808.nc </prescribed_ozone_file>
+<prescribed_ozone_file    > RCEMIP_ozone.c200211.nc </prescribed_ozone_file>
 <prescribed_ozone_name    > O3                 </prescribed_ozone_name>
 <prescribed_ozone_cycle_yr> 2000               </prescribed_ozone_cycle_yr>
 
