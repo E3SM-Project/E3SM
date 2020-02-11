@@ -75,6 +75,16 @@ void  update_prognostic_ice_c(
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
+void ice_cldliq_collection_c(Real rho, Real temp, Real rhofaci, Real f1pr04,
+                             Real qitot_incld,Real qc_incld, Real nitot_incld, Real nc_incld,
+                             Real* qccol, Real* nccol, Real* qcshd, Real* ncshdc);
+
+void ice_rain_collection_c(Real rho, Real temp, Real rhofaci, Real logn0r, Real f1pr07, Real f1pr08,
+                           Real qitot_incld, Real nitot_incld, Real qr_incld, Real* qrcol, Real* nrcol);
+
+
+void ice_self_collection_c(Real rho, Real rhofaci, Real f1pr03, Real eii,
+                           Real qirim_incld, Real qitot_incld, Real nitot_incld, Real* nislf);
 }
 
 namespace scream {
@@ -166,6 +176,31 @@ void get_rain_dsd2(GetRainDsd2Data& d)
   get_rain_dsd2_c(d.qr, &nr_in, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
   d.nr_out = nr_in;
 }
+
+void ice_cldliq_collection(IceCldliqCollectionData& d)
+{
+  p3_init(true);
+  ice_cldliq_collection_c(d.rho, d.temp, d.rhofaci, d.f1pr04,
+                          d.qitot_incld, d.qc_incld, d.nitot_incld, d.nc_incld,
+                          &d.qccol, &d.nccol, &d.qcshd, &d.ncshdc);
+}
+
+void ice_rain_collection(IceRainCollectionData& d)
+{
+  p3_init(true);
+  ice_rain_collection_c(d.rho, d.temp, d.rhofaci, d.logn0r, d.f1pr07, d.f1pr08,
+                        d.qitot_incld, d.nitot_incld, d.qr_incld,
+                        &d.qrcol, &d.nrcol);
+}
+
+void ice_self_collection(IceSelfCollectionData& d)
+{
+  p3_init(true);
+  ice_self_collection_c(d.rho, d.rhofaci, d.f1pr03, d.eii, d.qirim_incld,
+                        d.qitot_incld, d.nitot_incld,
+                        &d.nislf);
+}
+
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
     p3_init(true);
@@ -1231,6 +1266,107 @@ void compute_rain_fall_velocity_f(Real qr_incld_, Real rcldm_, Real rhofacr_,
   *V_qr_     = t_h(4);
   *V_nr_     = t_h(5);
 }
+
+void ice_cldliq_collection_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr04_,
+                             Real qitot_incld_,Real qc_incld_, Real nitot_incld_, Real nc_incld_,
+                             Real* qccol_, Real* nccol_, Real* qcshd_, Real* ncshdc_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 4);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, temp{temp_}, rhofaci{rhofaci_}, f1pr04{f1pr04_}, qitot_incld{qitot_incld_},
+          qc_incld{qc_incld_}, nitot_incld{nitot_incld_}, nc_incld{nc_incld_};
+    Spack qccol{0.}, nccol{0.}, qcshd{0.}, ncshdc{0.};
+
+    P3F::ice_cldliq_collection(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld,
+                               qccol, nccol, qcshd, ncshdc);
+
+    t_d(0) = qccol[0];
+    t_d(1) = nccol[0];
+    t_d(2) = qcshd[0];
+    t_d(3) = ncshdc[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qccol_     = t_h(0);
+  *nccol_     = t_h(1);
+  *qcshd_     = t_h(2);
+  *ncshdc_    = t_h(3);
+
+}
+
+
+
+void ice_rain_collection_f(Real rho_, Real temp_, Real rhofaci_, Real logn0r_, Real f1pr07_, Real f1pr08_,
+                           Real qitot_incld_, Real nitot_incld_, Real qr_incld_, Real* qrcol_, Real* nrcol_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, temp{temp_}, rhofaci{rhofaci_}, logn0r{logn0r_}, f1pr07{f1pr07_}, f1pr08{f1pr08_},
+          qitot_incld{qitot_incld_}, qr_incld{qr_incld_}, nitot_incld{nitot_incld_};
+    Spack qrcol{0.}, nrcol{0.};
+
+    P3F::ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,
+                             qitot_incld, nitot_incld, qr_incld,
+                             qrcol, nrcol);
+
+    t_d(0) = qrcol[0];
+    t_d(1) = nrcol[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qrcol_     = t_h(0);
+  *nrcol_     = t_h(1);
+}
+
+
+void ice_self_collection_f(Real rho_, Real rhofaci_, Real f1pr03_, Real eii_,
+                           Real qirim_incld_, Real qitot_incld_, Real nitot_incld_, Real* nislf_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, rhofaci{rhofaci_}, f1pr03{f1pr03_}, eii{eii_}, qirim_incld{qirim_incld_},
+          qitot_incld{qitot_incld_}, nitot_incld{nitot_incld_};
+    Spack nislf{0.};
+
+    P3F::ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld,
+                             nislf);
+
+    t_d(0) = nislf[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nislf_     = t_h(0);
+
+}
+
+
 
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.

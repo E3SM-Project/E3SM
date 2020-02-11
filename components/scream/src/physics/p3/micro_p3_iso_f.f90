@@ -218,6 +218,34 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
 
   end subroutine update_prognostic_ice_f
+
+  subroutine ice_cldliq_collection_f(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                                     nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, f1pr04
+    real(kind=c_real), value, intent(in) :: qitot_incld, qc_incld, nitot_incld, nc_incld
+    real(kind=c_real), intent(out) :: qccol, nccol, qcshd, ncshdc
+  end subroutine ice_cldliq_collection_f
+
+  subroutine ice_rain_collection_f(rho, t, rhofaci, logn0r, f1pr07, f1pr08, &
+                                   qitot_incld, nitot_incld, qr_incld, qrcol, nrcol) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, logn0r, f1pr07, f1pr08
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, qr_incld
+    real(kind=c_real), intent(out) :: qrcol, nrcol
+  end subroutine ice_rain_collection_f
+
+  subroutine ice_self_collection_f(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld, nislf) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld
+    real(kind=c_real), intent(out) :: nislf
+  end subroutine ice_self_collection_f
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use
