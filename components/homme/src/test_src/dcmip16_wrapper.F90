@@ -10,7 +10,8 @@ module dcmip16_wrapper
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
-use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode
+use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
+     sub_case
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -304,6 +305,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
+        if (sub_case==2) lon=mod(lon+pi,2*pi)  ! shift initial condition
 
         ! get surface pressure ps(i,j) at lat, lon, z=0, ignore all other output
         z_i(i,j,k)=0; call supercell_test(lon,lat,p(i,j,1),z_i(i,j,k),1,u(i,j,1),v(i,j,1),&
@@ -326,7 +328,8 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
-
+        if (sub_case==2) lon=mod(lon+pi,2*pi)  ! shift initial condition
+        
         ! get surface pressure ps(i,j) at lat, lon, z=0
         z(i,j,k)=0; call supercell_test(lon,lat,p(i,j,k),z(i,j,k),1,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),ps(i,j),rho(i,j,k),q(i,j,k,1),pert)
 
@@ -765,7 +768,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      ! just look at the GLL values.
      max_w     = max( max_w    , maxval(w    ) )
      ! ps isn't updated by the physics, so just look at the GLL values.
-     min_ps    = min( min_ps,    minval(elem(i)%state%ps_v(:,:,nt)) )
+     min_ps    = min( min_ps,    minval(elem(ie)%state%ps_v(:,:,nt)) )
   enddo
 
   call t_startf('gfr_fv_phys_to_dyn')

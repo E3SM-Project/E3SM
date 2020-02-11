@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_workflow version="2.0">
+<config_workflow version="2.1">
   <!--
   File: config_workflow.xml
   Purpose: Define the jobs to be run, the order to run them, the job size and
@@ -27,7 +27,7 @@
 	  The runtime_parameters block may have an optional MACH attribute.
 
   -->
-  <workflow_jobs case="default">
+  <workflow_jobs id="default">
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>

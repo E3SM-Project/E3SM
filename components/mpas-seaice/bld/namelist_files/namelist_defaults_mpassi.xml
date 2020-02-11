@@ -248,9 +248,9 @@
 <config_iron_saturation_phaeocystis>0.1</config_iron_saturation_phaeocystis>
 <config_fraction_spilled_to_DON>0.6</config_fraction_spilled_to_DON>
 <config_degredation_of_DON>0.03</config_degredation_of_DON>
-<config_fraction_DON_ammonium>0.25</config_fraction_DON_ammonium>
-<config_fraction_loss_to_saccharids>0.4</config_fraction_loss_to_saccharids>
-<config_fraction_loss_to_lipids>0.4</config_fraction_loss_to_lipids>
+<config_fraction_DON_ammonium>1.0</config_fraction_DON_ammonium>
+<config_fraction_loss_to_saccharids>0.5</config_fraction_loss_to_saccharids>
+<config_fraction_loss_to_lipids>0.5</config_fraction_loss_to_lipids>
 <config_fraction_exudation_to_saccharids>1.0</config_fraction_exudation_to_saccharids>
 <config_fraction_exudation_to_lipids>1.0</config_fraction_exudation_to_lipids>
 <config_remineralization_saccharids>0.03</config_remineralization_saccharids>
@@ -281,6 +281,7 @@
 <config_mobility_type_humics>0.0</config_mobility_type_humics>
 <config_mobility_type_saccharids>0.0</config_mobility_type_saccharids>
 <config_mobility_type_lipids>0.0</config_mobility_type_lipids>
+<config_mobility_type_inorganic_carbon>-1.0</config_mobility_type_inorganic_carbon>
 <config_mobility_type_proteins>0.0</config_mobility_type_proteins>
 <config_mobility_type_dissolved_iron>0.0</config_mobility_type_dissolved_iron>
 <config_mobility_type_particulate_iron>0.5</config_mobility_type_particulate_iron>
@@ -299,7 +300,7 @@
 <config_scales_absorption_diatoms>2.0</config_scales_absorption_diatoms>
 <config_scales_absorption_small_plankton>4.0</config_scales_absorption_small_plankton>
 <config_scales_absorption_phaeocystis>5.0</config_scales_absorption_phaeocystis>
-<config_ratio_C_to_N_proteins>7.0</config_ratio_C_to_N_proteins>
+<config_ratio_C_to_N_proteins>5.0</config_ratio_C_to_N_proteins>
 
 <!-- shortwave -->
 <config_shortwave_type>'dEdd'</config_shortwave_type>

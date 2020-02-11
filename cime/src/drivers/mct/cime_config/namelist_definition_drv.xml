@@ -1400,6 +1400,7 @@
     </desc>
     <values>
       <value>$EPS_AGRID</value>
+      <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
     </values>
   </entry>
 
@@ -3880,6 +3881,66 @@
     </values>
   </entry>
 
+  <entry id="atm2rof_fmapname"    modify_via_xml="ATM2ROF_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff flux mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_fmaptype"    modify_via_xml="ATM2ROF_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_smapname"    modify_via_xml="ATM2ROF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff state mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_smaptype"    modify_via_xml="ATM2ROF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2ROF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="rof2ocn_fmapname"    modify_via_xml="ROF2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -4721,6 +4782,44 @@
     </desc>
     <values>
       <value>$DATA_ASSIMILATION_LND</value>
+    </values>
+  </entry>
+
+  <entry id="seq_flux_mct_albdif">
+    <type>real</type>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
+    <desc>
+       Surface albedo for direct radiation
+    </desc>
+    <values>
+      <value>0.06</value>
+      <value aqua_planet_sst_type="sst_aquap11">0.07</value>
+    </values>
+  </entry>
+
+  <entry id="seq_flux_mct_albdir">
+    <type>real</type>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
+    <desc>
+       Surface albedo for diffuse radiation
+    </desc>
+    <values>
+      <value>0.07</value>
+    </values>
+  </entry>
+
+  <entry id="seq_flux_atmocn_minwind">
+    <type>real</type>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
+    <desc>
+       minimum wind speed for atmOcn flux calculations
+    </desc>
+    <values>
+      <value>0.5</value>
+      <value aqua_planet_sst_type="sst_aquap_constant">1.0</value>
     </values>
   </entry>
 

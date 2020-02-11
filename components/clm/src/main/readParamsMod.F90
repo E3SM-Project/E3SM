@@ -89,12 +89,13 @@ contains
     use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
-    use clm_varctl               , only : paramfile, iulog, use_betr
+    use clm_varctl               , only : paramfile, iulog, use_betr, use_hydrstress
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
     use tracer_varcon            , only : is_active_betr_bgc                                         
+    use PhotosynthesisMod        , only : params_inst
     
     !
     ! !ARGUMENTS:
@@ -164,6 +165,12 @@ contains
          call readGapMortParams (ncid)
        endif
     end if
+    !
+    ! Biogeophysics
+    !
+    if(use_hydrstress)then
+      call params_inst%readParams( ncid )
+    endif
 
     !
     ! close CN params file

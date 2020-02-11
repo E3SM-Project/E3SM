@@ -38,7 +38,8 @@ def lookfor1(fid,key1,key2="",allow_eof=0):
 
     
 
-
+mumin=[]
+mumax=[]
 KE=[]
 IE=[]
 PE=[]
@@ -70,10 +71,16 @@ try:
      
         time.extend([n*tstep/(24*3600)])
 
+        if ( ~hydrostatic_mode ):
+            str = lookfor1(sys.stdin,"mu    =","",0)
+            str=split(str)
+            mumin.extend([atof(str[0])])
+            mumax.extend([atof(str[3])])
+
         # KE,d/dt,diss:
         # IE,d/dt,diss:
         # PE,d/dt,diss:
-        str = lookfor1(sys.stdin,"KE,d/dt","",1)
+        str = lookfor1(sys.stdin,"KE,d/dt","",0)
         str=split(str)
         KE.extend([atof(str[1])])
         if (len(str) >= 4):
@@ -149,6 +156,19 @@ except eof,e:
     plt.grid(True)
     plt.legend()
     plt.savefig("HS-diss.png")
+
+    if ( ~hydrostatic_mode ):
+        plt.figure()
+        print ('plotting mu...std min,max=%f %f' % (np.std(mumin),np.std(mumax)))
+        legend1=("min avg: %.3f std: %.4f" % (sum(mumin)/len(mumin),np.std(mumin)) )
+        plt.plot(time,mumin,label=legend1)
+        legend1=("min avg: %.3f std: %.4f" % (sum(mumax)/len(mumax),np.std(mumax)) )
+        plt.plot(time,mumax,label=legend1)
+        plt.axis([min(time), max(min(time)+200,max(time)), -0.,2.0])
+        plt.grid(True)
+        plt.legend()
+        plt.savefig("mu.png")
+    
 
     plt.show()
     sys.exit(0)

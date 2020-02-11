@@ -81,6 +81,9 @@ module SoilStateType
      real(r8), pointer :: rootr_road_perv_col  (:,:) ! col effective fraction of roots in each soil layer of urban pervious road
      real(r8), pointer :: rootfr_road_perv_col (:,:) ! col effective fraction of roots in each soil layer of urban pervious road
      real(r8), pointer :: root_depth_patch     (:)   ! rooting depth of each PFT (m)
+     real(r8), pointer :: k_soil_root_patch    (:,:) ! patch soil-root interface conductance [mm/s]
+     real(r8), pointer :: root_conductance_patch(:,:) ! patch root conductance [mm/s]
+     real(r8), pointer :: soil_conductance_patch(:,:) ! patch soil conductance [mm/s]
 
    contains
 
@@ -176,6 +179,9 @@ contains
     allocate(this%rootfr_col           (begc:endc,1:nlevgrnd))          ; this%rootfr_col           (:,:) = nan 
     allocate(this%rootfr_road_perv_col (begc:endc,1:nlevgrnd))          ; this%rootfr_road_perv_col (:,:) = nan
     allocate(this%root_depth_patch     (begp:endp))                     ; this%root_depth_patch     (:)   = spval
+    allocate(this%k_soil_root_patch    (begp:endp,1:nlevsoi))           ; this%k_soil_root_patch (:,:) = nan
+    allocate(this%root_conductance_patch(begp:endp,1:nlevsoi))          ; this%root_conductance_patch (:,:) = nan
+    allocate(this%soil_conductance_patch(begp:endp,1:nlevsoi))          ; this%soil_conductance_patch (:,:) = nan
 
   end subroutine InitAllocate
 
@@ -857,6 +863,7 @@ contains
     use restUtilMod
     use ncdio_pio
     use clm_varctl,  only : use_dynroot
+    use clm_varctl,  only : use_hydrstress
     use RootBiophysMod      , only : init_vegrootfr
     !
     ! !ARGUMENTS:
@@ -869,7 +876,17 @@ contains
     logical          :: readvar   ! determine if variable is on initial file
     logical          :: readrootfr = .false.
     !-----------------------------------------------------------------------
+    if(use_hydrstress) then
+       call restartvar(ncid=ncid, flag=flag, varname='SMP', xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='soil matric potential', units='mm', &
+            interpinic_flag='interp', readvar=readvar, data=this%smp_l_col)
 
+       call restartvar(ncid=ncid, flag=flag, varname='HK', xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='hydraulic conductivity', units='mm/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%hk_l_col)
+    endif
     if(use_dynroot) then
        call restartvar(ncid=ncid, flag=flag, varname='root_depth', xtype=ncd_double,  &
             dim1name='pft', &

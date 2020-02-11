@@ -22,6 +22,7 @@ module seq_flux_mct
   !--------------------------------------------------------------------------
 
   public seq_flux_init_mct
+  public seq_flux_readnl_mct
   public seq_flux_initexch_mct
 
   public seq_flux_ocnalb_mct
@@ -106,6 +107,11 @@ module seq_flux_mct
 
   real(r8),parameter :: const_pi      = SHR_CONST_PI       ! pi
   real(r8),parameter :: const_deg2rad = const_pi/180.0_r8  ! deg to rads
+
+  ! albedo reference variables - set via namelist
+  real(r8)  :: seq_flux_mct_albdif  ! albedo, diffuse
+  real(r8)  :: seq_flux_mct_albdir  ! albedo, direct
+  real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
 
   ! Coupler field indices
 
@@ -454,6 +460,65 @@ contains
 
   !===============================================================================
 
+  subroutine seq_flux_readnl_mct (nmlfile, ID)
+
+    use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
+    use shr_mpi_mod,    only : shr_mpi_bcast
+    use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
+    use shr_nl_mod, only: shr_nl_find_group_name
+
+    !INPUT/OUTPUT PARAMETERS
+    character(len=*), intent(in) :: nmlfile   ! Name-list filename
+    integer                , intent(in) :: ID
+
+    !LOCAL VARIABLES
+    integer :: mpicom             ! MPI communicator
+    integer :: ierr               ! I/O error code
+    integer :: unitn              ! Namelist unit number to read
+
+    character(len=256) :: cime_model
+
+    namelist /seq_flux_mct_inparm/ seq_flux_mct_albdif, seq_flux_mct_albdir, seq_flux_atmocn_minwind
+
+    character(len=*),parameter :: subname = '(seq_flux_readnl_mct) '
+
+    !-------------------------------------------------------------------------------
+
+    call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
+
+       !---------------------------------------------------------------------------
+       ! Read in namelist
+       !---------------------------------------------------------------------------
+
+        unitn = shr_file_getUnit()
+        write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
+             //trim(nmlfile)
+        open( unitn, file=trim(nmlfile), status='old' )
+        call shr_nl_find_group_name(unitn, 'seq_flux_mct_inparm', ierr)
+        ierr = 1
+        read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
+
+        if (ierr < 0) then
+           call shr_sys_abort( &
+                subname//"ERROR: namelist read returns an EOF or EOR condition" )
+        end if
+
+        close(unitn)
+        call shr_file_freeUnit( unitn )
+
+     end if
+
+     if (seq_comm_iamin(ID)) then
+        call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
+        call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
+        call shr_mpi_bcast(seq_flux_atmocn_minwind, mpicom)
+     endif
+
+  end subroutine seq_flux_readnl_mct
+
+  !===============================================================================
+
   subroutine seq_flux_initexch_mct(atm, ocn, mpicom_cplid, cplid)
 
     !-----------------------------------------------------------------------
@@ -714,8 +779,6 @@ contains
     logical             :: update_alb           ! was albedo updated
     logical,save        :: first_call = .true.
     !
-    real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
-    real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !
     !-----------------------------------------------------------------------
@@ -759,10 +822,10 @@ contains
     if (flux_albav) then
 
        do n=1,nloc_o
-          anidr = albdir
-          avsdr = albdir
-          anidf = albdif
-          avsdf = albdif
+          anidr = seq_flux_mct_albdir
+          avsdr = seq_flux_mct_albdir
+          anidf = seq_flux_mct_albdif
+          avsdf = seq_flux_mct_albdif
 
           ! Albedo is now function of latitude (will be new implementation)
           !rlat = const_deg2rad * lats(n)
@@ -822,8 +885,8 @@ contains
                      (cosz         - 0.500_r8 ) *   &
                      (cosz         - 1.000_r8 )  )
                 avsdr = anidr
-                anidf = albdif
-                avsdf = albdif
+                anidf = seq_flux_mct_albdif
+                avsdf = seq_flux_mct_albdif
              else !--- dark side of earth ---
                 anidr = 1.0_r8
                 avsdr = 1.0_r8
@@ -1018,7 +1081,8 @@ contains
        endif
        call shr_flux_atmocn_diurnal (nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
@@ -1039,10 +1103,11 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             duu10n,ustar, re  , ssq , missval = 0.0_r8 )
     else
-       
+
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             ocn_surface_flux_scheme, &
@@ -1216,8 +1281,6 @@ contains
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     !
-    real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
-    real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
     !
     !-----------------------------------------------------------------------
@@ -1440,10 +1503,11 @@ contains
        if (ocn_surface_flux_scheme.eq.2) then
           call shr_sys_abort(trim(subname)//' ERROR cannot use flux_diurnal with UA flux scheme')
        endif
-       
+
        call shr_flux_atmocn_diurnal (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
@@ -1469,7 +1533,8 @@ contains
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             ocn_surface_flux_scheme, &

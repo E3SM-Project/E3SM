@@ -301,14 +301,13 @@ end subroutine check_energy_get_integrals
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) + state%s(i,k         )*state%pdel(i,k)/gravit
-!!! cam6  se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
-!!! cam6    do i = 1, ncol
-!!! cam6       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
-!!! cam6    end do
+    do i = 1, ncol
+       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+    end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
     if (ixcldliq > 1  .and.  ixcldice > 1) then
@@ -451,14 +450,13 @@ end subroutine check_energy_get_integrals
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) + state%s(i,k         )*state%pdel(i,k)/gravit
-!!!cam6   se(i) = se(i) + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
-!!!cam6    do i = 1, ncol
-!!!cam6       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
-!!!cam6    end do
+    do i = 1, ncol
+       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+    end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
     if (ixcldliq > 1  .and.  ixcldice > 1) then
@@ -841,6 +839,15 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     if (single_column .and. use_replay) then
       heat_glob = heat_glob_scm(1)
     endif
+    
+    ! In single column model we do NOT want to take into
+    !   consideration the dynamics energy fixer.  Since only
+    !   one column of dynamics is active, this data will 
+    !   essentially be garbage. 
+    if (single_column .and. .not. use_replay) then
+      heat_glob = 0._r8
+    endif
+    
     ptend%s(:ncol,:pver) = heat_glob
 !!$    write(iulog,*) "chk_fix: heat", state%lchnk, ncol, heat_glob
 

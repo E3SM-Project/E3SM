@@ -115,6 +115,7 @@
       <value component="bisicles" >$SRCROOT/components/bisicles-landice/cime_config/config_compsets.xml</value>      
       <value component="malibisicles" >$SRCROOT/components/bisicles-landice/cime_config/config_compsets.xml</value>      
       <value component="mpassi"   >$SRCROOT/components/mpas-seaice/cime_config/config_compsets.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

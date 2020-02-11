@@ -48,6 +48,7 @@ def buildlib(bldroot, installpath, case):
     cime_model = case.get_value("MODEL")
     caseroot = case.get_value("CASEROOT")
     pio_version = case.get_value("PIO_VERSION")
+    scorpio_src_root_dir = None
     if cime_model == "e3sm":
         srcroot = case.get_value("SRCROOT")
         scorpio_src_root_dir = os.path.join(srcroot, "externals")
@@ -84,7 +85,7 @@ def buildlib(bldroot, installpath, case):
     cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
     stdargs = get_standard_makefile_args(case, shared_lib=True)
 
-    gmake_vars =  "CASEROOT={caseroot} MODEL={pio_model} "\
+    gmake_vars =  "CASEROOT={caseroot} MODEL={pio_model} COMP_NAME={pio_model} "\
                   "USER_CMAKE_OPTS={cmake_opts} "\
                   "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "\
                   "USER_CPPDEFS=-DTIMING"\

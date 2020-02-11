@@ -10,8 +10,9 @@ module WaterstateType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
-  use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro
-  use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno   
+  use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro, &
+                              use_hydrstress
+  use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno 
   use clm_varcon     , only : spval
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                

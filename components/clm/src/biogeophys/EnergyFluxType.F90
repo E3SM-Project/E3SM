@@ -88,6 +88,9 @@ module EnergyFluxType
 
      ! Transpiration
      real(r8), pointer :: btran_patch             (:)   ! patch transpiration wetness factor (0 to 1)
+     !plant hydraulics
+     real(r8), pointer :: bsun_patch              (:)   ! patch sunlit canopy transpiration wetness factor (0 to 1)
+     real(r8), pointer :: bsha_patch              (:)   ! patch shaded canopy transpiration wetness factor (0 to 1)
 
      ! Roots
      real(r8), pointer :: btran2_patch            (:)   ! patch root zone soil wetness factor (0 to 1) 
@@ -246,6 +249,8 @@ contains
     allocate(this%rresis_patch             (begp:endp,1:nlevgrnd))  ; this%rresis_patch            (:,:) = nan
     allocate(this%btran_patch              (begp:endp))             ; this%btran_patch             (:)   = nan
     allocate(this%btran2_patch             (begp:endp))             ; this%btran2_patch            (:)   = nan
+    allocate( this%bsun_patch              (begp:endp))             ; this%bsun_patch              (:)   = nan
+    allocate( this%bsha_patch              (begp:endp))             ; this%bsha_patch              (:)   = nan
 
     allocate( this%errsoi_patch            (begp:endp))             ; this%errsoi_patch            (:)   = nan
     allocate( this%errsoi_col              (begc:endc))             ; this%errsoi_col              (:)   = nan

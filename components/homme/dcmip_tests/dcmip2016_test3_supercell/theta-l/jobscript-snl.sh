@@ -5,26 +5,24 @@
 #
 #SBATCH --job-name d16-3-theta
 #SBATCH --account=FY150001
+#SBATCH -p ec
+#SBATCH --account=condo
+#SBATCH -p acme-medium
 #SBATCH -N 36
 #SBATCH --time=0:30:00
-#SBATCH -p ec
-#PBS -q acme
-#PBS -l walltime=30:00
-#PBS -l nodes=25    
+
 
 OMP_NUM_THREADS=1
-NCPU=640
-if [ -n "$PBS_ENVIRONMENT" ]; then
-#  NCPU=$PBS_NNODES
-  [ "$PBS_ENVIRONMENT" = "PBS_BATCH" ] && cd $PBS_O_WORKDIR 
-  NCPU=$PBS_NNODES
-fi
+NCPU=8
 if [ -n "$SLURM_NNODES" ]; then
-    NCPU=$SLURM_NNODES
-    let NCPU*=16
-    let NCPU/=$OMP_NUM_THREADS
+   patt='([[:digit:]]+)'
+   if [[ $SLURM_TASKS_PER_NODE =~ $patt ]]; then
+     PER_NODE=${BASH_REMATCH[1]}
+   else
+     PER_NODE=16
+   fi
+   NCPU=$(( $SLURM_NNODES * $PER_NODE ))
 fi
-
 EXEC=../../../test_execs/theta-l-nlev40/theta-l-nlev40
 
 
@@ -35,7 +33,7 @@ echo "NCPU = $NCPU"
 namelist=namelist-$prefix.nl
 \cp -f $namelist input.nl
 date
-mpirun -np $NCPU $EXEC < input.nl
+srun -K -c 1 -n $NCPU -N $SLURM_NNODES  $EXEC < input.nl
 date
 
 ncl plot_supercell_wvel.ncl

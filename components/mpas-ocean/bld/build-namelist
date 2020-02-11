@@ -644,12 +644,58 @@ add_default($nl, 'config_Rayleigh_damping_coeff');
 add_default($nl, 'config_Rayleigh_bottom_friction');
 add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 
-########################
-# Namelist group: vmix #
-########################
+#########################
+# Namelist group: cvmix #
+#########################
 
-add_default($nl, 'config_convective_visc');
-add_default($nl, 'config_convective_diff');
+add_default($nl, 'config_use_cvmix');
+add_default($nl, 'config_cvmix_prandtl_number');
+add_default($nl, 'config_use_cvmix_background');
+add_default($nl, 'config_cvmix_background_diffusion');
+add_default($nl, 'config_cvmix_background_viscosity');
+add_default($nl, 'config_use_cvmix_convection');
+add_default($nl, 'config_cvmix_convective_diffusion');
+add_default($nl, 'config_cvmix_convective_viscosity');
+add_default($nl, 'config_cvmix_convective_basedOnBVF');
+add_default($nl, 'config_cvmix_convective_triggerBVF');
+add_default($nl, 'config_use_cvmix_shear');
+add_default($nl, 'config_cvmix_num_ri_smooth_loops');
+add_default($nl, 'config_cvmix_use_BLD_smoothing');
+add_default($nl, 'config_cvmix_shear_mixing_scheme');
+add_default($nl, 'config_cvmix_shear_PP_nu_zero');
+add_default($nl, 'config_cvmix_shear_PP_alpha');
+add_default($nl, 'config_cvmix_shear_PP_exp');
+add_default($nl, 'config_cvmix_shear_KPP_nu_zero');
+add_default($nl, 'config_cvmix_shear_KPP_Ri_zero');
+add_default($nl, 'config_cvmix_shear_KPP_exp');
+add_default($nl, 'config_use_cvmix_tidal_mixing');
+add_default($nl, 'config_use_cvmix_double_diffusion');
+add_default($nl, 'config_use_cvmix_kpp');
+add_default($nl, 'config_use_cvmix_fixed_boundary_layer');
+add_default($nl, 'config_cvmix_kpp_boundary_layer_depth');
+add_default($nl, 'config_cvmix_kpp_criticalBulkRichardsonNumber');
+add_default($nl, 'config_cvmix_kpp_matching');
+add_default($nl, 'config_cvmix_kpp_EkmanOBL');
+add_default($nl, 'config_cvmix_kpp_MonObOBL');
+add_default($nl, 'config_cvmix_kpp_interpolationOMLType');
+add_default($nl, 'config_cvmix_kpp_surface_layer_extent');
+add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
+add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
+add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
+add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
+add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
+add_default($nl, 'config_cvmix_kpp_use_theory_wave');
+add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
+add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
+
+##############################
+# Namelist group: vmix_const #
+##############################
+
+add_default($nl, 'config_use_const_visc');
+add_default($nl, 'config_use_const_diff');
+add_default($nl, 'config_vert_visc');
+add_default($nl, 'config_vert_diff');
 
 ##############################
 # Namelist group: vmix_const #
@@ -669,6 +715,13 @@ add_default($nl, 'config_use_rich_diff');
 add_default($nl, 'config_bkrd_vert_visc');
 add_default($nl, 'config_bkrd_vert_diff');
 add_default($nl, 'config_rich_mix');
+
+########################
+# Namelist group: vmix #
+########################
+
+add_default($nl, 'config_convective_visc');
+add_default($nl, 'config_convective_diff');
 
 #############################
 # Namelist group: vmix_tanh #
@@ -723,6 +776,9 @@ add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
+add_default($nl, 'config_cvmix_kpp_use_theory_wave');
+add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
+add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 
 ###########################
 # Namelist group: forcing #

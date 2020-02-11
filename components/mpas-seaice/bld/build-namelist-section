@@ -298,6 +298,7 @@ add_default($nl, 'config_mobility_type_DMSPd');
 add_default($nl, 'config_mobility_type_humics');
 add_default($nl, 'config_mobility_type_saccharids');
 add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_inorganic_carbon');
 add_default($nl, 'config_mobility_type_proteins');
 add_default($nl, 'config_mobility_type_dissolved_iron');
 add_default($nl, 'config_mobility_type_particulate_iron');

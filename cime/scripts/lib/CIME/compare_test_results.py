@@ -58,7 +58,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
     Returns True if all tests generated either PASS or SKIP results, False if
     there was at least one FAIL result.
     """
-    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}".format(test_id)
+    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}*".format(test_id)
     test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
     expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
 
