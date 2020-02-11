@@ -5,9 +5,8 @@
 		<option name="config_use_Redi">.true.</option>
 		<option name="config_use_GM">.false.</option>
 		<option name="config_Redi_tracer_kappa">600.0</option>
-		<option name="config_Redi_surface_taper_layers">2</option>
-		<option name="config_Redi_bottom_taper_layers">2</option>
-		<option name="config_Redi_zero_in_boundary_layer">.false.</option>
+		<option name="config_Redi_half_slope">10</option>
+		<option name="config_Redi_half_width">0.001</option>
 		<option name="config_use_debugTracers">.true.</option>
 		<option name="config_disable_thick_all_tend">.true.</option>
 		<option name="config_disable_vel_all_tend">.true.</option>
