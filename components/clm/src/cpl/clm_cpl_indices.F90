@@ -108,6 +108,7 @@ module clm_cpl_indices
   integer, public ::index_x2l_Flrr_volr       ! rtm->lnd rof volr total volume
   integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
   integer, public ::index_x2l_Flrr_supply     ! rtm->lnd rof supply for land use
+  integer, public ::index_x2l_Flrr_deficit    ! rtm->lnd supply deficit
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model

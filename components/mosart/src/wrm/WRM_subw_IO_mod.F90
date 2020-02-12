@@ -753,17 +753,16 @@ MODULE WRM_subw_IO_mod
         end do
 
 !NV
-           if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Jan',minval(StorWater%pre_release(:,1)),maxval(StorWater%pre_release(:,1)) 
-
-           if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Apr', minval(StorWater%pre_release(:,4)),maxval(StorWater%pre_release(:,4))
-           if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Jul',minval(StorWater%pre_release(:,7)),maxval(StorWater%pre_release(:,7))
-           if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Oct', minval(StorWater%pre_release(:,10)),maxval(StorWater%pre_release(:,10))
-           if (masterproc) write(iulog,FORMR) trim(subname),'Coulee',StorWater%pre_release(80,1),StorWater%pre_release(80,3)
-           if (masterproc) write(iulog,FORMR) trim(subname),'Coulee',StorWater%pre_release(80,5),StorWater%pre_release(80,9)
-           if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Flow',WRMUnit%MeanMthFlow(80,13), WRMUnit%MeanMthFlow(80,8)
-           if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Demand',WRMUnit%MeanMthFlow(80,1),WRMUnit%MeanMthFlow(80,3)
-           if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Demand',WRMUnit%MeanMthFlow(80,5),WRMUnit%MeanMthFlow(80,7)
-           if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Means Flow Demand',WRMUnit%MeanMthDemand(80,13),WRMUnit%MeanMthFlow(80,13)
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Jan',minval(StorWater%pre_release(:,1)),maxval(StorWater%pre_release(:,1)) 
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Apr', minval(StorWater%pre_release(:,4)),maxval(StorWater%pre_release(:,4))
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Jul',minval(StorWater%pre_release(:,7)),maxval(StorWater%pre_release(:,7))
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'prerelease Oct', minval(StorWater%pre_release(:,10)),maxval(StorWater%pre_release(:,10))
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'Coulee',StorWater%pre_release(80,1),StorWater%pre_release(80,3)
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'Coulee',StorWater%pre_release(80,5),StorWater%pre_release(80,9)
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Flow',WRMUnit%MeanMthFlow(80,13), WRMUnit%MeanMthFlow(80,8)
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Demand',WRMUnit%MeanMthFlow(80,1),WRMUnit%MeanMthFlow(80,3)
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Demand',WRMUnit%MeanMthFlow(80,5),WRMUnit%MeanMthFlow(80,7)
+          ! if (masterproc) write(iulog,FORMR) trim(subname),'Coulee Means Flow Demand',WRMUnit%MeanMthDemand(80,13),WRMUnit%MeanMthFlow(80,13)
            call shr_sys_flush(iulog)
 
         !--- initialize start of the operational year based on long term simulation
@@ -803,10 +802,9 @@ MODULE WRM_subw_IO_mod
      if (ctlSubwWRM%ExtractionFlag > 0) then
 
         call get_curr_date(yr, mon, day, tod)
-        write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod
-    
-        write(strYear,'(I4.4)') yr
-        write(strMonth,'(I2.2)') mon
+      !  write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod    
+      !  write(strYear,'(I4.4)') yr
+      !  write(strMonth,'(I2.2)') mon
         !fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
         fname = trim(ctlSubwWRM%demandPath)//'1980_'//strMonth//'.nc'   ! constant 1980 demand
 
@@ -844,18 +842,18 @@ MODULE WRM_subw_IO_mod
      character(len=*),parameter :: subname = '(WRM_computeRelease)'
 
      call get_curr_date(yr, mon, day, tod)
-     write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod
+    ! write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod
      do idam=1,ctlSubwWRM%localNumDam
         if ( mon .eq. WRMUnit%MthStOp(idam)) then
            WRMUnit%StorMthStOp(idam) = StorWater%storage(idam)
     end if
      enddo
      call RegulationRelease()
-     write(iulog,*) 'Start Coulee ',mon,day,tod,WRMUnit%MeanMthFlow(80,13)
-     write(iulog,*) 'start Op mon, storage ', WRMUnit%MthStOp(80),WRMUnit%StorMthStOp(80)
-     write(iulog,*)  'storage, release pre targets ',StorWater%storage(80), StorWater%release(80)
+    ! write(iulog,*) 'Start Coulee ',mon,day,tod,WRMUnit%MeanMthFlow(80,13)
+    ! write(iulog,*) 'start Op mon, storage ', WRMUnit%MthStOp(80),WRMUnit%StorMthStOp(80)
+    ! write(iulog,*)  'storage, release pre targets ',StorWater%storage(80), StorWater%release(80)
      call WRM_storage_targets()
-     write(iulog,*) 'Coulee targets ',StorWater%release(80)
+    ! write(iulog,*) 'Coulee targets ',StorWater%release(80)
 
   end subroutine WRM_computeRelease
 

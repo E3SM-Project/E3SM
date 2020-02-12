@@ -12,7 +12,7 @@ module surfrdMod
   use clm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
   use clm_varcon      , only : grlnd
-  use clm_varctl      , only : iulog, scmlat, scmlon, single_column, tw_irr
+  use clm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
   use clm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
@@ -548,7 +548,7 @@ contains
     !    o real % abundance PFTs (as a percent of vegetated area)
     !
     ! !USES:
-    use clm_varctl  , only : create_crop_landunit, tw_irr
+    use clm_varctl  , only : create_crop_landunit, firrig_data
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
     use clm_varsur  , only : wt_lunit, topo_glc_mec
@@ -655,7 +655,7 @@ contains
     call surfrd_special(begg, endg, ncid, ldomain%ns)
 	
 	! Obtain firrig and surface/grnd irrigation fraction
-    if (tw_irr) then
+    if (firrig_data) then
      call ncd_io(ncid=ncid, varname='FIRRIG', flag='read', data=ldomain%firrig, &
           dim1name=grlnd, readvar=readvar)
      if (.not. readvar) call endrun( trim(subname)//' ERROR: FIRRIG NOT on surfdata file' )!
