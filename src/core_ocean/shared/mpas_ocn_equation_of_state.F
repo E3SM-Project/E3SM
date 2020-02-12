@@ -89,7 +89,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_equation_of_state_density(statePool, diagnosticsPool,&
-                           meshPool, scratchPool, nCells, kDisplaced,  &
+                           meshPool, nCells, kDisplaced,  &
                            displacement_type, density, err,            &
                            thermalExpansionCoeff,                      &
                            salineContractionCoeff, timeLevelIn)
@@ -111,8 +111,7 @@ contains
       type (mpas_pool_type), intent(in) :: &
          statePool,           &! pool containing state variables
          diagnosticsPool,     &! pool containing some forcing fields
-         meshPool,            &! pool containing mesh quantities
-         scratchPool           ! pool containing some scratch space
+         meshPool              ! pool containing mesh quantities
 
       !-----------------------------------------------------------------
       ! Output variables

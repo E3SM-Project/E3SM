@@ -84,7 +84,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, ierr)!{{{
+   subroutine ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, ierr)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -100,7 +100,6 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: statePool !< Input/Output: state information
-      type (mpas_pool_type), intent(inout) :: scratchPool !< Input/Output: scratch information
 
       !-----------------------------------------------------------------
       !

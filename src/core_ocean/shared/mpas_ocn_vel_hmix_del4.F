@@ -103,7 +103,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del4_tend(meshPool, scratchPool, divergence, relativeVorticity, tend, err)!{{{
+   subroutine ocn_vel_hmix_del4_tend(meshPool, divergence, relativeVorticity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -113,8 +113,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          divergence      !< Input: velocity divergence
-
-      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          relativeVorticity       !< Input: relative vorticity
