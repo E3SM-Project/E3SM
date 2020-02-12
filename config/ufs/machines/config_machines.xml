@@ -251,7 +251,7 @@ This allows using a different mpirun command to launch unit tests
     </resource_limits>
   </machine>
 
-  <machine MACH="homebrew">
+  <machine MACH="macos">
     <DESC>
       Customize these fields as appropriate for your system,
       particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
@@ -280,18 +280,11 @@ This allows using a different mpirun command to launch unit tests
       </arguments>
     </mpirun>
     <module_system type="none"/>
-    <environment_variables>
-      <env name="NCEP_LIBS">$ENV{NCEPLIBS_DIR}</env>
-      <env name="NEMSIO_INC">$ENV{NCEPLIBS_DIR}/include</env>
-      <env name="NEMSIO_LIB">$ENV{NCEPLIBS_DIR}/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">$ENV{NCEPLIBS_DIR}/lib/libbacio_v2.1.0_4.a</env>
-      <env name="SP_LIBd">$ENV{NCEPLIBS_DIR}/lib/libsp_v2.0.2_d.a</env>
-      <env name="W3EMC_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3emc_v2.2.0_d.a</env>
-      <env name="W3NCO_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3nco_v2.0.6_d.a</env>
-      <env name="ESMFMKFILE">$ENV{NCEPLIBS_DIR}/lib/esmf.mk</env>
-      <env name="NETCDF">$ENV{NCEPLIBS_DIR}</env>
-      <env name="PATH">$ENV{PATH}:$ENV{NCEPLIBS_DIR}/bin</env>
+<!--
+     <environment_variables>
+       <env name="PATH">$ENV{PATH}:$ENV{NCEPLIBS_DIR}/bin</env>
     </environment_variables>
+-->
   </machine>
 
   <machine MACH="stampede2-skx">
