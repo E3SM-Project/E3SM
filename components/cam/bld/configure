@@ -269,7 +269,7 @@ OPTIONS
 
   Options for MMF CAM:
 
-     -use_MMF         Build superparameterized CAM.
+     -use_MMF           Build the MMF configuration (super-parameterized EAM)
      -crm_nx <n>        CRM's x-grid.
      -crm_ny <n>        CRM's y-grid.
      -crm_nz <n>        CRM's z-grid.
@@ -1306,7 +1306,7 @@ EOF
 if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Superparameterization mode (SPCAM)
+# Superparameterization mode (MMF)
 
 if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
@@ -1322,10 +1322,10 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
     $cfg_ref->set('crm_adv', $opts{'crm_adv'});
-# Check that model is not using threading for SPCAM 
+# Check that model is not using threading for the MMF 
     if ($nthreads > 1) {
      die <<"EOF";
-**  ERROR: SPCAM mode may only use single thread
+**  ERROR: MMF mode may only use single thread
 **         nthreads set to $nthreads
 **         
 EOF
@@ -1335,7 +1335,7 @@ EOF
 }
 
 my $use_MMF = $cfg_ref->get('use_MMF') ? "ON" : "OFF";
-if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $use_MMF.$eol"; }
+if ($print>=2) { print "Configure EAM for MMF (super-parameterization) mode: $use_MMF.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1887,7 +1887,7 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 # Building for perturbation growth tests
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
-# Building for MMF/superparameterization
+# Building for MMF/super-parameterization
 my $crm_nx = $cfg_ref->get('crm_nx');
 my $crm_ny = $cfg_ref->get('crm_ny');
 my $crm_nz = $cfg_ref->get('crm_nz');
@@ -2653,7 +2653,7 @@ sub write_filepath
 	print $fh "$camsrcdir/cam/src/physics/carma/base\n";
     }
 
-    # Superparameterization; this code section needs to appear before those
+    # MMF/super-parameterization; this code section needs to appear before those
     # adding the physics and chemistry packages to override versions of files
     # that appear in both places
     if ($use_MMF) {
@@ -2690,8 +2690,6 @@ sub write_filepath
             print $fh "$camsrcdir/cam/src/physics/crm/rrtmg\n";
         } elsif ($rad eq 'rrtmgp') {
             print $fh "$camsrcdir/cam/src/physics/crm/rrtmgp\n";
-        } elsif ($rad eq 'camrt') {
-            print $fh "$camsrcdir/cam/src/physics/crm/camrt\n";
         }
     }
 
