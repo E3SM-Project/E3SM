@@ -355,7 +355,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             logger.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
                             no_files_missing = False
                             if (download):
-                                print "HERE input_ic_root {} rel_path {}".format(input_ic_root,rel_path)
                                 if use_ic_path:
                                     no_files_missing = _download_if_in_repo(server,
                                                                             input_ic_root, rel_path.strip(os.sep),
