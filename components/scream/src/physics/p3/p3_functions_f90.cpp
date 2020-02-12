@@ -1200,7 +1200,7 @@ void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Rea
     *ncautr_ = t_h(2);
 }
 
-void cloud_water_autoconversion_c(Real* nitot_local_, Real* max_total_Ni_, Real* inv_rho_local_){
+void impose_max_total_Ni_f(Real* nitot_local_, Real* max_total_Ni_, Real* inv_rho_local_){
 
   using P3F = Functions<Real, DefaultDevice>; 
   using Spack   = typename P3F::Spack;

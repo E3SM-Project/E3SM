@@ -75,7 +75,7 @@ interface
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
 
-  subroutine impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local)
+  subroutine impose_max_total_Ni_f(nitot_local, max_total_Ni, inv_rho_local)
     use iso_c_binding
     !arguments:
     real(kind=c_real), intent(inout) :: nitot_local, max_total_Ni, inv_rho_local

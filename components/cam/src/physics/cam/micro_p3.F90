@@ -1929,6 +1929,9 @@ contains
     ! If the sum of all nitot(:) exceeds maximum allowable, each category to preserve
     ! ratio of number between categories.
     !--------------------------------------------------------------------------------
+   #ifdef SCREAM_CONFIG_IS_CMAKE
+      use micro_p3_iso_f, only: impose_max_total_Ni_f
+   #endif
 
     implicit none
 
