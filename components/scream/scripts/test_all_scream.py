@@ -54,7 +54,9 @@ class TestAllScream(object):
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
         # Compute baseline info
-        expect(not (self._baseline_ref and self._baseline_ref),
+        import pdb
+        pdb.set_trace()
+        expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
         if self._baseline_dir is None:
             if self._baseline_ref is None:
