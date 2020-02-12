@@ -71,6 +71,8 @@ real(r8), parameter :: basetemp = 300._r8
 real(r8), parameter :: basepres = 100000._r8
 ! Minimum surface friction velocity
 real(r8), parameter :: ustar_min = 0.01_r8
+! PBL max depth in pressure units
+real(r8), parameter :: pblmaxp = 4.e4_r8
 
 ! ========
 ! Set upper limits for certain SHOC quantities
@@ -86,20 +88,26 @@ real(r8), parameter :: maxtke = 50.0_r8
 ! Minimum TKE [m2/s2]
 real(r8), parameter :: mintke = 0.0004_r8
 
+! Maximum number of levels in pbl from surface
+integer :: npbl       
+
 !==============================================================
 ! Begin SHOC parameterization code!
 contains
 !==============================================================
 
 subroutine shoc_init( &
-             gravit, rair, rh2o, cpair, &
-	     zvir, latvap, karman)
+             nlev, gravit, rair, rh2o, cpair, &
+	     zvir, latvap, karman, &
+	     pref_mid, nbot_shoc, ntop_shoc)
 
   implicit none
   
   ! Purpose:  Initialize constants for SHOC
   ! These should be set to the same values used in 
   ! whatever host model SHOC is implemented in
+
+  integer, intent(in)   :: nlev ! number of levels
 	     
   real(r8), intent(in)  :: gravit ! gravity
   real(r8), intent(in)  :: rair   ! dry air gas constant 
@@ -109,6 +117,13 @@ subroutine shoc_init( &
   real(r8), intent(in)  :: latvap ! latent heat of vaporization
   real(r8), intent(in)  :: karman ! Von Karman's constant
   
+  real(r8), intent(in) :: pref_mid(nlev) ! reference pressures at midpoints
+  
+  integer, intent(in)   :: nbot_shoc ! Bottom level to which SHOC is applied
+  integer, intent(in)   :: ntop_shoc ! Top level to which SHOC is applied
+  
+  integer :: k
+  
   ggr = gravit   ! [m/s2] 
   rgas = rair    ! [J/kg.K]
   rv = rh2o      ! [J/kg.K]
@@ -116,6 +131,19 @@ subroutine shoc_init( &
   eps = zvir     ! [-]
   lcond = latvap ! [J/kg]
   vk = karman    ! [-]
+  
+   ! Limit pbl height to regions below 400 mb
+   ! npbl = max number of levels (from bottom) in pbl
+
+   npbl = 0
+   do k=nbot_shoc,ntop_shoc,-1
+      if (pref_mid(k) >= pblmaxp) then
+         npbl = npbl + 1
+      end if
+   end do
+   npbl = max(npbl,1)
+   
+   return  
   
 end subroutine shoc_init	     				   
 
@@ -133,7 +161,7 @@ subroutine shoc_main ( &
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
      shoc_cldfrac,shoc_ql,&               ! Output
-     obklen,&                             ! Output
+     pblh,&                               ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
@@ -208,8 +236,8 @@ subroutine shoc_main ( &
   real(r8), intent(out) :: shoc_cldfrac(shcol,nlev)
   ! cloud liquid mixing ratio [kg/kg] 
   real(r8), intent(out) :: shoc_ql(shcol,nlev) 
-  
-  real(r8), intent(out) :: obklen(shcol)
+  ! planetary boundary layer depth [m]
+  real(r8), intent(out) :: pblh(shcol)
   
   ! also output variables, but part of the SHOC diagnostics
   !  to be output to history file by host model (if desired)
@@ -254,7 +282,14 @@ subroutine shoc_main ( &
   ! Grid difference centereted on thermo grid [m] 
   real(r8) :: dz_zt(shcol,nlev)
   ! Grid difference centereted on interface grid [m] 
-  real(r8) :: dz_zi(shcol,nlevi) 
+  real(r8) :: dz_zi(shcol,nlevi)   
+  
+  ! Surface friction velocity [m/s]
+  real(r8) :: ustar(shcol)
+  ! Monin Obukhov length [m]
+  real(r8) :: obklen(shcol)
+  ! Kinematic surface buoyancy flux [m^2/s^3]
+  real(r8) :: kbfs(shcol)
 
   ! Check TKE to make sure values lie within acceptable 
   !  bounds after host model performs horizontal advection
@@ -362,7 +397,14 @@ subroutine shoc_main ( &
          shcol,uw_sfc,vw_sfc,&                          ! Input
 	 wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
 	 shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
-	 obklen)                                        ! Output
+	 ustar,kbfs,obklen)                             ! Output
+	 
+  call pblintd(&
+         shcol,nlev,nlevi,&                   ! Input
+	 zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
+	 qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+	 ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
+	 pblh)                                ! Output
 	
   return
      
@@ -2118,7 +2160,7 @@ subroutine shoc_diag_obklen(&
              shcol,uw_sfc,vw_sfc,&      ! Input
 	     wthl_sfc,wqw_sfc,thl_sfc,& ! Input
 	     cldliq_sfc,qv_sfc,&        ! Input
-	     obklen)                    ! Ouput
+	     ustar,kbfs,obklen)         ! Ouput
 	       
   implicit none
   
@@ -2141,27 +2183,220 @@ subroutine shoc_diag_obklen(&
   real(r8), intent(in) :: qv_sfc(shcol)
   
 ! OUTPUT VARIABLES
-  ! Obukhov length 
+  ! Obukhov length [m]
   real(r8), intent(out) :: obklen(shcol)  
+  ! surface friction velocity [m/s]
+  real(r8), intent(out) :: ustar(shcol)
+  ! surface kinematic buoyancy flux [m^s/s^3]
+  real(r8), intent(out) :: kbfs(shcol)
   
 ! LOCAL VARIABLES
   integer :: i
-  real(r8) :: ustar   ! surface friction velocity
   real(r8) :: th_sfc  ! potential temperature at surface
   real(r8) :: thv_sfc ! virtual potential temperature at surface
-  real(r8) :: kbfs    ! sfc kinematic buoyancy flux [m^2/s^3]
   
   do i=1,shcol
     th_sfc = thl_sfc(i) + (lcond/cp)*cldliq_sfc(i)
     thv_sfc = th_sfc*(1._r8+eps*qv_sfc(i)-cldliq_sfc(i))
-    ustar = max(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2),ustar_min)
-    kbfs = wthl_sfc(i)+eps*th_sfc*wqw_sfc(i)
-    obklen(i) = -thv_sfc*ustar**3/(ggr*vk*(kbfs+sign(1.e-10_r8,kbfs)))
+    ustar(i) = max(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2),ustar_min)
+    kbfs(i) = wthl_sfc(i)+eps*th_sfc*wqw_sfc(i)
+    obklen(i) = -thv_sfc*ustar(i)**3/(ggr*vk*(kbfs(i)+sign(1.e-10_r8,kbfs(i))))
   enddo 	
   
   return
   
-end subroutine shoc_diag_obklen   
+end subroutine shoc_diag_obklen 
+
+  !
+  !===============================================================================
+  subroutine pblintd(&
+       shcol,nlev,nlevi,&             ! Input
+       z,zi,thl,ql,&                  ! Input
+       q,u,v,&                        ! Input
+       ustar,obklen,kbfs,cldn,&       ! Input
+       pblh)                          ! Output
+
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: 
+    ! Diagnose standard PBL variables
+    ! 
+    ! Method: 
+    ! Diagnosis of PBL depth. 
+    ! The PBL depth follows:
+    !    Holtslag, A.A.M., and B.A. Boville, 1993:
+    !    Local versus Nonlocal Boundary-Layer Diffusion in a Global Climate
+    !    Model. J. Clim., vol. 6., p. 1825--1842.
+    !
+    ! Updated by Holtslag and Hack to exclude the surface layer from the
+    ! definition of the boundary layer Richardson number. Ri is now defined
+    ! across the outer layer of the pbl (between the top of the surface
+    ! layer and the pbl top) instead of the full pbl (between the surface and
+    ! the pbl top). For simiplicity, the surface layer is assumed to be the
+    ! region below the first model level (otherwise the boundary layer depth
+    ! determination would require iteration).
+    !
+    ! Modified for boundary layer height diagnosis: Bert Holtslag, june 1994
+    ! >>>>>>>>>  (Use ricr = 0.3 in this formulation)
+    ! 
+    ! Author: B. Stevens (extracted from pbldiff, August 2000)
+    ! 
+    !-----------------------------------------------------------------------
+    !------------------------------Arguments--------------------------------
+    !
+    ! Input arguments
+    !
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+    integer, intent(in) :: nlevi                     ! number of interface layers
+
+    real(r8), intent(in)  :: thl(shcol,nlev)         ! liquid water potential temp [K]
+    real(r8), intent(in)  :: ql(shcol,nlev)          ! cloud liquid mixing ratio [kg/kg]
+    real(r8), intent(in)  :: q(shcol,nlev)           ! water vapor [kg/kg]
+    real(r8), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
+    real(r8), intent(in)  :: u(shcol,nlev)           ! windspeed x-direction [m/s]
+    real(r8), intent(in)  :: v(shcol,nlev)           ! windspeed y-direction [m/s]
+    real(r8), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
+    real(r8), intent(in)  :: obklen(shcol)           ! Obukhov length
+    real(r8), intent(in)  :: kbfs(shcol)             ! sfc kinematic buoyancy flux [m^2/s^3]
+    real(r8), intent(in)  :: zi(shcol,nlevi)         ! height above surface [m]
+    real(r8), intent(in)  :: cldn(shcol,nlev)        ! new cloud fraction
+
+    !
+    ! Output arguments
+    !
+    real(r8), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
+    !
+    !---------------------------Local parameters----------------------------
+    !
+    real(r8), parameter :: onet  = 1._r8/3._r8  ! 1/3 power in wind gradient expression
+    real(r8), parameter :: tiny = 1.e-36_r8     ! lower bound for wind magnitude
+    real(r8), parameter :: fac  = 100._r8       ! ustar parameter in height diagnosis 
+    real(r8), parameter :: fak   =  8.5_r8      ! Constant in surface temperature excess 
+    real(r8), parameter :: ricr  =  0.3_r8      ! Critical richardson number
+    real(r8), parameter :: betam = 15.0_r8      ! Constant in wind gradient expression
+    real(r8), parameter :: sffrac=  0.1_r8      ! Surface layer fraction of boundary layer
+    real(r8), parameter :: binm  = betam*sffrac ! betam * sffrac
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
+    integer  :: k                       ! level index
+
+    real(r8) :: phiminv(shcol)          ! inverse phi function for momentum
+    real(r8) :: phihinv(shcol)          ! inverse phi function for heat
+    real(r8) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
+    real(r8) :: thv(shcol,nlev)         ! virtual potential temperature
+    real(r8) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
+    real(r8) :: vvk                     ! velocity magnitude squared
+    real(r8) :: th
+
+    logical  :: unstbl(shcol)           ! pts w/unstbl pbl (positive virtual ht flx)
+    logical  :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    logical  :: ocncldcheck(shcol)      ! True=>if ocean surface and cloud in lowest layer
+    !
+    ! Compute Obukhov length virtual temperature flux and various arrays for use later:
+    !
+    
+    ! Compute virtual potential temperature 
+    do k=1,nlev
+      do i=1,shcol
+        th=thl(i,k)+(lcond/cp)*ql(i,k)
+        thv(i,k)=th+(1._r8+eps*q(i,k)-ql(i,k))
+      enddo
+    enddo 
+    
+    do i=1,shcol
+       check(i)     = .true.
+       rino(i,nlev) = 0.0_r8
+       pblh(i)      = z(i,nlev)
+    end do
+    !
+    !
+    ! PBL height calculation:  Scan upward until the Richardson number between
+    ! the first level and the current level exceeds the "critical" value.
+    !
+    do k=nlev-1,nlev-npbl+1,-1
+       do i=1,shcol
+          if (check(i)) then
+             vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 + fac*ustar(i)**2
+             vvk = max(vvk,tiny)
+             rino(i,k) = ggr*(thv(i,k) - thv(i,nlev))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
+             if (rino(i,k) >= ricr) then
+                pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) - rino(i,k+1)) * &
+                     (z(i,k) - z(i,k+1))
+                check(i) = .false.
+             end if
+          end if
+       end do
+    end do
+    !
+    ! Estimate an effective surface temperature to account for surface fluctuations
+    !
+    do i=1,shcol
+       if (check(i)) pblh(i) = z(i,nlevi-npbl)
+       unstbl(i) = (kbfs(i) > 0._r8)
+       check(i)  = (kbfs(i) > 0._r8)
+       if (check(i)) then
+          phiminv(i)   = (1._r8 - binm*pblh(i)/obklen(i))**onet
+          rino(i,nlev) = 0.0_r8
+          tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
+       end if
+    end do
+    !
+    ! Improve pblh estimate for unstable conditions using the convective temperature excess:
+    !
+    do k=nlev-1,nlev-npbl+1,-1
+       do i=1,shcol
+          if (check(i)) then
+             vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 + fac*ustar(i)**2
+             vvk = max(vvk,tiny)
+             rino(i,k) = ggr*(thv(i,k) - tlv(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
+             if (rino(i,k) >= ricr) then
+                pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) - rino(i,k+1))* &
+                     (z(i,k) - z(i,k+1))
+                check(i) = .false.
+             end if
+          end if
+       end do
+    end do
+    !
+    ! PBL height must be greater than some minimum mechanical mixing depth
+    ! Several investigators have proposed minimum mechanical mixing depth
+    ! relationships as a function of the local friction velocity, u*.  We
+    ! make use of a linear relationship of the form h = c u* where c=700.
+    ! The scaling arguments that give rise to this relationship most often
+    ! represent the coefficient c as some constant over the local coriolis
+    ! parameter.  Here we make use of the experimental results of Koracin
+    ! and Berkowicz (1988) [BLM, Vol 43] for wich they recommend 0.07/f
+    ! where f was evaluated at 39.5 N and 52 N.  Thus we use a typical mid
+    ! latitude value for f so that c = 0.07/f = 700.  Also, do not allow 
+    ! PBL to exceed some maximum (npbl) number of allowable points
+    !
+    do i=1,shcol
+       if (check(i)) pblh(i) = z(i,nlevi-npbl)
+       pblh(i) = max(pblh(i),700.0_r8*ustar(i))
+    end do
+    !
+    ! Final requirement on PBL heightis that it must be greater than the depth
+    ! of the lowest model level over ocean if there is any cloud diagnosed in 
+    ! the lowest model level.  This is to deal with the inadequacies of the 
+    ! current "dry" formulation of the boundary layer, where this test is 
+    ! used to identify circumstances where there is marine stratus in the 
+    ! lowest level, and to provide a weak ventilation of the layer to avoid
+    ! a pathology in the cloud scheme (locking in low-level stratiform cloud)
+    ! If over an ocean surface, and any cloud is diagnosed in the 
+    ! lowest level, set pblh to 50 meters higher than top interface of lowest level
+    !
+    !  jrm This is being applied everywhere (not just ocean)!
+    do i=1,shcol
+       ocncldcheck(i) = .false.
+       if (cldn(i,nlev).ge.0.0_r8) ocncldcheck(i) = .true.
+       if (ocncldcheck(i)) pblh(i) = max(pblh(i),zi(i,nlev) + 50._r8)
+    end do
+    !
+    return
+  end subroutine pblintd  
 
   !==============================================================
   ! Linear interpolation to get values on various grids

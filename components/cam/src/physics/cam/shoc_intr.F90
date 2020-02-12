@@ -7,7 +7,7 @@ module shoc_intr
   !                                                                    !
   ! SHOC replaces the exisiting turbulence, shallow convection, and    !
   !   macrophysics in E3SM                                             !  
-  !                                                                    !  p
+  !                                                                    ! 
   !                                                                    !
   !---------------------------Code history---------------------------- !
   ! Authors:  P. Bogenschutz                                           ! 
@@ -272,8 +272,8 @@ end function shoc_implements_cnst
     integer :: lptr
     integer :: nmodes, nspec, m, l
     integer :: ixnumliq
-    integer :: ntop_eddy
-    integer :: nbot_eddy
+    integer :: ntop_shoc
+    integer :: nbot_shoc
     character(len=128) :: errstring   
 
     logical :: history_amwg
@@ -347,17 +347,6 @@ end function shoc_implements_cnst
        lq(ixnumliq) = .false.
        edsclr_dim = edsclr_dim-1
     endif 
-   
-    ! ----------------------------------------------------------------- !
-    ! Set-up HB diffusion.  Only initialized to diagnose PBL depth      !
-    ! ----------------------------------------------------------------- !
-
-    ! Initialize eddy diffusivity module
-
-    ntop_eddy = 1    ! if >1, must be <= nbot_molec
-    nbot_eddy = pver ! currently always pver
-
-    call init_hb_diff( gravit, cpair, ntop_eddy, nbot_eddy, pref_mid, karman, eddy_scheme )
 
     ! ----------------------------------------------------------------- !
     ! Initialize turbulent mountain stress module                       !
@@ -424,9 +413,13 @@ end function shoc_implements_cnst
     ! Initialize SHOC                                                !
     ! ---------------------------------------------------------------!
  
+    ntop_shoc = 1    ! if >1, must be <= nbot_molec
+    nbot_shoc = pver ! currently always pver 
+ 
     call shoc_init( &
-          gravit, rair, rh2o, cpair, &
-	  zvir, latvap, karman)   
+          pver, gravit, rair, rh2o, cpair, &
+	  zvir, latvap, karman, &
+	  pref_mid, nbot_shoc, ntop_shoc )   
     
     ! --------------- !
     ! End             !
@@ -861,7 +854,7 @@ end function shoc_implements_cnst
 	  um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	  wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
           cloud_frac(:ncol,:), rcm_shoc(:ncol,:), & ! Output
-	  obklen(:ncol), & ! Output 
+	  pblh(:ncol), & ! Output 
           shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
           wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
@@ -1136,39 +1129,6 @@ end function shoc_implements_cnst
       enddo
     enddo
    
-    ! --------------------------------------------------------------------------------- !  
-    !  DIAGNOSE THE PBL DEPTH                                                           !
-    !  this is needed for aerosol code                                                  !
-    ! --------------------------------------------------------------------------------- ! 
-
-    do i=1,ncol
-      do k=1,pver
-        th(i,k) = state1%t(i,k)*state1%exner(i,k)
-        thv(i,k) = th(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq))
-      enddo
-    enddo
- 
-    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
-!    do i=1,ncol
-!      rrho(i,1) = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(i,pver))
-!      call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
-!                       rrho(i,1), ustar2(i) )
-!      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho(i,1), ustar2(i), &
-!                        kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
-!    enddo
-   
-    dummy2(:) = 0._r8
-    dummy3(:) = 0._r8
-   
-    where (kbfs .eq. -0.0_r8) kbfs = 0.0_r8
-
-    !  Compute PBL depth according to Holtslag-Boville Scheme
-!    call pblintd(ncol, thv, state1%zm, state1%u, state1%v, &
-!                ustar2, obklen, kbfs, pblh, dummy2, &
-!                state1%zi, cloud_frac(:,1:pver), 1._r8-cam_in%landfrac, dummy3)  
-		
-!    write(*,*) 'PBLh ', pblh(:)		
-    ! Assign the first pver levels of cloud_frac back to cld
     cld(:,1:pver) = cloud_frac(:,1:pver)	
 
     ! --------------------------------------------------------!
