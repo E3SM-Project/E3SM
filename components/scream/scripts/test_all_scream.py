@@ -1,4 +1,5 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect, is_repo_clean
+from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, \
+    get_current_commit, expect, is_repo_clean, get_common_ancestor
 check_minimum_python_version(3, 4)
 
 import os, shutil
@@ -9,7 +10,8 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos, submit, parallel, fast_fail, baseline_ref, baseline_dir, machine, no_tests, keep_tree, custom_cmake_opts, tests):
+    def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
+                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False, custom_cmake_opts=(), tests=()):
     ###########################################################################
 
         self._cxx               = cxx
@@ -45,9 +47,27 @@ class TestAllScream(object):
                        "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
                            format(t, ", ".join(self._test_full_names.keys())))
 
-        if not self._baseline_dir == "NONE":
-            print ("Ignoring baseline ref {}, and using baselines in directory {} instead".format(self._baseline_ref, self._baseline_dir))
-            print ("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, but there will be errors if the baselines are not found.".format(self._baseline_dir))
+        expect(self._src_dir.endswith("components/scream"), "Run from $scream_repo/components/scream")
+        if not self._kokkos:
+            expect(self._machine, "If no kokkos provided, must provide machine name for internal kokkos build")
+        if self._submit:
+            expect(self._machine, "If dashboard submit request, must provide machine name")
+
+        # Compute baseline info
+        expect(not (self._baseline_ref and self._baseline_ref),
+               "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
+        if self._baseline_dir is None:
+            if self._baseline_ref is None:
+                # Compute baseline ref
+                if self._keep_tree:
+                    self._baseline_ref = "HEAD"
+                else:
+                    self._baseline_ref = get_common_ancestor("origin/master")
+
+                print("Using baseline commit {}".format(self._baseline_ref))
+        else:
+            print("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, "
+                  "but there will be errors if the baselines are not found.".format(self._baseline_dir))
 
         # Deduce how many resources per test
         self._proc_count = 4 # default
@@ -73,12 +93,19 @@ class TestAllScream(object):
                 self._proc_count = 1
 
         if self._keep_tree:
-            if self._baseline_dir=="NONE":
+            expect(not is_repo_clean(), "Makes no sense to use --keep-tree when repo is clean")
+            print("WARNING! You have uncommitted changes in your repo.",
+                  "         The PASS/FAIL status may depend on these changes",
+                  "         so if you want to keep them, don't forget to create a commit.",sep="\n")
+            if self._baseline_dir is None:
                 # Make sure the baseline ref is HEAD
-                expect(self._baseline_ref=="HEAD","The option --keep-tree is only available when testing against pre-built baselines (--baseline-dir) or HEAD (-b HEAD)")
+                expect(self._baseline_ref == "HEAD",
+                       "The option --keep-tree is only available when testing against pre-built baselines "
+                       "(--baseline-dir) or HEAD (-b HEAD)")
         else:
-            expect(is_repo_clean(),"Repo must be clean before running. If testing against HEAD or pre-built baselines, you can pass `--keep-tree` to allow non-clean repo.")
-                
+            expect(is_repo_clean(),
+                   "Repo must be clean before running. If testing against HEAD or pre-built baselines, "
+                   "you can pass `--keep-tree` to allow non-clean repo.")
 
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
@@ -121,7 +148,7 @@ class TestAllScream(object):
 
         result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
 
-        if not self._baseline_dir == "NONE":
+        if self._baseline_dir is not None:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}/{}/data".format(self._baseline_dir,name)
 
         if not self._submit:
@@ -142,7 +169,7 @@ class TestAllScream(object):
         return result
 
     ###############################################################################
-    def generate_baselines(self, test, cleanup):
+    def generate_baselines(self, test):
     ###############################################################################
         name = self._test_full_names[test]
         test_dir = "ctest-build/{}".format(name)
@@ -159,7 +186,7 @@ class TestAllScream(object):
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
 
-        cmd = "make -j{} && make baseline".format(self._proc_count);
+        cmd = "make -j{} && make baseline".format(self._proc_count)
         if self._parallel:
             start, end = self.get_taskset_id(test)
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
@@ -170,29 +197,32 @@ class TestAllScream(object):
             print("WARNING: Failed to create baselines:\n{}".format(err))
             return False
 
-        if cleanup:        
-            run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
+        run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
 
         return True
 
     ###############################################################################
-    def generate_all_baselines(self, git_baseline_head, git_head):
+    def generate_all_baselines(self):
     ###############################################################################
-        print("Generating baselines for ref {}".format(git_baseline_head))
+        git_head_commit     = get_current_commit()
+        git_head_ref        = get_current_head()
+        git_baseline_commit = get_current_commit(commit=self._baseline_ref)
 
-        if git_baseline_head != "HEAD":
-            expect(is_repo_clean(), "If baseline commit is not HEAD, then the repo must be clean before running")
-            run_cmd_no_fail("git checkout {}".format(git_baseline_head))
-            print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
+        need_co = git_baseline_commit == git_head_commit
 
+        print("Generating baselines for ref {}".format(self._baseline_ref))
 
-        cleanup = git_baseline_head != "HEAD"
+        if need_co:
+            expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+            run_cmd_no_fail("git checkout {}".format(self._baseline_ref))
+            print("  Switched to {} ({})".format(self._baseline_ref, git_baseline_commit))
+
         success = True
         num_workers = len(self._tests) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
             future_to_test = {
-                executor.submit(self.generate_baselines, test, cleanup) : test
+                executor.submit(self.generate_baselines, test) : test
                 for test in self._tests}
 
             for future in threading3.as_completed(future_to_test):
@@ -203,9 +233,9 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        if git_baseline_head != "HEAD":
-            run_cmd_no_fail("git checkout {}".format(git_head))
-            print("  Switched back to {} ({})".format(git_head, get_current_commit()))
+        if need_co:
+            run_cmd_no_fail("git checkout {}".format(git_head_ref))
+            print("  Switched back to {} ({})".format(git_head_ref, git_head_commit))
 
         return success
 
@@ -259,11 +289,6 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
-        git_head_commit = get_current_commit()
-        git_head = get_current_head()
-
-        print("Testing git ref {} ({})".format(git_head, git_head_commit))
-
         success = True
         # First, create build directories (one per test)
         for test in self._tests:
@@ -277,15 +302,11 @@ class TestAllScream(object):
 
             os.makedirs(test_dir)
 
-        if self._baseline_dir=="NONE":
+        if self._baseline_dir is None:
             # Second, generate baselines
-            git_baseline_commit = get_current_commit(commit=self._baseline_ref)
-            if git_baseline_commit == git_head_commit:
-                self._baseline_ref = None
-                print("WARNING: baseline commit is same as current HEAD")
+            expect(self._baseline_ref is not None, "Missing baseline ref")
 
-            git_baseline_head = "HEAD" if self._baseline_ref is None else self._baseline_ref
-            success = self.generate_all_baselines(git_baseline_head,git_head)
+            success = self.generate_all_baselines()
             if not success:
                 print ("Error(s) occurred during baselines generation phase")
                 return success
