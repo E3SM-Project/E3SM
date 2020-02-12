@@ -318,7 +318,8 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                 if(full_path):
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
-                    if input_ic_root in full_path and ic_filepath:
+                    if iput_ic_root and input_ic_root in full_path \
+                       and ic_filepath:
                         rel_path = full_path.replace(input_ic_root, ic_filepath)
                         use_ic_path = True
                     elif input_data_root in full_path:
