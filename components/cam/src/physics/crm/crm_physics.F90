@@ -843,13 +843,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 #if defined( MMF_DIR_NS )
     if (crm_ny.eq.1) then
        crm_angle(:ncol) = pi/2.
-    else 
-       crm_angle(:ncol) = 0.
     endif
-#else
-      crm_angle(:ncol) = 0.
 #endif /* MMF_DIR_NS */
-
 #endif /* MMF_ORIENT_RAND */
 
    !------------------------------------------------------------------------------------------------
@@ -1030,7 +1025,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
       ! only need to do this once when crm_angle is static
       call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
-      
+
    else  ! not is_first_step
 
       ptend%q(:,:,1) = 0.  ! necessary?
