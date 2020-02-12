@@ -367,7 +367,7 @@ This allows using a different mpirun command to launch unit tests
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="NETCDF">$ENV{TACC_NETCDF_DIR}</env>
-      <env name="NCEP_LIBS">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
+      <env name="NCEPLIBS_DIR">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
       <env name="NEMSIO_INC">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/include</env>
       <env name="NEMSIO_LIB">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libnemsio_v2.2.3.a</env>
       <env name="BACIO_LIB4">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libbacio_v2.1.0_4.a</env>

@@ -2,7 +2,7 @@
 {{ batchdirectives }}
 
 # Set environment variables
-if [ -z "${NCEP_LIBS}" ]; then
+if [ -z "${NCEPLIBS_DIR}" ]; then
   echo "Set environment variables:"
   cat software_environment.txt | grep "=" | sed -e 's/^/export /' > .env
   source .env
@@ -18,14 +18,15 @@ cd $rundir
 # Query build directory
 blddir="$rundir/../bld"
 
-# Set environment variables
-export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
+# Link chgres executable to build directory
+cd $blddir
+ln -sf $NCEPLIBS_DIR/bin/ncep_post .
+cd -
 
-# Copy executable to build directory
-cp $NCEP_LIBS/bin/ncep_post $blddir/.
+# Set environment variables
+export LD_LIBRARY_PATH=$NCEPLIBS_DIR/lib:$NCEPLIBS_DIR/lib64:$LD_LIBRARY_PATH
 
 # Query mpirun command
-
 runcmd='{{ mpirun }}'
 mpirun=`echo $runcmd | awk '{print $1}'`
 
