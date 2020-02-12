@@ -200,8 +200,6 @@ class TestAllScream(object):
             print("WARNING: Failed to create baselines:\n{}".format(err))
             return False
 
-        run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
-
         return True
 
     ###############################################################################
