@@ -14,18 +14,19 @@
     <address>ftp.emc.ncep.noaa.gov/EIB/UFS/</address>
     <user>anonymous</user>
     <password>user@example.edu</password>
-  </server>
-  <server>
-    <!-- needed for test input data on ftp server -->
-    <comment>ftp site for ufs release</comment>
-    <protocol>ftp</protocol>
-    <address>ftp.emc.ncep.noaa.gov/EIB/UFS/inputdata</address>
-    <user>anonymous</user>
-    <password>user@example.edu</password>
+    <ic_filepath>inputdata/prod</ic_filepath>
   </server>
   <server>
     <comment>NOMADS ftp site for initial conditions</comment>
     <protocol>wget</protocol>
-    <address>nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/</address>
+    <address>http://nomads.ncep.noaa.gov:/pub/data/nccf/com/gfs/prod</address>
+    <ic_filepath></ic_filepath>
   </server>
+  <server>
+    <comment>NOMADS ftp site for grib initial conditions</comment>
+    <protocol>wget</protocol>
+    <address>https://nomads.ncdc.noaa.gov:</address>
+    <ic_filepath>data/gfsanl/</ic_filepath>
+  </server>
+
 </inputdata>

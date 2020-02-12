@@ -2,7 +2,7 @@
 {{ batchdirectives }}
 
 # Set environment variables
-if [ -z "${NCEP_LIBS}" ]; then
+if [ -z "${NCEPLIBS_DIR}" ]; then
   echo "Set environment variables:"
   cat software_environment.txt | grep "=" | sed -e 's/^/export /' > .env
   source .env
@@ -13,6 +13,14 @@ fi
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "Run directory is $rundir"
+
+# Query build directory
+blddir="$rundir/../bld"
+
+# Link chgres executable to build directory
+cd $blddir
+ln -sf $NCEPLIBS_DIR/bin/chgres_cube.exe .
+cd - 
 
 # Query resolution and date
 atm_grid=`./xmlquery --value ATM_GRID`
@@ -30,9 +38,10 @@ echo "FILE PREFIX = $prefix"
 isrestart=`./xmlquery --value CONTINUE_RUN`
 echo "Is this run restart? $isrestart"
 
-# make sure namelists are up to date
+# Make sure namelists are up to date
 ./preview_namelists
 
+# Query required number of task
 np=`./xmlquery task_count --subgroup case.chgres --value`
 
 # Goto run directory
@@ -43,17 +52,15 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   # Link namelist file
   ln -sf config.nml fort.41
 
-  # Query build directory
-  blddir="$rundir/../bld"
-
   # Set environment variables
-  export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=$NCEPLIBS_DIR/lib:$NCEPLIBS_DIR/lib64:$LD_LIBRARY_PATH
 
   LID=`date +%y%m%d-%H%M%S`
   # Run chgres
   runcmd='{{ mpirun }}'
   mpirun=`echo $runcmd | awk '{print $1}'`
-  eval "$mpirun -np $np $NCEPLIBS_DIR/bin/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
+
+  eval "$mpirun -np $np $blddir/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
 
   # Move output files to input directory
   mv -f gfs_ctrl.nc INPUT/${prefix}.gfs_ctrl.nc
