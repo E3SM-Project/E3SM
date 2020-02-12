@@ -439,6 +439,44 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct HomogeneousFreezingData
+{
+  static constexpr size_t NUM_ARRAYS = 12;
+
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real* t, *exner, *xlf;
+
+  // In/out
+  Real* qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *th;
+
+  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+                          const std::array<std::pair<Real, Real>, NUM_ARRAYS>& ranges);
+
+  // deep copy
+  HomogeneousFreezingData(const HomogeneousFreezingData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+
+};
+void homogeneous_freezing(HomogeneousFreezingData& d);
+
+extern "C" {
+
+void homogeneous_freezing_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* t, Real* exner, Real* xlf,
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* th);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ComputeRainFallVelocityData
 {
   // Inputs
