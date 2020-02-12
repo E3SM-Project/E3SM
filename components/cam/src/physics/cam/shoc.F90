@@ -152,16 +152,15 @@ end subroutine shoc_init
 ! Host models should call the following routine to call SHOC 
 
 subroutine shoc_main ( &
-     shcol, nlev, nlevi, dtime, &         ! Input
-     host_dx, host_dy,thv, cldliq, &      ! Input
+     shcol, nlev, nlevi, dtime, nadv, &   ! Input
+     host_dx, host_dy,thv, &              ! Input
      zt_grid,zi_grid,pres,pdel,&          ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input     
      tke, thetal, qw, &                   ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
-     wthv_sec,tkh,tk,&                    ! Input/Output
-     shoc_cldfrac,shoc_ql,&               ! Output
-     pblh,&                               ! Output
+     wthv_sec,tkh,tk,shoc_ql,&            ! Input/Output
+     shoc_cldfrac,pblh,&                  ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
@@ -179,6 +178,8 @@ subroutine shoc_main ( &
   integer, intent(in) :: nlevi  
   ! number of tracers [-]
   integer, intent(in) :: num_qtracers  
+  ! number of times to loop SHOC
+  integer, intent(in) :: nadv
   
   ! SHOC timestep [s]
   real(r8), intent(in) :: dtime	
@@ -195,9 +196,7 @@ subroutine shoc_main ( &
   ! Differences in pressure levels [Pa] 
   real(r8), intent(in) :: pdel(shcol,nlev)
   ! virtual potential temperature [K] 
-  real(r8), intent(in) :: thv(shcol,nlev) 
-  ! cloud liquid mixing ratio [kg/kg]
-  real(r8), intent(in) :: cldliq(shcol,nlev) 
+  real(r8), intent(in) :: thv(shcol,nlev)  
   ! large scale vertical velocity [m/s]
   real(r8), intent(in) :: w_field(shcol,nlev) 
   ! Surface sensible heat flux [K m/s]
@@ -274,6 +273,9 @@ subroutine shoc_main ( &
   !============================================================================
 ! LOCAL VARIABLES
   
+  ! time counter
+  integer :: t
+  
   ! vertical flux of tracers [varies]
   real(r8) :: wtracer_sec(shcol,nlevi,num_qtracers) 
   ! air density on thermo grid [kg/m3]
@@ -291,102 +293,106 @@ subroutine shoc_main ( &
   ! Kinematic surface buoyancy flux [m^2/s^3]
   real(r8) :: kbfs(shcol)
 
-  ! Check TKE to make sure values lie within acceptable 
-  !  bounds after host model performs horizontal advection
-  call check_tke(shcol,nlev,&                 ! Input
-         tke)                                 ! Input/Output
+  do t=1,nadv
 
-  ! Define vertical grid arrays needed for 
-  !   vertical derivatives in SHOC, also 
-  !   define air density     
-  call shoc_grid( &
-         shcol,nlev,nlevi,&                   ! Input
-	 zt_grid,zi_grid,pdel,&               ! Input
-         dz_zt,dz_zi,rho_zt)  		      ! Output
+    ! Check TKE to make sure values lie within acceptable 
+    !  bounds after host model performs horizontal advection
+    call check_tke(shcol,nlev,&                 ! Input
+           tke)                                 ! Input/Output
 
-  ! Update the turbulent length scale	 
-  call shoc_length(&
-         shcol,nlev,nlevi, tke,&              ! Input
-         host_dx, host_dy, cldliq,&           ! Input
-         zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
-	 thetal,wthv_sec,thv,&                ! Input
-	 brunt,shoc_mix)  		      ! Output
+    ! Define vertical grid arrays needed for 
+    !   vertical derivatives in SHOC, also 
+    !   define air density     
+    call shoc_grid( &
+           shcol,nlev,nlevi,&                   ! Input
+	   zt_grid,zi_grid,pdel,&               ! Input
+           dz_zt,dz_zi,rho_zt)  		! Output
 
-  ! Advance the SGS TKE equation	 
-  call shoc_tke(&
-         shcol,nlev,nlevi,dtime,&             ! Input
-         wthv_sec,shoc_mix,&                  ! Input
-	 dz_zi,dz_zt,pres,&                   ! Input
-	 u_wind,v_wind,brunt,&                ! Input
-	 uw_sfc,vw_sfc,&                      ! Input
-	 zt_grid,zi_grid,&                    ! Input
-         tke,tk,tkh,&		              ! Input/Output
-	 isotropy)                            ! Output
+    ! Update the turbulent length scale	 
+    call shoc_length(&
+           shcol,nlev,nlevi, tke,&              ! Input
+           host_dx, host_dy, shoc_ql,&          ! Input
+           zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
+	   thetal,wthv_sec,thv,&                ! Input
+	   brunt,shoc_mix)  		        ! Output
+
+    ! Advance the SGS TKE equation	 
+    call shoc_tke(&
+           shcol,nlev,nlevi,dtime,&             ! Input
+           wthv_sec,shoc_mix,&                  ! Input
+	   dz_zi,dz_zt,pres,&                   ! Input
+	   u_wind,v_wind,brunt,&                ! Input
+	   uw_sfc,vw_sfc,&                      ! Input
+	   zt_grid,zi_grid,&                    ! Input
+           tke,tk,tkh,&		                ! Input/Output
+	   isotropy)                            ! Output
   
-  ! If implicit diffusion solver is used, 
-  !  update SHOC prognostic variables here
-  if (do_implicit) then
-    call update_prognostics_implicit(&        ! Input
-           shcol,nlev,nlevi,num_qtracers,&    ! Input
-	   dtime,dz_zt,dz_zi,rho_zt,&         ! Input
-	   zt_grid,zi_grid,tk,tkh,&           ! Input
-           uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
-           thetal,qw,qtracers,tke,&           ! Input/Output
-	   u_wind,v_wind)                     ! Input/Output
-  endif	 
+    ! If implicit diffusion solver is used, 
+    !  update SHOC prognostic variables here
+    if (do_implicit) then
+      call update_prognostics_implicit(&        ! Input
+             shcol,nlev,nlevi,num_qtracers,&    ! Input
+	     dtime,dz_zt,dz_zi,rho_zt,&         ! Input
+	     zt_grid,zi_grid,tk,tkh,&           ! Input
+             uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
+             thetal,qw,qtracers,tke,&           ! Input/Output
+	     u_wind,v_wind)                     ! Input/Output
+    endif	 
 
-  ! Diagnose the second order moments, needed
-  !  for the PDF closure
-  call diag_second_shoc_moments(&
-         shcol,nlev,nlevi,&                   ! Input
-         num_qtracers,thetal,qw,&             ! Input
-	 u_wind,v_wind,qtracers,tke,&         ! Input
-	 isotropy,tkh,tk,&                    ! Input
-	 dz_zi,zt_grid,zi_grid,&              ! Input
-	 wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
-	 wtracer_sfc,shoc_mix,&               ! Input
-         w_sec,thl_sec,qw_sec,&               ! Output
-	 wthl_sec,wqw_sec,&                   ! Output
-	 qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
-	 wtracer_sec)
+    ! Diagnose the second order moments, needed
+    !  for the PDF closure
+    call diag_second_shoc_moments(&
+           shcol,nlev,nlevi,&                   ! Input
+           num_qtracers,thetal,qw,&             ! Input
+	   u_wind,v_wind,qtracers,tke,&         ! Input
+	   isotropy,tkh,tk,&                    ! Input
+	   dz_zi,zt_grid,zi_grid,&              ! Input
+	   wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
+	   wtracer_sfc,shoc_mix,&               ! Input
+           w_sec,thl_sec,qw_sec,&               ! Output
+	   wthl_sec,wqw_sec,&                   ! Output
+	   qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
+	   wtracer_sec)
 
-  ! Diagnose the third moment of vertical velocity, 
-  !  needed for the PDF closure	 
-  call diag_third_shoc_moments(&
-         shcol,nlev,nlevi,&                   ! Input
-         w_sec,thl_sec,qw_sec,qwthl_sec,&     ! Input
-	 wthl_sec,isotropy,brunt,&            ! Input
-	 thetal,tke,wthv_sec,shoc_mix,&       ! Input
-	 dz_zt,dz_zi,&                        ! Input
-	 zt_grid,zi_grid,&                    ! Input
-	 w3)                                  ! Output
+    ! Diagnose the third moment of vertical velocity, 
+    !  needed for the PDF closure	 
+    call diag_third_shoc_moments(&
+           shcol,nlev,nlevi,&                   ! Input
+           w_sec,thl_sec,qw_sec,qwthl_sec,&     ! Input
+	   wthl_sec,isotropy,brunt,&            ! Input
+	   thetal,tke,wthv_sec,shoc_mix,&       ! Input
+	   dz_zt,dz_zi,&                        ! Input
+	   zt_grid,zi_grid,&                    ! Input
+	   w3)                                  ! Output
   
-  ! Update thetal, qw, tracers, and wind components
-  !   based on SGS mixing, if explicit scheme is used
-  if (.not. do_implicit) then
-    call update_prognostics(&
-           shcol,nlev,nlevi,num_qtracers,&    ! Input
-           dtime,dz_zt,wthl_sec,&             ! Input
-           wqw_sec,wtke_sec,uw_sec,&          ! Input
-	   vw_sec,wtracer_sec,&               ! Input
-           rho_zt,zt_grid,zi_grid,&           ! Input
-           thetal,qw,qtracers,tke,&           ! Input/Output	
-	   u_wind,v_wind)                     ! Input/Output
-  endif
+    ! Update thetal, qw, tracers, and wind components
+    !   based on SGS mixing, if explicit scheme is used
+    if (.not. do_implicit) then
+      call update_prognostics(&
+             shcol,nlev,nlevi,num_qtracers,&    ! Input
+             dtime,dz_zt,wthl_sec,&             ! Input
+             wqw_sec,wtke_sec,uw_sec,&          ! Input
+	     vw_sec,wtracer_sec,&               ! Input
+             rho_zt,zt_grid,zi_grid,&           ! Input
+             thetal,qw,qtracers,tke,&           ! Input/Output	
+	     u_wind,v_wind)                     ! Input/Output
+    endif
 	 
-  ! Call the PDF to close on SGS cloud and turbulence
-  call shoc_assumed_pdf(&
-         shcol,nlev,nlevi,&                   ! Input
-         thetal,qw,w_field,thl_sec,qw_sec,&   ! Input
-	 wthl_sec,w_sec,&                     ! Input
-	 wqw_sec,qwthl_sec,w3,pres,&          ! Input
-	 zt_grid,zi_grid,&                    ! Input
-	 shoc_cldfrac,shoc_ql,&               ! Output
-         wqls_sec,wthv_sec)                   ! Output
+    ! Call the PDF to close on SGS cloud and turbulence
+    call shoc_assumed_pdf(&
+           shcol,nlev,nlevi,&                   ! Input
+           thetal,qw,w_field,thl_sec,qw_sec,&   ! Input
+	   wthl_sec,w_sec,&                     ! Input
+	   wqw_sec,qwthl_sec,w3,pres,&          ! Input
+	   zt_grid,zi_grid,&                    ! Input
+	   shoc_cldfrac,shoc_ql,&               ! Output
+           wqls_sec,wthv_sec)                   ! Output
 
-  ! Check TKE to make sure values lie within acceptable 
-  !  bounds after vertical advection, etc.
-  call check_tke(shcol,nlev,tke)
+    ! Check TKE to make sure values lie within acceptable 
+    !  bounds after vertical advection, etc.
+    call check_tke(shcol,nlev,tke)
+  
+  enddo ! end time loop
   
   ! End SHOC parameterization
     

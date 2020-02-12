@@ -502,7 +502,6 @@ end function shoc_implements_cnst
    real(r8) :: edsclr_out(pcols,pver,edsclr_dim)
    real(r8) :: rcm_in(pcols,pver)
    real(r8) :: cloudfrac_shoc(pcols,pver)
-   real(r8) :: rcm_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: exner(pcols,pver)
    real(r8) :: thlm(pcols,pver)
@@ -797,35 +796,27 @@ end function shoc_implements_cnst
    ! Actually call SHOC                                !
    ! ------------------------------------------------- !   
 
-   do t=1,nadv
-
-     call shoc_main( &
-          ncol, pver, pverp, dtime, & ! Input
-	  host_dx_in(:ncol), host_dy_in(:ncol), thv(:ncol,:),rcm(:ncol,:),& ! Input
-          zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state1%pdel(:ncol,:pver),& ! Input
-	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
-	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
-	  tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
-	  um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
-	  wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
-          cloud_frac(:ncol,:), rcm_shoc(:ncol,:), & ! Output
-	  pblh(:ncol), & ! Output 
-          shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
-          w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
-          wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
-          uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), & ! Output (diagnostic)
-          wqls_out(:ncol,:),brunt_out(:ncol,:)) ! Output (diagnostic)
-
-          rcm_in(:,:) = rcm_shoc(:,:)
-
-   enddo  ! end time loop
+   call shoc_main( &
+        ncol, pver, pverp, dtime, nadv, & ! Input
+	host_dx_in(:ncol), host_dy_in(:ncol), thv(:ncol,:),& ! Input
+        zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state1%pdel(:ncol,:pver),& ! Input
+	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
+	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
+	tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
+	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
+	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), rcm(:ncol,:), & ! Input/Output
+        cloud_frac(:ncol,:), pblh(:ncol), & ! Output
+        shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
+        w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)   
+        wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
+        uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), & ! Output (diagnostic)
+        wqls_out(:ncol,:),brunt_out(:ncol,:)) ! Output (diagnostic)
    
    ! Transfer back to pbuf variables
    
    do k=1,pver
      do i=1,ncol 
      
-       rcm(i,k) = rcm_shoc(i,k)
        cloud_frac(i,k) = min(cloud_frac(i,k),1._r8)
        
        do ixind=1,edsclr_dim
