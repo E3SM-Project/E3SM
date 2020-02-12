@@ -2825,111 +2825,116 @@
     <module_system type="none"/>
   </machine>
 
-  <machine MACH="summitdev">
-    <DESC>ORNL pre-Summit testbed. Node: 2x POWER8 + 4x Tesla P100, 20 cores/node, 8 HW threads/core.</DESC>
-    <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,pgiacc</COMPILERS>
-    <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
-    <PROJECT>csc249</PROJECT>
-    <CHARGE_ACCOUNT>CSC249ADSE15</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>32</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
-    <SUPPORTED_BY>acme</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>80</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="spectrum-mpi">
-      <executable>/lustre/atlas/world-shared/cli900/helper_scripts/mpirun.summitdev</executable>
-      <!-- <executable>jsrun</executable> -->
-      <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N $MAX_MPITASKS_PER_NODE</arg>
-        <!-- <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE </arg> -->
-        <!-- <arg name="thread_count"> -c $ENV{OMP_NUM_THREADS} -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg> -->
-      </arguments>
-    </mpirun>
+  <machine MACH="summit-cpu">
+<!-- Ref: https://www.olcf.ornl.gov/for-users/system-user-guides/summit/ -->
+   <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 21 cores/socket, 4 HW threads/core.</DESC>
+   <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
+   <OS>LINUX</OS>
+   <COMPILERS>pgi,ibm,pgigpu,gnu</COMPILERS>
+   <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
+   <PROJECT>cli115</PROJECT>
+   <CHARGE_ACCOUNT>CLI115</CHARGE_ACCOUNT>
+   <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT/e3sm</SAVE_TIMING_DIR>
+   <SAVE_TIMING_DIR_PROJECTS>cli115,csc190</SAVE_TIMING_DIR_PROJECTS>
+   <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/scratch/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
+   <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
+   <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+   <DOUT_S_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/archive/$CASE</DOUT_S_ROOT>
+   <BASELINE_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+   <CCSM_CPRNC>/gpfs/alpine/cli115/world-shared/e3sm/tools/cprnc.summit/cprnc</CCSM_CPRNC>
+   <GMAKE_J>32</GMAKE_J>
+   <TESTS>e3sm_developer</TESTS>
+   <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+   <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
+   <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
+   <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
+   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+   <mpirun mpilib="spectrum-mpi">
+   <!-- Use a helper script to tweak jsrun options -->
+   <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+   <!-- <executable>jsrun</executable> -->
+   <!--<arguments compiler="!pgigpu">
+       <arg name="num_tasks" > -n {{ total_tasks }} -N 84 </arg>
+   </arguments>-->
+   <arguments>
+       <arg name="num_tasks" > -n {{ total_tasks }} -N $MAX_MPITASKS_PER_NODE </arg>
+   </arguments>
+   </mpirun>
+    <!-- Useful jsrun options:
+    -n  (hyphen-hyphen)nrs  Number of resource sets
+    -a  (hyphen-hyphen)tasks_per_rs Number of tasks per resource set
+    -c  (hyphen-hyphen)cpu_per_rs Number of CPUs per resource set. Threads per rs.
+    -g  (hyphen-hyphen)gpu_per_rs Number of GPUs per resource set
+    -r  (hyphen-hyphen)rs_per_host  Number of resource sets per host
+    -->
     <module_system type="module" allow_error="true">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
-      <init_path lang="sh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/sh</init_path>
-      <init_path lang="csh">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/csh</init_path>
-      <init_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/env_modules_python.py</init_path>
-      <init_path lang="perl">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/7.4/init/perl</init_path>
+      <init_path lang="sh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/perl</init_path>
       <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
       <cmd_path lang="perl">module</cmd_path>
-      <cmd_path lang="python">/sw/summitdev/lmod/7.4.0/rhel7.2_gnu4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/7.7.10/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
       <!-- Always execute -->
       <modules>
-        <command name="ls"/>
         <command name="purge"/>
         <command name="ls"/>
         <command name="load">DefApps</command>
         <command name="load">python/3.5.2</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
-        <command name="load">cmake/3.6.1</command>
-        <command name="load">essl/5.5.0-20161110</command>
-        <command name="load">netlib-lapack/3.6.1</command>
+        <command name="load">cmake/3.11.3</command>
+        <command name="load">essl/6.1.0-20180406</command>
+        <command name="load">netlib-lapack/3.8.0</command>
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi">
-        <command name="rm">xl</command>
-        <command name="load">pgi/17.9</command>
-        <command name="load">spectrum-mpi/10.1.0.4-20170915</command>
-        <command name="ls"/>
+        <command name="load">pgi/19.4</command>
+      </modules>
+      <modules compiler="pgigpu">
+        <command name="load">pgi/19.4</command>
+        <command name="load">cuda</command>
+      </modules>
+      <modules compiler="pgi.*">
+        <command name="load">pgi/19.4</command>
       </modules>
       <modules compiler="ibm">
-        <command name="rm">pgi</command>
-        <command name="load">xl/20170914-beta</command>
-        <command name="load">spectrum-mpi/10.1.0.4-20170915</command>
-        <command name="ls"/>
+        <command name="load">xl</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/6.4.0</command>
+      </modules>
+      <modules compiler="pgiacc">
+        <command name="load">cuda/10.1.168</command>
       </modules>
 
-      <!-- mpi lib settings -->
-      <modules mpilib="mpi-serial">
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
+      <modules>
+        <command name="load">netcdf</command>
+        <command name="load">netcdf-fortran</command>
       </modules>
+      <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.7.0</command>
-        <command name="load">hdf5/1.10.0-patch1</command>
+        <command name="load">spectrum-mpi</command>
+        <command name="load">parallel-netcdf</command>
+        <command name="load">hdf5</command>
       </modules>
-      <modules compiler="pgi" mpilib="!mpi-serial">
-        <command name="load">netcdf/4.4.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.7.0</command>
-        <command name="load">hdf5/1.10.0-patch1</command>
+      <modules compiler="pgi.*" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi</command>
+        <command name="load">parallel-netcdf</command>
+        <command name="load">hdf5</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi</command>
+        <command name="load">parallel-netcdf</command>
+        <command name="load">hdf5</command>
       </modules>
     </module_system>
-    <RUNDIR>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-
-    <!-- Useful jsrun options:
-     -n	(hyphen-hyphen)nrs	Number of resource sets
-     -a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set
-     -c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
-     -g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
-     -r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
-
-      <arg name="num_tasks" > -n ALL_HOSTS -p {{ total_tasks }} </arg>
-      Old options: <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg>
-      <arg name="show-binding"> report-bindings </arg>
-      <arg name="show-processmap"> display-map </arg>
-     -->
 
     <!-- Default -->
     <environment_variables>
