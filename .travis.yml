@@ -3,7 +3,7 @@ os:
 
 language: python
 python:
-  - "2.7"
+  - "3.7"
 
 before_install:
   - sudo apt-get update
@@ -22,7 +22,7 @@ before_install:
   - conda update -q conda
   - conda config --set anaconda_upload no
 
-  - conda create -n e3sm_diags python=$TRAVIS_PYTHON_VERSION cdp=1.4.2 vcs=8.1 vtk-cdat=8.2.0rc2.8.1 vcsaddons=8.1 dv3d=8.1 cdms2=3.1.2 cdutil=8.1 genutil=8.1.1 cdtime=3.1.2 numpy matplotlib cartopy beautifulsoup4 lxml flake8 -c conda-forge -c cdat -c cdat/label/v81 -y
+  - conda env create -f travis_env.yml
   - conda activate e3sm_diags
   - export UVCDAT_ANONYMOUS_LOG=False
 

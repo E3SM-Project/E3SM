@@ -97,3 +97,6 @@ ENV/
 
 # Temporary files
 *~
+
+# NetCDF files
+*.nc

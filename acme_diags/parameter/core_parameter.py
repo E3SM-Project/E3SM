@@ -15,7 +15,8 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         self.viewer_descr = {}
 
         self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'meridional_mean_2d',
-            'lat_lon', 'polar', 'area_mean_time_series', 'cosp_histogram']
+                     'lat_lon', 'polar', 'area_mean_time_series', 'cosp_histogram',
+                     'enso_diags']
         self.dataset = ''
         self.run_type = 'model_vs_obs'
         self.variables = []
