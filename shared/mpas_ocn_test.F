@@ -299,8 +299,6 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: bottomDepth, refBottomDepthTopOfCell, yCell, yEdge
       real(kind=RKIND), dimension(:,:), pointer :: zMid
 
-      type (field2DReal), pointer :: yRelativeSlopeSolutionField, yGMStreamFuncSolutionField, yGMBolusVelocitySolutionField
-
       integer :: nVertLevels
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)

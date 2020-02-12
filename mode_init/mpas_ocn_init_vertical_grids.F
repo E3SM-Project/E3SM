@@ -761,8 +761,7 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, verticalMeshPool, scratchPool, forcingPool
 
-      type (field2DReal), pointer :: zInterfaceField, &
-                                     verticalStretchField
+      type (field2DReal), pointer :: verticalStretchField
       type (field1DInteger), pointer :: smoothingMaskField
 
       real (kind=RKIND), dimension(:,:), pointer :: zMid, layerThickness, restingThickness, zInterface, &
