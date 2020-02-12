@@ -349,10 +349,15 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Computes cloud water autoconversion process rate
   KOKKOS_FUNCTION
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
     Spack& qcaut, Spack& ncautc, Spack& ncautr);
 
+  // Impose maximum ice number
+  KOKKOS_FUNCTION
+  static void impose_max_total_Ni(Spack& nitot_local, Spack& max_total_Ni, Spack& inv_rho_local);
+  
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
   //  and adjusts qirim and birim appropriately.
