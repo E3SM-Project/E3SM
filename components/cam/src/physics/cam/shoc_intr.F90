@@ -7,7 +7,7 @@ module shoc_intr
   !                                                                    !
   ! SHOC replaces the exisiting turbulence, shallow convection, and    !
   !   macrophysics in E3SM                                             !  
-  !                                                                    !  
+  !                                                                    !  p
   !                                                                    !
   !---------------------------Code history---------------------------- !
   ! Authors:  P. Bogenschutz                                           ! 
@@ -426,7 +426,7 @@ end function shoc_implements_cnst
  
     call shoc_init( &
           gravit, rair, rh2o, cpair, &
-	  latvap)   
+	  zvir, latvap, karman)   
     
     ! --------------- !
     ! End             !
@@ -861,6 +861,7 @@ end function shoc_implements_cnst
 	  um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	  wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
           cloud_frac(:ncol,:), rcm_shoc(:ncol,:), & ! Output
+	  obklen(:ncol), & ! Output 
           shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
           wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
@@ -1148,13 +1149,13 @@ end function shoc_implements_cnst
     enddo
  
     ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
-    do i=1,ncol
-      rrho(i,1) = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(i,pver))
-      call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
-                       rrho(i,1), ustar2(i) )
-      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho(i,1), ustar2(i), &
-                        kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
-    enddo
+!    do i=1,ncol
+!      rrho(i,1) = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(i,pver))
+!      call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
+!                       rrho(i,1), ustar2(i) )
+!      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho(i,1), ustar2(i), &
+!                        kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
+!    enddo
    
     dummy2(:) = 0._r8
     dummy3(:) = 0._r8
@@ -1162,10 +1163,11 @@ end function shoc_implements_cnst
     where (kbfs .eq. -0.0_r8) kbfs = 0.0_r8
 
     !  Compute PBL depth according to Holtslag-Boville Scheme
-    call pblintd(ncol, thv, state1%zm, state1%u, state1%v, &
-                ustar2, obklen, kbfs, pblh, dummy2, &
-                state1%zi, cloud_frac(:,1:pver), 1._r8-cam_in%landfrac, dummy3)  
+!    call pblintd(ncol, thv, state1%zm, state1%u, state1%v, &
+!                ustar2, obklen, kbfs, pblh, dummy2, &
+!                state1%zi, cloud_frac(:,1:pver), 1._r8-cam_in%landfrac, dummy3)  
 		
+!    write(*,*) 'PBLh ', pblh(:)		
     ! Assign the first pver levels of cloud_frac back to cld
     cld(:,1:pver) = cloud_frac(:,1:pver)	
 

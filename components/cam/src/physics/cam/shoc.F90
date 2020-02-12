@@ -27,6 +27,8 @@ real(r8) :: rgas  ! dry air gas constant [J/kg.K]
 real(r8) :: rv    ! water vapor gas constant [J/kg.K]
 real(r8) :: cp    ! specific heat of dry air [J/kg.K]
 real(r8) :: lcond ! latent heat of vaporization [J/kg]
+real(r8) :: eps   ! rh2o/rair - 1 [-]
+real(r8) :: vk    ! von karmann constant [-]
 
 !=========================================================
 ! Private module parameters
@@ -67,6 +69,8 @@ logical, parameter :: do_implicit = .true.
 real(r8), parameter :: basetemp = 300._r8
 ! Reference pressure [Pa]
 real(r8), parameter :: basepres = 100000._r8
+! Minimum surface friction velocity
+real(r8), parameter :: ustar_min = 0.01_r8
 
 ! ========
 ! Set upper limits for certain SHOC quantities
@@ -89,7 +93,7 @@ contains
 
 subroutine shoc_init( &
              gravit, rair, rh2o, cpair, &
-	     latvap)
+	     zvir, latvap, karman)
 
   implicit none
   
@@ -101,13 +105,17 @@ subroutine shoc_init( &
   real(r8), intent(in)  :: rair   ! dry air gas constant 
   real(r8), intent(in)  :: rh2o   ! water vapor gas constant
   real(r8), intent(in)  :: cpair  ! specific heat of dry air
+  real(r8), intent(in)  :: zvir   ! rh2o/rair - 1 
   real(r8), intent(in)  :: latvap ! latent heat of vaporization
+  real(r8), intent(in)  :: karman ! Von Karman's constant
   
   ggr = gravit   ! [m/s2] 
   rgas = rair    ! [J/kg.K]
   rv = rh2o      ! [J/kg.K]
   cp = cpair     ! [J/kg.K]
+  eps = zvir     ! [-]
   lcond = latvap ! [J/kg]
+  vk = karman    ! [-]
   
 end subroutine shoc_init	     				   
 
@@ -125,6 +133,7 @@ subroutine shoc_main ( &
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
      shoc_cldfrac,shoc_ql,&               ! Output
+     obklen,&                             ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
@@ -199,6 +208,8 @@ subroutine shoc_main ( &
   real(r8), intent(out) :: shoc_cldfrac(shcol,nlev)
   ! cloud liquid mixing ratio [kg/kg] 
   real(r8), intent(out) :: shoc_ql(shcol,nlev) 
+  
+  real(r8), intent(out) :: obklen(shcol)
   
   ! also output variables, but part of the SHOC diagnostics
   !  to be output to history file by host model (if desired)
@@ -341,6 +352,17 @@ subroutine shoc_main ( &
   ! Check TKE to make sure values lie within acceptable 
   !  bounds after vertical advection, etc.
   call check_tke(shcol,nlev,tke)
+  
+  ! End SHOC parameterization
+    
+  ! Remaining code is to diagnose certain quantities
+  !  related to PBL.  No answer changing subroutines
+  !  should be placed at this point onward
+  call shoc_diag_obklen(&
+         shcol,uw_sfc,vw_sfc,&                          ! Input
+	 wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
+	 shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+	 obklen)                                        ! Output
 	
   return
      
@@ -1757,7 +1779,7 @@ subroutine shoc_length(&
   integer i, j, k, kk, kt
   integer kl, ku, kb, kc, dothis, kli, kui
   real(r8) :: deep_thresh, deep_thick, cloud_thick, lstarn, thresh
-  real(r8) :: cldmix, vonk, thedel, depth
+  real(r8) :: cldmix, thedel, depth
   real(r8) :: omn, betdz, bbb, term, qsatt, dqsat, bet
   real(r8) :: thv_up, thv_dn, thedz, tscale, thefac, thecoef, thegam, norm
   real(r8) :: stabterm, conv_var, tkes, mmax, cldthresh
@@ -1774,7 +1796,6 @@ subroutine shoc_length(&
  
   doclouddef = .true.
  
-  vonk=0.35_r8   ! Vonkarman constnt
   tscale=400._r8 ! time scale set based on similarity results
   brunt2(:,:) = 0._r8
   numer(:) = 0._r8
@@ -1820,7 +1841,7 @@ subroutine shoc_length(&
       
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
-      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
+      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vk*zt_grid(i,k))) &
         +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)     
       
     enddo  ! end i loop (column loop)
@@ -2089,6 +2110,58 @@ subroutine vd_shoc_solve(&
   return
   
 end subroutine vd_shoc_solve
+
+  !==============================================================
+  ! Linear interpolation to get values on various grids
+  
+subroutine shoc_diag_obklen(&
+             shcol,uw_sfc,vw_sfc,&      ! Input
+	     wthl_sfc,wqw_sfc,thl_sfc,& ! Input
+	     cldliq_sfc,qv_sfc,&        ! Input
+	     obklen)                    ! Ouput
+	       
+  implicit none
+  
+! INPUT VARIABLES
+  ! number of columns 
+  integer, intent(in) :: shcol
+  ! Surface sensible heat flux [K m/s]
+  real(r8), intent(in) :: wthl_sfc(shcol) 
+  ! Surface latent heat flux [kg/kg m/s]
+  real(r8), intent(in) :: wqw_sfc(shcol)
+  ! Surface momentum flux (u-direction) [m2/s2] 
+  real(r8), intent(in) :: uw_sfc(shcol) 
+  ! Surface momentum flux (v-direction) [m2/s2]
+  real(r8), intent(in) :: vw_sfc(shcol)
+  ! Surface potential temperature [K]
+  real(r8), intent(in) :: thl_sfc(shcol)
+  ! Surface cloud liquid water [kg /kg]
+  real(r8), intent(in) :: cldliq_sfc(shcol)
+  ! Surface water vapor
+  real(r8), intent(in) :: qv_sfc(shcol)
+  
+! OUTPUT VARIABLES
+  ! Obukhov length 
+  real(r8), intent(out) :: obklen(shcol)  
+  
+! LOCAL VARIABLES
+  integer :: i
+  real(r8) :: ustar   ! surface friction velocity
+  real(r8) :: th_sfc  ! potential temperature at surface
+  real(r8) :: thv_sfc ! virtual potential temperature at surface
+  real(r8) :: kbfs    ! sfc kinematic buoyancy flux [m^2/s^3]
+  
+  do i=1,shcol
+    th_sfc = thl_sfc(i) + (lcond/cp)*cldliq_sfc(i)
+    thv_sfc = th_sfc*(1._r8+eps*qv_sfc(i)-cldliq_sfc(i))
+    ustar = max(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2),ustar_min)
+    kbfs = wthl_sfc(i)+eps*th_sfc*wqw_sfc(i)
+    obklen(i) = -thv_sfc*ustar**3/(ggr*vk*(kbfs+sign(1.e-10_r8,kbfs)))
+  enddo 	
+  
+  return
+  
+end subroutine shoc_diag_obklen   
 
   !==============================================================
   ! Linear interpolation to get values on various grids
