@@ -211,7 +211,7 @@ class TestAllScream(object):
         git_head_ref        = get_current_head()
         git_baseline_commit = get_current_commit(commit=self._baseline_ref)
 
-        need_co = git_baseline_commit == git_head_commit
+        need_co = git_baseline_commit != git_head_commit
 
         print("Generating baselines for ref {}".format(self._baseline_ref))
 
