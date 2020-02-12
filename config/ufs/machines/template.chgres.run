@@ -1,15 +1,6 @@
 #!/bin/bash
 {{ batchdirectives }}
 
-# Set environment variables
-if [ -z "${NCEPLIBS_DIR}" ]; then
-  echo "Set environment variables:"
-  cat software_environment.txt | grep "=" | sed -e 's/^/export /' > .env
-  source .env
-else
-  echo "Environment variables are already set:"
-fi
-
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "Run directory is $rundir"
@@ -21,6 +12,15 @@ blddir="$rundir/../bld"
 cd $blddir
 ln -sf $NCEPLIBS_DIR/bin/chgres_cube.exe .
 cd - 
+
+# Find date command
+OS=`uname -a`
+MACOS='Darwin'
+if [[ "$OS" == *"$MACOS"* ]]; then
+  date_cmd=gdate
+else
+  date_cmd=date
+fi
 
 # Query resolution and date
 atm_grid=`./xmlquery --value ATM_GRID`
@@ -55,11 +55,12 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   # Set environment variables
   export LD_LIBRARY_PATH=$NCEPLIBS_DIR/lib:$NCEPLIBS_DIR/lib64:$LD_LIBRARY_PATH
 
-  LID=`date +%y%m%d-%H%M%S`
+  # Get current date
+  LID=`${date_cmd} +%y%m%d-%H%M%S`
+
   # Run chgres
   runcmd='{{ mpirun }}'
   mpirun=`echo $runcmd | awk '{print $1}'`
-
   eval "$mpirun -np $np $blddir/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
 
   # Move output files to input directory

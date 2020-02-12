@@ -1,15 +1,6 @@
 #!/bin/bash
 {{ batchdirectives }}
 
-# Set environment variables
-if [ -z "${NCEPLIBS_DIR}" ]; then
-  echo "Set environment variables:"
-  cat software_environment.txt | grep "=" | sed -e 's/^/export /' > .env
-  source .env
-else
-  echo "Environment variables are already set:"
-fi
-
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "run dir is $rundir"
@@ -25,6 +16,15 @@ cd -
 
 # Set environment variables
 export LD_LIBRARY_PATH=$NCEPLIBS_DIR/lib:$NCEPLIBS_DIR/lib64:$LD_LIBRARY_PATH
+
+# Find date command
+OS=`uname -a`
+MACOS='Darwin'
+if [[ "$OS" == *"$MACOS"* ]]; then
+  date_cmd=gdate
+else
+  date_cmd=date
+fi
 
 # Query mpirun command
 runcmd='{{ mpirun }}'
@@ -50,8 +50,7 @@ nlines=`cat itag.tmp | wc -l`
 echo $nlines
 
 # Run post to process all output files one by one
-lst=`find ./${dyn_prefix}f*.$file_ext  -printf "%f\n"`
-for f in $lst
+for f in ${dyn_prefix}f*.$file_ext
 do
   # Query time before starting post
   export T1=$SECONDS
@@ -60,7 +59,7 @@ do
   time_step=`echo $f | tr -d "${dyn_prefix}f"`
   time_step=`echo $time_step | tr -d ".$file_ext"`
   time_step_num=`expr $time_step + 0`
-  date_str_cycle=`date -d "$date_str $time_step_num hours" +%Y-%m-%d_%H:%M:%S`
+  date_str_cycle=`${date_cmd} -d "$date_str $time_step_num hours" +%Y-%m-%d_%H:%M:%S`
 
   # Create namelist for specific date
   head -n 3 itag.tmp > itaga.$time_step
