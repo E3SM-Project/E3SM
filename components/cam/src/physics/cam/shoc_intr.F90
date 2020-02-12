@@ -78,8 +78,7 @@ module shoc_intr
       shoc_liq_sh = 10.e-6, &
       shoc_ice_deep = 25.e-6, &
       shoc_ice_sh = 50.e-6  
-      
-  logical      :: do_tms    
+         
   logical      :: lq(pcnst)
   logical      :: lq2(pcnst)
  
@@ -122,7 +121,6 @@ module shoc_intr
     
     call phys_getopts( eddy_scheme_out                 = eddy_scheme, &
                        deep_scheme_out                 = deep_scheme, & 
-                       do_tms_out                      = do_tms,      &
                        history_budget_out              = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
                        micro_do_icesupersat_out        = micro_do_icesupersat, &
@@ -347,27 +345,6 @@ end function shoc_implements_cnst
        lq(ixnumliq) = .false.
        edsclr_dim = edsclr_dim-1
     endif 
-
-    ! ----------------------------------------------------------------- !
-    ! Initialize turbulent mountain stress module                       !
-    ! ------------------------------------------------------------------!
-
-    if ( do_tms) then
-       call init_tms( r8, tms_orocnst, tms_z0fac, karman, gravit, rair, errstring)
-       call handle_errmsg(errstring, subname="init_tms")
-
-       call addfld( 'TAUTMSX' ,  horiz_only,  'A','N/m2',  'Zonal      turbulent mountain surface stress' )
-       call addfld( 'TAUTMSY' ,  horiz_only,  'A','N/m2',  'Meridional turbulent mountain surface stress' )
-       if (history_amwg) then
-          call add_default( 'TAUTMSX ', 1, ' ' )
-          call add_default( 'TAUTMSY ', 1, ' ' )
-       end if
-       if (masterproc) then
-          write(iulog,*)'Using turbulent mountain stress module'
-          write(iulog,*)'  tms_orocnst = ',tms_orocnst
-          write(iulog,*)'  tms_z0fac = ',tms_z0fac
-       end if
-    endif
 
     ! Add SHOC fields
     call addfld('SHOC_TKE', (/'lev'/), 'A', 'm2/s2', 'TKE')
@@ -758,18 +735,6 @@ end function shoc_implements_cnst
        wl_b(i) = wl_b(i) + state1%q(i,k,ixcldliq)*state1%pdel(i,k)/gravit
      enddo
    enddo
-   
-   ! ------------------------------------------------- !
-   ! Begin module to compute turbulent mountain stress !
-   ! ------------------------------------------------- !
-    if ( do_tms) then
-       call t_startf('compute_tms')
-       call compute_tms( pcols,        pver,      ncol,                   &
-                     state1%u,     state1%v,  state1%t,  state1%pmid, &
-                     state1%exner, state1%zm, sgh30,     ksrftms,     &
-                     tautmsx,      tautmsy,   cam_in%landfrac ) 
-       call t_stopf('compute_tms')
-    endif
     
    ! ------------------------------------------------- !
    ! End module to compute turbulent mountain stress   !
@@ -813,17 +778,7 @@ end function shoc_implements_cnst
       upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,pverp)               ! Surface meridional momentum flux
       vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,pverp)               ! Surface zonal momentum flux  
       wtracer_sfc(i,:) = 0._r8  ! in E3SM tracer fluxes are done elsewhere
-   enddo   
-      
-   ! ------------------------------------------------- !
-   ! Apply TMS                                         !
-   ! ------------------------------------------------- !    
-   if ( do_tms) then
-     do i=1,ncol
-       upwp_sfc(i) = upwp_sfc(i)-((ksrftms(i)*state1%u(i,pver))/rrho_i(i,pverp))
-       vpwp_sfc(i) = vpwp_sfc(i)-((ksrftms(i)*state1%v(i,pver))/rrho_i(i,pverp))
-     enddo 
-   endif             
+   enddo               
    
    !  Do the same for tracers 
    icnt=0
