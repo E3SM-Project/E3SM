@@ -487,8 +487,8 @@ subroutine wetdepa_v2( ncol, deltat, &
       ! crm_nz is used to disable warnings above the CRM with MMF
       integer, parameter :: crm_nz = CRM_NZ   
 #else
-      ! if not MMF, CRM_NZ is not defined, so set to zero to avoid build error
-      integer, parameter :: crm_nz = 0
+      ! if not MMF, CRM_NZ is not defined, so set to pver to avoid build error
+      integer, parameter :: crm_nz = pver
 #endif
       logical use_MMF
       call phys_getopts( use_MMF_out = use_MMF)
