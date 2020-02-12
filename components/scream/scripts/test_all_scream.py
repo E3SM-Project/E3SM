@@ -64,7 +64,7 @@ class TestAllScream(object):
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
-                    if self._baseline_ref == get_current_commit("origin/master"):
+                    if self._baseline_ref is None or self._baseline_ref == get_current_commit("origin/master"):
                         self._baseline_ref = "origin/master"
 
                 print("Using baseline commit {}".format(self._baseline_ref))
