@@ -249,7 +249,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         num_compared += len(match_ups)
 
         for hist1, hist2 in match_ups:
-            if not '.nc.' in hist1:
+            if not '.nc' in hist1:
                 logger.info("Ignoring non-netcdf file {}".format(hist1))
                 continue
             success, cprnc_log_file, cprnc_comment = cprnc(model, os.path.join(from_dir1,hist1),
