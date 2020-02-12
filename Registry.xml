@@ -1752,7 +1752,6 @@
 			<var name="iceFraction"/>
 			<var name="windSpeed10m"/>
 			<var name="nAccumulatedCoupled"/>
-			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
@@ -3125,60 +3124,6 @@
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
-		<var name="normalThicknessFlux" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time"
-			 units="m^{2} s^{-1}"
-			 description="Flux of thickness through an edge"
-		/>
-		<var name="normalThicknessFluxSum" persistence="scratch" type="real" dimensions="nEdges Time"
-			 units="m^{2} s^{-1}"
-			 description="Flux of thickness through an edge over full column, sum(h*u)"
-		/>
-		<var name="layerThicknessSumEdge" persistence="scratch" type="real" dimensions="nEdges Time"
-			 units="m"
-			 description="total thickness at edge, sum(h)"
-		/>
-		<var name="vorticityGradientTangentialComponent"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nEdges Time"
-			units="s^{-1} m^{-1}"
-			description="gradient of vorticity in the tangent direction (positive points from vertex1 to vertex2)"
-		/>
-		<var name="vorticityGradientNormalComponent"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nEdges Time"
-			units="s^{-1} m^{-1}"
-			description="gradient of vorticity in the normal direction (positive points from cell1 to cell2)"
-		/>
-		<var name="normalizedRelativeVorticityVertex"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
-			description="curl of horizontal velocity divided by layer thickness, defined at vertices"
-		/>
-		<var name="normalizedPlanetaryVorticityVertex"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
-			description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
-		/>
-		<var name="kineticEnergyVertex"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
-			description="kinetic energy of horizontal velocity defined at vertices"
-		/>
-		<var name="kineticEnergyVertexOnCells"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
-			description="kinetic energy of horizontal velocity defined at vertices"
-		/>
-		<var name="densitySurfaceDisplaced"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
-			description="Density computed by displacing SST and SSS to every vertical layer within the column"
-		/>
-		<var name="thermalExpansionCoeff"
-			 persistence="persistent"
-			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
-			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)."
-		/>
 		<var name="salineContractionCoeff"
 			 persistence="persistent"
 			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
@@ -3251,40 +3196,6 @@
 			 type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
 			 description="Outer product, $u_e \otimes n_e$, at each edge."
 		/>
-		<var name="normalVectorEdge"
-			 persistence="scratch"
-			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-			 description="Vector component normal to an edge."
-		/>
-		<var name="tangentialVectorEdge"
-			 persistence="scratch"
-			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-			 description="Vector component tangent to an edge."
-		/>
-		<var name="windStressFullScratch" type="real" dimensions="nVertLevels nEdges Time" units="N m^{-2}"
-			 persistence="scratch"
-			 description="Wind stress used for reconstructing diagnostic output fields."
-		/>
-		<var name="windStressXScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-			 persistence="scratch"
-			 description="reconstructed surface wind stress in the x direction. Used for diagnostics."
-		/>
-		<var name="windStressYScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-			 persistence="scratch"
-			 description="reconstructed surface wind stress in the y direction. User for diagnostics."
-		/>
-		<var name="windStressZScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-			 persistence="scratch"
-			 description="reconstructed surface wind stress in the z direction. User for diagnostics."
-		/>
-		<var name="windStressZonalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-			 persistence="scratch"
-			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
-		/>
-		<var name="windStressMeridionalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-			 persistence="scratch"
-			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
-		/>
 		<var name="gradDensityEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Normal gradient of density"
 		/>
@@ -3303,45 +3214,15 @@
 		<var name="dDispDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
 			 description="Vertical gradient of density"
 		/>
-		<var name="dDispDensityDzTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
-			 description="Vertical gradient of density at edge and top of layer."
-		/>
-		<var name="dTracerdZTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
-			 description="Vertical gradient of tracer field at cell centers"
-		/>
-		<var name="dTracerdZTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
-			 description="Vertical gradient of tracer field at cell edges"
-		/>
 		<var name="gradZMidEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Gradient of zMid"
 		/>
 		<var name="gradZMidTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
 			 description="Gradient of zMid at layer interfaces"
 		/>
-		<var name="tridiagA" persistence="scratch" type="real" dimensions="nVertLevels" units=""
-			 description="The lower band of a tridiagonal matrix"
-		/>
-		<var name="tridiagB" persistence="scratch" type="real" dimensions="nVertLevels" units=""
-			 description="The central band of a tridiagonal matrix"
-		/>
-		<var name="tridiagC" persistence="scratch" type="real" dimensions="nVertLevels" units=""
-			 description="The upper band of a tridiagonal matrix"
-		/>
 		<var name="areaCellSum" type="real" dimensions="nVertLevels nCells Time" units="m^{2}"
 			 persistence="scratch"
 			 description="Accumulated cell area for normalization"
-		/>
-		<var name="rightHandSide" persistence="scratch" type="real" dimensions="nVertLevels" units=""
-			 description="A vector"
-		/>
-		<var name="yRelativeSlopeSolution" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
-			 description="Slope of isopycnal surface for analytic solution"
-		/>
-		<var name="yGMStreamFuncSolution" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
-			 description="GM stream function reconstructed to the cell centers, for analytic solution"
-		/>
-		<var name="yGMBolusVelocitySolution" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
 		/>
 
 		<!-- defined to enable openmp -->
@@ -3356,145 +3237,11 @@
 				 description="tracer"
 			/>
 		</var_array>
-		<var name="div_hu" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="div_hu"
-		/>
-		<var name="projectedSSH" persistence="scratch" type="real" dimensions="nCells" units=""
-			 description="projectedSSH"
-		/>
-		<var name="ALE_Thickness" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="ALE_Thickness"
-		/>
-		<var name="delsq_u" persistence="scratch" type="real" dimensions="nVertLevels nEdgesP1" units=""
-			 description="delsq_u"
-		/>
-		<var name="delsq_divergence" persistence="scratch" type="real" dimensions="nVertLevels nCellsP1" units=""
-			 description="delsq_divergence"
-		/>
-		<var name="delsq_relativeVorticity" persistence="scratch" type="real" dimensions="nVertLevels nVerticesP1" units=""
-			 description="delsq_relativeVorticity"
-		/>
-		<var name="ddensityTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCellsP1" units=""
-			 description="ddensityTopOfCell"
-		/>
-		<var name="ddensityTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
-			 description="ddensityTopOfEdge"
-		/>
-		<var name="du2TopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCellsP1" units=""
-			 description="du2TopOfCell"
-		/>
-		<var name="du2TopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
-			 description="du2TopOfEdge"
-		/>
-		<var name="tracerCur" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Current single tracer value for advection"
-		/>
-		<var name="hNewInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Inverse layer thickness for advection"
-		/>
-		<var name="hProv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="provisional layer thickness for advection"
-		/>
-		<var name="hProvInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="m"
-			 description="inverse of provisional layer thickness for advection"
-		/>
-		<var name="workTendency" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Advective tendency work array"
-		/>
-		<var name="tracerMin" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Min tracer value for monotonic advection"
-		/>
-		<var name="tracerMax" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Max tracer value for monotonic advection"
-		/>
-		<var name="fluxIncoming" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Incoming flux of a tracer for advection"
-		/>
-		<var name="fluxOutgoing" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Outgoing flux of a tracer for advection"
-		/>
-		<var name="lowOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
-			 description="Low order flux scratch variable for both horizontal and vertical advection."
-		/>
-		<var name="highOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
-			 description="High order flux scratch variable for both horizontal and vertical advection."
-		/>
-		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
-			 description="btrvel_temp"
-		/>
-		<!-- FIELDS FOR LAND-ICE FORCING -->
-		<var name="boundaryLayerTemperatureScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="^\circ C"
-			description="temperature averaged vertically over the sub-ice-shelf boundary layer"
-		/>
-		<var name="boundaryLayerSalinityScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="PSU"
-			description="salinity averaged vertically over the sub-ice-shelf boundary layer"
-		/>
-		<var name="freezeInterfaceSalinityScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="PSU"
-			description="salinity at land ice-ocean interface where freezing is occurring"
-		/>
-		<var name="freezeInterfaceTemperatureScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="^\circ C"
-			description="temperature at land ice-ocean interface where freezing is occurring"
-		/>
-		<var name="freezeThicknessFluxScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="m s^{-1}"
-			description="thickness flux at land ice-ocean interface where freezing is occurring"
-		/>
-		<var name="freezeTemperatureFluxScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="^\circ C m s^{-1}"
-			description="ocean temperature flux at land ice-ocean interface where freezing is occurring"
-		/>
-		<var name="freezeIceTemperatureFluxScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="^\circ C m s^{-1}"
-			description="ice temperature flux at land ice-ocean interface where freezing is occurring"
-		/>
-		<var name="effectiveDensityScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="kg m^{-3}"
-			description="effective seawater density in land ice before horizontal averaging"
-		/>
-		<!-- FIELDS FOR LAND-ICE PRESSURE AND SSH INITIALIZATION -->
-		<var name="scratchZMid"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells" units="m"
-			description="reference z-midpoint of cells for vertical interpolation of tracers"
-		/>
-		<var name="scratchMaxLevelCell"
-			persistence="scratch"
-			type="integer" dimensions="nCells" units="unitless"
-			description="reference maxLevelCell for vertical interpolation of tracers"
-		/>
-		<!-- FIELDS FOR HORIZONTAL SMOOTHING DURING INITIALIZATION -->
-		<var name="smoothedField"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="various"
-			description="the smoothed version of a field on cells during iterative smoothing"
-		/>
 		<!-- FIELDS FOR RX1 INITIALIZATION -->
 		<var name="zInterfaceScratch"
 			persistence="scratch"
 			type="real" dimensions="nVertLevelsP1 nCells" units="m"
 			description="location of layer interfaces at cell centers, used for thickening layers constrained by the Haney number (rx1)"
-		/>
-		<var name="goalStretchScratch"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells" units="unitless"
-			description="the goal stretch field for the vertical coordinate"
-		/>
-		<var name="goalWeightScratch"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells" units="unitless"
-			description="the sum of weights used to determine the goal stretch field"
 		/>
 		<var name="zTopScratch"
 			persistence="scratch"
@@ -3510,11 +3257,6 @@
 			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
 			description="updated location of the lower layer used to compute the Haney number (rx1), needed so update is agnostic to the order in which cells are accessed"
-		/>
-		<var name="smoothingMaskNewScratch"
-			persistence="scratch"
-			type="integer" dimensions="nCells" units="unitless"
-			description="a copy of the smoothing mask used to iteratively expand the field into a buffer region of open ocean around land ice."
 		/>
 	</var_struct>
 	<var_struct name="pointLocations" time_levs="1">
