@@ -1200,6 +1200,38 @@ void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Rea
     *ncautr_ = t_h(2);
 }
 
+void cloud_water_autoconversion_c(Real* nitot_local_, Real* max_total_Ni_, Real* inv_rho_local_){
+
+  using P3F = Functions<Real, DefaultDevice>; 
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+
+  view_1d t_d("t_h", 3); 
+  auto t_h = Kokkos::create_mirror_view(t_d); 
+  
+  Real local_nitot_local = *nitot_local_; 
+  Real local_max_total_Ni = *max_total_Ni_; 
+  Real local_inv_rho_local = *inv_rho_local_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack nitot_local(local_nitot_local); 
+    Spack max_total_Ni(local_max_total_Ni); 
+    Spack inv_rho_local(local_inv_rho_local);
+
+    P3F::impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local);
+    t_d(0) = nitot_local[0];
+    t_d(1) = max_total_Ni[0];
+    t_d(2) = inv_rho_local[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nitot_local_ = t_h(0); 
+  *max_total_Ni_ = t_h(1); 
+  *inv_rho_local_ = t_h(2);
+}
+
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)
 {
   using P3F  = Functions<Real, DefaultDevice>;
