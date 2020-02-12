@@ -11,6 +11,10 @@
 	      <xs:element type="xs:string" name="comment" minOccurs="0"/>
               <xs:element type="xs:string" name="protocol"/>
               <xs:element type="xs:string" name="address"/>
+              <xs:element type="xs:string" name="user" minOccurs="0"/>
+              <xs:element type="xs:string" name="password" minOccurs="0"/>
+              <xs:element type="xs:string" name="checksum" minOccurs="0"/>
+              <xs:element type="xs:string" name="ic_filepath" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>

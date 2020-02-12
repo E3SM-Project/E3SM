@@ -145,7 +145,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
     return logs
 
 ###############################################################################
-def _build_checks(case, build_threaded, comp_interface, 
+def _build_checks(case, build_threaded, comp_interface,
                   debug, compiler, mpilib, complist, ninst_build, smp_value,
                   model_only, buildlist):
 ###############################################################################
@@ -499,13 +499,13 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     case.load_env()
 
     sharedpath = _build_checks(case, build_threaded, comp_interface,
-                               debug, compiler, mpilib, complist, ninst_build, smp_value, 
+                               debug, compiler, mpilib, complist, ninst_build, smp_value,
                                model_only, buildlist)
 
     t2 = time.time()
     logs = []
 
-    if not model_only and cime_model != "ufs":
+    if not model_only and 'CPL' in comp_classes:
         logs = _build_libraries(case, exeroot, sharedpath, caseroot,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
