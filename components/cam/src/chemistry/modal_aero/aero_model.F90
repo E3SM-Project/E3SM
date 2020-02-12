@@ -2837,6 +2837,8 @@ do_lphase2_conditional: &
     !
     use physconst,     only: pi,boltz, gravit, rair
     use mo_drydep,     only: n_land_type, fraction_landuse
+    use ieee_arithmetic, only: ieee_is_nan
+    use phys_control,    only: phys_getopts
 
     ! !ARGUMENTS:
     !
@@ -2883,6 +2885,7 @@ do_lphase2_conditional: &
     integer  :: lt
     real(r8) :: lnd_frc
     real(r8) :: wrk1, wrk2, wrk3
+    logical  :: use_MMF
 
     ! constants
     real(r8) gamma(11)      ! exponent of schmidt number
@@ -2921,7 +2924,7 @@ do_lphase2_conditional: &
               -1/
     save iwet
 
-
+    call phys_getopts( use_MMF_out = use_MMF )
     !------------------------------------------------------------------------
     do k=1,pver
        do i=1,ncol
@@ -2948,6 +2951,12 @@ do_lphase2_conditional: &
           vlc_grv(i,k) = (4.0_r8/18.0_r8) * radius_moment(i,k)*radius_moment(i,k)*density_part(i,k)* &
                   gravit*slp_crc(i,k) / vsc_dyn_atm(i,k) ![m s-1] Stokes' settling velocity SeP97 p. 466
           vlc_grv(i,k) = vlc_grv(i,k) * dispersion
+
+          ! in the MMF NaN's were occurring here but the root cause was not
+          ! identified, so this check was added to work around the issue
+          if (use_MMF) then
+            if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
+          end if
 
           vlc_dry(i,k)=vlc_grv(i,k)
        enddo
