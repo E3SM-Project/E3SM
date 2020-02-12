@@ -189,8 +189,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta
 
       ! Diagnostics Field Pointers
-      type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
-      type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField, effectiveDensityField
+      type (field1DReal), pointer :: effectiveDensityField
       ! tracer tendencies brought in here to normalize by new layer thickness
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         activeTracerHorizontalAdvectionTendency,      &
@@ -202,12 +201,6 @@ module ocn_time_integration_split
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         temperatureShortWaveTendency
-      ! State/Tend Field Pointers
-      type (field1DReal), pointer :: normalBarotropicVelocitySubcycleField, sshSubcycleField
-      type (field2DReal), pointer :: highFreqThicknessField, lowFreqDivergenceField
-      type (field2DReal), pointer :: normalBaroclinicVelocityField, layerThicknessField
-      type (field2DReal), pointer :: normalVelocityField
-      type (field3DReal), pointer :: tracersGroupField
 
       ! tracer iterators
       type (mpas_pool_iterator_type) :: groupItr

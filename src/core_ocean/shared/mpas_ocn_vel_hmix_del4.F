@@ -161,8 +161,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaTriangle, &
             meshScalingDel4, areaCell
 
-      type (field2DReal), pointer :: delsq_uField, delsq_divergenceField, delsq_relativeVorticityField
-
       err = 0
 
       if(.not.hmixDel4On) return

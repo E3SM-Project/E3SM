@@ -202,10 +202,6 @@ contains
       real (kind=RKIND), dimension(:),   pointer :: normalVelocitySurfaceLayer
       real (kind=RKIND), dimension(:),   pointer :: indexSurfaceLayerDepth
 
-      type (field2DReal), pointer :: kineticEnergyVertexField, kineticEnergyVertexOnCellsField
-      type (field2DReal), pointer :: normalizedRelativeVorticityVertexField, normalizedPlanetaryVorticityVertexField
-      type (field2DReal), pointer :: vorticityGradientNormalComponentField, vorticityGradientTangentialComponentField
-
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
 
@@ -1008,9 +1004,6 @@ contains
 
       real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
-      type (field1DReal), pointer :: projectedSSHField
-      type (field2DReal), pointer :: ALE_ThicknessField, div_huField
-
       err = 0
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -1623,7 +1616,6 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, layerThickness, normalVelocity, &
                                                     landIceBoundaryLayerTracers, landIceTracerTransferVelocities
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-      type (field1DReal), pointer :: boundaryLayerTemperatureField, boundaryLayerSalinityField
 
       ! constants for Holland and Jenkins 1999 parameterization of the boundary layer
       real (kind=RKIND), parameter :: &

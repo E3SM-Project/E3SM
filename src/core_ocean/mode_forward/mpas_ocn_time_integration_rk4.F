@@ -162,13 +162,11 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroup, tracersCur, tracersNew
 
       ! Diagnostics Field Pointers
-      type (field1DReal), pointer :: boundaryLayerDepthField, effectiveDensityField
-      type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
+      type (field1DReal), pointer :: effectiveDensityField
 
       ! State/Tend Field Pointers
-      type (field2DReal), pointer :: normalVelocityField, layerThicknessField
+      type (field2DReal), pointer :: normalVelocityField
       type (field2DReal), pointer :: wettingVelocityField
-      type (field3DReal), pointer :: tracersGroupField
 
       ! Tracer Group Iteartion
       type (mpas_pool_iterator_type) :: groupItr
