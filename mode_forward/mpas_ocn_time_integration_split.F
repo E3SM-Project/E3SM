@@ -1926,7 +1926,7 @@ module ocn_time_integration_split
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
          ! Update the effective desnity in land ice if we're coupling to land ice
-         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
+         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
 
 !         ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
 !         if (config_use_GM.or.config_use_Redi) then

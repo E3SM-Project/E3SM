@@ -656,20 +656,20 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
 
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
                                          nCells, 0, 'relative', density, err, &
                                          inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
                                          timeLevelIn=timeLevel)
       call mpas_threading_barrier()
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
                                          nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
                                          nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
       call mpas_threading_barrier()
@@ -1486,7 +1486,7 @@ contains
       nCells = nCellsArray( 3 )
 
       ! compute EOS by displacing SST/SSS to every vertical layer in column
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 0, 'surfaceDisplaced', &
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, nCells, 0, 'surfaceDisplaced', &
                                          densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
