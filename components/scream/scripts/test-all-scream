@@ -67,6 +67,9 @@ OR
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
         help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")
 
+    parser.add_argument("-i", "--integration-test", action="store_true", default="JENKINS_HOME" in os.environ,
+                        help="Merge origin/master into this branch before testing.")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################

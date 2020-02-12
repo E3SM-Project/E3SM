@@ -11,7 +11,8 @@ class TestAllScream(object):
 
     ###########################################################################
     def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
-                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False, custom_cmake_opts=(), tests=()):
+                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False, custom_cmake_opts=(), tests=(),
+                 integration_test="JENKINS_HOME" in os.environ):
     ###########################################################################
 
         self._cxx               = cxx
@@ -27,6 +28,7 @@ class TestAllScream(object):
         self._custom_cmake_opts = custom_cmake_opts
         self._tests             = tests
         self._src_dir           = os.getcwd()
+        self._integration_test  = integration_test
 
         self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
@@ -61,10 +63,14 @@ class TestAllScream(object):
                 # Compute baseline ref
                 if self._keep_tree:
                     self._baseline_ref = "HEAD"
+                elif self._integration_test:
+                    self._baseline_ref = "origin/master"
+                    if get_current_commit() != get_current_commit(commit="origin/master"):
+                        run_cmd_no_fail("git merge origin/master")
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
-                    if self._baseline_ref is None or self._baseline_ref == get_current_commit("origin/master"):
+                    if self._baseline_ref is None or self._baseline_ref == get_current_commit(commit="origin/master"):
                         self._baseline_ref = "origin/master"
 
                 print("Using baseline commit {}".format(self._baseline_ref))
@@ -97,6 +103,7 @@ class TestAllScream(object):
 
         if self._keep_tree:
             expect(not is_repo_clean(), "Makes no sense to use --keep-tree when repo is clean")
+            expect(not self._integration_test, "Should not be doing keep-tree with integration testing")
             print("WARNING! You have uncommitted changes in your repo.",
                   "         The PASS/FAIL status may depend on these changes",
                   "         so if you want to keep them, don't forget to create a commit.",sep="\n")
