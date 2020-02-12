@@ -676,7 +676,7 @@ module ocn_time_integration_rk4
          call mpas_threading_barrier()
 
          ! Update the effective desnity in land ice if we're coupling to land ice
-         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
+         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
 
          ! ------------------------------------------------------------------
          ! Accumulating various parameterizations of the transport velocity

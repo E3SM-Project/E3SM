@@ -439,6 +439,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'eliassenPalmAM', am_epftPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'eliassenPalmAMPKGScratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
@@ -488,7 +489,7 @@ contains
                   lastLayerBuoyCoor(ncells), &
                   heightMidBuoyCoor(nBuoyancyLayers, nCells), &
                   heightTopBuoyCoor(nBuoyancyLayers, nCells), &
-                  heightInterfaceBuoyCoor(nBuoyancyLayers + 1, nCells), &
+                  heightInterfaceBuoyCoor(nBuoyancyLayers, nCells), &
                   sigma(nBuoyancyLayers, nCells), &
                   montgPotBuoyCoor(nBuoyancyLayers, nCells), &
                   montgPotNormalGradOnEdge(nBuoyancyLayers, nEdges), &
@@ -582,9 +583,8 @@ contains
          call mpas_pool_get_array(am_epftPool, 'ErtelPVGradMerid', ErtelPVGradMerid)
 
          ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
-
          call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-                                            scratchPool, nCells, 1, 'absolute', potentialDensity, &
+                                            nCells, 1, 'absolute', potentialDensity, &
                                             err) !, timeLevelIn=1)
 
          !--------------------------------------------------
