@@ -209,11 +209,11 @@ class TestAllScream(object):
         git_head_ref        = get_current_head()
         git_baseline_commit = get_current_commit(commit=self._baseline_ref)
 
-        need_co = git_baseline_commit != git_head_commit
+        need_checkout = git_baseline_commit != git_head_commit
 
         print("Generating baselines for ref {}".format(self._baseline_ref))
 
-        if need_co:
+        if need_checkout:
             expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
             run_cmd_no_fail("git checkout {}".format(self._baseline_ref))
             print("  Switched to {} ({})".format(self._baseline_ref, git_baseline_commit))
@@ -234,7 +234,7 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        if need_co:
+        if need_checkout:
             run_cmd_no_fail("git checkout {}".format(git_head_ref))
             print("  Switched back to {} ({})".format(git_head_ref, git_head_commit))
 
