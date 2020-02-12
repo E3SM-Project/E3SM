@@ -86,7 +86,6 @@ module ocn_lagrangian_particle_tracking_reset
      type (mpas_pool_type), pointer :: lagrPartTrackScalarPool, lagrPartTrackRegionsPool
      real (kind=RKIND), pointer :: globalResetTimeValue
      type (mpas_timeInterval_type) :: timeInterval
-     type (field1DInteger), pointer :: resetInsideRegionMaskValue1Field, resetOutsideRegionMaskValue1Field
      integer, dimension(:), pointer :: resetInsideRegionMaskValue1, resetOutsideRegionMaskValue1
 
      err = 0

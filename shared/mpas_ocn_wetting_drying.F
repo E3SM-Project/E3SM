@@ -245,7 +245,6 @@ contains
       real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
       real (kind=RKIND), dimension(:, :), pointer :: wettingVelocity
-      type (field2DReal), pointer :: wettingVelocityField
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:), pointer :: maxLevelEdgeBot

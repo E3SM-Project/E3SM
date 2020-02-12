@@ -458,7 +458,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       type (block_type), pointer :: block
 
       integer :: iTracer, cell, cell1, cell2
-      real (kind=RKIND) :: normalThicknessFluxSum, thicknessSum, hEdge1, zMidPBC, &
+      real (kind=RKIND) :: thicknessSum, hEdge1, zMidPBC, &
          depth1, depth2
 
       integer, dimension(:), pointer :: maxLevelCell, landIceMask
