@@ -455,7 +455,6 @@ CONTAINS
 subroutine sgs_proc(ncrms)
   use tke_full_mod, only: tke_full
   use grid, only: dt,icycle
-  use params, only: dosmoke
   implicit none
   integer, intent(in) :: ncrms
   integer :: icrm, k, j, i

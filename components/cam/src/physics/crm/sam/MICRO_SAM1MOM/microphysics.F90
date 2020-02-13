@@ -156,7 +156,6 @@ CONTAINS
 
     use grid, only: nrestart
     use vars
-    use params, only: dosmoke
     implicit none
     integer, intent(in) :: ncrms
     integer k, n,icrm, i, j, l
@@ -180,9 +179,6 @@ CONTAINS
     enddo
 
       if(docloud) then
-        call micro_diagnose(ncrms)
-      end if
-      if(dosmoke) then
         call micro_diagnose(ncrms)
       end if
     end if
@@ -250,7 +246,6 @@ CONTAINS
   !
   subroutine micro_proc(ncrms)
     use grid, only: nstep,dt,icycle
-    use params, only: dosmoke
     use cloud_mod
     use precip_init_mod
     use precip_proc_mod
@@ -265,9 +260,6 @@ CONTAINS
     if(docloud) then
       call cloud(ncrms, micro_field(:,:,:,:,1), micro_field(:,:,:,:,2), qn)
       if(doprecip) call precip_proc(ncrms, qpsrc, qpevp, micro_field(:,:,:,:,1), micro_field(:,:,:,:,2), qn)
-      call micro_diagnose(ncrms)
-    end if
-    if(dosmoke) then
       call micro_diagnose(ncrms)
     end if
   end subroutine micro_proc

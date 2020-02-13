@@ -821,7 +821,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 
       !-----------------------------------------------------------
       !       Cloud condensation/evaporation and precipitation processes:
-      if(docloud.or.dosmoke) call micro_proc(ncrms)
+      if(docloud) call micro_proc(ncrms)
 
       !-----------------------------------------------------------
       !       Apply mean-state acceleration

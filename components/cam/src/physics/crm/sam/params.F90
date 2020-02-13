@@ -33,12 +33,13 @@ module params
   real(crm_rknd), parameter :: fac_fus  = lfus/cp
   real(crm_rknd), parameter :: fac_sub  = lsub/cp
 
+  real(crm_rknd), parameter :: epsv = 0.61     ! = (1-eps)/eps, where eps= Rv/Ra
+
   real(crm_rknd), parameter ::  pi = 3.141592653589793
 
   !
   ! internally set parameters:
 
-  real(crm_rknd)   epsv     ! = (1-eps)/eps, where eps= Rv/Ra, or =0. if dosmoke=.true.
   logical:: dosubsidence = .false.
   real(crm_rknd), allocatable :: fcorz(:)      ! Vertical Coriolis parameter
 
@@ -58,17 +59,17 @@ module params
   logical, allocatable :: ocean(:)           ! flag indicating that surface is water
   logical, allocatable :: land(:)            ! flag indicating that surface is land
 
-  logical:: docloud       = .false.   ! 
-  logical:: doprecip      = .false.   ! 
+  logical:: docloud       = .false.   ! allow cloud formation
+  logical:: doprecip      = .false.   ! allow precipitation
   logical:: dodamping     = .false.   ! Newtonian damping for upper levels
   logical:: dosgs         = .false.   ! sub-grid turbulence scheme
   logical:: dosurface     = .false.   ! surface scheme to calculate friction within CRM
+
   logical:: docoriolis    = .false.   ! not normally used for MMF
   logical:: dowallx       = .false.   ! not normally used for MMF
   logical:: dowally       = .false.   ! not normally used for MMF
   logical:: docolumn      = .false.   ! not normally used for MMF
   logical:: dotracers     = .false.   ! not normally used for MMF
-  logical:: dosmoke       = .false.   ! not normally used for MMF
 
   integer, parameter :: asyncid = 1
 

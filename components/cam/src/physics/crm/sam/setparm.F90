@@ -58,12 +58,6 @@ contains
     call sgs_setparm() ! read in SGS options from prm file.
     call micro_setparm() ! read in microphysical options from prm file.
 
-    if(dosmoke) then
-      epsv=0.
-    else
-      epsv=0.61
-    endif
-
     if(navgmom_x.lt.0.or.navgmom_y.lt.0) then
       nstatmom        = 1
       nstatmomstart    = 99999999
