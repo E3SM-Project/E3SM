@@ -6,7 +6,7 @@ contains
 
   subroutine setparm
 
-    !       initialize parameters:
+    ! initialize parameters:
 
     use vars
     !use micro_params
@@ -18,16 +18,11 @@ contains
 
     integer icondavg, ierr
 
-    doprecip    = .true.
-    docloud     = .true.
-    dosgs       = .true.
-    dodamping   = .true.
-
     dt    = CRM_DT
     dx    = CRM_DX
     dy    = CRM_DY
     
-    rank            = 0   ! in MMF model, rank = 0
+    rank  = 0   ! in MMF model, rank = 0
     !------------------------------------
     !  Set parameters
 

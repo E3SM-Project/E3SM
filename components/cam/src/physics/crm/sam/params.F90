@@ -15,7 +15,9 @@ module params
   integer, parameter :: crm_rknd = selected_real_kind(12) ! 8 byte real
 #endif
 
-  !   Constants:
+  !----------------------------------------------
+  ! Constants
+  !----------------------------------------------
 
   real(crm_rknd), parameter :: cp    = real( shr_const_cpdair ,crm_rknd)
   real(crm_rknd), parameter :: ggr   = real( shr_const_g      ,crm_rknd)
@@ -26,8 +28,8 @@ module params
   real(crm_rknd), parameter :: rv    = real( shr_const_rgas/shr_const_mwwv ,crm_rknd)
 
   real(crm_rknd), parameter :: diffelq = 2.21e-05     ! Diffusivity of water vapor, m2/s
-  real(crm_rknd), parameter :: therco = 2.40e-02      ! Thermal conductivity of air, J/m/s/K
-  real(crm_rknd), parameter :: muelq = 1.717e-05      ! Dynamic viscosity of air
+  real(crm_rknd), parameter :: therco  = 2.40e-02     ! Thermal conductivity of air, J/m/s/K
+  real(crm_rknd), parameter :: muelq   = 1.717e-05    ! Dynamic viscosity of air
 
   real(crm_rknd), parameter :: fac_cond = lcond/cp
   real(crm_rknd), parameter :: fac_fus  = lfus/cp
@@ -37,32 +39,26 @@ module params
 
   real(crm_rknd), parameter ::  pi = 3.141592653589793
 
-  !
-  ! internally set parameters:
-
-  logical:: dosubsidence = .false.
-  real(crm_rknd), allocatable :: fcorz(:)      ! Vertical Coriolis parameter
-
   !----------------------------------------------
-  ! Parameters set by PARAMETERS namelist:
-  ! Initialized to default values.
+  ! Internally set parameters
   !----------------------------------------------
 
   real(crm_rknd):: ug = 0.        ! Velocity of the Domain's drift in x direction
   real(crm_rknd):: vg = 0.        ! Velocity of the Domain's drift in y direction
-  real(crm_rknd), allocatable :: fcor(:)  ! Coriolis parameter
+
+  real(crm_rknd), allocatable :: fcor(:)          ! Coriolis parameter
+  real(crm_rknd), allocatable :: fcorz(:)         ! Vertical Coriolis parameter
   real(crm_rknd), allocatable :: longitude0(:)    ! latitude of the domain's center
   real(crm_rknd), allocatable :: latitude0 (:)    ! longitude of the domain's center
-
   real(crm_rknd), allocatable :: z0(:)            ! roughness length
-  logical :: les =.false.    ! flag for Large-Eddy Simulation
+
   logical, allocatable :: ocean(:)           ! flag indicating that surface is water
   logical, allocatable :: land(:)            ! flag indicating that surface is land
 
-  logical:: docloud       = .false.   ! allow cloud formation
-  logical:: doprecip      = .false.   ! allow precipitation
-  logical:: dodamping     = .false.   ! Newtonian damping for upper levels
-  logical:: dosgs         = .false.   ! sub-grid turbulence scheme
+  logical:: docloud       = .true.    ! allow cloud formation
+  logical:: doprecip      = .true.    ! allow precipitation
+  logical:: dodamping     = .true.    ! Newtonian damping for upper levels
+  logical:: dosgs         = .true.    ! sub-grid turbulence scheme
   logical:: dosurface     = .false.   ! surface scheme to calculate friction within CRM
 
   logical:: docoriolis    = .false.   ! not normally used for MMF
