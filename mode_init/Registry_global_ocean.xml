@@ -345,10 +345,6 @@
 		/>
 	</nml_record>
 	<var_struct name="scratch" time_levs="1">
-		<var name="smoothedLevels" type="integer" dimensions="nCells" persistence="scratch"
-			 default_value="0" units="unitless"
-			 description="Temporary space to hold smoothed maxLevelCell to allow bit-reproducibility."
-		/>
 		<var name="cullStack" type="integer" dimensions="nCells" persistence="scratch"
 			 default_value="0" units="unitless"
 			 description="Temporary space to hold a stack for culling inland seas."
