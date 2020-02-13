@@ -17,7 +17,10 @@ void Functions<S,D>
     // ratio of number between categories.
     //--------------------------------------------------------------------------------
     
-
+    const auto nitot_not_small = nitot_local >= 1e-20; 
+    if(nitot_not_small.any()){
+        nitot_local = nitot_local*min(max_total_Ni * inv_rho_local/nitot_local, 1.0); 
+    }
 }
 
 } // namespace p3
