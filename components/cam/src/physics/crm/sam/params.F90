@@ -57,21 +57,18 @@ module params
   logical :: les =.false.    ! flag for Large-Eddy Simulation
   logical, allocatable :: ocean(:)           ! flag indicating that surface is water
   logical, allocatable :: land(:)            ! flag indicating that surface is land
-  logical :: sfc_flx_fxd =.false. ! surface sensible flux is fixed
-  logical :: sfc_tau_fxd =.false.! surface drag is fixed
 
-  logical:: dodamping = .false.
-  logical:: docloud = .false.
-  logical:: docam_sfc_fluxes = .false.   ! Apply the surface fluxes within CAM
-  logical:: doprecip = .false.
-  logical:: dosgs = .false.
-  logical:: docoriolis = .false.
-  logical:: dosurface = .false.
-  logical:: dowallx = .false.
-  logical:: dowally = .false.
-  logical:: docolumn = .false.
-  logical:: dotracers = .false.
-  logical:: dosmoke = .false.
+  logical:: docloud       = .false.   ! 
+  logical:: doprecip      = .false.   ! 
+  logical:: dodamping     = .false.   ! Newtonian damping for upper levels
+  logical:: dosgs         = .false.   ! sub-grid turbulence scheme
+  logical:: dosurface     = .false.   ! surface scheme to calculate friction within CRM
+  logical:: docoriolis    = .false.   ! not normally used for MMF
+  logical:: dowallx       = .false.   ! not normally used for MMF
+  logical:: dowally       = .false.   ! not normally used for MMF
+  logical:: docolumn      = .false.   ! not normally used for MMF
+  logical:: dotracers     = .false.   ! not normally used for MMF
+  logical:: dosmoke       = .false.   ! not normally used for MMF
 
   integer, parameter :: asyncid = 1
 

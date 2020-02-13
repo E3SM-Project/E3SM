@@ -1,9 +1,9 @@
-module crmsurface_mod
+module crm_surface_mod
   implicit none
 
 contains
 
-  subroutine crmsurface(ncrms,bflx)
+  subroutine crm_surface(ncrms,bflx)
     use vars
     use params
     implicit none
@@ -13,33 +13,31 @@ contains
     integer i,j,icrm
 
     !--------------------------------------------------------
-    if(SFC_FLX_FXD.and..not.SFC_TAU_FXD) then
-      !$acc parallel loop async(asyncid)
-      do icrm = 1 , ncrms
-        uhl(icrm) = uhl(icrm) + dtn*utend(icrm,1)
-        vhl(icrm) = vhl(icrm) + dtn*vtend(icrm,1)
-        taux0(icrm) = 0.
-        tauy0(icrm) = 0.
-      enddo
-      !$acc parallel loop collapse(3) async(asyncid)
-      do j=1,ny
-        do i=1,nx
-          do icrm = 1 , ncrms
-            u_h0 = max(real(1.,crm_rknd),sqrt((0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug)**2+(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg)**2))
-            tau00 = rho(icrm,1) * diag_ustar(z(icrm,1),bflx(icrm),u_h0,z0(icrm))**2
-            fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug-uhl(icrm))/u_h0*tau00
-            fluxbv(icrm,i,j) = -(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/u_h0*tau00
-            tmp = fluxbu(icrm,i,j)/dble(nx*ny)
-            !$acc atomic update
-            taux0(icrm) = taux0(icrm) + tmp
-            tmp = fluxbv(icrm,i,j)/dble(nx*ny)
-            !$acc atomic update
-            tauy0(icrm) = tauy0(icrm) + tmp
-          end do
+    !$acc parallel loop async(asyncid)
+    do icrm = 1 , ncrms
+      uhl(icrm) = uhl(icrm) + dtn*utend(icrm,1)
+      vhl(icrm) = vhl(icrm) + dtn*vtend(icrm,1)
+      taux0(icrm) = 0.
+      tauy0(icrm) = 0.
+    end do
+    !$acc parallel loop collapse(3) async(asyncid)
+    do j=1,ny
+      do i=1,nx
+        do icrm = 1 , ncrms
+          u_h0 = max(real(1.,crm_rknd),sqrt((0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug)**2+(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg)**2))
+          tau00 = rho(icrm,1) * diag_ustar(z(icrm,1),bflx(icrm),u_h0,z0(icrm))**2
+          fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug-uhl(icrm))/u_h0*tau00
+          fluxbv(icrm,i,j) = -(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/u_h0*tau00
+          tmp = fluxbu(icrm,i,j)/dble(nx*ny)
+          !$acc atomic update
+          taux0(icrm) = taux0(icrm) + tmp
+          tmp = fluxbv(icrm,i,j)/dble(nx*ny)
+          !$acc atomic update
+          tauy0(icrm) = tauy0(icrm) + tmp
         end do
-      enddo
-    end if ! SFC_FLX_FXD
-  end subroutine crmsurface
+      end do
+    end do
+  end subroutine crm_surface
 
   ! ----------------------------------------------------------------------
   !
@@ -131,4 +129,4 @@ contains
   end function z0_est
   ! ----------------------------------------------------------------------
 
-end module crmsurface_mod
+end module crm_surface_mod

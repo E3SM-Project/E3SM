@@ -12,7 +12,7 @@ module crm_module
   use adams_mod, only: adams
   use advect_all_scalars_mod, only: advect_all_scalars
   use sat_mod
-  use crmsurface_mod
+  use crm_surface_mod
 #ifdef sam1mom
   use precip_init_mod
 #endif
@@ -762,7 +762,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 
       !-----------------------------------------------
       !     surface fluxes:
-      if (dosurface) call crmsurface(ncrms,bflx)
+      if (dosurface) call crm_surface(ncrms,bflx)
 
       !-----------------------------------------------------------
       !  SGS physics:

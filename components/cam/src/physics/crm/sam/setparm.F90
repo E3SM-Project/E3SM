@@ -19,13 +19,14 @@ contains
     integer icondavg, ierr
 
     doprecip    = .true.
-    dosgs   = .true.
-    dosurface = .true.
+    docloud     = .true.
+    dosgs       = .true.
     dodamping   = .true.
+
     dt    = CRM_DT
     dx    = CRM_DX
     dy    = CRM_DY
-    docloud         = .true.
+    
     rank            = 0   ! in MMF model, rank = 0
     !------------------------------------
     !  Set parameters
