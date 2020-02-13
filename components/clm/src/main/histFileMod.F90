@@ -30,6 +30,7 @@ module histFileMod
   use EDTypesMod        , only : ncwd_fates       => ncwd
   use FatesInterfaceMod , only : numpft_fates     => numpft
   use TopounitType      , only : top_pp
+  use topounit_varcon   , only : max_topounits
 
   !
   implicit none
@@ -129,7 +130,7 @@ module histFileMod
   private :: masterlist_change_timeavg ! Override default history tape contents for specific tape
   private :: htape_addfld              ! Add a field to the active list for a history tape
   private :: htape_create              ! Define contents of history file t
-  private :: htape_add_ltype_metadata  ! Add global metadata defining landunit types
+  private :: htape_add_ltype_metadata  ! Add global metadata defining landunit types TKT do we also need the same function for topounit?
   private :: htape_add_natpft_metadata ! Add global metadata defining natpft types
   private :: htape_add_cft_metadata    ! Add global metadata defining cft types
   private :: htape_timeconst           ! Write time constant values to history tape
@@ -175,7 +176,7 @@ module histFileMod
      character(len=8) :: p2c_scale_type        ! scale factor when averaging pft to column
      character(len=8) :: c2l_scale_type        ! scale factor when averaging column to landunit
      character(len=8) :: l2g_scale_type        ! scale factor when averaging landunit to gridcell
-     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell
+     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell  TKT do we also need l2t_scale_type?
      integer :: no_snow_behavior               ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
   end type field_info
 
@@ -1035,8 +1036,8 @@ contains
     character(len=1)  :: avgflag        ! time averaging flag
     character(len=8)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
     character(len=8)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
-    character(len=8)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells
-    character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
+    character(len=8)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells (TKT why we dont have l2t_scale_type?)
+    character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells 
     real(r8), pointer :: hbuf(:,:)      ! history buffer
     integer , pointer :: nacs(:,:)      ! accumulation counter
     real(r8), pointer :: field(:)       ! clm 1d pointer field
@@ -1160,6 +1161,9 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
        else
           check_active = .false.
        end if
@@ -1848,7 +1852,7 @@ contains
 
     ! Global compressed dimensions (not including non-land points)
     call ncd_defdim(lnfid, trim(nameg), numg, dimid)
-    call ncd_defdim(lnfid, trim(namet), numt, dimid)
+    call ncd_defdim(lnfid, trim(namet), max_topounits, dimid) !TKT topounit dimension needs to be max_topounits
     call ncd_defdim(lnfid, trim(namel), numl, dimid)
     call ncd_defdim(lnfid, trim(namec), numc, dimid)
     call ncd_defdim(lnfid, trim(namep), nump, dimid)
@@ -3235,11 +3239,6 @@ contains
 
           ! Write 3D time constant history variables only to first primary tape
           if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then             
-             if (masterproc) then
-                   write(iulog,*)' ******* TKT *******'
-                   write(iulog,*) ' : Shape of watsat_col = ',shape(watsat_col) ! TKT debuging
-                   write(iulog,*) ' : Size of watsat_col = ',size(watsat_col) ! TKT debuging                   
-             end if 
              call htape_timeconst3D(t, &
                   bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
              do_3Dtconst = .false.

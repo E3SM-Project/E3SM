@@ -373,7 +373,7 @@ contains
   end subroutine clm_ptrs_check
 
   !-----------------------------------------------------------------------
-  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp,topo_ind)
+  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp,topo_ind,is_tpu_active)
     !
     ! !DESCRIPTION:
     ! Add an entry in the topounit-level arrays. ti gives the index of the last topounit
@@ -381,13 +381,14 @@ contains
     ! accordingly.
     !
     ! !ARGUMENTS:
-    integer  , intent(inout) :: ti      ! input value is index of last topounit added; output value is index of this newly-added topounit
-    integer  , intent(in)    :: gi      ! gridcell index on which this topounit should be placed 
-    real(r8) , intent(in)    :: wtgcell ! weight of the topounit relative to the gridcell
-    real(r8) , intent(in)    :: elv     ! topounit elevation
-    real(r8) , intent(in)    :: slp     ! topounit slope
-    integer , intent(in)    :: asp      ! topounit aspect
+    integer  , intent(inout) :: ti           ! input value is index of last topounit added; output value is index of this newly-added topounit
+    integer  , intent(in)    :: gi           ! gridcell index on which this topounit should be placed 
+    real(r8) , intent(in)    :: wtgcell      ! weight of the topounit relative to the gridcell
+    real(r8) , intent(in)    :: elv          ! topounit elevation
+    real(r8) , intent(in)    :: slp          ! topounit slope
+    integer , intent(in)    :: asp           ! topounit aspect
     integer , intent(in)    :: topo_ind      ! topounit index in the grid
+    logical , intent(in)    :: is_tpu_active
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: subname = 'add_topounit'
@@ -400,7 +401,8 @@ contains
     top_pp%elevation(ti) = elv
     top_pp%slope(ti) = slp
     top_pp%aspect(ti) = asp
-    top_pp%topo_grc_ind(ti) = topo_ind
+    top_pp%topo_grc_ind(ti) = topo_ind    
+    top_pp%active(ti) = is_tpu_active
     
   end subroutine add_topounit
 
