@@ -4,8 +4,7 @@ module cam_optics
    use assertions, only: assert, assert_valid, assert_range
    use radiation_state, only: nlev_rad, ktop, kbot
    use radiation_utils, only: handle_error
-   use radconstants, only: nswbands, nswgpts, &
-                           nlwbands, nlwgpts
+   use radconstants, only: nswbands, nlwbands
    use rad_constituents, only: liqcldoptics, icecldoptics
 
    implicit none
@@ -398,10 +397,10 @@ contains
       integer, parameter :: changeseed = 1
 
       ! Dimension sizes
-      integer :: ncol, nlay
+      integer :: ncol, nlay, ngpt
 
       ! McICA subcolumn cloud flag
-      logical :: iscloudy(nswgpts,pcols,pver)
+      logical, allocatable :: iscloudy(:,:,:)
 
       ! Loop variables
       integer :: icol, ilev, igpt, iband, ilev_cam, ilev_rad
@@ -410,6 +409,10 @@ contains
       character(len=32) :: subname = 'set_cloud_optics_sw'
 
       ncol = state%ncol
+      ngpt = kdist%get_ngpt()
+
+      ! Allocate array to hold subcolumn cloud flag
+      allocate(iscloudy(ngpt,ncol,pver))
 
       ! Get optics by band
       call handle_error(optics_bnd%alloc_2str(ncol, pver, kdist%get_band_lims_wavenumber()))
@@ -439,10 +442,10 @@ contains
 
       ! Do MCICA sampling of optics here. This will map bands to gpoints,
       ! while doing stochastic sampling of cloud state
-      call mcica_subcol_mask(nswgpts, ncol, pver, changeseed, &
+      call mcica_subcol_mask(ngpt, ncol, pver, changeseed, &
                              state%pmid(1:ncol,1:pver), &
                              combined_cloud_fraction(1:ncol,1:pver), &
-                             iscloudy(1:nswgpts,1:ncol,1:pver))
+                             iscloudy(1:ngpt,1:ncol,1:pver))
 
       ! -- generate subcolumns for homogeneous clouds -----
       ! where there is a cloud, set the subcolumn cloud properties;
@@ -461,7 +464,7 @@ contains
             ! corresponds to a single g-point. This is how this code implements the
             ! McICA assumptions: simultaneously sampling over cloud state and
             ! g-point.
-            do igpt = 1,nswgpts
+            do igpt = 1,ngpt
                if (iscloudy(igpt,icol,ilev_cam) .and. &
                    combined_cloud_fraction(icol,ilev_cam) > 0._r8) then
                   iband = kdist%convert_gpt2band(igpt)
@@ -492,6 +495,8 @@ contains
       ! Free memory for optics by band
       call free_optics_sw(optics_bnd)
 
+      deallocate(iscloudy)
+
    end subroutine set_cloud_optics_sw
 
    !----------------------------------------------------------------------------
@@ -521,16 +526,20 @@ contains
       integer, parameter :: changeseed = 1
 
       ! Dimension sizes
-      integer :: ncol
+      integer :: ncol, ngpt
 
       ! Temporary arrays to hold mcica-sampled cloud optics
-      logical :: iscloudy(nlwgpts,pcols,pver)
+      logical, allocatable :: iscloudy(:,:,:)
 
       ! Loop variables
       integer :: icol, ilev_rad, igpt, iband, ilev_cam
 
       ! Set dimension size working variables
       ncol = state%ncol
+      ngpt = kdist%get_ngpt()
+
+      ! Allocate array to hold subcolumn cloudy flag
+      allocate(iscloudy(ngpt,ncol,pver))
 
       ! Get optics by band
       call handle_error(optics_bnd%alloc_1scl(ncol, pver, kdist%get_band_lims_wavenumber()))
@@ -554,10 +563,10 @@ contains
       ! while doing stochastic sampling of cloud state
       !
       ! First, just get the stochastic subcolumn cloudy mask...
-      call mcica_subcol_mask(nlwgpts, ncol, pver, changeseed, &
+      call mcica_subcol_mask(ngpt, ncol, pver, changeseed, &
                              state%pmid(1:ncol,1:pver), &
                              combined_cloud_fraction(1:ncol,1:pver), &
-                             iscloudy(1:nlwgpts,1:ncol,1:pver))
+                             iscloudy(1:ngpt,1:ncol,1:pver))
 
       ! ... and now map optics to g-points, selecting a single subcolumn for each
       ! g-point. This implementation generates homogeneous clouds, but it would be
@@ -575,7 +584,7 @@ contains
          ilev_rad = ilev_cam + (nlev_rad - pver)
 
          do icol = 1,ncol
-            do igpt = 1,nlwgpts
+            do igpt = 1,ngpt
                if (iscloudy(igpt,icol,ilev_cam) .and. (combined_cloud_fraction(icol,ilev_cam) > 0._r8) ) then
                   iband = kdist%convert_gpt2band(igpt)
                   optics_out%tau(icol,ilev_rad,igpt) = optics_bnd%tau(icol,ilev_cam,iband)
@@ -600,6 +609,8 @@ contains
 
       ! Free memory for optics by band
       call free_optics_lw(optics_bnd)
+
+      deallocate(iscloudy)
 
    end subroutine set_cloud_optics_lw
 
