@@ -260,6 +260,29 @@ struct Functions
 
   // TODO: comment
   KOKKOS_FUNCTION
+  static void rain_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofacr,
+    const uview_1d<const Spack>& rcldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const uview_1d<const Spack>& qr_incld,
+    const MemberType& team,
+    const Workspace& workspace,
+    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qr,
+    const uview_1d<Spack>& nr,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& rflx,
+    const uview_1d<Spack>& qr_tend,
+    const uview_1d<Spack>& nr_tend,
+    Scalar& prt_liq);
+
+  // TODO: comment
+  KOKKOS_FUNCTION
   static void ice_sedimentation(
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
@@ -282,28 +305,23 @@ struct Functions
     const view_itab_table& itab,
     Scalar& prt_sol);
 
-  // TODO: comment
+  // homogeneous freezing of cloud and rain
   KOKKOS_FUNCTION
-  static void rain_sedimentation(
-    const uview_1d<const Spack>& rho,
-    const uview_1d<const Spack>& inv_rho,
-    const uview_1d<const Spack>& rhofacr,
-    const uview_1d<const Spack>& rcldm,
-    const uview_1d<const Spack>& inv_dzq,
-    const uview_1d<const Spack>& qr_incld,
+  static void homogeneous_freezing(
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& xlf,
     const MemberType& team,
-    const Workspace& workspace,
-    const view_2d_table& vn_table, const view_2d_table& vm_table,
-    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
+    const uview_1d<Spack>& qc,
+    const uview_1d<Spack>& nc,
     const uview_1d<Spack>& qr,
     const uview_1d<Spack>& nr,
-    const uview_1d<Spack>& nr_incld,
-    const uview_1d<Spack>& mu_r,
-    const uview_1d<Spack>& lamr,
-    const uview_1d<Spack>& rflx,
-    const uview_1d<Spack>& qr_tend,
-    const uview_1d<Spack>& nr_tend,
-    Scalar& prt_liq);
+    const uview_1d<Spack>& qitot,
+    const uview_1d<Spack>& nitot,
+    const uview_1d<Spack>& qirim,
+    const uview_1d<Spack>& birim,
+    const uview_1d<Spack>& th);
 
   // -- Find layers
 

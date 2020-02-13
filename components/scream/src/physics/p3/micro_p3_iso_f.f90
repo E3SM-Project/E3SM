@@ -199,6 +199,28 @@ interface
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
 
+  subroutine homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: exner
+    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+  end subroutine homogeneous_freezing_f
+
   subroutine compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use iso_c_binding
 
