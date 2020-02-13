@@ -1641,6 +1641,12 @@ if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
     add_default($nl, 'iceopticsfile');
 }
 
+# Run radiation every time step with MMF
+if ($cfg->get('use_MMF')) {
+  add_default($nl, 'iradsw', 'val' => '1');
+  add_default($nl, 'iradlw', 'val' => '1');
+}
+
 # Gaseous absorption coefficients files for RRTMGP
 if ($rad_pkg eq 'rrtmgp') {
     add_default($nl, 'rrtmgp_coefficients_file_sw');
