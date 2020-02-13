@@ -66,7 +66,7 @@ class TestAllScream(object):
                 elif self._integration_test:
                     self._baseline_ref = "origin/master"
                     if get_current_commit() != get_current_commit(commit="origin/master"):
-                        run_cmd_no_fail("git merge origin/master", verbose=True)
+                        run_cmd_no_fail("git merge origin/master", arg_stdout=None, arg_stderr=None, verbose=True)
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
