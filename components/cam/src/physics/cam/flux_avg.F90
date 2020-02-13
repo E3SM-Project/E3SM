@@ -79,6 +79,7 @@ subroutine flux_avg_init(cam_in,  pbuf2d)
    do lchnk = begchunk, endchunk
       ncol = get_ncols_p(lchnk)
       pbuf2d_chunk => pbuf_get_chunk(pbuf2d, lchnk)
+      
       call pbuf_set_field(pbuf2d_chunk, lhflx_idx,  cam_in(lchnk)%lhf(:ncol))
       call pbuf_set_field(pbuf2d_chunk, shflx_idx,  cam_in(lchnk)%shf(:ncol))
       call pbuf_set_field(pbuf2d_chunk, qflx_idx,   cam_in(lchnk)%cflx(:ncol,1))
@@ -180,9 +181,10 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
    integer,  intent(in)    :: ncol
 
    real(r8) :: temp(pcols)
-   real(r8) :: timescale = 14400._r8    ! 4 hours
    real(r8) :: maxres
    integer i
+
+   real(r8), parameter :: timescale = 14400._r8    ! 4 hours
 
    temp(1:ncol) = new(1:ncol)
    if (nstep > 0) then
