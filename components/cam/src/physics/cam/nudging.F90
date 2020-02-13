@@ -1233,13 +1233,16 @@ contains
 
 !==> JS ADD
       else
-         ! The following lines are used to reset the nudging tendency
-         ! to zero in order to perform an intermittent simulation
-         Nudge_Ustep(:ncol,:pver,:) = 0._r8
-         Nudge_Vstep(:ncol,:pver,:) = 0._r8
-         Nudge_Tstep(:ncol,:pver,:) = 0._r8
-         Nudge_Qstep(:ncol,:pver,:) = 0._r8
-         Nudge_PSstep(:ncol,:) = 0._r8
+         do lchnk=begchunk,endchunk
+            ncol=phys_state(lchnk)%ncol
+            ! The following lines are used to reset the nudging tendency
+            ! to zero in order to perform an intermittent simulation
+            Nudge_Ustep(:ncol,:pver,lchnk) = 0._r8
+            Nudge_Vstep(:ncol,:pver,lchnk) = 0._r8
+            Nudge_Tstep(:ncol,:pver,lchnk) = 0._r8
+            Nudge_Qstep(:ncol,:pver,lchnk) = 0._r8
+            Nudge_PSstep(:ncol,lchnk)      = 0._r8
+         end do
 !==> JS END
       end if
 !==> JS ADD
