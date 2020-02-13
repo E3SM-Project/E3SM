@@ -14,7 +14,7 @@
     <address>ftp.emc.ncep.noaa.gov/EIB/UFS/</address>
     <user>anonymous</user>
     <password>user@example.edu</password>
-    <ic_filepath>inputdata/canned_winds</ic_filepath>
+    <ic_filepath>inputdata/canned_winds/</ic_filepath>
   </server>
   <server>
     <comment>NOMADS ftp site for initial conditions</comment>
