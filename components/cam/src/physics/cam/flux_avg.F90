@@ -180,6 +180,8 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
    integer,  intent(in)    :: ncol
 
    real(r8) :: temp(pcols)
+   real(r8) :: timescale = 14400._r8    ! 4 hours
+   real(r8) :: maxres
    integer i
 
    temp(1:ncol) = new(1:ncol)
@@ -206,12 +208,12 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
    ! but if it is large we will add it at the rate required to put
    ! the residual back into the flux over a 2 hour period
    do i = 1,ncol
-      if (abs(res(i)).lt.max(abs(new(i)),abs(old(i)))*0.05_r8) then
+      maxres = max( abs(new(i)) , abs(old(i)) )
+      if (abs(res(i)).lt.maxres*0.05_r8) then
          temp(i) = res(i)
          res(i) = 0._r8
       else
-         temp(i) = res(i)*deltat/7200._r8
-         !     temp(i) = res(i)*deltat*0.5/7200.
+         temp(i) = res(i)*deltat/timescale
          res(i) = res(i)-temp(i)
       endif
    end do
