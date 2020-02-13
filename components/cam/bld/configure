@@ -1899,7 +1899,9 @@ my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
 my $crm_adv    = $cfg_ref->get('crm_adv');
 my $yes3Dval = 1;
 if ($crm_ny eq 1) {$yes3Dval = 0;}
-$cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+$cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+$cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
+$cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
 
 if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
 if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
