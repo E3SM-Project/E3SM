@@ -161,7 +161,7 @@ function(build_model COMP_CLASS COMP_NAME)
   #-------------------------------------------------------------------------------
 
   if (MPILIB STREQUAL "mpi-serial")
-    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/lib-mpi-serial.a")
+    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
     set(MLIBS "${MLIBS} ${MPISERIAL}")
   endif()
 
