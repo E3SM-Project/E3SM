@@ -374,7 +374,7 @@ struct Functions
 
   // Impose maximum ice number
   KOKKOS_FUNCTION
-  static void impose_max_total_Ni(Spack& nitot_local, Spack& max_total_Ni, Spack& inv_rho_local);
+  static void impose_max_total_Ni(Spack& nitot_local, const Spack& max_total_Ni, const Spack& inv_rho_local);
   
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
@@ -455,6 +455,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
+# include "p3_functions_impose_max_total_Ni_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"

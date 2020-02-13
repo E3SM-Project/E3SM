@@ -271,6 +271,15 @@ contains
       call cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr)
   end subroutine cloud_water_autoconversion_c
 
+  subroutine impose_max_total_ni_c(nitot_local, max_total_Ni, inv_rho_local) bind(C)
+    use micro_p3, only: impose_max_total_Ni
+
+    real(kind=c_real), intent(inout) :: nitot_local
+    real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
+
+    call impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local)
+  end subroutine impose_max_total_ni_c
+
   subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use micro_p3, only: calc_first_order_upwind_step, realptr
 

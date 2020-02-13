@@ -1930,7 +1930,7 @@ contains
     ! ratio of number between categories.
     !--------------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
-      use micro_p3_iso_f, only: impose_max_total_Ni_f
+      use micro_p3_iso_f, only: impose_max_total_ni_f
 #endif
 
     implicit none
@@ -1941,6 +1941,13 @@ contains
 
     !local variables:
     real(rtype)                              :: dum
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call impose_max_total_ni_f(nitot_local,max_total_Ni,inv_rho_local)
+       return
+    endif
+#endif
 
     if (nitot_local.ge.1.e-20_rtype) then
        dum = max_total_Ni*inv_rho_local/nitot_local
@@ -2831,7 +2838,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call  cloud_water_autoconversion_f(rho,qc_incld,nc_incld,    &
+      call cloud_water_autoconversion_f(rho,qc_incld,nc_incld,    &
          qcaut,ncautc,ncautr)
       return
    endif
