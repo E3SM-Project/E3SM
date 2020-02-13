@@ -21,7 +21,7 @@ contains
 
     use grid
     use vars, only: u, v, w, rho, rhow
-    use params, only: docolumn, crm_rknd
+    use params, only: crm_rknd
 
     implicit none
     integer, intent(in) :: ncrms, icrm
@@ -34,12 +34,6 @@ contains
     !	local
     real(crm_rknd), dimension(dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm) :: df
     integer :: i, j, k
-
-
-    if(docolumn) then
-      flux = 0.
-      return
-    endif
 
     !call t_startf ('advect_scalars')
 

@@ -13,7 +13,7 @@ contains
     !       Also, used for a 2D version
     !       For more processors for the given number of levels and 3D, use pressure_big
     use vars
-    use params, only: dowallx, dowally, docolumn, crm_rknd
+    use params, only: dowallx, dowally, crm_rknd
     use press_rhs_mod
     use press_grad_mod
     use fft_mod
@@ -73,8 +73,6 @@ contains
     jt = 0
 
     !-----------------------------------------------------------------
-
-    if(docolumn) return
 
     if(dowallx) then
       iwall=1

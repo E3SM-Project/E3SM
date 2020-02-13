@@ -28,7 +28,7 @@ contains
     integer i,j,k,ib,ic,kc,kb,icrm
     integer :: numgangs  !For working around PGI bug where it didn't create enough OpenACC gangs
 
-    if(.not.dosgs.and..not.docolumn) return
+    if(.not.dosgs) return
 
     rdx2=1./(dx*dx)
     j=1
@@ -68,28 +68,26 @@ contains
       endif
     endif
 
-    if(.not.docolumn) then
-      !$acc parallel loop collapse(3) async(asyncid)
-      do k=1,nzm
-        do i=0,nx
-          do icrm = 1 , ncrms
-            rdx5=0.5*rdx2  *grdf_x(icrm,k)
-            ic=i+1
-            tkx=rdx5*(tkh(icrm,i,j,k)+tkh(icrm,ic,j,k))
-            flx(icrm,i,j,k)=-tkx*(field(icrm,ic,j,k)-field(icrm,i,j,k))
-          enddo
+    !$acc parallel loop collapse(3) async(asyncid)
+    do k=1,nzm
+      do i=0,nx
+        do icrm = 1 , ncrms
+          rdx5=0.5*rdx2  *grdf_x(icrm,k)
+          ic=i+1
+          tkx=rdx5*(tkh(icrm,i,j,k)+tkh(icrm,ic,j,k))
+          flx(icrm,i,j,k)=-tkx*(field(icrm,ic,j,k)-field(icrm,i,j,k))
         enddo
       enddo
-      !$acc parallel loop collapse(3) async(asyncid)
-      do k=1,nzm
-        do i=1,nx
-          do icrm = 1 , ncrms
-            ib=i-1
-            dfdt(icrm,i,j,k)=dfdt(icrm,i,j,k)-(flx(icrm,i,j,k)-flx(icrm,ib,j,k))
-          enddo
+    enddo
+    !$acc parallel loop collapse(3) async(asyncid)
+    do k=1,nzm
+      do i=1,nx
+        do icrm = 1 , ncrms
+          ib=i-1
+          dfdt(icrm,i,j,k)=dfdt(icrm,i,j,k)-(flx(icrm,i,j,k)-flx(icrm,ib,j,k))
         enddo
       enddo
-    endif
+    enddo
 
     !$acc parallel loop collapse(2) async(asyncid)
     do k = 1 , nzm

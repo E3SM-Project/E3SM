@@ -9,7 +9,7 @@ contains
     !        momentum tendency due to SGS diffusion
 
     use vars
-    use params, only: docolumn, crm_rknd
+    use params, only: crm_rknd
     use openacc_utils
     implicit none
     integer, intent(in) :: ncrms
@@ -40,42 +40,40 @@ contains
 
     j=1
 
-    if( .not. docolumn ) then
-      !For working around PGI bugs where PGI did not allocate enough gangs
-      numgangs = ceiling( ncrms*nzm*nx/128. )
-      !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
-      do k=1,nzm
-        do i=0,nx
-          do icrm = 1 , ncrms
-            kc=k+1
-            kcu=min(kc,nzm)
-            dxz=dx/(dz(icrm)*adzw(icrm,kc))
-            rdx21=rdx2 * grdf_x(icrm,k)
-            rdx251=rdx25 * grdf_x(icrm,k)
-            ic=i+1
-            tkx=rdx21*tk(icrm,i,j,k)
-            fu(icrm,i,j,k)=-2.*tkx*(u(icrm,ic,j,k)-u(icrm,i,j,k))
-            fv(icrm,i,j,k)=-tkx*(v(icrm,ic,j,k)-v(icrm,i,j,k))
-            tkx=rdx251*(tk(icrm,i,j,k)+tk(icrm,ic,j,k)+tk(icrm,i,j,kcu)+tk(icrm,ic,j,kcu))
-            fw(icrm,i,j,k)=-tkx*(w(icrm,ic,j,kc)-w(icrm,i,j,kc)+(u(icrm,ic,j,kcu)-u(icrm,ic,j,k))*dxz)
-          end do
+    !For working around PGI bugs where PGI did not allocate enough gangs
+    numgangs = ceiling( ncrms*nzm*nx/128. )
+    !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
+    do k=1,nzm
+      do i=0,nx
+        do icrm = 1 , ncrms
+          kc=k+1
+          kcu=min(kc,nzm)
+          dxz=dx/(dz(icrm)*adzw(icrm,kc))
+          rdx21=rdx2 * grdf_x(icrm,k)
+          rdx251=rdx25 * grdf_x(icrm,k)
+          ic=i+1
+          tkx=rdx21*tk(icrm,i,j,k)
+          fu(icrm,i,j,k)=-2.*tkx*(u(icrm,ic,j,k)-u(icrm,i,j,k))
+          fv(icrm,i,j,k)=-tkx*(v(icrm,ic,j,k)-v(icrm,i,j,k))
+          tkx=rdx251*(tk(icrm,i,j,k)+tk(icrm,ic,j,k)+tk(icrm,i,j,kcu)+tk(icrm,ic,j,kcu))
+          fw(icrm,i,j,k)=-tkx*(w(icrm,ic,j,kc)-w(icrm,i,j,kc)+(u(icrm,ic,j,kcu)-u(icrm,ic,j,k))*dxz)
         end do
       end do
-      !For working around PGI bugs where PGI did not allocate enough gangs
-      numgangs = ceiling( ncrms*nzm*nx/128. )
-      !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
-      do k=1,nzm
-        do i=1,nx
-          do icrm = 1 , ncrms
-            kc=k+1
-            ib=i-1
-            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,k)-fu(icrm,ib,j,k))
-            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,k)-fv(icrm,ib,j,k))
-            dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-(fw(icrm,i,j,k)-fw(icrm,ib,j,k))
-          end do
+    end do
+    !For working around PGI bugs where PGI did not allocate enough gangs
+    numgangs = ceiling( ncrms*nzm*nx/128. )
+    !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
+    do k=1,nzm
+      do i=1,nx
+        do icrm = 1 , ncrms
+          kc=k+1
+          ib=i-1
+          dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,k)-fu(icrm,ib,j,k))
+          dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,k)-fv(icrm,ib,j,k))
+          dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-(fw(icrm,i,j,k)-fw(icrm,ib,j,k))
         end do
       end do
-    end if
+    end do
 
     !-------------------------
 

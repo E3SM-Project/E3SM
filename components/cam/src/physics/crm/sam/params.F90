@@ -64,7 +64,6 @@ module params
   logical:: docoriolis    = .false.   ! not normally used for MMF
   logical:: dowallx       = .false.   ! not normally used for MMF
   logical:: dowally       = .false.   ! not normally used for MMF
-  logical:: docolumn      = .false.   ! not normally used for MMF
   logical:: dotracers     = .false.   ! not normally used for MMF
 
   integer, parameter :: asyncid = 1

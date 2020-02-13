@@ -707,7 +707,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
    ! TODO: this should not be a pointer, it is being used as an alloctable (and
    ! is only used in one place, so should get a more descriptive variable name)
-   real(r8), pointer, dimension(:,:)     :: tempPtr
+   real(r8), pointer, dimension(:,:) :: tempPtr
 
    real(r8), dimension(pcols) :: qli_hydro_before    ! column-integraetd rain + snow + graupel 
    real(r8), dimension(pcols) ::  qi_hydro_before    ! column-integrated snow water + graupel water
