@@ -23,10 +23,10 @@ save
 
 public :: &
    cloud_rad_props_init,          &
-   get_ice_optics_sw,             & ! return Mitchell SW ice radiative properties
-   get_ice_optics_lw,             & ! Mitchell LW ice rad props
-   get_liquid_optics_sw,          & ! return Conley SW rad props
-   get_liquid_optics_lw,          & ! return Conley LW rad props
+   get_mitchell_ice_optics_sw,    & ! return Mitchell SW ice radiative properties
+   get_mitchell_ice_optics_lw,    & ! Mitchell LW ice rad props
+   get_gammadist_liq_optics_sw,   & ! return Conley SW rad props
+   get_gammadist_liq_optics_lw,   & ! return Conley LW rad props
    get_snow_optics_sw,            &
    get_snow_optics_lw
 
@@ -267,7 +267,7 @@ end subroutine cloud_rad_props_init
 
 !==============================================================================
 
-subroutine get_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
+subroutine get_mitchell_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    type(physics_state), intent(in)   :: state
    type(physics_buffer_desc),pointer :: pbuf(:)
 
@@ -286,11 +286,11 @@ subroutine get_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    call interpolate_ice_optics_sw(state%ncol, iciwpth, dei, tau, tau_w, &
                                   tau_w_g, tau_w_f)
 
-end subroutine get_ice_optics_sw
+end subroutine get_mitchell_ice_optics_sw
 
 !==============================================================================
 
-subroutine get_ice_optics_lw(state, pbuf, abs_od)
+subroutine get_mitchell_ice_optics_lw(state, pbuf, abs_od)
    type(physics_state), intent(in)     :: state
    type(physics_buffer_desc), pointer  :: pbuf(:)
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
@@ -304,11 +304,11 @@ subroutine get_ice_optics_lw(state, pbuf, abs_od)
 
    call interpolate_ice_optics_lw(state%ncol,iciwpth, dei, abs_od)
 
-end subroutine get_ice_optics_lw
+end subroutine get_mitchell_ice_optics_lw
 
 !==============================================================================
 
-subroutine get_liquid_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
+subroutine get_gammadist_liq_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    type(physics_state), intent(in)   :: state
    type(physics_buffer_desc),pointer :: pbuf(:)
 
@@ -342,11 +342,11 @@ subroutine get_liquid_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
       enddo
    enddo
 
-end subroutine get_liquid_optics_sw
+end subroutine get_gammadist_liq_optics_sw
 
 !==============================================================================
 
-subroutine get_liquid_optics_lw(state, pbuf, abs_od)
+subroutine get_gammadist_liq_optics_lw(state, pbuf, abs_od)
    type(physics_state), intent(in)    :: state
    type(physics_buffer_desc),pointer  :: pbuf(:)
    real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
@@ -375,7 +375,7 @@ subroutine get_liquid_optics_lw(state, pbuf, abs_od)
       enddo
    enddo
 
-end subroutine get_liquid_optics_lw
+end subroutine get_gammadist_liq_optics_lw
 
 !==============================================================================
 
@@ -390,7 +390,7 @@ subroutine get_snow_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
 
    real(r8), pointer :: icswpth(:,:), des(:,:)
 
-   ! This does the same thing as get_ice_optics_sw, except with a different
+   ! This does the same thing as get_mitchell_ice_optics_sw, except with a different
    ! water path and effective diameter.
    call pbuf_get_field(pbuf, i_icswp, icswpth)
    call pbuf_get_field(pbuf, i_des,   des)
