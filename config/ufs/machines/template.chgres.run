@@ -1,6 +1,15 @@
 #!/bin/bash
 {{ batchdirectives }}
 
+# Set environment variables
+if [ -z "${NCEPLIBS_DIR}" ]; then
+  echo "Set environment variables:"
+  cat software_environment.txt | grep NCEPLIBS_DIR | sed -e 's/^/export /' > .env
+  source .env
+else
+  echo "Environment variables are already set:"
+fi
+
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "Run directory is $rundir"
