@@ -58,7 +58,7 @@
       <runtime_parameters>
         <task_count>72</task_count>
         <tasks_per_node>$MAX_MPITASKS_PER_NODE</tasks_per_node>
-        <walltime>0:30:00</walltime>
+        <walltime>1:00:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">
@@ -78,7 +78,7 @@
       <runtime_parameters>
         <task_count>72</task_count>
         <tasks_per_node>$MAX_MPITASKS_PER_NODE</tasks_per_node>
-        <walltime>0:30:00</walltime>
+        <walltime>1:00:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.st_archive">
@@ -102,7 +102,7 @@
       <runtime_parameters>
         <task_count>72</task_count>
         <tasks_per_node>$MAX_MPITASKS_PER_NODE</tasks_per_node>
-        <walltime>0:30:00</walltime>
+        <walltime>1:00:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">

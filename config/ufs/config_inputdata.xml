@@ -14,7 +14,7 @@
     <address>ftp.emc.ncep.noaa.gov/EIB/UFS/</address>
     <user>anonymous</user>
     <password>user@example.edu</password>
-    <ic_filepath>inputdata/prod</ic_filepath>
+    <ic_filepath>inputdata/canned_winds</ic_filepath>
   </server>
   <server>
     <comment>NOMADS ftp site for initial conditions</comment>
@@ -26,7 +26,7 @@
     <comment>NOMADS ftp site for grib initial conditions</comment>
     <protocol>wget</protocol>
     <address>https://nomads.ncdc.noaa.gov:</address>
-    <ic_filepath>data/gfsanl/</ic_filepath>
+    <ic_filepath>data/gfs4/</ic_filepath>
   </server>
 
 </inputdata>
