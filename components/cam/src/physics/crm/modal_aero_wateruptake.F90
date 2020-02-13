@@ -164,7 +164,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8), pointer :: pmid(:,:)   ! layer pressure (Pa)
    real(r8), pointer :: raer(:,:)   ! aerosol species MRs (kg/kg and #/kg)
 
-!==Guangxing Lin
+   ! Added for MMF 
    real(r8), pointer :: h2ommr_crm(:,:,:,:)        ! specfic humidity in CRM domain
    real(r8), pointer :: t_crm(:,:,:,:)             ! temperature at the CRM domain
    real(r8), pointer :: qcl_crm(:,:,:,:), qci_crm(:,:,:,:)
@@ -173,7 +173,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8), allocatable :: wtrvol_grid(:,:,:)     ! single-particle-mean water volume in wet aerosol (m3)
    real(r8), allocatable :: wetvol_grid(:,:,:)     ! single-particle-mean wet volume (m3)
    real(r8), allocatable :: ncount_clear(:,:,:)    ! to count the fraction of clear sky part
-!==Guangxing Lin
 
    real(r8), pointer :: cldn(:,:)            ! layer cloud fraction (0-1)
    real(r8), pointer :: dgncur_a(:,:,:)      !
@@ -274,9 +273,9 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       wetrad(pcols,pver,nmodes),   &
       wetvol(pcols,pver,nmodes),   &
       wtrvol(pcols,pver,nmodes),   &
-      wtrvol_grid(pcols,pver,nmodes), & !==Guangxing Lin
-      wetvol_grid(pcols,pver,nmodes), & !==Guangxing Lin    
-      ncount_clear(pcols,pver,nmodes), & !==Guangxing Lin
+      wtrvol_grid(pcols,pver,nmodes),  & ! for MMF
+      wetvol_grid(pcols,pver,nmodes),  & ! for MMF
+      ncount_clear(pcols,pver,nmodes), & ! for MMF
       rhcrystal(nmodes),           &
       rhdeliques(nmodes),          &
       specdens_1(nmodes)           )
@@ -465,7 +464,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
                   dgncur_awet(i,k,m) = dgncur_a(i,k,m) * (wetrad(i,k,m)/dryrad(i,k,m))
 
-                  !==Guangxing Lin
                   ! qaerwat(i,k,m)     = rhoh2o*naer(i,k,m)*wtrvol(i,k,m)
                   if(use_MMF) then
                      wtrvol_grid(i,k,m) = wtrvol_grid(i,k,m) + wtrvol(i,k,m)*(1.-cldnt(i,k))
@@ -483,8 +481,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                      end if
 #endif
                   end if
-                  !==Guangxing Lin
-
                 
                   ! compute aerosol wet density (kg/m3)
                   if (wetvol(i,k,m) > 1.0e-30_r8) then
@@ -495,7 +491,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                end do ! i
             end do ! k 
 
-            !==Guangxing Lin
             if (use_MMF) then
                if (last_column) then
                   do k = 1, pver
@@ -521,7 +516,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                   end do ! ncol
                endif ! last_column
             endif ! use_MMF
-            !==Guangxing Lin
 
          end do ! modes
 
