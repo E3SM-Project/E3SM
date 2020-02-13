@@ -1923,7 +1923,7 @@
         <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
-        <command name="load">pgi/19.7</command>
+        <command name="load">pgi/19.10</command>
       </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
