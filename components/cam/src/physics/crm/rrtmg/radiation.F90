@@ -84,17 +84,11 @@ integer :: dei_idx      = 0
 ! running SP before these are set unless we change the order of how things are
 ! read. A better option would be to set these defaults in the compset definition
 ! probably.
-#ifdef CRM
-integer :: iradsw =  1     ! freq. of shortwave radiation calc in time steps (positive)
-                           ! or hours (negative).
-integer :: iradlw =  1     ! frequency of longwave rad. calc. in time steps (positive)
-                           ! or hours (negative).
-#else
+
 integer :: iradsw = -1     ! freq. of shortwave radiation calc in time steps (positive)
                            ! or hours (negative).
 integer :: iradlw = -1     ! frequency of longwave rad. calc. in time steps (positive)
                            ! or hours (negative).
-#endif
 
 integer :: irad_always = 0 ! Specifies length of time in timesteps (positive)
                            ! or hours (negative) SW/LW radiation will be
@@ -942,9 +936,9 @@ end function radiation_nextsw_cday
     use physconst,            only: gravit
     use constituents,         only: cnst_get_ind
     use radconstants,         only: idx_sw_diag
-#ifdef CRM
+
     use crm_physics,          only: m2005_effradius
-#endif
+    
 #ifdef MODAL_AERO
     use modal_aero_data,       only: ntot_amode
 #endif
@@ -1645,7 +1639,6 @@ end function radiation_nextsw_cday
               end do ! i
             end do ! m
 
-#ifdef CRM  
             ! update effective radius
             if (MMF_microphysics_scheme .eq. 'm2005') then 
               do m=1,crm_nz
@@ -1682,7 +1675,7 @@ end function radiation_nextsw_cday
                 dei_crm(:ncol,ii,jj,m) = dei(:ncol,k)
               end do ! m
             end if ! sam1mom
-#endif
+
           endif ! use_MMF
 
           call t_startf('cldoptics')
