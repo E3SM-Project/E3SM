@@ -5,6 +5,10 @@ module cam_optics
    use radiation_state, only: nlev_rad, ktop, kbot
    use radiation_utils, only: handle_error
    use radconstants, only: nswbands, nlwbands
+   use rad_constituents, only: icecldoptics, liqcldoptics
+   use ebert_curry, only: ec_ice_optics_sw, ec_ice_optics_lw
+   use slingo, only: slingo_liq_optics_sw, slingo_liq_optics_lw
+   use cam_abortutils, only: endrun
 
    implicit none
    private
@@ -94,9 +98,9 @@ contains
       !                    size(optics_out%optical_depth,2), &
       !                    size(optics_out%optical_depth,3)) :: &
       real(r8), dimension(nswbands,pcols,pver) :: &
-            liquid_tau, liquid_tau_ssa, liquid_tau_ssa_g, liquid_tau_ssa_f, &
+            liq_tau, liq_tau_ssa, liq_tau_ssa_g, liq_tau_ssa_f, &
             ice_tau, ice_tau_ssa, ice_tau_ssa_g, ice_tau_ssa_f, &
-            cloud_tau, cloud_tau_ssa, cloud_tau_ssa_g, cloud_tau_ssa_f, &
+            cld_tau, cld_tau_ssa, cld_tau_ssa_g, cld_tau_ssa_f, &
             snow_tau, snow_tau_ssa, snow_tau_ssa_g, snow_tau_ssa_f, &
             combined_tau, combined_tau_ssa, combined_tau_ssa_g, combined_tau_ssa_f
 
@@ -104,23 +108,17 @@ contains
       real(r8), pointer :: iciwp(:,:), dei(:,:)
       real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
 
-      ! Flag to see if we should be doing snow optics. To set this, we can look for
-      ! the "snow cloud fraction" on the physics buffer, and if found then set this
-      ! to .true.
-      logical :: do_snow_optics = .true.
-      integer :: err
-
-      integer :: ncol, iband
+      integer :: ncol, iband, ilev, icol
 
       ! Initialize
       ice_tau = 0
       ice_tau_ssa = 0
       ice_tau_ssa_g = 0
       ice_tau_ssa_f = 0
-      liquid_tau = 0
-      liquid_tau_ssa = 0
-      liquid_tau_ssa_g = 0
-      liquid_tau_ssa_f = 0
+      liq_tau = 0
+      liq_tau_ssa = 0
+      liq_tau_ssa_g = 0
+      liq_tau_ssa_f = 0
       snow_tau = 0
       snow_tau_ssa = 0
       snow_tau_ssa_g = 0
@@ -134,36 +132,73 @@ contains
       !call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
       !call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
       ncol = state%ncol
-      call get_mitchell_ice_optics_sw(state, pbuf, &
-                             ice_tau, ice_tau_ssa, &
-                             ice_tau_ssa_g, ice_tau_ssa_f)
+      if (trim(icecldoptics) == 'mitchell') then
+         call get_mitchell_ice_optics_sw( &
+            state, pbuf, &
+            ice_tau, ice_tau_ssa, &
+            ice_tau_ssa_g, ice_tau_ssa_f &
+         )
+         ! We need to fix band ordering because the old input files assume RRTMG band
+         ! ordering, but this has changed in RRTMGP.
+         ! TODO: fix the input files themselves!
+         do ilev = 1,pver
+            do icol = 1,ncol
+               ice_tau      (:,icol,ilev) = reordered(ice_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               ice_tau_ssa  (:,icol,ilev) = reordered(ice_tau_ssa  (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               ice_tau_ssa_g(:,icol,ilev) = reordered(ice_tau_ssa_g(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               ice_tau_ssa_f(:,icol,ilev) = reordered(ice_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+            end do
+         end do
+      else if (trim(icecldoptics) == 'ebertcurry') then
+         call ec_ice_optics_sw(state, pbuf, ice_tau, ice_tau_ssa, ice_tau_ssa_g, ice_tau_ssa_f)
+      else
+         call endrun('icecldoptics ' // trim(icecldoptics) // ' not supported.')
+      end if
       call assert_range(ice_tau(1:nswbands,1:ncol,1:pver), 0._r8, 1e20_r8, &
                         'get_cloud_optics_sw: ice_tau')
       
       ! Get liquid cloud optics
-      call get_gammadist_liq_optics_sw(state, pbuf, &
-                                liquid_tau, liquid_tau_ssa, &
-                                liquid_tau_ssa_g, liquid_tau_ssa_f)
-      call assert_range(liquid_tau(1:nswbands,1:ncol,1:pver), 0._r8, 1e20_r8, &
-                        'get_cloud_optics_sw: liquid_tau')
+      if (trim(liqcldoptics) == 'gammadist') then
+         call get_gammadist_liq_optics_sw( &
+            state, pbuf, &
+            liq_tau, liq_tau_ssa, &
+            liq_tau_ssa_g, liq_tau_ssa_f &
+         )
+         do ilev = 1,pver
+            do icol = 1,ncol
+               liq_tau      (:,icol,ilev) = reordered(liq_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               liq_tau_ssa  (:,icol,ilev) = reordered(liq_tau_ssa  (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               liq_tau_ssa_g(:,icol,ilev) = reordered(liq_tau_ssa_g(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               liq_tau_ssa_f(:,icol,ilev) = reordered(liq_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+            end do
+         end do
+      else if (trim(liqcldoptics) == 'slingo') then
+         call slingo_liq_optics_sw( &
+            state, pbuf, &
+            liq_tau, liq_tau_ssa, &
+            liq_tau_ssa_g, liq_tau_ssa_f &
+         )
+      else
+         call endrun('liqcldoptics ' // trim(liqcldoptics) // ' not supported.')
+      end if
 
-      ! Should we do snow optics? Check for existence of "cldfsnow" variable
-      ! NOTE: turned off for now...we need to figure out how to adjust the cloud
-      ! fraction seen by the mcica sampling as well when we are doing snow optics.
-      ! The thing to do then is probably to set this at the module level.
-      !call pbuf_get_index(pbuf, 'CLDFSNOW', err=err)
-      !if (err > 0) then
-      !   do_snow_optics = .true.
-      !else
-      !   do_snow_optics = .false.
-      !end if
+      call assert_range(liq_tau(1:nswbands,1:ncol,1:pver), 0._r8, 1e20_r8, &
+                        'get_cloud_optics_sw: liq_tau')
 
       ! Get snow cloud optics
-      if (do_snow_optics) then
+      if (do_snow_optics()) then
          ! Doing snow optics; call procedure to get these from CAM state and pbuf
          call get_snow_optics_sw(state, pbuf, &
                                  snow_tau, snow_tau_ssa, &
                                  snow_tau_ssa_g, snow_tau_ssa_f)
+         do ilev = 1,pver
+            do icol = 1,ncol
+               snow_tau      (:,icol,ilev) = reordered(snow_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               snow_tau_ssa  (:,icol,ilev) = reordered(snow_tau_ssa  (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               snow_tau_ssa_g(:,icol,ilev) = reordered(snow_tau_ssa_g(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+               snow_tau_ssa_f(:,icol,ilev) = reordered(snow_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
+            end do
+         end do
       else
          ! We are not doing snow optics, so set these to zero so we can still use 
          ! the arrays without additional logic
@@ -180,24 +215,24 @@ contains
       call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
 
       ! Combine all cloud optics from CAM routines
-      cloud_tau = ice_tau + liquid_tau
-      cloud_tau_ssa = ice_tau_ssa + liquid_tau_ssa
-      cloud_tau_ssa_g = ice_tau_ssa_g + liquid_tau_ssa_g
+      cld_tau = ice_tau + liq_tau
+      cld_tau_ssa = ice_tau_ssa + liq_tau_ssa
+      cld_tau_ssa_g = ice_tau_ssa_g + liq_tau_ssa_g
       call combine_properties( &
          nswbands, ncol, pver, &
-         cloud_fraction(1:ncol,1:pver), cloud_tau(1:nswbands,1:ncol,1:pver), &
+         cloud_fraction(1:ncol,1:pver), cld_tau(1:nswbands,1:ncol,1:pver), &
          snow_fraction(1:ncol,1:pver), snow_tau(1:nswbands,1:ncol,1:pver), &
          combined_tau(1:nswbands,1:ncol,1:pver) &
       )
       call combine_properties( &
          nswbands, ncol, pver, &
-         cloud_fraction(1:ncol,1:pver), cloud_tau_ssa(1:nswbands,1:ncol,1:pver), &
+         cloud_fraction(1:ncol,1:pver), cld_tau_ssa(1:nswbands,1:ncol,1:pver), &
          snow_fraction(1:ncol,1:pver), snow_tau_ssa(1:nswbands,1:ncol,1:pver), &
          combined_tau_ssa(1:nswbands,1:ncol,1:pver) &
       )
       call combine_properties( &
          nswbands, ncol, pver, &
-         cloud_fraction(1:ncol,1:pver), cloud_tau_ssa_g(1:nswbands,1:ncol,1:pver), &
+         cloud_fraction(1:ncol,1:pver), cld_tau_ssa_g(1:nswbands,1:ncol,1:pver), &
          snow_fraction(1:ncol,1:pver), snow_tau_ssa_g(1:nswbands,1:ncol,1:pver), &
          combined_tau_ssa_g(1:nswbands,1:ncol,1:pver) &
       )
@@ -254,7 +289,7 @@ contains
 
       ! Temporary variables to hold absorption optical depth
       real(r8), dimension(nlwbands,pcols,pver) :: &
-            ice_tau, liq_tau, snow_tau, cloud_tau, combined_tau
+            ice_tau, liq_tau, snow_tau, cld_tau, combined_tau
 
       integer :: iband, ncol
 
@@ -265,31 +300,47 @@ contains
       ice_tau(:,:,:) = 0.0
       liq_tau(:,:,:) = 0.0
       snow_tau(:,:,:) = 0.0
-      cloud_tau(:,:,:) = 0.0
+      cld_tau(:,:,:) = 0.0
       combined_tau(:,:,:) = 0.0
 
       ! Get ice optics
-      call get_mitchell_ice_optics_lw(state, pbuf, ice_tau)
+      if (trim(icecldoptics) == 'mitchell') then
+         call get_mitchell_ice_optics_lw(state, pbuf, ice_tau)
+      else if (trim(icecldoptics) == 'ebertcurry') then
+         call ec_ice_optics_lw(state, pbuf, ice_tau)
+      else
+         call endrun('icecldoptics ' // trim(icecldoptics) // ' not supported.')
+      end if
 
       ! Get liquid optics
-      call get_gammadist_liq_optics_lw(state, pbuf, liq_tau)
+      if (trim(liqcldoptics) == 'gammadist') then
+         call get_gammadist_liq_optics_lw(state, pbuf, liq_tau)
+      else if (trim(liqcldoptics) == 'slingo') then
+         call slingo_liq_optics_lw(state, pbuf, liq_tau)
+      else
+         call endrun('liqcldoptics ' // trim(liqcldoptics) // ' not supported.')
+      end if
 
       ! Get snow optics?
-      call get_snow_optics_lw(state, pbuf, snow_tau)
+      if (do_snow_optics()) then
+         call get_snow_optics_lw(state, pbuf, snow_tau)
 
-      ! Get cloud and snow fractions. This is used to weight the contribution to
-      ! the total lw absorption by the fraction of the column that contains
-      ! cloud vs snow. TODO: is this the right thing to do here?
-      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
+         ! Get cloud and snow fractions. This is used to weight the contribution to
+         ! the total lw absorption by the fraction of the column that contains
+         ! cloud vs snow. TODO: is this the right thing to do here?
+         call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
+         call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
 
-      ! Combined cloud optics
-      cloud_tau = liq_tau + ice_tau
-      call combine_properties(nlwbands, ncol, pver, &
-         cloud_fraction(1:ncol,1:pver), cloud_tau(1:nlwbands,1:ncol,1:pver), &
-         snow_fraction(1:ncol,1:pver), snow_tau(1:nlwbands,1:ncol,1:pver), &
-         combined_tau(1:nlwbands,1:ncol,1:pver) &
-      )
+         ! Combined cloud optics
+         cld_tau = liq_tau + ice_tau
+         call combine_properties(nlwbands, ncol, pver, &
+            cloud_fraction(1:ncol,1:pver), cld_tau(1:nlwbands,1:ncol,1:pver), &
+            snow_fraction(1:ncol,1:pver), snow_tau(1:nlwbands,1:ncol,1:pver), &
+            combined_tau(1:nlwbands,1:ncol,1:pver) &
+         )
+      else
+         combined_tau(1:nlwbands,1:ncol,1:pver) = cld_tau(1:nlwbands,1:ncol,1:pver)
+      end if
 
       ! Set optics_out
       do iband = 1,nlwbands
@@ -412,23 +463,6 @@ contains
       ! the subcolumn sampling to account for cloud overlap.
       call optics_cam%initialize(nswbands, ncol, pver)
       call get_cloud_optics_sw(state, pbuf, optics_cam)
-
-      ! We need to fix band ordering because the old input files assume RRTMG band
-      ! ordering, but this has changed in RRTMGP.
-      ! TODO: fix the input files themselves!
-      do icol = 1,size(optics_cam%optical_depth,1)
-         do ilev = 1,size(optics_cam%optical_depth,2)
-            optics_cam%optical_depth(icol,ilev,:) = reordered( &
-               optics_cam%optical_depth(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
-            )
-            optics_cam%single_scattering_albedo(icol,ilev,:) = reordered( &
-               optics_cam%single_scattering_albedo(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
-            )
-            optics_cam%assymmetry_parameter(icol,ilev,:) = reordered( &
-               optics_cam%assymmetry_parameter(icol,ilev,:), map_rrtmg_to_rrtmgp_swbands &
-            )
-         end do
-      end do
 
       ! Send in-cloud optical depth for visible band to history buffer
       call output_cloud_optics_sw(state, optics_cam)
@@ -845,7 +879,7 @@ contains
       type(cam_optics_type), intent(in) :: optics
 
       ! Check values
-      call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), 'cloud_tau_lw')
+      call assert_valid(optics%optical_depth(1:state%ncol,1:pver,1:nlwbands), 'cld_tau_lw')
 
       ! Output
       call outfld('CLOUD_TAU_LW', &
@@ -855,5 +889,22 @@ contains
    end subroutine output_cloud_optics_lw
 
    !----------------------------------------------------------------------------
+
+   ! Should we do snow optics? Check for existence of "cldfsnow" variable
+   logical function do_snow_optics()
+      use physics_buffer, only: pbuf_get_index
+      use cam_abortutils, only: endrun
+      real(r8), pointer :: pbuf(:)
+      integer :: err, idx
+
+      idx = pbuf_get_index('CLDFSNOW', errcode=err)
+      if (idx > 0) then
+         do_snow_optics = .true.
+      else
+         do_snow_optics = .false.
+      end if
+
+      return
+   end function do_snow_optics 
 
 end module cam_optics

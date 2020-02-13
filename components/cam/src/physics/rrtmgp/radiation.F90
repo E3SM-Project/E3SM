@@ -435,6 +435,8 @@ contains
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
+      use ebert_curry, only: ec_rad_props_init
+      use slingo, only: slingo_rad_props_init
 
       ! Physics state is going to be needed for perturbation growth tests, but we
       ! have yet to implement this in RRTMGP. It is a vector because at the point
@@ -473,6 +475,8 @@ contains
 
       ! Initialize cloud optics
       call cloud_rad_props_init()
+      call ec_rad_props_init()
+      call slingo_rad_props_init()
 
       ! Initialize output fields for offline driver.
       ! TODO: do we need to keep this functionality? Where is the offline driver?
