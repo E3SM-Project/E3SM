@@ -1258,12 +1258,11 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrs
       P3F::rain_self_collection(rho, qr_incld, nr_incld, nrslf);
 
       t_d(0) = nrslf[0];
-      
+
     });
 
   Kokkos::deep_copy(t_h, t_d);
   *nrslf_ = t_d[0];
-
 }
 
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)

@@ -2769,6 +2769,10 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    ! self-collection and breakup of rain
    ! (breakup following modified Verlinde and Cotton scheme)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: rain_self_collection_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2777,6 +2781,14 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    real(rtype), intent(out) :: nrslf
 
    real(rtype) :: dum, dum1, dum2
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
+         nrslf)
+      return
+   endif
+#endif
 
    if (qr_incld.ge.qsmall) then
 
