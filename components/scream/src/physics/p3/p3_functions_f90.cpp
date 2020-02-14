@@ -1262,7 +1262,7 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrs
     });
 
   Kokkos::deep_copy(t_h, t_d);
-  *nrslf_ = t_d[0];
+  *nrslf_ = t_h(0);
 }
 
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)
