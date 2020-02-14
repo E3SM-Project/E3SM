@@ -533,7 +533,7 @@
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines/$COMPILER</BASELINE_ROOT>
-    <!--CCSM_CPRNC>/sems-data-store/ACME/cprnc/build.new/cprnc</CCSM_CPRNC-->
+    <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build.new/cprnc</CCSM_CPRNC>
     <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>

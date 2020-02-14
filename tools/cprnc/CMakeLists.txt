@@ -1,23 +1,18 @@
 PROJECT(CPRNC C Fortran)
 
- 	
-execute_process(COMMAND ../configure --macros-format=CMake WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/src/CMake")
+# Generate this with: $cimeroot/tools/configure --mpilib=mpi-serial --macros-format=CMake
+#   You'll also need to source the .env_mach_specific.sh file before trying to build cprnc
+include("${PROJECT_BINARY_DIR}/Macros.cmake")
 
-INCLUDE(Macros.cmake)
+if (NOT NETCDF_PATH)
+  message(FATAL_ERROR "Requires NETCDF_PATH either from Macros.cmake or argument")
+endif()
 
 ENABLE_LANGUAGE(Fortran)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIMEROOT}/src/externals/pio2/cmake)
-
-# Defining NETCDF_LIBRARIES and NETCDF_INCLUDE_DIR enables bypassing
-#   the search for Netcdf
-IF (NOT DEFINED NETCDF_LIBRARIES OR NOT DEFINED NETCDF_INCLUDE_DIR)
-  SET(NETCDF_INCLUDE_DIR ${NETCDF_PATH}/include)
-  SET(NETCDF_LIBRARIES ${NETCDF_PATH}/lib/libnetcdff.a)
-ENDIF ()
 
 ADD_CUSTOM_COMMAND(
   OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
@@ -37,7 +32,7 @@ ELSEIF (CMAKE_COMPILER_ID STREQUAL PathScale)
 ENDIF ()
 
 INCLUDE_DIRECTORIES(
-  ${NETCDF_INCLUDE_DIR}
+  ${NETCDF_PATH}/include
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR}
 )
@@ -53,9 +48,6 @@ SET (CPRNC_SRCS
 ADD_EXECUTABLE(cprnc ${CPRNC_SRCS})
 ADD_DEPENDENCIES(cprnc COMPARE_VARS)
 
-TARGET_LINK_LIBRARIES(cprnc ${NETCDF_LIBRARIES})
-
-INSTALL(TARGETS cprnc
-        RUNTIME DESTINATION bin)
-
-execute_process(COMMAND ../configure --clean WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+# SLIBS comes from Macros.cmake
+separate_arguments(SLIBS_LIST UNIX_COMMAND "${SLIBS}")
+TARGET_LINK_LIBRARIES(cprnc ${SLIBS_LIST})
