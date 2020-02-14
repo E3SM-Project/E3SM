@@ -1098,12 +1098,6 @@ contains
       ! buffer to be aggregated and written to disk
       use cam_history, only: outfld
 
-      ! CAM optical properties; includes cam_optics_type class for holding optical
-      ! properties, and subroutines to get CAM aerosol and cloud optical properties
-      ! via CAM parameterizations
-      use cam_optics, only: cam_optics_type
-      use physconst, only: cpair, stebol
-
       ! ---------------------------------------------------------------------------
       ! Arguments
       ! ---------------------------------------------------------------------------
