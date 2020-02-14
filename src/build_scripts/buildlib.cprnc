@@ -44,13 +44,15 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-
+    import pdb
+    pdb.set_trace()
+    make_args = get_standard_makefile_args(case, shared_lib=True)
     sfc = run_cmd_no_fail("make -f Macros.make {} -p | grep SFC".format(make_args)).split(":=")[-1].strip()
     np = run_cmd_no_fail("make -f Macros.make {} -p | grep NETCDF_PATH".format(make_args)).split(":=")[-1].strip()
     cr = "$CIMEROOT/tools/cprnc"
 
-    cmake_cmd = "cmake -DNETCDF_PATH={netcdf_path} -DCMAKE_Fortran_COMPILER_ID={sfc} {cr}".format(netcdf_path=np, sfc=sfc, cr=cr)
-    Run_bld_cmd_ensure_logging(cmake_cmd, logger, from_dir=bldroot)
+    cmake_cmd = "cmake -DNETCDF_PATH={netcdf_path} -DCMAKE_Fortran_COMPILER_ID={sfc} {cr} -DCMAKE_PREFIX_PATH{dest_path}".format(netcdf_path=np, sfc=sfc, cr=cr, destpath=installpath)
+    run_bld_cmd_ensure_logging(cmake_cmd, logger, from_dir=bldroot)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
