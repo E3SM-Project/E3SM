@@ -186,6 +186,26 @@ extern "C"{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct RainSelfCollectionData
+{
+  //inputs 
+  Real rho; 
+  Real qr_incld; 
+  Real nr_incld; 
+
+  //output
+  Real nrslf;
+};
+
+void rain_self_collection(RainSelfCollectionData& d);
+extern "C"{
+
+void rain_self_collection_f(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetCloudDsd2Data
 {
   // Inputs
