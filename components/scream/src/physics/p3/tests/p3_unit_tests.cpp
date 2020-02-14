@@ -451,6 +451,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
   };//TestP3UpdatePrognosticIce
 
+  template <typename D>
+  struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
+  {
+
+  };//TestP3FunctionsImposeMaxTotalNi
+
+
 }//namespace unit_test
 }//namespace p3
 }//namespace scream
@@ -469,6 +476,10 @@ TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_
 
   TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
+}
+
+TEST_CASE("p3_impose_max_total_ni_test", "[p3_impose_max_total_ni_test]"){
+
 }
 
 
