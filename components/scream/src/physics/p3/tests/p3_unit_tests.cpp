@@ -454,6 +454,80 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   template <typename D>
   struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
   {
+	  static void impose_max_total_ni_bfb_test(){
+		  
+		  static constexpr Int max_pack_size = 16;
+		  REQUIRE(Spack::n <= max_pack_size);
+
+		  ImposeMaxTotalNiData dc[max_pack_size]= {
+			 {},
+			 {},
+			 {},
+			 {},
+	
+			 {},
+			 {},
+			 {},
+			 {},
+
+			 {},
+			 {},
+			 {},
+			 {},
+
+			 {},
+			 {},
+			 {},
+			 {},
+		  };
+
+		//Sync to device
+		view_1d<ImposeMaxTotalNiData> dc_device("dc", Spack::n);
+		auto dc_host = Kokkos::create_mirror_view(dc_device);
+
+		//This copy only copies the input variables.
+        std::copy(&dc[0], &dc[0] + Spack::n, dc_host.data());
+        Kokkos::deep_copy(dc_device, dc_host);
+
+		//Get data from fortran 	
+  		for (Int i = 0; i < Spack::n; ++i) {
+    		impose_max_total_Ni(dc[i]);
+  		}
+
+		//Run function from a kernal and copy results back to the host
+  		Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+		// Init pack inputs
+		Spack nitot_local, max_total_Ni, inv_rho_local;
+		for (Int s = 0; s < Spack::n; ++s) {
+			nitot_local[s] = dc_device(s).nitot_local;
+			max_total_Ni[s] = dc_device(s).max_total_Ni;
+			inv_rho_local[s] = dc_device(s).inv_rho_local;
+		}
+
+		Functions::impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local);
+		// Copy results back into views
+		for (Int s = 0; s < Spack::n; ++s) {
+			dc_device(s).nitot_local = nitot_local[s];
+			dc_device(s).max_total_Ni = max_total_Ni[s];
+			dc_device(s).inv_rho_local = inv_rho_local[s];
+		}
+      });
+
+    // Sync back to host
+    Kokkos::deep_copy(dc_host, dc_device);
+
+    // Validate results
+    for (Int s = 0; s < Spack::n; ++s) {
+       REQUIRE(dc[s].nitot_local == dc_host(s).nitot_local);
+       REQUIRE(dc[s].max_total_Ni == dc_host(s).max_total_Ni);
+       REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
+     }
+
+	}
+
+	  static void run_bfb(){
+		  impose_max_total_ni_bfb_test();
+	  }
 
   };//TestP3FunctionsImposeMaxTotalNi
 
@@ -479,7 +553,7 @@ TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_
 }
 
 TEST_CASE("p3_impose_max_total_ni_test", "[p3_impose_max_total_ni_test]"){
-
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi::run_bfb();
 }
 
 
