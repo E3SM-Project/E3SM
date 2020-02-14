@@ -171,8 +171,7 @@ CONTAINS
 
 
   subroutine sgs_init(ncrms)
-    use grid, only: nrestart, dx, dy, dz, adz, masterproc
-    use params, only: LES
+    use grid, only: nrestart, dx, dy, dz, adz
     implicit none
     integer, intent(in) :: ncrms
     integer k,icrm, i, j, l
@@ -203,26 +202,16 @@ CONTAINS
         enddo
       enddo
     end if
+    
+    !$acc parallel loop collapse(2) async(asyncid)
+    do k=1,nzm
+      do icrm = 1 , ncrms
+        grdf_x(icrm,k) = min( real(16.,crm_rknd), dx**2/(adz(icrm,k)*dz(icrm))**2)
+        grdf_y(icrm,k) = min( real(16.,crm_rknd), dy**2/(adz(icrm,k)*dz(icrm))**2)
+        grdf_z(icrm,k) = 1.
+      end do
+    end do
 
-    if(LES) then
-      !$acc parallel loop collapse(2) async(asyncid)
-      do k=1,nzm
-        do icrm = 1 , ncrms
-          grdf_x(icrm,k) = dx**2/(adz(icrm,k)*dz(icrm))**2
-          grdf_y(icrm,k) = dy**2/(adz(icrm,k)*dz(icrm))**2
-          grdf_z(icrm,k) = 1.
-        end do
-      end do
-    else
-      !$acc parallel loop collapse(2) async(asyncid)
-      do k=1,nzm
-        do icrm = 1 , ncrms
-          grdf_x(icrm,k) = min( real(16.,crm_rknd), dx**2/(adz(icrm,k)*dz(icrm))**2)
-          grdf_y(icrm,k) = min( real(16.,crm_rknd), dy**2/(adz(icrm,k)*dz(icrm))**2)
-          grdf_z(icrm,k) = 1.
-        end do
-      end do
-    end if
   end subroutine sgs_init
 
   !----------------------------------------------------------------------
