@@ -422,6 +422,8 @@ derived_variables = {
         (('SWCF',), rename),
         (('toa_net_sw_all_mon', 'toa_net_sw_clr_mon'),
          lambda net_all, net_clr: swcf(net_all, net_clr)),
+        (('toa_net_sw_all_mon', 'toa_net_sw_clr_t_mon'),
+         lambda net_all, net_clr: swcf(net_all, net_clr)),
         (('toa_cre_sw_mon',), rename),
         (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac)),
         (('rsut', 'rsutcs'), lambda rsutcs, rsut: swcf(rsut, rsutcs)) 
@@ -430,12 +432,16 @@ derived_variables = {
         (('SWCFSRF',), rename),
         (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_mon'),
          lambda net_all, net_clr: swcfsrf(net_all, net_clr)),
+        (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_t_mon'),
+         lambda net_all, net_clr: swcfsrf(net_all, net_clr)),
         (('sfc_cre_net_sw_mon',), rename),
         (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ]),
     'LWCF': OrderedDict([
         (('LWCF',), rename),
         (('toa_net_lw_all_mon', 'toa_net_lw_clr_mon'),
+         lambda net_all, net_clr: lwcf(net_clr, net_all)),
+        (('toa_net_lw_all_mon', 'toa_net_lw_clr_t_mon'),
          lambda net_all, net_clr: lwcf(net_clr, net_all)),
         (('toa_cre_lw_mon',), rename),
         (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac)),
@@ -445,11 +451,15 @@ derived_variables = {
         (('LWCFSRF',), rename),
         (('sfc_net_lw_all_mon', 'sfc_net_lw_clr_mon'),
          lambda net_all, net_clr: lwcfsrf(net_clr, net_all)),
+        (('sfc_net_lw_all_mon', 'sfc_net_lw_clr_t_mon'),
+         lambda net_all, net_clr: lwcfsrf(net_clr, net_all)),
         (('sfc_cre_net_lw_mon',), rename),
         (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
     'NETCF': OrderedDict([
         (('toa_net_sw_all_mon', 'toa_net_sw_clr_mon', 'toa_net_lw_all_mon', 'toa_net_lw_clr_mon'),
+         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+        (('toa_net_sw_all_mon', 'toa_net_sw_clr_t_mon', 'toa_net_lw_all_mon', 'toa_net_lw_clr_t_mon'),
          lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
         (('toa_cre_sw_mon', 'toa_cre_lw_mon'),
          lambda swcf, lwcf: netcf2(swcf, lwcf)),
@@ -459,6 +469,8 @@ derived_variables = {
     ]),
     'NETCF_SRF': OrderedDict([
         (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_mon', 'sfc_net_lw_all_mon', 'sfc_net_lw_clr_mon'),
+         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+        (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_t_mon', 'sfc_net_lw_all_mon', 'sfc_net_lw_clr_t_mon'),
          lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
         (('sfc_cre_sw_mon', 'sfc_cre_lw_mon'),
          lambda swcf, lwcf: netcf2(swcf, lwcf)),
@@ -471,7 +483,8 @@ derived_variables = {
         (('rlds', 'rlus'), lambda rlds, rlus: netlw(rlds, rlus))
     ]),
     'FLNSC': OrderedDict([
-        (('sfc_net_lw_clr_mon',), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
+        (('sfc_net_lw_clr_mon',), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon),
+        (('sfc_net_lw_clr_t_mon',), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
     ]),
     'FLDS': OrderedDict([
         (('rlds',), rename)
@@ -488,7 +501,8 @@ derived_variables = {
 	    (('rsds','rsus'), lambda rsds, rsus: netsw(rsds, rsus))
     ]),
     'FSNSC': OrderedDict([
-        (('sfc_net_sw_clr_mon',), rename)
+        (('sfc_net_sw_clr_mon',), rename),
+        (('sfc_net_sw_clr_t_mon',), rename)
     ]),
     'FSDS': OrderedDict([
         (('rsds',), rename)
