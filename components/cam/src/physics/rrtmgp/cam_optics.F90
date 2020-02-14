@@ -71,9 +71,8 @@ contains
       use ppgrid, only: pcols, pver
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
-      use cloud_rad_props, only: get_mitchell_ice_optics_sw, &
-                                 get_gammadist_liq_optics_sw, &
-                                 get_snow_optics_sw
+      use cloud_rad_props, only: mitchell_ice_optics_sw, &
+                                 gammadist_liq_optics_sw
 
       ! Inputs. Right now, this uses state and pbuf, and passes these along to the
       ! individual get_*_optics routines from cloud_rad_props. This is not very
@@ -105,8 +104,9 @@ contains
             combined_tau, combined_tau_ssa, combined_tau_ssa_g, combined_tau_ssa_f
 
       ! Pointers to fields on the physics buffer
-      real(r8), pointer :: iciwp(:,:), dei(:,:)
-      real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
+      real(r8), pointer, dimension(:,:) :: &
+         cloud_fraction, snow_fraction, &
+         iclwp, iciwp, icswp, dei, des, lambdac, mu
 
       integer :: ncol, iband, ilev, icol
 
@@ -133,8 +133,10 @@ contains
       !call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
       ncol = state%ncol
       if (trim(icecldoptics) == 'mitchell') then
-         call get_mitchell_ice_optics_sw( &
-            state, pbuf, &
+         call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
+         call mitchell_ice_optics_sw( &
+            ncol, iciwp, dei, &
             ice_tau, ice_tau_ssa, &
             ice_tau_ssa_g, ice_tau_ssa_f &
          )
@@ -159,8 +161,11 @@ contains
       
       ! Get liquid cloud optics
       if (trim(liqcldoptics) == 'gammadist') then
-         call get_gammadist_liq_optics_sw( &
-            state, pbuf, &
+         call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
+         call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
+         call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
+         call gammadist_liq_optics_sw( &
+            ncol, iclwp, lambdac, mu, &
             liq_tau, liq_tau_ssa, &
             liq_tau_ssa_g, liq_tau_ssa_f &
          )
@@ -188,9 +193,13 @@ contains
       ! Get snow cloud optics
       if (do_snow_optics()) then
          ! Doing snow optics; call procedure to get these from CAM state and pbuf
-         call get_snow_optics_sw(state, pbuf, &
-                                 snow_tau, snow_tau_ssa, &
-                                 snow_tau_ssa_g, snow_tau_ssa_f)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+         call mitchell_ice_optics_sw( &
+            ncol, icswp, des, &
+            snow_tau, snow_tau_ssa, &
+            snow_tau_ssa_g, snow_tau_ssa_f &
+         )
          do ilev = 1,pver
             do icol = 1,ncol
                snow_tau      (:,icol,ilev) = reordered(snow_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
@@ -274,9 +283,8 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
                                 pbuf_get_index
-      use cloud_rad_props, only: get_gammadist_liq_optics_lw, &
-                                 get_mitchell_ice_optics_lw, &
-                                 get_snow_optics_lw
+      use cloud_rad_props, only: gammadist_liq_optics_lw, &
+                                 mitchell_ice_optics_lw
       use radconstants, only: nlwbands
 
       type(physics_state), intent(in) :: state
@@ -285,7 +293,9 @@ contains
 
       ! Cloud and snow fractions, used to weight optical properties by
       ! contributions due to cloud vs snow
-      real(r8), pointer :: cloud_fraction(:,:), snow_fraction(:,:)
+      real(r8), pointer, dimension(:,:) :: &
+         cloud_fraction, snow_fraction, &
+         iclwp, iciwp, icswp, mu, lambdac, dei, des
 
       ! Temporary variables to hold absorption optical depth
       real(r8), dimension(nlwbands,pcols,pver) :: &
@@ -305,7 +315,9 @@ contains
 
       ! Get ice optics
       if (trim(icecldoptics) == 'mitchell') then
-         call get_mitchell_ice_optics_lw(state, pbuf, ice_tau)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
+         call mitchell_ice_optics_lw(ncol, iciwp, dei, ice_tau)
       else if (trim(icecldoptics) == 'ebertcurry') then
          call ec_ice_optics_lw(state, pbuf, ice_tau)
       else
@@ -314,7 +326,10 @@ contains
 
       ! Get liquid optics
       if (trim(liqcldoptics) == 'gammadist') then
-         call get_gammadist_liq_optics_lw(state, pbuf, liq_tau)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
+         call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
+         call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
+         call gammadist_liq_optics_lw(ncol, iclwp, lambdac, mu, liq_tau)
       else if (trim(liqcldoptics) == 'slingo') then
          call slingo_liq_optics_lw(state, pbuf, liq_tau)
       else
@@ -323,7 +338,9 @@ contains
 
       ! Get snow optics?
       if (do_snow_optics()) then
-         call get_snow_optics_lw(state, pbuf, snow_tau)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+         call mitchell_ice_optics_lw(ncol, icswp, des, snow_tau)
 
          ! Get cloud and snow fractions. This is used to weight the contribution to
          ! the total lw absorption by the fraction of the column that contains
