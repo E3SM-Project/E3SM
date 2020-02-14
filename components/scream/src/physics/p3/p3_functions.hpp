@@ -371,6 +371,9 @@ struct Functions
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
     Spack& qcaut, Spack& ncautc, Spack& ncautr);
 
+  KOKKOS_FUNCTION
+  static void rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nrslf);
+
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
   //  and adjusts qirim and birim appropriately.
