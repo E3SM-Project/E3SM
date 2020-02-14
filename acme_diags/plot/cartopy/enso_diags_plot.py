@@ -3,6 +3,7 @@ from __future__ import print_function
 import matplotlib
 import numpy as np
 import numpy.ma as ma
+from numpy.polynomial.polynomial import polyfit
 import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -32,12 +33,14 @@ def add_cyclic(var):
     lon = var.getLongitude()
     return var(longitude=(lon[0], lon[0] + 360.0, 'coe'))
 
+
 def get_ax_size(fig, ax):
     bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     width, height = bbox.width, bbox.height
     width *= fig.dpi
     height *= fig.dpi
     return width, height
+
 
 def determine_tick_step(degrees_covered):
     if degrees_covered > 180:
@@ -49,7 +52,8 @@ def determine_tick_step(degrees_covered):
     else:
         return 1    
 
-def plot_panel(n, fig, proj, var, clevels, cmap,
+
+def plot_panel_map(n, fig, proj, var, clevels, cmap,
                title, parameter, conf=None, stats={}):
 
     var = add_cyclic(var)
@@ -187,7 +191,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
         fig.text(panel[n][0] + 0.25, panel[n][1] - 0.0355, hatch_text, ha='right', fontdict=plotSideTitle)
 
 
-def plot(reference, test, diff, metrics_dict, ref_confidence_levels, test_confidence_levels, parameter):
+def plot_map(reference, test, diff, metrics_dict, ref_confidence_levels, test_confidence_levels, parameter):
     if parameter.backend not in ['cartopy', 'mpl', 'matplotlib']:
         return
 
@@ -201,15 +205,17 @@ def plot(reference, test, diff, metrics_dict, ref_confidence_levels, test_confid
     # so we have the original stats displayed
 
     # First panel
-    plot_panel(0, fig, proj, test, parameter.contour_levels, parameter.test_colormap,
-               (parameter.test_name_yrs, parameter.test_title, test.units), parameter, conf=test_confidence_levels, stats=metrics_dict['test'])
+    plot_panel_map(0, fig, proj, test, parameter.contour_levels, parameter.test_colormap,
+               (parameter.test_name_yrs, parameter.test_title, test.units), parameter,
+               conf=test_confidence_levels, stats=metrics_dict['test'])
 
     # Second panel
-    plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap,
-               (parameter.ref_name_yrs, parameter.reference_title, reference.units), parameter, conf=ref_confidence_levels, stats=metrics_dict['ref'])
+    plot_panel_map(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap,
+               (parameter.ref_name_yrs, parameter.reference_title, reference.units), parameter,
+               conf=ref_confidence_levels, stats=metrics_dict['ref'])
 
     # Third panel
-    plot_panel(2, fig, proj, diff, parameter.diff_levels, parameter.diff_colormap,
+    plot_panel_map(2, fig, proj, diff, parameter.diff_levels, parameter.diff_colormap,
                (None, parameter.diff_title, None), parameter, stats=metrics_dict['diff'])
 
     # Figure title
@@ -223,16 +229,14 @@ def plot(reference, test, diff, metrics_dict, ref_confidence_levels, test_confid
         print('Output dir: {}'.format(output_dir))
     # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
     # => {parameter.orig_results_dir}/enso_diags/{parameter.case_id} 
-    original_output_dir = get_output_dir(parameter.current_set, parameter,
-                                         ignore_container=True)
+    original_output_dir = get_output_dir(parameter.current_set, parameter, ignore_container=True)
     if parameter.print_statements:
         print('Original output dir: {}'.format(original_output_dir))
     # parameter.output_file is defined in acme_diags/driver/enso_diags_driver.py
     # {parameter.results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
     # {parameter.orig_results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
-    original_file_path = os.path.join(original_output_dir,
-                                           parameter.output_file)
+    original_file_path = os.path.join(original_output_dir, parameter.output_file)
     
     # Save figure
     for f in parameter.output_format:
@@ -265,5 +269,106 @@ def plot(reference, test, diff, metrics_dict, ref_confidence_levels, test_confid
             original_subplot_file_path = original_file_path + subplot_suffix
             print('Sub-plot saved in: ' + original_subplot_file_path)
             i += 1
+
+    plt.close()
+
+
+def plot_scatter(x, y, parameter):
+    fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
+    test_color = 'black'
+    ref_color = 'red'
+    test_title = "Test" if parameter.test_title == '' else parameter.test_title
+    if parameter.test_name_yrs:
+        test_title += ' : {}'.format(parameter.test_name_yrs)
+    ref_title = "Reference" if parameter.reference_title == '' else parameter.reference_title
+    if parameter.ref_name_yrs:
+        ref_title += ' : {}'.format(parameter.ref_name_yrs)
+    # https://stackoverflow.com/questions/14827650/pyplot-scatter-plot-marker-size
+    plt.scatter(x['test'], y['test'], label=test_title, color=test_color, marker='s', s=8)
+    plt.scatter(x['ref'], y['ref'], label=ref_title, color=ref_color, marker='o', s=8)
+    for value_type in ['test', 'ref']:
+        if value_type == 'test':
+            type_str = 'Test'
+            type_color = test_color
+            x_range = (min(x['test']), max(x['test']))
+        else:
+            type_str = 'Reference'
+            type_color = ref_color
+            x_range = (min(x['ref']), max(x['ref']))
+        # https://stackoverflow.com/questions/35091879/merge-2-arrays-vertical-to-tuple-numpy
+        # Two parallel lists of values
+        values = np.array((x[value_type], y[value_type]))
+        # Zip the values together (i.e., list of (x,y) instead of (list of x, list of y)
+        values = values.T
+        if y['var'] == 'TAUX':
+            value_strs = ['']
+        else:
+            value_strs = ['positive ', 'negative ']
+        for value_str in value_strs:
+            # https://stackoverflow.com/questions/24219841/numpy-where-on-a-2d-matrix
+            if value_str == 'positive ':
+                # For all rows (x,y), choose the rows where x > 0
+                rows = np.where(values[:, 0] > 0)
+                smaller_x_range = (0, x_range[1])
+                linestyle = '-'
+            elif value_str == 'negative ':
+                # For all rows (x,y), choose the rows where x < 0
+                rows = np.where(values[:, 0] < 0)
+                smaller_x_range = (x_range[0], 0)
+                linestyle = '--'
+            elif value_str == '':
+                rows = None
+                smaller_x_range = x_range
+                linestyle = '-'
+            if rows:
+                # Get the filtered zip (list of (x,y) where x > 0 or x < 0)
+                filtered_values = values[rows]
+            else:
+                filtered_values = values
+            # Get the filtered parallel lists (i.e., (list of x, list of y))
+            filtered_values = filtered_values.T
+            # https://stackoverflow.com/questions/19068862/how-to-overplot-a-line-on-a-scatter-plot-in-python
+            b, m = polyfit(filtered_values[0], filtered_values[1], 1)
+            label = 'Linear fit for %sTS anomalies: %s (slope = %.2f)' % (value_str, type_str, m)
+            ys = [b + m*x for x in smaller_x_range]
+            plt.plot(smaller_x_range, ys, label=label, color=type_color, linestyle=linestyle)
+    max_test = max(abs(min(y['test'])), abs(max(y['test'])))
+    max_ref = max(abs(min(y['ref'])), abs(max(y['ref'])))
+    max_value = max(max_test, max_ref) + 1
+    plt.ylim(-max_value, max_value)
+    plt.xlabel('{} anomaly ({})'.format(x['var'], x['units']))
+    plt.ylabel('{} anomaly ({})'.format(y['var'], y['units']))
+    plt.legend()
+
+    # Prepare to save figure
+    # get_output_dir => {parameter.results_dir}/{set_name}/{parameter.case_id}
+    # => {parameter.results_dir}/enso_diags/{parameter.case_id}
+    output_dir = get_output_dir(parameter.current_set, parameter)
+    if parameter.print_statements:
+        print('Output dir: {}'.format(output_dir))
+    # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
+    # => {parameter.orig_results_dir}/enso_diags/{parameter.case_id}
+    original_output_dir = get_output_dir(parameter.current_set, parameter, ignore_container=True)
+    if parameter.print_statements:
+        print('Original output dir: {}'.format(original_output_dir))
+    # parameter.output_file is defined in acme_diags/driver/enso_diags_driver.py
+    # {parameter.results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
+    file_path = os.path.join(output_dir, parameter.output_file)
+    # {parameter.orig_results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
+    original_file_path = os.path.join(original_output_dir, parameter.output_file)
+
+    # Figure title
+    fig.suptitle(parameter.main_title, x=0.5, y=0.93, fontsize=15)
+
+    # Save figure
+    for f in parameter.output_format:
+        f = f.lower().split('.')[-1]
+        plot_suffix = '.' + f
+        plot_file_path = file_path + plot_suffix
+        plt.savefig(plot_file_path)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        original_plot_file_path = original_file_path + plot_suffix
+        print('Plot saved in: ' + original_plot_file_path)
 
     plt.close()
