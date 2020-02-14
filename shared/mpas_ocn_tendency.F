@@ -455,8 +455,6 @@ contains
                           config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
                           config_use_tracerGroup_ttd_forcing
 
-     real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
-
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
@@ -743,7 +741,7 @@ contains
                      call ocn_tracer_surface_restoring_compute(groupItr % memberName, nTracerGroup, nCells, tracerGroup,  &
                         tracerGroupPistonVelocity, tracerGroupSurfaceRestoringValue, tracerGroupSurfaceFlux, indexSalinity, &
                         config_use_surface_salinity_monthly_restoring, &
-                        salinity_restoring_constant_piston_velocity, err)
+                        config_salinity_restoring_constant_piston_velocity, err)
                      call mpas_timer_stop("surface_restoring_" // trim(groupItr % memberName))
                  endif
 
@@ -1104,7 +1102,11 @@ contains
     subroutine ocn_tendency_init(err)!{{{
         integer, intent(out) :: err !< Output: Error flag
 
+        logical, pointer :: config_use_highFreqThick_restore
+
         err = 0
+
+        call mpas_pool_get_config(ocnConfigs, 'config_use_highFreqThick_restore', config_use_highFreqThick_restore)
 
         if (config_use_highFreqThick_restore) then
            use_highFreqThick_restore = 1
