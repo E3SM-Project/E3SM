@@ -156,8 +156,9 @@ subroutine shoc_main ( &
      host_dx, host_dy,thv, &              ! Input
      zt_grid,zi_grid,pres,pdel,&          ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
-     wtracer_sfc,num_qtracers,w_field, &  ! Input     
-     tke, thetal, qw, &                   ! Input/Output
+     wtracer_sfc,num_qtracers,w_field, &  ! Input
+     exner,phis, &                        ! Input     
+     host_temp, tke, thetal, qw, &        ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,shoc_ql,&            ! Input/Output
      shoc_cldfrac,pblh,&                  ! Output
@@ -209,8 +210,14 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: vw_sfc(shcol) 
   ! Surface flux for tracers [varies]
   real(r8), intent(in) :: wtracer_sfc(shcol,num_qtracers) 
+  ! Exner function [-]
+  real(r8), intent(in) :: exner(shcol,nlev)
+  ! Host model surface geopotential height
+  real(r8), intent(in) :: phis(shcol)
 
 ! INPUT/OUTPUT VARIABLES  
+  ! temperature of the host model [K]
+  real(r8), intent(inout) :: host_temp(shcol,nlev)
   ! turbulent kinetic energy [m2/s2]
   real(r8), intent(inout) :: tke(shcol,nlev)  
   ! liquid water potential temperature [K]
@@ -292,6 +299,22 @@ subroutine shoc_main ( &
   real(r8) :: obklen(shcol)
   ! Kinematic surface buoyancy flux [m^2/s^3]
   real(r8) :: kbfs(shcol)
+  
+  ! Variables related to energy conservation
+  real(r8) :: se_b(shcol),ke_b(shcol),&
+              wv_b(shcol),wl_b(shcol),&
+	      se_a(shcol),ke_a(shcol),&
+              wv_a(shcol),wl_a(shcol)
+  
+  ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
+  ! for the computation of total energy before SHOC is called.  This is for an 
+  ! effort to conserve energy since liquid water potential temperature (which SHOC 
+  ! conserves) and static energy (which E3SM conserves) are not exactly equal. 
+  
+  call shoc_energy_integrals(&
+         shcol,nlev,host_temp,pdel,&
+	 qw,shoc_ql,u_wind,v_wind,&
+	 se_b,ke_b,wv_b,wl_b)
 
   do t=1,nadv
 
@@ -393,8 +416,20 @@ subroutine shoc_main ( &
     call check_tke(shcol,nlev,tke)
   
   enddo ! end time loop
-  
+
   ! End SHOC parameterization
+  
+  ! Use SHOC outputs to update the host model
+  !  temperature
+  call update_host_temp(&
+         shcol,nlev,thetal,&                   ! Input
+         shoc_ql,exner,zt_grid,phis,&          ! Input
+	 host_temp)	                       ! Output
+  
+  call shoc_energy_integrals(&
+         shcol,nlev,host_temp,pdel,&
+	 qw,shoc_ql,u_wind,v_wind,&
+	 se_a,ke_a,wv_a,wl_a)
     
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
@@ -2158,6 +2193,111 @@ subroutine vd_shoc_solve(&
   return
   
 end subroutine vd_shoc_solve
+
+!==============================================================
+! Subroutine to compute integrals for SHOC conservation
+!  with host model
+
+subroutine shoc_energy_integrals(&
+             shcol,nlev,host_temp,pdel,&
+	     rtm,rcm,u_wind,v_wind,&
+	     se_int,ke_int,wv_int,wl_int)
+
+  implicit none
+
+! INPUT VARIABLES
+  ! number of columns 
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+  ! host model temperature [K]
+  real(r8), intent(in) :: host_temp(shcol,nlev)  
+  ! pressure layer thickness [Pa]
+  real(r8), intent(in) :: pdel(shcol,nlev)
+  ! zonal wind [m/s]
+  real(r8), intent(in) :: u_wind(shcol,nlev)
+  ! meridional wind [m/s]
+  real(r8), intent(in) :: v_wind(shcol,nlev)
+  ! total water mixing ratio [kg/kg]
+  real(r8), intent(in) :: rtm(shcol,nlev) 
+  ! cloud liquid mixing ratio [kg/kg]
+  real(r8), intent(in) :: rcm(shcol,nlev)   
+  
+! OUTPUT VARIABLES
+  ! integrated static energy
+  real(r8), intent(out) :: se_int(shcol)
+  ! integrated kinetic energy
+  real(r8), intent(out) :: ke_int(shcol)
+  ! integrated water vapor 
+  real(r8), intent(out) :: wv_int(shcol)
+  ! integrated liquid water 
+  real(r8), intent(out) :: wl_int(shcol)
+  
+! LOCAL VARIABLES
+  integer :: i, k
+  real(r8) :: rvm
+  
+  do k=1,nlev
+    do i=1,shcol
+       rvm = rtm(i,k) - rcm(i,k) ! compute water vapor
+       se_int(i) = se_int(i) + host_temp(i,k)*pdel(i,k)/ggr
+       ke_int(i) = ke_int(i) + 0.5_r8*(u_wind(i,k)**2+v_wind(i,k)**2)*pdel(i,k)/ggr
+       wv_int(i) = wv_int(i) + rvm*pdel(i,k)/ggr
+       wl_int(i) = wl_int(i) + rcm(i,k)*pdel(i,k)/ggr    
+    enddo
+  enddo
+  
+  return
+	     
+end subroutine shoc_energy_integrals
+
+!==============================================================
+! Subroutine to update SHOC output to host model temperature
+
+subroutine update_host_temp(&
+             shcol,nlev,thlm,&                 ! Input
+	     shoc_ql,exner,zt_grid,phis,&      ! Input
+	     host_temp)                        ! Output
+
+  implicit none
+  
+  ! INPUT VARIABLES
+  ! number of columns 
+  integer, intent(in) :: shcol
+  ! number of levels 
+  integer, intent(in) :: nlev
+  ! liquid water potential temperature [K]
+  real(r8), intent(in) :: thlm(shcol,nlev) 
+  ! cloud liquid water mixing ratio [kg/kg]
+  real(r8), intent(in) :: shoc_ql(shcol,nlev)  
+  ! exner function [-]
+  real(r8), intent(in) :: exner(shcol,nlev)  
+  ! heights at mid point [m]
+  real(r8), intent(in) :: zt_grid(shcol,nlev)   
+  ! surface geopotential height of host model [m]
+  real(r8), intent(in) :: phis(shcol)
+  
+  ! OUTPUT VARIABLES
+  ! host model temperature [K]
+  real(r8), intent(out) :: host_temp(shcol,nlev)
+  
+  ! LOCAL VARIABLES
+  ! Temperature [K]
+  real(r8) :: temp
+  
+  integer :: i, k
+  
+  do k=1,nlev
+    do i=1,shcol
+      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/exner(i,k)
+      host_temp(i,k) = cp*temp+ ggr*zt_grid(i,k)+phis(i)
+    enddo
+  enddo
+
+  return
+	     
+end subroutine update_host_temp
+	
 
   !==============================================================
   ! Linear interpolation to get values on various grids

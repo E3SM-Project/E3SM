@@ -520,6 +520,7 @@ end function shoc_implements_cnst
    real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
+   real(r8) :: host_temp(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
    real(r8) :: shoc_mix_out(pcols,pver), tk_in(pcols,pver), tkh_in(pcols,pver)
    real(r8) :: isotropy_out(pcols,pver)
@@ -756,6 +757,7 @@ end function shoc_implements_cnst
        zt_g(i,k) = state1%zm(i,k)-state1%zi(i,pver+1)
        rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,k)/dz_g(i,k))
        wm_zt(i,k) = -1._r8*state1%omega(i,k)/(rrho(i,k)*gravit)
+       host_temp(i,k) = state1%s(i,k)
      enddo
    enddo
      
@@ -802,7 +804,8 @@ end function shoc_implements_cnst
         zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state1%pdel(:ncol,:pver),& ! Input
 	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
 	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
-	tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
+	exner(:ncol,:),state1%phis(:ncol), & ! Input
+	host_temp(:ncol,:), tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
 	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), rcm(:ncol,:), & ! Input/Output
         cloud_frac(:ncol,:), pblh(:ncol), & ! Output
