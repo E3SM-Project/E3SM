@@ -506,7 +506,6 @@ subroutine crm_physics_init(species_class)
    call addfld ('CRM_QPI ',(/'crm_nx','crm_ny', 'crm_nz'/), 'I', 'kg/kg   ', 'CRM Precipitating Ice'               )
    call addfld ('CRM_PREC',(/'crm_nx','crm_ny'/),           'I', 'm/s     ', 'CRM Precipitation Rate'              )
 
-   !-- MDB 8/2013
    call addfld ('SPTVFLUX ',(/ 'lev' /), 'A', 'W/m2  ','Buoyancy Flux from CRM'             )
    call addfld ('SPBUOY   ',(/ 'lev' /), 'A', 'W/m3  ','Buoyancy Term from CRM'             )
    call addfld ('SPBUOYSD ',(/ 'lev' /), 'A', 'W/m3  ','Std Dev of Buoyancy Term from CRM'  )
@@ -741,8 +740,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    type(crm_input_type)  :: crm_input
    type(crm_output_type) :: crm_output
 #ifdef MAML
-   real(r8), pointer, dimension(:,:,:)   :: crm_pcp
-   real(r8), pointer, dimension(:,:,:)   :: crm_snw
+   real(r8), pointer, dimension(:,:,:) :: crm_pcp
+   real(r8), pointer, dimension(:,:,:) :: crm_snw
    real(r8) :: factor_xy
    real(r8) :: tau00_avg, bflxls_avg, fluxu00_avg, fluxv00_avg 
    real(r8) :: fluxt00_avg, fluxq00_avg 
@@ -763,9 +762,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
    crm_run_time = ztodt
 
-   
-   call phys_getopts(use_ECPP_out            = use_ECPP)
-   call phys_getopts(use_MMF_out           = use_MMF)
+   call phys_getopts(use_ECPP_out = use_ECPP)
+   call phys_getopts(use_MMF_out = use_MMF)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    nstep = get_nstep()
