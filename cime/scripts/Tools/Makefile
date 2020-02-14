@@ -260,13 +260,6 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
-  SLIBS += $(KOKKOS_LIBS)
-  CXXFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
-endif
-
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH

@@ -2,9 +2,11 @@
 Utilities
 """
 
-import os, sys, re, signal
+import os, sys, re, signal, subprocess
 
+###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
+###############################################################################
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
@@ -19,23 +21,17 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         msg = error_prefix + " " + error_msg
         raise exc_type(msg)
 
-_hack=object()
+###############################################################################
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+            arg_stdout=subprocess.PIPE, arg_stderr=subprocess.PIPE, env=None, combine_output=False):
+###############################################################################
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
     >>> run_cmd('ls file_i_hope_doesnt_exist')[0] != 0
     True
     """
-    import subprocess # Not safe to do globally, module not available in older pythons
-
-    # Real defaults for these value should be subprocess.PIPE
-    if arg_stdout is _hack:
-        arg_stdout = subprocess.PIPE
-
-    if arg_stderr is _hack:
-        arg_stderr = subprocess.STDOUT if combine_output else subprocess.PIPE
+    arg_stderr = subprocess.STDOUT if combine_output else arg_stderr
 
     if verbose:
         print("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
@@ -70,8 +66,10 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
 
     return stat, output, errput
 
+###############################################################################
 def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
-                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False, exc_type=SystemExit):
+                    arg_stdout=subprocess.PIPE, arg_stderr=subprocess.PIPE, env=None, combine_output=False, exc_type=SystemExit):
+###############################################################################
     """
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
@@ -100,7 +98,9 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
 
     return output
 
+###############################################################################
 def check_minimum_python_version(major, minor):
+###############################################################################
     """
     Check your python version.
 
@@ -111,7 +111,9 @@ def check_minimum_python_version(major, minor):
     expect(sys.version_info[0] > major or
            (sys.version_info[0] == major and sys.version_info[1] >= minor), msg)
 
+###############################################################################
 def convert_to_seconds(time_str):
+###############################################################################
     """
     Convert time value in [[HH:]MM:]SS to seconds
 
@@ -130,7 +132,9 @@ def convert_to_seconds(time_str):
 
     return result
 
+###############################################################################
 def convert_to_babylonian_time(seconds):
+###############################################################################
     """
     Convert time value to seconds to HH:MM:SS
 
@@ -144,7 +148,9 @@ def convert_to_babylonian_time(seconds):
 
     return "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
+###############################################################################
 def format_time(time_format, input_format, input_time):
+###############################################################################
     """
     Converts the string input_time from input_format to time_format
     Valid format specifiers are "%H", "%M", and "%S"
@@ -214,7 +220,9 @@ def format_time(time_format, input_format, input_time):
         output_time += field[1:]
     return output_time
 
+###############################################################################
 class SharedArea(object):
+###############################################################################
     """
     Enable 0002 umask within this manager
     """
@@ -229,7 +237,9 @@ class SharedArea(object):
     def __exit__(self, *_):
         os.umask(self._orig_umask)
 
+###############################################################################
 class Timeout(object):
+###############################################################################
     """
     A context manager that implements a timeout. By default, it
     will raise exception, but a custon function call can be provided.
@@ -251,7 +261,9 @@ class Timeout(object):
         if self._seconds is not None:
             signal.alarm(0)
 
+###############################################################################
 def median(items):
+###############################################################################
     """
     >>> items = [2.3]
     >>> median(items)
@@ -269,7 +281,9 @@ def median(items):
         quotient, remainder = divmod(len(items), 2)
         return sorted(items)[quotient] if remainder else sum(sorted(items)[quotient - 1:quotient + 1]) / 2.
 
+###############################################################################
 def get_current_branch(repo=None):
+###############################################################################
     """
     Return the name of the current branch for a repository
 
@@ -295,7 +309,9 @@ def get_current_branch(repo=None):
         else:
             return output.replace("refs/heads/", "")
 
+###############################################################################
 def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
+###############################################################################
     """
     Return the sha1 of the current HEAD commit
 
@@ -309,7 +325,9 @@ def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
 
     return output if rc == 0 else None
 
+###############################################################################
 def get_current_head(repo=None):
+###############################################################################
     """
     Return current head, preferring branch name if possible
     """
@@ -319,6 +337,17 @@ def get_current_head(repo=None):
     else:
         return branch
 
+###############################################################################
 def is_repo_clean(repo=None):
+###############################################################################
     rc, output, _ = run_cmd("git status --porcelain --untracked-files=no", combine_output=True, from_dir=repo)
     return rc == 0 and output == ""
+
+###############################################################################
+def get_common_ancestor(other_head, head="HEAD", repo=None):
+###############################################################################
+    """
+    Returns None on error.
+    """
+    rc, output, _ = run_cmd("git merge-base {} {}".format(other_head, head), from_dir=repo)
+    return output if rc == 0 else None

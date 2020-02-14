@@ -134,12 +134,18 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_cld_exchange
 
+    real(kind=c_real), dimension(its:ite,3) :: col_location
+    integer :: i
+    do i = its,ite
+      col_location(i,:) = real(i)
+    end do
+
     call p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
          pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
          pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
          pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-         vap_ice_exchange, vap_cld_exchange)
+         vap_ice_exchange, vap_cld_exchange,col_location)
   end subroutine p3_main_c
 
   subroutine p3_use_cxx_c(arg_use_cxx) bind(C)
@@ -424,6 +430,31 @@ contains
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
 
+  subroutine homogeneous_freezing_c(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+    use micro_p3, only: homogeneous_freezing
+
+    ! arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: exner
+    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+
+    call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+         qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
+  end subroutine homogeneous_freezing_c
+
   subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use micro_p3, only: compute_rain_fall_velocity
 
@@ -454,6 +485,45 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
          dt,nmltratio,rhorime_c,th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
 
   end subroutine update_prognostic_ice_c
+
+  subroutine ice_cldliq_collection_c(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                                     nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
+    use micro_p3, only: ice_cldliq_collection
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr04
+    real(kind=c_real), value, intent(in) :: qitot_incld, qc_incld, nitot_incld, nc_incld
+    real(kind=c_real), intent(out) :: qccol, nccol, qcshd, ncshdc
+
+    call ice_cldliq_collection(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                               nc_incld, qccol, nccol, qcshd, ncshdc)
+  end subroutine ice_cldliq_collection_c
+
+  subroutine ice_rain_collection_c(rho, temp, rhofaci, logn0r, f1pr07, f1pr08, &
+                                   qitot_incld, nitot_incld, qr_incld, qrcol, nrcol) bind(C)
+    use micro_p3, only: ice_rain_collection
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, logn0r, f1pr07, f1pr08
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, qr_incld
+    real(kind=c_real), intent(out) :: qrcol, nrcol
+
+    call ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,  &
+                             qitot_incld, nitot_incld, qr_incld, qrcol, nrcol)
+  end subroutine ice_rain_collection_c
+
+  subroutine ice_self_collection_c(rho, rhofaci, f1pr03, eii, qirim_incld, &
+                                   qitot_incld, nitot_incld, nislf) bind(C)
+    use micro_p3, only: ice_self_collection
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld
+    real(kind=c_real), intent(out) :: nislf
+
+    call ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, &
+                             qitot_incld, nitot_incld, nislf)
+  end subroutine ice_self_collection_c
 
   subroutine  update_prognostic_liquid_c(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
        qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)

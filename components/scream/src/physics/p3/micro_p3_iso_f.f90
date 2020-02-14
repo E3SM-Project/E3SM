@@ -193,6 +193,28 @@ interface
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
 
+  subroutine homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: exner
+    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+  end subroutine homogeneous_freezing_f
+
   subroutine compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use iso_c_binding
 
@@ -218,6 +240,34 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
 
   end subroutine update_prognostic_ice_f
+
+  subroutine ice_cldliq_collection_f(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                                     nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, f1pr04
+    real(kind=c_real), value, intent(in) :: qitot_incld, qc_incld, nitot_incld, nc_incld
+    real(kind=c_real), intent(out) :: qccol, nccol, qcshd, ncshdc
+  end subroutine ice_cldliq_collection_f
+
+  subroutine ice_rain_collection_f(rho, t, rhofaci, logn0r, f1pr07, f1pr08, &
+                                   qitot_incld, nitot_incld, qr_incld, qrcol, nrcol) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, logn0r, f1pr07, f1pr08
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, qr_incld
+    real(kind=c_real), intent(out) :: qrcol, nrcol
+  end subroutine ice_rain_collection_f
+
+  subroutine ice_self_collection_f(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld, nislf) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld
+    real(kind=c_real), intent(out) :: nislf
+  end subroutine ice_self_collection_f
 
   subroutine update_prognostic_liquid_f(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
        qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)

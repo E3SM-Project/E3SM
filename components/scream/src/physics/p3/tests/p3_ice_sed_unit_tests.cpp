@@ -32,10 +32,16 @@ static void run_phys_ice_sed()
   // TODO
 }
 
+static void run_phys_homogeneous_freezing()
+{
+  // TODO
+}
+
 static void run_phys()
 {
   run_phys_calc_bulk_rhime();
   run_phys_ice_sed();
+  run_phys_homogeneous_freezing();
 }
 
 static void run_bfb_calc_bulk_rhime()
@@ -188,10 +194,78 @@ static void run_bfb_ice_sed()
   }
 }
 
+static void run_bfb_homogeneous_freezing()
+{
+  const std::array< std::pair<Real, Real>, HomogeneousFreezingData::NUM_ARRAYS > ranges = {
+    std::make_pair(C::homogfrze - 10, C::homogfrze + 10), // t
+    std::make_pair(0.000E+00, 1.000E+00), // exner
+    std::make_pair(0.000E+00, 1.000E+00), // xlf
+    std::make_pair(0.000E+00, C::QSMALL*2), // qc
+    std::make_pair(0.000E+00, 1.000E+00), // nc
+    std::make_pair(0.000E+00, C::QSMALL*2), // qr
+    std::make_pair(0.000E+00, 1.000E+00), // nr
+    std::make_pair(0.000E+00, 1.000E+00), // qitot
+    std::make_pair(0.000E+00, 1.000E+00), // nitot
+    std::make_pair(0.000E+00, 1.000E+00), // qirim
+    std::make_pair(0.000E+00, 1.000E+00), // birim
+    std::make_pair(0.000E+00, 1.000E+00), // th
+  };
+
+  HomogeneousFreezingData hfds_fortran[] = {
+    //                    kts, kte, ktop, kbot, kdir, ranges
+    HomogeneousFreezingData(1,  72,   27,   72,   -1, ranges),
+    HomogeneousFreezingData(1,  72,   72,   27,    1, ranges),
+    HomogeneousFreezingData(1,  72,   27,   27,   -1, ranges),
+    HomogeneousFreezingData(1,  72,   27,   27,    1, ranges),
+  };
+
+  static constexpr Int num_runs = sizeof(hfds_fortran) / sizeof(HomogeneousFreezingData);
+
+  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // inout data is in original state
+  HomogeneousFreezingData hfds_cxx[num_runs] = {
+    HomogeneousFreezingData(hfds_fortran[0]),
+    HomogeneousFreezingData(hfds_fortran[1]),
+    HomogeneousFreezingData(hfds_fortran[2]),
+    HomogeneousFreezingData(hfds_fortran[3]),
+  };
+
+    // Get data from fortran
+  for (Int i = 0; i < num_runs; ++i) {
+    homogeneous_freezing(hfds_fortran[i]);
+  }
+
+  // Get data from cxx
+  for (Int i = 0; i < num_runs; ++i) {
+    HomogeneousFreezingData& d = hfds_cxx[i];
+    homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                           d.t, d.exner, d.xlf,
+                           d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.th);
+  }
+
+  for (Int i = 0; i < num_runs; ++i) {
+    // Due to pack issues, we must restrict checks to the active k space
+    Int start = std::min(hfds_fortran[i].kbot, hfds_fortran[i].ktop) - 1; // 0-based indx
+    Int end   = std::max(hfds_fortran[i].kbot, hfds_fortran[i].ktop);     // 0-based indx
+    for (Int k = start; k < end; ++k) {
+      REQUIRE(hfds_fortran[i].qc[k]    == hfds_cxx[i].qc[k]);
+      REQUIRE(hfds_fortran[i].nc[k]    == hfds_cxx[i].nc[k]);
+      REQUIRE(hfds_fortran[i].qr[k]    == hfds_cxx[i].qr[k]);
+      REQUIRE(hfds_fortran[i].nr[k]    == hfds_cxx[i].nr[k]);
+      REQUIRE(hfds_fortran[i].qitot[k] == hfds_cxx[i].qitot[k]);
+      REQUIRE(hfds_fortran[i].nitot[k] == hfds_cxx[i].nitot[k]);
+      REQUIRE(hfds_fortran[i].qirim[k] == hfds_cxx[i].qirim[k]);
+      REQUIRE(hfds_fortran[i].birim[k] == hfds_cxx[i].birim[k]);
+      REQUIRE(hfds_fortran[i].th[k]    == hfds_cxx[i].th[k]);
+    }
+  }
+}
+
 static void run_bfb()
 {
   run_bfb_calc_bulk_rhime();
   run_bfb_ice_sed();
+  run_bfb_homogeneous_freezing();
 }
 
 };

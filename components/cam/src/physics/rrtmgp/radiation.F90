@@ -28,7 +28,7 @@ module radiation
 
    use radiation_state, only: ktop, kbot, nlev_rad
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
-                              handle_error
+                              check_range, handle_error
 
    implicit none
    private
@@ -117,14 +117,17 @@ module radiation
    real(r8) :: dt_avg = 0.0_r8  
 
    ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by coefficients_file_sw and
-   ! coefficients_file_lw in the radiation namelist. They exist as module data
-   ! because we only want to load those files once.
+   ! RRTMGP coefficients files, specified by rrtmgp_coefficients_file_sw and
+   ! rrtmgp_coefficients_file_lw in the radiation namelist. They exist as module
+   ! data because we only want to load those files once.
    type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
-   ! k-distribution coefficients files to read from. These are set via namelist
-   ! variables.
-   character(len=cl) :: coefficients_file_sw, coefficients_file_lw
+   ! k-distribution coefficients files to read from. Set via namelist.
+   character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
+
+   ! Should we clip temperatures when out of bounds of absorption coefficient
+   ! look-up table data?
+   logical :: rrtmgp_clip_temperatures = .false.
 
    ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
    ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
@@ -199,11 +202,11 @@ contains
       integer :: unitn, ierr
       integer :: dtime  ! timestep size
       character(len=*), parameter :: subroutine_name = 'radiation_readnl'
-      character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
                               rrtmgp_coefficients_file_sw, &
+                              rrtmgp_clip_temperatures   , &
                               iradsw, iradlw, irad_always, &
                               use_rad_dt_cosz, spectralflux
 
@@ -227,16 +230,13 @@ contains
       ! Broadcast namelist variables
       call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
+      call mpibcast(rrtmgp_clip_temperatures, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
-
-      ! Set module data
-      coefficients_file_lw = rrtmgp_coefficients_file_lw
-      coefficients_file_sw = rrtmgp_coefficients_file_sw
 
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
       if (present(dtime_in)) then
@@ -251,7 +251,7 @@ contains
       ! Print runtime options to log.
       if (masterproc) then
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
-         write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
+         write(iulog,10) trim(rrtmgp_coefficients_file_lw), trim(rrtmgp_coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux
       end if
@@ -477,8 +477,8 @@ contains
       ! the other tasks!
       ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast to
       call set_available_gases(active_gases, available_gases)
-      call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
-      call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+      call rrtmgp_load_coefficients(k_dist_sw, rrtmgp_coefficients_file_sw, available_gases)
+      call rrtmgp_load_coefficients(k_dist_lw, rrtmgp_coefficients_file_lw, available_gases)
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -1066,7 +1066,6 @@ contains
       use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_gas_concentrations, only: ty_gas_concs
       use mo_optical_props, only: ty_optical_props, &
                                   ty_optical_props_1scl
@@ -1080,7 +1079,7 @@ contains
       ! properties, and subroutines to get CAM aerosol and cloud optical properties
       ! via CAM parameterizations
       use cam_optics, only: cam_optics_type
-      use physconst, only: cpair, stebol
+      use physconst, only: cpair, stebol, pi
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1162,7 +1161,7 @@ contains
       ! for columns beyond ncol or nday
       qrsc(:,:) = 0
       qrlc(:,:) = 0
-     
+
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
 
@@ -1242,6 +1241,7 @@ contains
 
    end subroutine radiation_tend
 
+
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
@@ -1260,6 +1260,7 @@ contains
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
+      use physconst, only: pi
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1309,7 +1310,7 @@ contains
       integer :: ncol
 
       ! Loop indices
-      integer :: iband
+      integer :: iband, iday, icol
 
       ! For loops over diagnostic calls
       logical :: active_calls(0:N_DIAG)
@@ -1320,6 +1321,10 @@ contains
       ! temperatures to make sure they are within the valid range.
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+
+      ! Latitude and longitude arrays for extra debugging information when
+      ! things go wrong
+      real(r8), dimension(pcols) :: lat, lon
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
@@ -1372,6 +1377,25 @@ contains
                          pmid(1:nday,1:nlev_rad), &
                          pint(1:nday,1:nlev_rad+1), &
                          col_indices=day_indices(1:nday))
+
+      ! Check temperatures to make sure they are within the bounds of the
+      ! absorption coefficient look-up tables
+      do iday = 1,nday
+         icol = day_indices(iday)
+         lat(iday) = state%lat(icol) * 180._r8 / pi
+         lon(iday) = state%lon(icol) * 180._r8 / pi
+      end do
+      call t_startf('rrtmgp_check_temperatures')
+      call check_range( &
+         tmid(1:nday,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
+      )
+      call check_range( &
+         tint(1:nday,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
+      )
+      call t_stopf('rrtmgp_check_temperatures')
+
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
@@ -1517,6 +1541,7 @@ contains
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
+      use physconst, only: pi
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1538,6 +1563,10 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
 
+      ! Latitude and longitude arrays for extra debugging information when
+      ! things go wrong
+      real(r8), dimension(pcols) :: lat, lon
+
       ! Surface emissivity needed for longwave
       real(r8) :: surface_emissivity(nlwbands,pcols)
 
@@ -1549,7 +1578,7 @@ contains
       type(ty_optical_props_1scl) :: aerosol_optics_lw
       type(ty_optical_props_1scl) :: cloud_optics_lw
 
-      integer :: ncol, icall
+      integer :: ncol, icol, icall
 
       ! Number of physics columns in this "chunk"; used in multiple places
       ! throughout this subroutine, so set once for convenience
@@ -1561,7 +1590,26 @@ contains
                          tint(1:ncol,1:nlev_rad+1), &
                          pmid(1:ncol,1:nlev_rad), &
                          pint(1:ncol,1:nlev_rad+1))
-       
+
+      ! Check temperatures to make sure they are within the bounds of the
+      ! absorption coefficient look-up tables. If out of bounds, optionally clip
+      ! values to min/max specified (depending on value of
+      ! rrtmgp_clip_temperatures)
+      do icol = 1,ncol
+         lat(icol) = state%lat(icol) * 180._r8 / pi
+         lon(icol) = state%lon(icol) * 180._r8 / pi
+      end do
+      call t_startf('rrtmgp_check_temperatures')
+      call check_range( &
+         tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
+      )
+      call check_range( &
+         tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
+      )
+      call t_stopf('rrtmgp_check_temperatures')
+
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
@@ -2417,6 +2465,5 @@ end function string_in_list
       end do
 
    end subroutine expand_day_fluxes
-
 
 end module radiation

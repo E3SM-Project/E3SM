@@ -30,6 +30,7 @@ struct Constants
   static constexpr Scalar LatIce      = 333700.0;
   static constexpr Scalar CpLiq       = 4188.0;
   static constexpr Scalar Tmelt       = 273.15;
+  static constexpr Scalar homogfrze   = Tmelt - 40;
   static constexpr Scalar Pi          = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc  = true;
@@ -48,6 +49,8 @@ struct Constants
   static constexpr Scalar QSMALL      = 1.e-14;
   static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;
+  static constexpr Scalar ZERO        = 0.0;
+  static constexpr Scalar ONE         = 1.0;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
@@ -59,6 +62,9 @@ struct Constants
   static constexpr Scalar bcn         = 2.;
   static constexpr Scalar rho_rimeMin = 50.;
   static constexpr Scalar rho_rimeMax = 900.;
+  static constexpr Scalar eci         = 0.5;
+  static constexpr Scalar eri         = 1.0;
+  static constexpr Scalar dropmass    = 5.2e-7;
   static constexpr Scalar NCCNST      = 200.0e+6;
 
   // Table dimension constants
@@ -79,6 +85,9 @@ constexpr Scalar Constants<Scalar>::NSMALL;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::QSMALL;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::ZERO;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;

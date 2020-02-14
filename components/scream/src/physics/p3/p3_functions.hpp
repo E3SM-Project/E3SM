@@ -260,6 +260,29 @@ struct Functions
 
   // TODO: comment
   KOKKOS_FUNCTION
+  static void rain_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofacr,
+    const uview_1d<const Spack>& rcldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const uview_1d<const Spack>& qr_incld,
+    const MemberType& team,
+    const Workspace& workspace,
+    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qr,
+    const uview_1d<Spack>& nr,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& rflx,
+    const uview_1d<Spack>& qr_tend,
+    const uview_1d<Spack>& nr_tend,
+    Scalar& prt_liq);
+
+  // TODO: comment
+  KOKKOS_FUNCTION
   static void ice_sedimentation(
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
@@ -282,28 +305,23 @@ struct Functions
     const view_itab_table& itab,
     Scalar& prt_sol);
 
-  // TODO: comment
+  // homogeneous freezing of cloud and rain
   KOKKOS_FUNCTION
-  static void rain_sedimentation(
-    const uview_1d<const Spack>& rho,
-    const uview_1d<const Spack>& inv_rho,
-    const uview_1d<const Spack>& rhofacr,
-    const uview_1d<const Spack>& rcldm,
-    const uview_1d<const Spack>& inv_dzq,
-    const uview_1d<const Spack>& qr_incld,
+  static void homogeneous_freezing(
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& xlf,
     const MemberType& team,
-    const Workspace& workspace,
-    const view_2d_table& vn_table, const view_2d_table& vm_table,
-    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
+    const uview_1d<Spack>& qc,
+    const uview_1d<Spack>& nc,
     const uview_1d<Spack>& qr,
     const uview_1d<Spack>& nr,
-    const uview_1d<Spack>& nr_incld,
-    const uview_1d<Spack>& mu_r,
-    const uview_1d<Spack>& lamr,
-    const uview_1d<Spack>& rflx,
-    const uview_1d<Spack>& qr_tend,
-    const uview_1d<Spack>& nr_tend,
-    Scalar& prt_liq);
+    const uview_1d<Spack>& qitot,
+    const uview_1d<Spack>& nitot,
+    const uview_1d<Spack>& qirim,
+    const uview_1d<Spack>& birim,
+    const uview_1d<Spack>& th);
 
   // -- Find layers
 
@@ -384,6 +402,30 @@ struct Functions
     Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
     Spack& nr);
 
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_cldliq_collection(const Spack& rho, const Spack& temp,
+                                    const Spack& rhofaci, const Spack& f1pr04,
+                                    const Spack& qitot_incld, const Spack& qc_incld,
+                                    const Spack& nitot_incld, const Spack& nc_incld,
+                                    Spack& qccol, Spack& nccol, Spack& qcshd, Spack& ncshdc);
+
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_rain_collection(const Spack& rho, const Spack& temp,
+                                  const Spack& rhofaci, const Spack& logn0r,
+                                  const Spack& f1pr07, const Spack& f1pr08,
+                                  const Spack& qitot_incld, const Spack& nitot_incld,
+                                  const Spack& qr_incld,
+                                  Spack& qrcol, Spack& nrcol);
+  
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_self_collection(const Spack& rho, const Spack& rhofaci,
+                                  const Spack& f1pr03, const Spack& eii,
+                                  const Spack& qirim_incld, const Spack& qitot_incld,
+                                  const Spack& nitot_incld, Spack& nislf);
+
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
@@ -391,6 +433,7 @@ struct Functions
     const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
     const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
     const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
+
 
 };
 
@@ -420,6 +463,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
+# include "p3_functions_ice_collection_impl.hpp"
 #endif
 
 #endif

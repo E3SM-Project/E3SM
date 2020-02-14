@@ -218,11 +218,9 @@ class PerfAnalysis(object):
         force_threads = self._force_threads if force_threads is None else force_threads
 
         if self._machine == "bowman":
-            os.environ["KMP_AFFINITY"] = "balanced,granularity=fine"
             os.environ["OMP_NUM_THREADS"] = "272"
             os.environ["NUMA_PREFIX"] = "numactl -i 1"
         elif self._machine == "blake":
-            os.environ["KMP_AFFINITY"] = "balanced,granularity=fine"
             os.environ["OMP_NUM_THREADS"] = "96"
         elif self._machine in ["white", "waterman", "melvin"]:
             pass

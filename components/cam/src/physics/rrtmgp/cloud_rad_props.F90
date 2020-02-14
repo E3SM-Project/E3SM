@@ -301,7 +301,6 @@ subroutine get_ice_optics_lw(state, pbuf, abs_od)
    ! the lookup tables.
    call pbuf_get_field(pbuf, i_iciwp, iciwpth)
    call pbuf_get_field(pbuf, i_dei,   dei)
-
    call interpolate_ice_optics_lw(state%ncol,iciwpth, dei, abs_od)
 
 end subroutine get_ice_optics_lw
@@ -413,7 +412,6 @@ subroutine get_snow_optics_lw(state, pbuf, abs_od)
    ! different water path and effective diameter.
    call pbuf_get_field(pbuf, i_icswp, icswpth)
    call pbuf_get_field(pbuf, i_des,   des)
-
    call interpolate_ice_optics_lw(state%ncol,icswpth, des, abs_od)
 
 end subroutine get_snow_optics_lw
