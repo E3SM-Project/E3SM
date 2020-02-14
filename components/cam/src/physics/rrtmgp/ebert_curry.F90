@@ -2,8 +2,6 @@ module ebert_curry
 
    use shr_kind_mod,     only: r8 => shr_kind_r8
    use ppgrid,           only: pcols, pver
-   use physics_types,    only: physics_state
-   use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
    use radconstants,     only: nswbands, nlwbands, get_sw_spectral_boundaries
 
    implicit none
@@ -18,22 +16,11 @@ module ebert_curry
 
    real, public, parameter:: scalefactor = 1._r8 !500._r8/917._r8
 
-   ! indexes into pbuf for optical parameters of MG clouds
-   integer :: iciwp_idx   = 0 
-   integer :: iclwp_idx   = 0 
-   integer :: cld_idx     = 0  
-   integer :: rei_idx     = 0  
-
 contains
 
    !===========================================================================
 
    subroutine ec_rad_props_init()
-
-      iciwp_idx  = pbuf_get_index('ICIWP')
-      iclwp_idx  = pbuf_get_index('ICLWP')
-      cld_idx    = pbuf_get_index('CLD')
-      rei_idx    = pbuf_get_index('REI')
 
       return
 
@@ -41,20 +28,17 @@ contains
 
    !===========================================================================
 
-   subroutine ec_ice_optics_sw(state, pbuf, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
+   subroutine ec_ice_optics_sw(ncol, cldn, cicewp, rei, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f)
 
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
-
+      integer, intent(in) :: ncol
+      real(r8), intent(in), dimension(:,:) :: rei
+      real(r8), intent(in), dimension(:,:) :: cldn
+      real(r8), intent(in), dimension(:,:) :: cicewp 
       real(r8),intent(out) :: ice_tau    (nswbands,pcols,pver) ! extinction optical depth
       real(r8),intent(out) :: ice_tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
       real(r8),intent(out) :: ice_tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
       real(r8),intent(out) :: ice_tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
 
-      real(r8), pointer, dimension(:,:) :: rei
-      real(r8), pointer, dimension(:,:) :: cldn
-      real(r8), pointer, dimension(:,:) :: tmpptr
-      real(r8), dimension(pcols,pver) :: cicewp
       real(r8), dimension(nswbands) :: wavmin
       real(r8), dimension(nswbands) :: wavmax
 
@@ -92,19 +76,9 @@ contains
       real(r8), parameter :: rei_min = 13._r8
       real(r8), parameter :: rei_max = 130._r8
 
-      integer :: ns, i, k, indxsl, lchnk, Nday
-      integer :: itim_old
+      integer :: ns, i, k, indxsl
       real(r8) :: tmp1i, tmp2i, tmp3i, g
 
-      Nday = state%ncol
-      lchnk = state%lchnk
-
-      itim_old = pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, cld_idx,cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-      call pbuf_get_field(pbuf, rei_idx,rei)
-      call pbuf_get_field(pbuf, iciwp_idx, tmpptr)
-      cicewp(1:pcols,1:pver) =  1000.0_r8*tmpptr(1:pcols,1:pver)
-      
       call get_sw_spectral_boundaries(wavmin,wavmax,'microns')
 
       do ns = 1, nswbands
@@ -127,13 +101,13 @@ contains
          fbarii = fbari(indxsl)
 
          do k=1,pver
-            do i=1,Nday
+            do i=1,ncol
 
                ! note that optical properties for ice valid only
                ! in range of 13 > rei > 130 micron (Ebert and Curry 92)
                if (cldn(i,k) >= cldmin .and. cldn(i,k) >= cldeps) then
                   tmp1i = abarii + bbarii/max(rei_min,min(scalefactor*rei(i,k),rei_max))
-                  ice_tau(ns,i,k) = cicewp(i,k)*tmp1i
+                  ice_tau(ns,i,k) = 1000._r8 * cicewp(i,k) * tmp1i
                else
                   ice_tau(ns,i,k) = 0.0_r8
                endif
@@ -148,7 +122,7 @@ contains
                ice_tau_w_g(ns,i,k) = ice_tau_w(ns,i,k) * g
                ice_tau_w_f(ns,i,k) = ice_tau_w(ns,i,k) * g * g
 
-            end do ! End do i=1,Nday
+            end do ! End do i=1,ncol
          end do    ! End do k=1,pver
       end do ! nswbands
 
@@ -156,45 +130,25 @@ contains
 
    !===========================================================================
 
-   subroutine ec_ice_optics_lw(state, pbuf, abs_od)
+   subroutine ec_ice_optics_lw(ncol, cldn, iclwpth, iciwpth, rei, abs_od)
 
-      type(physics_state), intent(in)   :: state
-      type(physics_buffer_desc),pointer :: pbuf(:)
+      integer, intent(in) :: ncol
+      real(r8), intent(in), dimension(:,:) :: cldn, iclwpth, iciwpth, rei
       real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
-
-      real(r8) :: gicewp(pcols,pver)
-      real(r8) :: gliqwp(pcols,pver)
-      real(r8) :: cicewp(pcols,pver)
-      real(r8) :: cliqwp(pcols,pver)
       real(r8) :: ficemr(pcols,pver)
       real(r8) :: cwp(pcols,pver)
       real(r8) :: cldtau(pcols,pver)
-
-      real(r8), pointer, dimension(:,:) :: cldn
-      real(r8), pointer, dimension(:,:) :: rei
-      integer :: ncol, itim_old, lwband, i, k, lchnk
-
+      integer :: lwband, i, k
       real(r8) :: kabs, kabsi
 
-      real(r8) kabsl                  ! longwave liquid absorption coeff (m**2/g)
-      parameter (kabsl = 0.090361_r8)
+      ! longwave liquid absorption coeff (m**2/g)
+      real(r8), parameter :: kabsl = 0.090361_r8
 
       ! Optical properties for ice are valid only in the range of
       ! 13 < rei < 130 micron (Ebert and Curry 92)
       real(r8), parameter :: rei_min = 13._r8
       real(r8), parameter :: rei_max = 130._r8
 
-      real(r8), pointer, dimension(:,:) :: iclwpth, iciwpth
-
-
-      ncol = state%ncol
-      lchnk = state%lchnk
-
-      itim_old  =  pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, rei_idx,   rei)
-      call pbuf_get_field(pbuf, cld_idx,   cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-      call pbuf_get_field(pbuf, iclwp_idx, iclwpth)
-      call pbuf_get_field(pbuf, iciwp_idx, iciwpth)
       do k=1,pver
          do i = 1,ncol
             cwp(i,k) = 1000.0_r8 *iciwpth(i,k) + 1000.0_r8 *iclwpth(i,k)

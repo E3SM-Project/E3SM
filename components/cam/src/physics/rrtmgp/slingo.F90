@@ -7,8 +7,6 @@ module slingo
 
    use shr_kind_mod,     only: r8 => shr_kind_r8
    use ppgrid,           only: pcols, pver
-   use physics_types,    only: physics_state
-   use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
    use radconstants,     only: nswbands, nlwbands, get_sw_spectral_boundaries
 
    implicit none
@@ -20,24 +18,11 @@ module slingo
       slingo_liq_optics_lw, &
       slingo_liq_optics_sw
 
-   ! indexes into pbuf for optical parameters of MG clouds
-   integer :: iclwp_idx  = 0 
-   integer :: iciwp_idx  = 0
-   integer :: cld_idx    = 0 
-   integer :: rel_idx  = 0
-   integer :: rei_idx  = 0
-
 contains
 
    !===========================================================================
 
    subroutine slingo_rad_props_init()
-
-      iciwp_idx  = pbuf_get_index('ICIWP')
-      iclwp_idx  = pbuf_get_index('ICLWP')
-      cld_idx    = pbuf_get_index('CLD')
-      rel_idx    = pbuf_get_index('REL')
-      rei_idx    = pbuf_get_index('REI')
 
       return
 
@@ -45,19 +30,18 @@ contains
 
    !===========================================================================
 
-   subroutine slingo_liq_optics_sw(state, pbuf, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
+   subroutine slingo_liq_optics_sw(ncol, cldn, cliqwp, rel, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
 
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
+      integer, intent(in) :: ncol
+      real(r8), intent(in), dimension(:,:) :: rel
+      real(r8), intent(in), dimension(:,:) :: cldn
+      real(r8), intent(in), dimension(:,:) :: cliqwp 
 
       real(r8),intent(out) :: liq_tau    (nswbands,pcols,pver) ! extinction optical depth
       real(r8),intent(out) :: liq_tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
       real(r8),intent(out) :: liq_tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
       real(r8),intent(out) :: liq_tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
 
-      real(r8), pointer, dimension(:,:) :: rel
-      real(r8), pointer, dimension(:,:) :: cldn
-      real(r8), pointer, dimension(:,:) :: cliqwp 
       real(r8), dimension(nswbands)     :: wavmin
       real(r8), dimension(nswbands)     :: wavmax
 
@@ -98,22 +82,11 @@ contains
       real(r8), parameter :: rel_min = 4.2_r8
       real(r8), parameter :: rel_max = 16._r8
 
-      integer :: ns, i, k, indxsl, Nday
-      integer :: i_rel, lchnk, icld, itim_old
+      integer :: ns, i, k, indxsl
       real(r8) :: tmp1l, tmp2l, tmp3l, g
       real(r8) :: kext(pcols,pver)
-      real(r8), pointer, dimension(:,:) :: iclwpth
 
-      Nday = state%ncol
-      lchnk = state%lchnk
-
-      itim_old = pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, cld_idx, cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-      call pbuf_get_field(pbuf, rel_idx, rel)
-      call pbuf_get_field(pbuf, iclwp_idx, cliqwp)
-      
       call get_sw_spectral_boundaries(wavmin,wavmax,'microns')
-     
       do ns = 1, nswbands
          ! Set index for cloud particle properties based on the wavelength,
          ! according to A. Slingo (1989) equations 1-3:
@@ -141,7 +114,7 @@ contains
          fbarli = fbarl(indxsl)
 
          do k=1,pver
-            do i=1,Nday
+            do i=1,ncol
 
                ! note that optical properties for liquid valid only
                ! in range of 4.2 > rel > 16 micron (Slingo 89)
@@ -162,7 +135,7 @@ contains
                liq_tau_w_g(ns,i,k) = liq_tau_w(ns,i,k) * g
                liq_tau_w_f(ns,i,k) = liq_tau_w(ns,i,k) * g * g
 
-            end do ! End do i=1,Nday
+            end do ! End do i=1,ncol
          end do ! End do k=1,pver
       end do ! nswbands
 
@@ -170,38 +143,23 @@ contains
 
    !===========================================================================
 
-   subroutine slingo_liq_optics_lw(state, pbuf, abs_od)
+   subroutine slingo_liq_optics_lw(ncol, cldn, iclwpth, iciwpth, abs_od)
 
-      type(physics_state), intent(in)  :: state
-      type(physics_buffer_desc),pointer  :: pbuf(:)
+      integer, intent(in) :: ncol
+      real(r8), intent(in), dimension(:,:) :: cldn, iclwpth, iciwpth
       real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
 
-      real(r8) :: gicewp(pcols,pver)
-      real(r8) :: gliqwp(pcols,pver)
-      real(r8) :: cicewp(pcols,pver)
-      real(r8) :: cliqwp(pcols,pver)
       real(r8) :: ficemr(pcols,pver)
       real(r8) :: cwp(pcols,pver)
       real(r8) :: cldtau(pcols,pver)
 
-      real(r8), pointer, dimension(:,:) :: cldn
-      real(r8), pointer, dimension(:,:) :: rei
-      integer :: ncol, icld, itim_old, i_rei, lwband, i, k, lchnk 
+      integer :: lwband, i, k
 
       real(r8) :: kabs, kabsi
-      real(r8) kabsl                  ! longwave liquid absorption coeff (m**2/g)
-      parameter (kabsl = 0.090361_r8)
 
-      real(r8), pointer, dimension(:,:) :: iclwpth, iciwpth
+      ! longwave liquid absorption coeff (m**2/g)
+      real(r8), parameter :: kabsl = 0.090361_r8
 
-      ncol=state%ncol
-      lchnk = state%lchnk
-
-      itim_old  =  pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, rei_idx,   rei)
-      call pbuf_get_field(pbuf, cld_idx,   cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-      call pbuf_get_field(pbuf, iclwp_idx, iclwpth)
-      call pbuf_get_field(pbuf, iciwp_idx, iciwpth)
       do k=1,pver
          do i = 1,ncol
             cwp   (i,k) = 1000.0_r8 * iclwpth(i,k) + 1000.0_r8 * iciwpth(i, k)
