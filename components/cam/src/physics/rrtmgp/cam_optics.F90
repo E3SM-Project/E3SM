@@ -19,8 +19,7 @@ module cam_optics
           sample_cloud_optics_sw, &
           sample_cloud_optics_lw, &
           compress_optics_sw, &
-          set_aerosol_optics_sw, &
-          set_aerosol_optics_lw
+          set_aerosol_optics_sw
 
    ! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
    integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
@@ -458,60 +457,21 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, optics_out)
-      use ppgrid, only: pcols, pver
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
-                                pbuf_get_field
-      use mo_optical_props, only: ty_optical_props_1scl
-      use aer_rad_props, only: aer_rad_props_lw
-      use radconstants, only: nlwbands
-
-      integer, intent(in) :: icall
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
-      logical, intent(in) :: is_cmip6_volc
-      type(ty_optical_props_1scl), intent(inout) :: optics_out
-
-      ! Subroutine name for error messages
-      character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_lw'
-
-      ! Output from CAM routines; expected to have dimension pcols
-      real(r8) :: absorption_tau(pcols,pver,nlwbands)
-
-      ! Loop variables
-      integer :: ilev
-      integer :: ncol
-
-      ! Get aerosol absorption optical depth from CAM routine
-      absorption_tau = 0.0
-      call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, absorption_tau)
-
-      ! Populate the RRTMGP optical properties object with CAM optical depth
-      optics_out%tau(:,:,:) = 0.0
-      ncol = state%ncol
-      optics_out%tau(1:ncol,ktop:kbot,1:nlwbands) = absorption_tau(1:ncol,1:pver,1:nlwbands)
-
-   end subroutine set_aerosol_optics_lw
-
-   !----------------------------------------------------------------------------
-
    subroutine set_aerosol_optics_sw(icall, state, pbuf, &
-                                    day_indices, night_indices, &
+                                    night_indices, &
                                     is_cmip6_volc, &
-                                    optics_out)
+                                    tau_out, ssa_out, asm_out)
       use ppgrid, only: pcols, pver
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use aer_rad_props, only: aer_rad_props_sw
       use radconstants, only: nswbands
-      use mo_optical_props, only: ty_optical_props_2str
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
-      integer, intent(in) :: day_indices(:), night_indices(:)
+      integer, intent(in) :: night_indices(:)
       logical, intent(in) :: is_cmip6_volc
-      type(ty_optical_props_2str), intent(inout) :: optics_out
+      real(r8), intent(out), dimension(:,:,:) :: tau_out, ssa_out, asm_out
 
       ! NOTE: aer_rad_props expects 0:pver indexing on these! It appears this is to
       ! account for the extra layer added above model top, but it is not entirely
@@ -523,7 +483,7 @@ contains
       real(r8), dimension(pcols,0:pver,nswbands) :: tau, tau_w, tau_w_g, tau_w_f
 
       integer :: ncol
-      integer :: iday, icol, ilay
+      integer :: icol, ilay
 
       ! Everyone needs a name
       character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_sw'
@@ -539,53 +499,37 @@ contains
                             count(night_indices > 0), night_indices, is_cmip6_volc, &
                             tau, tau_w, tau_w_g, tau_w_f)
 
-      ! Reset outputs (also handles case where radiation grid contains an extra
-      ! layer above CAM grid)
-      optics_out%tau = 0
-      optics_out%ssa = 1
-      optics_out%g = 0
-
-      ! Assign daytime columns
-      do iday = 1,count(day_indices > 0)
-
-         ! Get index into full chunk-wide array for this daytime index
-         icol = day_indices(iday)
-
+      ! Extract quantities from products
+      do icol = 1,ncol
          ! Copy cloud optical depth over directly
-         optics_out%tau(iday,ktop:kbot,1:nswbands) = tau(icol,1:pver,1:nswbands)
-
+         tau_out(icol,1:pver,1:nswbands) = tau(icol,1:pver,1:nswbands)
          ! Extract single scattering albedo from the product-defined fields
          where (tau(icol,1:pver,1:nswbands) > 0)
-            optics_out%ssa(iday,ktop:kbot,1:nswbands) &
+            ssa_out(icol,1:pver,1:nswbands) &
                = tau_w(icol,1:pver,1:nswbands) / tau(icol,1:pver,1:nswbands)
          elsewhere
-            optics_out%ssa(iday,ktop:kbot,1:nswbands) = 1
+            ssa_out(icol,1:pver,1:nswbands) = 1
          endwhere
-
          ! Extract assymmetry parameter from the product-defined fields
          where (tau_w(icol,1:pver,1:nswbands) > 0)
-            optics_out%g(iday,ktop:kbot,1:nswbands) &
+            asm_out(icol,1:pver,1:nswbands) &
                = tau_w_g(icol,1:pver,1:nswbands) / tau_w(icol,1:pver,1:nswbands)
          elsewhere
-            optics_out%g(iday,ktop:kbot,1:nswbands) = 0
+            asm_out(icol,1:pver,1:nswbands) = 0
          endwhere
-
       end do
 
       ! We need to fix band ordering because the old input files assume RRTMG band
       ! ordering, but this has changed in RRTMGP.
       ! TODO: fix the input files themselves!
-      do icol = 1,size(optics_out%tau,1)
-         do ilay = 1,size(optics_out%tau,2)
-            optics_out%tau(icol,ilay,:) = reordered(optics_out%tau(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-            optics_out%ssa(icol,ilay,:) = reordered(optics_out%ssa(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-            optics_out%g(icol,ilay,:) = reordered(optics_out%g(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
+      do icol = 1,size(tau_out,1)
+         do ilay = 1,size(tau_out,2)
+            tau_out(icol,ilay,:) = reordered(tau_out(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
+            ssa_out(icol,ilay,:) = reordered(ssa_out(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
+            asm_out(icol,ilay,:) = reordered(asm_out(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
          end do
       end do
 
-      ! Check values
-      call handle_error(optics_out%validate())
-      
    end subroutine set_aerosol_optics_sw
 
    !----------------------------------------------------------------------------

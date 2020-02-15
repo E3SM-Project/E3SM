@@ -1298,7 +1298,7 @@ contains
       real(r8) :: albedo_diffuse(nswbands,pcols), albedo_diffuse_day(nswbands,pcols)
 
       ! Cloud and aerosol optics
-      type(ty_optical_props_2str) :: aerosol_optics_sw, cloud_optics_sw
+      type(ty_optical_props_2str) :: aer_optics_sw, cloud_optics_sw
 
       ! Gas concentrations
       type(ty_gas_concs) :: gas_concentrations
@@ -1346,7 +1346,9 @@ contains
          rei, rel
 
       ! Cloud optics by band
-      real(r8), dimension(pcols, pver, nswbands) :: cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd
+      real(r8), dimension(pcols, pver, nswbands) :: &
+         cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd, &
+         aer_tau, aer_ssa, aer_asm
       real(r8), dimension(pcols, pver, nswgpts) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
 
       ! Everybody needs a name
@@ -1485,7 +1487,7 @@ contains
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, &
+      call handle_error(aer_optics_sw%alloc_2str(nday, nlev_rad, &
                                                      k_dist_sw%get_band_lims_wavenumber(), &
                                                      name='shortwave aerosol optics'))
 
@@ -1500,17 +1502,28 @@ contains
 
             if (do_aerosol_rad) then
                ! Get shortwave aerosol optics
-               call t_startf('rad_aerosol_optics_sw')
-               call set_aerosol_optics_sw(icall, state, pbuf, &
-                                          day_indices(1:nday), &
-                                          night_indices(1:nnight), &
-                                          is_cmip6_volc, &
-                                          aerosol_optics_sw)
-               call t_stopf('rad_aerosol_optics_sw')
+               call t_startf('rad_aer_optics_sw')
+               aer_optics_sw%tau = 0
+               aer_optics_sw%ssa = 1
+               aer_optics_sw%g   = 0
+               call set_aerosol_optics_sw( &
+                  icall, state, pbuf, &
+                  night_indices(1:nnight), &
+                  is_cmip6_volc, &
+                  aer_tau, aer_ssa, aer_asm &
+               )
+               call compress_optics_sw( &
+                  day_indices, &
+                  aer_tau(1:ncol,1:pver,:), aer_ssa(1:ncol,1:pver,:), aer_asm(1:ncol,1:pver,:), &
+                  aer_optics_sw%tau(1:nday,2:nlev_rad,:), &
+                  aer_optics_sw%ssa(1:nday,2:nlev_rad,:), &
+                  aer_optics_sw%g  (1:nday,2:nlev_rad,:)  &
+               )
+               call t_stopf('rad_aer_optics_sw')
             else
-               aerosol_optics_sw%tau(:,:,:) = 0
-               aerosol_optics_sw%ssa(:,:,:) = 0
-               aerosol_optics_sw%g  (:,:,:) = 0
+               aer_optics_sw%tau(:,:,:) = 0
+               aer_optics_sw%ssa(:,:,:) = 0
+               aer_optics_sw%g  (:,:,:) = 0
             end if
 
             ! Set gas concentrations (I believe the gases may change for
@@ -1534,7 +1547,7 @@ contains
                albedo_diffuse_day(1:nswbands,1:nday), &
                cloud_optics_sw, &
                fluxes_allsky_day, fluxes_clrsky_day, &
-               aer_props=aerosol_optics_sw, &
+               aer_props=aer_optics_sw, &
                tsi_scaling=tsi_scaling &
             ))
             call t_stopf('rad_calculations_sw')
@@ -1567,7 +1580,7 @@ contains
 
       ! Free fluxes and optical properties
       call free_optics_sw(cloud_optics_sw)
-      call free_optics_sw(aerosol_optics_sw)
+      call free_optics_sw(aer_optics_sw)
       call free_fluxes(fluxes_allsky_day)
       call free_fluxes(fluxes_clrsky_day)
 
@@ -1646,8 +1659,9 @@ contains
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
-      use cam_optics, only: get_cloud_optics_lw, sample_cloud_optics_lw, set_aerosol_optics_lw
+      use cam_optics, only: get_cloud_optics_lw, sample_cloud_optics_lw
       use cam_control_mod, only: aqua_planet
+      use aer_rad_props, only: aer_rad_props_lw
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1682,11 +1696,11 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
 
       ! Optical properties by *band* (will be mapped later to gpoints)
-      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd
+      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd, aer_tau
 
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
-      type(ty_optical_props_1scl) :: aerosol_optics_lw
+      type(ty_optical_props_1scl) :: aer_optics_lw
       type(ty_optical_props_1scl) :: cloud_optics_lw
 
       integer :: ncol, icall
@@ -1753,8 +1767,8 @@ contains
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aerosol_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
-      call aerosol_optics_lw%set_name('longwave aerosol optics')
+      call handle_error(aer_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
+      call aer_optics_lw%set_name('longwave aerosol optics')
 
       ! Loop over diagnostic calls (what does this mean?)
       call rad_cnst_get_call_list(active_calls)
@@ -1770,11 +1784,13 @@ contains
 
             if (do_aerosol_rad) then
                ! Get longwave aerosol optics
-               call t_startf('rad_aerosol_optics_lw')
-               call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
-               call t_stopf('rad_aerosol_optics_lw')
+               call t_startf('rad_aer_optics_lw')
+               aer_optics_lw%tau(:,:,:) = 0
+               call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau)
+               aer_optics_lw%tau(1:ncol,ktop:kbot,1:nlwbands) = aer_tau(1:ncol,1:pver,1:nlwbands)
+               call t_stopf('rad_aer_optics_lw')
             else
-               aerosol_optics_lw%tau(:,:,:) = 0
+               aer_optics_lw%tau(:,:,:) = 0
             end if
 
             ! Do longwave radiative transfer calculations
@@ -1786,7 +1802,7 @@ contains
                surface_emissivity(1:nlwbands,1:ncol), &
                cloud_optics_lw, &
                fluxes_allsky, fluxes_clrsky, &
-               aer_props=aerosol_optics_lw, &
+               aer_props=aer_optics_lw, &
                t_lev=tint(1:ncol,1:nlev_rad+1), &
                n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
             ))
@@ -1810,7 +1826,7 @@ contains
 
       ! Free fluxes and optical properties
       call free_optics_lw(cloud_optics_lw)
-      call free_optics_lw(aerosol_optics_lw)
+      call free_optics_lw(aer_optics_lw)
 
    end subroutine radiation_driver_lw
 
