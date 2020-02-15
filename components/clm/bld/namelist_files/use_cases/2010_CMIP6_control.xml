@@ -17,7 +17,4 @@
 <stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_popdens>
 <stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_popdens>
 
-<!-- CMIP6 DECK compsets -->
-<fsurdat hgrid="ne30np4" >lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc </fsurdat>
-<fsurdat hgrid="r0125" >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc </fsurdat>
 </namelist_defaults>
