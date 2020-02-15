@@ -1267,7 +1267,7 @@ contains
       use perf_mod, only: t_startf, t_stopf
       use cam_history, only: outfld
       use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
       use camsrfexch, only: cam_in_t
       use mo_rrtmgp_clr_all_sky, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
@@ -1275,7 +1275,8 @@ contains
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
-      use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
+      use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
+                            compress_optics_sw, set_aerosol_optics_sw
       use cam_control_mod, only: aqua_planet
 
       ! Inputs
@@ -1338,6 +1339,16 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
 
+      ! Pointers to fields on the physics buffer
+      real(r8), pointer, dimension(:,:) :: &
+         cld, cldfsnow, &
+         iclwp, iciwp, icswp, dei, des, lambdac, mu, &
+         rei, rel
+
+      ! Cloud optics by band
+      real(r8), dimension(pcols, pver, nswbands) :: cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd
+      real(r8), dimension(pcols, pver, nswgpts) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
+
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
 
@@ -1346,10 +1357,21 @@ contains
       ! throughout this subroutine, so set once for convenience
       ncol = state%ncol
 
+      ! Get fields from pbuf
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+      call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
+      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+      call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
+      call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
+      call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
+      call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
+
       ! Get cosine solar zenith angle for current time step. 
       call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
-
-      ! Send values for this chunk to history buffer
       call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
 
       if (fixed_total_solar_irradiance<0) then
@@ -1429,15 +1451,31 @@ contains
       end if
 
       ! Do shortwave cloud optics calculations
-      ! TODO: refactor the set_cloud_optics codes to allow passing arrays
-      ! rather than state/pbuf so that we can use this for superparameterized
-      ! simulations...or alternatively add logic within the set_cloud_optics
-      ! routines to handle this.
       call t_startf('shortwave cloud optics')
+      call get_cloud_optics_sw( &
+         ncol, pver, nswbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+         lambdac, mu, dei, des, rel, rei, &
+         cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd &
+      )
+      call sample_cloud_optics_sw( &
+         ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
+         state%pmid, cld, cldfsnow, &
+         cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd, &
+         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt &
+      )
       call handle_error(cloud_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
-      call set_cloud_optics_sw(state, pbuf, &
-                               day_indices(1:nday), &
-                               k_dist_sw, cloud_optics_sw)
+      cloud_optics_sw%tau = 0
+      cloud_optics_sw%ssa = 1
+      cloud_optics_sw%g   = 0
+      call compress_optics_sw( &
+         day_indices, cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+         cloud_optics_sw%tau(1:nday,2:nlev_rad,:), &
+         cloud_optics_sw%ssa(1:nday,2:nlev_rad,:), &
+         cloud_optics_sw%g  (1:nday,2:nlev_rad,:)  &
+      )
+      call output_cloud_optics_sw(state, cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd)
+      ! Apply delta scaling to account for forward-scattering
+      call handle_error(cloud_optics_sw%delta_scale())
       call t_stopf('shortwave cloud optics')
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
@@ -1537,6 +1575,62 @@ contains
 
    !----------------------------------------------------------------------------
 
+   subroutine output_cloud_optics_sw(state, tau, ssa, asm)
+      use ppgrid, only: pver
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+      use radconstants, only: idx_sw_diag
+
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
+      character(len=*), parameter :: subname = 'output_cloud_optics_sw'
+
+      ! Check values
+      call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%optical_depth')
+      call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%single_scattering_albedo')
+      call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%assymmetry_parameter')
+
+      ! Send outputs to history buffer
+      call outfld('CLOUD_TAU_SW', &
+                  tau(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('CLOUD_SSA_SW', &
+                  ssa(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('CLOUD_G_SW', &
+                  asm(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('TOT_ICLD_VISTAU', &
+                  tau(1:state%ncol,1:pver,idx_sw_diag), &
+                  state%ncol, state%lchnk)
+   end subroutine output_cloud_optics_sw
+
+   !----------------------------------------------------------------------------
+
+   subroutine output_cloud_optics_lw(state, tau)
+
+      use ppgrid, only: pver
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:,:,:) :: tau
+
+      ! Check values
+      call assert_valid(tau(1:state%ncol,1:pver,1:nlwbands), 'cld_tau_lw')
+
+      ! Output
+      call outfld('CLOUD_TAU_LW', &
+                  tau(1:state%ncol,1:pver,1:nlwbands), &
+                  state%ncol, state%lchnk)
+
+   end subroutine output_cloud_optics_lw
+
+   !----------------------------------------------------------------------------
+
    subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
@@ -1544,7 +1638,7 @@ contains
       use perf_mod, only: t_startf, t_stopf
       use cam_history, only: outfld
       use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
       use camsrfexch, only: cam_in_t
       use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
@@ -1552,7 +1646,7 @@ contains
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
-      use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
+      use cam_optics, only: get_cloud_optics_lw, sample_cloud_optics_lw, set_aerosol_optics_lw
       use cam_control_mod, only: aqua_planet
 
       ! Inputs
@@ -1562,6 +1656,12 @@ contains
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+      ! Pointer to pbuf fields
+      real(r8), pointer, dimension(:,:) :: &
+         cld, cldfsnow, &
+         iclwp, iciwp, icswp, &
+         mu, lambdac, dei, des, rei
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_lw'
@@ -1581,6 +1681,9 @@ contains
       ! Temporary heating rates on radiation vertical grid
       real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
 
+      ! Optical properties by *band* (will be mapped later to gpoints)
+      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd
+
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
       type(ty_optical_props_1scl) :: aerosol_optics_lw
@@ -1591,6 +1694,18 @@ contains
       ! Number of physics columns in this "chunk"; used in multiple places
       ! throughout this subroutine, so set once for convenience
       ncol = state%ncol
+
+      ! Get fields from pbuf
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+      call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
+      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+      call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
+      call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
+      call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
 
       ! Set rad state variables
       call set_rad_state(state, cam_in, &
@@ -1616,7 +1731,19 @@ contains
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
       call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
-      call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
+      cloud_optics_lw%tau = 0.0
+      call get_cloud_optics_lw( &
+         ncol, pver, nlwbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+         lambdac, mu, dei, des, rei, &
+         cld_tau_bnd &
+      )
+      call sample_cloud_optics_lw( &
+         ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
+         state%pmid, cld, cldfsnow, &
+         cld_tau_bnd, cloud_optics_lw%tau(1:ncol,2:nlev_rad,:) &
+      )
+      call output_cloud_optics_lw(state, cld_tau_bnd)
+      call handle_error(cloud_optics_lw%delta_scale())
       call t_stopf('longwave cloud optics')
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
