@@ -2719,6 +2719,10 @@ end subroutine droplet_self_collection
 subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
    qcacc,ncacc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_rain_accretion_f
+#endif
+
 !............................
 ! accretion of cloud by rain
 
@@ -2735,6 +2739,13 @@ real(rtype), intent(out) :: ncacc
 
 real(rtype) :: dum, dum1
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld, &
+         qcacc, ncacc)
+      return
+   endif
+#endif
 if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
 
    if (iparam.eq.1) then

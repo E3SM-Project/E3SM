@@ -164,6 +164,29 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct CloudRainAccretionData
+{
+  // inputs
+  Real rho;
+  Real inv_rho;
+  Real qc_incld;
+  Real nc_incld;
+  Real qr_incld;
+
+  // output
+  Real qcacc;
+  Real ncacc;
+};
+
+void cloud_rain_accretion(CloudRainAccretionData& d);
+extern "C"{
+
+  void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
+    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudWaterAutoconversionData
 {
   // inputs

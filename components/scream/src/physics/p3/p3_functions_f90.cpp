@@ -36,6 +36,9 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void cloud_rain_accretion_c(Real rho, Real inv_rho, Real qc_incld, Real nc_incld,
+                            Real qr_incld, Real* qcacc, Real* ncacc);
+
 void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
 
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
@@ -160,6 +163,13 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
   p3_init(true);
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void cloud_rain_accretion(CloudRainAccretionData& d)
+{
+  p3_init(true);
+  cloud_rain_accretion_c(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld,
+                         &d.qcacc, &d.ncacc);
 }
 
 void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
@@ -1215,6 +1225,34 @@ void rain_sedimentation_f(
 
   Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, qr_tend_d, nr_tend_d, rflx_d};
   pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx}, sizes_out, inout_views);
+}
+
+void cloud_rain_accretion_f(
+  Real rho_, Real inv_rho_, Real qc_incld_, Real nc_incld_, Real qr_incld_,
+  Real* qcacc_, Real* ncacc_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qcacc = *qcacc_;
+  Real local_ncacc = *ncacc_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), inv_rho(inv_rho_), qc_incld(qc_incld_),
+                          nc_incld(nc_incld_), qr_incld(qr_incld_),
+                          qcacc(local_qcacc), ncacc(local_ncacc);
+      P3F::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
+                                qcacc, ncacc);
+
+      t_d(0) = qcacc[0];
+      t_d(1) = ncacc[0];
+
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qcacc_ = t_h(0);
+  *ncacc_ = t_h(1);
 }
 
 void cloud_water_autoconversion_f(

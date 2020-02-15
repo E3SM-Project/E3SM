@@ -32,6 +32,7 @@ if (NOT CUDA_BUILD)
     p3_functions_find.cpp
     p3_functions_math.cpp
     p3_functions_update_prognostics.cpp
+    p3_functions_cloud_rain_acc.cpp
     p3_functions_autoconversion.cpp)
 endif()
 
