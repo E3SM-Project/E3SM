@@ -20,6 +20,9 @@ void Functions<S,D>
                         Spack& th, Spack& qv, Spack& qitot, Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,
                         Spack& nc, Spack& qr, Spack& nr)
 {
+  constexpr Scalar QSMALL    = C::QSMALL;
+  constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
+
   qc = qc + (-qcheti-qccol-qcshd-qiberg)*dt;
 
   if ( log_predictNc ){
@@ -32,7 +35,6 @@ void Functions<S,D>
   // but accounts for rapid evaporation of small melting ice particles)
   nr = nr + (-nrcol-nrheti+nmltratio*nimlt+nrshdr+ncshdc)*dt;
 
-  constexpr Scalar QSMALL    = C::QSMALL;
   const auto qitot_not_small = qitot >= QSMALL;
 
   if ( qitot_not_small.any() ) {
@@ -44,8 +46,6 @@ void Functions<S,D>
   const auto dum = (qrcol + qccol + qrheti + qcheti) * dt;
   qitot = qitot + (qidep + qinuc + qiberg) * dt + dum;
   qirim = qirim + dum;
-
-  constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
 
   birim = birim + (qrcol * INV_RHO_RIMEMAX + qccol / rhorime_c + (qrheti +
                                                                   qcheti) * INV_RHO_RIMEMAX) * dt;
@@ -91,28 +91,29 @@ void Functions<S,D>
 			   const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
 			   const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr)
 {
+  constexpr Scalar NCCNST = C::NCCNST;
+  constexpr int IPARAM    = C::IPARAM;
+  constexpr Scalar INV_CP = C::INV_CP;
 
-  qc = qc + (qcnuc - qcacc - qcaut) * dt;
-  qr = qr + (qcacc + qcaut - qrevp) * dt;
+  qc = qc + (-qcacc-qcaut+qcnuc)*dt;
+  qr = qr + (qcacc+qcaut-qrevp)*dt;
 
-  if(log_predictNc) {
-    nc = nc + (ncslf -ncacc - ncautc) * dt;
+  if (log_predictNc) {
+    nc = nc + (-ncacc-ncautc+ncslf)*dt;
   }
-  else{
-    constexpr Scalar NCCNST = C::NCCNST;
+  else {
     nc = NCCNST * inv_rho;
   }
-  constexpr int IPARAM = C::IPARAM;
-  if (IPARAM == 1 || IPARAM == 2){
+
+  if (IPARAM == 1 || IPARAM == 2) {
     nr = nr + (sp(0.5) * ncautc - nrslf - nrevp) * dt;
   }
-  else{
+  else {
     nr = nr + (ncautr - nrslf - nrevp) * dt;
   }
 
-  qv = qv + (qrevp - qcnuc) * dt;
+  qv = qv + (-qcnuc+qrevp)*dt;
 
-  constexpr Scalar INV_CP = C::INV_CP;
   th = th + exner*((qcnuc - qrevp) * xxlv * INV_CP) * dt;
 }
 
