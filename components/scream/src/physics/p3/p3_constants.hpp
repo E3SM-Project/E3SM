@@ -56,7 +56,7 @@ struct Constants
   static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
   static constexpr Scalar CP          = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP      = 1.0/CP;
-  static constexpr Scalar Tol         = util::is_single_precision<Real>::value ? 2e-5 : 1e-14; 
+  static constexpr Scalar Tol         = util::is_single_precision<Real>::value ? 2e-5 : 1e-14;
   static constexpr Scalar mu_r_const  = 1.0;
   static constexpr Scalar dt_left_tol = 1.e-4;
   static constexpr Scalar bcn         = 2.;
