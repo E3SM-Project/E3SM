@@ -19,9 +19,6 @@
 namespace scream {
 namespace p3 {
 namespace unit_test {
-
-
-
 /*
  * Unit-tests for p3_functions.
  */
@@ -258,6 +255,7 @@ static void cloud_water_conservation_tests_device(){
     REQUIRE(Spack::n <= max_pack_size);
 
     CloudWaterConservationData cwdc[max_pack_size] = {
+      //qc, qcnuc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
       {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
       {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -354,6 +352,7 @@ static void cloud_water_conservation_tests_device(){
     REQUIRE(Spack::n <= max_pack_size);
 
     IceWaterConservationData iwdc[max_pack_size] = {
+      // qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt
       {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
       {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
       {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
@@ -409,7 +408,7 @@ static void cloud_water_conservation_tests_device(){
         qimlt[s] = iwdc_device(s).qimlt;
       }
 
-      Functions::ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,iwdc_device(0).dt,qisub,qimlt);
+      Functions::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt);
       // Copy results back into views
       for (Int s = 0; s < Spack::n; ++s) {
         iwdc_device(s).qitot = qitot[s];
@@ -453,6 +452,7 @@ static void cloud_water_conservation_tests_device(){
     REQUIRE(Spack::n <= max_pack_size);
 
     RainWaterConservationData rwdc[max_pack_size] = {
+      // qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti
       {0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0},
       {3.6842105263157901e-6, 1.8910609577335389e-12, 6.5659507736611415e-9, 2.0267066625093075e-3, 1.3686661018890648e-9, 1800.0, 0.0, 0.0, 0.0},
       {1.0000000000000001e-5, 1.3239078166546396e-11, 4.5967389456540289e-8, 0.0, 0.0, 1800.0, 0.0, 1.4619847302347994e-33, 1.3104200383028957e-8},

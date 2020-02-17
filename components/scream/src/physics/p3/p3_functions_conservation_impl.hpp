@@ -32,9 +32,8 @@ void Functions<S,D>
   }
 
   if(nothing_todo.any()){
-    ratio.set(nothing_todo, 1.0); // If not limiting sinks on qc then most likely did not run out of qc
+    ratio.set(nothing_todo, 1); // If not limiting sinks on qc then most likely did not run out of qc
   }
-
 
   //PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
   //"ratio" of timestep and vapor deposition and sublimation  for the
@@ -42,8 +41,8 @@ void Functions<S,D>
   // water to begin with.
   enforce_conservation = sources > qtendsmall;
   if (enforce_conservation.any()){
-    qidep.set(enforce_conservation, qidep*(1.0-ratio));
-    qisub.set(enforce_conservation, qisub*(1.0-ratio));
+    qidep.set(enforce_conservation, qidep*(1-ratio));
+    qisub.set(enforce_conservation, qisub*(1-ratio));
   }
 }
 
