@@ -1298,7 +1298,7 @@ contains
       real(r8) :: albedo_diffuse(nswbands,pcols), albedo_diffuse_day(nswbands,pcols)
 
       ! Cloud and aerosol optics
-      type(ty_optical_props_2str) :: aer_optics_sw, cloud_optics_sw
+      type(ty_optical_props_2str) :: aer_optics_sw, cld_optics_sw
 
       ! Gas concentrations
       type(ty_gas_concs) :: gas_concentrations
@@ -1465,19 +1465,19 @@ contains
          cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd, &
          cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt &
       )
-      call handle_error(cloud_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
-      cloud_optics_sw%tau = 0
-      cloud_optics_sw%ssa = 1
-      cloud_optics_sw%g   = 0
+      call handle_error(cld_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
+      cld_optics_sw%tau = 0
+      cld_optics_sw%ssa = 1
+      cld_optics_sw%g   = 0
       call compress_optics_sw( &
          day_indices, cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
-         cloud_optics_sw%tau(1:nday,2:nlev_rad,:), &
-         cloud_optics_sw%ssa(1:nday,2:nlev_rad,:), &
-         cloud_optics_sw%g  (1:nday,2:nlev_rad,:)  &
+         cld_optics_sw%tau(1:nday,2:nlev_rad,:), &
+         cld_optics_sw%ssa(1:nday,2:nlev_rad,:), &
+         cld_optics_sw%g  (1:nday,2:nlev_rad,:)  &
       )
       call output_cloud_optics_sw(state, cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd)
       ! Apply delta scaling to account for forward-scattering
-      call handle_error(cloud_optics_sw%delta_scale())
+      call handle_error(cld_optics_sw%delta_scale())
       call t_stopf('shortwave cloud optics')
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
@@ -1545,7 +1545,7 @@ contains
                coszrs_day(1:nday), &
                albedo_direct_day(1:nswbands,1:nday), &
                albedo_diffuse_day(1:nswbands,1:nday), &
-               cloud_optics_sw, &
+               cld_optics_sw, &
                fluxes_allsky_day, fluxes_clrsky_day, &
                aer_props=aer_optics_sw, &
                tsi_scaling=tsi_scaling &
@@ -1579,7 +1579,7 @@ contains
       end do
 
       ! Free fluxes and optical properties
-      call free_optics_sw(cloud_optics_sw)
+      call free_optics_sw(cld_optics_sw)
       call free_optics_sw(aer_optics_sw)
       call free_fluxes(fluxes_allsky_day)
       call free_fluxes(fluxes_clrsky_day)
@@ -1701,7 +1701,7 @@ contains
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
       type(ty_optical_props_1scl) :: aer_optics_lw
-      type(ty_optical_props_1scl) :: cloud_optics_lw
+      type(ty_optical_props_1scl) :: cld_optics_lw
 
       integer :: ncol, icall
 
@@ -1744,8 +1744,8 @@ contains
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
-      call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
-      cloud_optics_lw%tau = 0.0
+      call handle_error(cld_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
+      cld_optics_lw%tau = 0.0
       call get_cloud_optics_lw( &
          ncol, pver, nlwbands, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rei, &
@@ -1754,10 +1754,10 @@ contains
       call sample_cloud_optics_lw( &
          ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
          state%pmid, cld, cldfsnow, &
-         cld_tau_bnd, cloud_optics_lw%tau(1:ncol,2:nlev_rad,:) &
+         cld_tau_bnd, cld_optics_lw%tau(1:ncol,2:nlev_rad,:) &
       )
       call output_cloud_optics_lw(state, cld_tau_bnd)
-      call handle_error(cloud_optics_lw%delta_scale())
+      call handle_error(cld_optics_lw%delta_scale())
       call t_stopf('longwave cloud optics')
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
@@ -1800,7 +1800,7 @@ contains
                pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
                pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
                surface_emissivity(1:nlwbands,1:ncol), &
-               cloud_optics_lw, &
+               cld_optics_lw, &
                fluxes_allsky, fluxes_clrsky, &
                aer_props=aer_optics_lw, &
                t_lev=tint(1:ncol,1:nlev_rad+1), &
@@ -1825,7 +1825,7 @@ contains
       end do  ! loop over diagnostic calls
 
       ! Free fluxes and optical properties
-      call free_optics_lw(cloud_optics_lw)
+      call free_optics_lw(cld_optics_lw)
       call free_optics_lw(aer_optics_lw)
 
    end subroutine radiation_driver_lw
