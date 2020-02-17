@@ -1294,8 +1294,8 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad
 
       ! Albedo for shortwave calculations
-      real(r8) :: albedo_direct(nswbands,pcols), albedo_direct_day(nswbands,pcols)
-      real(r8) :: albedo_diffuse(nswbands,pcols), albedo_diffuse_day(nswbands,pcols)
+      real(r8) :: albedo_dir(nswbands,pcols), albedo_dir_day(nswbands,pcols)
+      real(r8) :: albedo_dif(nswbands,pcols), albedo_dif_day(nswbands,pcols)
 
       ! Cloud and aerosol optics
       type(ty_optical_props_2str) :: aer_optics_sw, cld_optics_sw
@@ -1435,16 +1435,16 @@ contains
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
-      call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
+      call set_albedo(cam_in, albedo_dir(1:nswbands,1:ncol), albedo_dif(1:nswbands,1:ncol))
 
       ! Send albedos to history buffer (useful for debugging)
-      call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(1:nswbands,1:ncol)), ncol, state%lchnk)
-      call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse(1:nswbands,1:ncol)), ncol, state%lchnk)
+      call outfld('SW_ALBEDO_DIR', transpose(albedo_dir(1:nswbands,1:ncol)), ncol, state%lchnk)
+      call outfld('SW_ALBEDO_DIF', transpose(albedo_dif(1:nswbands,1:ncol)), ncol, state%lchnk)
 
       ! Compress to daytime-only arrays
       do iband = 1,nswbands
-         call compress_day_columns(albedo_direct(iband,1:ncol), albedo_direct_day(iband,1:nday), day_indices(1:nday))
-         call compress_day_columns(albedo_diffuse(iband,1:ncol), albedo_diffuse_day(iband,1:nday), day_indices(1:nday))
+         call compress_day_columns(albedo_dir(iband,1:ncol), albedo_dir_day(iband,1:nday), day_indices(1:nday))
+         call compress_day_columns(albedo_dif(iband,1:ncol), albedo_dif_day(iband,1:nday), day_indices(1:nday))
       end do
       call compress_day_columns(coszrs(1:ncol), coszrs_day(1:nday), day_indices(1:nday))
 
@@ -1555,8 +1555,8 @@ contains
                tmid_day(1:nday,1:nlev_rad), &
                pint_day(1:nday,1:nlev_rad+1), &
                coszrs_day(1:nday), &
-               albedo_direct_day(1:nswbands,1:nday), &
-               albedo_diffuse_day(1:nswbands,1:nday), &
+               albedo_dir_day(1:nswbands,1:nday), &
+               albedo_dif_day(1:nswbands,1:nday), &
                cld_optics_sw, &
                fluxes_allsky_day, fluxes_clrsky_day, &
                aer_props=aer_optics_sw, &
@@ -2106,34 +2106,34 @@ contains
    ! Set surface albedos from cam surface exchange object for direct and diffuse
    ! beam radiation. This code was copied from the RRTMG implementation, but moved
    ! to a subroutine with some better variable names.
-   subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
+   subroutine set_albedo(cam_in, albedo_dir, albedo_dif)
       use camsrfexch, only: cam_in_t
       use radiation_utils, only: clip_values
 
       type(cam_in_t), intent(in) :: cam_in
-      real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
-      real(r8), intent(inout) :: albedo_diffuse(:,:)  ! surface albedo, diffuse radiation
+      real(r8), intent(inout) :: albedo_dir(:,:)   ! surface albedo, direct radiation
+      real(r8), intent(inout) :: albedo_dif(:,:)  ! surface albedo, diffuse radiation
 
       ! Local namespace
       real(r8) :: wavenumber_limits(2,nswbands)
       integer :: ncol, iband
 
       ! Check dimension sizes of output arrays.
-      ! albedo_direct and albedo_diffuse should have sizes nswbands,ncol, but ncol
+      ! albedo_dir and albedo_dif should have sizes nswbands,ncol, but ncol
       ! can change so we just check that it is less than or equal to pcols (the
       ! maximum size ncol is ever allowed to be).
-      call assert(size(albedo_direct, 1) == nswbands, &
-                  'set_albedo: size(albedo_direct, 1) /= nswbands')
-      call assert(size(albedo_direct, 2) <= pcols, &
-                  'set_albedo: size(albedo_direct, 2) > pcols')
-      call assert(all(shape(albedo_direct) == shape(albedo_diffuse)), &
-                  'set_albedo: albedo_direct and albedo_diffuse have inconsistent shapes')
+      call assert(size(albedo_dir, 1) == nswbands, &
+                  'set_albedo: size(albedo_dir, 1) /= nswbands')
+      call assert(size(albedo_dir, 2) <= pcols, &
+                  'set_albedo: size(albedo_dir, 2) > pcols')
+      call assert(all(shape(albedo_dir) == shape(albedo_dif)), &
+                  'set_albedo: albedo_dir and albedo_dif have inconsistent shapes')
       
-      ncol = size(albedo_direct, 2)
+      ncol = size(albedo_dir, 2)
 
       ! Initialize albedo
-      albedo_direct(:,:) = 0._r8
-      albedo_diffuse(:,:) = 0._r8
+      albedo_dir(:,:) = 0._r8
+      albedo_dif(:,:) = 0._r8
 
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
@@ -2147,23 +2147,23 @@ contains
              is_visible(wavenumber_limits(2,iband))) then
 
             ! Entire band is in the visible
-            albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
-            albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
+            albedo_dir(iband,1:ncol) = cam_in%asdir(1:ncol)
+            albedo_dif(iband,1:ncol) = cam_in%asdif(1:ncol)
 
          else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
                   .not.is_visible(wavenumber_limits(2,iband))) then
 
             ! Entire band is in the longwave (near-infrared)
-            albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
-            albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
+            albedo_dir(iband,1:ncol) = cam_in%aldir(1:ncol)
+            albedo_dif(iband,1:ncol) = cam_in%aldif(1:ncol)
 
          else
 
             ! Band straddles the visible to near-infrared transition, so we take
             ! the albedo to be the average of the visible and near-infrared
             ! broadband albedos
-            albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
-            albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
+            albedo_dir(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
+            albedo_dif(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
 
          end if
       end do
@@ -2172,8 +2172,8 @@ contains
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
       ! was never checked for RRTMG, so albedos will probably be slight different
       ! than the implementation in RRTMG!
-      call clip_values(albedo_direct, 0._r8, 1._r8, varname='albedo_direct')
-      call clip_values(albedo_diffuse, 0._r8, 1._r8, varname='albedo_diffuse')
+      call clip_values(albedo_dir, 0._r8, 1._r8, varname='albedo_dir')
+      call clip_values(albedo_dif, 0._r8, 1._r8, varname='albedo_dif')
 
    end subroutine set_albedo
 
