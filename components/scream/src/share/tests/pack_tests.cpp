@@ -203,6 +203,16 @@ struct TestPack {
     compare_packs(dc, d);                                 \
   } while (0)
 
+#define test_pack_gen_unary_op(op) do {             \
+    Pack a, b, ac;                                  \
+    scalar c;                                       \
+    setup(a, b, c);                                 \
+    a = op b;                                       \
+    vector_novec for (int i = 0; i < Pack::n; ++i)  \
+      ac[i] = op b[i];                              \
+    compare_packs(ac, a);                           \
+  } while (0)
+
 #define test_pack_gen_unary_fn(op, impl) do {     \
   Pack a, b, ac;                                  \
   scalar c;                                       \
@@ -250,6 +260,8 @@ struct TestPack {
     test_pack_gen_bin_fn_all(min, scream::util::min, setup);
     test_pack_gen_bin_fn_all(max, scream::util::max, setup);
     test_pack_gen_bin_fn_all(pow, std::pow, setup_pow);
+
+    test_pack_gen_unary_op(-);
 
     test_pack_gen_unary_stdfn(abs);
     test_pack_gen_unary_stdfn(exp);
