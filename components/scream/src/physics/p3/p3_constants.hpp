@@ -105,12 +105,6 @@ struct Globals
 };
 
 template <typename Scalar>
-vector_2d_t<Scalar> Globals<Scalar>::VN_TABLE(VTABLE_DIM0, std::vector<Scalar>(VTABLE_DIM1));
-
-template <typename Scalar>
-vector_2d_t<Scalar> Globals<Scalar>::VM_TABLE(VTABLE_DIM0, std::vector<Scalar>(VTABLE_DIM1));
-
-template <typename Scalar>
 std::vector<Scalar> Globals<Scalar>::MU_R_TABLE(MU_R_TABLE_DIM);
 
 } // namespace p3
