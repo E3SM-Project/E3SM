@@ -1156,6 +1156,7 @@ contains
 
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+      real(r8), dimension(nswbands,pcols) :: albedo_dir, albedo_dif
 
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
@@ -1215,9 +1216,17 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_allsky, do_direct=.true.)
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nswbands, fluxes_clrsky, do_direct=.true.)
 
+         ! Get albedo. This uses CAM routines internally and just provides a
+         ! wrapper to improve readability of the code here.
+         call set_albedo(cam_in, albedo_dir(1:nswbands,1:ncol), albedo_dif(1:nswbands,1:ncol))
+
+         ! Send albedos to history buffer (useful for debugging)
+         call outfld('SW_ALBEDO_DIR', transpose(albedo_dir(1:nswbands,1:ncol)), ncol, state%lchnk)
+         call outfld('SW_ALBEDO_DIF', transpose(albedo_dif(1:nswbands,1:ncol)), ncol, state%lchnk)
+
          ! Call the shortwave radiation driver
-         call radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
-                                  pmid, pint, tmid, &
+         call radiation_driver_sw(state, pbuf, is_cmip6_volc, &
+                                  pmid, pint, tmid, albedo_dir, albedo_dif, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
         
          ! Set net fluxes used by other components (land?) 
@@ -1250,7 +1259,7 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
 
          ! Call the longwave radiation driver to calculate fluxes and heating rates
-         call radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
+         call radiation_driver_lw(state, pbuf, is_cmip6_volc, &
                                   pmid, pint, tmid, tint, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
         
@@ -1291,8 +1300,8 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
-                                  pmid, pint, tmid, &
+   subroutine radiation_driver_sw(state, pbuf, is_cmip6_volc, &
+                                  pmid, pint, tmid, albedo_dir, albedo_dif, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
@@ -1300,7 +1309,6 @@ contains
       use cam_history, only: outfld
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
-      use camsrfexch, only: cam_in_t
       use mo_rrtmgp_clr_all_sky, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
@@ -1312,11 +1320,11 @@ contains
       ! Inputs
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
-      type(cam_in_t), intent(in) :: cam_in
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
-      real(r8), intent(inout), dimension(:,:) :: pmid, pint, tmid
+      real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
+      real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
 
       ! Temporary fluxes compressed to daytime only arrays
       type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
@@ -1325,8 +1333,7 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad
 
       ! Albedo for shortwave calculations
-      real(r8) :: albedo_dir(nswbands,pcols), albedo_dir_day(nswbands,pcols)
-      real(r8) :: albedo_dif(nswbands,pcols), albedo_dif_day(nswbands,pcols)
+      real(r8), dimension(nswbands,pcols) :: albedo_dir_day, albedo_dif_day
 
       ! Cloud and aerosol optics
       type(ty_optical_props_2str) :: aer_optics_sw, cld_optics_sw
@@ -1448,14 +1455,6 @@ contains
          pmid_day(iday,:) = pmid(icol,:)
          pint_day(iday,:) = pint(icol,:)
       end do
-
-      ! Get albedo. This uses CAM routines internally and just provides a
-      ! wrapper to improve readability of the code here.
-      call set_albedo(cam_in, albedo_dir(1:nswbands,1:ncol), albedo_dif(1:nswbands,1:ncol))
-
-      ! Send albedos to history buffer (useful for debugging)
-      call outfld('SW_ALBEDO_DIR', transpose(albedo_dir(1:nswbands,1:ncol)), ncol, state%lchnk)
-      call outfld('SW_ALBEDO_DIF', transpose(albedo_dif(1:nswbands,1:ncol)), ncol, state%lchnk)
 
       ! Compress to daytime-only arrays
       do iband = 1,nswbands
@@ -1672,7 +1671,7 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
+   subroutine radiation_driver_lw(state, pbuf, is_cmip6_volc, &
                                   pmid, pint, tmid, tint, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
@@ -1681,7 +1680,6 @@ contains
       use cam_history, only: outfld
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
-      use camsrfexch, only: cam_in_t
       use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
@@ -1694,7 +1692,6 @@ contains
       ! Inputs
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
-      type(cam_in_t), intent(in) :: cam_in
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
