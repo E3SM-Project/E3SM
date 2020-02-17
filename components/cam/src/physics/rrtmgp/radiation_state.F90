@@ -2,7 +2,6 @@ module radiation_state
 
    use shr_kind_mod, only: r8=>shr_kind_r8
    use ppgrid, only: pcols, pver
-   use radiation_utils, only: compress_day_columns
 
    implicit none
    private
@@ -26,7 +25,7 @@ contains
    !----------------------------------------------------------------------------
    ! Create copies of state variables for radiation calculations that (probably)
    ! include an extra level above model top
-   subroutine set_rad_state(state, cam_in, tmid, tint, pmid, pint, col_indices)
+   subroutine set_rad_state(state, cam_in, tmid, tint, pmid, pint)
 
       use physics_types, only: physics_state
       use camsrfexch, only: cam_in_t
@@ -38,37 +37,20 @@ contains
       real(r8), intent(out) :: tint(:,:)
       real(r8), intent(out) :: pmid(:,:)
       real(r8), intent(out) :: pint(:,:)
-      integer, intent(in), optional :: col_indices(:)
 
       real(r8) :: tint_cam(pcols,pver+1)
-      integer :: ncol, nday
+      integer :: ncol
 
       ncol = state%ncol
 
-      if (present(col_indices)) then
-         nday = count(col_indices > 0)
-      else
-         nday = ncol
-      end if
-
       ! Map CAM to rad fields
-      if (present(col_indices)) then
-         call compress_day_columns(state%t(1:ncol,1:pver), tmid(1:nday,ktop:kbot), col_indices(1:nday))
-         call compress_day_columns(state%pmid(1:ncol,1:pver), pmid(1:nday,ktop:kbot), col_indices(1:nday))
-         call compress_day_columns(state%pint(1:ncol,1:pver+1), pint(1:nday,ktop:kbot+1), col_indices(1:nday))
-      else
-         tmid(1:ncol,ktop:kbot) = state%t(1:ncol,1:pver)
-         pmid(1:ncol,ktop:kbot) = state%pmid(1:ncol,1:pver)
-         pint(1:ncol,ktop:kbot+1) = state%pint(1:ncol,1:pver+1)
-      end if
+      tmid(1:ncol,ktop:kbot) = state%t(1:ncol,1:pver)
+      pmid(1:ncol,ktop:kbot) = state%pmid(1:ncol,1:pver)
+      pint(1:ncol,ktop:kbot+1) = state%pint(1:ncol,1:pver+1)
 
       ! Calculate interface temperature explicitly
       call set_interface_temperature(state, cam_in, tint_cam(1:ncol,1:pver+1))
-      if (present(col_indices)) then
-         call compress_day_columns(tint_cam(1:ncol,1:pver+1), tint(1:nday,ktop:kbot+1), col_indices(1:nday))
-      else
-         tint(1:ncol,ktop:kbot+1) = tint_cam(1:ncol,1:pver+1)
-      end if
+      tint(1:ncol,ktop:kbot+1) = tint_cam(1:ncol,1:pver+1)
 
       ! Fill layer above model top; this is done 
       ! consistent with the RRTMG implementation

@@ -1336,8 +1336,8 @@ contains
       ! State fields that are passed into RRTMGP. Some of these may need to
       ! modified from what exist in the physics_state object, i.e. to clip
       ! temperatures to make sure they are within the valid range.
-      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
-      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid, tmid_day, pmid_day
+      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint, pint_day, tint_day
 
       ! Pointers to fields on the physics buffer
       real(r8), pointer, dimension(:,:) :: &
@@ -1351,7 +1351,7 @@ contains
          aer_tau, aer_ssa, aer_asm
       real(r8), dimension(pcols, pver, nswgpts) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
       real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr, gas_vmr_day
-      integer :: igas
+      integer :: igas, iday, icol
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
@@ -1413,15 +1413,25 @@ contains
       ! Populate RRTMGP input variables. Use the day_indices index array to
       ! map CAM variables on all columns to the daytime-only arrays, and take
       ! only the ktop:kbot vertical levels (mapping CAM vertical grid to
-      ! RRTMGP vertical grid). Note that we populate the state separately for
-      ! shortwave and longwave, because we need to compress to just the daytime
-      ! columns for the shortwave, but the longwave uses all columns
+      ! RRTMGP vertical grid).
       call set_rad_state(state, cam_in, &
-                         tmid(1:nday,1:nlev_rad), & 
-                         tint(1:nday,1:nlev_rad+1), &
-                         pmid(1:nday,1:nlev_rad), &
-                         pint(1:nday,1:nlev_rad+1), &
-                         col_indices=day_indices(1:nday))
+                         tmid(1:ncol,1:nlev_rad), & 
+                         tint(1:ncol,1:nlev_rad+1), &
+                         pmid(1:ncol,1:nlev_rad), &
+                         pint(1:ncol,1:nlev_rad+1))
+      do iday = 1,nday
+         icol = day_indices(iday)
+         tmid_day(iday,:) = tmid(icol,:)
+         tint_day(iday,:) = tint(icol,:)
+         pmid_day(iday,:) = pmid(icol,:)
+         pint_day(iday,:) = pint(icol,:)
+      end do
+
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid_day(1:nday,1:nlev_rad)  , k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint_day(1:nday,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
+      end if
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
@@ -1447,12 +1457,6 @@ contains
       ! have vertical dimension nlev_rad (defined at midpoints).
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
-
-      ! Make sure temperatures are within range for aqua planets
-      if (aqua_planet) then
-         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
-         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
-      end if
 
       ! Do shortwave cloud optics calculations
       call t_startf('shortwave cloud optics')
@@ -1489,9 +1493,10 @@ contains
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aer_optics_sw%alloc_2str(nday, nlev_rad, &
-                                                     k_dist_sw%get_band_lims_wavenumber(), &
-                                                     name='shortwave aerosol optics'))
+      call handle_error(aer_optics_sw%alloc_2str( &
+         nday, nlev_rad, k_dist_sw%get_band_lims_wavenumber(), &
+         name='shortwave aerosol optics' &
+      ))
 
       ! Loop over diagnostic calls 
       ! TODO: more documentation on what this means
@@ -1546,9 +1551,9 @@ contains
             call t_startf('rad_calculations_sw')
             call handle_error(rte_sw( &
                k_dist_sw, gas_concentrations, &
-               pmid(1:nday,1:nlev_rad), &
-               tmid(1:nday,1:nlev_rad), &
-               pint(1:nday,1:nlev_rad+1), &
+               pmid_day(1:nday,1:nlev_rad), &
+               tmid_day(1:nday,1:nlev_rad), &
+               pint_day(1:nday,1:nlev_rad+1), &
                coszrs_day(1:nday), &
                albedo_direct_day(1:nswbands,1:nday), &
                albedo_diffuse_day(1:nswbands,1:nday), &
@@ -1561,9 +1566,9 @@ contains
 
             ! Calculate heating rates on the DAYTIME columns
             call t_startf('rad_heating_rate_sw')
-            call calculate_heating_rate(fluxes_allsky_day, pint(1:nday,1:nlev_rad+1), &
+            call calculate_heating_rate(fluxes_allsky_day, pint_day(1:nday,1:nlev_rad+1), &
                                         qrs_rad(1:nday,1:nlev_rad))
-            call calculate_heating_rate(fluxes_clrsky_day, pint(1:nday,1:nlev_rad+1), &
+            call calculate_heating_rate(fluxes_clrsky_day, pint_day(1:nday,1:nlev_rad+1), &
                                         qrsc_rad(1:nday,1:nlev_rad))
             call t_stopf('rad_heating_rate_sw')
 
