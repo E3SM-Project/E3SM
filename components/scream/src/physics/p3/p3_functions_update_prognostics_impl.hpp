@@ -20,18 +20,17 @@ void Functions<S,D>
                         Spack& th, Spack& qv, Spack& qitot, Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,
                         Spack& nc, Spack& qr, Spack& nr)
 {
-
-  qc = qc - (qcheti + qccol + qcshd + qiberg) * dt;
+  qc = qc + (-qcheti-qccol-qcshd-qiberg)*dt;
 
   if ( log_predictNc ){
-    nc = nc - (nccol + ncheti) * dt;
+    nc = nc + (-nccol-ncheti)*dt;
   }
 
-  qr = qr - (qrcol - qimlt + qrheti - qcshd) * dt;
+  qr = qr + (-qrcol+qimlt-qrheti+qcshd)*dt;
 
   //apply factor to source for rain number from melting of ice, (ad-hoc
   // but accounts for rapid evaporation of small melting ice particles)
-  nr = nr - (nrcol + nrheti - nmltratio * nimlt - nrshdr - ncshdc) * dt;
+  nr = nr + (-nrcol-nrheti+nmltratio*nimlt+nrshdr+ncshdc)*dt;
 
   constexpr Scalar QSMALL    = C::QSMALL;
   const auto qitot_not_small = qitot >= QSMALL;
@@ -55,10 +54,10 @@ void Functions<S,D>
 
   //PMC nCat deleted interactions_loop
 
-  const auto qirim_lt_thresh = qirim < 0.0 ;
+  const auto qirim_lt_thresh = qirim < 0 ;
   if (qirim_lt_thresh.any()){
-    qirim.set(qirim_lt_thresh, 0.0);
-    birim.set(qirim_lt_thresh, 0.0);
+    qirim.set(qirim_lt_thresh, 0);
+    birim.set(qirim_lt_thresh, 0);
   }
 
   // densify under wet growth
@@ -76,12 +75,11 @@ void Functions<S,D>
   //   Alternatively, it can be simplified by tending qirim -- qitot
   //   and birim such that rho_rim (qirim/birim) --> rho_liq during melting.
   // ==
-  qv = qv - (qidep - qisub + qinuc) * dt;
+  qv = qv + (-qidep+qisub-qinuc)*dt;
 
   constexpr Scalar INV_CP = C::INV_CP;
   th = th + exner * ((qidep - qisub + qinuc) * xxls * INV_CP +
                      (qrcol + qccol + qcheti + qrheti - qimlt + qiberg) * xlf * INV_CP) * dt;
-
 }
 
 template<typename S, typename D>
