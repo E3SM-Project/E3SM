@@ -2,8 +2,6 @@ module cam_optics
 
    use shr_kind_mod, only: r8=>shr_kind_r8
    use assertions, only: assert, assert_valid, assert_range
-   use radiation_state, only: nlev_rad, ktop, kbot
-   use radiation_utils, only: handle_error
    use radconstants, only: nswbands, nlwbands
    use rad_constituents, only: icecldoptics, liqcldoptics
    use ebert_curry, only: ec_ice_optics_sw, ec_ice_optics_lw
@@ -35,7 +33,7 @@ contains
          lambdac, mu, dei, des, rel, rei, &
          tau_out, ssa_out, asm_out)
 
-      use ppgrid, only: pcols, pver
+      use ppgrid, only: pcols
       use physics_types, only: physics_state
       use cloud_rad_props, only: mitchell_ice_optics_sw, &
                                  gammadist_liq_optics_sw
@@ -85,7 +83,7 @@ contains
       ! Get ice cloud optics
       if (trim(icecldoptics) == 'mitchell') then
          call mitchell_ice_optics_sw( &
-            ncol, iciwp, dei, &
+            ncol, nlev, iciwp, dei, &
             ice_tau, ice_tau_ssa, &
             ice_tau_ssa_g, ice_tau_ssa_f &
          )
@@ -101,7 +99,7 @@ contains
             end do
          end do
       else if (trim(icecldoptics) == 'ebertcurry') then
-         call ec_ice_optics_sw(ncol, cld, iciwp, rei, ice_tau, ice_tau_ssa, ice_tau_ssa_g, ice_tau_ssa_f)
+         call ec_ice_optics_sw(ncol, nlev, cld, iciwp, rei, ice_tau, ice_tau_ssa, ice_tau_ssa_g, ice_tau_ssa_f)
       else
          call endrun('icecldoptics ' // trim(icecldoptics) // ' not supported.')
       end if
@@ -111,7 +109,7 @@ contains
       ! Get liquid cloud optics
       if (trim(liqcldoptics) == 'gammadist') then
          call gammadist_liq_optics_sw( &
-            ncol, iclwp, lambdac, mu, &
+            ncol, nlev, iclwp, lambdac, mu, &
             liq_tau, liq_tau_ssa, &
             liq_tau_ssa_g, liq_tau_ssa_f &
          )
@@ -125,7 +123,7 @@ contains
          end do
       else if (trim(liqcldoptics) == 'slingo') then
          call slingo_liq_optics_sw( &
-            ncol, cld, iclwp, rel, &
+            ncol, nlev, cld, iclwp, rel, &
             liq_tau, liq_tau_ssa, &
             liq_tau_ssa_g, liq_tau_ssa_f &
          )
@@ -139,7 +137,7 @@ contains
       ! Get snow cloud optics
       if (do_snow_optics()) then
          call mitchell_ice_optics_sw( &
-            ncol, icswp, des, &
+            ncol, nlev, icswp, des, &
             snow_tau, snow_tau_ssa, &
             snow_tau_ssa_g, snow_tau_ssa_f &
          )
@@ -218,7 +216,7 @@ contains
          lambdac, mu, dei, des, rei, &
          tau_out)
 
-      use ppgrid, only: pcols, pver
+      use ppgrid, only: pcols
       use cloud_rad_props, only: gammadist_liq_optics_lw, &
                                  mitchell_ice_optics_lw
       use radconstants, only: nlwbands
@@ -245,25 +243,25 @@ contains
 
       ! Get ice optics
       if (trim(icecldoptics) == 'mitchell') then
-         call mitchell_ice_optics_lw(ncol, iciwp, dei, ice_tau)
+         call mitchell_ice_optics_lw(ncol, nlev, iciwp, dei, ice_tau)
       else if (trim(icecldoptics) == 'ebertcurry') then
-         call ec_ice_optics_lw(ncol, cld, iclwp, iciwp, rei, ice_tau)
+         call ec_ice_optics_lw(ncol, nlev, cld, iclwp, iciwp, rei, ice_tau)
       else
          call endrun('icecldoptics ' // trim(icecldoptics) // ' not supported.')
       end if
 
       ! Get liquid optics
       if (trim(liqcldoptics) == 'gammadist') then
-         call gammadist_liq_optics_lw(ncol, iclwp, lambdac, mu, liq_tau)
+         call gammadist_liq_optics_lw(ncol, nlev, iclwp, lambdac, mu, liq_tau)
       else if (trim(liqcldoptics) == 'slingo') then
-         call slingo_liq_optics_lw(ncol, cld, iclwp, iciwp, liq_tau)
+         call slingo_liq_optics_lw(ncol, nlev, cld, iclwp, iciwp, liq_tau)
       else
          call endrun('liqcldoptics ' // trim(liqcldoptics) // ' not supported.')
       end if
 
       ! Get snow optics?
       if (do_snow_optics()) then
-         call mitchell_ice_optics_lw(ncol, icswp, des, snow_tau)
+         call mitchell_ice_optics_lw(ncol, nlev, icswp, des, snow_tau)
 
          ! Combined cloud optics
          cld_tau = liq_tau + ice_tau
@@ -411,7 +409,7 @@ contains
          ncol, nlev, ngpt, gpt2bnd, &
          pmid, cld, cldfsnow, &
          tau_bnd, tau_gpt)
-      use ppgrid, only: pcols, pver
+      use ppgrid, only: pcols
       use mcica_subcol_gen, only: mcica_subcol_mask
 
       integer, intent(in) :: ncol, nlev, ngpt

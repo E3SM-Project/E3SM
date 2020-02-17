@@ -6,7 +6,6 @@ module slingo
    !------------------------------------------------------------------------------------------------
 
    use shr_kind_mod,     only: r8 => shr_kind_r8
-   use ppgrid,           only: pcols, pver
    use radconstants,     only: nswbands, nlwbands, get_sw_spectral_boundaries
 
    implicit none
@@ -30,17 +29,20 @@ contains
 
    !===========================================================================
 
-   subroutine slingo_liq_optics_sw(ncol, cldn, cliqwp, rel, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
+   subroutine slingo_liq_optics_sw(ncol, nlev, cldn, cliqwp, rel, liq_tau, liq_tau_w, liq_tau_w_g, liq_tau_w_f)
 
-      integer, intent(in) :: ncol
+      integer, intent(in) :: ncol, nlev
+
+      ! Inputs have dimension ncol,nlev
       real(r8), intent(in), dimension(:,:) :: rel
       real(r8), intent(in), dimension(:,:) :: cldn
       real(r8), intent(in), dimension(:,:) :: cliqwp 
 
-      real(r8),intent(out) :: liq_tau    (nswbands,pcols,pver) ! extinction optical depth
-      real(r8),intent(out) :: liq_tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
-      real(r8),intent(out) :: liq_tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
-      real(r8),intent(out) :: liq_tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
+      ! Outputs have dimension nbnd,ncol,nlev
+      real(r8),intent(out) :: liq_tau    (:,:,:) ! extinction optical depth
+      real(r8),intent(out) :: liq_tau_w  (:,:,:) ! single scattering albedo * tau
+      real(r8),intent(out) :: liq_tau_w_g(:,:,:) ! assymetry parameter * tau * w
+      real(r8),intent(out) :: liq_tau_w_f(:,:,:) ! forward scattered fraction * tau * w
 
       real(r8), dimension(nswbands)     :: wavmin
       real(r8), dimension(nswbands)     :: wavmax
@@ -84,7 +86,6 @@ contains
 
       integer :: ns, i, k, indxsl
       real(r8) :: tmp1l, tmp2l, tmp3l, g
-      real(r8) :: kext(pcols,pver)
 
       call get_sw_spectral_boundaries(wavmin,wavmax,'microns')
       do ns = 1, nswbands
@@ -113,7 +114,7 @@ contains
          ebarli = ebarl(indxsl)
          fbarli = fbarl(indxsl)
 
-         do k=1,pver
+         do k=1,nlev
             do i=1,ncol
 
                ! note that optical properties for liquid valid only
@@ -136,22 +137,22 @@ contains
                liq_tau_w_f(ns,i,k) = liq_tau_w(ns,i,k) * g * g
 
             end do ! End do i=1,ncol
-         end do ! End do k=1,pver
+         end do ! End do k=1,nlev
       end do ! nswbands
 
    end subroutine slingo_liq_optics_sw
 
    !===========================================================================
 
-   subroutine slingo_liq_optics_lw(ncol, cldn, iclwpth, iciwpth, abs_od)
+   subroutine slingo_liq_optics_lw(ncol, nlev, cldn, iclwpth, iciwpth, abs_od)
 
-      integer, intent(in) :: ncol
+      integer, intent(in) :: ncol, nlev
       real(r8), intent(in), dimension(:,:) :: cldn, iclwpth, iciwpth
-      real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
+      real(r8), intent(out) :: abs_od(:,:,:)
 
-      real(r8) :: ficemr(pcols,pver)
-      real(r8) :: cwp(pcols,pver)
-      real(r8) :: cldtau(pcols,pver)
+      real(r8) :: ficemr(ncol,nlev)
+      real(r8) :: cwp(ncol,nlev)
+      real(r8) :: cldtau(ncol,nlev)
 
       integer :: lwband, i, k
 
@@ -160,14 +161,14 @@ contains
       ! longwave liquid absorption coeff (m**2/g)
       real(r8), parameter :: kabsl = 0.090361_r8
 
-      do k=1,pver
+      do k=1,nlev
          do i = 1,ncol
             cwp   (i,k) = 1000.0_r8 * iclwpth(i,k) + 1000.0_r8 * iciwpth(i, k)
             ficemr(i,k) = 1000.0_r8 * iciwpth(i,k)/(max(1.e-18_r8, cwp(i,k)))
          end do
       end do
 
-      do k=1,pver
+      do k=1,nlev
          do i=1,ncol
             ! Note from Andrew Conley:
             !  Optics for RK no longer supported, This is constructed to get
@@ -180,7 +181,7 @@ contains
       end do
 
       do lwband = 1,nlwbands
-         abs_od(lwband,1:ncol,1:pver)=cldtau(1:ncol,1:pver)
+         abs_od(lwband,1:ncol,1:nlev)=cldtau(1:ncol,1:nlev)
       enddo
 
    end subroutine slingo_liq_optics_lw

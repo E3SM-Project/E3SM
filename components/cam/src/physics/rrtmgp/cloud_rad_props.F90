@@ -4,7 +4,6 @@ module cloud_rad_props
 !------------------------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use ppgrid,           only: pcols, pver, pverp
 use radconstants,     only: nswbands, nlwbands
 use rad_constituents, only: iceopticsfile, liqopticsfile
 use interpolate_data, only: interp_type, lininterp_init, lininterp, &
@@ -233,18 +232,20 @@ end subroutine cloud_rad_props_init
 
 !==============================================================================
 
-subroutine gammadist_liq_optics_sw(ncol, iclwpth, lamc, pgam, tau, tau_w, tau_w_g, tau_w_f)
-   integer, intent(in) :: ncol
-   real(r8), intent(in), dimension(:,:) :: lamc, pgam, iclwpth
-   real(r8),intent(out) :: tau    (nswbands,pcols,pver) ! extinction optical depth
-   real(r8),intent(out) :: tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
-   real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! asymetry parameter * tau * w
-   real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
+subroutine gammadist_liq_optics_sw(ncol, nlev, iclwpth, lamc, pgam, tau, tau_w, tau_w_g, tau_w_f)
+   integer, intent(in) :: ncol, nlev
 
-   real(r8), dimension(pcols,pver) :: kext
+   ! Inputs have dimension ncol,nlev
+   real(r8), intent(in), dimension(:,:) :: lamc, pgam, iclwpth
+
+   ! Outputs have dimension nbnd,ncol,nlev
+   real(r8),intent(out) :: tau    (:,:,:) ! extinction optical depth
+   real(r8),intent(out) :: tau_w  (:,:,:) ! single scattering albedo * tau
+   real(r8),intent(out) :: tau_w_g(:,:,:) ! asymetry parameter * tau * w
+   real(r8),intent(out) :: tau_w_f(:,:,:) ! forward scattered fraction * tau * w
    integer i,k,swband
 
-   do k = 1,pver
+   do k = 1,nlev
       do i = 1,ncol
          if(lamc(i,k) > 0._r8) then ! This seems to be clue from microphysics of no cloud
             call gam_liquid_sw(iclwpth(i,k), lamc(i,k), pgam(i,k), &
@@ -262,14 +263,14 @@ end subroutine gammadist_liq_optics_sw
 
 !==============================================================================
 
-subroutine gammadist_liq_optics_lw(ncol, iclwpth, lamc, pgam, abs_od)
-   integer, intent(in) :: ncol
+subroutine gammadist_liq_optics_lw(ncol, nlev, iclwpth, lamc, pgam, abs_od)
+   integer, intent(in) :: ncol, nlev
    real(r8), intent(in), dimension(:,:) :: lamc, pgam, iclwpth
-   real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
+   real(r8), intent(out) :: abs_od(:,:,:)
    integer lwband, i, k
 
    abs_od = 0._r8
-   do k = 1,pver
+   do k = 1,nlev
       do i = 1,ncol
          if(lamc(i,k) > 0._r8) then ! This seems to be the clue for no cloud from microphysics formulation
             call gam_liquid_lw(iclwpth(i,k), lamc(i,k), pgam(i,k), abs_od(1:nlwbands,i,k))
@@ -282,24 +283,26 @@ end subroutine gammadist_liq_optics_lw
 
 !==============================================================================
 
-subroutine mitchell_ice_optics_sw(ncol, iciwpth, dei, tau, tau_w, &
+subroutine mitchell_ice_optics_sw(ncol, nlev, iciwpth, dei, tau, tau_w, &
      tau_w_g, tau_w_f)
 
-  integer, intent(in) :: ncol
-  real(r8), intent(in) :: iciwpth(pcols,pver)
-  real(r8), intent(in) :: dei(pcols,pver)
+  ! Inputs have dimension ncol,nlev
+  integer, intent(in) :: ncol, nlev
+  real(r8), intent(in) :: iciwpth(:,:)
+  real(r8), intent(in) :: dei(:,:)
 
-  real(r8),intent(out) :: tau    (nswbands,pcols,pver) ! extinction optical depth
-  real(r8),intent(out) :: tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
-  real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
-  real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
+  ! Outputs have dimension nswbands,ncol,nlev
+  real(r8),intent(out) :: tau    (:,:,:) ! extinction optical depth
+  real(r8),intent(out) :: tau_w  (:,:,:) ! single scattering albedo * tau
+  real(r8),intent(out) :: tau_w_g(:,:,:) ! assymetry parameter * tau * w
+  real(r8),intent(out) :: tau_w_f(:,:,:) ! forward scattered fraction * tau * w
 
   type(interp_type) :: dei_wgts
 
   integer :: i, k, swband
   real(r8) :: ext(nswbands), ssa(nswbands), asm(nswbands)
 
-  do k = 1,pver
+  do k = 1,nlev
      do i = 1,ncol
         if( iciwpth(i,k) < 1.e-80_r8 .or. dei(i,k) == 0._r8) then
            ! if ice water path is too small, OD := 0
@@ -333,20 +336,20 @@ end subroutine mitchell_ice_optics_sw
 
 !==============================================================================
 
-subroutine mitchell_ice_optics_lw(ncol, iciwpth, dei, abs_od)
+subroutine mitchell_ice_optics_lw(ncol, nlev, iciwpth, dei, abs_od)
 
-  integer, intent(in) :: ncol
-  real(r8), intent(in) :: iciwpth(pcols,pver)
-  real(r8), intent(in) :: dei(pcols,pver)
+  integer, intent(in) :: ncol, nlev
+  real(r8), intent(in) :: iciwpth(:,:)
+  real(r8), intent(in) :: dei(:,:)
 
-  real(r8),intent(out) :: abs_od(nlwbands,pcols,pver)
+  real(r8),intent(out) :: abs_od(:,:,:)
 
   type(interp_type) :: dei_wgts
 
   integer :: i, k, lwband
   real(r8) :: absor(nlwbands)
 
-  do k = 1,pver
+  do k = 1,nlev
      do i = 1,ncol
         ! if ice water path is too small, OD := 0
         if( iciwpth(i,k) < 1.e-80_r8 .or. dei(i,k) == 0._r8) then
