@@ -1098,6 +1098,10 @@ contains
       ! buffer to be aggregated and written to disk
       use cam_history, only: outfld
 
+      use radiation_state, only: set_rad_state
+      use radiation_utils, only: clip_values
+      use cam_control_mod, only: aqua_planet
+
       ! ---------------------------------------------------------------------------
       ! Arguments
       ! ---------------------------------------------------------------------------
@@ -1150,6 +1154,9 @@ contains
       real(r8) :: qrsc(pcols,pver)
       real(r8) :: qrlc(pcols,pver)
 
+      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
+      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
       logical :: conserve_energy = .true.
@@ -1178,6 +1185,28 @@ contains
       ! for columns beyond ncol or nday
       qrsc(:,:) = 0
       qrlc(:,:) = 0
+
+      if (radiation_do('sw') .or. radiation_do('lw')) then
+         ! Make copies of state variables because we may need to modify in-place, and because we need
+         ! to add a level above model top to account for heating
+         call set_rad_state( &
+            state, cam_in, &
+            tmid(1:ncol,1:nlev_rad), tint(1:ncol,1:nlev_rad+1), & 
+            pmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1) &
+         )
+
+         ! Make sure temperatures are within range for aqua planets
+         if (aqua_planet) then
+            call clip_values( &
+               tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+               varname='tmid', warn=.true. &
+            )
+            call clip_values( &
+               tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+               varname='tint', warn=.true. &
+            )
+         end if
+      end if
      
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
@@ -1188,6 +1217,7 @@ contains
 
          ! Call the shortwave radiation driver
          call radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  pmid, pint, tmid, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
         
          ! Set net fluxes used by other components (land?) 
@@ -1221,6 +1251,7 @@ contains
 
          ! Call the longwave radiation driver to calculate fluxes and heating rates
          call radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  pmid, pint, tmid, tint, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
         
          ! Set net fluxes used in other components
@@ -1261,6 +1292,7 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_sw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  pmid, pint, tmid, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
@@ -1273,11 +1305,9 @@ contains
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
-      use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             compress_optics_sw, set_aerosol_optics_sw
-      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1286,6 +1316,7 @@ contains
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+      real(r8), intent(inout), dimension(:,:) :: pmid, pint, tmid
 
       ! Temporary fluxes compressed to daytime only arrays
       type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
@@ -1336,8 +1367,8 @@ contains
       ! State fields that are passed into RRTMGP. Some of these may need to
       ! modified from what exist in the physics_state object, i.e. to clip
       ! temperatures to make sure they are within the valid range.
-      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid, tmid_day, pmid_day
-      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint, pint_day, tint_day
+      real(r8), dimension(pcols,nlev_rad) :: tmid_day, pmid_day
+      real(r8), dimension(pcols,nlev_rad+1) :: pint_day, tint_day
 
       ! Pointers to fields on the physics buffer
       real(r8), pointer, dimension(:,:) :: &
@@ -1410,28 +1441,13 @@ contains
          return
       end if
 
-      ! Populate RRTMGP input variables. Use the day_indices index array to
-      ! map CAM variables on all columns to the daytime-only arrays, and take
-      ! only the ktop:kbot vertical levels (mapping CAM vertical grid to
-      ! RRTMGP vertical grid).
-      call set_rad_state(state, cam_in, &
-                         tmid(1:ncol,1:nlev_rad), & 
-                         tint(1:ncol,1:nlev_rad+1), &
-                         pmid(1:ncol,1:nlev_rad), &
-                         pint(1:ncol,1:nlev_rad+1))
+      ! Compress state to daytime-only
       do iday = 1,nday
          icol = day_indices(iday)
          tmid_day(iday,:) = tmid(icol,:)
-         tint_day(iday,:) = tint(icol,:)
          pmid_day(iday,:) = pmid(icol,:)
          pint_day(iday,:) = pint(icol,:)
       end do
-
-      ! Make sure temperatures are within range for aqua planets
-      if (aqua_planet) then
-         call clip_values(tmid_day(1:nday,1:nlev_rad)  , k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
-         call clip_values(tint_day(1:nday,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
-      end if
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
@@ -1657,6 +1673,7 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_lw(state, pbuf, cam_in, is_cmip6_volc, &
+                                  pmid, pint, tmid, tint, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
@@ -1672,7 +1689,6 @@ contains
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: get_cloud_optics_lw, sample_cloud_optics_lw
-      use cam_control_mod, only: aqua_planet
       use aer_rad_props, only: aer_rad_props_lw
 
       ! Inputs
@@ -1682,6 +1698,7 @@ contains
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+      real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid, tint
 
       ! Pointer to pbuf fields
       real(r8), pointer, dimension(:,:) :: &
@@ -1694,12 +1711,6 @@ contains
 
       ! For loops over diagnostic calls (TODO: what does this mean?)
       logical :: active_calls(0:N_DIAG)
-
-      ! State fields that are passed into RRTMGP. Some of these may need to
-      ! modified from what exist in the physics_state object, i.e. to clip
-      ! temperatures to make sure they are within the valid range.
-      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
-      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
 
       ! Surface emissivity needed for longwave
       real(r8) :: surface_emissivity(nlwbands,pcols)
@@ -1736,13 +1747,6 @@ contains
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
 
-      ! Set rad state variables
-      call set_rad_state(state, cam_in, &
-                         tmid(1:ncol,1:nlev_rad), &
-                         tint(1:ncol,1:nlev_rad+1), &
-                         pmid(1:ncol,1:nlev_rad), &
-                         pint(1:ncol,1:nlev_rad+1))
-       
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
@@ -1750,12 +1754,6 @@ contains
       ! exists or is assumed in the model we should use it here as well.
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
-
-      ! Make sure temperatures are within range for aqua planets
-      if (aqua_planet) then
-         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tmid', warn=.true.)
-         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tint', warn=.true.)
-      end if
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
