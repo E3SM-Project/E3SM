@@ -266,6 +266,19 @@ scream_pack_gen_bin_op_all(-)
 scream_pack_gen_bin_op_all(*)
 scream_pack_gen_bin_op_all(/)
 
+#define scream_pack_gen_unary_op(op)                           \
+  template <typename PackType>                                 \
+  KOKKOS_FORCEINLINE_FUNCTION                                  \
+  OnlyPack<PackType>                                           \
+  operator op (const PackType& a) {                            \
+    PackType b;                                                \
+    vector_simd                                                \
+    for (int i = 0; i < PackType::n; ++i) b[i] = op a[i];      \
+    return b;                                                  \
+  }
+
+scream_pack_gen_unary_op(-)
+
 #define scream_pack_gen_unary_fn(fn, impl)                            \
   template <typename PackType>                                        \
   KOKKOS_INLINE_FUNCTION                                              \
@@ -480,6 +493,7 @@ OnlyPack<PackType> range (const typename PackType::scalar& start) {
 #undef scream_pack_gen_bin_op_ps
 #undef scream_pack_gen_bin_op_sp
 #undef scream_pack_gen_bin_op_all
+#undef scream_pack_gen_unary_op
 #undef scream_pack_gen_unary_fn
 #undef scream_pack_gen_unary_stdfn
 #undef scream_pack_gen_bin_fn_pp
