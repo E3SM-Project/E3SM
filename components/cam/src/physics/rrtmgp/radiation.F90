@@ -1158,6 +1158,9 @@ contains
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
       real(r8), dimension(nswbands,pcols) :: albedo_dir, albedo_dif
 
+      ! Cosine solar zenith angle for all columns in chunk
+      real(r8) :: coszrs(pcols)
+
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
       logical :: conserve_energy = .true.
@@ -1228,13 +1231,21 @@ contains
          call outfld('SW_ALBEDO_DIR', transpose(albedo_dir(1:nswbands,1:ncol)), ncol, state%lchnk)
          call outfld('SW_ALBEDO_DIF', transpose(albedo_dif(1:nswbands,1:ncol)), ncol, state%lchnk)
 
+         ! Get cosine solar zenith angle for current time step. 
+         call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
+         call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
+         ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
+         ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
+         ! and skip the loop?
+         if (swrad_off) coszrs(:) = 0._r8
+
          ! Loop over diagnostic calls
          call rad_cnst_get_call_list(active_calls)
          do icall = N_DIAG,0,-1
             if (active_calls(icall)) then
                ! Call the shortwave radiation driver
                call radiation_driver_sw(icall, state, pbuf, is_cmip6_volc, &
-                                        pmid, pint, tmid, albedo_dir, albedo_dif, &
+                                        pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                                         fluxes_allsky, fluxes_clrsky, qrs, qrsc)
                ! Send fluxes to history buffer
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
@@ -1321,7 +1332,7 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_sw(icall, state, pbuf, is_cmip6_volc, &
-                                  pmid, pint, tmid, albedo_dir, albedo_dif, &
+                                  pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
@@ -1345,6 +1356,7 @@ contains
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
       real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
+      real(r8), intent(in), dimension(:) :: coszrs
 
       ! Temporary fluxes compressed to daytime only arrays
       type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
@@ -1360,9 +1372,6 @@ contains
 
       ! Gas concentrations
       type(ty_gas_concs) :: gas_concentrations
-
-      ! Cosine solar zenith angle for all columns in chunk
-      real(r8) :: coszrs(pcols)
 
       ! Incoming solar radiation, scaled for solar zenith angle 
       ! and earth-sun distance
@@ -1428,10 +1437,6 @@ contains
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
 
-      ! Get cosine solar zenith angle for current time step. 
-      call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
-      call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
-
       if (fixed_total_solar_irradiance<0) then
          ! Get orbital eccentricity factor to scale total sky irradiance
          tsi_scaling = get_eccentricity_factor()
@@ -1441,11 +1446,6 @@ contains
          ! retrieves the solar constant
          tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
       end if
-
-      ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
-      ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
-      ! and skip the loop?
-      if (swrad_off) coszrs(:) = 0._r8
 
       ! Gather night/day column indices for subsetting SW inputs; we only want to
       ! do the shortwave radiative transfer during the daytime to save
