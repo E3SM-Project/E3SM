@@ -354,6 +354,18 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
+  KOKKOS_FUNCTION
+  static void cloud_water_conservation(const Spack& qc, const Spack& qcnuc,const Scalar dt,
+   Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep);
+
+  KOKKOS_FUNCTION
+  static void rain_water_conservation(const Spack& qr, const Spack& qcaut, const Spack& qcacc, const Spack& qimlt, const Spack& qcshd, const Scalar dt,
+   Spack& qrevp, Spack& qrcol, Spack& qrheti);
+
+  KOKKOS_FUNCTION
+  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt, 
+   Spack& qisub, Spack& qimlt);
+
   // TODO: comment
   template <bool zero_out=true>
   KOKKOS_INLINE_FUNCTION
@@ -455,6 +467,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_cloud_rain_acc_impl.hpp"

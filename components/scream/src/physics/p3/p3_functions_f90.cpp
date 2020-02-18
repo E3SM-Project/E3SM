@@ -31,6 +31,15 @@ void access_lookup_table_c(Int dumjj, Int dumii, Int dumi, Int index,
 void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
+void cloud_water_conservation_c(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
+  Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
+
+void rain_water_conservation_c(Real qr, Real qcaut, Real qcacc, Real qimlt, Real qcshd,
+  Real dt, Real* qrevp, Real* qrcol, Real* qrheti);
+
+void ice_water_conservation_c(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
+  Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
+
 void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
                       Real* cdist, Real* cdist1, Real lcldm);
 
@@ -160,16 +169,34 @@ void access_lookup_table(AccessLookupTableData& d)
 
 void access_lookup_table_coll(AccessLookupTableCollData& d)
 {
-  p3_init(true);
+  p3_init(true); // need to initialize p3 first so that tables are loaded
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
+
 
 void cloud_rain_accretion(CloudRainAccretionData& d)
 {
   p3_init(true);
   cloud_rain_accretion_c(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld,
                          &d.qcacc, &d.ncacc);
+}
+
+void cloud_water_conservation(CloudWaterConservationData& d){
+  p3_init(true);
+  cloud_water_conservation_c(d.qc, d.qcnuc, d.dt, &d.qcaut, &d.qcacc, &d.qccol, &d.qcheti,
+  &d.qcshd, &d.qiberg, &d.qisub, &d.qidep);
+}
+
+void rain_water_conservation(RainWaterConservationData& d){
+  p3_init(true);
+  rain_water_conservation_c(d.qr, d.qcaut, d.qcacc, d.qimlt, d.qcshd, d.dt, &d.qrevp, &d.qrcol, &d.qrheti);
+}
+
+void ice_water_conservation(IceWaterConservationData& d){
+  p3_init(true);
+  ice_water_conservation_c(d.qitot, d.qidep, d.qinuc, d.qiberg, d.qrcol, d.qccol, d.qrheti,
+    d.qcheti, d.dt, &d.qisub, &d.qimlt);
 }
 
 void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
@@ -1612,6 +1639,56 @@ Real cxx_exp(Real input)
 #else
   return std::exp(input);
 #endif
+}
+
+void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_,
+  Real* qcheti_, Real* qcshd_, Real* qiberg_, Real* qisub_, Real* qidep_)
+  {
+    using P3F = Functions<Real, HostDevice>;
+    using Spack   = typename P3F::Spack;
+
+    Spack qc(qc_), qcnuc(qcnuc_), qcaut(*qcaut_), qcacc(*qcacc_), qccol(*qccol_), qcheti(*qcheti_);
+    Spack qcshd(*qcshd_), qiberg(*qiberg_), qisub(*qisub_), qidep(*qidep_);
+
+    P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+    *qcaut_ = qcaut[0];
+    *qcacc_ = qcacc[0];
+    *qccol_ = qccol[0];
+    *qcheti_ = qcheti[0];
+    *qcshd_ = qcshd[0];
+    *qiberg_ = qiberg[0];
+    *qisub_ = qisub[0];
+    *qidep_ = qidep[0];
+  }
+
+void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, Real qcshd_,
+  Real dt, Real* qrevp_, Real* qrcol_, Real* qrheti_)
+  {
+    using P3F = Functions<Real, HostDevice>;
+    using Spack   = typename P3F::Spack;
+
+    Spack qr(qr_), qcaut(qcaut_), qcacc(qcacc_), qimlt(qimlt_), qcshd(qcshd_), qrevp(*qrevp_);
+    Spack qrcol(*qrcol_), qrheti(*qrheti_);
+
+    P3F::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
+    *qrevp_ = qrevp[0];
+    *qrcol_ = qrcol[0];
+    *qrheti_ = qrheti[0];
+  }
+
+void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg_, Real qrcol_, Real qccol_,
+  Real qrheti_, Real qcheti_, Real dt, Real* qisub_, Real* qimlt_)
+{
+    using P3F = Functions<Real, HostDevice>;
+    using Spack   = typename P3F::Spack;
+    
+    Spack qitot(qitot_), qidep(qidep_), qinuc(qinuc_), qiberg(qiberg_), qrcol(qrcol_), qccol(qccol_);
+    Spack qrheti(qrheti_), qcheti(qcheti_), qisub(*qisub_), qimlt(*qimlt_);
+
+    P3F::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt);
+    *qisub_ = qisub[0];
+    *qimlt_ = qimlt[0];
+
 }
 
 } // namespace p3

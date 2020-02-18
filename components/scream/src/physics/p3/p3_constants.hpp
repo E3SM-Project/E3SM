@@ -47,6 +47,7 @@ struct Constants
   static constexpr Scalar CONS2       = 4.*PIOV3*RHOW;
   static constexpr Scalar CONS3       =  1.0/(CONS2*1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
   static constexpr Scalar QSMALL      = 1.e-14;
+  static constexpr Scalar QTENDSMALL = 1e-20;
   static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;
   static constexpr Scalar ZERO        = 0.0;
@@ -80,10 +81,16 @@ template <typename Scalar>
 constexpr Scalar Constants<Scalar>::QSMALL;
 
 template <typename Scalar>
+constexpr Scalar Constants<Scalar>::QTENDSMALL;
+
+template<typename Scalar>
 constexpr Scalar Constants<Scalar>::ZERO;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::Tol;
 
 } // namespace p3
 } // namespace scream
