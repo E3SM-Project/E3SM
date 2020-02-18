@@ -172,10 +172,10 @@
   <batch_system MACH="aleph" type="pbs" >
     <directives>
       <directive>-l nodes={{ num_nodes }}</directive>
-      <directive>-q {{ queue }}</directive>
+      <directive>-q iccp</directive>
     </directives>
     <queues>
-      <queue default="true" >iccp</queue>
+      <queue walltimemax="24:00:00" default="true" >iccp</queue>
     </queues>
   </batch_system>
 
