@@ -907,6 +907,10 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="izumi" COMPILER="intel">
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">/fs/cgd/csm/tools/pFUnit/pFUnit3.3.3_izumi_Intel19.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+</compiler>
+
 <compiler MACH="hobart" COMPILER="intel">
   <CFLAGS>
     <append> -lifcore</append>
