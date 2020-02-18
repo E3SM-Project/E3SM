@@ -395,7 +395,7 @@ end function shoc_implements_cnst
  
     call shoc_init( &
           pver, gravit, rair, rh2o, cpair, &
-	  zvir, latvap, karman, &
+	  zvir, latvap, latice, karman, &
 	  pref_mid, nbot_shoc, ntop_shoc )   
     
     ! --------------- !
@@ -801,7 +801,7 @@ end function shoc_implements_cnst
    call shoc_main( &
         ncol, pver, pverp, dtime, nadv, & ! Input
 	host_dx_in(:ncol), host_dy_in(:ncol), thv(:ncol,:),& ! Input
-        zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state1%pdel(:ncol,:pver),& ! Input
+        zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state%pint(:ncol,:pverp), state1%pdel(:ncol,:pver),& ! Input
 	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
 	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
 	exner(:ncol,:),state1%phis(:ncol), & ! Input

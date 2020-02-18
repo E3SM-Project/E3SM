@@ -27,6 +27,7 @@ real(r8) :: rgas  ! dry air gas constant [J/kg.K]
 real(r8) :: rv    ! water vapor gas constant [J/kg.K]
 real(r8) :: cp    ! specific heat of dry air [J/kg.K]
 real(r8) :: lcond ! latent heat of vaporization [J/kg]
+real(r8) :: lice  ! latent heat of fusion [J/kg]
 real(r8) :: eps   ! rh2o/rair - 1 [-]
 real(r8) :: vk    ! von karmann constant [-]
 
@@ -98,7 +99,7 @@ contains
 
 subroutine shoc_init( &
              nlev, gravit, rair, rh2o, cpair, &
-	     zvir, latvap, karman, &
+	     zvir, latvap, latice, karman, &
 	     pref_mid, nbot_shoc, ntop_shoc)
 
   implicit none
@@ -115,6 +116,7 @@ subroutine shoc_init( &
   real(r8), intent(in)  :: cpair  ! specific heat of dry air
   real(r8), intent(in)  :: zvir   ! rh2o/rair - 1 
   real(r8), intent(in)  :: latvap ! latent heat of vaporization
+  real(r8), intent(in)  :: latice ! latent heat of fusion
   real(r8), intent(in)  :: karman ! Von Karman's constant
   
   real(r8), intent(in) :: pref_mid(nlev) ! reference pressures at midpoints
@@ -130,6 +132,7 @@ subroutine shoc_init( &
   cp = cpair     ! [J/kg.K]
   eps = zvir     ! [-]
   lcond = latvap ! [J/kg]
+  lice = latice  ! [J/kg]
   vk = karman    ! [-]
   
    ! Limit pbl height to regions below 400 mb
@@ -154,7 +157,7 @@ end subroutine shoc_init
 subroutine shoc_main ( &
      shcol, nlev, nlevi, dtime, nadv, &   ! Input
      host_dx, host_dy,thv, &              ! Input
-     zt_grid,zi_grid,pres,pdel,&          ! Input
+     zt_grid,zi_grid,pres,presi,pdel,&     ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
      exner,phis, &                        ! Input     
@@ -194,6 +197,8 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: zi_grid(shcol,nlevi) 
   ! pressure levels on thermo grid [Pa]  
   real(r8), intent(in) :: pres(shcol,nlev)
+  ! pressure levels on interface grid [Pa]  
+  real(r8), intent(in) :: presi(shcol,nlev)  
   ! Differences in pressure levels [Pa] 
   real(r8), intent(in) :: pdel(shcol,nlev)
   ! virtual potential temperature [K] 
@@ -430,6 +435,15 @@ subroutine shoc_main ( &
          shcol,nlev,host_temp,pdel,&
 	 qw,shoc_ql,u_wind,v_wind,&
 	 se_a,ke_a,wv_a,wl_a)
+	 
+  call shoc_energy_fixer(&
+         shcol,nlev,nlevi,dtime,nadv,&
+	 zt_grid,zi_grid,&
+         se_b,ke_b,wv_b,wl_b,&
+	 se_a,ke_a,wv_a,wl_a,&
+	 wthl_sfc,wqw_sfc,pdel,&
+	 rho_zt,tke,presi,&
+	 host_temp)
     
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
@@ -2297,6 +2311,115 @@ subroutine update_host_temp(&
   return
 	     
 end subroutine update_host_temp
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_fixer(&
+             shcol,nlev,nlevi,dtime,nadv,&
+	     zt_grid,zi_grid,& 
+             se_b,ke_b,wv_b,wl_b,&
+	     se_a,ke_a,wv_a,wl_a,&
+	     wthl_sfc,wqw_sfc,pdel,&
+	     rho_zt,tke,pint,&
+	     host_temp)
+	     
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns 
+  integer, intent(in) :: shcol
+  ! number of levels 
+  integer, intent(in) :: nlev
+  ! number of levels on interface grid
+  integer, intent(in) :: nlevi  
+  ! SHOC timestep
+  real(r8), intent(in) :: dtime 
+  ! number of SHOC iterations
+  integer, intent(in) :: nadv 
+  ! integrated static energy before
+  real(r8), intent(in) :: se_b(shcol)
+  ! integrated kinetic energy before
+  real(r8), intent(in) :: ke_b(shcol)
+  ! integrated water vapor before
+  real(r8), intent(in) :: wv_b(shcol)
+  ! integrated liquid water before
+  real(r8), intent(in) :: wl_b(shcol)  	
+  ! integrated static energy after
+  real(r8), intent(in) :: se_a(shcol)
+  ! integrated kinetic energy after
+  real(r8), intent(in) :: ke_a(shcol)
+  ! integrated water vapor after
+  real(r8), intent(in) :: wv_a(shcol)
+  ! integrated liquid water after
+  real(r8), intent(in) :: wl_a(shcol)	
+  ! Surface sensible heat flux [K m/s]
+  real(r8), intent(in) :: wthl_sfc(shcol)
+  ! Surface latent heat flux [kg/kg m/s] 
+  real(r8), intent(in) :: wqw_sfc(shcol) 
+  ! pressure differenes [Pa] 
+  real(r8), intent(in) :: pdel(shcol,nlev)
+  ! heights on midpoint grid [m] 
+  real(r8), intent(in) :: zt_grid(shcol,nlev)
+  ! heights on interface grid [m] 
+  real(r8), intent(in) :: zi_grid(shcol,nlev)    
+  ! pressure on interface grid [Pa] 
+  real(r8), intent(in) :: pint(shcol,nlev)   
+  ! density on midpoint grid [kg/m^3] 
+  real(r8), intent(in) :: rho_zt(shcol,nlev) 
+  !turbulent kinetic energy [m^2/s^2] 
+  real(r8), intent(in) :: tke(shcol,nlev)   
+  
+  ! INPUT VARIABLES
+  !host temperature [K] 
+  real(r8), intent(inout) :: host_temp(shcol,nlev)         
+  
+  ! LOCAL VARIABLES
+  ! density on interface grid [kg/m^3]
+  real(r8) :: rho_zi(shcol,nlevi)
+  ! sensible and latent heat fluxes [W/m^2]
+  real(r8) :: shf, lhf, hdtime
+  real(r8) :: se_dis(shcol), te_a(shcol), te_b(shcol)
+  integer :: shoctop(shcol)
+  integer :: i, k
+	
+  ! compute the host timestep
+  hdtime = dtime * float(nadv)	
+	
+  call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
+
+  ! Based on these integrals, compute the total energy before and after SHOC call
+  do i=1,shcol
+    ! convert shf and lhf to W/m^2
+    shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)
+    lhf=wqw_sfc(i)*rho_zi(i,nlevi)
+    te_a(i) = se_a(i) + ke_a(i) + (lcond+lice)*wv_a(i)+lice*wl_a(i)
+    te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)
+    te_b(i) = te_b(i)+((shf+lhf)*(lcond+lice))*hdtime
+  enddo    
+  
+  ! Limit the energy fixer to find highest layer where SHOC is active
+  ! Find first level where wp2 is higher than lowest threshold
+  do i=1,shcol
+    shoctop(i) = 1
+    do while (tke(i,shoctop(i)) .eq. mintke .and. shoctop(i) .lt. nlev-1)
+      shoctop(i) = shoctop(i) + 1
+    enddo   
+   
+    ! Compute the disbalance of total energy, over depth where SHOC is active
+    se_dis(i) = (te_a(i) - te_b(i))/(pint(i,nlevi)-pint(i,shoctop(i)))  
+  enddo    
+
+  do i=1,shcol
+    do k=shoctop(i),nlev
+      host_temp(i,k) = host_temp(i,k) - se_dis(i)*ggr
+    enddo
+  enddo	
+	     
+  return
+	     
+end subroutine shoc_energy_fixer
+
 	
 
   !==============================================================
