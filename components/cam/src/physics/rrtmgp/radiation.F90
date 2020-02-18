@@ -1472,10 +1472,10 @@ contains
       type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
 
       ! Temporary heating rates on radiation vertical grid (and daytime only)
-      real(r8), dimension(pcols,nlev_rad) :: qrs_rad, qrsc_rad
+      real(r8), dimension(ncol,nlev_rad) :: qrs_rad, qrsc_rad
 
       ! Albedo for shortwave calculations
-      real(r8), dimension(nswbands,pcols) :: albedo_dir_day, albedo_dif_day
+      real(r8), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
 
       ! Cloud and aerosol optics
       type(ty_optical_props_2str) :: aer_optics_sw, cld_optics_sw
@@ -1485,15 +1485,15 @@ contains
 
       ! Incoming solar radiation, scaled for solar zenith angle 
       ! and earth-sun distance
-      real(r8) :: solar_irradiance_by_gpt(pcols,nswgpts)
+      real(r8) :: solar_irradiance_by_gpt(ncol,nswgpts)
 
       ! Gathered indicies of day and night columns 
       ! chunk_column_index = day_indices(daylight_column_index)
       integer :: nday, nnight     ! Number of daylight columns
-      integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
+      integer :: day_indices(ncol), night_indices(ncol)   ! Indicies of daylight coumns
 
       ! Cosine solar zenith angle for daytime columns
-      real(r8) :: coszrs_day(pcols)  ! cosine solar zenith angle
+      real(r8) :: coszrs_day(ncol)  ! cosine solar zenith angle
 
       ! Scaling factor for total sky irradiance; used to account for orbital
       ! eccentricity, and could be used to scale total sky irradiance for different
@@ -1506,10 +1506,10 @@ contains
       ! State fields that are passed into RRTMGP. Some of these may need to
       ! modified from what exist in the physics_state object, i.e. to clip
       ! temperatures to make sure they are within the valid range.
-      real(r8), dimension(pcols,nlev_rad) :: tmid_day, pmid_day
-      real(r8), dimension(pcols,nlev_rad+1) :: pint_day, tint_day
+      real(r8), dimension(ncol,nlev_rad) :: tmid_day, pmid_day
+      real(r8), dimension(ncol,nlev_rad+1) :: pint_day, tint_day
 
-      real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr_day
+      real(r8), dimension(size(active_gases),ncol,pver) :: gas_vmr_day
       integer :: igas, iday, icol
 
       ! Everybody needs a name
@@ -1753,10 +1753,10 @@ contains
       character(*), parameter :: subroutine_name = 'radiation_driver_lw'
 
       ! Surface emissivity needed for longwave
-      real(r8) :: surface_emissivity(nlwbands,pcols)
+      real(r8) :: surface_emissivity(nlwbands,ncol)
 
       ! Temporary heating rates on radiation vertical grid
-      real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
+      real(r8), dimension(ncol,nlev_rad) :: qrl_rad, qrlc_rad
 
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
@@ -1976,6 +1976,7 @@ contains
 
    end subroutine reset_fluxes
 
+   !----------------------------------------------------------------------------
 
    subroutine set_daynight_indices(coszrs, day_indices, night_indices)
       ! Input: cosine of solar zenith angle
@@ -2024,6 +2025,7 @@ contains
 
    end subroutine set_daynight_indices
 
+   !----------------------------------------------------------------------------
 
    ! Subroutine to calculate the solar insolation, accounting for orbital
    ! eccentricity and solar variability
@@ -2045,6 +2047,7 @@ contains
 
    end function get_eccentricity_factor
 
+   !----------------------------------------------------------------------------
 
    ! Get and set cosine of the solar zenith angle for all columns in a physics chuck
    ! based on input physics_state object and timestep. This routine serves mainly
@@ -2093,6 +2096,7 @@ contains
                   coszrs(1:state%ncol), state%ncol, dt)
    end subroutine set_cosine_solar_zenith_angle
 
+   !----------------------------------------------------------------------------
 
    ! Set surface albedos from cam surface exchange object for direct and diffuse
    ! beam radiation. This code was copied from the RRTMG implementation, but moved
@@ -2256,6 +2260,7 @@ contains
 
    end subroutine output_fluxes_sw
 
+   !----------------------------------------------------------------------------
 
    ! Send longwave fluxes and heating rates to history buffer
    subroutine output_fluxes_lw(icall, state, flux_all, flux_clr, qrl, qrlc)
@@ -2325,6 +2330,7 @@ contains
 
    end subroutine output_fluxes_lw
 
+   !----------------------------------------------------------------------------
 
    ! For some reason the RRTMGP flux objects do not include initialization
    ! routines, but rather expect the user to associate the individual fluxes (which
@@ -2368,6 +2374,8 @@ contains
 
    end subroutine initialize_rrtmgp_fluxes
 
+   !----------------------------------------------------------------------------
+
    subroutine free_fluxes(fluxes)
       use mo_fluxes_byband, only: ty_fluxes_byband
       type(ty_fluxes_byband), intent(inout) :: fluxes
@@ -2381,6 +2389,8 @@ contains
       if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
    end subroutine free_fluxes
 
+   !----------------------------------------------------------------------------
+
    subroutine free_optics_sw(optics)
       use mo_optical_props, only: ty_optical_props_2str
       type(ty_optical_props_2str), intent(inout) :: optics
@@ -2390,6 +2400,8 @@ contains
       call optics%finalize()
    end subroutine free_optics_sw
 
+   !----------------------------------------------------------------------------
+
    subroutine free_optics_lw(optics)
       use mo_optical_props, only: ty_optical_props_1scl
       type(ty_optical_props_1scl), intent(inout) :: optics
@@ -2397,6 +2409,7 @@ contains
       call optics%finalize()
    end subroutine free_optics_lw
 
+   !----------------------------------------------------------------------------
 
    subroutine get_gas_vmr(icall, state, pbuf, gas_names, gas_vmr) 
 
@@ -2495,6 +2508,7 @@ contains
 
    end subroutine get_gas_vmr
 
+   !----------------------------------------------------------------------------
 
    subroutine set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
       use mo_gas_concentrations, only: ty_gas_concs
@@ -2541,6 +2555,7 @@ contains
 
    end subroutine set_gas_concentrations
 
+   !----------------------------------------------------------------------------
 
    logical function string_in_list(string, list)
       character(len=*), intent(in) :: string
@@ -2560,6 +2575,7 @@ contains
       end do
    end function string_in_list
 
+   !----------------------------------------------------------------------------
 
    subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
       use mo_rte_kind, only: wp
