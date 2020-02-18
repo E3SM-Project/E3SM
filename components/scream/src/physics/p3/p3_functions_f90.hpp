@@ -214,15 +214,10 @@ extern "C"{
 struct CloudRainAccretionData
 {
   // inputs
-  Real rho;
-  Real inv_rho;
-  Real qc_incld;
-  Real nc_incld;
-  Real qr_incld;
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
 
   // output
-  Real qcacc;
-  Real ncacc;
+  Real qcacc, ncacc;
 };
 
 void cloud_rain_accretion(CloudRainAccretionData& d);
