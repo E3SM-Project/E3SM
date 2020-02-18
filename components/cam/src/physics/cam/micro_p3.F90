@@ -1948,7 +1948,6 @@ contains
        return
     endif
 #endif
-
     if (nitot_local.ge.1.e-20_rtype) then
        dum = max_total_Ni*inv_rho_local/nitot_local
        nitot_local = nitot_local*min(dum,1._rtype)
