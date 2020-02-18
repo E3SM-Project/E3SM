@@ -317,9 +317,9 @@ subroutine shoc_main ( &
   ! conserves) and static energy (which E3SM conserves) are not exactly equal. 
   
   call shoc_energy_integrals(&
-         shcol,nlev,host_temp,pdel,&
-	 qw,shoc_ql,u_wind,v_wind,&
-	 se_b,ke_b,wv_b,wl_b)
+         shcol,nlev,host_temp,pdel,&            ! Input
+	 qw,shoc_ql,u_wind,v_wind,&             ! Input
+	 se_b,ke_b,wv_b,wl_b)                   ! Input/Output
 
   do t=1,nadv
 
@@ -431,19 +431,19 @@ subroutine shoc_main ( &
          shoc_ql,exner,zt_grid,phis,&          ! Input
 	 host_temp)	                       ! Output
   
-  call shoc_energy_integrals(&
-         shcol,nlev,host_temp,pdel,&
-	 qw,shoc_ql,u_wind,v_wind,&
-	 se_a,ke_a,wv_a,wl_a)
+  call shoc_energy_integrals(&                 ! Input
+         shcol,nlev,host_temp,pdel,&           ! Input
+	 qw,shoc_ql,u_wind,v_wind,&            ! Input
+	 se_a,ke_a,wv_a,wl_a)                  ! Output
 	 
   call shoc_energy_fixer(&
-         shcol,nlev,nlevi,dtime,nadv,&
-	 zt_grid,zi_grid,&
-         se_b,ke_b,wv_b,wl_b,&
-	 se_a,ke_a,wv_a,wl_a,&
-	 wthl_sfc,wqw_sfc,pdel,&
-	 rho_zt,tke,presi,&
-	 host_temp)
+         shcol,nlev,nlevi,dtime,nadv,&         ! Input
+	 zt_grid,zi_grid,&                     ! Input
+         se_b,ke_b,wv_b,wl_b,&                 ! Input
+	 se_a,ke_a,wv_a,wl_a,&                 ! Input
+	 wthl_sfc,wqw_sfc,pdel,&               ! Input
+	 rho_zt,tke,presi,&                    ! Input
+	 host_temp)                            ! Input/Output
     
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
@@ -2213,9 +2213,9 @@ end subroutine vd_shoc_solve
 !  with host model
 
 subroutine shoc_energy_integrals(&
-             shcol,nlev,host_temp,pdel,&
-	     rtm,rcm,u_wind,v_wind,&
-	     se_int,ke_int,wv_int,wl_int)
+             shcol,nlev,host_temp,pdel,&    ! Input
+	     rtm,rcm,u_wind,v_wind,&        ! Input
+	     se_int,ke_int,wv_int,wl_int)   ! Output
 
   implicit none
 
@@ -2320,13 +2320,13 @@ end subroutine update_host_temp
 ! Subroutine foe SHOC energy fixer with host model temp
 
 subroutine shoc_energy_fixer(&
-             shcol,nlev,nlevi,dtime,nadv,&
-	     zt_grid,zi_grid,& 
-             se_b,ke_b,wv_b,wl_b,&
-	     se_a,ke_a,wv_a,wl_a,&
-	     wthl_sfc,wqw_sfc,pdel,&
-	     rho_zt,tke,pint,&
-	     host_temp)
+             shcol,nlev,nlevi,dtime,nadv,&  ! Input
+	     zt_grid,zi_grid,&              ! Input
+             se_b,ke_b,wv_b,wl_b,&          ! Input
+	     se_a,ke_a,wv_a,wl_a,&          ! Input
+	     wthl_sfc,wqw_sfc,pdel,&        ! Input
+	     rho_zt,tke,pint,&              ! Input
+	     host_temp)                     ! Input/Output
 	     
   implicit none
 
