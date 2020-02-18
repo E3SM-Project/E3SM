@@ -65,8 +65,7 @@ do
   export T1=$SECONDS
 
   # Query time step and create new date for cycle
-  time_step=`echo $f | tr -d "${dyn_prefix}f"`
-  time_step=`echo $time_step | tr -d ".$file_ext"`
+  time_step=`echo $f | sed "s/${dyn_prefix}f//" | sed "s/\.$file_ext//"`
   time_step_num=`expr $time_step + 0`
   date_str_cycle=`${date_cmd} -d "$date_str $time_step_num hours" +%Y-%m-%d_%H:%M:%S`
 
