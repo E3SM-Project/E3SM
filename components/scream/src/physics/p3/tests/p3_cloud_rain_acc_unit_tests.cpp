@@ -29,43 +29,53 @@ static void run_phys()
 
 static void run_bfb()
 {
-  CloudRainAccretionData crads_fortran[] = {
-    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc
-    {1.0,  1.0, 72.0,   27.0,   72.0, 0.0, 0.0},
-    {1.0,  1.0, 72.0,   72.0,   27.0, 0.0, 0.0},
-    {1.0,  1.0, 72.0,   27.0,   72.0, 0.0, 0.0},
-    {1.0,  1.0, 72.0,   72.0,   27.0, 0.0, 0.0},
-    {1.0,  1.0, 72.0,   27.0,   27.0, 0.0, 0.0}
+  // This is the threshold for whether the qc and qr cloud mixing ratios are
+  // large enough to affect the warm-phase process rates qcacc and ncacc.
+  constexpr Scalar qsmall = C::QSMALL;
+
+  constexpr Scalar rho = 1.0;
+  constexpr Scalar inv_rho = 1.0 / rho;
+  constexpr Scalar qc_incld_small = 0.9 * qsmall;
+  constexpr Scalar qr_incld_small = 0.9 * qsmall;
+  constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
+  constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
+  constexpr Scalar nc_incld = 1.0;
+
+  CloudRainAccretionData fortran_data[] = {
+      // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc
+      {rho, inv_rho, qc_incld_small, nc_incld, qr_incld_small, 0.0, 0.0},
+      {rho, inv_rho, qc_incld_small, nc_incld, qr_incld_not_small, 0.0, 0.0},
+      {rho, inv_rho, qc_incld_not_small, nc_incld, qr_incld_small, 0.0, 0.0},
+      {rho, inv_rho, qc_incld_not_small, nc_incld, qr_incld_not_small, 0.0, 0.0},
   };
 
-  static constexpr Int num_runs = sizeof(crads_fortran) / sizeof(CloudRainAccretionData);
+  static constexpr Int num_runs = sizeof(fortran_data) / sizeof(CloudRainAccretionData);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
-  CloudRainAccretionData crads_cxx[num_runs] = {
-    CloudRainAccretionData(crads_fortran[0]),
-    CloudRainAccretionData(crads_fortran[1]),
-    CloudRainAccretionData(crads_fortran[2]),
-    CloudRainAccretionData(crads_fortran[3]),
-    CloudRainAccretionData(crads_fortran[4]),
+  CloudRainAccretionData cxx_data[] = {
+      fortran_data[0],
+      fortran_data[1],
+      fortran_data[2],
+      fortran_data[3]
   };
 
-  // Get data from fortran
+  // Run the Fortran subroutine.
   for (Int i = 0; i < num_runs; ++i) {
-    cloud_rain_accretion(crads_fortran[i]);
+    cloud_rain_accretion(fortran_data[i]);
   }
 
-  // Get data from cxx
+  // Run the C++ subroutine.
   for (Int i = 0; i < num_runs; ++i) {
-    CloudRainAccretionData& d = crads_cxx[i];
+    CloudRainAccretionData& d = cxx_data[i];
     cloud_rain_accretion_f(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld,
                            &d.qcacc, &d.ncacc);
   }
 
   // Check output.
   for (Int i = 0; i < num_runs; ++i) {
-    REQUIRE(crads_fortran[i].qcacc == crads_cxx[i].qcacc);
-    REQUIRE(crads_fortran[i].ncacc == crads_cxx[i].ncacc);
+    REQUIRE(fortran_data[i].qcacc == cxx_data[i].qcacc);
+    REQUIRE(fortran_data[i].ncacc == cxx_data[i].ncacc);
   }
 
 }
