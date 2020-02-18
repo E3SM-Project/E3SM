@@ -7,7 +7,7 @@ gold standard to determine if the code is working or not on the current platform
 Run from $scream-repo/components/scream
 """
 
-from utils import expect, check_minimum_python_version, is_repo_clean
+from utils import check_minimum_python_version
 check_minimum_python_version(3, 4)
 
 import argparse, sys, os
@@ -41,38 +41,36 @@ OR
 
     parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
 
-    parser.add_argument("-p", "--parallel", action="store_true", help="Launch the different build types stacks in parallel")
+    parser.add_argument("-p", "--parallel", action="store_true",
+                        help="Launch the different build types stacks in parallel")
 
-    parser.add_argument("-f", "--fast-fail", action="store_true", help="Stop testing when the first failure is detected")
+    parser.add_argument("-f", "--fast-fail", action="store_true",
+                        help="Stop testing when the first failure is detected")
 
-    default_baseline_ref = "HEAD" if "JENKINS_HOME" in os.environ else "origin/master"
-    parser.add_argument("-b", "--baseline-ref", default=default_baseline_ref,
-                        help="What commit to use to generate baselines")
-    default_baseline_dir = "NONE"
-    parser.add_argument("--baseline-dir",default=default_baseline_dir,
-                        help="Use baselines from the given directory, skip baseline creation. Ignores -b/--baseline options")
+    parser.add_argument("-b", "--baseline-ref", default=None, # default will be computed later
+        help="What commit to use to generate baselines. Default is merge-base of current commit and origin/master (or HEAD if --keep-tree)")
 
-    parser.add_argument("-m", "--machine", help="Provide machine name. This is required for internal kokkos builds and dashboard submission")
+    parser.add_argument("--baseline-dir", default=None,
+        help="Use baselines from the given directory, skip baseline creation.")
+
+    parser.add_argument("-m", "--machine",
+        help="Provide machine name. This is required for internal kokkos builds and dashboard submission")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
 
-    parser.add_argument("--keep-tree", action="store_true", help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
+    parser.add_argument("--keep-tree", action="store_true",
+        help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
 
     parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
-                        help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
+        help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
-                        help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")
+        help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")
 
-    args = parser.parse_args(args[1:])
+    parser.add_argument("-i", "--integration-test", action="store_true", default="JENKINS_HOME" in os.environ,
+                        help="Merge origin/master into this branch before testing.")
 
-    expect(os.getcwd().endswith("components/scream"), "Run from $scream_repo/components/scream")
-    if not args.kokkos:
-        expect(args.machine, "If no external kokkos provided, must provide machine name for internal kokkos build")
-    if args.submit:
-        expect(args.machine, "If dashboard submit request, must provide machine name")
-
-    return args
+    return parser.parse_args(args[1:])
 
 ###############################################################################
 def _main_func(description):
@@ -82,10 +80,7 @@ def _main_func(description):
     success = tas.test_all_scream()
 
     print("OVERALL STATUS: {}".format("PASS" if success else "FAIL"))
-    if not is_repo_clean():
-        print("WARNING! You have uncommitted changes in your repo.",
-              "         The PASS/FAIL status may depend on these changes",
-              "         so if you want to keep them, don't forget to create a commit.",sep="\n")
+
     sys.exit(0 if success else 1)
 
 ###############################################################################
