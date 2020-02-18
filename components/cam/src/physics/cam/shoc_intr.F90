@@ -717,28 +717,7 @@ end function shoc_implements_cnst
        tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
      
      enddo
-   enddo        
-  
-   ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
-   ! for the computation of total energy before SHOC is called.  This is for an 
-   ! effort to conserve energy since liquid water potential temperature (which SHOC 
-   ! conserves) and static energy (which CAM conserves) are not exactly equal.   
-   se_b = 0._r8
-   ke_b = 0._r8
-   wv_b = 0._r8
-   wl_b = 0._r8
-   do k=1,pver
-     do i=1,ncol
-       se_b(i) = se_b(i) + state1%s(i,k)*state1%pdel(i,k)/gravit
-       ke_b(i) = ke_b(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)/gravit
-       wv_b(i) = wv_b(i) + state1%q(i,k,ixq)*state1%pdel(i,k)/gravit
-       wl_b(i) = wl_b(i) + state1%q(i,k,ixcldliq)*state1%pdel(i,k)/gravit
-     enddo
-   enddo
-    
-   ! ------------------------------------------------- !
-   ! End module to compute turbulent mountain stress   !
-   ! ------------------------------------------------- !  
+   enddo         
    
    ! ------------------------------------------------- !
    ! Prepare inputs for SHOC call                      !
@@ -757,7 +736,7 @@ end function shoc_implements_cnst
        zt_g(i,k) = state1%zm(i,k)-state1%zi(i,pver+1)
        rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,k)/dz_g(i,k))
        wm_zt(i,k) = -1._r8*state1%omega(i,k)/(rrho(i,k)*gravit)
-       host_temp(i,k) = state1%s(i,k)
+       shoc_s(i,k) = state1%s(i,k)
      enddo
    enddo
      
@@ -805,7 +784,7 @@ end function shoc_implements_cnst
 	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
 	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
 	exner(:ncol,:),state1%phis(:ncol), & ! Input
-	host_temp(:ncol,:), tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
+	shoc_s(:ncol,:), tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
 	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), rcm(:ncol,:), & ! Input/Output
         cloud_frac(:ncol,:), pblh(:ncol), & ! Output
@@ -833,50 +812,6 @@ end function shoc_implements_cnst
                 tk(:ncol,:pver),khzm(:ncol,:pverp),pver,pverp,ncol,0._r8)
    call linear_interp(state%zm(:ncol,:pver),state%zi(:ncol,:pverp),&
                 tkh(:ncol,:pver),khzt(:ncol,:pverp),pver,pverp,ncol,0._r8)
-   
-   ! Compute integrals for static energy, kinetic energy, water vapor, and liquid water
-   ! after SHOC is called.  This is for energy conservation purposes. 
-   se_a = 0._r8
-   ke_a = 0._r8
-   wv_a = 0._r8
-   wl_a = 0._r8
-   do k=1,pver
-     do i=1,ncol
-       shoc_t(i,k) = (thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner(i,k)
-       shoc_s(i,k) = cpair*shoc_t(i,k)+ &
-                      gravit*state1%zm(i,k)+state1%phis(i)
-       se_a(i) = se_a(i) + shoc_s(i,k)*state1%pdel(i,k)/gravit
-       ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)/gravit
-       wv_a(i) = wv_a(i) + (rtm(i,k)-rcm(i,k))*state1%pdel(i,k)/gravit
-       wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)/gravit
-
-     enddo    
-   enddo     
-  
-   ! Based on these integrals, compute the total energy before and after SHOC call
-   do i=1,ncol
-     te_a(i) = se_a(i) + ke_a(i) + (latvap+latice)*wv_a(i)+latice*wl_a(i)
-     te_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*wl_b(i)
-     te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
-   enddo  
-   
-   ! Limit the energy fixer to find highest layer where SHOC is active
-   ! Find first level where wp2 is higher than lowest threshold
-   do i=1,ncol
-     shoctop(i) = 1
-     do while (tke(i,shoctop(i)) .eq. tke_tol .and. shoctop(i) .lt. pver-1)
-       shoctop(i) = shoctop(i) + 1
-     enddo   
-   
-     ! Compute the disbalance of total energy, over depth where SHOC is active
-     se_dis(i) = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,shoctop(i)))  
-   enddo    
-
-   do i=1,ncol
-     do k=shoctop(i),pver
-       shoc_s(i,k) = shoc_s(i,k) - se_dis(i)*gravit
-     enddo
-   enddo
 
    !  Now compute the tendencies of SHOC to CAM, note that pverp is the ghost point
    !  for all variables and therefore is never called in this loop

@@ -2251,6 +2251,10 @@ subroutine shoc_energy_integrals(&
   integer :: i, k
   real(r8) :: rvm
   
+  se_int(:) = 0._r8
+  ke_int(:) = 0._r8
+  wv_int(:) = 0._r8
+  wl_int(:) = 0._r8
   do k=1,nlev
     do i=1,shcol
        rvm = rtm(i,k) - rcm(i,k) ! compute water vapor
@@ -2304,7 +2308,7 @@ subroutine update_host_temp(&
   do k=1,nlev
     do i=1,shcol
       temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/exner(i,k)
-      host_temp(i,k) = cp*temp+ ggr*zt_grid(i,k)+phis(i)
+      host_temp(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
     enddo
   enddo
 
@@ -2364,7 +2368,7 @@ subroutine shoc_energy_fixer(&
   ! heights on interface grid [m] 
   real(r8), intent(in) :: zi_grid(shcol,nlev)    
   ! pressure on interface grid [Pa] 
-  real(r8), intent(in) :: pint(shcol,nlev)   
+  real(r8), intent(in) :: pint(shcol,nlevi)   
   ! density on midpoint grid [kg/m^3] 
   real(r8), intent(in) :: rho_zt(shcol,nlev) 
   !turbulent kinetic energy [m^2/s^2] 
@@ -2395,7 +2399,7 @@ subroutine shoc_energy_fixer(&
     lhf=wqw_sfc(i)*rho_zi(i,nlevi)
     te_a(i) = se_a(i) + ke_a(i) + (lcond+lice)*wv_a(i)+lice*wl_a(i)
     te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)
-    te_b(i) = te_b(i)+((shf+lhf)*(lcond+lice))*hdtime
+    te_b(i) = te_b(i)+(shf+(lhf)*(lcond+lice))*hdtime
   enddo    
   
   ! Limit the energy fixer to find highest layer where SHOC is active
