@@ -1088,10 +1088,6 @@ contains
       use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_optical_props, only: ty_optical_props, &
-                                  ty_optical_props_1scl
       use mo_fluxes_byband, only: ty_fluxes_byband
 
       ! CAM history module provides subroutine to send output data to the history
@@ -1101,6 +1097,11 @@ contains
       use radiation_state, only: set_rad_state
       use radiation_utils, only: clip_values
       use cam_control_mod, only: aqua_planet
+
+      use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
+                            get_cloud_optics_lw, sample_cloud_optics_lw, &
+                            set_aerosol_optics_sw
+      use aer_rad_props, only: aer_rad_props_lw
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1149,6 +1150,12 @@ contains
       real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
       real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
 
+      ! Pointers to fields on the physics buffer
+      real(r8), pointer, dimension(:,:) :: &
+         cld, cldfsnow, &
+         iclwp, iciwp, icswp, dei, des, lambdac, mu, &
+         rei, rel
+
       ! Clear-sky heating rates are not on the physics buffer, and we have no
       ! reason to put them there, so declare these are regular arrays here
       real(r8) :: qrsc(pcols,pver)
@@ -1160,6 +1167,17 @@ contains
 
       ! Cosine solar zenith angle for all columns in chunk
       real(r8) :: coszrs(pcols)
+
+      ! Cloud optical properties
+      real(r8), dimension(pcols,pver,nswgpts ) :: cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
+      real(r8), dimension(pcols,pver,nswbands) :: cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw
+      real(r8), dimension(pcols,pver,nswbands) :: aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
+      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
+      real(r8), dimension(pcols,pver,nlwgpts ) :: cld_tau_gpt_lw
+
+      ! Needed for shortwave aerosol; TODO: remove this dependency
+      integer :: nday, nnight     ! Number of daylight columns
+      integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
 
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
@@ -1188,6 +1206,19 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+
+      ! Get fields from pbuf for optics
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
+      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+      call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
+      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+      call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
+      call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
+      call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
+      call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
 
       ! Initialize clearsky-heating rates to make sure we do not get garbage
       ! for columns beyond ncol or nday
@@ -1239,13 +1270,52 @@ contains
          ! and skip the loop?
          if (swrad_off) coszrs(:) = 0._r8
 
+         ! Do shortwave cloud optics calculations
+         call t_startf('rad_cld_optics_sw')
+         call get_cloud_optics_sw( &
+            ncol, pver, nswbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+            lambdac, mu, dei, des, rel, rei, &
+            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
+         )
+         call sample_cloud_optics_sw( &
+            ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
+            state%pmid, cld, cldfsnow, &
+            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
+            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
+         )
+         call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
+         call t_stopf('rad_cld_optics_sw')
+
+         ! Aerosol needs night indices
+         ! TODO: remove this dependency, it's just used to mask aerosol outputs
+         call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
+         nday = count(day_indices(1:ncol) > 0)
+         nnight = count(night_indices(1:ncol) > 0)
+
          ! Loop over diagnostic calls
          call rad_cnst_get_call_list(active_calls)
          do icall = N_DIAG,0,-1
             if (active_calls(icall)) then
+               if (do_aerosol_rad) then
+                  call t_startf('rad_aer_optics_sw')
+                  call set_aerosol_optics_sw( &
+                     icall, state, pbuf, &
+                     night_indices(1:nnight), &
+                     is_cmip6_volc, &
+                     aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
+                  )
+                  call t_stopf('rad_aer_optics_sw')
+               else
+                  aer_tau_bnd_sw = 0
+                  aer_ssa_bnd_sw = 0
+                  aer_asm_bnd_sw = 0
+               end if
+
                ! Call the shortwave radiation driver
                call radiation_driver_sw(icall, state, pbuf, is_cmip6_volc, &
                                         pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
+                                        cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
+                                        aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw, &
                                         fluxes_allsky, fluxes_clrsky, qrs, qrsc)
                ! Send fluxes to history buffer
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
@@ -1281,13 +1351,33 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
 
+         call t_startf('rad_cld_optics_lw')
+         call get_cloud_optics_lw( &
+            ncol, pver, nlwbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+            lambdac, mu, dei, des, rei, &
+            cld_tau_bnd_lw &
+         )
+         call sample_cloud_optics_lw( &
+            ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
+            state%pmid, cld, cldfsnow, &
+            cld_tau_bnd_lw, cld_tau_gpt_lw &
+         )
+         call output_cloud_optics_lw(state, cld_tau_bnd_lw)
+         call t_stopf('rad_cld_optics_lw')
+
          ! Loop over diagnostic calls
          call rad_cnst_get_call_list(active_calls)
          do icall = N_DIAG,0,-1
             if (active_calls(icall)) then
+               if (do_aerosol_rad) then
+                  call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau_bnd_lw)
+               else
+                  aer_tau_bnd_lw = 0
+               end if
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw(icall, state, pbuf, is_cmip6_volc, &
                                         pmid, pint, tmid, tint, &
+                                        cld_tau_gpt_lw, aer_tau_bnd_lw, &
                                         fluxes_allsky, fluxes_clrsky, qrl, qrlc)
                ! Send fluxes to history buffer
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
@@ -1333,6 +1423,8 @@ contains
 
    subroutine radiation_driver_sw(icall, state, pbuf, is_cmip6_volc, &
                                   pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
+                                  cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+                                  aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
@@ -1357,6 +1449,8 @@ contains
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
       real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
       real(r8), intent(in), dimension(:) :: coszrs
+      real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
+      real(r8), intent(in), dimension(:,:,:) :: aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd
 
       ! Temporary fluxes compressed to daytime only arrays
       type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
@@ -1402,17 +1496,6 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid_day, pmid_day
       real(r8), dimension(pcols,nlev_rad+1) :: pint_day, tint_day
 
-      ! Pointers to fields on the physics buffer
-      real(r8), pointer, dimension(:,:) :: &
-         cld, cldfsnow, &
-         iclwp, iciwp, icswp, dei, des, lambdac, mu, &
-         rei, rel
-
-      ! Cloud optics by band
-      real(r8), dimension(pcols, pver, nswbands) :: &
-         cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd, &
-         aer_tau, aer_ssa, aer_asm
-      real(r8), dimension(pcols, pver, nswgpts) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
       real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr, gas_vmr_day
       integer :: igas, iday, icol
 
@@ -1423,19 +1506,6 @@ contains
       ! Number of physics columns in this "chunk"; used in multiple places
       ! throughout this subroutine, so set once for convenience
       ncol = state%ncol
-
-      ! Get fields from pbuf
-      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
-      call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
-      call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
-      call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
-      call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
-      call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
 
       if (fixed_total_solar_irradiance<0) then
          ! Get orbital eccentricity factor to scale total sky irradiance
@@ -1489,19 +1559,7 @@ contains
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
-      ! Do shortwave cloud optics calculations
-      call t_startf('shortwave cloud optics')
-      call get_cloud_optics_sw( &
-         ncol, pver, nswbands, cld, cldfsnow, iclwp, iciwp, icswp, &
-         lambdac, mu, dei, des, rel, rei, &
-         cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd &
-      )
-      call sample_cloud_optics_sw( &
-         ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
-         state%pmid, cld, cldfsnow, &
-         cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd, &
-         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt &
-      )
+      ! Populate RRTMGP optics
       call handle_error(cld_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
       cld_optics_sw%tau = 0
       cld_optics_sw%ssa = 1
@@ -1512,10 +1570,8 @@ contains
          cld_optics_sw%ssa(1:nday,2:nlev_rad,:), &
          cld_optics_sw%g  (1:nday,2:nlev_rad,:)  &
       )
-      call output_cloud_optics_sw(state, cld_tau_bnd, cld_ssa_bnd, cld_asm_bnd)
       ! Apply delta scaling to account for forward-scattering
       call handle_error(cld_optics_sw%delta_scale())
-      call t_stopf('shortwave cloud optics')
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
       ! "band" rather than passing the full spectral discretization object, and
@@ -1530,25 +1586,18 @@ contains
       ))
 
       if (do_aerosol_rad) then
-         ! Get shortwave aerosol optics
-         call t_startf('rad_aer_optics_sw')
          aer_optics_sw%tau = 0
          aer_optics_sw%ssa = 1
          aer_optics_sw%g   = 0
-         call set_aerosol_optics_sw( &
-            icall, state, pbuf, &
-            night_indices(1:nnight), &
-            is_cmip6_volc, &
-            aer_tau, aer_ssa, aer_asm &
-         )
          call compress_optics_sw( &
             day_indices, &
-            aer_tau(1:ncol,1:pver,:), aer_ssa(1:ncol,1:pver,:), aer_asm(1:ncol,1:pver,:), &
+            aer_tau_bnd(1:ncol,1:pver,:), &
+            aer_ssa_bnd(1:ncol,1:pver,:), &
+            aer_asm_bnd(1:ncol,1:pver,:), &
             aer_optics_sw%tau(1:nday,2:nlev_rad,:), &
             aer_optics_sw%ssa(1:nday,2:nlev_rad,:), &
             aer_optics_sw%g  (1:nday,2:nlev_rad,:)  &
          )
-         call t_stopf('rad_aer_optics_sw')
       else
          aer_optics_sw%tau(:,:,:) = 0
          aer_optics_sw%ssa(:,:,:) = 0
@@ -1677,6 +1726,7 @@ contains
 
    subroutine radiation_driver_lw(icall, state, pbuf, is_cmip6_volc, &
                                   pmid, pint, tmid, tint, &
+                                  cld_tau_gpt, aer_tau_bnd, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
@@ -1690,8 +1740,6 @@ contains
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
-      use cam_optics, only: get_cloud_optics_lw, sample_cloud_optics_lw
-      use aer_rad_props, only: aer_rad_props_lw
 
       ! Inputs
       integer, intent(in) :: icall
@@ -1701,12 +1749,7 @@ contains
       real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid, tint
-
-      ! Pointer to pbuf fields
-      real(r8), pointer, dimension(:,:) :: &
-         cld, cldfsnow, &
-         iclwp, iciwp, icswp, &
-         mu, lambdac, dei, des, rei
+      real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, aer_tau_bnd
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_lw'
@@ -1719,9 +1762,6 @@ contains
 
       ! Temporary heating rates on radiation vertical grid
       real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
-
-      ! Optical properties by *band* (will be mapped later to gpoints)
-      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd, aer_tau
 
       ! Gas volume mixing ratios
       real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr
@@ -1737,18 +1777,6 @@ contains
       ! throughout this subroutine, so set once for convenience
       ncol = state%ncol
 
-      ! Get fields from pbuf
-      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
-      call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
-      call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
-      call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
-      call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
-
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
@@ -1757,21 +1785,11 @@ contains
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
-      ! Do longwave cloud optics calculations
+      ! Populate RRTMGP optics
       call t_startf('longwave cloud optics')
       call handle_error(cld_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
       cld_optics_lw%tau = 0.0
-      call get_cloud_optics_lw( &
-         ncol, pver, nlwbands, cld, cldfsnow, iclwp, iciwp, icswp, &
-         lambdac, mu, dei, des, rei, &
-         cld_tau_bnd &
-      )
-      call sample_cloud_optics_lw( &
-         ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
-         state%pmid, cld, cldfsnow, &
-         cld_tau_bnd, cld_optics_lw%tau(1:ncol,2:nlev_rad,:) &
-      )
-      call output_cloud_optics_lw(state, cld_tau_bnd)
+      cld_optics_lw%tau(1:ncol,2:nlev_rad,:) = cld_tau_gpt(1:ncol,1:pver,:)
       call handle_error(cld_optics_lw%delta_scale())
       call t_stopf('longwave cloud optics')
 
@@ -1797,8 +1815,7 @@ contains
          ! Get longwave aerosol optics
          call t_startf('rad_aer_optics_lw')
          aer_optics_lw%tau(:,:,:) = 0
-         call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau)
-         aer_optics_lw%tau(1:ncol,ktop:kbot,1:nlwbands) = aer_tau(1:ncol,1:pver,1:nlwbands)
+         aer_optics_lw%tau(1:ncol,ktop:kbot,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
          call t_stopf('rad_aer_optics_lw')
       else
          aer_optics_lw%tau(:,:,:) = 0
