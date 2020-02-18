@@ -44,7 +44,7 @@ struct UnitWrap::UnitTest<D>::TestP3Func
     for(int s = 0; s < sat_ice_p.n; ++s){
       // Test vapor pressure
       if (abs(sat_ice_p[s] - correct_sat_ice_p) > tol ) {errors++;}
-      //if (abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {errors++;}
+      if (abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {errors++;}
       //Test mixing-ratios
       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > tol ) {errors++;}
       if (abs(mix_liq_r[s] -  correct_mix_liq_r) > tol ) {errors++;}
