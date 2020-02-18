@@ -1493,7 +1493,7 @@ contains
          call mpas_pool_get_array(okuboWeissAMPool, 'vorticity', om)
 
          !$omp master
-         allocate(velocityGradient(2, 2, nVertLevels, nCells), &
+         allocate(velocityGradient(3, 3, nVertLevels, nCells), &
                   OW_thresh(nVertLevels, nCells), &
                   S(nVertLevels, nCells), &
                   Lam1(nVertLevels, nCells), &
