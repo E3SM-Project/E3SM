@@ -15,7 +15,7 @@
 # ne30: 12 nodes, 2h  (20 nodes, 1.5h)
 # ne120: 80 nodes 20h?   (run for 400days, output after 200 days?)
 #
-#SBATCH --job-name HS
+#SBATCH --job-name debug
 #XXSBATCH -p batch,short
 #XXSBATCH --account=FY150001
 #SBATCH -p acme-centos6
@@ -26,7 +26,7 @@
 set nlev=26
 set ndays = 1600
 set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
-set rfreq = 0       # no. of days, or n. of timesteps if ndays=0
+set rfreq = 400     # no. of days, or n. of timesteps if ndays=0
 
 # 0 = normal, 1=restart
 set runtype = 0
@@ -56,9 +56,7 @@ if ( $ne == 15 ) then
  endif
  if ( $ne == 30 ) then
     # 1 degree    H model, 20 nodes, 30min for 1600days
-    set tstep = 288  # H model
-    #set tstep = 300  # H model
-    #set tstep = 72  # NH model. edit namelist to turn on NH
+    set tstep = 300  # H model
     set nu = 1e15       # 1.5e15 crashed, 1.6e15 ran
     set nu_div = 1e15
 
@@ -92,9 +90,11 @@ if ( $ne == 15 ) then
 
  # number of hours between calls to prim_printstate
  set sfreq = 24
- #set sfreq = 1
  @ sfreq *= 3600
  @ sfreq /= $tstep
+
+# set sfreq = 1
+
 
  if ( $ndays == 0 ) then
    set sfreq = $nmax
@@ -115,7 +115,7 @@ if ( $ne == 15 ) then
 
  mkdir -p $bld
  cd $bld
- # rm $bld/CMakeCache.txt    # remove this file to force re-configure
+ #rm $bld/CMakeCache.txt    # remove this file to force re-configure
  if (! -f CMakeCache.txt) then
     echo "running CMAKE to configure the model"
 
@@ -183,7 +183,7 @@ cat  $wdir/input.nl
 ############################################################
 date
 set echo
-srun -c 1 -N $SLURM_NNODES   $bld/src/$exe/$exe < $wdir/input.nl 
+srun -K -c 1 -N $SLURM_NNODES   $bld/src/$exe/$exe < $wdir/input.nl 
 date
 
 # save timing data

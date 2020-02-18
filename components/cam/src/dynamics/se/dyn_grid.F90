@@ -84,6 +84,7 @@ module dyn_grid
     real(kind=r8), allocatable :: lat(:,:)    ! latitude
     real(kind=r8), allocatable :: corner_lon(:,:,:)    ! longitude
     real(kind=r8), allocatable :: corner_lat(:,:,:)    ! latitude
+    real(kind=r8), allocatable :: topo(:,:)   ! topography data
   end type fv_physgrid_struct
   type(fv_physgrid_struct), public, pointer :: fv_physgrid(:) => null()
 
@@ -1538,6 +1539,7 @@ contains
       allocate( fv_physgrid(ie)%lat        (fv_nphys,fv_nphys) )
       allocate( fv_physgrid(ie)%lon        (fv_nphys,fv_nphys) )
       allocate( fv_physgrid(ie)%area       (fv_nphys,fv_nphys) )
+      allocate( fv_physgrid(ie)%topo       (fv_nphys,fv_nphys) )
       allocate( fv_physgrid(ie)%corner_lat(fv_nphys,fv_nphys,4) )
       allocate( fv_physgrid(ie)%corner_lon(fv_nphys,fv_nphys,4) )
     end do ! ie
@@ -1642,6 +1644,7 @@ contains
       deallocate( fv_physgrid(ie)%lat  )
       deallocate( fv_physgrid(ie)%lon  )
       deallocate( fv_physgrid(ie)%area )
+      deallocate( fv_physgrid(ie)%topo )
       deallocate( fv_physgrid(ie)%corner_lat )
       deallocate( fv_physgrid(ie)%corner_lon )
     end do ! ie

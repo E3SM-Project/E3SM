@@ -18,108 +18,10 @@ cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
 
-# Set module path
-set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-
-# Load dependency search path.
-file(STRINGS ${CMAKE_BINARY_DIR}/Filepath FILEPATH_DIRS)
-set(CPP_DIRS ${FILEPATH_DIRS})
-list(APPEND CPP_DIRS ".")
-
-# Add INCROOT to path for Depends and Include
-set(MINCROOT "")
-if (INCROOT)
-  list(APPEND CPP_DIRS ${INCROOT})
-  set(MINCROOT ${INCROOT})
-endif ()
-
-# Determine whether to compile threaded or not
-# Set the THREADDIR for the shared build
-# based on the threaded build status
-if (SMP_PRESENT)
-  set(THREADDIR "threads")
-  set(compile_threaded TRUE)
-else()
-  set(THREADDIR "nothreads")
-  set(compile_threaded FALSE)
-endif()
-
-# set the debug directory based on the debug status
-if (DEBUG)
-  set(DEBUGDIR "debug")
-else()
-  set(DEBUGDIR "nodebug")
-endif()
-
-if (USE_ESMF_LIB)
-  set(ESMFDIR "esmf")
-else()
-  set(ESMFDIR "noesmf")
-endif()
-
-# Determine whether any C++ code will be included in the build;
-# currently, C++ code is included if and only if we're linking to the
-# trilinos library or the Albany library.
-set(USE_CXX FALSE)
-if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS)
-  set(USE_CXX TRUE)
-endif()
-
-if (NOT MOD_SUFFIX)
-  set(MOD_SUFFIX "mod")
-endif()
-
-#===============================================================================
-# set CPP options (must use this before any flags or cflags settings)
-#===============================================================================
-include(${CASEROOT}/Macros.cmake)
-
-set(CPPDEFS "${CPPDEFS} ${USER_CPPDEFS} -D${OS}")
-
-# SLIBS comes from Macros, so this append must come after Macros are included
-if (USE_FMS)
-  set(SLIBS "${SLIBS} -lfms")
-endif()
-
-if (DEBUG)
-  # e3sm still has components that cannot build with -DDEBUG
-  if (CIME_MODEL STREQUAL "cesm")
-    set(CPPDEFS "${CPPDEFS} -DDEBUG")
-  endif()
-else()
-  set(CPPDEFS "${CPPDEFS} -DNDEBUG")
-endif()
-
-if (USE_ESMF_LIB)
-  set(CPPDEFS "${CPPDEFS} -DUSE_ESMF_LIB")
-endif()
-
-if (COMP_INTERFACE STREQUAL "nuopc")
-  set(CPPDEFS "${CPPDEFS} -DNUOPC_INTERFACE")
-else()
-  set(CPPDEFS "${CPPDEFS} -DMCT_INTERFACE")
-endif()
-
-if (COMPARE_TO_NUOPC)
-  set(CPPDEFS "${CPPDEFS} -DCOMPARE_TO_NUOPC")
-endif()
-
-if (MPILIB STREQUAL mpi-serial)
-  set(CPPDEFS "${CPPDEFS} -DNO_MPI2")
-else()
-  set(CPPDEFS "${CPPDEFS} -DHAVE_MPI")
-endif()
-
-if (PIO_VERSION STREQUAL "1")
-  set(CPPDEFS "${CPPDEFS} -DPIO1")
-else()
-  set(USE_CXX TRUE)
-endif()
-
-if (NOT SHAREDPATH)
-  set(SHAREDPATH ${COMPILER}/${MPILIB}/${DEBUGDIR}/${THREADDIR}/${COMP_INTERFACE})
-  set(INSTALL_SHAREDPATH ${EXEROOT}/${SHAREDPATH})
-endif()
+# Include function definitions
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
@@ -451,9 +353,11 @@ if (NOT PIO_LIBDIR)
   set(PIO_LIBDIR "${INSTALL_SHAREDPATH}/lib")
 endif()
 
-if (NOT GPTL_LIBDIR)
-  set(GPTL_LIBDIR "${INSTALL_SHAREDPATH}/lib")
-endif()
+# merged from master (2/10/20)
+set(BUILDCONF ${CASEROOT}/Buildconf)
+
+# Do any MPAS builds first since they manage their own flags
+build_mpas_models()
 
 if (NOT GLC_DIR)
   set(GLC_DIR "${EXEROOT}/glc")
@@ -616,235 +520,30 @@ set(ULIBS "-L${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/l
 set(CMAKE_Fortran_FLAGS "${FFLAGS} ${FPPDEFS} ${EXTRA_PIO_FPPDEFS} ${INCLDIR}")
 set(CMAKE_C_FLAGS "${CFLAGS} ${CPPDEFS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
 set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${CPPDEFS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+
+# merged from master (2/10/20)
+# Set global cmake settings
+set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
+
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
-set(GPTL_PATH "${INSTALL_SHAREDPATH}")
-set(PIO_ENABLE_TESTS FALSE)
-set(PIO_USE_MALLOC TRUE)
-set(USER_CMAKE_MODULE_PATH "${CIMEROOT}/src/CMake;${CIMEROOT}/src/externals/pio2/cmake")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
-if (NOT PNETCDF_PATH)
-  set(WITH_PNETCDF FALSE)
-endif()
-
-if (MPILIB STREQUAL "mpi-serial")
-  set(PIO_USE_MPISERIAL TRUE)
-  set(MPISERIAL_PATH ${INSTALL_SHAREDPATH})
-endif()
-
-set(CMAKE_C_COMPILER ${CC})
-set(CMAKE_CXX_COMPILER ${CXX})
-set(CMAKE_Fortran_COMPILER ${FC})
-set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
-
-# JGF: We only want to do CAM for now
-# add_subdirectory(${GLCROOT}/source_cism)
-# add_subdirectory(${PIO_SRC_DIR})
-
-#-------------------------------------------------------------------------------
-# Build & include dependency files
-#-------------------------------------------------------------------------------
-
-# JGF, I think we can rely on CMake's built-in dependency analysus
-
-# Get src files
-# JGF: Cmake does not have a VPATH concept, so we need relative/absolute paths to source files
-# Note: Using absolute paths seems to wreck CMake's ability to do a dep analysis on fortran
-# sources and compile them in the right order.
-#
-# One additional subtley is that, when mkSrcfiles found multiple files with the same basename,
-# only the one found first gets compiled.
-
-#execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
-#file(STRINGS ${CMAKE_BINARY_DIR}/Srcfiles SOURCES)
-
-set(SRCROOT_REL "${CIMEROOT}/..")
-set(BASENAME_SET)
-file(TO_CMAKE_PATH ${SRCROOT_REL} SRCROOT_ABS)
-foreach(DIRSEARCH ${FILEPATH_DIRS})
-  file(GLOB MATCHES RELATIVE "${SRCROOT_ABS}/components" "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/*.F90.in")
-  if (MATCHES)
-    foreach (MATCH IN LISTS MATCHES)
-      get_filename_component(BASENAME ${MATCH} NAME)
-      list(FIND BASENAME_SET ${BASENAME} BASENAME_WAS_FOUND)
-      if (BASENAME_WAS_FOUND EQUAL -1)
-        list(APPEND SOURCES ${MATCH})
-        list(APPEND BASENAME_SET ${BASENAME})
-      else()
-        message(WARNING "Skipping repeated base filename ${BASENAME} for ${MATCH}")
-      endif()
-    endforeach()
-  endif()
-endforeach()
-
-foreach(SOURCE_FILE IN LISTS SOURCES)
-  get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
-  if (SOURCE_EXT STREQUAL ".F90.in")
-    string(REPLACE ".in" "" SOURCE_NO_IN ${SOURCE_FILE})
-    list(APPEND GEN_F90_SOURCES ${SOURCE_NO_IN})
-    list(APPEND SOURCES ${SOURCE_NO_IN})
-    list(REMOVE_ITEM SOURCES ${SOURCE_FILE})
-  endif()
-endforeach()
-
-foreach(ITEM IN LISTS CPP_DIRS)
-  if (EXISTS ${ITEM})
-    set(INCLDIR "${INCLDIR} -I${ITEM}")
-  endif()
-endforeach()
-
-#-------------------------------------------------------------------------------
-# create list of component libraries - hard-wired for current ccsm components
-#-------------------------------------------------------------------------------
-
-if (CIME_MODEL STREQUAL "cesm")
-  if (COMP_LND STREQUAL "clm")
-    set(USE_SHARED_CLM TRUE)
-  else()
-    set(USE_SHARED_CLM FALSE)
-  endif()
-else()
-  set(USE_SHARED_CLM FALSE)
-endif()
-
-if (NOT USE_SHARED_CLM)
-  set(LNDOBJDIR "${EXEROOT}/lnd/obj")
-  set(LNDLIBDIR "${LIBROOT}")
-  if (COMP_LND STREQUAL "clm")
-    set(LNDLIB "libclm.a")
-  else()
-    set(LNDLIB "liblnd.a")
-  endif()
-  set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
-else()
-  set(LNDLIB "libclm.a")
-  set(LNDOBJDIR "${SHAREDLIBROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/clm/obj")
-  set(LNDLIBDIR "${EXEROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/lib")
-  set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-  if (MODEL STREQUAL "clm")
-    set(INCLUDE_DIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-  endif()
-endif()
-
-if (NOT ULIBDEP)
-  if (LIBROOT)
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libatm.a")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libice.a")
-    set(ULIBDEP "${ULIBDEP} ${LNDLIBDIR}/${LNDLIB}")
-    set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libocn.a")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/librof.a")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libglc.a")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libwav.a")
-    if (NOT COMP_INTERFACE STREQUAL "nuopc")
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libiac.a")
-    endif()
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libesp.a")
-  endif()
-endif()
-
-if (COMP_GLC STREQUAL "cism")
-  set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismfortran.a")
-  if (CISM_USE_TRILINOS)
-    set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismcpp.a")
-  endif()
-endif()
-if (OCN_SUBMODEL STREQUAL "moby")
-  set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libmoby.a")
-endif()
-
-# JGF, this kind of thing should be done via target_link_library in cmake
-if (NOT CLIBS)
-  if (ULIBDEP)
-    # For each occurrence of something like /path/to/foo/libbar.a in ULIBDEP,
-    # CLIBS will contain -L/path/to/foo -lbar
-    foreach (ITEM ${ULIBDEP})
-      get_filename_component(ULIB_DIR ${ITEM} DIRECTORY)
-      get_filename_component(ULIB_LIB ${ITEM} NAME)
-      set(CLIBS "${CLIBS} -L${ULIB_DIR} -l${ULIB_LIB}")
-    endforeach()
-  endif()
-endif()
-
-# libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
-# so this needs to be added after creating CLIBS above
-set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
-set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
-
-# Things may have been added to flags and we need to remove PIO stuff
-set(CMAKE_Fortran_FLAGS "${FFLAGS} ${INCLDIR}")
-set(CMAKE_C_FLAGS "${CFLAGS} ${INCLDIR}")
-set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${INCLDIR}")
-
-# do the necessary genf90s
+# Set global targets
 add_custom_target(genf90
   DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
-foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
-  get_filename_component(BASENAME ${SRC_FILE} NAME)
-  add_custom_command (
-    OUTPUT ${CMAKE_BINARY_DIR}/${BASENAME}
-    COMMAND ${CIMEROOT}/src/externals/genf90/genf90.pl
-    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${CMAKE_BINARY_DIR}/${BASENAME}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
-  list(REMOVE_ITEM SOURCES ${SRC_FILE})
-  list(APPEND SOURCES ${CMAKE_BINARY_DIR}/${BASENAME})
-endforeach ()
 
-# Flags are slightly different for different fortran extensions
-foreach (SOURCE_FILE IN LISTS SOURCES)
-  # Cosp manages its own flags
-  if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
-    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
-    if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-      set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FIXEDFLAGS}")
-    elseif(SOURCE_EXT STREQUAL ".f90")
-      set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS}")
-    elseif(SOURCE_EXT STREQUAL ".F90")
-      set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS} ${CONTIGUOUS_FLAG}")
-    endif()
+# Build E3SM components
+set(IDX 0)
+set(COMP_CLASSES cpl atm lnd ice ocn rof glc wav iac esp)
+set(MPAS_COMPS "mpaso" "mpassi" "mali")
+foreach(COMP_NAME IN LISTS COMP_NAMES)
+  list(GET COMP_CLASSES ${IDX} COMP_CLASS)
+  if (NOT COMP_CLASS STREQUAL "cpl" AND NOT COMP_NAME IN_LIST MPAS_COMPS)
+    message("Found component ${COMP_CLASS} model '${COMP_NAME}'")
+    add_subdirectory(cmake/${COMP_CLASS})
   endif()
+
+  math(EXPR IDX "${IDX} + 1")
 endforeach()
 
-# Load machine/compiler specific settings
-set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
-set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
-set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
-set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
-foreach(ITEM IN LISTS TRY_TO_LOAD)
-  if (EXISTS ${ITEM})
-    include(${ITEM})
-  endif()
-endforeach()
-
-# Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
-foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-  set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FFLAGS_NOOPT}")
-endforeach()
-
-#-------------------------------------------------------------------------------
-# build rules:
-#-------------------------------------------------------------------------------
-
-if (MPILIB STREQUAL "mpi-serial")
-  set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/lib-mpi-serial.a")
-  set(MLIBS "${MLIBS} ${MPISERIAL}")
-endif()
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
-
-if (COMPLIB)
-  add_library(${COMPLIB})
-  target_sources(${COMPLIB} PRIVATE ${SOURCES})
-
-  # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
-  # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags. Also, CPPDEFS *must*
-  # be provided as a list, not a whitespace-separated string; otherwise, things get wonky.
-  separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
-  target_compile_definitions(${COMPLIB} PRIVATE ${CPPDEFS_LIST})
-  add_dependencies(${COMPLIB} genf90)
-endif()
-
-if (EXEC_SE)
-  add_executable(${EXEC_SE})
-  target_link_library(${EXEC_SE} ${COMPLIB} ${ULIBDEP} ${CSMSHARELIB} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${CLIBS} ${ULIBS} ${SLIBS} ${MLIBS} ${F90_LDFLAGS})
-endif()
+add_subdirectory(cmake/cpl)

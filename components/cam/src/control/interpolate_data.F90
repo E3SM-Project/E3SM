@@ -15,7 +15,7 @@ module interpolate_data
 ! Public Methods:
 !
 
-  public :: interp_type, lininterp, vertinterp, bilin, get_timeinterp_factors
+  public :: interp_type, lininterp, vertinterp, vertinterpz, bilin, get_timeinterp_factors
   public :: lininterp_init, lininterp_finish
   type interp_type
      real(r8), pointer :: wgts(:)
@@ -976,6 +976,101 @@ contains
 
     return
   end subroutine vertinterp
+
+  subroutine vertinterpz(ncol, ncold, nlev, zmid, zout, arrin, arrout)
+
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose: Vertically interpolate input array to output height (above 
+    !          surface) level.  Copy values at boundaries.
+    !
+    ! Method:  Copies vertinterp and shifts its logic so height decreases 
+    !          with increasing level index.
+    !
+    ! Author:  Bryce Harrop
+    ! Note:    A more elegant method would be to introduce controlling logic
+    !          to vertinterp to get rid of the need for two separate 
+    !          subroutines.
+    !          Simple tests were done for linear and logarithmic 
+    !          interpolation, and the results suggested linear is better
+    !          for interpolation of low-level winds.
+    !-----------------------------------------------------------------------
+
+    implicit none
+
+    !------------------------------Arguments--------------------------------
+    integer , intent(in)  :: ncol              ! column dimension
+    integer , intent(in)  :: ncold             ! declared column dimension
+    integer , intent(in)  :: nlev              ! vertical dimension
+    real(r8), intent(in)  :: zmid(ncold,nlev)  ! input level height levels
+    real(r8), intent(in)  :: zout              ! output height level
+    real(r8), intent(in)  :: arrin(ncold,nlev) ! input  array
+    real(r8), intent(out) :: arrout(ncold)     ! output array (interpolated)
+    !--------------------------------------------------------------------------
+
+    !---------------------------Local variables-----------------------------
+    integer i,k               ! indices
+    integer kupper(ncold)     ! Level indices for interpolation
+    real(r8) dzu              ! upper level height difference
+    real(r8) dzl              ! lower level height difference
+    logical found(ncold)      ! true if input levels found
+    logical error             ! error flag
+    !-----------------------------------------------------------------
+    !
+    ! Initialize index array and logical flags
+    !
+    do i=1,ncol
+       found(i)  = .false.
+       kupper(i) = 1
+    end do
+    error = .false.
+    !
+    ! Store level indices for interpolation.
+    ! Once all indices have been found, do the interpolation
+    !
+
+    k = nlev-1
+    do while ( (any(found(:) .eqv. .false.) .eqv. .true.) .and. k>=1 )
+       do i=1,ncol
+          if ((.not. found(i)) .and. zmid(i,k)>zout .and. zout>=zmid(i,k+1)) then
+             found(i) = .true.
+             kupper(i) = k
+          end if
+       end do
+       k = k-1
+    end do
+    
+    
+    !
+    ! If we've fallen through the k-loop, we cannot interpolate and
+    ! must extrapolate from the bottom or top data level for at least some
+    ! of the columns.
+    !
+    do i=1,ncol
+       if (zout >= zmid(i,1)) then
+          arrout(i) = arrin(i,1)
+       else if (zout <= zmid(i,nlev)) then
+          arrout(i) = arrin(i,nlev)
+       else if (found(i)) then
+          dzu = zout - zmid(i,kupper(i))  !B Don't know the pressure thicknesses
+          dzl = zmid(i,kupper(i)+1) - zout
+          !BEH This is a linear interpolation
+          arrout(i) = (arrin(i,kupper(i)  )*dzl + arrin(i,kupper(i)+1)*dzu)/(dzl + dzu)
+          !BEH this is a logarthmic interpolation
+          !arrout(i) = arrin(i,kupper(i))**(dzl/(dzl + dzu)) * arrin(i,kupper(i)+1)**(dzu/(dzl + dzu))
+       else
+          error = .true.
+       end if
+    end do
+    !
+    ! Error check
+    !
+    if (error) then
+       call endrun ('VERTINTERPZ: ERROR FLAG')
+    end if
+
+    return
+  end subroutine vertinterpz
 
   subroutine get_timeinterp_factors (cycflag, np1, cdayminus, cdayplus, cday, &
        fact1, fact2, str)

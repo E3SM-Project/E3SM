@@ -208,12 +208,12 @@
 
   <compset>
     <alias>F20TRC5-CMIP6</alias>
-    <lname>20TR_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>20TR_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F2010SC5-CMIP6</alias>
-    <lname>2010S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>

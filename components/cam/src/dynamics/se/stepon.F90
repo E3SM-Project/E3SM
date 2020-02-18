@@ -461,7 +461,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
       call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
-      ! Multiply omega_p by pressure t get omega for output
+#ifdef MODEL_THETA_L
+      ! omega_p is just omega when using the theta dycore
+      call outfld('DYN_OMEGA',dyn_in%elem(ie)%derived%omega_p(:,:,:)  ,npsq,ie)
+#else
+      ! Multiply omega_p by pressure to get omega for output
       p_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
       do k = 1,nlev
          p_i(:,:,k+1) = p_i(:,:,k) + dyn_in%elem(ie)%state%dp3d(:,:,k,tl_f)
@@ -469,6 +473,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          omega(:,:,k) = dyn_in%elem(ie)%derived%omega_p(:,:,k) * p_m(:,:,k)
       enddo
       call outfld('DYN_OMEGA',omega(:,:,:),npsq,ie)
+#endif
    end do
    
    
@@ -587,7 +592,9 @@ end subroutine stepon_run3
 !
 ! !INTERFACE:
 subroutine stepon_final(dyn_in, dyn_out)
-   use dyn_grid,         only: fv_physgrid_final, fv_nphys
+  use dyn_grid,         only: fv_physgrid_final, fv_nphys
+  use cam_logfile, only: iulog
+  use prim_driver_base,only: prim_finalize
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,
@@ -607,9 +614,12 @@ subroutine stepon_final(dyn_in, dyn_out)
 
    ! Deallocate variables needed for the FV physics grid
    if (fv_nphys > 0) then
-      call fv_physgrid_final()
+     if (par%masterproc)  write(iulog,*) "stepon: phygrid finalization..."
+     call fv_physgrid_final()
    end if ! fv_nphys > 0
-
+   if (par%masterproc)  write(iulog,*) "stepon: HOMME finalization..."
+   call prim_finalize
+   if (par%masterproc)  write(iulog,*) "stepon: End of finalization"
 !EOC
 end subroutine stepon_final
 

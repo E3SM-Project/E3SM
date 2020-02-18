@@ -104,7 +104,9 @@ def buildnml(case, caseroot, compname):
         os_opt = "-target_os bgq" if os_ == 'bgq' else ""
 
         # TODO: cam/bld/configure needs to be converted to python
-        run_cmd_no_fail("{} -s -ccsm_seq -ice none -ocn {} -comp_intf {} {} -spmd {} -smp {} -dyn {} -dyn_target {} -res {} {} {} {} {}".format(os.path.join(srcroot, "components/cam/bld/configure"), ocn, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt), from_dir=camconf_dir)
+        config_cmd = "{} -s -ccsm_seq -ice none -ocn {} -caseroot {} -comp_intf {} {} -spmd {} -smp {} -dyn {} -dyn_target {} -res {} {} {} {} {}".\
+            format(os.path.join(srcroot, "components/cam/bld/configure"), ocn, caseroot, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt)
+        run_cmd_no_fail(config_cmd, from_dir=camconf_dir)
 
     else:
 
@@ -160,7 +162,7 @@ def buildnml(case, caseroot, compname):
                 if inst_string != "":
                     logger.warning("WARNING: {} is being used".format(cam_branch_file))
 
-        dtime = ( 3600 * 24 ) / atm_ncpl
+        dtime = ( 3600 * 24 ) // atm_ncpl
         start_ymd = run_startdate.replace("-", "")
         ntasks = ntasks_atm / ninst_atm
 

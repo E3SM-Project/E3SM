@@ -30,7 +30,7 @@ from six.moves      import configparser, urllib
 # define global constants
 logger = logging.getLogger(__name__)
 _svn_expdb_url = 'https://svn-cesm2-expdb.cgd.ucar.edu'
-_exp_types = ['CMIP6', 'production', 'tuning']
+_exp_types = ['CMIP6', 'production', 'tuning','lens']
 _xml_vars = ['CASE', 'COMPILER', 'COMPSET', 'CONTINUE_RUN', 'DOUT_S', 'DOUT_S_ROOT',
              'GRID', 'MACH', 'MPILIB', 'MODEL', 'MODEL_VERSION', 'REST_N', 'REST_OPTION',
              'RUNDIR', 'RUN_REFCASE', 'RUN_REFDATE', 'RUN_STARTDATE', 'RUN_TYPE',
@@ -546,8 +546,9 @@ def get_case_status(case_dict):
     cstatus = case_dict['CASEROOT']+'/CaseStatus'
     if os.path.exists(cstatus):
         # get the run status
-        run_status = is_last_process_complete(cstatus, "case.run success", "case.run starting")
-        if run_status is True:
+        run_status_1 = is_last_process_complete(cstatus, "case.run success", "case.run starting")
+        run_status_2 = is_last_process_complete(cstatus, "model execution success", "model execution starting")
+        if run_status_1 is True or run_status_2 is True:
             case_dict['run_status'] = 'Succeeded'
         case_dict['run_size'] = get_disk_usage(case_dict['run_path'])
         case_dict['run_last_date'] = get_run_last_date(case_dict['CASE'], case_dict['run_path'])

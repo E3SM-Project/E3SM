@@ -309,6 +309,7 @@ GetOptions(
     "cam_bld=s"                 => \$opts{'cam_bld'},
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
+    "caseroot=s"                => \$opts{'caseroot'},
     "e3smreplay"                => \$opts{'e3smreplay'},
     "cc=s"                      => \$opts{'cc'},
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
@@ -611,6 +612,10 @@ EOF
     if ($print>=2) { print "CAM executable will be created in: $cam_exedir$eol"; }
 }
 
+if (defined $opts{'caseroot'}) {
+    $cfg_ref->set('caseroot', $opts{'caseroot'})
+}
+
 #-----------------------------------------------------------------------------------------------
 # User source directories.
 my $usr_src = '';
@@ -755,6 +760,21 @@ if (defined $opts{'dyn'}) {
       print "+------------------------------------------------+\n";
     } else {
       $cfg_ref->set('dyn', lc($opts{'dyn'}) );
+    }
+    if (defined $opts{'dyn_target'}) {                                                        
+        #$cfg_ref->set('dyn_target', $opts{'dyn_target'});
+        if (substr($opts{'dyn_target'},0,5) eq 'preqx') {
+            # preqx, preqx_acc, preqx_kokkos use 'preqx' namelist defaults
+            $cfg_ref->set('dyn_target', 'preqx');
+        }
+        if (substr($opts{'dyn_target'},0,5) eq 'theta') {
+            # theta_* uses 'theta-l' namelist defaults
+            $cfg_ref->set('dyn_target', 'theta-l');
+        }
+        print  "SE dycore target options:\n";
+        print  "  build target:    $opts{'dyn_target'}\n";
+        my $temp = $cfg_ref->get('dyn_target');
+        print  "  namelist target: $temp\n";
     }
 }
 
@@ -1843,7 +1863,7 @@ if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
 # Spectral Element dycore
 if($dyn_pkg eq 'se'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
-    $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
+    $cfg_cppdefs .= " -DCAM -D_PRIM ";
 }
 
 # -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
@@ -2216,6 +2236,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 #-----------------------------------------------------------------------------------------------
 # COSP library.
+# JGF: We can get rid of this stuff once the legacy build system is removed
 if ($cosp) {
 
     # Set the directory used to build cosp.  Add location and library name
@@ -2487,6 +2508,7 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
+    my $caseroot      = $cfg_ref->get('caseroot');
 
     # Root directory
     my $camsrcdir = "$cam_root/components";
@@ -2508,8 +2530,7 @@ sub write_filepath
 
     # CESM has a standard source mods location.
     if ($ccsm_seq) {
-	my $CASEROOT = "$ENV{'CASEROOT'}";
-	print $fh "$CASEROOT/SourceMods/src.cam\n";
+	print $fh "$caseroot/SourceMods/src.cam\n";
     }
 
     # offline unit driver (defaults to stub)

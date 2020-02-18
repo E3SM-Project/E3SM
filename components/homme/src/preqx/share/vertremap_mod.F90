@@ -138,7 +138,7 @@ contains
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
-     if (qsize>0) then
+     if (qsize>0 .and. np1_qdp > 0) then
 
        call t_startf('vertical_remap1_3')
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)

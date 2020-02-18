@@ -507,11 +507,13 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean gridcell carbon state data structure
   !------------------------------------------------------------------------
-  subroutine grc_cs_init(this, begg, endg)
+  subroutine grc_cs_init(this, begg, endg,carbon_type)
     !
     ! !ARGUMENTS:
     class(gridcell_carbon_state) :: this
     integer, intent(in) :: begg,endg
+    character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']    
+
     !
     ! !LOCAL VARIABLES:
     integer :: g
@@ -529,10 +531,24 @@ contains
     ! initialize history fields for select members of grc_cs
     !-----------------------------------------------------------------------
     if (.not. use_fates) then
-       this%seedc(begg:endg) = spval
-       call hist_addfld1d (fname='SEEDC_GRC', units='gC/m^2', &
-            avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
-            ptr_gcell=this%seedc)
+       if (carbon_type == 'c12') then
+          this%seedc(begg:endg) = spval
+          call hist_addfld1d (fname='SEEDC_GRC', units='gC/m^2', &
+               avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
+               ptr_gcell=this%seedc)
+       end if 
+       if (carbon_type == 'c13') then
+          this%seedc(begg:endg) = spval
+          call hist_addfld1d (fname='C13_SEEDC_GRC', units='gC/m^2', &
+               avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
+               ptr_gcell=this%seedc)
+       end if 
+       if (carbon_type == 'c14') then
+          this%seedc(begg:endg) = spval
+          call hist_addfld1d (fname='C14_SEEDC_GRC', units='gC/m^2', &
+               avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
+               ptr_gcell=this%seedc)
+       end if 
     end if
     
     !-----------------------------------------------------------------------

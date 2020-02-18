@@ -32,6 +32,9 @@ end if
   
 ;  output_format = "ncgm"
   output_format = "pdf"
+  output_format@wkPaperHeightF   = 8
+  output_format@wkPaperWidthF    = 11
+  output_format@wkOrientation    = "portrait"
 
 
   ntimes = dimsizes(f->time)
@@ -104,7 +107,7 @@ end if
     res@mpMinLatF = 25
     res@mpMaxLatF = 75
 
-    res@vpHeightF           = .3
+    ;res@vpHeightF           = .3
 
 
     time = f->time
