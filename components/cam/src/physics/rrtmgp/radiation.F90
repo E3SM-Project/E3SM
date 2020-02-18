@@ -1175,6 +1175,9 @@ contains
       real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
       real(r8), dimension(pcols,pver,nlwgpts ) :: cld_tau_gpt_lw
 
+      ! Gas volume mixing ratios
+      real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr
+
       ! Needed for shortwave aerosol; TODO: remove this dependency
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
@@ -1296,6 +1299,11 @@ contains
          call rad_cnst_get_call_list(active_calls)
          do icall = N_DIAG,0,-1
             if (active_calls(icall)) then
+               ! Get gas concentrations
+               call t_startf('rad_gas_concentrations_sw')
+               call get_gas_vmr(icall, state, pbuf, active_gases, gas_vmr)
+               call t_stopf('rad_gas_concentrations_sw')
+               ! Get aerosol optics
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_sw')
                   call set_aerosol_optics_sw( &
@@ -1312,11 +1320,13 @@ contains
                end if
 
                ! Call the shortwave radiation driver
-               call radiation_driver_sw(icall, state, pbuf, is_cmip6_volc, &
-                                        pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
-                                        cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
-                                        aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw, &
-                                        fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+               call radiation_driver_sw( &
+                  ncol, active_gases, gas_vmr, &
+                  pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
+                  cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
+                  aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw, &
+                  fluxes_allsky, fluxes_clrsky, qrs, qrsc &
+               )
                ! Send fluxes to history buffer
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
             end if
@@ -1369,16 +1379,25 @@ contains
          call rad_cnst_get_call_list(active_calls)
          do icall = N_DIAG,0,-1
             if (active_calls(icall)) then
+               ! Get gas concentrations
+               call t_startf('rad_gas_concentrations_sw')
+               call get_gas_vmr(icall, state, pbuf, active_gases, gas_vmr)
+               call t_stopf('rad_gas_concentrations_sw')
+               ! Get aerosol optics
                if (do_aerosol_rad) then
+                  call t_startf('rad_aer_optics_lw')
                   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau_bnd_lw)
+                  call t_stopf('rad_aer_optics_lw')
                else
                   aer_tau_bnd_lw = 0
                end if
                ! Call the longwave radiation driver to calculate fluxes and heating rates
-               call radiation_driver_lw(icall, state, pbuf, is_cmip6_volc, &
-                                        pmid, pint, tmid, tint, &
-                                        cld_tau_gpt_lw, aer_tau_bnd_lw, &
-                                        fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+               call radiation_driver_lw( &
+                  ncol, active_gases, gas_vmr, &
+                  pmid, pint, tmid, tint, &
+                  cld_tau_gpt_lw, aer_tau_bnd_lw, &
+                  fluxes_allsky, fluxes_clrsky, qrl, qrlc &
+               )
                ! Send fluxes to history buffer
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
             end if
@@ -1421,16 +1440,14 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_sw(icall, state, pbuf, is_cmip6_volc, &
+   subroutine radiation_driver_sw(ncol, &
+                                  gas_names, gas_vmr, &
                                   pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                                   cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
                                   aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
-      use cam_history, only: outfld
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
       use mo_rrtmgp_clr_all_sky, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
@@ -1440,12 +1457,11 @@ contains
                             compress_optics_sw, set_aerosol_optics_sw
 
       ! Inputs
-      integer, intent(in) :: icall
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
+      integer, intent(in) :: ncol
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
-      logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+      character(len=*), intent(in), dimension(:) :: gas_names
+      real(r8), intent(in), dimension(:,:,:) :: gas_vmr
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
       real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
       real(r8), intent(in), dimension(:) :: coszrs
@@ -1484,9 +1500,6 @@ contains
       ! climates as well (i.e., paleoclimate simulations)
       real(r8) :: tsi_scaling
 
-      ! Number of columns
-      integer :: ncol
-
       ! Loop indices
       integer :: iband
 
@@ -1496,16 +1509,12 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid_day, pmid_day
       real(r8), dimension(pcols,nlev_rad+1) :: pint_day, tint_day
 
-      real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr, gas_vmr_day
+      real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr_day
       integer :: igas, iday, icol
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
 
-
-      ! Number of physics columns in this "chunk"; used in multiple places
-      ! throughout this subroutine, so set once for convenience
-      ncol = state%ncol
 
       if (fixed_total_solar_irradiance<0) then
          ! Get orbital eccentricity factor to scale total sky irradiance
@@ -1604,13 +1613,6 @@ contains
          aer_optics_sw%g  (:,:,:) = 0
       end if
 
-      ! Set gas concentrations (I believe the gases may change for
-      ! different values of icall, which is why we do this within the
-      ! loop)
-      call t_startf('rad_gas_concentrations_sw')
-      call get_gas_vmr(icall, state, pbuf, active_gases, gas_vmr)
-      call t_stopf('rad_gas_concentrations_sw')
-
       ! Compress gases to daytime-only
       call t_startf('rad_set_gases_sw')
       do igas = 1,size(active_gases)
@@ -1618,7 +1620,7 @@ contains
                                    gas_vmr_day(igas,1:nday,1:pver), &
                                    day_indices(1:nday))
       end do
-      call set_gas_concentrations(nday, active_gases, gas_vmr_day, gas_concentrations)
+      call set_gas_concentrations(nday, gas_names, gas_vmr_day, gas_concentrations)
       call t_stopf('rad_set_gases_sw')
 
       ! Do shortwave radiative transfer calculations
@@ -1724,16 +1726,13 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_lw(icall, state, pbuf, is_cmip6_volc, &
+   subroutine radiation_driver_lw(ncol, &
+                                  gas_names, gas_vmr, &
                                   pmid, pint, tmid, tint, &
                                   cld_tau_gpt, aer_tau_bnd, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
-      use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
       use perf_mod, only: t_startf, t_stopf
-      use cam_history, only: outfld
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
       use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
@@ -1742,20 +1741,16 @@ contains
       use radiation_utils, only: calculate_heating_rate, clip_values
 
       ! Inputs
-      integer, intent(in) :: icall
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
+      integer, intent(in) :: ncol
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
-      logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+      character(len=*), intent(in), dimension(:) :: gas_names
+      real(r8), intent(in), dimension(:,:,:) :: gas_vmr
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid, tint
       real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, aer_tau_bnd
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_lw'
-
-      ! For loops over diagnostic calls (TODO: what does this mean?)
-      logical :: active_calls(0:N_DIAG)
 
       ! Surface emissivity needed for longwave
       real(r8) :: surface_emissivity(nlwbands,pcols)
@@ -1763,19 +1758,10 @@ contains
       ! Temporary heating rates on radiation vertical grid
       real(r8), dimension(pcols,nlev_rad) :: qrl_rad, qrlc_rad
 
-      ! Gas volume mixing ratios
-      real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr
-
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
       type(ty_optical_props_1scl) :: aer_optics_lw
       type(ty_optical_props_1scl) :: cld_optics_lw
-
-      integer :: ncol
-
-      ! Number of physics columns in this "chunk"; used in multiple places
-      ! throughout this subroutine, so set once for convenience
-      ncol = state%ncol
 
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
@@ -1807,8 +1793,7 @@ contains
       ! for different values of icall, which is why we do this within
       ! the loop).
       call t_startf('rad_gas_concentrations_lw')
-      call get_gas_vmr(icall, state, pbuf, active_gases, gas_vmr)
-      call set_gas_concentrations(ncol, active_gases, gas_vmr, gas_concentrations)
+      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
       call t_stopf('rad_gas_concentrations_lw')
 
       if (do_aerosol_rad) then
