@@ -65,6 +65,7 @@ struct Constants
   static constexpr Scalar eci         = 0.5;
   static constexpr Scalar eri         = 1.0;
   static constexpr Scalar dropmass    = 5.2e-7;
+  static constexpr Scalar kr          = 5.78e+3;
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
