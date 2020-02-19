@@ -1,9 +1,13 @@
 ! verify that crm-level outputs can be written and they don't break restarts
 
 ! file i/o
-nhtfrq = 0,-6
-mfilt = 1,120
+nhtfrq = 0,-6,-6
+mfilt = 1,120,120
 
 ! CRM-fields on subset of globe
 fincl2 = 'CRM_T:A','CRM_QRAD:I'
 fincl2lonlat = '100w:90w_30n:40n'
+
+! Global grid variables on a subset of the globe
+fincl3 = 'PS:I','PRECT:I','LHFLX:I','FSNT:I','UBOT:I','SPDT:I','SPTLS:I','SPMC:I','SPTKE:I'
+fincl2lonlat = '00w:90w_00n:90n'
