@@ -261,7 +261,6 @@ struct ImposeMaxTotalNiData{
   Real max_total_Ni, inv_rho_local;
 };
 void impose_max_total_Ni(ImposeMaxTotalNiData& d);
-
 extern "C"{
 
   void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);

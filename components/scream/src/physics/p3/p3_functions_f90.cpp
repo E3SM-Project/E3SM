@@ -1327,7 +1327,6 @@ void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_
   Kokkos::deep_copy(t_h, t_d);
 
   *nitot_local_ = t_h(0); 
-
 }
 
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)
