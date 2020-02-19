@@ -100,6 +100,14 @@ interface
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
 
+  subroutine impose_max_total_ni_f(nitot_local, max_total_Ni, inv_rho_local) bind(C)
+    use iso_c_binding
+    
+    !arguments:
+    real(kind=c_real), intent(inout) :: nitot_local
+    real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
+  end subroutine impose_max_total_ni_f
+  
   subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use iso_c_binding
 

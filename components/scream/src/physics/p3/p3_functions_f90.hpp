@@ -233,6 +233,21 @@ extern "C"{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ImposeMaxTotalNiData{
+  // inout
+  Real nitot_local;
+  
+  //input
+  Real max_total_Ni, inv_rho_local;
+};
+void impose_max_total_Ni(ImposeMaxTotalNiData& d);
+
+extern "C"{
+  void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetCloudDsd2Data
 {
   // Inputs
@@ -250,7 +265,7 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 struct GetRainDsd2Data
 {
