@@ -2781,12 +2781,12 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    real(rtype), intent(out) :: nrslf
 
    real(rtype) :: dum, dum1, dum2
-   real(rtype) :: nrslf_old
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
 
    if (use_cxx) then
       call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
-         nrslf_old)
+         nrslf)
       return
    endif
 #endif
@@ -2806,10 +2806,8 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       dum2 = bfb_cbrt(qr_incld/(pi*rhow*nr_incld))
       if (dum2.lt.dum1) then
          dum = 1._rtype
-         print *, '1'
       else if (dum2.ge.dum1) then
          dum = 2._rtype-bfb_exp(2300._rtype*(dum2-dum1))
-         print *, '2'
       endif
 
       if (iparam.eq.1) then
