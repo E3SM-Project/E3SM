@@ -3209,6 +3209,11 @@ subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,
     qrevp,nrevp,nrslf,    &
     log_predictNc,inv_rho,exner,xxlv,dt,    &
     th,qv,qc,nc,qr,nr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: update_prognostic_liquid_f
+#endif
+
    !-- warm-phase only processes:
    implicit none
 
@@ -3236,6 +3241,16 @@ subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,
    real(rtype), intent(inout) :: nc
    real(rtype), intent(inout) :: qr
    real(rtype), intent(inout) :: nr
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  update_prognostic_liquid_f(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,    &
+           qrevp,nrevp,nrslf,    &
+           log_predictNc,inv_rho,exner,xxlv,dt,    &
+           th,qv,qc,nc,qr,nr)
+      return
+   endif
+#endif
 
    qc = qc + (-qcacc-qcaut+qcnuc)*dt
    qr = qr + (qcacc+qcaut-qrevp)*dt

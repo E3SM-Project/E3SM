@@ -66,11 +66,19 @@ struct Constants
   static constexpr Scalar eci         = 0.5;
   static constexpr Scalar eri         = 1.0;
   static constexpr Scalar dropmass    = 5.2e-7;
+  static constexpr Scalar NCCNST      = 200.0e+6;
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
+
+  // switch for warm-rain parameterization
+  // = 1 Seifert and Beheng 2001
+  // = 2 Beheng 1994
+  // = 3 Khairoutdinov and Kogan 2000
+  static constexpr int IPARAM         = 3;
+
 };
 
 template <typename Scalar>
