@@ -2729,7 +2729,7 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
    qcacc,ncacc)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cloud_rain_accretion_f
+   use micro_p3_iso_f, only: cloud_rain_accretion_f, cxx_pow
 #endif
 
 !............................
@@ -2771,7 +2771,7 @@ if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
            1.e+6_rtype*inv_rho
    elseif (iparam.eq.3) then
       !Khroutdinov and Kogan (2000)
-      qcacc = 67._rtype*(qc_incld*qr_incld)**1.15_rtype
+      qcacc = 67._rtype*bfb_pow(qc_incld*qr_incld,1.15_rtype)
       ncacc = qcacc*nc_incld/qc_incld
    endif
 
