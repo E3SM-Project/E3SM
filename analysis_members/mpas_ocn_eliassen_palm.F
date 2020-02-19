@@ -489,7 +489,7 @@ contains
                   lastLayerBuoyCoor(ncells), &
                   heightMidBuoyCoor(nBuoyancyLayers, nCells), &
                   heightTopBuoyCoor(nBuoyancyLayers, nCells), &
-                  heightInterfaceBuoyCoor(nBuoyancyLayers, nCells), &
+                  heightInterfaceBuoyCoor(nBuoyancyLayers + 1, nCells), &
                   sigma(nBuoyancyLayers, nCells), &
                   montgPotBuoyCoor(nBuoyancyLayers, nCells), &
                   montgPotNormalGradOnEdge(nBuoyancyLayers, nEdges), &

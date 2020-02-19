@@ -230,7 +230,7 @@ contains
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
          !$omp master
-         allocate(pressureAdjustedForLandIce(nVertLevels, nCellsSolve))
+         allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
          !$omp end master
          !$omp barrier
 
