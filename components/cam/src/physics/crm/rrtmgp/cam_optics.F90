@@ -34,8 +34,8 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
                                 pbuf_get_index, pbuf_old_tim_idx
-      use cloud_rad_props, only: get_mitchell_ice_optics_sw, &
-                                 get_conley_liq_optics_sw, &
+      use cloud_rad_props, only: mitchell_ice_optics_sw, &
+                                 gammadist_liq_optics_sw, &
                                  get_snow_optics_sw
       use ebert_curry, only: ec_ice_optics_sw
       use slingo, only: slingo_liq_optics_sw
@@ -97,7 +97,7 @@ contains
 
       ! Get ice cloud optics
       if (trim(icecldoptics) == 'mitchell') then
-         call get_mitchell_ice_optics_sw(state, pbuf, &
+         call mitchell_ice_optics_sw(state, pbuf, &
                                 ice_tau, ice_tau_ssa, &
                                 ice_tau_ssa_g, ice_tau_ssa_f)
 
@@ -111,18 +111,22 @@ contains
             end do
          end do
       else if (trim(icecldoptics) == 'ebertcurry') then
-         call ec_ice_optics_sw (state, pbuf, &
-                                ice_tau, ice_tau_ssa, &
-                                ice_tau_ssa_g, ice_tau_ssa_f)
+         call ec_ice_optics_sw( &
+            state, pbuf, &
+            ice_tau, ice_tau_ssa, &
+            ice_tau_ssa_g, ice_tau_ssa_f &
+         )
       else
          call endrun('Ice optics scheme ' // trim(icecldoptics) // ' not recognized.')
       end if
       
       ! Get liquid cloud optics
       if (trim(liqcldoptics) == 'gammadist') then
-         call get_conley_liq_optics_sw(state, pbuf, &
-                                       liq_tau, liq_tau_ssa, &
-                                       liq_tau_ssa_g, liq_tau_ssa_f)
+         call gammadist_liq_optics_sw( &
+            state, pbuf, &
+            liq_tau, liq_tau_ssa, &
+            liq_tau_ssa_g, liq_tau_ssa_f &
+         )
 
          ! Mitchell optics hard-coded for RRTMG band-ordering
          do ilev = 1,pver
@@ -227,8 +231,8 @@ contains
       use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
                                 pbuf_get_index, pbuf_old_tim_idx
       use phys_control, only: phys_getopts
-      use cloud_rad_props, only: get_conley_liq_optics_lw, &
-                                 get_mitchell_ice_optics_lw, &
+      use cloud_rad_props, only: gammadist_liq_optics_lw, &
+                                 mitchell_ice_optics_lw, &
                                  get_snow_optics_lw
       use ebert_curry, only: ec_ice_optics_lw
       use slingo, only: slingo_liq_optics_lw
@@ -264,7 +268,7 @@ contains
 
       ! Get ice optics
       if (trim(icecldoptics) == 'mitchell') then
-         call get_mitchell_ice_optics_lw(state, pbuf, ice_tau)
+         call mitchell_ice_optics_lw(state, pbuf, ice_tau)
       else if (trim(icecldoptics) == 'ebertcurry') then
          call ec_ice_optics_lw(state, pbuf, ice_tau)
       else
@@ -273,11 +277,11 @@ contains
 
       ! Get liquid optics
       if (trim(liqcldoptics) == 'gammadist') then
-         call get_conley_liq_optics_lw(state, pbuf, liq_tau)
+         call gammadist_liq_optics_lw(state, pbuf, liq_tau)
       else if (trim(liqcldoptics) == 'slingo') then
          call slingo_liq_optics_lw(state, pbuf, liq_tau)
       else
-         call endrun('Ice optics scheme ' // trim(liqcldoptics) // ' not recognized.')
+         call endrun('Liquid optics scheme ' // trim(liqcldoptics) // ' not recognized.')
       end if
 
       ! Combine liquid and ice
@@ -848,7 +852,7 @@ contains
          do_snow_optics = .false.
       end if
 
-      ! Reset to false if using SPCAM with 1-mom scheme
+      ! Reset to false if using MMF with 1-mom scheme
       call phys_getopts(use_MMF_out           = use_MMF          )
       call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
       if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then

@@ -16,7 +16,6 @@ module radiation
    use cam_abortutils,   only: endrun
    use scamMod,          only: scm_crm_mode, single_column, swrad_off
    use rad_constituents, only: N_DIAG
-   use radconstants,     only: nlwgpts, nswgpts, nlwbands, nswbands
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -97,6 +96,15 @@ module radiation
    ! TODO: How does this differ if value is .false.?
    logical :: use_rad_dt_cosz  = .false. 
 
+   ! Flag to indicate whether to do aerosol optical calculations. This
+   ! zeroes out the aerosol optical properties if False
+   logical :: do_aerosol_rad = .true.
+
+   ! Value for prescribing an invariant solar constant (i.e. total solar
+   ! irradiance at TOA). Used for idealized experiments such as RCE.
+   ! Disabled when value is less than 0.
+   real(r8) :: fixed_total_solar_irradiance = -1
+
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
 
@@ -131,6 +139,24 @@ module radiation
 
    ! Set name for this module (for purpose of writing output and log files)
    character(len=*), parameter :: module_name = 'radiation'
+
+   ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
+   ! This information will be stored in the k_dist_sw and k_dist_lw objects and
+   ! may
+   ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
+   ! methods, but I think we need to save these as private module data so that
+   ! we
+   ! can automatically allocate arrays later in subroutine headers, i.e.:
+   !
+   !     real(r8) :: cld_tau(pcols,pver,nswbands)
+   !
+   ! and so forth. Previously some of this existed in radconstants.F90, but I do
+   ! not think we need to use that.
+   ! EDIT: maybe these JUST below in radconstants.F90?
+   integer :: nswbands, nlwbands
+
+   ! Also, save number of g-points as private module data
+   integer :: nswgpts, nlwgpts
 
    ! Gases that we want to use in the radiative calculations. These need to be set
    ! here, because the RRTMGP kdist initialization needs to know the names of the
@@ -174,7 +200,8 @@ contains
       use units,           only: getunit, freeunit
       use spmd_utils,      only: mpicom, mstrid=>masterprocid, &
                                  mpi_integer, mpi_logical, &
-                                 mpi_character, masterproc
+                                 mpi_character, masterproc, &
+                                 mpi_real8
       use time_manager,    only: get_step_size
       use cam_logfile,     only: iulog
 
@@ -189,10 +216,11 @@ contains
       character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
-      namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
-                              rrtmgp_coefficients_file_sw, &
-                              iradsw, iradlw, irad_always, &
-                              use_rad_dt_cosz, spectralflux
+      namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
+                              rrtmgp_coefficients_file_sw,     &
+                              iradsw, iradlw, irad_always,     &
+                              use_rad_dt_cosz, spectralflux,   &
+                              do_aerosol_rad, fixed_total_solar_irradiance
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -219,6 +247,8 @@ contains
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -240,7 +270,8 @@ contains
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
          write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
-                         use_rad_dt_cosz, spectralflux
+                         use_rad_dt_cosz, spectralflux, &
+                         do_aerosol_rad, fixed_total_solar_irradiance
       end if
    10 format('  LW coefficents file: ',                                a/, &
              '  SW coefficents file: ',                                a/, &
@@ -248,9 +279,12 @@ contains
              '  Frequency (timesteps) of Longwave Radiation calc:   ',i5/, &
              '  SW/LW calc done every timestep for first N steps. N=',i5/, &
              '  Use average zenith angle:                           ',l5/, &
-             '  Output spectrally resolved fluxes:                  ',l5/)
+             '  Output spectrally resolved fluxes:                  ',l5/, &
+             '  Do aerosol radiative calculations:                  ',l5/, &
+             '  Fixed solar consant (disabled with -1):             ',f10.4/ )
 
    end subroutine radiation_readnl
+
 
    !================================================================================================
 
@@ -429,7 +463,6 @@ contains
       integer :: cldfsnow_idx = 0 
 
       logical :: use_MMF  ! MMF flag
-      character(len=16) :: MMF_microphysics_scheme
 
       character(len=128) :: error_message
 
@@ -447,12 +480,8 @@ contains
 
       ! Initialize cloud optics
       call cloud_rad_props_init()
-      call phys_getopts(use_MMF_out           = use_MMF          )
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      if (use_MMF .and. trim(MMF_microphysics_scheme) == 'sam1mom') then
-         call ec_rad_props_init()
-         call slingo_rad_props_init()
-      end if
+      call ec_rad_props_init()
+      call slingo_rad_props_init()
 
       ! Initialize output fields for offline driver.
       ! TODO: do we need to keep this functionality? Where is the offline driver?
@@ -473,6 +502,11 @@ contains
       call set_available_gases(active_gases, available_gases)
       call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+
+      ! Get number of bands used in shortwave and longwave and set module data
+      ! appropriately so that these sizes can be used to allocate array sizes.
+      nswbands = k_dist_sw%get_nband()
+      nlwbands = k_dist_lw%get_nband()
 
       ! Set number of g-points for used for correlated-k. These are determined
       ! by the absorption coefficient data.
