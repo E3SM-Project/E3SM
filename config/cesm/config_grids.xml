@@ -281,6 +281,14 @@
       <mask>tx0.1v3</mask>
     </model_grid>
 
+    <model_grid alias="TL319_g17" compset="DROF%JRA-1p4">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="rof">JRA025v2</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="TL319_g17" not_compset="_CAM">
       <grid name="atm">TL319</grid>
       <grid name="lnd">TL319</grid>
@@ -301,6 +309,13 @@
       <grid name="lnd">TL319</grid>
       <grid name="ocnice">tx0.1v2</grid>
       <grid name="rof">JRA025</grid>
+    </model_grid>
+
+    <model_grid alias="TL319_t13" compset="DROF%JRA-1p4">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">tx0.1v3</grid>
+      <grid name="rof">JRA025v2</grid>
     </model_grid>
 
     <model_grid alias="TL319_t13" not_compset="_CAM">
@@ -1668,6 +1683,11 @@
       <!-- TODO (mvertens, 2018-12-02): create a domain file for this  -->
       <desc>r01 is 1/10 degree river routing grid:</desc>
       <support>For experimental use by high resolution grids</support>
+    </domain>
+
+    <domain name="JRA025v2">
+      <nx>1440</nx> <ny>720</ny>
+      <desc>JRA 0.25 degree runoff grid for use with JRA-55 runoff data</desc>
     </domain>
 
     <domain name="JRA025">
