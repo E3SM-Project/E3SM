@@ -30,12 +30,12 @@
 
   <entry id="DLND_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,CLMNLDAS,GLC_CPLHIST,NULL</valid_values>
+    <valid_values>CPLHIST,CLMNLDAS2,GLC_CPLHIST,NULL</valid_values>
     <default_value>NULL</default_value>
     <values match="last">
       <value compset="DLND%NULL">NULL</value>
       <value compset="DLND%LCPL">CPLHIST</value>
-      <value compset="DLND%LCLMR">CLMNLDAS</value>
+      <value compset="DLND%LCLMR">CLMNLDAS2</value>
       <value compset="DLND%SCPL">GLC_CPLHIST</value>
     </values>
     <group>run_component_dlnd</group>

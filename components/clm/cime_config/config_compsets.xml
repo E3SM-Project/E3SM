@@ -230,8 +230,18 @@
    </compset>
 
    <compset>
-     <alias>INLDASCNPECACNTBC</alias>
-     <lname>2000_DATM%NLDAS_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+     <alias>INLDAS2CNPECACNTBC</alias>
+     <lname>2000_DATM%NLDAS2_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I2003NLDAS2CNPECACNTBC</alias>
+     <lname>2003_DATM%NLDAS2_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+     <alias>I2010NLDAS2CNPECACNTBC</alias>
+     <lname>2010_DATM%NLDAS2_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
  
    <compset>
@@ -255,8 +265,8 @@
    </compset>
 
    <compset>
-     <alias>IM20TRNLDASCNPECACNTBC</alias>
-     <lname>20TR_DATM%NLDAS_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+     <alias>IM20TRNLDAS2CNPECACNTBC</alias>
+     <lname>20TR_DATM%NLDAS2_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
    <compset>

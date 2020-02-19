@@ -69,7 +69,7 @@
     <values>
       <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
-      <value dlnd_mode="CLMNLDAS">clm.nldas</value>
+      <value dlnd_mode="CLMNLDAS2">clm.nldas</value>
       <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
     </values>
   </entry>
@@ -228,7 +228,7 @@
       <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
       <value dlnd_mode="CPLHIST">COPYALL</value>
-      <value dlnd_mode="CLMNLDAS">COPYALL</value>
+      <value dlnd_mode="CLMNLDAS2">COPYALL</value>
     </values>
   </entry>
 
@@ -261,7 +261,7 @@
     </desc>
     <values>
       <value>nn</value>
-      <value dlnd_mode="CLMNLDAS">copy</value>
+      <value dlnd_mode="CLMNLDAS2">copy</value>
     </values>
   </entry>
 
