@@ -134,6 +134,12 @@
   <lname>20TR_CAM5%AV1C-H01A_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- E3SM V2 GCAM coupling  compsets -->
+<compset>
+  <alias>GCAM_BCRC_1850S</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC_GCAM</lname>
+</compset>
+
 <!-- E3SM V1 BGC experiment compsets -->
 
 <compset>
