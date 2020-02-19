@@ -466,6 +466,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_find_impl.hpp"
 # include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
+# include "p3_functions_rain_self_collection_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"

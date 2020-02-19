@@ -260,6 +260,15 @@ contains
     call rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrheti)
   end subroutine rain_water_conservation_c
 
+  subroutine rain_self_collection_c(rho, qr_incld, nr_incld, nrslf) bind(C)
+    use micro_p3, only: rain_self_collection
+
+    real(kind=c_real), value, intent(in) :: rho, qr_incld, nr_incld
+    real(kind=c_real), intent(out) :: nrslf
+
+    call rain_self_collection(rho, qr_incld, nr_incld, nrslf)
+  end subroutine rain_self_collection_c
+
   subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
     qisub,qimlt) bind(C)
     use micro_p3, only: ice_water_conservation

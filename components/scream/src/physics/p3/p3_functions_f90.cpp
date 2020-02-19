@@ -190,9 +190,14 @@ void ice_water_conservation(IceWaterConservationData& d){
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
 }
 
-void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
+void cloud_water_autoconversion(CloudWaterAutoconversionData& d){
   p3_init(true);
   cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, &d.qcaut, &d.ncautc, &d.ncautr);
+}
+
+void rain_self_collection(RainSelfCollectionData& d){
+  p3_init(true);
+  rain_self_collection_c(d.rho, d.qr_incld, d.nr_incld, &d.nrslf);
 }
 
 void get_cloud_dsd2(GetCloudDsd2Data& d)
