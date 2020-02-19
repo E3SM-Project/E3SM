@@ -16,21 +16,21 @@ void Functions<S,D>
   // self-collection and breakup of rain
   // (breakup following modified Verlinde and Cotton scheme)
 
-  constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar rhow = C::RhoH2O;
-  constexpr Scalar pi = C::Pi;
+  constexpr Scalar qsmall = C::QSMALL;
+  constexpr Scalar rhow   = C::RhoH2O;
+  constexpr Scalar pi     = C::Pi;
 
   const auto qr_incld_not_small = qr_incld >= qsmall; 
   
-  if(qr_incld_not_small.any()){
+  if (qr_incld_not_small.any()){
     const Real dum1 = sp(280.e-6); 
     const auto dum2 = pack::cbrt((qr_incld)/(pi*rhow*nr_incld));
     const auto dum2_lt_dum1 = dum2 < dum1;
-    if(dum2_lt_dum1.any()){
+    if (dum2_lt_dum1.any()){
       nrslf.set(dum2_lt_dum1, sp(5.78)*nr_incld*qr_incld*rho);//sp(5.78)*nr_incld*qr_incld*rho);
     }
     const auto dum2_ge_dum1 = dum2 >= dum1;  
-    if(dum2_ge_dum1.any()){
+    if (dum2_ge_dum1.any()){
       const auto dum = 2-pack::exp(2300*(dum2-dum1));
       nrslf.set(dum2_ge_dum1, dum*sp(5.78)*nr_incld*qr_incld*rho);
     }

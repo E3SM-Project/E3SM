@@ -2799,7 +2799,6 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    endif
 #endif
 
-   !  print *, rho, qr_incld, nr_incld, nrslf
    if (qr_incld.ge.qsmall) then
 
       ! include breakup
@@ -2822,7 +2821,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       elseif (iparam.eq.2 .or. iparam.eq.3) then
          nrslf = dum*5.78_rtype*nr_incld*qr_incld*rho
       endif
-   
+
    endif
 
 end subroutine rain_self_collection
