@@ -396,7 +396,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    crm_run_time = ztodt
 
    call phys_getopts(use_ECPP_out = use_ECPP)
-   call phys_getopts(use_MMF_out = use_MMF)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    nstep = get_nstep()
@@ -1132,9 +1131,8 @@ subroutine crm_save_state_tend(state,tend,pbuf)
    integer itim, ifld, ncol, i, lchnk
    real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
    real(r8), pointer, dimension(:,:) :: qqcw
-   logical                           :: use_MMF, use_ECPP
+   logical :: use_ECPP
 
-   call phys_getopts( use_MMF_out = use_MMF )
    call phys_getopts( use_ECPP_out  = use_ECPP  )
 
    lchnk = state%lchnk
@@ -1211,12 +1209,11 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
    type(physics_buffer_desc), pointer       :: pbuf(:)
 
    integer ncol, lchnk, i, m
-   real(r8), pointer, dimension(:,:) :: cld                 ! cloud fraction
-   real(r8), pointer, dimension(:,:) :: qqcw                ! 
-   character(len=16)                 :: microp_scheme       ! host model microphysics scheme
-   logical                           :: use_MMF, use_ECPP
+   logical :: use_ECPP
+   character(len=16) :: microp_scheme           ! host model microphysics scheme
+   real(r8), pointer, dimension(:,:) :: cld     ! cloud fraction
+   real(r8), pointer, dimension(:,:) :: qqcw    ! 
    
-   call phys_getopts( use_MMF_out     = use_MMF )
    call phys_getopts( use_ECPP_out      = use_ECPP  )
    call phys_getopts( microp_scheme_out = microp_scheme )
 
