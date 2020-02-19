@@ -57,36 +57,36 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     };
 
     //Sync to device
-	KTH::view_1d<RainSelfCollectionData> dc_device("dc", Spack::n);
-	auto dc_host = Kokkos::create_mirror_view(dc_device);
+    KTH::view_1d<RainSelfCollectionData> dc_device("dc", Spack::n);
+    auto dc_host = Kokkos::create_mirror_view(dc_device);
 
     std::copy(&dc[0], &dc[0] + Spack::n, dc_host.data());
     Kokkos::deep_copy(dc_device, dc_host);
 
-	//Get data from fortran 	
+    //Get data from fortran
   	for (Int i = 0; i < Spack::n; ++i) {
       rain_self_collection(dc[i]);
   	}
 
-	//Run function from a kernal and copy results back to the host
+    //Run function from a kernal and copy results back to the host
   	Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-	  // Init pack inputs
+      // Init pack inputs
       Spack rho_local, qr_incld_local, nr_incld_local, nrslf_local;
-	  for (Int s = 0; s < Spack::n; ++s) {
-          rho_local[i] = dc_device(s).rho;
-          qr_incld_local[i] = dc_device(s).qr_incld;
-          nr_incld_local[i] = dc_device(s).nr_incld;
-          nrslf_local[i] = dc_device(s).nrslf;
-	  }
+      for (Int s = 0; s < Spack::n; ++s) {
+        rho_local[i] = dc_device(s).rho;
+        qr_incld_local[i] = dc_device(s).qr_incld;
+        nr_incld_local[i] = dc_device(s).nr_incld;
+        nrslf_local[i] = dc_device(s).nrslf;
+       }
 
-	  Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nrslf_local);
-	  // Copy results back into views
-	  for (Int s = 0; s < Spack::n; ++s) {
-          dc_device(s).rho = rho_local[s];
-          dc_device(s).qr_incld = qr_incld_local[s];
-          dc_device(s).nr_incld = nr_incld_local[s];
-          dc_device(s).nrslf = nrslf_local[s];
-	  }
+      Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nrslf_local);
+      // Copy results back into views
+      for (Int s = 0; s < Spack::n; ++s) {
+        dc_device(s).rho = rho_local[s];
+        dc_device(s).qr_incld = qr_incld_local[s];
+        dc_device(s).nr_incld = nr_incld_local[s];
+        dc_device(s).nrslf = nrslf_local[s];
+      }
     });
 
     // Sync back to host
@@ -94,17 +94,16 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
     // Validate results
     for (Int s = 0; s < Spack::n; ++s) {
-        REQUIRE(dc[s].rho == dc_host(s).rho);
-        REQUIRE(dc[s].qr_incld == dc_host(s).qr_incld);
-        REQUIRE(dc[s].nr_incld == dc_host(s).nr_incld);
-        REQUIRE(dc[s].nrslf == dc_host(s).nrslf);
+      REQUIRE(dc[s].rho == dc_host(s).rho);
+      REQUIRE(dc[s].qr_incld == dc_host(s).qr_incld);
+      REQUIRE(dc[s].nr_incld == dc_host(s).nr_incld);
+      REQUIRE(dc[s].nrslf == dc_host(s).nrslf);
     }
   }
 
-
-   static void run_bfb(){
-     run_rain_self_collection_bfb_tests();
-    }
+  static void run_bfb(){
+    run_rain_self_collection_bfb_tests();
+  }
 
 }; //TestRainselfCollection
 
@@ -114,8 +113,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 } // scream
 
 namespace{
-
-    TEST_CASE("p3_rain_self_collection_test", "[p3_rain_self_collection_test"){
-        scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection::run_bfb();
-    }
+  TEST_CASE("p3_rain_self_collection_test", "[p3_rain_self_collection_test"){
+    scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection::run_bfb();
+  }
 } // namespace

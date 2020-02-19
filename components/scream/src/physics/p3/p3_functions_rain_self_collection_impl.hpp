@@ -12,9 +12,9 @@ void Functions<S,D>
 ::rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nrslf)
 {
 
-// ------------------------------------------------------
-// self-collection and breakup of rain
-// (breakup following modified Verlinde and Cotton scheme)
+  // ------------------------------------------------------
+  // self-collection and breakup of rain
+  // (breakup following modified Verlinde and Cotton scheme)
 
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar rhow = C::RhoH2O;

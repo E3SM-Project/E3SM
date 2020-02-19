@@ -2792,7 +2792,6 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    real(rtype) :: dum, dum1, dum2
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-
    if (use_cxx) then
       call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
          nrslf)

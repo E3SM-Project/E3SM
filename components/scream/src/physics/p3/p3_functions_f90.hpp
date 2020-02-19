@@ -237,9 +237,7 @@ extern "C"{
 struct RainSelfCollectionData
 {
   //inputs 
-  Real rho; 
-  Real qr_incld; 
-  Real nr_incld; 
+  Real rho, qr_incld, nr_incld; 
 
   //output
   Real nrslf;
