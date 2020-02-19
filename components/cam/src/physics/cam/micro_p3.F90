@@ -2770,7 +2770,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    ! (breakup following modified Verlinde and Cotton scheme)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: rain_self_collection_f
+   use micro_p3_iso_f, only: rain_self_collection_f, cxx_cbrt, cxx_exp
 #endif
 
    implicit none
@@ -2781,20 +2781,17 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    real(rtype), intent(out) :: nrslf
 
    real(rtype) :: dum, dum1, dum2
-
-   real(rtype) :: nrslf_old, nrslf_cxx, nrslf_f90; 
+   real(rtype) :: nrslf_old
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   if (use_cxx) then
-      nrslf_cxx = nrslf
-      nrslf_old = nrslf
-      call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
-         nrslf_cxx)
 
-      !print *, nrslf
-      !return
+   if (use_cxx) then
+      call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
+         nrslf_old)
+      return
    endif
 #endif
 
+   !  print *, rho, qr_incld, nr_incld, nrslf
    if (qr_incld.ge.qsmall) then
 
       ! include breakup
@@ -2806,11 +2803,13 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       ! want to keep breakup threshold consistent so 'dum'
       ! is expressed in terms of lambda rather than mass-mean D
 
-      dum2 = (qr_incld/(pi*rhow*nr_incld))**thrd
+      dum2 = bfb_cbrt(qr_incld/(pi*rhow*nr_incld))
       if (dum2.lt.dum1) then
          dum = 1._rtype
+         print *, '1'
       else if (dum2.ge.dum1) then
-         dum = 2._rtype-exp(2300._rtype*(dum2-dum1))
+         dum = 2._rtype-bfb_exp(2300._rtype*(dum2-dum1))
+         print *, '2'
       endif
 
       if (iparam.eq.1) then
@@ -2818,7 +2817,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       elseif (iparam.eq.2 .or. iparam.eq.3) then
          nrslf = dum*5.78_rtype*nr_incld*qr_incld*rho
       endif
-
+   
    endif
 
 end subroutine rain_self_collection
