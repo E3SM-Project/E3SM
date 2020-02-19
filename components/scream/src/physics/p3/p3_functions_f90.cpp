@@ -49,6 +49,8 @@ void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* 
 
 void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
 
+void impose_max_total_ni_c(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
+
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
@@ -198,6 +200,11 @@ void cloud_water_autoconversion(CloudWaterAutoconversionData& d){
 void rain_self_collection(RainSelfCollectionData& d){
   p3_init(true);
   rain_self_collection_c(d.rho, d.qr_incld, d.nr_incld, &d.nrslf);
+}
+
+void impose_max_total_Ni(ImposeMaxTotalNiData& d){
+  p3_init(true);
+  impose_max_total_ni_c(&d.nitot_local, d.max_total_Ni, d.inv_rho_local);
 }
 
 void get_cloud_dsd2(GetCloudDsd2Data& d)
@@ -1294,6 +1301,33 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrs
 
   Kokkos::deep_copy(t_h, t_d);
   *nrslf_ = t_h(0);
+}
+
+void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_local_)
+{
+  using P3F = Functions<Real, DefaultDevice>; 
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+
+  view_1d t_d("t_h", 1); 
+  auto t_h = Kokkos::create_mirror_view(t_d); 
+  
+  Real local_nitot_local = *nitot_local_; 
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack nitot_local(local_nitot_local); 
+    Spack max_total_Ni(max_total_Ni_); 
+    Spack inv_rho_local(inv_rho_local_);
+
+    P3F::impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local);
+    t_d(0) = nitot_local[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nitot_local_ = t_h(0); 
+
 }
 
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)

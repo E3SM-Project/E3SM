@@ -31,10 +31,11 @@ if (NOT CUDA_BUILD)
     p3_functions_dsd2.cpp
     p3_functions_find.cpp
     p3_functions_math.cpp
-    p3_functions_autoconversion.cpp
+    p3_functions_update_prognostics.cpp
+    p3_functions_autoconversion.cpp 
     p3_functions_conservation.cpp
     p3_functions_rain_self_collection.cpp
-    p3_functions_update_prognostics.cpp)
+    p3_functions_impose_max_total_Ni.cpp)
 endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})

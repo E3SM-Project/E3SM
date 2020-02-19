@@ -73,6 +73,7 @@ struct UnitWrap {
     struct TestP3UpdatePrognosticIce;
     struct TestIceCollection;
     struct TestRainSelfCollection;
+    struct TestP3FunctionsImposeMaxTotalNi;
   };
 
 };
