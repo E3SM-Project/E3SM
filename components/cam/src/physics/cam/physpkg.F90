@@ -12,7 +12,7 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
-
+use module_perturb
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use shr_sys_mod,      only: shr_sys_irtc
   use spmd_utils,       only: masterproc
@@ -2462,6 +2462,11 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
 
+       !if(pcnst>40)state%q(:,:,43) = 0.0_r8
+       if(icolprnt(lchnk)>0)then 
+          write(102,*)'before clb and mic:',nstep,state%q(icolprnt(lchnk),kprnt,4)
+          if(pcnst>40)write(103,*)nstep,state%q(icolprnt(lchnk),kprnt,41),state%q(icolprnt(lchnk),kprnt,42),state%q(icolprnt(lchnk),kprnt,43)
+       endif
        do macmic_it = 1, cld_macmic_num_steps
 
         if (l_st_mac) then
@@ -2478,6 +2483,7 @@ end if
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
             call physics_update(state, ptend, ztodt, tend)
+            if(icolprnt(lchnk)>0) write(102,*)'aft_microp_aero_run:',nstep,state%q(icolprnt(lchnk),kprnt,4)
             call check_energy_chng(state, tend, "mp_aero_tend", nstep, ztodt, zero, zero, zero, zero)      
 
           endif
@@ -2511,6 +2517,7 @@ end if
              ! the full time (ztodt).
              call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
              call physics_update(state, ptend, ztodt, tend)
+             if(icolprnt(lchnk)>0) write(102,*)'aft_macrop_driver_tend:',nstep,state%q(icolprnt(lchnk),kprnt,4)
              call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2554,6 +2561,7 @@ end if
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
+                if(icolprnt(lchnk)>0) write(102,*)'aft_clubb_tend_cam:',nstep,state%q(icolprnt(lchnk),kprnt,4)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2607,6 +2615,7 @@ end if
              call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, ncol)
 
              call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
+             if(icolprnt(lchnk)>0) write(102,*)'aft_subcol:',nstep,state%q(icolprnt(lchnk),kprnt,4)
              call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
                   nstep, ztodt, zero_sc, prec_str_sc(:ncol)/cld_macmic_num_steps, &
                   snow_str_sc(:ncol)/cld_macmic_num_steps, zero_sc)
@@ -2616,6 +2625,7 @@ end if
              call physics_ptend_dealloc(ptend_sc)
           else
              call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
+             if(icolprnt(lchnk)>0) write(102,*)'aft_microp_driver_tend:',nstep,state%q(icolprnt(lchnk),kprnt,4),ptend%q(icolprnt(lchnk),kprnt,4)
           end if
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then
@@ -2628,6 +2638,7 @@ end if
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
           call physics_update (state, ptend, ztodt, tend)
+          if(icolprnt(lchnk)>0) write(102,*)'aft_subcol_1:',nstep,state%q(icolprnt(lchnk),kprnt,4)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
                zero, prec_str(:ncol)/cld_macmic_num_steps, &
                snow_str(:ncol)/cld_macmic_num_steps, zero)
@@ -2650,6 +2661,7 @@ end if
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
 
        end do ! end substepping over macrophysics/microphysics
+       if(icolprnt(lchnk)>0) write(102,*)'aft_mic_clb:',nstep,state%q(icolprnt(lchnk),kprnt,4)
 
        prec_sed(:ncol) = prec_sed_macmic(:ncol)/cld_macmic_num_steps
        snow_sed(:ncol) = snow_sed_macmic(:ncol)/cld_macmic_num_steps

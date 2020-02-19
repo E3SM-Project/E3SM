@@ -9,7 +9,7 @@ module ndrop
 !            affect the climate calculation.  This is implemented by using list
 !            index 0 in all the calls to rad_constituent interfaces.
 !---------------------------------------------------------------------------------
-
+use module_perturb
 use shr_kind_mod,     only: r8 => shr_kind_r8
 use spmd_utils,       only: masterproc
 use ppgrid,           only: pcols, pver, pverp
@@ -492,7 +492,8 @@ subroutine dropmixnuc( &
       fm(ntot_amode),                 &
       fluxn(ntot_amode),              &
       fluxm(ntot_amode)               )
-
+   fluxn=0.0_r8
+   if(icolprnt(lchnk)>0) write(102,*)'ndrop_fluxn_1a:',fluxn(1),fluxn(2),fluxn(3),fluxn(4)
    ! Init pointers to mode number and specie mass mixing ratios in 
    ! intersitial and cloud borne phases.
    do m = 1, ntot_amode
@@ -530,6 +531,7 @@ subroutine dropmixnuc( &
       do k = top_lev, pver
 
          qcld(k)  = ncldwtr(i,k)
+         if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_qcld_1:', qcld(k),ncldwtr(i,k)
          qncld(k) = 0._r8
          srcn(k)  = 0._r8
          cs(i,k)  = pmid(i,k)/(rair*temp(i,k))        ! air density (kg/m3)
@@ -610,6 +612,7 @@ subroutine dropmixnuc( &
             !++ sungsup
             nsource(i,k) = nsource(i,k) + qcld(k)*(cldn_tmp - cldo_tmp)/cldo_tmp*dtinv
             qcld(k)      = qcld(k)*(1._r8 + (cldn_tmp - cldo_tmp)/cldo_tmp)
+            if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_qcld_2:', qcld(k),cldn_tmp,cldo_tmp
             !-- sungsup
 
             ! convert activated aerosol to interstitial in decaying cloud
@@ -661,11 +664,12 @@ subroutine dropmixnuc( &
                hygro(m)    = hy(i)
             end do
 
-            call activate_modal( &
+            call activate_modal( .false.,&
                wbar, wmix, wdiab, wmin, wmax,                       &
                temp(i,k), cs(i,k), naermod, ntot_amode, &
                vaerosol, hygro, fn, fm, fluxn,                      &
                fluxm,flux_fullact(k))
+            if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_fluxn_1:',fluxn(1)
 
             factnum(i,k,:) = fn
 
@@ -674,6 +678,7 @@ subroutine dropmixnuc( &
                mm = mam_idx(m,0)
                dact   = dumc*fn(m)*raer(mm)%fld(i,k) ! interstitial only
                qcld(k) = qcld(k) + dact
+               if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_qcld_3:', qcld(k),dact
                nsource(i,k) = nsource(i,k) + dact*dtinv
                raercol_cw(k,mm,nsav) = raercol_cw(k,mm,nsav) + dact  ! cloud-borne aerosol
                raercol(k,mm,nsav)    = raercol(k,mm,nsav) - dact
@@ -752,12 +757,23 @@ subroutine dropmixnuc( &
                   hygro(m)    = hy(i)
                end do
 
-               call activate_modal( &
+               if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_fluxn_1b:',fluxn(1),wbar, wmix, wdiab, wmin, wmax,                       &
+                  temp(i,k), cs(i,k), naermod(1), naermod(2), naermod(3), naermod(4), ntot_amode, &
+                  vaerosol(1),vaerosol(2),vaerosol(3),vaerosol(4), hygro(1), hygro(2), hygro(3), hygro(4)
+               !if(icolprnt(lchnk)==i .and. k==kprnt .and. ntot_amode>4)write(102,*)'ndrop_fluxn_1c:',naermod(5),vaerosol(5),hygro(5) 
+
+               fn = 0.0_r8
+               fm = 0.0_r8
+               fluxn  = 0.0_r8
+               fluxm  = 0.0_r8
+               flux_fullact(k)  = 0.0_r8
+
+               call activate_modal( (icolprnt(lchnk)==i .and. k==kprnt),  &
                   wbar, wmix, wdiab, wmin, wmax,                       &
                   temp(i,k), cs(i,k), naermod, ntot_amode, &
                   vaerosol, hygro, fn, fm, fluxn,                      &
                   fluxm, flux_fullact(k))
-
+               if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_fluxn_2:',fluxn(1)
                factnum(i,k,:) = fn
 
                if (k < pver) then
@@ -816,8 +832,10 @@ subroutine dropmixnuc( &
                do m = 1, ntot_amode
                   mm = mam_idx(m,0)
                   fluxn(m) = fluxn(m)*dumc
+                  if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_fluxn_3:',fluxn(m),dumc,m
                   fluxm(m) = fluxm(m)*dumc
                   nact(k,m) = nact(k,m) + fluxn(m)*dum
+                  if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_nact_1:', nact(k,m),fluxn(m),dum,m
                   mact(k,m) = mact(k,m) + fluxm(m)*dum
                   if (k < pver) then
                      ! note that kp1 is used here
@@ -937,6 +955,7 @@ subroutine dropmixnuc( &
       do k = top_lev, pver-1
          do m = 1, ntot_amode
             nact(k,m) = min( nact(k,m), ekkp(k) )
+            if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_nact_2:', nact(k,m),ekkp(k),m
             mact(k,m) = min( mact(k,m), ekkp(k) )
          end do
       end do
@@ -958,18 +977,19 @@ subroutine dropmixnuc( &
             ! rce-comment- activation source in layer k involves particles from k+1
             !	       srcn(:)=srcn(:)+nact(:,m)*(raercol(:,mm,nsav))
             srcn(top_lev:pver-1) = srcn(top_lev:pver-1) + nact(top_lev:pver-1,m)*(raercol(top_lev+1:pver,mm,nsav))
-
+            if(icolprnt(lchnk)==i) write(102,*)'ndrop_srcn_1:', srcn(kprnt),nact(kprnt,m),raercol(kprnt,mm,nsav),m,mm,nsav
             ! rce-comment- new formulation for k=pver
             !              srcn(  pver  )=srcn(  pver  )+nact(  pver  ,m)*(raercol(  pver,mm,nsav))
             tmpa = raercol(pver,mm,nsav)*nact(pver,m) &
                  + raercol_cw(pver,mm,nsav)*(nact(pver,m) - taumix_internal_pver_inv)
             srcn(pver) = srcn(pver) + max(0.0_r8,tmpa)
          end do
+         if(icolprnt(lchnk)==i) write(102,*)'ndrop_qcld_4:', qcld(kprnt),srcn(kprnt),n
          call explmix(  &
             qcld, srcn, ekkp, ekkm, overlapp,  &
             overlapm, qncld, zero, zero, pver, &
             dtmix, .false.)
-
+         if(icolprnt(lchnk)==i) write(102,*)'ndrop_qcld_5:', qcld(kprnt),n
          ! rce-comment
          !    the interstitial particle mixratio is different in clear/cloudy portions
          !    of a layer, and generally higher in the clear portion.  (we have/had
@@ -1054,6 +1074,7 @@ subroutine dropmixnuc( &
       do k = top_lev, pver
          ndropmix(i,k) = (qcld(k) - ncldwtr(i,k))*dtinv - nsource(i,k)
          tendnd(i,k)   = (max(qcld(k), 1.e-6_r8) - ncldwtr(i,k))*dtinv
+         if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'ndrop_tendnd_1:',tendnd(i,k),qcld(k),ncldwtr(i,k),dtinv
          ndropcol(i)   = ndropcol(i) + ncldwtr(i,k)*pdel(i,k)
       end do
       ndropcol(i) = ndropcol(i)/gravit
@@ -1239,7 +1260,7 @@ end subroutine explmix
 
 !===============================================================================
 
-subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
+subroutine activate_modal(flg,wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    na, nmode, volume, hygro, &
    fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed ) 
 
@@ -1255,7 +1276,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
 
 
    !      input
-
+   logical :: flg
    real(r8), intent(in) :: wbar          ! grid cell mean vertical velocity (m/s)
    real(r8), intent(in) :: sigw          ! subgrid standard deviation of vertical vel (m/s)
    real(r8), intent(in) :: wdiab         ! diabatic vertical velocity (0 if adiabatic)
@@ -1449,7 +1470,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
          if ( present( smax_prescribed ) ) then
             smax = smax_prescribed
          else
-            call maxsat(zeta,eta,nmode,smc,smax)
+            call maxsat(flg,zeta,eta,nmode,smc,smax)
          endif
          !	      write(iulog,*)'w,smax=',w,smax
 
@@ -1577,6 +1598,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
             call endrun('activate')
          endif
          fluxn(m)=sumflxn(m)/(sq2*sqpi*sigw)
+         if(flg .and. m<5)write(102,*)'in activate_mdl_1:',fluxn(m),sumflxn(m),sq2,sqpi,sigw,m
          fm(m)=sumfm(m)/(sq2*sqpi*sigw)
          !            fm(m)=sumfm(m)/(sumg)
          if(fm(m).gt.1.01_r8)then
@@ -1607,7 +1629,10 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
          if ( present( smax_prescribed ) ) then
             smax = smax_prescribed
          else
-            call maxsat(zeta,eta,nmode,smc,smax)
+            do m=1,nmode
+               if(flg)write(102,*)'in activate_mdl_3:',zeta(m),eta(m),smc(m),m
+            enddo
+            call maxsat(flg,zeta,eta,nmode,smc,smax)
          endif
 
          lnsmax=log(smax)
@@ -1622,6 +1647,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
             fm(m)=0.5_r8*(1._r8-erf(arg))
             if(wbar.gt.0._r8)then
                fluxn(m)=fn(m)*w
+               if(flg .and. m<5)write(102,*)'in activate_mdl_2:',fluxn(m),fn(m),w,m,lnsm(m),lnsmax,sq2,alogsig(m),smax
                fluxm(m)=fm(m)*w
             endif
          enddo
@@ -1634,14 +1660,14 @@ end subroutine activate_modal
 
 !===============================================================================
 
-subroutine maxsat(zeta,eta,nmode,smc,smax)
+subroutine maxsat(flg,zeta,eta,nmode,smc,smax)
 
    !      calculates maximum supersaturation for multiple
    !      competing aerosol modes.
 
    !      Abdul-Razzak and Ghan, A parameterization of aerosol activation.
    !      2. Multiple aerosol types. J. Geophys. Res., 105, 6837-6844.
-
+  logical :: flg
    integer,  intent(in)  :: nmode ! number of modes
    real(r8), intent(in)  :: smc(nmode) ! critical supersaturation for number mode radius
    real(r8), intent(in)  :: zeta(nmode)
@@ -1654,6 +1680,7 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
       if(zeta(m).gt.1.e5_r8*eta(m).or.smc(m)*smc(m).gt.1.e5_r8*eta(m))then
          !            weak forcing. essentially none activated
          smax=1.e-20_r8
+         if(flg)write(102,*)'smax weal forcing:',m,smax
       else
          !            significant activation of this mode. calc activation all modes.
          go to 1
@@ -1679,13 +1706,18 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
          g2=smc(m)/sqrt(eta(m)+3._r8*zeta(m))
          g2sqrt=sqrt(g2)
          g2=g2sqrt*g2
-         sum=sum+(f1(m)*g1+f2(m)*g2)/(smc(m)*smc(m))
+         if(flg)write(102,*)'maxsat_1:',sum
+         !if(m<5)sum=sum+(f1(m)*g1+f2(m)*g2)/(smc(m)*smc(m)) !This fixes it!!!!
+         if(m<5)sum=sum+(f1(m)*g1+f2(m)*g2)/(smc(m)*smc(m))
+         if(flg)write(102,*)'maxsat_2:',sum,f1(m),g1,f2(m),g2,smc(m),m
       else
          sum=1.e20_r8
+         if(flg)write(102,*)'maxsat_3:',sum,m
       endif
    enddo
-
+   if(flg)write(102,*)'maxsat_final_sum:',sum
    smax=1._r8/sqrt(sum)
+   if(flg)write(102,*)'maxsat_4:',smax,sum
 
 end subroutine maxsat
 

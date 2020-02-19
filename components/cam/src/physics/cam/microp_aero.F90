@@ -21,7 +21,7 @@ module microp_aero
 !                  interface modules and preserve just the driver layer functionality here.
 !
 !---------------------------------------------------------------------------------
-
+use module_perturb
 use shr_kind_mod,     only: r8=>shr_kind_r8
 use spmd_utils,       only: masterproc
 use ppgrid,           only: pcols, pver, pverp
@@ -748,6 +748,7 @@ subroutine microp_aero_run ( &
       call t_stopf('dropmixnuc')
 
       npccn(:ncol,:) = nctend_mixnuc(:ncol,:)
+      if(icolprnt(lchnk)>0) write(102,*)'microp_aero_npccn_1:',npccn(icolprnt(lchnk),kprnt),nctend_mixnuc(icolprnt(lchnk),kprnt)
 
    else
 
@@ -774,6 +775,7 @@ subroutine microp_aero_run ( &
             end if
 
             npccn(i,k) = (dum*lcldm(i,k) - nc(i,k))/deltatin
+            if(icolprnt(lchnk)==i .and. k==kprnt) write(102,*)'microp_aero_npccn_2:',npccn(i,k),dum,lcldm(i,k),nc(i,k),deltatin
          end do
       end do
       call t_stopf('droplet_act_bulk_aero')

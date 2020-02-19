@@ -15,7 +15,7 @@ module clubb_intr
   ! Authors:  P. Bogenschutz, C. Craig, A. Gettelman                                                     ! 
   !                                                                                                      ! 
   !----------------------------------------------------------------------------------------------------- !
-
+  use module_perturb
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: pver, pverp
   use phys_control,  only: phys_getopts
@@ -1355,6 +1355,7 @@ end subroutine clubb_init_cnst
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
 
+   if(icolprnt(state%lchnk)>0)write(102,*)'clb_top:',state%q(icolprnt(state%lchnk),kprnt,4)
    call t_startf('clubb_tend_cam_init')
    invrs_hdtime = 1._r8 / hdtime
    invrs_gravit = 1._r8 / gravit
@@ -1537,6 +1538,8 @@ end subroutine clubb_init_cnst
 
     ! Add the ice tendency to the output tendency
      call physics_ptend_sum(ptend_loc, ptend_all, ncol)
+
+     if(icolprnt(lchnk)>0)write(102,*)'b1:',state%q(icolprnt(lchnk),kprnt,ixnumliq)
 
     ! ptend_loc is reset to zero by this call
      call physics_update(state1, ptend_loc, hdtime)
@@ -2286,6 +2289,7 @@ end subroutine clubb_init_cnst
       call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice4')
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
+   if(icolprnt(lchnk)>0)write(102,*)'b2:',state%q(icolprnt(lchnk),kprnt,ixnumliq)
    call physics_update(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------------------ !
@@ -2356,6 +2360,7 @@ end subroutine clubb_init_cnst
    call outfld( 'DPDLFT',   ptend_loc%s(:,:)/cpair, pcols, lchnk)
   
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
+   if(icolprnt(lchnk)>0)write(102,*)'b3:',state%q(icolprnt(lchnk),kprnt,ixnumliq)
    call physics_update(state1,ptend_loc,hdtime)
 
    ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
@@ -2740,6 +2745,7 @@ end subroutine clubb_init_cnst
    
    return
 #endif
+   if(icolprnt(state%lchnk)>0)write(102,*)'clb_bot:',state%q(icolprnt(state%lchnk),kprnt,4)
   end subroutine clubb_tend_cam
     
   ! =============================================================================== !

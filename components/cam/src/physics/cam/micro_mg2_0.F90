@@ -1,5 +1,7 @@
 module micro_mg2_0
 
+use module_perturb
+
 !---------------------------------------------------------------------------------
 ! Purpose:
 !   MG microphysics version 2.0 - Update of MG microphysics with
@@ -361,7 +363,7 @@ end subroutine micro_mg_init
 !===============================================================================
 !microphysics routine for each timestep goes here...
 
-subroutine micro_mg_tend ( &
+subroutine micro_mg_tend ( lchnk,&
      mgncol,             nlev,               deltatin,           &
      t,                            q,                            &
      qcn,                          qin,                          &
@@ -455,7 +457,7 @@ subroutine micro_mg_tend ( &
   ! e-mail: morrison@ucar.edu, andrew@ucar.edu
 
   ! input arguments
-  integer,  intent(in) :: mgncol         ! number of microphysics columns
+  integer,  intent(in) :: mgncol,lchnk         ! number of microphysics columns
   integer,  intent(in) :: nlev           ! number of layers
   real(r8), intent(in) :: deltatin       ! time step (s)
   real(r8), intent(in) :: t(:,:)        ! input temperature (K)
@@ -859,6 +861,7 @@ subroutine micro_mg_tend ( &
   ! Copies of input concentrations that may be changed internally.
   qc = qcn
   nc = ncn
+  if(icolprnt(lchnk)>0 .and. mgncol>12  .and. nlev>62) write(102,*)'micro_mg2_0_nc_o:',nc(13,63),ncn(13,63)
   qi = qin
   ni = nin
   qr = qrn
@@ -886,6 +889,7 @@ subroutine micro_mg_tend ( &
      elsewhere
         lcldm = mincld
      end where
+     !if(icolprnt(lchnk)>0 .and. mgncol>12  .and. nlev>62) write(102,*)'micro_mg2_0_lcldm_2:',lcldm(13,63),mincld
 
      where (qi >= qsmall)
         icldm = 1._r8
@@ -899,6 +903,7 @@ subroutine micro_mg_tend ( &
      ! get cloud fraction, check for minimum
      cldm = max(cldn,mincld)
      lcldm = max(liqcldf,mincld)
+     !if(icolprnt(lchnk)>0 .and. mgncol>12  .and. nlev>62) write(102,*)'micro_mg2_0_lcldm_3:',lcldm(13,63),mincld,liqcldf(13,63),ncn(13,63)
      icldm = max(icecldf,mincld)
   end if
 
@@ -1096,12 +1101,15 @@ subroutine micro_mg_tend ( &
 
   ! output activated liquid and ice (convert from #/kg -> #/m3)
   !--------------------------------------------------
+  if(icolprnt(lchnk)>0 .and. mgncol>12  .and. nlev>62) write(102,*)'micro_mg2_0_nc_1:',nc(13,63)
   where (qc >= qsmall)
      nc = max(nc + npccn*deltat, 0._r8)
      ncal = nc*rho/lcldm ! sghan minimum in #/cm3
   elsewhere
      ncal = 0._r8
   end where
+
+  if(icolprnt(lchnk)>0 .and. mgncol>12  .and. nlev>62) write(102,*)'micro_mg2_0_nc_2:',nc(13,63),npccn(13,63),deltat
 
   where (t < icenuct)
      ncai = naai*rho
@@ -1217,10 +1225,12 @@ subroutine micro_mg_tend ( &
            ! limit in-cloud values to 0.005 kg/kg
            qcic(i,k)=min(qc(i,k)/lcldm(i,k),5.e-3_r8)
            ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
+           if(icolprnt(lchnk)>0 .and. i==13  .and. k==63) write(102,*)'micro_mg2_0_ncic_1:',ncic(i,k),nc(i,k),lcldm(i,k)
 
            ! specify droplet concentration
            if (nccons) then
               ncic(i,k)=ncnst/rho(i,k)
+              if(icolprnt(lchnk)>0 .and. i==13  .and. k==63) write(102,*)'micro_mg2_0_ncic_2:',ncic(i,k),ncnst,rho(i,k)
            end if
         else
            qcic(i,k)=0._r8
@@ -1309,6 +1319,7 @@ subroutine micro_mg_tend ( &
 
         call size_dist_param_liq(mg_liq_props, qcic(i,k), ncic(i,k), rho(i,k), &
              pgam(i,k), lamc(i,k))
+        if(icolprnt(lchnk)>0 .and. i==13  .and. k==63) write(102,*)'micro_mg2_0_ncic_3:',ncic(i,k)
 
      end do
 
@@ -1319,6 +1330,7 @@ subroutine micro_mg_tend ( &
 
      call kk2000_liq_autoconversion(microp_uniform, qcic(:,k), &
           ncic(:,k), rho(:,k), relvar(:,k),mg_prc_coeff_fix,prc_coef1,prc_exp,prc_exp1, prc(:,k), nprc(:,k), nprc1(:,k))
+        if(icolprnt(lchnk)>0 .and.  mgncol>12  .and. k==63) write(102,*)'micro_mg2_0_ncic_4:',ncic(13,k)
 
      if (precip_off) then
        prc(:,k) = 0.0_r8
@@ -1447,6 +1459,7 @@ subroutine micro_mg_tend ( &
 
            call immersion_freezing(microp_uniform, t(:,k), pgam(:,k), lamc(:,k), &
                 qcic(:,k), ncic(:,k), relvar(:,k), mnuccc(:,k), nnuccc(:,k))
+           if(icolprnt(lchnk)>0 .and.  mgncol>12  .and. k==63) write(102,*)'micro_mg2_0_ncic_5:',ncic(13,k)
 
            ! make sure number of droplets frozen does not exceed available ice nuclei concentration
            ! this prevents 'runaway' droplet freezing
@@ -1462,6 +1475,7 @@ subroutine micro_mg_tend ( &
            call contact_freezing(microp_uniform, t(:,k), p(:,k), rndst(:,k,:), &
                 nacon(:,k,:), pgam(:,k), lamc(:,k), qcic(:,k), ncic(:,k), &
                 relvar(:,k), mnucct(:,k), nnucct(:,k))
+           if(icolprnt(lchnk)>0 .and.  mgncol>12  .and. k==63) write(102,*)'micro_mg2_0_ncic_6:',ncic(13,k)
 
            mnudep(:,k)=0._r8
            nnudep(:,k)=0._r8
@@ -1511,6 +1525,7 @@ subroutine micro_mg_tend ( &
      call accrete_cloud_water_snow(t(:,k), rho(:,k), asn(:,k), uns(:,k), mu(:,k), &
           qcic(:,k), ncic(:,k), qsic(:,k), pgam(:,k), lamc(:,k), lams(:,k), n0s(:,k), &
           psacws(:,k), npsacws(:,k))
+     if(icolprnt(lchnk)>0 .and.  mgncol>12  .and. k==63) write(102,*)'micro_mg2_0_ncic_7:',ncic(13,k)
 
      if (do_cldice) then
         call secondary_ice_production(t(:,k), psacws(:,k), msacwi(:,k), nsacwi(:,k))
@@ -1525,9 +1540,11 @@ subroutine micro_mg_tend ( &
 
      call heterogeneous_rain_freezing(t(:,k), qric(:,k), nric(:,k), lamr(:,k), &
           mnuccr(:,k), nnuccr(:,k))
-
+     if(icolprnt(lchnk)>0 .and. mgncol>12  .and. k==63) write(102,*)'micro_mg2_0_npra_1:',npra(13,k),microp_uniform,qric(13,k), qcic(13,k), &
+          ncic(13,k), relvar(13,k), accre_enhan(13,k) 
      call accrete_cloud_water_rain(microp_uniform, qric(:,k), qcic(:,k), &
           ncic(:,k), relvar(:,k), accre_enhan(:,k), pra(:,k), npra(:,k))
+     if(icolprnt(lchnk)>0  .and. mgncol>12 .and. k==63) write(102,*)'micro_mg2_0_npra_2:',npra(13,k)
 
      call self_collection_rain(rho(:,k), qric(:,k), nric(:,k), nragg(:,k))
 
@@ -1657,7 +1674,9 @@ subroutine micro_mg_tend ( &
                 npsacws(i,k)-nsubc(i,k))*lcldm(i,k))*omsm
 
            nprc1(i,k) = nprc1(i,k)*ratio
+           if(icolprnt(lchnk)>0 .and. i==13 .and. k==63) write(102,*)'micro_mg2_0_npra_3:',npra(i,k)
            npra(i,k) = npra(i,k)*ratio
+           if(icolprnt(lchnk)>0 .and. i==13 .and. k==63) write(102,*)'micro_mg2_0_npra_4:',npra(i,k),ratio
            nnuccc(i,k) = nnuccc(i,k)*ratio
            nnucct(i,k) = nnucct(i,k)*ratio
            npsacws(i,k) = npsacws(i,k)*ratio
@@ -1968,10 +1987,12 @@ subroutine micro_mg_tend ( &
         pracstot(i,k) = pracs(i,k)*precip_frac(i,k)
         mnuccrtot(i,k) = mnuccr(i,k)*precip_frac(i,k)
 
-
+        if(icolprnt(lchnk)>0 .and. i==13 .and. k==63) write(102,*)'micro_mg2_0_nctend_1:',nctend(i,k)
         nctend(i,k) = nctend(i,k)+&
              (-nnuccc(i,k)-nnucct(i,k)-npsacws(i,k)+nsubc(i,k) &
              -npra(i,k)-nprc1(i,k))*lcldm(i,k)
+        if(icolprnt(lchnk)>0 .and. i==13 .and. k==63) write(102,*)'micro_mg2_0_nctend_2:',nctend(i,k),nnuccc(i,k),nnucct(i,k),npsacws(i,k),nsubc(i,k),npra(i,k),nprc1(i,k),lcldm(i,k)
+
 
         if (do_cldice) then
            if (use_hetfrz_classnuc) then
@@ -2042,6 +2063,13 @@ subroutine micro_mg_tend ( &
   ! Re-apply droplet activation tendency
   nc = ncn
   nctend = nctend + npccn
+  if(icolprnt(lchnk)>0) then
+     if(mgncol>12 .and. nlev>62)then
+        write(102,*)'micro_mg2_0_nctend_3:',nctend(13,63),npccn(13,63)
+     else
+        write(102,*)'micro_mg2_0_nctend_3_ELSE:',mgncol,nlev
+     endif
+  endif
 
   ! Re-apply rain freezing and snow melting.
   dum_2D = qs
@@ -2313,7 +2341,9 @@ subroutine micro_mg_tend ( &
         faltndc = faloutc(k)/pdel(i,k)
         faltndnc = faloutnc(k)/pdel(i,k)
         qctend(i,k) = qctend(i,k)-faltndc/nstep
+        if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_4:',nctend(i,k)
         nctend(i,k) = nctend(i,k)-faltndnc/nstep
+        if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_5:',nctend(i,k),nctend(i,k),faltndnc,nstep
 
         ! sedimentation tendency for output
         qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep
@@ -2331,7 +2361,9 @@ subroutine micro_mg_tend ( &
 
            ! add fallout terms to eulerian tendencies
            qctend(i,k) = qctend(i,k)-faltndc/nstep
+           if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_6:',nctend(i,k)
            nctend(i,k) = nctend(i,k)-faltndnc/nstep
+           if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_7:',nctend(i,k),nctend(i,k),faltndnc,nstep
 
            ! sedimentation tendency for output
            qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep
@@ -2601,9 +2633,11 @@ subroutine micro_mg_tend ( &
 
                  ! assume melting ice produces droplet
                  ! mean volume radius of 8 micron
-
+                 if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_8:',nctend(i,k)
                  nctend(i,k)=nctend(i,k)+3._r8*dum*dumi(i,k)/deltat/ &
                       (4._r8*pi*5.12e-16_r8*rhow)
+                 if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_9:',nctend(i,k),dum,dumi(i,k),deltat,pi,rhow
+
 
                  qitend(i,k)=((1._r8-dum)*dumi(i,k)-qi(i,k))/deltat
                  nitend(i,k)=((1._r8-dum)*dumni(i,k)-ni(i,k))/deltat
@@ -2638,6 +2672,7 @@ subroutine micro_mg_tend ( &
                       500._r8)/deltat
                  qctend(i,k)=((1._r8-dum)*dumc(i,k)-qc(i,k))/deltat
                  nctend(i,k)=((1._r8-dum)*dumnc(i,k)-nc(i,k))/deltat
+                 if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_10:',nctend(i,k),dum,dumnc(i,k),nc(i,k),deltat
                  tlat(i,k)=tlat(i,k)+xlf*dum*dumc(i,k)/deltat
               end if
            end if
@@ -2761,6 +2796,7 @@ subroutine micro_mg_tend ( &
               ! out of bounds
 
               nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
+              if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_11:',nctend(i,k),ncnst,rho(i,k),lcldm(i,k),nc(i,k),deltat
 
            end if
 
@@ -2772,6 +2808,7 @@ subroutine micro_mg_tend ( &
            if (dum /= dumnc(i,k)) then
               ! adjust number conc if needed to keep mean size in reasonable range
               nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
+              if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_12:',nctend(i,k),dumnc(i,k),lcldm(i,k),nc(i,k),deltat
            end if
 
            effc(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
@@ -2841,7 +2878,10 @@ subroutine micro_mg_tend ( &
      do k=1,nlev
         ! if updated q (after microphysics) is zero, then ensure updated n is also zero
         !=================================================================================
-        if (qc(i,k)+qctend(i,k)*deltat.lt.qsmall) nctend(i,k)=-nc(i,k)/deltat
+        if (qc(i,k)+qctend(i,k)*deltat.lt.qsmall) then 
+           nctend(i,k)=-nc(i,k)/deltat
+           if(icolprnt(lchnk)>0 .and. i==13 .and. k==63)write(102,*)'micro_mg2_0_nctend_13:',nctend(i,k),nc(i,k),deltat
+        endif
         if (do_cldice .and. qi(i,k)+qitend(i,k)*deltat.lt.qsmall) nitend(i,k)=-ni(i,k)/deltat
         if (qr(i,k)+qrtend(i,k)*deltat.lt.qsmall) nrtend(i,k)=-nr(i,k)/deltat
         if (qs(i,k)+qstend(i,k)*deltat.lt.qsmall) nstend(i,k)=-ns(i,k)/deltat
