@@ -288,8 +288,8 @@ contains
          endif
 
          !$omp master
-         allocate(workArray(nDefinedDataFields, nCells), &
-                  workMask(nCells), &
+         allocate(workArray(nDefinedDataFields, size(areaCell)), &
+                  workMask(size(areaCell)), &
                   workMin(nDefinedDataFields), &
                   workMax(nDefinedDataFields), &
                   workSum(nDefinedDataFields))
