@@ -52,7 +52,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
 }
 
 template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION
+KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
 Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice)
 {

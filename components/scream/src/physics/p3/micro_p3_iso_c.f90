@@ -10,7 +10,7 @@ module micro_p3_iso_c
 #endif
 
 !
-! This file contains bridges from scream c++ to  micro_p3 fortran.
+! This file contains bridges from scream c++ to micro_p3 fortran.
 !
 
 contains
@@ -239,6 +239,37 @@ contains
     call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
   end subroutine access_lookup_table_coll_c
 
+
+  subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
+    qiberg,qisub,qidep) bind(C)
+    use micro_p3, only: cloud_water_conservation
+
+    real(kind=c_real), value, intent(in) :: qc, qcnuc, dt
+    real(kind=c_real), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+
+    call cloud_water_conservation(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+  end subroutine cloud_water_conservation_c
+
+  subroutine rain_water_conservation_c(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+    qrevp,qrcol,qrheti) bind(C)
+    use micro_p3, only: rain_water_conservation
+
+    real(kind=c_real), value, intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
+    real(kind=c_real), intent(inout) :: qrevp, qrcol, qrheti
+
+    call rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrheti)
+  end subroutine rain_water_conservation_c
+
+  subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+    qisub,qimlt) bind(C)
+    use micro_p3, only: ice_water_conservation
+
+    real(kind=c_real), value, intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
+    real(kind=c_real), intent(inout) :: qisub, qimlt
+
+    call ice_water_conservation(qitot,qidep,qinuc,qrcol,qccol,qrheti,qcheti,qiberg,dt,qisub,qimlt)
+  end subroutine ice_water_conservation_c
+
   subroutine get_cloud_dsd2_c(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
     use micro_p3, only: get_cloud_dsd2
     use micro_p3_utils, only: dnu
@@ -270,6 +301,15 @@ contains
 
       call cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr)
   end subroutine cloud_water_autoconversion_c
+
+  subroutine impose_max_total_ni_c(nitot_local, max_total_Ni, inv_rho_local) bind(C)
+    use micro_p3, only: impose_max_total_Ni
+
+    real(kind=c_real), intent(inout) :: nitot_local
+    real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
+
+    call impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local)
+  end subroutine impose_max_total_ni_c
 
   subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use micro_p3, only: calc_first_order_upwind_step, realptr

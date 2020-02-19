@@ -1929,6 +1929,9 @@ contains
     ! If the sum of all nitot(:) exceeds maximum allowable, each category to preserve
     ! ratio of number between categories.
     !--------------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+      use micro_p3_iso_f, only: impose_max_total_ni_f
+#endif
 
     implicit none
 
@@ -1939,6 +1942,12 @@ contains
     !local variables:
     real(rtype)                              :: dum
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call impose_max_total_ni_f(nitot_local,max_total_Ni,inv_rho_local)
+       return
+    endif
+#endif
     if (nitot_local.ge.1.e-20_rtype) then
        dum = max_total_Ni*inv_rho_local/nitot_local
        nitot_local = nitot_local*min(dum,1._rtype)
@@ -2828,7 +2837,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call  cloud_water_autoconversion_f(rho,qc_incld,nc_incld,    &
+      call cloud_water_autoconversion_f(rho,qc_incld,nc_incld,    &
          qcaut,ncautc,ncautr)
       return
    endif
@@ -2953,13 +2962,24 @@ end subroutine prevent_ice_overdepletion
 
 subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_water_conservation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: qc, qcnuc, dt
    real(rtype), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
-
-
    real(rtype) :: sinks, sources, ratio
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_water_conservation_f(qc,qcnuc,dt,    &
+         qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+      return
+   endif
+#endif
 
    sinks   = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt
    sources = qc + (qcnuc)*dt
@@ -2990,12 +3010,24 @@ end subroutine cloud_water_conservation
 subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
    qrevp,qrcol,qrheti)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: rain_water_conservation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
    real(rtype), intent(inout) :: qrevp, qrcol, qrheti
 
    real(rtype) :: sinks, sources, ratio
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  rain_water_conservation_f(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+         qrevp,qrcol,qrheti)
+      return
+   endif
+#endif
 
    sinks   = (qrevp+qrcol+qrheti)*dt
    sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt
@@ -3011,11 +3043,23 @@ end subroutine rain_water_conservation
 subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
    qisub,qimlt)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: ice_water_conservation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
    real(rtype), intent(inout) :: qisub, qimlt
    real(rtype) :: sinks, sources, ratio
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  ice_water_conservation_f(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+      qisub,qimlt)
+      return
+   endif
+#endif
 
    sinks   = (qisub+qimlt)*dt
    sources = qitot + (qidep+qinuc+qrcol+qccol+  &
@@ -3025,7 +3069,6 @@ subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qc
       qisub = qisub*ratio
       qimlt = qimlt*ratio
    endif
-
 
 end subroutine ice_water_conservation
 

@@ -162,6 +162,53 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 }
 
+struct CloudWaterConservationData
+{
+  // inputs
+  Real qc, qcnuc, dt;
+
+  //output
+  Real qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+};
+
+void cloud_water_conservation(CloudWaterConservationData& d);
+
+extern "C"{
+  void cloud_water_conservation_f(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
+    Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
+}
+
+struct RainWaterConservationData
+{
+  // inputs
+  Real qr, qcaut, qcacc, qimlt, qcshd, dt;
+
+  //output
+  Real qrevp, qrcol, qrheti;
+};
+
+void rain_water_conservation(RainWaterConservationData& d);
+
+extern "C"{
+  void rain_water_conservation_f(Real qr, Real qcaut, Real qcacc, Real qimlt, Real qcshd,
+  Real dt, Real* qrevp, Real* qrcol, Real* qrheti);
+}
+
+struct IceWaterConservationData
+{
+  //inputs
+  Real qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt;
+
+  //output
+  Real qisub, qimlt;
+};
+
+void ice_water_conservation(IceWaterConservationData& d);
+
+extern "C"{
+  void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
+  Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CloudWaterAutoconversionData
@@ -186,6 +233,21 @@ extern "C"{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ImposeMaxTotalNiData{
+  // inout
+  Real nitot_local;
+  
+  //input
+  Real max_total_Ni, inv_rho_local;
+};
+void impose_max_total_Ni(ImposeMaxTotalNiData& d);
+
+extern "C"{
+  void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetCloudDsd2Data
 {
   // Inputs
@@ -203,7 +265,7 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 struct GetRainDsd2Data
 {
