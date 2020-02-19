@@ -2813,9 +2813,11 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
          dum = 2._rtype-exp(2300._rtype*(dum2-dum1))
       endif
 
-      nrslf = dum*5.78_rtype*nr_incld*qr_incld*rho
-
-   print *, nrslf_cxx, nrslf, dum
+      if (iparam.eq.1) then
+         nrslf = dum*kr*1.e-3_rtype*qr_incld*nr_incld*rho
+      elseif (iparam.eq.2 .or. iparam.eq.3) then
+         nrslf = dum*5.78_rtype*nr_incld*qr_incld*rho
+      endif
 
    endif
 
