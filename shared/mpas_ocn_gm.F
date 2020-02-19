@@ -471,6 +471,15 @@ contains
                sfcTaperDown = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
                sfcTaperDown = max(0.0_RKIND, min(sfcTaperDown, 1.0_RKIND))
 
+               ! LPV move vertical lines up to not limit the vertical mixing term
+               ! Griffies 1998 eqn 34
+               k33(k  ,iCell) = k33(k  ,iCell) + slopeTaperUp * sfcTaperUp * &
+                              areaEdge*dzTop(k)*slopeTriadUp(k,iCellSelf,iEdge)**2
+               k33(k+1,iCell) = k33(k+1,iCell) + slopeTaperDown * sfcTaperDown * &
+                          areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
+               k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
+               k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
+
                ! Slope can be unbounded in regions of neutral stability.
                ! Reset slope to maximum slope limit.
                slopeTriadUp(k,iCellSelf,iEdge) = &
@@ -479,10 +488,10 @@ contains
                   slopeTaperDown * sfcTaperDown * slopeTriadDown(k,iCellSelf,iEdge)
 
                ! Griffies 1998 eqn 34
-               k33(k  ,iCell) = k33(k  ,iCell) + areaEdge*dzTop(k  )*slopeTriadUp(k,iCellSelf,iEdge)**2
-               k33(k+1,iCell) = k33(k+1,iCell) + areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
-               k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
-               k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
+!               k33(k  ,iCell) = k33(k  ,iCell) + areaEdge*dzTop(k  )*slopeTriadUp(k,iCellSelf,iEdge)**2
+!               k33(k+1,iCell) = k33(k+1,iCell) + areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
+!               k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
+!               k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
 
                ! Could put in vertical smoothing of slopes here if we wanted.
                ! Oct 2019 mrp, we decided not to smooth the slope variables for
