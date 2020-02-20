@@ -20,7 +20,7 @@ blddir="$rundir/../bld"
 # Link chgres executable to build directory
 cd $blddir
 ln -sf $NCEPLIBS_DIR/bin/chgres_cube.exe .
-cd - 
+cd -
 
 # Find date command
 OS=`uname -a`
@@ -70,7 +70,7 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   # Run chgres
   runcmd='{{ mpirun }}'
   mpirun=`echo $runcmd | awk '{print $1}'`
-  eval "$mpirun -np $np $blddir/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
+  eval "$mpirun -n $np $blddir/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
 
   # Move output files to input directory
   mv -f gfs_ctrl.nc INPUT/${prefix}.gfs_ctrl.nc
