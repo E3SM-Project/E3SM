@@ -1,0 +1,187 @@
+.SUFFIXES : .F .f .c .o .a .f90 .f95
+########################################################################
+#
+# The Makefile for building the COSP library is created by CAM's configure
+# using this template and prepending the following macros:
+# COSP_PATH, ISCCP_PATH, RS_PATH, CS_PATH, MISR_PATH, MODIS_PATH, RT_PATH,
+# and PARASOL_PATH.
+#
+# The macro CAM_BLD is also prepended.  It is the build directory of the CAM
+# code and it contains the abortutils.mod file.  The abortutils module is
+# referenced by COSP code in order to perform an abort which is appropriate
+# for the CESM system.
+#
+# The main customization required for the library to link with CAM is to
+# use autopromotion of the default real type to real*8.  This is required
+# in most, though not all, of the COSP files.  Also, some compilers require
+# special flags to specify fixed or free format source (rather than depend
+# on filename extensions).  Thus, the explicit rules at the end of this
+# template for compiling COSP files have been modified to allow different
+# sets of flags for 1) files that cannot be compiled with autopromotion,
+# and 2) files that use fixed format source.
+#
+# The generated Makefile will be used by a sub-Make issued from CAM's Make.
+# The sub-Make will inherit the macros:
+#
+# FC           name of Fortran90 compiler
+# FC_FLAGS     Fortran compiler flags
+#
+########################################################################
+
+F90      := $(FC)
+F90FLAGS := $(FREEFLAGS) $(FC_FLAGS)
+VPATH    := $(COSP_PATH)
+
+OBJS =  cosp_kinds.o cosp_constants.o cosp_cloudsat_interface.o cosp_config.o  \
+        cosp.o cosp_stats.o quickbeam.o parasol.o lidar_simulator.o icarus.o   \
+        cosp_calipso_interface.o cosp_isccp_interface.o cosp_misr_interface.o  \
+        MISR_simulator.o cosp_modis_interface.o modis_simulator.o              \
+        cosp_rttov_interfaceSTUB.o cosp_rttovSTUB.o cosp_parasol_interface.o   \
+        scops.o prec_scops.o cosp_utils.o cosp_optics.o quickbeam_optics.o     \
+        mo_rng.o cosp_errorHandling.o array_lib.o math_lib.o optics_lib.o      \
+        mrgrnk.o 
+
+
+libcosp.a: $(OBJS)
+	ar cr libcosp.a $(OBJS)
+
+%.o: %.f90
+	$(F90) -I$(CAM_BLD) $(F90FLAGS) -c  $<
+%.o: %.F90
+	$(F90) -I$(CAM_BLD) $(F90FLAGS) -c  $<
+
+# Dependencies (COSP2 library)
+cosp.o                     : cosp_kinds.o cosp_modis_interface.o cosp_constants.o            \
+                             cosp_rttov_interfaceSTUB.o cosp_misr_interface.o                \
+                             cosp_isccp_interface.o cosp_calipso_interface.o                 \
+                             cosp_cloudsat_interface.o cosp_stats.o cosp_parasol_interface.o \
+                             cosp_rttovSTUB.o cosp_rttov_interfaceSTUB.o quickbeam.o         \
+                             MISR_simulator.o lidar_simulator.o parasol.o icarus.o 
+cosp_config.o              : cosp_kinds.o
+cosp_stats.o               : cosp_kinds.o cosp_config.o
+cosp_calipso_interface.o   : cosp_kinds.o lidar_simulator.o
+cosp_cloudsat_interface.o  : cosp_kinds.o cosp_config.o quickbeam.o
+cosp_isccp_interface.o     : cosp_kinds.o icarus.o
+cosp_misr_interface.o      : cosp_kinds.o 
+cosp_modis_interface.o     : cosp_kinds.o cosp_config.o modis_simulator.o
+cosp_rttov_interfaceSTUB.o : cosp_kinds.o cosp_config.o cosp_rttovSTUB.o
+cosp_parasol_interface.o   : cosp_kinds.o 
+cosp_rttovSTUB.o           : cosp_kinds.o cosp_config.o cosp_constants.o
+MISR_simulator.o           : cosp_kinds.o cosp_config.o cosp_stats.o
+modis_simulator.o          : cosp_kinds.o cosp_config.o cosp_stats.o
+lidar_simulator.o          : cosp_kinds.o cosp_config.o cosp_stats.o
+icarus.o	               : cosp_kinds.o cosp_constants.o  cosp_stats.o
+parasol.o                  : cosp_kinds.o cosp_config.o cosp_constants.o
+quickbeam.o                : cosp_kinds.o cosp_config.o cosp_stats.o
+# Dependencies (for COSP interface)
+mo_rng.o              : cosp_kinds.o
+scops.o               : cosp_kinds.o mo_rng.o cosp_errorHandling.o
+prec_scops.o	      : cosp_kinds.o cosp_config.o
+cosp_optics.o         : cosp_kinds.o cosp_constants.o modis_simulator.o
+quickbeam_optics.o    : cosp_kinds.o cosp_config.o cosp_constants.o quickbeam.o      \
+			            cosp_errorHandling.o array_lib.o math_lib.o optics_lib.o 
+optics_lib.o	      : cosp_kinds.o cosp_errorHandling.o
+array_lib.o   	      : cosp_kinds.o cosp_errorHandling.o
+math_lib.o            : cosp_kinds.o array_lib.o mrgrnk.o
+mrgrnk.o              : cosp_kinds.o
+cosp_errorHandling.o  : cosp_kinds.o
+cosp_utils.o          : cosp_kinds.o cosp_config.o
+cosp_constants.o      : cosp_kinds.o
+
+#
+clean_objs:
+	rm -f $(OBJS) *.mod *.o
+
+clean:
+	rm -f $(PROG) $(OBJS) *.mod *.o fort.*
+
+icarus.o : $(ISCCP_PATH)/icarus.F90
+	$(F90) $(F90FLAGS) -c $<
+
+quickbeam.o: $(RS_PATH)/quickbeam.F90
+	$(F90) $(F90FLAGS) -c $<
+
+MISR_simulator.o : $(MISR_PATH)/MISR_simulator.F90
+	$(F90) $(F90FLAGS) -c $<
+
+modis_simulator.o : $(MODIS_PATH)/modis_simulator.F90 
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_rttov_interfaceSTUB.o : $(COSP_PATH)/src/simulator/cosp_rttov_interfaceSTUB.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_misr_interface.o : $(COSP_PATH)/src/simulator/cosp_misr_interface.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_modis_interface.o : $(COSP_PATH)/src/simulator/cosp_modis_interface.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_isccp_interface.o : $(COSP_PATH)/src/simulator/cosp_isccp_interface.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_calipso_interface.o : $(COSP_PATH)/src/simulator/cosp_calipso_interface.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_cloudsat_interface.o : $(COSP_PATH)/src/simulator/cosp_cloudsat_interface.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_parasol_interface.o : $(COSP_PATH)/src/simulator/cosp_parasol_interface.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_rttovSTUB.o : $(RT_PATH)/cosp_rttovSTUB.F90 
+	$(F90) $(F90FLAGS) -c $<
+
+lidar_simulator.o : $(CS_PATH)/lidar_simulator.F90
+	$(F90) $(F90FLAGS) -c $<
+
+parasol.o : $(PARASOL_PATH)/parasol.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_constants.o :  $(COSP_PATH)/src/cosp_constants.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_kinds.o : $(COSP_PATH)/cosp_kinds.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_config.o :  $(COSP_PATH)/src/cosp_config.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp.o :  $(COSP_PATH)/src/cosp.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_stats.o :  $(COSP_PATH)/src/cosp_stats.F90
+	$(F90) $(F90FLAGS) -c $<
+
+# COSPv1.4 interface
+mo_rng.o : $(COSP_PATH)/subcol/mo_rng.F90
+	$(F90) $(F90FLAGS) -c $<
+
+scops.o : $(COSP_PATH)/subcol/scops.F90
+	$(F90) $(F90FLAGS) -c $<
+
+prec_scops.o : $(COSP_PATH)/subcol/prec_scops.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_utils.o :  $(COSP_PATH)/optics/cosp_utils.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_optics.o :  $(COSP_PATH)/optics/cosp_optics.F90
+	$(F90) $(F90FLAGS) -c $<
+
+quickbeam_optics.o :  $(COSP_PATH)/optics/quickbeam_optics.F90
+	$(F90) $(F90FLAGS) -c $<
+
+array_lib.o : $(COSP_PATH)/optics/array_lib.F90
+	$(F90) $(F90FLAGS) -c $<
+
+math_lib.o : $(COSP_PATH)/optics/math_lib.F90
+	$(F90) $(F90FLAGS) -c $<
+
+mrgrnk.o : $(COSP_PATH)/optics/mrgrnk.F90
+	$(F90) $(F90FLAGS) -c $<
+
+optics_lib.o : $(COSP_PATH)/optics/optics_lib.F90
+	$(F90) $(F90FLAGS) -c $<
+
+cosp_errorHandling.o : $(COSP_PATH)/cosp_errorHandling.F90
+	$(F90) $(F90FLAGS) -c $<

@@ -19,6 +19,10 @@
 	path = components/cam/src/physics/rrtmgp/external
 	url = git@github.com:RobertPincus/rte-rrtmgp.git
 	branch = develop
+[submodule "components/cam/src/physics/cosp2/external"]
+	path = components/cam/src/physics/cosp2/external
+	url = git@github.com:CFMIP/COSPv2.0.git
+	branch =  CESM_v2.1.4
 [submodule "externals/scorpio"]
 	path = externals/scorpio
 	url = git@github.com:E3SM-Project/scorpio.git
