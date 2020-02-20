@@ -264,7 +264,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         elif lib == "mpi-serial":
             full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
         elif lib == "cprnc":
-            full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
+            full_lib_path = sharedlibroot
             case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
