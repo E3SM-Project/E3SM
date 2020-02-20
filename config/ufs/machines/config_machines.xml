@@ -253,7 +253,7 @@ This allows using a different mpirun command to launch unit tests
 
   <machine MACH="hera">
     <DESC>NOAA hera system</DESC>
-    <NODENAME_REGEX>hfe[0-9[0-9]\.hera</NODENAME_REGEX>
+    <NODENAME_REGEX>hfe[0-9][0-9]\.hera</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi</MPILIBS>
