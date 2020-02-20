@@ -211,6 +211,24 @@ extern "C"{
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct CloudRainAccretionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
+
+  // output
+  Real qcacc, ncacc;
+};
+
+void cloud_rain_accretion(CloudRainAccretionData& d);
+extern "C"{
+
+  void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
+    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudWaterAutoconversionData
 {
   // inputs

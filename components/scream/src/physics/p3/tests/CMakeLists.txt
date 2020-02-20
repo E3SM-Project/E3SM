@@ -9,6 +9,7 @@ set(P3_TESTS_SRCS
   p3_find_unit_tests.cpp
   p3_upwind_unit_tests.cpp
   p3_cloud_sed_unit_tests.cpp
+  p3_cloud_rain_acc_unit_tests.cpp
   p3_ice_sed_unit_tests.cpp
   p3_ice_collection_unit_tests.cpp
   p3_rain_sed_unit_tests.cpp
