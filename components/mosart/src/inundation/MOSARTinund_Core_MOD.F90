@@ -18,13 +18,13 @@ MODULE MOSARTinund_Core_MOD
       SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm
   use MOSARTinund_PreProcs_MOD, only: con1Em3
   use RtmVar, only: barrier_timers, iulog, inundflag
-  use RtmSpmd, only: mpicom_rof
+  use RtmSpmd, only: mpicom_rof, masterproc
   use mct_mod
   
   implicit none
   private
   
-  public MOSARTinund_simulate, ManningEq
+  public MOSARTinund_simulate, ManningEq, ChnlFPexchg
                    
   contains
   
@@ -361,7 +361,7 @@ MODULE MOSARTinund_Core_MOD
             ! Ratio of flooded  area to computation unit area :
             TRunoff%ff_unit(iu) = ff_unit                                                                  
             ! Ratio of flooded floodplain area to computation unit area :
-            TRunoff%ff_fp(iu) = ff_unit - TUnit%a_chnl( iu )              
+            TRunoff%ff_fp(iu) = ff_unit - TUnit%a_chnl( iu )   			
 
             ! Area of flooded floodplain :
             !TRunoff%fa_fp(iu) = TUnit%area(iu) * TRunoff%ff_fp(iu)      

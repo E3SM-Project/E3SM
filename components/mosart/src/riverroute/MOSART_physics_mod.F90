@@ -28,6 +28,7 @@ MODULE MOSART_physics_mod
                              insert_returnflow_soilcolumn, &
                              estimate_returnflow_deficit
   use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
+  use MOSARTinund_Core_MOD, only: ChnlFPexchg
   use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
@@ -137,12 +138,12 @@ MODULE MOSART_physics_mod
        THeat%Tr_avg = 0._r8
     endif
     negchan = 9999.0_r8
-    do m=1,Tctl%DLevelH2R
 
+    !subcycling begins
+    do m=1,Tctl%DLevelH2R
        !------------------
        ! subnetwork
        !------------------
-
        call t_startf('mosartr_subnetwork')    
        TRunoff%erlateral(:,:) = 0._r8
        if (heatflag) THeat%ha_lateral(:) = 0._r8
@@ -151,9 +152,7 @@ MODULE MOSART_physics_mod
        do iunit=rtmCTL%begr,rtmCTL%endr
           temp_Tt = 0._r8
           if(TUnit%mask(iunit) > 0) then
-!extraction from subnetwork here from wt
-!#ifdef INCLUDE_WRM
-             if (wrmflag) then
+             if (wrmflag) then !extraction from subnetwork here from wt
                 if (nt == nt_nliq) then
                    if  (ctlSubwWRM%ExtractionFlag > 0 .and. TRunoff%yt(iunit,nt_nliq) >= 0.1_r8) then
                       localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
@@ -162,7 +161,6 @@ MODULE MOSART_physics_mod
                    endif
                 endif
              endif
-!#endif
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_t(iunit)
              do k=1,TUnit%numDT_t(iunit)
                 call subnetworkRouting(iunit,nt,localDeltaT)
@@ -212,6 +210,24 @@ MODULE MOSART_physics_mod
        end do ! nt
        call t_stopf('mosartr_subnetwork')    
 
+       if (inundflag) then
+          ! Channel -- floodplain exchange computation :      
+          call ChnlFPexchg ( )
+            ! update variables after channel-floodplain exchanges
+            ! Floodplain water volume :
+              TRunoff%wf_ini = TRunoff%wf_exchg
+            ! Floodplain max water depth :
+              TRunoff%hf_ini = TRunoff%hf_exchg     
+            ! Floodplain area fraction (not including channel)
+              TRunoff%ff_ini = TRunoff%ff_fp
+            ! Flooded area fraction (including channel):
+              TRunoff%ffunit_ini = TRunoff%ff_unit
+            ! Channel water depth
+              TRunoff%yr(:,1) = TRunoff%yr_exchg
+            ! Channel storage
+              TRunoff%wr(:,1) = TRunoff%wr_exchg
+        end if   
+	        	
        !------------------
        ! upstream interactions
        !------------------
