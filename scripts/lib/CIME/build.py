@@ -248,9 +248,10 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         libs.append("kokkos")
 
     # Check if we need to build our own cprnc
-    cprnc_loc = case.get_value("CCSM_CPRNC")
-    if not cprnc_loc or not os.path.exists(cprnc_loc):
-        libs.append("cprnc")
+    if case.get_value("TEST"):
+        cprnc_loc = case.get_value("CCSM_CPRNC")
+        if not cprnc_loc or not os.path.exists(cprnc_loc):
+            libs.append("cprnc")
 
     logs = []
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
