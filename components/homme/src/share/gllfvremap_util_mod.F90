@@ -456,10 +456,10 @@ contains
                 call get_temperature(elem(ie), wr1, hvcoord, nt1)
                 global_shared_buf(ie,1) = sum(wr*(elem(ie)%derived%FT - wr1)**2)
                 global_shared_buf(ie,2) = sum(wr*wr1**2)                
-                wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
+                wr1 = wr1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
                 global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
                 wr1 = elem(ie)%derived%FT
-                wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
+                wr1 = wr1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
                 global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
              end if
           else

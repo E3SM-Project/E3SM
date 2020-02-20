@@ -711,31 +711,28 @@
         <command name="add">+cmake-3.12.4</command>
       </modules>
       <modules compiler="gnu">
-        <command name="add">+gcc-6.2.0</command>
-        <command name="add">+szip-2.1-gcc-6.2.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial">
-        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-serial-gcc6.2.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="add">+mpich-3.2-gcc-6.2.0</command>
-        <command name="add">+hdf5-1.8.16-gcc-6.2.0-mpich-3.2-parallel</command>
-        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-parallel-gcc6.2.0-mpich-3.2</command>
+        <command name="add">+gcc-8.2.0</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables>
-      <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
-    </environment_variables>
     <environment_variables mpilib="mpi-serial">
-      <!-- We currently don't have a soft env for serial hdf5 -->
-      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-6.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <!-- We currently don't have a soft env for serial hdf5 and szip built with gcc 8.2.0 -->
+      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <!-- We currently don't have a soft env for netcdf serial built with gcc 8.2.0 -->
+      <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-serial/gcc-8.2.0</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5dump))}</env>
-      <!-- We currently don't have a soft env for pnetcdf 1.8.1 -->
-      <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.8.1/gcc-6.2.0</env>
+      <!-- We currently don't have a soft env for parallel hdf5 and szip built with gcc 8.2.0 -->
+      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <!-- We currently don't have a soft env for mpich 3.3.2 built with gcc 8.2.0 -->
+      <env name="PATH">/soft/apps/packages/climate/mpich/3.3.2/gcc-8.2.0/bin:$ENV{PATH}</env>
+      <!-- We currently don't have a soft env for parallel hdf5 built with mpich 3.3.2 and gcc 8.2.0 -->
+      <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0</env>
+      <!-- We currently don't have a soft env for netcdf parallel built with mpich 3.3.2 and gcc 8.2.0 -->
+      <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/mpich-3.3.2/gcc-8.2.0</env>
+      <!-- We currently don't have a soft env for pnetcdf built with mpich 3.3.2 and gcc 8.2.0 -->
+      <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.12.0/mpich-3.3.2/gcc-8.2.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
@@ -3051,6 +3048,7 @@
     <!-- <RUNDIR>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/$CASE/run</RUNDIR> -->
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <!-- Ref: https://www.olcf.ornl.gov/for-users/system-user-guides/summit/ -->
     <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
 
@@ -3066,7 +3064,6 @@
     <environment_variables>
       <env name="COMPILER">$COMPILER</env>
       <env name="MPILIB">$MPILIB</env>
-      <env name="OMP_STACKSIZE">128M</env>
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="NETCDF_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
@@ -3075,7 +3072,7 @@
       <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="OMP_NUM_THREADS">$ENV{OMP_NUM_THREADS}</env>
+      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
