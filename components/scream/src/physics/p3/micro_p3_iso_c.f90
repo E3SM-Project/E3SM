@@ -10,7 +10,7 @@ module micro_p3_iso_c
 #endif
 
 !
-! This file contains bridges from scream c++ to  micro_p3 fortran.
+! This file contains bridges from scream c++ to micro_p3 fortran.
 !
 
 contains
@@ -135,7 +135,7 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_cld_exchange
 
     real(kind=c_real), dimension(its:ite,3) :: col_location
-    integer :: i,k
+    integer :: i
     do i = its,ite
       col_location(i,:) = real(i)
     end do
@@ -239,6 +239,37 @@ contains
     call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
   end subroutine access_lookup_table_coll_c
 
+
+  subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
+    qiberg,qisub,qidep) bind(C)
+    use micro_p3, only: cloud_water_conservation
+
+    real(kind=c_real), value, intent(in) :: qc, qcnuc, dt
+    real(kind=c_real), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+
+    call cloud_water_conservation(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+  end subroutine cloud_water_conservation_c
+
+  subroutine rain_water_conservation_c(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+    qrevp,qrcol,qrheti) bind(C)
+    use micro_p3, only: rain_water_conservation
+
+    real(kind=c_real), value, intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
+    real(kind=c_real), intent(inout) :: qrevp, qrcol, qrheti
+
+    call rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrheti)
+  end subroutine rain_water_conservation_c
+
+  subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+    qisub,qimlt) bind(C)
+    use micro_p3, only: ice_water_conservation
+
+    real(kind=c_real), value, intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
+    real(kind=c_real), intent(inout) :: qisub, qimlt
+
+    call ice_water_conservation(qitot,qidep,qinuc,qrcol,qccol,qrheti,qcheti,qiberg,dt,qisub,qimlt)
+  end subroutine ice_water_conservation_c
+
   subroutine get_cloud_dsd2_c(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
     use micro_p3, only: get_cloud_dsd2
     use micro_p3_utils, only: dnu
@@ -262,6 +293,15 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine cloud_rain_accretion_c(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
+
+      use micro_p3, only: cloud_rain_accretion
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
+      real(kind=c_real), intent(inout) :: qcacc, ncacc
+
+      call cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc)
+  end subroutine cloud_rain_accretion_c
+
   subroutine cloud_water_autoconversion_c(rho,qc_incld,nc_incld,qcaut,ncautc,ncautr) bind(C)
 
       use micro_p3, only: cloud_water_autoconversion
@@ -270,6 +310,15 @@ contains
 
       call cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr)
   end subroutine cloud_water_autoconversion_c
+
+  subroutine impose_max_total_ni_c(nitot_local, max_total_Ni, inv_rho_local) bind(C)
+    use micro_p3, only: impose_max_total_Ni
+
+    real(kind=c_real), intent(inout) :: nitot_local
+    real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
+
+    call impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local)
+  end subroutine impose_max_total_ni_c
 
   subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use micro_p3, only: calc_first_order_upwind_step, realptr
@@ -430,6 +479,31 @@ contains
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
 
+  subroutine homogeneous_freezing_c(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+    use micro_p3, only: homogeneous_freezing
+
+    ! arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: exner
+    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+
+    call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+         qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
+  end subroutine homogeneous_freezing_c
+
   subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use micro_p3, only: compute_rain_fall_velocity
 
@@ -460,5 +534,63 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
          dt,nmltratio,rhorime_c,th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
 
   end subroutine update_prognostic_ice_c
+
+  subroutine ice_cldliq_collection_c(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                                     nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
+    use micro_p3, only: ice_cldliq_collection
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr04
+    real(kind=c_real), value, intent(in) :: qitot_incld, qc_incld, nitot_incld, nc_incld
+    real(kind=c_real), intent(out) :: qccol, nccol, qcshd, ncshdc
+
+    call ice_cldliq_collection(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                               nc_incld, qccol, nccol, qcshd, ncshdc)
+  end subroutine ice_cldliq_collection_c
+
+  subroutine ice_rain_collection_c(rho, temp, rhofaci, logn0r, f1pr07, f1pr08, &
+                                   qitot_incld, nitot_incld, qr_incld, qrcol, nrcol) bind(C)
+    use micro_p3, only: ice_rain_collection
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, logn0r, f1pr07, f1pr08
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, qr_incld
+    real(kind=c_real), intent(out) :: qrcol, nrcol
+
+    call ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,  &
+                             qitot_incld, nitot_incld, qr_incld, qrcol, nrcol)
+  end subroutine ice_rain_collection_c
+
+  subroutine ice_self_collection_c(rho, rhofaci, f1pr03, eii, qirim_incld, &
+                                   qitot_incld, nitot_incld, nislf) bind(C)
+    use micro_p3, only: ice_self_collection
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld
+    real(kind=c_real), intent(out) :: nislf
+
+    call ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, &
+                             qitot_incld, nitot_incld, nislf)
+  end subroutine ice_self_collection_c
+
+  subroutine  update_prognostic_liquid_c(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
+    use micro_p3, only: update_prognostic_liquid
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, &
+         qrevp, nrevp, nrslf
+
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), value, intent(in) :: inv_rho, exner, xxlv, dt
+
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
+
+    call update_prognostic_liquid(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr)
+
+  end subroutine update_prognostic_liquid_c
 
 end module micro_p3_iso_c

@@ -260,6 +260,29 @@ struct Functions
 
   // TODO: comment
   KOKKOS_FUNCTION
+  static void rain_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofacr,
+    const uview_1d<const Spack>& rcldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const uview_1d<const Spack>& qr_incld,
+    const MemberType& team,
+    const Workspace& workspace,
+    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qr,
+    const uview_1d<Spack>& nr,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& rflx,
+    const uview_1d<Spack>& qr_tend,
+    const uview_1d<Spack>& nr_tend,
+    Scalar& prt_liq);
+
+  // TODO: comment
+  KOKKOS_FUNCTION
   static void ice_sedimentation(
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
@@ -282,28 +305,23 @@ struct Functions
     const view_itab_table& itab,
     Scalar& prt_sol);
 
-  // TODO: comment
+  // homogeneous freezing of cloud and rain
   KOKKOS_FUNCTION
-  static void rain_sedimentation(
-    const uview_1d<const Spack>& rho,
-    const uview_1d<const Spack>& inv_rho,
-    const uview_1d<const Spack>& rhofacr,
-    const uview_1d<const Spack>& rcldm,
-    const uview_1d<const Spack>& inv_dzq,
-    const uview_1d<const Spack>& qr_incld,
+  static void homogeneous_freezing(
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& xlf,
     const MemberType& team,
-    const Workspace& workspace,
-    const view_2d_table& vn_table, const view_2d_table& vm_table,
-    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
+    const uview_1d<Spack>& qc,
+    const uview_1d<Spack>& nc,
     const uview_1d<Spack>& qr,
     const uview_1d<Spack>& nr,
-    const uview_1d<Spack>& nr_incld,
-    const uview_1d<Spack>& mu_r,
-    const uview_1d<Spack>& lamr,
-    const uview_1d<Spack>& rflx,
-    const uview_1d<Spack>& qr_tend,
-    const uview_1d<Spack>& nr_tend,
-    Scalar& prt_liq);
+    const uview_1d<Spack>& qitot,
+    const uview_1d<Spack>& nitot,
+    const uview_1d<Spack>& qirim,
+    const uview_1d<Spack>& birim,
+    const uview_1d<Spack>& th);
 
   // -- Find layers
 
@@ -336,6 +354,18 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
+  KOKKOS_FUNCTION
+  static void cloud_water_conservation(const Spack& qc, const Spack& qcnuc,const Scalar dt,
+   Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep);
+
+  KOKKOS_FUNCTION
+  static void rain_water_conservation(const Spack& qr, const Spack& qcaut, const Spack& qcacc, const Spack& qimlt, const Spack& qcshd, const Scalar dt,
+   Spack& qrevp, Spack& qrcol, Spack& qrheti);
+
+  KOKKOS_FUNCTION
+  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt, 
+   Spack& qisub, Spack& qimlt);
+
   // TODO: comment
   template <bool zero_out=true>
   KOKKOS_INLINE_FUNCTION
@@ -349,9 +379,20 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Computes the accretion of clouds by rain
+  KOKKOS_FUNCTION
+  static void cloud_rain_accretion(const Spack& rho, const Spack& inv_rho,
+    const Spack& qc_incld, const Spack& nc_incld, const Spack& qr_incld,
+    Spack& qcacc, Spack& ncacc);
+
+  // Computes cloud water autoconversion process rate
   KOKKOS_FUNCTION
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
     Spack& qcaut, Spack& ncautc, Spack& ncautr);
+
+  // Impose maximum ice number
+  KOKKOS_FUNCTION
+  static void impose_max_total_Ni(Spack& nitot_local, const Spack& max_total_Ni, const Spack& inv_rho_local);
 
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
@@ -383,6 +424,40 @@ struct Functions
     const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
     Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
     Spack& nr);
+
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_cldliq_collection(const Spack& rho, const Spack& temp,
+                                    const Spack& rhofaci, const Spack& f1pr04,
+                                    const Spack& qitot_incld, const Spack& qc_incld,
+                                    const Spack& nitot_incld, const Spack& nc_incld,
+                                    Spack& qccol, Spack& nccol, Spack& qcshd, Spack& ncshdc);
+
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_rain_collection(const Spack& rho, const Spack& temp,
+                                  const Spack& rhofaci, const Spack& logn0r,
+                                  const Spack& f1pr07, const Spack& f1pr08,
+                                  const Spack& qitot_incld, const Spack& nitot_incld,
+                                  const Spack& qr_incld,
+                                  Spack& qrcol, Spack& nrcol);
+  
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_self_collection(const Spack& rho, const Spack& rhofaci,
+                                  const Spack& f1pr03, const Spack& eii,
+                                  const Spack& qirim_incld, const Spack& qitot_incld,
+                                  const Spack& nitot_incld, Spack& nislf);
+
+  //liquid-phase dependent processes:
+  KOKKOS_FUNCTION
+  static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
+    const Spack& qcaut,const Spack& ncautc, const Spack& qcnuc, const Spack& ncautr,
+    const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
+    const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
+    const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
+
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -406,11 +481,15 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
+# include "p3_functions_impose_max_total_Ni_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
+# include "p3_functions_cloud_rain_acc_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
+# include "p3_functions_ice_collection_impl.hpp"
 #endif
 
 #endif

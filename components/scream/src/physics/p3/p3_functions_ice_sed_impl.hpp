@@ -181,6 +181,71 @@ void Functions<S,D>
     {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
 }
 
+template <typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>
+::homogeneous_freezing(
+  const uview_1d<const Spack>& t,
+  const uview_1d<const Spack>& exner,
+  const uview_1d<const Spack>& xlf,
+  const MemberType& team,
+  const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
+  const uview_1d<Spack>& qc,
+  const uview_1d<Spack>& nc,
+  const uview_1d<Spack>& qr,
+  const uview_1d<Spack>& nr,
+  const uview_1d<Spack>& qitot,
+  const uview_1d<Spack>& nitot,
+  const uview_1d<Spack>& qirim,
+  const uview_1d<Spack>& birim,
+  const uview_1d<Spack>& th)
+{
+  constexpr Scalar qsmall          = C::QSMALL;
+  constexpr Scalar nsmall          = C::NSMALL;
+  constexpr Scalar homogfrze       = C::homogfrze;
+  constexpr Scalar inv_rho_rimeMax = C::INV_RHO_RIMEMAX;
+  constexpr Scalar inv_cp          = C::INV_CP;
+
+  const Int kmin_scalar = ( kdir == 1 ? kbot : ktop);
+  const Int kmax_scalar = ( kdir == 1 ? ktop : kbot);
+
+  // Convert top/bot to pack indices
+  Int kmin, kmax;
+  util::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
+
+  Kokkos::parallel_for(
+    Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
+
+    const int pk = kmin + pk_;
+
+    // Set up masks
+    const auto range_pack    = scream::pack::range<IntSmallPack>(pk*Spack::n);
+    const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
+    const auto t_lt_homogf   = t(pk) < homogfrze;
+    const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;
+    const auto qr_gt_small   = range_mask && t_lt_homogf && qr(pk) > qsmall;
+
+    Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(pack::max(nc(pk), nsmall)), Nr_nuc(pack::max(nr(pk), nsmall));
+
+    qirim(pk).set(qc_gt_small, qirim(pk) + Qc_nuc);
+    qitot(pk).set(qc_gt_small, qitot(pk) + Qc_nuc);
+    birim(pk).set(qc_gt_small, birim(pk) + Qc_nuc*inv_rho_rimeMax);
+    nitot(pk).set(qc_gt_small, nitot(pk) + Nc_nuc);
+    th(pk).set   (qc_gt_small, th(pk) + exner(pk)*Qc_nuc*xlf(pk)*inv_cp);
+
+    qirim(pk).set(qr_gt_small, qirim(pk) + Qr_nuc);
+    qitot(pk).set(qr_gt_small, qitot(pk) + Qr_nuc);
+    birim(pk).set(qr_gt_small, birim(pk) + Qr_nuc*inv_rho_rimeMax);
+    nitot(pk).set(qr_gt_small, nitot(pk) + Nr_nuc);
+    th(pk).set   (qr_gt_small, th(pk) + exner(pk)*Qr_nuc*xlf(pk)*inv_cp);
+
+    qc(pk).set(qc_gt_small, 0);
+    nc(pk).set(qc_gt_small, 0);
+    qr(pk).set(qr_gt_small, 0);
+    nr(pk).set(qr_gt_small, 0);
+  });
+}
+
 } // namespace p3
 } // namespace scream
 
