@@ -260,10 +260,10 @@ This allows using a different mpirun command to launch unit tests
     <PROJECT>nems</PROJECT>
     <SAVE_TIMING_DIR/>
     <CIME_OUTPUT_ROOT>/scratch1/NCEPDEV/nems/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/scratch1/NCEPDEV/stmp2/CIME_UFSINPUT</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/scratch1/NCEPDEV/stmp2/CIME_UFSINPUT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch1/NCEPDEV/nems/Rocky.Dunlap/BASELINES</BASELINE_ROOT>
+    <BASELINE_ROOT>/scratch1/NCEPDEV/stmp2/CIME_UFSBASELINES</BASELINE_ROOT>
     <CCSM_CPRNC>/home/Rocky.Dunlap/bin/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
