@@ -173,13 +173,13 @@ contains
             fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
          end if
 #if (defined HUM_HOL)
-         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO
-         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35
+         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO 
+         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35 
 #endif
 
 #if (defined MARSH)
-         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO
-         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35
+         if (c .eq. 1) fsat(c) = 1.0 * exp(-1.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO - 1.0, 0.35 test (TAO 1/21/2020)
+         if (c .eq. 2) fsat(c) = min(1.0 * exp(-1.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35 1.0, 0.35 test (TAO 1/21/2020)
 #endif
          ! use perched water table to determine fsat (if present)
          if ( frost_table(c) > zwt(c)) then 
@@ -194,8 +194,8 @@ contains
 #endif
 
 #if (defined MARSH)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 0.1, 0.15 to 0.35
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-1.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% - 1.0, 0.35 test (TAO 1/21/2020)
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-1.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t 0.1, 0.15 to 0.35 - 1.0, 0.35 test (TAO 1/21/2020)
 #endif
 
          else
@@ -208,8 +208,8 @@ contains
 #endif 
 
 #if (defined MARSH)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-1.0_r8/0.1_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-1.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35 - 1.0, 0.35 test (TAO 1/21/2020)
 #endif 
          endif
          if (origflag == 1) then

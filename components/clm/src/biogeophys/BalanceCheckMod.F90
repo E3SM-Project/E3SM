@@ -243,7 +243,7 @@ contains
           qflx_sl_top_soil           =>    waterflux_vars%qflx_sl_top_soil_col        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_liq_dynbal            =>    waterflux_vars%qflx_liq_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
           qflx_ice_dynbal            =>    waterflux_vars%qflx_ice_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
-#if (defined HUM_HOL || MARSH)
+#if (defined HUM_HOL || defined MARSH)
           qflx_lat_aqu               =>    waterflux_vars%qflx_lat_aqu                , & ! Input:   [real(r8) (:)   ]  lateral flow between hummock and hollow (mm H2O /s)
           qflx_tide                  =>    waterflux_vars%qflx_tide                   , & ! Input:   [real(r8) (:)   ]  difference in tide between timesteps (mm H2O /s) TAO
           qflx_surf_input            =>    waterflux_vars%qflx_surf_input             , & ! Input:   [real(r8) (:)   ] input to hollow surface water from hummock (mm H2O /s)
@@ -428,7 +428,7 @@ contains
              write(iulog,*)'qflx_glcice_melt           = ',qflx_glcice_melt(indexc)
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc) 
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
-#if (defined HUM_HOL || MARSH)
+#if (defined HUM_HOL || defined MARSH)
              write(iulog,*)'qflx_lat_aqu               = ',qflx_lat_aqu(indexc)
              write(iulog,*)'qflx_tide                  = ',qflx_tide(indexc)
              write(iulog,*)'qflx_surf_input            = ',qflx_surf_input(indexc)
