@@ -644,6 +644,13 @@ using a fortran linker.
   <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
 </compiler>
 
+<compiler COMPILER="intel" MACH="jet">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.7.0/intel/18.0.5.274</NETCDF_PATH>
+</compiler>
+
 <compiler MACH="userdefined">
   <CONFIG_ARGS>
     <base/>
