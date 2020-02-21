@@ -855,7 +855,13 @@ contains
                ! In that case, it will take until the next winter solstice
                ! before the growing degree-day summation starts again.
 
-               if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
+               ! A note by F-M Yuan (2020-02-21): when having heavy snow winter,
+               ! snow melting may be lasting into July in some Arctic area (esp. East Russia)
+               ! So better to let ONSET stage up to 'offset' starting criteria date.
+
+               !if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
+               if (onset_gddflag(p) == 1._r8 .and. &
+                   (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) ) then
                   onset_gddflag(p) = 0._r8
                   onset_gdd(p) = 0._r8
                end if
