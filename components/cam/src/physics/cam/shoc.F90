@@ -2161,15 +2161,14 @@ subroutine vd_shoc_solve(&
   integer, intent(in) :: nlev
   ! number of levels on the interface
   integer, intent(in) :: nlevi	     
-
   ! superdiagonal
-  real(r8), intent(out) :: ca(shcol,nlev)
+  real(r8), intent(in) :: ca(shcol,nlev)
   ! subdiagonal
-  real(r8), intent(out) :: cc(shcol,nlev)
+  real(r8), intent(in) :: cc(shcol,nlev)
   ! 1./(1.+ca(k)+cc(k)-cc(k)*ze(k-1))
-  real(r8), intent(out) :: denom(shcol,nlev)
+  real(r8), intent(in) :: denom(shcol,nlev)
   ! Term in tri-diag. matrix system
-  real(r8), intent(out) :: ze(shcol,nlev)
+  real(r8), intent(in) :: ze(shcol,nlev)
   
 ! IN/OUT VARIABLES
   real(r8), intent(inout) :: var(shcol,nlev)
