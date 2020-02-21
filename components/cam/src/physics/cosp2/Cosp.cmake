@@ -12,7 +12,9 @@ set(COSP_SOURCES
    cam/src/physics/cosp2/external/src/simulator/parasol/parasol.F90
    cam/src/physics/cosp2/external/src/simulator/actsim/lidar_simulator.F90
    cam/src/physics/cosp2/external/src/simulator/icarus/icarus.F90
+   cam/src/physics/cosp2/external/src/simulator/cosp_atlid_interface.F90
    cam/src/physics/cosp2/external/src/simulator/cosp_calipso_interface.F90
+   cam/src/physics/cosp2/external/src/simulator/cosp_grLidar532_interface.F90
    cam/src/physics/cosp2/external/src/simulator/cosp_isccp_interface.F90
    cam/src/physics/cosp2/external/src/simulator/cosp_misr_interface.F90
    cam/src/physics/cosp2/external/src/simulator/MISR_simulator/MISR_simulator.F90

@@ -39,7 +39,7 @@ OBJS =  cosp_kinds.o cosp_constants.o cosp_cloudsat_interface.o cosp_config.o  \
         cosp_rttov_interfaceSTUB.o cosp_rttovSTUB.o cosp_parasol_interface.o   \
         scops.o prec_scops.o cosp_utils.o cosp_optics.o quickbeam_optics.o     \
         mo_rng.o cosp_errorHandling.o array_lib.o math_lib.o optics_lib.o      \
-        mrgrnk.o 
+        mrgrnk.o cosp_grLidar532_interface.o cosp_atlid_interface.o
 
 
 libcosp.a: $(OBJS)
@@ -56,7 +56,8 @@ cosp.o                     : cosp_kinds.o cosp_modis_interface.o cosp_constants.
                              cosp_isccp_interface.o cosp_calipso_interface.o                 \
                              cosp_cloudsat_interface.o cosp_stats.o cosp_parasol_interface.o \
                              cosp_rttovSTUB.o cosp_rttov_interfaceSTUB.o quickbeam.o         \
-                             MISR_simulator.o lidar_simulator.o parasol.o icarus.o 
+                             MISR_simulator.o lidar_simulator.o parasol.o icarus.o           \
+			     cosp_grLidar532_interface.o cosp_atlid_interface.o
 cosp_config.o              : cosp_kinds.o
 cosp_stats.o               : cosp_kinds.o cosp_config.o
 cosp_calipso_interface.o   : cosp_kinds.o lidar_simulator.o
@@ -121,6 +122,12 @@ cosp_isccp_interface.o : $(COSP_PATH)/src/simulator/cosp_isccp_interface.F90
 
 cosp_calipso_interface.o : $(COSP_PATH)/src/simulator/cosp_calipso_interface.F90
 	$(F90) $(F90FLAGS) -c $<
+
+cosp_grLidar532_interface.o : $(COSP_PATH)/src/simulator/cosp_grLidar532_interface.F90
+        $(F90) $(F90FLAGS) -c $<
+
+cosp_atlid_interface.o : $(COSP_PATH)/src/simulator/cosp_atlid_interface.F90
+        $(F90) $(F90FLAGS) -c $<
 
 cosp_cloudsat_interface.o : $(COSP_PATH)/src/simulator/cosp_cloudsat_interface.F90
 	$(F90) $(F90FLAGS) -c $<
