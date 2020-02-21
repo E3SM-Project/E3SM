@@ -58,7 +58,7 @@ def buildlib(bldroot, installpath, case):
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 
-    run_bld_cmd_ensure_logging("{} -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging("{} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)

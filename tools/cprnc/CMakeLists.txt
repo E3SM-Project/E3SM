@@ -3,6 +3,8 @@ PROJECT(CPRNC C Fortran)
 # Generate this with: $cimeroot/tools/configure --mpilib=mpi-serial --macros-format=CMake
 #   You'll also need to source the .env_mach_specific.sh file before trying to build cprnc
 include("${PROJECT_BINARY_DIR}/Macros.cmake")
+set(CMAKE_Fortran_Compiler "${SFC}")
+set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 
 if (NOT NETCDF_PATH)
   message(FATAL_ERROR "Requires NETCDF_PATH either from Macros.cmake or argument")
@@ -21,15 +23,6 @@ ADD_CUSTOM_COMMAND(
 )
 
 ADD_CUSTOM_TARGET(COMPARE_VARS DEPENDS ${PROJECT_BINARY_DIR}/compare_vars_mod.F90)
-
-# Support extended line lengths
-IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
-ELSEIF (CMAKE_COMPILER_ID STREQUAL PGI)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend")
-ELSEIF (CMAKE_COMPILER_ID STREQUAL PathScale)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
-ENDIF ()
 
 INCLUDE_DIRECTORIES(
   ${NETCDF_PATH}/include
