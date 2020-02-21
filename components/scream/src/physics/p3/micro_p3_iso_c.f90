@@ -293,6 +293,15 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine droplet_self_collection_c(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
+
+      use micro_p3, only: droplet_self_collection
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
+      real(kind=c_real), intent(inout) :: ncslf
+
+      call droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf)
+  end subroutine droplet_self_collection_c
+
   subroutine cloud_rain_accretion_c(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
 
       use micro_p3, only: cloud_rain_accretion

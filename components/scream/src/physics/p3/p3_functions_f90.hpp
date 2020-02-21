@@ -211,6 +211,24 @@ extern "C"{
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct DropletSelfCollectionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, mu_c, nu, ncautc;
+
+  // output
+  Real ncslf;
+};
+
+void droplet_self_collection(DropletSelfCollectionData& d);
+extern "C"{
+
+  void droplet_self_collection_f(Real rho, Real inv_rho, Real qc_incld,
+    Real mu_c, Real nu, Real ncautc, Real* ncslf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudRainAccretionData
 {
   // inputs
