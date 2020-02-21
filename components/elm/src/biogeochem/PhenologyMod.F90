@@ -661,6 +661,7 @@ contains
       !$acc routine seq
     use shr_const_mod   , only: SHR_CONST_TKFRZ, SHR_CONST_PI
     use elm_varcon      , only: secspday
+    use elm_varctl      , only: onset_gdd_extension
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -907,10 +908,26 @@ contains
                ! In that case, it will take until the next winter solstice
                ! before the growing degree-day summation starts again.
 
-               if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
-                  onset_gddflag(p) = 0._r8
-                  onset_gdd(p) = 0._r8
+               ! A note by F-M Yuan (2020-02-21): when having heavy snow winter,
+               ! snow melting may be lasting into July in some Arctic area (esp. East Russia)
+               ! So better to let ONSET stage up to 'offset' starting criteria date, if this feature is on.
+
+               if (onset_gdd_extension) then
+                  if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8 &
+                    .and. dayl(g) < PhenolParamsInst%crit_dayl) then
+                     onset_gddflag(p) = 0._r8
+                     onset_gdd(p) = 0._r8
+
+                  end if
+
+               else
+
+                  if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
+                     onset_gddflag(p) = 0._r8
+                     onset_gdd(p) = 0._r8
+                  end if
                end if
+
 
                ! if the gdd flag is set, and if the soil is above freezing
                ! then accumulate growing degree days for onset trigger
