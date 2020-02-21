@@ -111,7 +111,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
 {
   using Device = Kokkos::Device<Kokkos::Cuda, typename Kokkos::Cuda::memory_space>;
   using flag_type = int; // this appears to be the smallest type that correctly handles atomic operations
-  using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
+  using view_1d = ExecView<flag_type*>;
   using RandomGenerator = Kokkos::Random_XorShift64_Pool<Kokkos::Cuda>;
   using rnd_type = typename RandomGenerator::generator_type;
 
