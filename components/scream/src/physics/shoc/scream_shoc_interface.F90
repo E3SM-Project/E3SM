@@ -39,6 +39,8 @@ module scream_shoc_interface_mod
   real(kind=c_real) :: cpliq  =    4188.00000000000
   real(kind=c_real) :: tmelt  =    273.150000000000
   real(kind=c_real) :: pi     =    3.14159265358979
+  real(kind=c_real) :: karman =    0.40000000000000
+  real(kind=c_real) :: zvir   =    0.60779307282415
 
 contains
 
@@ -48,13 +50,30 @@ contains
     use shoc,                   only: shoc_init,r8
  
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
+    
+    real(kind=c_real) :: pref_mid(pcols,pver)           ! pressure at midlevel hPa
+    integer(kind=c_int) :: its, ite, kts, kte
 
-    call shoc_init( &
+    kts     = 1
+    kte     = pver
+
+    do k = kte,kts,-1 
+      pref_mid(:,k)    = 1e3_rtype - (1e3_rtype-0.1)/real(pver)!state%pmid(:,:)
+    end do
+
+    call shoc_init(& 
+          integer(pver),&
           real(gravit,kind=r8),&
           real(rair,kind=r8),  &
           real(rh2o,kind=r8),  &
           real(cpair,kind=r8), &
-          real(latvap,kind=r8))   
+	  real(zvir,kind=r8),  &
+          real(latvap,kind=r8),&
+	  real(latice,kind=r8),&
+	  real(karman,kind=r8),&
+	  pref_mid,            &
+	  integer(kte),&
+	  integer(kts))   
 
     q(:,:,:) = 0.0_rtype
     q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
