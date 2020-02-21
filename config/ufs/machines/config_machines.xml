@@ -175,7 +175,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">cmake</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/18.0.5</command>
+	<command name="load">intel/19.0.5</command>
 	<command name="load">mkl</command>
       </modules>
       <modules compiler="pgi">
@@ -213,11 +213,11 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/gnu-8.3.0/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0alpha01</command>
+	<command name="load">NCEPlibs/1.0.0beta02</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-18.0.5/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0alpha01</command>
+	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-19.0.5/mpt-2.19</command>
+	<command name="load">NCEPlibs/1.0.0beta02</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
