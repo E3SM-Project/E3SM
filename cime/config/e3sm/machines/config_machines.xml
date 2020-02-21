@@ -2959,7 +2959,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,pgiacc,gnu</COMPILERS>
+    <COMPILERS>ibm,pgi,pgigpu,pgiacc,gnu</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -3017,6 +3017,10 @@
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
         <command name="load">pgi/19.9</command>
+      </modules>
+      <modules compiler="pgigpu">
+        <command name="load">pgi/19.4</command>
+        <command name="load">cuda</command>
       </modules>
       <modules compiler="ibm">
         <command name="load">xl/16.1.1-5</command>
