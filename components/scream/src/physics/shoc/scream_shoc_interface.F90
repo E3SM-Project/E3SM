@@ -52,29 +52,28 @@ contains
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
     
     real(kind=c_real) :: pref_mid(pcols,pver)           ! pressure at midlevel hPa
-    integer(kind=c_int) :: its, ite, kts, kte, k
-    real(kind=c_real) :: karman
+    integer(kind=c_int) :: its, ite, kts, kte
 
     kts     = 1
     kte     = pver
 
     do k = kte,kts,-1 
-       pref_mid(:,k)    = 1e3_rtype - (1e3_rtype-0.1)/real(pver)!state%pmid(:,:)
+      pref_mid(:,k)    = 1e3_rtype - (1e3_rtype-0.1)/real(pver)!state%pmid(:,:)
     end do
 
     call shoc_init(& 
-         pver,&
-         real(gravit,kind=r8),&
-         real(rair,kind=r8),  &
-         real(rh2o,kind=r8),  &
-         real(cpair,kind=r8), &
-         real(zvir,kind=r8),  &
-         real(latvap,kind=r8),&
-         real(latice,kind=r8),&
-         real(karman,kind=r8),&
-         pref_mid,            &
-         kte,&
-         kts)   
+          integer(pver),&
+          real(gravit,kind=r8),&
+          real(rair,kind=r8),  &
+          real(rh2o,kind=r8),  &
+          real(cpair,kind=r8), &
+	  real(zvir,kind=r8),  &
+          real(latvap,kind=r8),&
+	  real(latice,kind=r8),&
+	  real(karman,kind=r8),&
+	  pref_mid,            &
+	  integer(kte),&
+	  integer(kts))   
 
     q(:,:,:) = 0.0_rtype
     q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
