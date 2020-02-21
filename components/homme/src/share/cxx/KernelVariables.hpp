@@ -8,6 +8,7 @@
 #define KERNEL_VARIABLES_HPP
 
 #include "Types.hpp"
+#include "scream_kokkos_utils.hpp"
 
 namespace Homme {
 
@@ -67,6 +68,18 @@ public:
       , ie(team_in.league_rank())
       , iq(-1)
       , team_idx(TeamInfo::get_team_idx<ExecSpace>(team_in.team_size(),team_in.league_rank()))
+      , team_utils(nullptr)
+  {
+    // Nothing to be done here
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  KernelVariables(const TeamMember &team_in, TeamUtils<ExecSpace>& utils)
+      : team(team_in)
+      , ie(team_in.league_rank())
+      , iq(-1)
+      , team_idx(utils.get_workspace_idx(team_in))
+      , team_utils(&utils)
   {
     // Nothing to be done here
   }
@@ -77,8 +90,16 @@ public:
       , ie(team_in.league_rank() / qsize)
       , iq(team_in.league_rank() % qsize)
       , team_idx(TeamInfo::get_team_idx<ExecSpace>(team_in.team_size(),team_in.league_rank()))
+      , team_utils(nullptr)
   {
     // Nothing to be done here
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  ~KernelVariables() {
+    if (team_utils != nullptr) {
+      team_utils->release_workspace_idx(team, team_idx);
+    }
   }
 
   template <typename Primitive, typename Data>
@@ -107,6 +128,7 @@ public:
 
   int ie, iq;
   const int team_idx;
+  TeamUtils<ExecSpace>* team_utils;
 }; // KernelVariables
 
 } // Homme
