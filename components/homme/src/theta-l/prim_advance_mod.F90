@@ -26,7 +26,7 @@ module prim_advance_mod
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
   use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_deltaerr,max_reserr
-  use element_ops,        only: set_theta_ref, state0, get_R_star
+  use element_ops,        only: set_theta_ref, state0, get_R_star, get_temperature
   use eos,                only: pnh_and_exner_from_eos,pnh_and_exner_from_eos2,phi_from_eos
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
@@ -1260,6 +1260,9 @@ contains
   real (kind=real_kind) :: eta_ave_w,scale1,scale2,scale3  ! weighting for eta_dot_dpdn mean flux, scale of unm1
 
   ! local
+
+  integer :: mminloc(3),mmaxloc(3)
+
   real (kind=real_kind), pointer, dimension(:,:,:) :: phi_i
   real (kind=real_kind), pointer, dimension(:,:,:) :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:) :: vtheta_dp
@@ -1927,6 +1930,18 @@ contains
      endif
      call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
           elem(ie)%spheremp,hvcoord%dp0)
+
+call get_temperature(elem(ie),temp,hvcoord,np1)
+if(maxval(temp)>350) then
+  mmaxloc=maxloc(temp)
+  write(iulog,*) 'MAXT:',maxval(temp),
+  mmaxloc(3),nstep !,elem(ie)%globalid,stage
+elseif(minval(temp)<150) then
+  mminloc=minloc(temp)
+  write(iulog,*) 'MINT:',minval(temp),
+  mminloc(3),nstep !,elem(ie)%globalid,stage
+endif
+
   end do
   call t_stopf('compute_andor_apply_rhs')
 
