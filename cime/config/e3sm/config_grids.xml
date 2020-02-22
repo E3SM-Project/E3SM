@@ -2649,16 +2649,16 @@
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_mono.200220.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200110.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200110.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_mono.200220.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200110.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200110.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4" ocn_grid="oEC60to30wLI">
