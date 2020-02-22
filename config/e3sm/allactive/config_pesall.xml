@@ -7822,7 +7822,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4_l%.+_oi%oEC60to30">
+  <grid name="a%ne30np4.*_l%.+_oi%oEC60to30">
     <mach name="anvil|bebop">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> A_WCYCL*/ne30_oEC* on 29 nodes pure-MPI, sypd=2.88 </comment>
