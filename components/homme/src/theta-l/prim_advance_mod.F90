@@ -174,16 +174,16 @@ contains
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
        call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
+            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0,nstep)
        ! u2 = u0 + dt/5 RHS(u1)
        call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0,nstep)
        ! u3 = u0 + dt/3 RHS(u2)
        call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0,nstep)
        ! u4 = u0 + 2dt/3 RHS(u3)
        call compute_andor_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0,nstep)
        ! compute (5*u1/4 - u0/4) in timelevel nm1:
        do ie=nets,nete
           elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
@@ -199,7 +199,7 @@ contains
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0,nstep)
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 !=========================================================================================
@@ -338,33 +338,33 @@ contains
       a2=1-a1
       dt2=dt/4
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0,nstep)
       call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       dt2=dt/6
       call compute_andor_apply_rhs(nm1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0,nstep)
       call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,nm1,a2*dt2,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       dt2=3*dt/8
       call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0,nstep)
       call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
 
       dt2=dt/2
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0,nstep)
       call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       a1=6d0/22 
       a2=10d0/22
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0,nstep)
       call compute_stage_value_dirk(nm1,a1*dt,n0,a1*dt,np1,a2*dt,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
       !  u0 saved in elem(n0)
@@ -1234,7 +1234,7 @@ contains
 !============================ stiff and or non-stiff ============================================
 
  subroutine compute_andor_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,eta_ave_w,scale1,scale2,scale3)
+       deriv,nets,nete,compute_diagnostics,eta_ave_w,scale1,scale2,scale3,nstep)
   ! ===================================
   ! compute the RHS, accumulate into u(np1) and apply DSS
   !
@@ -1258,6 +1258,8 @@ contains
   type (derivative_t),  intent(in) :: deriv
 
   real (kind=real_kind) :: eta_ave_w,scale1,scale2,scale3  ! weighting for eta_dot_dpdn mean flux, scale of unm1
+
+  integer, optional :: nstep
 
   ! local
 
@@ -1934,12 +1936,10 @@ contains
 call get_temperature(elem(ie),temp,hvcoord,np1)
 if(maxval(temp)>350) then
   mmaxloc=maxloc(temp)
-  write(iulog,*) 'MAXT:',maxval(temp),
-  mmaxloc(3),nstep !,elem(ie)%globalid,stage
+  write(iulog,*) 'MAXT:',maxval(temp), mmaxloc(3),nstep !,elem(ie)%globalid,stage
 elseif(minval(temp)<150) then
   mminloc=minloc(temp)
-  write(iulog,*) 'MINT:',minval(temp),
-  mminloc(3),nstep !,elem(ie)%globalid,stage
+  write(iulog,*) 'MINT:',minval(temp), mminloc(3),nstep !,elem(ie)%globalid,stage
 endif
 
   end do
