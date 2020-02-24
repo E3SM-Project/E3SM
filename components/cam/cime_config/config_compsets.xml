@@ -367,69 +367,80 @@
     <lname>SCAM_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>   
 
-  <!-- ******************************* -->
-  <!-- super-parameterization compsets -->
-  <!-- ******************************* -->
+  <!-- ****************************************** -->
+  <!-- MMF compsets (i.e. super-parameterization) -->
+  <!-- ****************************************** -->
 
-  <!-- F compset -->
+  <!-- ********** F compsets ********** -->
 
+  <!-- Old MMF compsets for comparing with original ECP fork -->
   <compset>
     <alias>FSP1V1</alias>
     <lname>2000_CAM5%SP1V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-  
   <compset>
     <alias>FSP1V1-MAML</alias>
     <lname>2000_CAM5%SP1V1-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-
   <compset>
     <alias>FSP2V1</alias>
     <lname>2000_CAM5%SP2V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-  
-  <!-- F testing compsets w/ reduced CRM dimensions -->
 
+  <!-- New MMF compsets for new implementation in E3SM repo -->
+  <compset>
+    <alias>F-MMF1</alias>
+    <lname>2000_CAM5%MMF1_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF1-MAML</alias>
+    <lname>2000_CAM5%MMF1-MAML_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2</alias>
+    <lname>2000_CAM5%MMF2_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2-MAML</alias>
+    <lname>2000_CAM5%MMF2-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <!-- ********** testing compsets w/ reduced CRM dimensions ********** -->
+
+  <!-- Old MMF compsets for comparing with original ECP fork -->
   <compset>
     <alias>FSP1V1-TEST</alias>
     <lname>2000_CAM5%SP1V1-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-  
   <compset>
     <alias>FSP1V1-MAML-TEST</alias>
     <lname>2000_CAM5%SP1V1-MAML-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-
   <compset>
     <alias>FSP2V1-TEST</alias>
     <lname>2000_CAM5%SP2V1-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-
   <compset>
     <alias>FSP2V1-ECPP-TEST</alias>
     <lname>2000_CAM5%SP2V1-ECPP-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- New MMF compsets for new implementation in E3SM repo -->
   <compset>
-    <alias>FSP1FAST</alias>
-    <lname>2000_CAM5%SP1FAST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F-MMF1-TEST</alias>
+    <lname>2000_CAM5%MMF1-TEST_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-
   <compset>
-    <alias>FSP2FAST</alias>
-    <lname>2000_CAM5%SP2FAST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F-MMF1-MAML-TEST</alias>
+    <lname>2000_CAM5%MMF1-MAML-TEST_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-
-  <!-- 20th century transient -->
-
   <compset>
-   <alias>F20TRSP1V1</alias>
-   <lname>20TR_CAM5%SP1V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F-MMF2-TEST</alias>
+    <lname>2000_CAM5%MMF2-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-
   <compset>
-   <alias>F20TRSP2V1</alias>
-   <lname>20TR_CAM5%SP2V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F-MMF2-ECPP-TEST</alias>
+    <lname>2000_CAM5%MMF2-ECPP-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->

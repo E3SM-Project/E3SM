@@ -341,7 +341,7 @@ GetOptions(
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
-    "use_MMF"                 => \$opts{'use_MMF'},
+    "use_MMF"                   => \$opts{'use_MMF'},
     "use_ECPP"                  => \$opts{'use_ECPP'},
     "use_MAML"                  => \$opts{'use_MAML'},
     "crm_nx=s"                  => \$opts{'crm_nx'},
