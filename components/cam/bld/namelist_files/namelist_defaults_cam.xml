@@ -162,8 +162,7 @@
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne512np4" nlev="72"        ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc</ncdata>
 <ncdata dyn="se" hgrid="ne1024np4" nlev="72"       ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc</ncdata>
-<ncdata dyn="se" hgrid="ne1024np4" nlev="120"      ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L120.nc</ncdata
->
+<ncdata dyn="se" hgrid="ne1024np4" nlev="120"      ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L120.nc</ncdata>
 <ncdata dyn="se" hgrid="ne256np4"           >DUMMY-IC</ncdata>
 <ncdata dyn="se" hgrid="ne512np4"           >DUMMY-IC</ncdata>
 <ncdata dyn="se" hgrid="ne1024np4"          >DUMMY-IC</ncdata>
