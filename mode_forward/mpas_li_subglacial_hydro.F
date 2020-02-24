@@ -1171,10 +1171,12 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: creepCoeff
       real (kind=RKIND), pointer :: porosity
       integer, pointer :: nVertLevels
+      integer, pointer :: nCells
       character (len=StrKIND), pointer :: config_SGH_pressure_calc
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), pointer :: rhoo
       integer :: err_tmp
+      integer :: iCell
 
       err = 0
       err_tmp = 0
@@ -1197,6 +1199,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_pressure_calc', config_SGH_pressure_calc)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
@@ -1264,10 +1267,12 @@ module li_subglacial_hydro
       waterPressure = max(0.0_RKIND, waterPressure)
       waterPressure = min(waterPressure, rhoi * gravity * thickness)
       ! set pressure correctly under floating ice and open ocean
-      where ( (li_mask_is_floating_ice(cellMask)) .or. &
-              ((.not. li_mask_is_ice(cellMask)) .and. (bedTopography < config_sea_level) ) )
-         waterPressure = rhoo * gravity * (config_sea_level - bedTopography)
-      end where
+      do iCell = 1, nCells
+        if ( li_mask_is_floating_ice(cellMask(iCell)) .or. &
+             ((.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) ) then
+           waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
+        endif
+      enddo
 
       waterPressureTendency = (waterPressure - waterPressureOld) / deltatSGH
 
