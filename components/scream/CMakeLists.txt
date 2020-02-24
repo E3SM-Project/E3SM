@@ -8,6 +8,12 @@ else()
   set(CIME_BUILD TRUE)
 endif()
 
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
+  # The new behavior for cmp0074 makes cmake use (rather than ignore)
+  # any <PackageName>_ROOT env/cmake variable previously set.
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 # Add the ./cmake folder to cmake path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
