@@ -19,7 +19,7 @@ module surfrdMod
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
   use spmdMod       
-  use topounit_varcon , only : max_topounits
+  use topounit_varcon , only : max_topounits, has_topounit  
   
   !
   ! !PUBLIC TYPES:
@@ -830,6 +830,13 @@ contains
     found = .false.
     do nl = begg,endg
        do t = 1, max_topounits
+         write(iulog,*)'pctlak = ',pctlak(nl,t) !TKT
+         write(iulog,*)'pctgla = ',pctgla(nl,t) !TKT
+         write(iulog,*)'pctwet = ',pctwet(nl,t) !TKT
+         write(iulog,*)'pcturb_tot = ',pcturb_tot(nl,t) !TKT
+         write(iulog,*)'PFT = ',pctspec(nl,t) !TKT
+         write(iulog,*)'Grid = ',nl, 'and Topounit = ',t !TKT
+            
          if (pctspec(nl,t) > 100._r8+1.e-04_r8) then
             found = .true.
             nindx = nl
