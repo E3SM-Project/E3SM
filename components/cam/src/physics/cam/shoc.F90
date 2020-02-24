@@ -159,7 +159,7 @@ end subroutine shoc_init
 subroutine shoc_main ( &
      shcol, nlev, nlevi, dtime, nadv, &   ! Input
      host_dx, host_dy,thv, &              ! Input
-     zt_grid,zi_grid,pres,presi,pdel,&     ! Input
+     zt_grid,zi_grid,pres,presi,pdel,&    ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
      exner,phis, &                        ! Input     
@@ -200,7 +200,7 @@ subroutine shoc_main ( &
   ! pressure levels on thermo grid [Pa]  
   real(r8), intent(in) :: pres(shcol,nlev)
   ! pressure levels on interface grid [Pa]  
-  real(r8), intent(in) :: presi(shcol,nlev)  
+  real(r8), intent(in) :: presi(shcol,nlevi)  
   ! Differences in pressure levels [Pa] 
   real(r8), intent(in) :: pdel(shcol,nlev)
   ! virtual potential temperature [K] 
