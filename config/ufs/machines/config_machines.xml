@@ -366,7 +366,6 @@ This allows using a different mpirun command to launch unit tests
     <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-    <TOTAL_TASKS>8</TOTAL_TASKS>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
