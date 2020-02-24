@@ -6561,7 +6561,9 @@ extern "C" void kokkos_init () {
   Kokkos::initialize(args);
 }
 
-extern "C" void kokkos_finalize () { Kokkos::finalize_all(); }
+extern "C" void kokkos_finalize () {
+  Kokkos::finalize();
+}
 
 static homme::CDR::Ptr g_cdr;
 
@@ -6671,4 +6673,9 @@ extern "C" void cedr_sl_check (const homme::Real* minq, const homme::Real* maxq,
   cedr_assert(g_cdr);
   cedr_assert(g_sl);
   homme::sl::check(*g_cdr, *g_sl, minq, maxq, nets-1, nete-1);
+}
+
+extern "C" void cedr_finalize () {
+  g_sl = nullptr;
+  g_cdr = nullptr;
 }

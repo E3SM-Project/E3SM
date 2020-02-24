@@ -139,9 +139,12 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     TARGET_INCLUDE_DIRECTORIES(
         ${dynLibName} PUBLIC
         ${SCREAM_INCLUDE_DIRS}
-        ${SCREAM_TPL_INCLUDE_DIRS}
         ${EXEC_INCLUDE_DIRS}        # This comes from PREQX_KOKKOS_SETUP
         ${dynLibDir}                # For config.h
+    )
+    TARGET_INCLUDE_DIRECTORIES(
+        ${dynLibName} SYSTEM PUBLIC
+        ${SCREAM_TPL_INCLUDE_DIRS}
     )
     SET_TARGET_PROPERTIES (${dynLibName}
       PROPERTIES
@@ -152,4 +155,6 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
   ENDIF()
 ENDMACRO(CreateDynamicsLib)
 
-ADD_SUBDIRECTORY (tests)
+if (NOT SCREAM_LIB_ONLY)
+  ADD_SUBDIRECTORY (tests)
+endif()

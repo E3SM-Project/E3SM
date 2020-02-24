@@ -17,7 +17,7 @@ else ()
 
   add_subdirectory(${KOKKOS_SRC} ${KOKKOS_BINARY})
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${KOKKOS_SRC}/core/src -I${KOKKOS_BINARY}")
+  set (Kokkos_INCLUDE_DIR "${KOKKOS_SRC}/core/src;${KOKKOS_BINARY}")
   list(APPEND KOKKOS_LDFLAGS "-L${KOKKOS_BINARY}")
   list(REMOVE_ITEM KOKKOS_LDFLAGS "-lkokkos")
   list(APPEND LDFLAGS ${KOKKOS_LDFLAGS})

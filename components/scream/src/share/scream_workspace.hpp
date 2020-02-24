@@ -69,6 +69,13 @@ class WorkspaceManager
   using view_1d_ptr_array = typename KokkosTypes<Device>::template view_1d_ptr_array<S, N>;
 
   //
+  // -------- Contants --------
+  //
+
+  // Default overprov factor for large GPU problems, testing has shown 1.25 is optimal
+  static constexpr Real GPU_DEFAULT_OVERPROVISION_FACTOR = 1.25;
+
+  //
   // ------- public API ---------
   //
 
@@ -76,7 +83,9 @@ class WorkspaceManager
   //   size: The number of T's per sub-block
   //   max_used: The maximum number of active sub-blocks
   //   policy: The team policy for Kokkos kernels using this WorkspaceManager
-  WorkspaceManager(int size, int max_used, TeamPolicy policy);
+  //   overprov_factor: How many workspace slots to overprovision (only applies to GPU for large problems)
+  WorkspaceManager(int size, int max_used, TeamPolicy policy,
+                   const Real& overprov_factor=GPU_DEFAULT_OVERPROVISION_FACTOR);
 
   // call from host.
   //
@@ -91,6 +100,13 @@ class WorkspaceManager
   // Returns a Workspace object which provides access to sub-blocks.
   KOKKOS_INLINE_FUNCTION
   Workspace get_workspace(const MemberType& team) const;
+
+  // call from device
+  //
+  // Releases a Workspace object, should normally be called via the
+  // Workspace destructor.
+  KOKKOS_INLINE_FUNCTION
+  void release_workspace(const MemberType& team, const Workspace& ws) const;
 
   class Workspace {
    public:
@@ -152,6 +168,10 @@ class WorkspaceManager
     //
     // ---------- Private --------------
     //
+
+    // Not technically private, but not part of the API since the user won't call it directly
+    KOKKOS_INLINE_FUNCTION
+    ~Workspace();
 
 #ifndef KOKKOS_ENABLE_CUDA
    private:
@@ -234,7 +254,7 @@ class WorkspaceManager
   void init_metadata(const int ws_idx, const int slot) const;
 
   static void init(const WorkspaceManager& wm, const view_2d<T>& data,
-                   const int concurrent_teams, const int max_used, const int total);
+                   const int max_ws_idx, const int max_used, const int total);
 
   //
   // data
@@ -246,7 +266,7 @@ class WorkspaceManager
   };
 
   util::TeamUtils<ExeSpace> m_tu;
-  int m_concurrent_teams, m_reserve, m_size, m_total, m_max_used;
+  int m_max_ws_idx, m_reserve, m_size, m_total, m_max_used;
 #ifndef NDEBUG
   view_1d<int> m_num_used;
   view_1d<int> m_high_water;
@@ -258,6 +278,9 @@ class WorkspaceManager
   view_1d<int> m_next_slot;
   view_2d<T> m_data;
 }; // class WorkspaceManager
+
+template <typename T, typename D>
+constexpr Real WorkspaceManager<T, D>::GPU_DEFAULT_OVERPROVISION_FACTOR;
 
 } // namespace scream
 

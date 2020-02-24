@@ -20,30 +20,32 @@ public:
   template<typename T,typename... Args>
   T& create (Args... args) {
     auto key = getKey<T>();
-    scream_require_msg(m_objects.find(key)==m_objects.end(),
-                       "Error! Object with key '" + key.name() + "' was already created in the scream context.\n");
+    scream_require_msg(m_objects.find(key)==m_objects.end(),"Error! Object with key '" + (std::string)key.name() + "' was already created in the scream context.\n");
 
-    auto it = m_objects.emplace(key,args...);
+    auto& obj = m_objects[key];
+    obj.template reset<T>(args...);
 
-    scream_require_msg(it.second, "Error! Something went wrong while creating object with key '" + key.name() + "'.\n");
-    return *it.first;
-
+    return util::any_cast<T>(obj);
   }
 
   template<typename T>
   const T& get () const {
     auto key = getKey<T>();
     scream_require_msg(m_objects.find(key)!=m_objects.end(),
-                       "Error! Object with key '" + key.name() + "' not found in the scream context.\n");
-    return m_objects.at(key);
+                       "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
+    const auto& obj = m_objects.at(key);
+
+    return util::any_cast<T>(obj);
   }
 
   template<typename T>
-  T& getNonConst () const {
+  T& getNonConst () {
     auto key = getKey<T>();
     scream_require_msg(m_objects.find(key)!=m_objects.end(),
-                       "Error! Object with key '" + key.name() + "' not found in the scream context.\n");
-    return m_objects.at(key);
+                       "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
+    auto& obj = m_objects.at(key);
+
+    return util::any_cast<T>(obj);
   }
 
   void clean_up () {

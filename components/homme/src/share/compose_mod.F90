@@ -194,6 +194,12 @@ module compose_mod
      end subroutine slmm_get_mpi_pattern
 #endif
 
+     subroutine cedr_finalize() bind(c)
+     end subroutine cedr_finalize
+
+     subroutine slmm_finalize() bind(c)
+     end subroutine slmm_finalize
+
   end interface
 
 contains
@@ -227,6 +233,8 @@ contains
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_startf('compose_init')
+    call kokkos_init()
+
     use_sgi = sgi_is_initialized()
     hard_zero = .true.
 
@@ -314,6 +322,14 @@ contains
     call t_stopf('compose_init')
 #endif
   end subroutine compose_init
+
+  subroutine compose_finalize()
+#ifdef HOMME_ENABLE_COMPOSE
+    call cedr_finalize()
+    call slmm_finalize()
+    call kokkos_finalize()
+#endif
+  end subroutine compose_finalize
   
   subroutine compose_query_bufsz(sendsz, recvsz)
     integer, intent(out) :: sendsz, recvsz

@@ -162,6 +162,71 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 }
 
+struct CloudWaterConservationData
+{
+  // inputs
+  Real qc, qcnuc, dt;
+
+  //output
+  Real qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+};
+
+void cloud_water_conservation(CloudWaterConservationData& d);
+
+extern "C"{
+  void cloud_water_conservation_f(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
+    Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
+}
+
+struct RainWaterConservationData
+{
+  // inputs
+  Real qr, qcaut, qcacc, qimlt, qcshd, dt;
+
+  //output
+  Real qrevp, qrcol, qrheti;
+};
+
+void rain_water_conservation(RainWaterConservationData& d);
+
+extern "C"{
+  void rain_water_conservation_f(Real qr, Real qcaut, Real qcacc, Real qimlt, Real qcshd,
+  Real dt, Real* qrevp, Real* qrcol, Real* qrheti);
+}
+
+struct IceWaterConservationData
+{
+  //inputs
+  Real qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt;
+
+  //output
+  Real qisub, qimlt;
+};
+
+void ice_water_conservation(IceWaterConservationData& d);
+
+extern "C"{
+  void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
+  Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+struct CloudRainAccretionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
+
+  // output
+  Real qcacc, ncacc;
+};
+
+void cloud_rain_accretion(CloudRainAccretionData& d);
+extern "C"{
+
+  void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
+    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CloudWaterAutoconversionData
@@ -186,6 +251,21 @@ extern "C"{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ImposeMaxTotalNiData{
+  // inout
+  Real nitot_local;
+  
+  //input
+  Real max_total_Ni, inv_rho_local;
+};
+void impose_max_total_Ni(ImposeMaxTotalNiData& d);
+
+extern "C"{
+  void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetCloudDsd2Data
 {
   // Inputs
@@ -203,7 +283,7 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 struct GetRainDsd2Data
 {
@@ -439,6 +519,44 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct HomogeneousFreezingData
+{
+  static constexpr size_t NUM_ARRAYS = 12;
+
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real* t, *exner, *xlf;
+
+  // In/out
+  Real* qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *th;
+
+  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+                          const std::array<std::pair<Real, Real>, NUM_ARRAYS>& ranges);
+
+  // deep copy
+  HomogeneousFreezingData(const HomogeneousFreezingData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+
+};
+void homogeneous_freezing(HomogeneousFreezingData& d);
+
+extern "C" {
+
+void homogeneous_freezing_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* t, Real* exner, Real* xlf,
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* th);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ComputeRainFallVelocityData
 {
   // Inputs
@@ -456,6 +574,113 @@ extern "C" {
 
 void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
+
+}
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3UpdatePrognosticIceData
+{
+  // Inputs
+  Real qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt,
+    nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xxls, xlf;
+  bool log_predictNc, log_wetgrowth;
+  Real dt, nmltratio, rhorime_c;
+
+  // In/outs
+  Real th, qv, qitot, nitot, qirim, birim, qc, nc, qr, nr;
+};
+
+void update_prognostic_ice(P3UpdatePrognosticIceData& d);
+
+extern "C"{
+
+void update_prognostic_ice_f( Real qcheti,Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
+Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr, Real qimlt, Real nimlt, Real qisub,
+Real qidep, Real qinuc, Real ninuc, Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
+bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio, Real rhorime_c, Real* th, Real* qv,
+Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3UpdatePrognosticLiqData
+{
+  // Inputs
+  Real qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf;
+
+  bool log_predictNc;
+
+  Real inv_rho, exner, xxlv, dt;
+
+  // In/outs
+  Real th, qv, qc, nc, qr, nr;
+};
+
+void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
+
+extern "C"{
+
+void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
+Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+Real* qc, Real* nc, Real* qr, Real* nr);
+}
+
+struct IceCldliqCollectionData
+{
+  // Inputs
+  Real rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld;
+  Real nitot_incld, nc_incld;
+  
+  // Outputs
+  Real qccol, nccol, qcshd, ncshdc;
+  
+};
+void ice_cldliq_collection(IceCldliqCollectionData& d);
+
+extern "C" {
+
+void ice_cldliq_collection_f(Real rho, Real temp, Real rhofaci, Real f1pr04,
+                             Real qitot_incld,Real qc_incld, Real nitot_incld, Real nc_incld,
+                             Real* qccol, Real* nccol, Real* qcshd, Real* ncshdc);
+}
+
+struct IceRainCollectionData
+{
+  // Inputs
+  Real rho, temp, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld;
+  Real nitot_incld, qr_incld;
+
+  // Outputs
+  Real qrcol, nrcol;
+
+};
+void ice_rain_collection(IceRainCollectionData& d);
+
+extern "C" {
+
+void ice_rain_collection_f(Real rho, Real temp, Real rhofaci, Real logn0r, Real f1pr07, Real f1pr08,
+                         Real qitot_incld, Real nitot_incld, Real qr_incld, Real* qrcol, Real* nrcol);
+
+}
+
+struct IceSelfCollectionData
+{
+  // Inputs
+  Real rho, rhofaci, f1pr03, eii, qirim_incld;
+  Real qitot_incld, nitot_incld;
+
+  // Outputs
+  Real nislf;
+
+};
+void ice_self_collection(IceSelfCollectionData& d);
+
+extern "C" {
+
+void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
+                           Real qirim_incld, Real qitot_incld, Real nitot_incld, Real* nislf);
 
 }
 

@@ -161,7 +161,7 @@ CONTAINS
 
        neltmp(1) = nelemdmax
        neltmp(2) = nelem
-       neltmp(3) = get_dyn_grid_parm('plon')
+       neltmp(3) = GlobalUniqueCols ! get_dyn_grid_parm('plon')
     else
        nelemd = 0
        neltmp(1) = 0

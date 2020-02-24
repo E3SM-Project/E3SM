@@ -514,7 +514,7 @@ contains
          else
             ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
             ! addition to PHIS.
-            call infld(fieldname // '_d', ncid_topo, ncol_name, &
+            call infld(trim(fieldname) // '_d', ncid_topo, ncol_name, &
                  1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
             if (found) then
                if (masterproc) then

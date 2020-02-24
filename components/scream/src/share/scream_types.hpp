@@ -1,8 +1,6 @@
 #ifndef SCREAM_TYPES_HPP
 #define SCREAM_TYPES_HPP
 
-#include <Kokkos_Core.hpp>
-
 #include "share/scream_config.hpp"
 #include "share/scream_kokkos_meta.hpp"
 

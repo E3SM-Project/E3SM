@@ -30,11 +30,15 @@ struct Constants
   static constexpr Scalar LatIce      = 333700.0;
   static constexpr Scalar CpLiq       = 4188.0;
   static constexpr Scalar Tmelt       = 273.15;
+  static constexpr Scalar homogfrze   = Tmelt - 40;
   static constexpr Scalar Pi          = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc  = true;
   static constexpr Scalar RHOW        = RhoH2O;
   static constexpr Scalar INV_RHOW    = 1.0/RHOW;
+  static constexpr Scalar RHO_RIMEMIN =  50.0;  //Min limit for rime density [kg m-3]
+  static constexpr Scalar RHO_RIMEMAX = 900.0;  //Max limit for rime density [kg m-3]
+  static constexpr Scalar INV_RHO_RIMEMAX  =  1.0/RHO_RIMEMAX; // Inverse for limits for rime density [kg m-3]
   static constexpr Scalar THIRD       = 1.0/3.0;
   static constexpr Scalar SXTH        = 1.0/6.0;
   static constexpr Scalar PIOV3       = Pi*THIRD;
@@ -43,8 +47,11 @@ struct Constants
   static constexpr Scalar CONS2       = 4.*PIOV3*RHOW;
   static constexpr Scalar CONS3       =  1.0/(CONS2*1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
   static constexpr Scalar QSMALL      = 1.e-14;
+  static constexpr Scalar QTENDSMALL = 1e-20;
   static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;
+  static constexpr Scalar ZERO        = 0.0;
+  static constexpr Scalar ONE         = 1.0;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
@@ -56,11 +63,22 @@ struct Constants
   static constexpr Scalar bcn         = 2.;
   static constexpr Scalar rho_rimeMin = 50.;
   static constexpr Scalar rho_rimeMax = 900.;
+  static constexpr Scalar eci         = 0.5;
+  static constexpr Scalar eri         = 1.0;
+  static constexpr Scalar dropmass    = 5.2e-7;
+  static constexpr Scalar NCCNST      = 200.0e+6;
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
+
+  // switch for warm-rain parameterization
+  // = 1 Seifert and Beheng 2001
+  // = 2 Beheng 1994
+  // = 3 Khairoutdinov and Kogan 2000
+  static constexpr int IPARAM         = 3;
+
 };
 
 template <typename Scalar>
@@ -70,7 +88,16 @@ template <typename Scalar>
 constexpr Scalar Constants<Scalar>::QSMALL;
 
 template <typename Scalar>
+constexpr Scalar Constants<Scalar>::QTENDSMALL;
+
+template<typename Scalar>
+constexpr Scalar Constants<Scalar>::ZERO;
+
+template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::Tol;
 
 } // namespace p3
 } // namespace scream

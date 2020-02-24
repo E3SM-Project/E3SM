@@ -49,6 +49,31 @@ interface
     real(kind=c_real),   intent(out) :: proc
   end subroutine access_lookup_table_coll_f
 
+  subroutine cloud_water_conservation_f(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
+    qiberg,qisub,qidep) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: qc, qcnuc, dt
+    real(kind=c_real), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+  end subroutine cloud_water_conservation_f
+
+  subroutine rain_water_conservation_f(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+    qrevp,qrcol,qrheti) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
+    real(kind=c_real), intent(inout) :: qrevp, qrcol, qrheti
+  end subroutine rain_water_conservation_f
+
+  subroutine ice_water_conservation_f(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+    qisub,qimlt) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
+    real(kind=c_real), intent(inout) :: qisub, qimlt
+
+  end subroutine ice_water_conservation_f
+
   subroutine get_cloud_dsd2_f(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
     use iso_c_binding
 
@@ -67,6 +92,14 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
+    real(kind=c_real), intent(inout) :: qcacc, ncacc
+  end subroutine cloud_rain_accretion_f
+
   subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)
     use iso_c_binding
 
@@ -75,6 +108,14 @@ interface
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
 
+  subroutine impose_max_total_ni_f(nitot_local, max_total_Ni, inv_rho_local) bind(C)
+    use iso_c_binding
+    
+    !arguments:
+    real(kind=c_real), intent(inout) :: nitot_local
+    real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
+  end subroutine impose_max_total_ni_f
+  
   subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use iso_c_binding
 
@@ -193,6 +234,28 @@ interface
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
 
+  subroutine homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: exner
+    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+  end subroutine homogeneous_freezing_f
+
   subroutine compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use iso_c_binding
 
@@ -201,6 +264,67 @@ interface
     real(kind=c_real), intent(inout) :: nr, nr_incld
     real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
   end subroutine compute_rain_fall_velocity_f
+
+subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol,nrcol,qrheti,nrheti,nrshdr, &
+       qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,exner,xxls,xlf,log_predictNc,log_wetgrowth, &
+       dt,nmltratio,rhorime_c,th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, &
+         qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, &
+         xlf, xxls, dt, nmltratio, rhorime_c
+
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+    logical(kind=c_bool), value, intent(in) :: log_wetgrowth
+
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
+
+  end subroutine update_prognostic_ice_f
+
+  subroutine ice_cldliq_collection_f(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
+                                     nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, f1pr04
+    real(kind=c_real), value, intent(in) :: qitot_incld, qc_incld, nitot_incld, nc_incld
+    real(kind=c_real), intent(out) :: qccol, nccol, qcshd, ncshdc
+  end subroutine ice_cldliq_collection_f
+
+  subroutine ice_rain_collection_f(rho, t, rhofaci, logn0r, f1pr07, f1pr08, &
+                                   qitot_incld, nitot_incld, qr_incld, qrcol, nrcol) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, logn0r, f1pr07, f1pr08
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, qr_incld
+    real(kind=c_real), intent(out) :: qrcol, nrcol
+  end subroutine ice_rain_collection_f
+
+  subroutine ice_self_collection_f(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld, nislf) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld
+    real(kind=c_real), intent(out) :: nislf
+  end subroutine ice_self_collection_f
+
+  subroutine update_prognostic_liquid_f(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, &
+         qrevp, nrevp, nrslf
+
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), value, intent(in) :: inv_rho, exner, xxlv, dt
+
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
+
+  end subroutine update_prognostic_liquid_f
 
   !
   ! These are some routine math operations that are not BFB between

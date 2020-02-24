@@ -9,9 +9,12 @@ set(P3_TESTS_SRCS
   p3_find_unit_tests.cpp
   p3_upwind_unit_tests.cpp
   p3_cloud_sed_unit_tests.cpp
+  p3_cloud_rain_acc_unit_tests.cpp
   p3_ice_sed_unit_tests.cpp
+  p3_ice_collection_unit_tests.cpp
   p3_rain_sed_unit_tests.cpp
   p3_dsd2_unit_tests.cpp
+  p3_autoconversion_tests.cpp
 )
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)
 
@@ -23,6 +26,6 @@ add_custom_target(p3_baseline
 
 add_dependencies(baseline p3_baseline)
 
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4 p3_lookup_table_1.dat-v4 COPYONLY)
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4 data/p3_lookup_table_1.dat-v4 COPYONLY)
 
 
