@@ -387,8 +387,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler COMPILER="pgi">
   <CFLAGS>
-    <base> -gopt -time </base>
-    <append compile_threaded="FALSE"> </append>
+    <base> -time </base>
     <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
@@ -408,7 +407,6 @@ flags should be captured within MPAS CMake files.
     <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
     <!-- -->
     <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
     <!--  -Mbounds        => Add array bounds checking  -->
     <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
     <!--                     * inv: invalid operands         -->
@@ -423,8 +421,7 @@ flags should be captured within MPAS CMake files.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
-    <append compile_threaded="FALSE"> </append>
+    <base>  -i4 -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="TRUE"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
     <append COMP_NAME="datm"> -Mnovect </append>
@@ -451,7 +448,6 @@ flags should be captured within MPAS CMake files.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition </base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
@@ -465,7 +461,6 @@ flags should be captured within MPAS CMake files.
 <compiler COMPILER="pgiacc">
   <CFLAGS>
     <base> -time </base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
@@ -485,7 +480,6 @@ flags should be captured within MPAS CMake files.
     <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
     <!-- -->
     <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
     <!--  -Mbounds        => Add array bounds checking  -->
     <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
     <!--                     * inv: invalid operands         -->
@@ -501,7 +495,6 @@ flags should be captured within MPAS CMake files.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
     <append COMP_NAME="cam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -529,7 +522,6 @@ flags should be captured within MPAS CMake files.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition -acc</base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
@@ -1170,6 +1162,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
+    <append COMP_NAME="cam">-Mnovect</append>
   </FFLAGS>
   <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
