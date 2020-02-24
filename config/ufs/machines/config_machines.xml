@@ -409,9 +409,6 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
      </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="impi">
-      <env name="ESMFMKFILE">$ENV{NCEPLIBS_DIR}/lib64/esmf.mk</env>
-    </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
