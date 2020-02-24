@@ -499,7 +499,7 @@ module li_advection
 
          ! Calculate volume converted from grounded to floating
          ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
-         call grounded_to_floating(cellMaskTemporaryField % array, cellMask, thickness, groundedToFloatingThickness)
+         call grounded_to_floating(cellMaskTemporaryField % array, cellMask, thickness, groundedToFloatingThickness, nCells)
 
          ! Calculate flux across grounding line
          ! Do this after new thickness & mask have been calculated, including SMB/BMB
@@ -1792,7 +1792,7 @@ module li_advection
 
     end subroutine vertical_remap
 
-    subroutine grounded_to_floating(cellMaskOrig, cellMaskNew, thicknessNew, groundedToFloatingThickness)
+    subroutine grounded_to_floating(cellMaskOrig, cellMaskNew, thicknessNew, groundedToFloatingThickness, nCells)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -1805,6 +1805,8 @@ module li_advection
       real(kind=RKIND), dimension(:), intent(in) :: &
          thicknessNew         !< Input: ice thickness after advection
 
+      integer, pointer, intent(in) :: &
+         nCells
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -1818,19 +1820,21 @@ module li_advection
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      integer :: iCell
 
       groundedToFloatingThickness(:) = 0.0_RKIND
 
-      ! find locations that had grounded ice before but now have floating ice
-      where (li_mask_is_grounded_ice(cellMaskOrig(:)) .and. &
-             li_mask_is_floating_ice(cellMaskNew(:)) )
-         groundedToFloatingThickness(:) = thicknessNew(:)
-
-      ! find locations that had floating ice before but now have grounded ice
-      elsewhere (li_mask_is_floating_ice(cellMaskOrig(:)) .and. &
-             li_mask_is_grounded_ice(cellMaskNew(:)) )
-         groundedToFloatingThickness(:) = -1.0_RKIND * thicknessNew(:)
-      end where
+      do iCell = 1, nCells
+        ! find locations that had grounded ice before but now have floating ice
+        if (li_mask_is_grounded_ice(cellMaskOrig(iCell)) .and. &
+            li_mask_is_floating_ice(cellMaskNew(iCell)) ) then
+           groundedToFloatingThickness(iCell) = thicknessNew(iCell)
+        ! find locations that had floating ice before but now have grounded ice
+        else if (li_mask_is_floating_ice(cellMaskOrig(iCell)) .and. &
+                 li_mask_is_grounded_ice(cellMaskNew(iCell)) ) then
+           groundedToFloatingThickness(iCell) = -1.0_RKIND * thicknessNew(iCell)
+        endif
+      enddo
 
     end subroutine grounded_to_floating
 
