@@ -19,7 +19,7 @@ module clm_initializeMod
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
-  use FatesInterfaceMod, only : set_fates_global_elements
+  
   use BeTRSimulationALM, only : create_betr_simulation_alm
   ! 
   !-----------------------------------------
@@ -79,6 +79,7 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
+    use CLMFatesInterfaceMod     , only : ELMFatesGlobalElements
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
