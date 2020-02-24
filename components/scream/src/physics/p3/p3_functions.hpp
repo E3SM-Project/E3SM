@@ -379,6 +379,12 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Computes the immersion freezing of rain
+  KOKKOS_FUNCTION
+  static void rain_immersion_freezing(const Spack& t, const Spack& lamr,
+    const Spack& mu_r, const Spack& cdistr, const Spack& qr_incld,
+    Spack& qrheti, Spack& nrheti);
+
   // Computes the accretion of clouds by rain
   KOKKOS_FUNCTION
   static void cloud_rain_accretion(const Spack& rho, const Spack& inv_rho,
@@ -488,6 +494,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_cloud_rain_acc_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
+# include "p3_functions_rain_imm_freezing_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"
 #endif

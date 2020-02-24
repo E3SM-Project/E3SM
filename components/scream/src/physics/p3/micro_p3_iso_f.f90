@@ -92,6 +92,14 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
+    real(kind=c_real), intent(inout) :: qrheti, nrheti
+  end subroutine rain_immersion_freezing_f
+
   subroutine cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
     use iso_c_binding
 
