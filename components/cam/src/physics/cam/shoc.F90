@@ -223,7 +223,8 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: phis(shcol)
 
 ! INPUT/OUTPUT VARIABLES  
-  ! prognostic temp variable of host model [J/kg]
+  ! prognostic temp variable of host model
+  ! dry static energy [J/kg]
   ! dse = Cp*T + g*z + phis
   real(r8), intent(inout) :: host_dse(shcol,nlev)
   ! turbulent kinetic energy [m2/s2]
