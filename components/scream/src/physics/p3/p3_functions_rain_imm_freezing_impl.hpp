@@ -29,13 +29,13 @@ void Functions<S,D>
                                            (t <= RainFrze);
   if (qr_not_small_and_t_freezing.any()) {
     qrheti.set(qr_not_small_and_t_freezing,
-               sp(CONS6) *
+               CONS6 *
                exp(log(cdistr) + log(tgamma(sp(7.)+mu_r)) - sp(6.)*log(lamr)) *
-               exp(sp(AIMM)*(sp(ZeroDegC)-t)));
+               exp(AIMM*(ZeroDegC-t)));
     nrheti.set(qr_not_small_and_t_freezing,
-               sp(CONS5) *
+               CONS5 *
                exp(log(cdistr) + log(tgamma(sp(4.)+mu_r)) - sp(3.)*log(lamr)) *
-               exp(sp(AIMM)*(sp(ZeroDegC)-t)));
+               exp(AIMM*(ZeroDegC-t)));
   }
 }
 
