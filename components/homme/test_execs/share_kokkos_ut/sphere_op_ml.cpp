@@ -466,7 +466,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagGradientSphereML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     // TO FROM
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
@@ -475,7 +475,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -483,7 +483,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -491,7 +491,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereUpdateML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -499,7 +499,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagSimpleLaplaceML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -507,7 +507,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagTensorLaplaceML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -515,7 +515,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagCurlSphereWkTestCovML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -523,7 +523,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagGradSphereWkTestCovML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -531,7 +531,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagVLaplaceCartesianML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -539,7 +539,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagVLaplaceContraML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -547,7 +547,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagVorticityVectorML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 

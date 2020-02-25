@@ -51,7 +51,7 @@ public:
                 "Error! ColumnOps impl would be buggy on gpu if VECTOR_SIZE>1.\n");
 
   static_assert(MIDPOINTS::NumPacks>1,
-                "Error! Some logic may be wrong with only one column pack.\n");;
+                "Error! Some logic may be wrong with only one column pack.\n");
 
   using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;

@@ -47,7 +47,7 @@ void prim_advec_tracers_remap_RK2 (const Real dt)
   // Precompute divdp
   GPTLstart("tl-at precompute_divdp");
   esf.precompute_divdp();
-  Kokkos::fence();
+  ExecSpace::impl_static_fence();
   GPTLstop("tl-at precompute_divdp");
 
   // Euler steps
@@ -78,7 +78,7 @@ void prim_advec_tracers_remap_RK2 (const Real dt)
   // to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.
   GPTLstart("tl-at qdp_time_avg");
   esf.qdp_time_avg(tl.n0_qdp,tl.np1_qdp);
-  Kokkos::fence();
+  ExecSpace::impl_static_fence();
   GPTLstop("tl-at qdp_time_avg");
 
   if ( ! EulerStepFunctor::is_quasi_monotone(params.limiter_option)) {

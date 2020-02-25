@@ -110,7 +110,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
                                  + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
     });
   }
-  ExecSpace::fence();
+  ExecSpace::impl_static_fence();
   GPTLstop("tl-sc dp3d-from-ps");
 
   // Loop over rsplit vertically lagrangian timesteps

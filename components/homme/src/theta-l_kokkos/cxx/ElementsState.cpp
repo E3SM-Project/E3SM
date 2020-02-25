@@ -290,7 +290,7 @@ void ElementsState::randomize(const int seed,
     hvcoord.compute_ps_ref_from_dp(kv,Homme::subview(dp,ie,tl),
                                       Homme::subview(ps,ie,tl));
   });
-  ExecSpace::fence();
+  ExecSpace::impl_static_fence();
 }
 
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,         CF90Ptr& state_w_i,
