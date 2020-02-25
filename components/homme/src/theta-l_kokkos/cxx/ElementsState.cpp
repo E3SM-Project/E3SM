@@ -47,12 +47,13 @@ void RefStates::compute(const bool hydrostatic,
   constexpr Real Tref = PhysicalConstants::Tref;
 
   auto policy = get_default_team_policy<ExecSpace>(num_elems);
-  const int num_teams = get_num_concurrent_teams(policy);
+  TeamUtils<ExecSpace> tu(policy);
+  const int num_teams = tu.get_num_concurrent_teams();
 
   ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> buf_p("",num_teams);
   ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> buf_p_i("",num_teams);
   Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const TeamMember& team){
-    KernelVariables kv(team);
+    KernelVariables kv(team, tu);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NP*NP),
                          [&](const int idx){
       const int igp = idx / NP;
@@ -282,9 +283,10 @@ void ElementsState::randomize(const int seed,
   hvcoord.m_inited = true;
   auto dp = m_dp3d;
   auto ps = m_ps_v;
-  Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(m_num_elems*NUM_TIME_LEVELS),
-                       KOKKOS_LAMBDA(const TeamMember team){
-    KernelVariables kv(team);
+  auto policy = Homme::get_default_team_policy<ExecSpace>(m_num_elems*NUM_TIME_LEVELS);
+  TeamUtils<ExecSpace> tu(policy);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const TeamMember& team) {
+    KernelVariables kv(team, tu);
     const int ie = kv.ie / NUM_TIME_LEVELS;
     const int tl = kv.ie % NUM_TIME_LEVELS;
     hvcoord.compute_ps_ref_from_dp(kv,Homme::subview(dp,ie,tl),
