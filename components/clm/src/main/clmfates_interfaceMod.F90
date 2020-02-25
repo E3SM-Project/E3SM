@@ -110,6 +110,7 @@ module CLMFatesInterfaceMod
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : InitPARTEHGlobals
+   use FatesInterfaceMod     , only : set_fates_global_elements
 
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
@@ -196,7 +197,6 @@ module CLMFatesInterfaceMod
       procedure, private :: init_soil_depths
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
-      procedure, public  :: ELMFatesGlobalElements
 
    end type hlm_fates_interface_type
 
@@ -209,6 +209,8 @@ module CLMFatesInterfaceMod
 
    character(len=*), parameter, private :: sourcefile = &
         __FILE__
+
+   public  :: ELMFatesGlobalElements
    
 contains
 
@@ -216,15 +218,35 @@ contains
 
    subroutine ELMFatesGlobalElements()
 
-       ! --------------------------------------------------------------------------------
-       ! This is one of the first calls to fates
-       ! Used for setting dimensions.  This MUST
-       ! be called after NL variables are specified and
-       ! after the FATES parameter file has been read in
-       ! Aside from setting global dimension info, which
-       ! is used in the history file, we also transfer
-       ! over the NL variables to FATES global settings.
-       ! --------------------------------------------------------------------------------
+     ! --------------------------------------------------------------------------------
+     ! This is one of the first calls to fates
+     ! Used for setting dimensions.  This MUST
+     ! be called after NL variables are specified and
+     ! after the FATES parameter file has been read in
+     ! Aside from setting global dimension info, which
+     ! is used in the history file, we also transfer
+     ! over the NL variables to FATES global settings.
+     ! --------------------------------------------------------------------------------  
+     
+     integer                                        :: pass_masterproc
+     integer                                        :: pass_vertsoilc
+     integer                                        :: pass_spitfire     
+     integer                                        :: pass_ed_st3
+     integer                                        :: pass_logging
+     integer                                        :: pass_ed_prescribed_phys
+     integer                                        :: pass_planthydro
+     integer                                        :: pass_inventory_init
+     integer                                        :: pass_is_restart
+     
+     ! --------------------------------------------------------------------------------
+     ! This is one of the first calls to fates
+     ! Used for setting dimensions.  This MUST
+     ! be called after NL variables are specified and
+     ! after the FATES parameter file has been read in
+     ! Aside from setting global dimension info, which
+     ! is used in the history file, we also transfer
+     ! over the NL variables to FATES global settings.
+     ! --------------------------------------------------------------------------------
        
        if (use_fates) then
 
@@ -379,15 +401,6 @@ contains
       ! local variables
       integer                                        :: nclumps   ! Number of threads
       logical                                        :: verbose_output
-      integer                                        :: pass_masterproc
-      integer                                        :: pass_vertsoilc
-      integer                                        :: pass_spitfire     
-      integer                                        :: pass_ed_st3
-      integer                                        :: pass_logging
-      integer                                        :: pass_ed_prescribed_phys
-      integer                                        :: pass_planthydro
-      integer                                        :: pass_inventory_init
-      integer                                        :: pass_is_restart
       integer                                        :: nc        ! thread index
       integer                                        :: s         ! FATES site index
       integer                                        :: c         ! HLM column index
