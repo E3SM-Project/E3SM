@@ -332,9 +332,6 @@ contains
 
            call InitPARTEHGlobals()
 
-           ! first read the non-PFT parameters
-           call FatesReadParameters()
-
        end if
 
        ! This determines the total amount of space it requires in its largest
