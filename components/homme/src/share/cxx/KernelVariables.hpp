@@ -74,7 +74,7 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
-  KernelVariables(const TeamMember &team_in, TeamUtils<ExecSpace>& utils)
+  KernelVariables(const TeamMember &team_in, const TeamUtils<ExecSpace>& utils)
       : team(team_in)
       , ie(team_in.league_rank())
       , iq(-1)
@@ -128,7 +128,7 @@ public:
 
   int ie, iq;
   const int team_idx;
-  TeamUtils<ExecSpace>* team_utils;
+  const TeamUtils<ExecSpace>* team_utils;
 }; // KernelVariables
 
 } // Homme
