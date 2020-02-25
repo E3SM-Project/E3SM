@@ -491,12 +491,6 @@ using a fortran linker.
   </FFLAGS>
 </compiler>
 
-<compiler MACH="centos7-linux">
-  <SLIBS>
-    <append>-L$(NETCDF_PATH)/lib -Wl,-rpath,$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="cheyenne">
   <CPPDEFS>
     <!-- these flags enable nano timers -->
@@ -532,13 +526,6 @@ using a fortran linker.
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
-<compiler MACH="cheyenne" COMPILER="pgi">
-  <SLIBS>
-    <append> -llapack -lblas </append>
-    <append MPILIB="mpi-serial"> -ldl </append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="hera" COMPILER="intel">
   <CFLAGS>
     <append> -qopt-report -xCORE-AVX2 </append>
@@ -548,17 +535,13 @@ using a fortran linker.
   </FFLAGS>
 </compiler>
 
-<compiler MACH="izumi">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
-  <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
-  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
-  <SLIBS>
-    <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf</append>
-  </SLIBS>
+<compiler COMPILER="intel" MACH="jet">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.7.0/intel/18.0.5.274</NETCDF_PATH>
 </compiler>
+
 
 <compiler MACH="macos" COMPILER="gnu">
   <LDFLAGS>
@@ -566,21 +549,6 @@ using a fortran linker.
          may require installation of the Apple Developer Tools. -->
     <append> -framework Accelerate </append>
   </LDFLAGS>
-</compiler>
-
-<compiler MACH="lonestar5">
-  <CPPDEFS>
-    <append> -DHAVE_NANOTIME </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
-  <LDFLAGS>
-    <append> -Wl,-rpath,${NETCDF_PATH}/lib </append>
-  </LDFLAGS>
-  <SLIBS>
-    <append> -L${NETCDF_PATH}/lib -lnetcdff -lnetcdf</append>
-  </SLIBS>
 </compiler>
 
 <compiler MACH="stampede2-skx">
@@ -609,63 +577,4 @@ using a fortran linker.
   <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
-
-<compiler MACH="stampede2-knl">
-  <CPPDEFS>
-    <append> -DHAVE_NANOTIME </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
-</compiler>
-
-<compiler MACH="stampede2-knl" COMPILER="intel">
-  <CFLAGS>
-    <append> -xCOMMON-AVX512 -no-fma </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append> -xCOMMON-AVX512 -no-fma </append>
-    <append MPILIB="mpi-serial"> -mcmodel medium </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append>-L$ENV{TACC_HDF5_LIB} -lhdf5 $(MKL) -zmuldefs -xCOMMON-AVX512</append>
-  </LDFLAGS>
-  <SLIBS>
-    <append>$SHELL{${NETCDF_PATH}/bin/nf-config --flibs} -L$ENV{TACC_HDF5_LIB} -lhdf5</append>
-  </SLIBS>
-  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="theia">
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort </MPIFC>
-  <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
-</compiler>
-
-<compiler COMPILER="intel" MACH="jet">
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <NETCDF_PATH>/apps/netcdf/4.7.0/intel/18.0.5.274</NETCDF_PATH>
-</compiler>
-
-<compiler MACH="userdefined">
-  <CONFIG_ARGS>
-    <base/>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append/>
-  </CPPDEFS>
-  <ESMF_LIBDIR/>
-  <MPI_LIB_NAME/>
-  <MPI_PATH/>
-  <NETCDF_PATH> USERDEFINED_MUST_EDIT_THIS</NETCDF_PATH>
-  <PNETCDF_PATH/>
-  <SLIBS>
-    <append># USERDEFINED $SHELL{${NETCDF_PATH}/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
 </config_compilers>

@@ -217,6 +217,7 @@
       <queue walltimemax="24:00:00" nodemin="861" nodemax="4166" default="true">batch</queue>
     </queues>
   </batch_system>
+
   <batch_system MACH="hera" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <submit_args>
@@ -232,77 +233,6 @@
       <queue walltimemax="00:30:00" nodemin="1" nodemax="210">debug</queue>
     </queues>
   </batch_system>
-  <batch_system type="pbs" MACH="izumi" >
-    <batch_submit>ssh izumi cd $CASEROOT ; qsub</batch_submit>
-    <jobid_pattern>(\d+.izumi.unified.ucar.edu)$</jobid_pattern>
-    <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="02:00:00"   strict="true" nodemin="1"  nodemax="8">short</queue>
-      <queue walltimemax="08:00:00"   strict="true" nodemin="1"  nodemax="6" default="true">medium</queue>
-      <queue walltimemax="40:00:00"   strict="true" nodemin="1"  nodemax="8">long</queue>
-      <queue walltimemax="120:00:00"   strict="true" nodemin="1"  nodemax="8">verylong</queue>
-      <queue walltimemax="32:00:00"   strict="true" nodemax="14" nodemin="1">overnight</queue>
-      <queue walltimemax="3000:00:00" strict="true" nodemax="14" nodemin="1">monster</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="lonestar5" type="slurm" >
-    <batch_submit>ssh login1.ls5.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <queues>
-      <queue walltimemax="48:00:00" nodemin="1" nodemax="171" default="true">normal</queue>
-      <queue walltimemax="24:00:00" nodemin="160" nodemax="342">large</queue>
-      <queue walltimemax="02:00:00" nodemin="1" nodemax="11" >development</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="stampede2-skx" type="slurm" >
-    <batch_submit>ssh login1.stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <queues>
-      <queue walltimemax="48:00:00" nodemin="1" nodemax="256" default="true">skx-normal</queue>
-      <queue walltimemax="02:00:00" nodemin="1" nodemax="4" >skx-dev</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="stampede2-knl" type="slurm" >
-    <batch_submit>ssh login1.stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <queues>
-      <queue walltimemax="48:00:00" nodemin="1" nodemax="256" >normal</queue>
-      <queue walltimemax="02:00:00" nodemin="1" nodemax="8" default="true">development</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="theia" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-q" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-      <directive>--partition=theia</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="01:00:00" nodemin="1" nodemax="171">batch</queue>
-    </queues>
-  </batch_system>
 
   <batch_system MACH="jet" type="slurm" >
     <batch_submit>sbatch</batch_submit>
@@ -316,6 +246,19 @@
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemin="1" nodemax="171">batch</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="stampede2-skx" type="slurm" >
+    <batch_submit>ssh login1.stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <queues>
+      <queue walltimemax="48:00:00" nodemin="1" nodemax="256" default="true">skx-normal</queue>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="4" >skx-dev</queue>
     </queues>
   </batch_system>
 
