@@ -18,7 +18,7 @@
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
-#include "scream_kokkos_utils.hpp"
+#include "kokkos_utils.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"

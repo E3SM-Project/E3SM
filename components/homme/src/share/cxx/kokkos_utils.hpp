@@ -1,5 +1,5 @@
-#ifndef SCREAM_KOKKOS_UTILS_HPP
-#define SCREAM_KOKKOS_UTILS_HPP
+#ifndef KOKKOS_UTILS_HPP
+#define KOKKOS_UTILS_HPP
 
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
@@ -10,7 +10,6 @@
 #include <cassert>
 #include <type_traits>
 
-// This file should not be merged with share/scream_kokkos_meta.hpp.
 // That file contains functionalities that *ideally* should be in kokkos
 // itself, and we can foresee being in kokkos in the future. Hence, that
 // file may be gone at some point (in fact, it may be gone by the time
@@ -186,4 +185,4 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
 
 } // namespace Homme
 
-#endif // SCREAM_KOKKOS_UTILS_HPP
+#endif // KOKKOS_UTILS_HPP

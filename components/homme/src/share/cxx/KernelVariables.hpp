@@ -8,7 +8,7 @@
 #define KERNEL_VARIABLES_HPP
 
 #include "Types.hpp"
-#include "scream_kokkos_utils.hpp"
+#include "kokkos_utils.hpp"
 
 namespace Homme {
 
