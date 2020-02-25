@@ -31,8 +31,8 @@ ANONYMOUS:
         Type: Lateral
         Immersed Ratio: 8.85000000000000009e-01
   Discretization: 
-    Cubature Degree: 11
-    Interleaved Ordering: true
+    Element Shape: Tetrahedron
+    #Exodus Output File Name: albany_output.exo
   Piro: 
     LOCA: 
       Bifurcation: { }
