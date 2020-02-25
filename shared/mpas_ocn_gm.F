@@ -460,16 +460,14 @@ contains
 
                zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
-               rValue = zEdge / verticalDisplacement
+               rValue = max(0.0_RKIND, min(1.0_RKIND, zEdge / verticalDisplacement))
 
                sfcTaperUp = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
-               sfcTaperUp = max(0.0_RKIND, min(sfcTaperUp, 1.0_RKIND))
 
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadDown(k,iCellSelf,iEdge))
-               rValue = zEdge / verticalDisplacement
+               rValue = max(0.0_RKIND, min(1.0_RKIND,zEdge / verticalDisplacement))
 
                sfcTaperDown = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
-               sfcTaperDown = max(0.0_RKIND, min(sfcTaperDown, 1.0_RKIND))
 
                ! LPV move vertical lines up to not limit the vertical mixing term
                ! Griffies 1998 eqn 34
