@@ -96,6 +96,17 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
+  KernelVariables(const TeamMember &team_in, const int qsize, const TeamUtils<ExecSpace>& utils)
+      : team(team_in)
+      , ie(team_in.league_rank() / qsize)
+      , iq(team_in.league_rank() % qsize)
+      , team_idx(utils.get_workspace_idx(team_in))
+      , team_utils(&utils)
+  {
+    // Nothing to be done here
+  }
+
+  KOKKOS_INLINE_FUNCTION
   ~KernelVariables() {
     if (team_utils != nullptr) {
       team_utils->release_workspace_idx(team, team_idx);

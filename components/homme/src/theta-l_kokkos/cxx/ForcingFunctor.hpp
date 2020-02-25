@@ -37,6 +37,10 @@ public:
    , m_policy_tracers_pre(1,1)
    , m_policy_tracers(1,1)
    , m_policy_tracers_post(1,1)
+   , m_tu_states(m_policy_states)
+   , m_tu_tracers_pre(m_policy_tracers_pre)
+   , m_tu_tracers(m_policy_tracers)
+   , m_tu_tracers_post(m_policy_tracers_post)
   {
     const auto& c = Context::singleton();
     const auto& p = c.get<SimulationParams>();
@@ -68,10 +72,15 @@ public:
     m_policy_tracers_pre = Homme::get_default_team_policy<ExecSpace,TagTracersPre>(m_tracers.num_elems());
     m_policy_tracers = Homme::get_default_team_policy<ExecSpace,TagTracers>(m_tracers.num_elems()*m_tracers.num_tracers());
     m_policy_tracers_post = Homme::get_default_team_policy<ExecSpace,TagTracersPost>(m_tracers.num_elems());
+
+    m_tu_states       = TeamUtils<ExecSpace>(m_policy_states);
+    m_tu_tracers_pre  = TeamUtils<ExecSpace>(m_policy_tracers_pre);
+    m_tu_tracers      = TeamUtils<ExecSpace>(m_policy_tracers);
+    m_tu_tracers_post = TeamUtils<ExecSpace>(m_policy_tracers_post);
   }
 
   int requested_buffer_size () const {
-    const int nteams = get_num_concurrent_teams(m_policy_tracers);
+    const int nteams = m_tu_tracers.get_num_concurrent_teams();
     const int nelems = m_state.num_elems();
     constexpr int mid_size = NP*NP*NUM_LEV*VECTOR_SIZE;
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
@@ -81,7 +90,7 @@ public:
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    const int num_teams = get_num_concurrent_teams(m_policy_tracers);
+    const int num_teams = m_tu_tracers.get_num_concurrent_teams();
     const int num_elems = m_state.num_elems();
 
     constexpr int mid_size = NP*NP*NUM_LEV;
@@ -121,7 +130,7 @@ public:
     constexpr int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
     constexpr int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu_states);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
 
@@ -214,7 +223,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator () (const TagTracersPre&, const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu_tracers_pre);
     constexpr Real Rgas = PhysicalConstants::Rgas;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -304,7 +313,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagTracers&, const TeamMember& team) const {
-    KernelVariables kv(team,m_qsize);
+    KernelVariables kv(team, m_qsize, m_tu_tracers);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;
@@ -339,7 +348,7 @@ public:
     constexpr int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
     constexpr int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu_tracers_post);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;
@@ -458,6 +467,7 @@ private:
   Kokkos::TeamPolicy<ExecSpace,TagTracersPre>   m_policy_tracers_pre;
   Kokkos::TeamPolicy<ExecSpace,TagTracers>      m_policy_tracers;
   Kokkos::TeamPolicy<ExecSpace,TagTracersPost>  m_policy_tracers_post;
+  TeamUtils<ExecSpace> m_tu_states, m_tu_tracers_pre, m_tu_tracers, m_tu_tracers_post;
 };
 
 } // namespace Homme
