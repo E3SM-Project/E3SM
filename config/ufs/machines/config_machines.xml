@@ -460,6 +460,65 @@ This allows using a different mpirun command to launch unit tests
     </environment_variables>
   </machine>
 
+  <machine MACH="jet">
+    <DESC>NOAA JET system</DESC>
+    <NODENAME_REGEX>fe\d?.fsl.noaa.gov</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>wrfruc</PROJECT>
+    <CIME_OUTPUT_ROOT>$ENV{CIME_OUTPUT_ROOT}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{DIN_LOC_ROOT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{DIN_LOC_ROOT}/ufs_inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{DOUT_S_ROOT}/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{BASELINE_ROOT}/ufs_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/mnt/lfs1/projects/wrfruc/mhu/ufs/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>NOAA</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="num_tasks">-n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="perl">/apps/lmod/lmod/init/perl</init_path> 
+      <init_path lang="python">/apps/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/apps/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules compiler="intel">
+        <command name="purge"/>
+        <command name="load">intel/18.0.5.274</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">impi/2018.4.274</command>
+        <command name="load">pnetcdf/1.6.1</command>
+        <command name="load">netcdf/4.7.0</command>
+        <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/intel-18.0.5.274/impi-2018.4.274</command>
+        <command name="load">NCEPlibs/1.0.0beta02</command>
+      </modules>
+      <modules>
+        <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/generic</command>
+        <command name="load">cmake/3.16.4</command>
+      </modules>
+    </module_system>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+    </environment_variables>
+  </machine>
+
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/ufs.exe </default_run_exe>
     <default_run_misc_suffix> >> ufs.log.$LID 2>&amp;1 </default_run_misc_suffix>
