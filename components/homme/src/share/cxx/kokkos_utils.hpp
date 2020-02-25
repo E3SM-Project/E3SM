@@ -121,7 +121,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
 
  public:
   template <typename TeamPolicy>
-  TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 1.0) :
+  TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 1.25) :
     _TeamUtilsCommonBase<Kokkos::Cuda>(policy),
     _num_ws_slots(_league_size > _num_teams
                   ? (overprov_factor * _num_teams > _league_size ? _league_size : overprov_factor * _num_teams)
