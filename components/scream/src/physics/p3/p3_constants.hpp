@@ -32,7 +32,7 @@ struct Constants
   static constexpr Scalar Tmelt       = 273.15;
   static constexpr Scalar ZeroDegC    = Tmelt;
   static constexpr Scalar homogfrze   = Tmelt - 40;
-  static constexpr Scalar rainfrze    = Tmelt - 4;
+  static constexpr Scalar RainFrze    = Tmelt - 4;
   static constexpr Scalar Pi          = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc  = true;
