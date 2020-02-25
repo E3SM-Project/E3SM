@@ -86,6 +86,7 @@ struct DirkFunctorImpl {
   Work m_work;
   LinearSystem m_ls;
   TeamPolicy m_policy, m_ig_policy;
+  TeamUtils<ExecSpace> m_tu, m_tu_ig;
   int nteam;
 
   KOKKOS_INLINE_FUNCTION
@@ -94,7 +95,7 @@ struct DirkFunctorImpl {
   }
 
   DirkFunctorImpl (const int nelem)
-    : m_policy(1,1,1), m_ig_policy(1,1,1) // throwaway settings
+    : m_policy(1,1,1), m_ig_policy(1,1,1), m_tu(m_policy), m_tu_ig(m_ig_policy) // throwaway settings
   {
     init(nelem);
   }
@@ -121,8 +122,10 @@ struct DirkFunctorImpl {
         ::team_num_threads_vectors(nelem, tp);
       m_policy = TeamPolicy(nelem, p.first, 1);
     }
-    nteam = std::min(nelem, get_num_concurrent_teams(m_policy));
+    m_tu = TeamUtils<ExecSpace>(m_policy);
+    nteam = std::min(nelem, m_tu.get_num_concurrent_teams());
     m_ig_policy = Homme::get_default_team_policy<ExecSpace>(nelem);
+    m_tu_ig = TeamUtils<ExecSpace>(m_ig_policy);
   }
 
   int requested_buffer_size () const {
@@ -168,7 +171,7 @@ struct DirkFunctorImpl {
     const auto work = m_work;
 
     const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team);
+      KernelVariables kv(team, m_tu_ig);
       const auto ie = kv.ie;
 
       const ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV_P]>
@@ -227,7 +230,7 @@ struct DirkFunctorImpl {
     const auto hybi = hvcoord.hybrid_bi;
 
     const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team);
+      KernelVariables kv(team, m_tu);
       const auto ie = kv.ie;
       const int nlev = num_phys_lev;
 
