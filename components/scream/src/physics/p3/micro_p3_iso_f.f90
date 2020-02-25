@@ -105,7 +105,7 @@ interface
 
     !arguments:
     real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
-    real(kind=c_real), intent(inout) :: ncslf
+    real(kind=c_real), intent(out) :: ncslf
   end subroutine droplet_self_collection_f
 
   subroutine cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
@@ -113,7 +113,7 @@ interface
 
     !arguments:
     real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
-    real(kind=c_real), intent(inout) :: qcacc, ncacc
+    real(kind=c_real), intent(out) :: qcacc, ncacc
   end subroutine cloud_rain_accretion_f
 
   subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)

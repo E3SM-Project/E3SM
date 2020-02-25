@@ -306,7 +306,7 @@ contains
 
       use micro_p3, only: droplet_self_collection
       real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
-      real(kind=c_real), intent(inout) :: ncslf
+      real(kind=c_real), intent(out) :: ncslf
 
       call droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf)
   end subroutine droplet_self_collection_c
@@ -315,7 +315,7 @@ contains
 
       use micro_p3, only: cloud_rain_accretion
       real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
-      real(kind=c_real), intent(inout) :: qcacc, ncacc
+      real(kind=c_real), intent(out) :: qcacc, ncacc
 
       call cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc)
   end subroutine cloud_rain_accretion_c
