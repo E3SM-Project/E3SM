@@ -238,17 +238,7 @@ contains
      integer                                        :: pass_inventory_init
      integer                                        :: pass_is_restart
      
-     ! --------------------------------------------------------------------------------
-     ! This is one of the first calls to fates
-     ! Used for setting dimensions.  This MUST
-     ! be called after NL variables are specified and
-     ! after the FATES parameter file has been read in
-     ! Aside from setting global dimension info, which
-     ! is used in the history file, we also transfer
-     ! over the NL variables to FATES global settings.
-     ! --------------------------------------------------------------------------------
-       
-       if (use_fates) then
+     if (use_fates) then
 
            ! Force FATES parameters that are recieve type, to the unset value
            call set_fates_ctrlparms('flush_to_unset')
@@ -357,9 +347,8 @@ contains
        ! fates_maxElementsPerSite (where a site is roughly equivalent to a column)
        ! (Note: this needs to be called when use_fates=.false. as well, becuase
        ! it will return some nominal dimension sizes of 1
-       call set_fates_global_elements(use_fates)
-       
 
+       call set_fates_global_elements(use_fates)
 
        return
    end subroutine ELMFatesGlobalElements
