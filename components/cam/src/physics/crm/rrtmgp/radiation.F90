@@ -476,6 +476,8 @@ contains
       real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
       character(len=32) :: subname = 'radiation_init'
 
+      character(len=6), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
+
       !-----------------------------------------------------------------------
 
       ! Initialize cloud optics
@@ -822,18 +824,12 @@ contains
       ! Add cloud-scale radiative quantities
       call phys_getopts(use_MMF_out=use_MMF)
       if (use_MMF) then
-         call addfld ('CRM_QRAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', 'K/s', &
-                      'Radiative heating tendency')
-         call addfld ('CRM_QRS ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', &
-                      'CRM Shortwave radiative heating rate')
-         call addfld ('CRM_QRSC', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', &
-                      'CRM clear-sky shortwave radiative heating rate')
-         call addfld ('CRM_QRL ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', &
-                      'CRM Longwave radiative heating rate' )
-         call addfld ('CRM_QRLC', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', &
-                      'CRM clear-sky longwave radiative heating rate' )
-         call addfld ('CRM_CLD_RAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'fraction', &
-                      'CRM cloud fraction')
+         call addfld('CRM_QRAD', dims_crm_rad, 'A', 'K/s', 'Radiative heating tendency')
+         call addfld('CRM_QRS ', dims_crm_rad, 'I', 'K/s', 'CRM Shortwave radiative heating rate')
+         call addfld('CRM_QRSC', dims_crm_rad, 'I', 'K/s', 'CRM clear-sky shortwave radiative heating rate')
+         call addfld('CRM_QRL ', dims_crm_rad, 'I', 'K/s', 'CRM Longwave radiative heating rate' )
+         call addfld('CRM_QRLC', dims_crm_rad, 'I', 'K/s', 'CRM clear-sky longwave radiative heating rate' )
+         call addfld('CRM_CLD_RAD', dims_crm_rad, 'I', 'fraction', 'CRM cloud fraction')
       end if
 
       call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
