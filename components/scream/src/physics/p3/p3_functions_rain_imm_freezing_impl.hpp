@@ -7,7 +7,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Implementation of p3 cloud rain accretion function. Clients should NOT
+ * Implementation of p3 rain immersion freezing function. Clients should NOT
  * #include this file, but include p3_functions.hpp instead.
  */
 

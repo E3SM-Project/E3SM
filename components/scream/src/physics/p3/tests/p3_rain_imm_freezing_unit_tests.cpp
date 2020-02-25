@@ -123,7 +123,7 @@ static void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_cloud_rain_accretion", "[p3_functions]")
+TEST_CASE("p3_rain_immersion_freezing", "[p3_functions]")
 {
   using TRIF = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainImmersionFreezing;
 
