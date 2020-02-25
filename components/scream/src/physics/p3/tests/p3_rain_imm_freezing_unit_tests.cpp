@@ -46,25 +46,25 @@ static void run_bfb()
 
   RainImmersionFreezingData rain_imm_freezing_data[max_pack_size] = {
     // t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti
-    {t_not_freezing, lamr1, mu_r1, cdistr1, qr_incld_small, 0.0, 0.0},
-    {t_not_freezing, lamr2, mu_r2, cdistr2, qr_incld_small, 0.0, 0.0},
-    {t_not_freezing, lamr3, mu_r3, cdistr3, qr_incld_small, 0.0, 0.0},
-    {t_not_freezing, lamr4, mu_r4, cdistr4, qr_incld_small, 0.0, 0.0},
+    {t_not_freezing, lamr1, mu_r1, cdistr1, qr_incld_small},
+    {t_not_freezing, lamr2, mu_r2, cdistr2, qr_incld_small},
+    {t_not_freezing, lamr3, mu_r3, cdistr3, qr_incld_small},
+    {t_not_freezing, lamr4, mu_r4, cdistr4, qr_incld_small},
 
-    {t_not_freezing, lamr1, mu_r1, cdistr1, qr_incld_not_small, 0.0, 0.0},
-    {t_not_freezing, lamr2, mu_r2, cdistr2, qr_incld_not_small, 0.0, 0.0},
-    {t_not_freezing, lamr3, mu_r3, cdistr3, qr_incld_not_small, 0.0, 0.0},
-    {t_not_freezing, lamr4, mu_r4, cdistr4, qr_incld_not_small, 0.0, 0.0},
+    {t_not_freezing, lamr1, mu_r1, cdistr1, qr_incld_not_small},
+    {t_not_freezing, lamr2, mu_r2, cdistr2, qr_incld_not_small},
+    {t_not_freezing, lamr3, mu_r3, cdistr3, qr_incld_not_small},
+    {t_not_freezing, lamr4, mu_r4, cdistr4, qr_incld_not_small},
 
-    {t_freezing, lamr1, mu_r1, cdistr1, qr_incld_small, 0.0, 0.0},
-    {t_freezing, lamr2, mu_r2, cdistr2, qr_incld_small, 0.0, 0.0},
-    {t_freezing, lamr3, mu_r3, cdistr3, qr_incld_small, 0.0, 0.0},
-    {t_freezing, lamr4, mu_r4, cdistr4, qr_incld_small, 0.0, 0.0},
+    {t_freezing, lamr1, mu_r1, cdistr1, qr_incld_small},
+    {t_freezing, lamr2, mu_r2, cdistr2, qr_incld_small},
+    {t_freezing, lamr3, mu_r3, cdistr3, qr_incld_small},
+    {t_freezing, lamr4, mu_r4, cdistr4, qr_incld_small},
 
-    {t_freezing, lamr1, mu_r1, cdistr1, qr_incld_not_small, 0.0, 0.0},
-    {t_freezing, lamr2, mu_r2, cdistr2, qr_incld_not_small, 0.0, 0.0},
-    {t_freezing, lamr3, mu_r3, cdistr3, qr_incld_not_small, 0.0, 0.0},
-    {t_freezing, lamr4, mu_r4, cdistr4, qr_incld_not_small, 0.0, 0.0}
+    {t_freezing, lamr1, mu_r1, cdistr1, qr_incld_not_small},
+    {t_freezing, lamr2, mu_r2, cdistr2, qr_incld_not_small},
+    {t_freezing, lamr3, mu_r3, cdistr3, qr_incld_not_small},
+    {t_freezing, lamr4, mu_r4, cdistr4, qr_incld_not_small}
   };
 
   // Sync to device

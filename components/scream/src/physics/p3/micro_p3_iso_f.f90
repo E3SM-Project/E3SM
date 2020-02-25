@@ -97,7 +97,7 @@ interface
 
     !arguments:
     real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
-    real(kind=c_real), intent(inout) :: qrheti, nrheti
+    real(kind=c_real), intent(out) :: qrheti, nrheti
   end subroutine rain_immersion_freezing_f
 
   subroutine droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)

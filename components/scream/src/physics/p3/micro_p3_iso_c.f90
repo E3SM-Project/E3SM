@@ -297,7 +297,7 @@ contains
 
       use micro_p3, only: rain_immersion_freezing
       real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
-      real(kind=c_real), intent(inout) :: qrheti, nrheti
+      real(kind=c_real), intent(out) :: qrheti, nrheti
 
       call rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti)
   end subroutine rain_immersion_freezing_c
