@@ -99,6 +99,8 @@ class EulerStepFunctorImpl {
   EulerStepData               m_data;
   SphereOperators             m_sphere_ops;
 
+  TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize;
+
   bool                m_kernel_will_run_limiters;
 
   std::shared_ptr<BoundaryExchange> m_mm_be, m_mmqb_be;
@@ -115,6 +117,8 @@ public:
    , m_deriv         (Context::singleton().get<ReferenceElement>().get_deriv())
    , m_hvcoord       (Context::singleton().get<HybridVCoord>())
    , m_sphere_ops    (Context::singleton().get<SphereOperators>())
+   , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1))
+   , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1))
   {
     // Nothing to be done here
   }
@@ -135,7 +139,13 @@ public:
     }
 
     // Make sure sphere ops have buffers large enough to accommodate this functor's needs
-    m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize));
+    auto tp_ne       = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
+    auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize);
+
+    m_tu_ne       = TeamUtils<ExecSpace>(tp_ne);
+    m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize);
+
+    m_sphere_ops.allocate_buffers(tp_ne_qsize);
   }
 
   int requested_buffer_size () const {
@@ -275,7 +285,7 @@ public:
 //case when nu_p > 0
   KOKKOS_INLINE_FUNCTION
   void operator() (const BIHPreNup&, const TeamMember& team) const {
-    KernelVariables kv(team,m_data.qsize);
+    KernelVariables kv(team, m_data.qsize, m_tu_ne_qsize);
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     dpdiss_adjustment(kv, team);
     m_sphere_ops.laplace_simple(kv, qtens_biharmonic, qtens_biharmonic);
@@ -284,7 +294,7 @@ public:
 //case when nu_p == 0
   KOKKOS_INLINE_FUNCTION
   void operator() (const BIHPreNoNup&, const TeamMember& team) const {
-    KernelVariables kv(team,m_data.qsize);
+    KernelVariables kv(team, m_data.qsize, m_tu_ne_qsize);
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     m_sphere_ops.laplace_simple(kv, qtens_biharmonic, qtens_biharmonic);
   }
@@ -312,7 +322,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const BIHPostConstHV&, const TeamMember& team) const {
-    KernelVariables kv(team,m_data.qsize);
+    KernelVariables kv(team, m_data.qsize, m_tu_ne_qsize);
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     team.team_barrier();
     m_sphere_ops.laplace_simple(kv, qtens_biharmonic, qtens_biharmonic);
@@ -322,7 +332,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const BIHPostTensorHV&, const TeamMember& team) const {
-    KernelVariables kv(team,m_data.qsize);
+    KernelVariables kv(team,m_data.qsize, m_tu_ne_qsize);
     const auto qtens_biharmonic = Homme::subview(m_tracers.qtens_biharmonic, kv.ie, kv.iq);
     const auto tensor = Homme::subview(m_geometry.m_tensorvisc, kv.ie);
     team.team_barrier();
@@ -374,13 +384,13 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const AALSetupPhase&, const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu_ne);
     run_setup_phase(kv);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const AALTracerPhase&, const TeamMember& team) const {
-    KernelVariables kv(team, m_data.qsize);
+    KernelVariables kv(team, m_data.qsize, m_tu_ne_qsize);
     run_tracer_phase(kv);
   }
 
@@ -401,7 +411,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const PrecomputeDivDp &, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu_ne);
     m_sphere_ops.divergence_sphere(kv,
                       Homme::subview(m_derived_state.m_vn0, kv.ie),
                       Homme::subview(m_derived_state.m_divdp, kv.ie));
@@ -424,7 +434,7 @@ public:
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize),
       KOKKOS_LAMBDA(const TeamMember& team) {
-        KernelVariables kv(team, qsize);
+        KernelVariables kv(team, qsize, m_tu_ne_qsize);
         const auto qdp_n0 = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qdp_np1 = Homme::subview(qdp, kv.ie, np1_qdp, kv.iq);
         Kokkos::parallel_for(
@@ -453,7 +463,7 @@ public:
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()),
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team);
+        KernelVariables kv(team, m_tu_ne);
         Kokkos::parallel_for (
           Kokkos::TeamThreadRange(kv.team, NP*NP),
           [&] (const int loop_idx) {
@@ -491,10 +501,11 @@ public:
         num_parallel_iterations, tp);
     Kokkos::TeamPolicy<ExecSpace> policy(num_parallel_iterations,
                                          tv.first, tv.second);
+    TeamUtils<ExecSpace> tu(policy);
     Kokkos::parallel_for(
       policy,
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team, qsize);
+        KernelVariables kv(team, qsize, tu);
         const auto dp_t = Homme::subview(dp, kv.ie);
         const auto qdp_t = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qtens_biharmonic_t = Homme::subview(qtens_biharmonic, kv.ie, kv.iq);

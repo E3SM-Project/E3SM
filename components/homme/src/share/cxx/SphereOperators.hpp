@@ -80,9 +80,8 @@ public:
   template<typename... Tags>
   void allocate_buffers (const Kokkos::TeamPolicy<ExecSpace,Tags...>& team_policy)
   {
-    const int num_parallel_iterations = team_policy.league_size();
-    const int alloc_dim = OnGpu<ExecSpace>::value ?
-                          num_parallel_iterations : std::min(get_num_concurrent_teams(team_policy),num_parallel_iterations);
+    TeamUtils<ExecSpace> tu(team_policy);
+    const int alloc_dim = tu.get_num_concurrent_teams();
 
     if (vector_buf_ml.extent_int(0)<alloc_dim) {
       vector_buf_sl = decltype(vector_buf_sl)("",alloc_dim);
