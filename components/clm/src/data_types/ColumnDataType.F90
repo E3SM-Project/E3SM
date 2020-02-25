@@ -3505,6 +3505,97 @@ contains
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1n)
 
+    if (use_fan) then
+       call restartvar(ncid=ncid, flag=flag, varname='tan_g1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_g1_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_g2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_g2_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_g3', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_g3_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s0', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s0_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s1_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s2_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s3', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s3_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f0', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f0_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f1_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f2_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f3', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f3_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fert_u0', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fert_u0_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fert_u1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fert_u1_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_u_grz', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_u_grz_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_a_grz', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_a_grz_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_r_grz', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_r_grz_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_u_app', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_u_app_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_a_app', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_a_app_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_r_app', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_r_app_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_tan_stored', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_tan_stored_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='man_n_stored', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%man_n_stored_col)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fan_grz_fract', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fan_grz_fract_col)
+    end if
+
+
     ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
     ! matches what the restart file was generated with.  
     ! add info about the SOM decomposition cascade
@@ -8689,6 +8780,31 @@ contains
 
        ! bgc-interface
        this%plant_ndemand(i) = value_column
+
+       if ( use_fan ) then
+          this%man_tan_appl_col(i)       = value_column
+          this%man_n_appl_col(i)         = value_column
+          this%man_n_grz_col(i)          = value_column
+          this%man_n_mix_col(i)          = value_column
+          this%man_n_barns_col(i)        = value_column
+          this%fert_n_appl_col(i)        = value_column
+          this%otherfert_n_appl_col(i)   = value_column
+          this%man_n_transf_col(i)       = value_column
+          this%nh3_barns_col(i)          = value_column
+          this%nh3_stores_col(i)         = value_column
+          this%nh3_grz_col(i)            = value_column
+          this%nh3_man_app_col(i)        = value_column
+          this%nh3_fert_col(i)           = value_column
+          this%nh3_otherfert_col(i)      = value_column
+          this%nh3_total_col(i)          = value_column
+          this%manure_no3_prod_col(i)    = value_column
+          this%fert_no3_prod_col(i)      = value_column
+          this%manure_nh4_to_soil_col(i) = value_column
+          this%fert_nh4_to_soil_col(i)   = value_column
+          this%manure_runoff_col(i)      = value_column
+          this%fert_runoff_col(i)        = value_column
+       end if
+
     end do
 
     do k = 1, ndecomp_pools

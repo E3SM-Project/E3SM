@@ -67,7 +67,7 @@ module CNEcosystemDynBetrMod
          canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
          photosyns_vars, soilhydrology_vars, energyflux_vars, &
          PlantMicKinetics_vars,                                          &
-         phosphorusflux_vars, phosphorusstate_vars)
+         phosphorusflux_vars, phosphorusstate_vars,frictionvel_vars)
 
     ! Description:
     ! Update vegetation related state variables and
@@ -139,6 +139,7 @@ module CNEcosystemDynBetrMod
     type(PlantMicKinetics_type)      , intent(inout) :: PlantMicKinetics_vars
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
+    type(frictionvel_type)           , intent(in)    :: frictionvel_vars
 
     if(.not. use_fates)then
        ! --------------------------------------------------
@@ -173,8 +174,12 @@ module CNEcosystemDynBetrMod
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
+
        call NitrogenDeposition(bounds, &
-            atm2lnd_vars, nitrogenflux_vars)
+            atm2lnd_vars, nitrogenflux_vars, nitrogenstate_vars, &
+            frictionvel_vars, waterstate_vars, waterflux_vars, &
+            temperature_vars, soilstate_vars, filter_soilc, num_soilc)
+
        call t_stopf('CNDeposition')
 
        call t_startf('MaintenanceResp')

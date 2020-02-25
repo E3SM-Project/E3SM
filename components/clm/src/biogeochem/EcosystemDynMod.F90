@@ -276,7 +276,7 @@ contains
        atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
        ch4_vars, photosyns_vars,                                        &
-       phosphorusflux_vars,phosphorusstate_vars)
+       phosphorusflux_vars,phosphorusstate_vars,frictionvel_vars)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-1 of EcosystemDynNoLeaching
@@ -355,6 +355,7 @@ contains
 !
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(frictionvel_type)   , intent(in)    :: frictionvel_vars
 
     !-----------------------------------------------------------------------
 
@@ -394,8 +395,12 @@ contains
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
+
        call NitrogenDeposition(bounds, &
-            atm2lnd_vars, nitrogenflux_vars)
+            atm2lnd_vars, nitrogenflux_vars, nitrogenstate_vars, &
+            frictionvel_vars, waterstate_vars, waterflux_vars, &
+            temperature_vars, soilstate_vars, filter_soilc, num_soilc)
+       
        call t_stopf('CNDeposition')
 
        if (.not. nu_com_nfix) then 

@@ -639,6 +639,11 @@ Max number of plant functional types in naturally vegetated landunit.
 Toggle to turn on the dynamic root model.
 </entry>
 
+<entry id="use_fan" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the Flow of Agricultural Nitrogen (FAN) model
+</entry>
+
 <!--                                                   -->
 <!-- mkmapdata  namelist                               -->
 <!--                                                   -->
@@ -1021,6 +1026,7 @@ Mapping method from Nitrogen deposition input file to the model resolution
     copy     = copy using the same indices
 </entry>
 
+
 <!-- ========================================================================================  -->
 <!-- pdepdyn streams Namelist (only used when bgc=cn/cndv)                                     -->
 <!-- ========================================================================================  -->
@@ -1055,6 +1061,42 @@ Mapping method from Phosphorus deposition input file to the model resolution
     spval    = set to special value
     copy     = copy using the same indices
 </entry>
+
+<!-- ========================================================================================  -->
+<!-- fan streams Namelist (only used when bgc=cn/cndv and use_fan=.true.)                 -->
+<!-- ========================================================================================  -->
+
+<entry id="stream_year_first_fan" type="integer" category="datasets"
+       group="fan_nml" valid_values="" >
+First year to loop over for FAN Nitrogen (manure) Deposition data
+</entry>
+
+<entry id="stream_year_last_fan" type="integer" category="datasets"
+       group="fan_nml" valid_values="" >
+Last year to loop over for FAN Nitrogen (manure) Deposition data
+</entry>
+
+<entry id="model_year_align_fan" type="integer" category="datasets"
+       group="fan_nml" valid_values="" >
+Simulation year that aligns with stream_year_first_ndep2 value
+</entry>
+
+<entry id="stream_fldfilename_fan" type="char*256" category="datasets"
+       input_pathname="abs" group="fan_nml" valid_values="" >
+Filename of input stream data for FAN Nitrogen (manure) Deposition
+</entry>
+
+<entry id="fanmapalgo" type="char*256" category="datasets"
+       group="fan_nml" valid_values="bilinear,nn,nnoni,nnonj,spval,copy" >
+Mapping method from FAN Nitrogen (manure) deposition input file to the model resolution
+    bilinear = bilinear interpolation
+    nn       = nearest neighbor
+    nnoni    = nearest neighbor on the "i" (longitude) axis
+    nnonj    = nearest neighbor on the "j" (latitude) axis
+    spval    = set to special value
+    copy     = copy using the same indices
+</entry>
+
 
 
 <!-- ========================================================================================  -->

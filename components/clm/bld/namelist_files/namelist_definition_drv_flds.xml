@@ -128,4 +128,12 @@
     List of fluxes needed by the CARMA model, from CLM to CAM.
   </entry>
 
+  <!-- ========================================================================================  -->
+  <!-- FAN fields                                                                              -->
+  <!-- ========================================================================================  -->
+  <entry id="fan_nh3_to_atm" type="logical" category="FAN"
+	 group="fan_inparm" valid_values="" >
+    Switch on/off the coupling of NH3 emissions from FAN/CLM to CAM
+  </entry>
+
 </namelist_definition>

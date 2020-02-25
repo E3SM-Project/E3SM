@@ -39,8 +39,8 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
-  use clm_varctl              , only: use_dynroot
-  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use clm_varctl              , only: use_dynroot, use_fan
+  use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use clm_varctl              , only: forest_fert_exp
@@ -135,7 +135,7 @@ contains
     ! ----------------------------------------------------------------------
 
     ! Time step
-    namelist / clm_inparm/ &
+    namelist /clm_inparm/ &
          dtime
 
     ! CLM namelist settings
@@ -295,6 +295,9 @@ contains
     namelist /clm_inparm/ &
          use_erosion, ero_ccycle
 
+    namelist /clm_inparm/ &
+         use_fan
+    
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -334,6 +337,7 @@ contains
        call shr_nl_find_group_name(unitn, 'clm_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
+          print *, 'ierr:', ierr
           if (ierr /= 0) then
              call endrun(msg='ERROR reading clm_inparm namelist'//errMsg(__FILE__, __LINE__))
           end if
@@ -617,6 +621,8 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (use_fan, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)

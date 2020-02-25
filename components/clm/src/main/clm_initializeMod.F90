@@ -11,7 +11,7 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr  
+  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr, use_fan  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -443,6 +443,8 @@ contains
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
+    use FanStreamMod          , only : fanstream_init, fanstream_interp
+
     !
     ! !ARGUMENTS    
     implicit none
@@ -808,6 +810,12 @@ contains
        call ndep_init(bounds_proc)
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
+       if ( use_fan ) then
+          call t_startf('init_ndep2')
+          call fanstream_init(bounds_proc, NLFilename)
+          call fanstream_interp(bounds_proc, atm2lnd_vars)
+          call t_stopf('init_ndep2')
+       end if
     end if
     
     ! ------------------------------------------------------------------------
