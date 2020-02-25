@@ -159,11 +159,11 @@ end subroutine shoc_init
 subroutine shoc_main ( &
      shcol, nlev, nlevi, dtime, nadv, &   ! Input
      host_dx, host_dy,thv, &              ! Input
-     zt_grid,zi_grid,pres,presi,pdel,&     ! Input
+     zt_grid,zi_grid,pres,presi,pdel,&    ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
      exner,phis, &                        ! Input     
-     host_temp, tke, thetal, qw, &        ! Input/Output
+     host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,shoc_ql,&            ! Input/Output
      shoc_cldfrac,pblh,&                  ! Output
@@ -200,7 +200,7 @@ subroutine shoc_main ( &
   ! pressure levels on thermo grid [Pa]  
   real(r8), intent(in) :: pres(shcol,nlev)
   ! pressure levels on interface grid [Pa]  
-  real(r8), intent(in) :: presi(shcol,nlev)  
+  real(r8), intent(in) :: presi(shcol,nlevi)  
   ! Differences in pressure levels [Pa] 
   real(r8), intent(in) :: pdel(shcol,nlev)
   ! virtual potential temperature [K] 
@@ -223,8 +223,10 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: phis(shcol)
 
 ! INPUT/OUTPUT VARIABLES  
-  ! temperature of the host model [K]
-  real(r8), intent(inout) :: host_temp(shcol,nlev)
+  ! prognostic temp variable of host model
+  ! dry static energy [J/kg]
+  ! dse = Cp*T + g*z + phis
+  real(r8), intent(inout) :: host_dse(shcol,nlev)
   ! turbulent kinetic energy [m2/s2]
   real(r8), intent(inout) :: tke(shcol,nlev)  
   ! liquid water potential temperature [K]
@@ -319,7 +321,7 @@ subroutine shoc_main ( &
   ! conserves) and static energy (which E3SM conserves) are not exactly equal. 
   
   call shoc_energy_integrals(&
-         shcol,nlev,host_temp,pdel,&            ! Input
+         shcol,nlev,host_dse,pdel,&             ! Input
 	 qw,shoc_ql,u_wind,v_wind,&             ! Input
 	 se_b,ke_b,wv_b,wl_b)                   ! Input/Output
 
@@ -428,13 +430,13 @@ subroutine shoc_main ( &
   
   ! Use SHOC outputs to update the host model
   !  temperature
-  call update_host_temp(&
+  call update_host_dse(&
          shcol,nlev,thetal,&                   ! Input
          shoc_ql,exner,zt_grid,phis,&          ! Input
-	 host_temp)	                       ! Output
+	 host_dse)	                       ! Output
   
   call shoc_energy_integrals(&                 ! Input
-         shcol,nlev,host_temp,pdel,&           ! Input
+         shcol,nlev,host_dse,pdel,&            ! Input
 	 qw,shoc_ql,u_wind,v_wind,&            ! Input
 	 se_a,ke_a,wv_a,wl_a)                  ! Output
 	 
@@ -445,7 +447,7 @@ subroutine shoc_main ( &
 	 se_a,ke_a,wv_a,wl_a,&                 ! Input
 	 wthl_sfc,wqw_sfc,pdel,&               ! Input
 	 rho_zt,tke,presi,&                    ! Input
-	 host_temp)                            ! Input/Output
+	 host_dse)                             ! Input/Output
     
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
@@ -1306,7 +1308,6 @@ subroutine shoc_assumed_pdf(&
   real(r8) :: thl_sec_zt(shcol,nlev)
   real(r8) :: qwthl_sec_zt(shcol,nlev)
   real(r8) :: qw_sec_zt(shcol,nlev)
-  real(r8) :: w_field_zt(shcol,nlev)
 
   ! define these so they don't have to be computed more than once
   real(r8), parameter :: sqrt2 = sqrt(2._r8)
@@ -1330,7 +1331,6 @@ subroutine shoc_assumed_pdf(&
   call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
   call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,0._r8)  
-  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)
   
   do k=1,nlev
     do i=1,shcol
@@ -1340,7 +1340,7 @@ subroutine shoc_assumed_pdf(&
       ! Get all needed input moments for the PDF
       !  at this particular point
       thl_first = thetal(i,k)
-      w_first = w_field_zt(i,k)
+      w_first = w_field(i,k)
       qw_first = qw(i,k)
       
       w3var = w3_zt(i,k)
@@ -1888,10 +1888,10 @@ subroutine shoc_length(&
   real(r8) :: thv_zi(shcol,nlevi)
   
   real(r8) :: numer(shcol)
-  real(r8) :: denom(shcol)
-  real(r8) :: cldarr(shcol) 
+  real(r8) :: denom(shcol) 
   real(r8) :: l_inf(shcol)
   real(r8) :: brunt2(shcol,nlev)
+  logical  :: cldcol(shcol)
  
   doclouddef = .true.
  
@@ -1899,6 +1899,7 @@ subroutine shoc_length(&
   brunt2(:,:) = 0._r8
   numer(:) = 0._r8
   denom(:) = 0._r8
+  cldcol(:) = .false.
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._r8)
@@ -1919,7 +1920,7 @@ subroutine shoc_length(&
 	numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
 	denom(i)=denom(i)+tkes*dz_zt(i,k)
       else
-        cldarr(i)=1
+        cldcol(i)=.true.
       endif
     
     enddo
@@ -1972,7 +1973,7 @@ subroutine shoc_length(&
  
   do i=1,shcol
   
-    if (cldarr(i) .eq. 1) then
+    if (cldcol(i)) then
       
       kl=0
       ku=0
@@ -2012,7 +2013,7 @@ subroutine shoc_length(&
 	
       enddo ! end k loop
 	
-    endif ! end cldarr conditional  
+    endif ! end cldcol conditional  
 	
   enddo ! end i loop
 
@@ -2214,7 +2215,7 @@ end subroutine vd_shoc_solve
 !  with host model
 
 subroutine shoc_energy_integrals(&
-             shcol,nlev,host_temp,pdel,&    ! Input
+             shcol,nlev,host_dse,pdel,&     ! Input
 	     rtm,rcm,u_wind,v_wind,&        ! Input
 	     se_int,ke_int,wv_int,wl_int)   ! Output
 
@@ -2226,7 +2227,7 @@ subroutine shoc_energy_integrals(&
   ! number of levels
   integer, intent(in) :: nlev
   ! host model temperature [K]
-  real(r8), intent(in) :: host_temp(shcol,nlev)  
+  real(r8), intent(in) :: host_dse(shcol,nlev)  
   ! pressure layer thickness [Pa]
   real(r8), intent(in) :: pdel(shcol,nlev)
   ! zonal wind [m/s]
@@ -2259,7 +2260,7 @@ subroutine shoc_energy_integrals(&
   do k=1,nlev
     do i=1,shcol
        rvm = rtm(i,k) - rcm(i,k) ! compute water vapor
-       se_int(i) = se_int(i) + host_temp(i,k)*pdel(i,k)/ggr
+       se_int(i) = se_int(i) + host_dse(i,k)*pdel(i,k)/ggr
        ke_int(i) = ke_int(i) + 0.5_r8*(u_wind(i,k)**2+v_wind(i,k)**2)*pdel(i,k)/ggr
        wv_int(i) = wv_int(i) + rvm*pdel(i,k)/ggr
        wl_int(i) = wl_int(i) + rcm(i,k)*pdel(i,k)/ggr    
@@ -2273,10 +2274,10 @@ end subroutine shoc_energy_integrals
 !==============================================================
 ! Subroutine to update SHOC output to host model temperature
 
-subroutine update_host_temp(&
+subroutine update_host_dse(&
              shcol,nlev,thlm,&                 ! Input
 	     shoc_ql,exner,zt_grid,phis,&      ! Input
-	     host_temp)                        ! Output
+	     host_dse)                         ! Output
 
   implicit none
   
@@ -2298,7 +2299,7 @@ subroutine update_host_temp(&
   
   ! OUTPUT VARIABLES
   ! host model temperature [K]
-  real(r8), intent(out) :: host_temp(shcol,nlev)
+  real(r8), intent(out) :: host_dse(shcol,nlev)
   
   ! LOCAL VARIABLES
   ! Temperature [K]
@@ -2309,13 +2310,13 @@ subroutine update_host_temp(&
   do k=1,nlev
     do i=1,shcol
       temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/exner(i,k)
-      host_temp(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
+      host_dse(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
     enddo
   enddo
 
   return
 	     
-end subroutine update_host_temp
+end subroutine update_host_dse
 
 !==============================================================
 ! Subroutine foe SHOC energy fixer with host model temp
@@ -2327,7 +2328,7 @@ subroutine shoc_energy_fixer(&
 	     se_a,ke_a,wv_a,wl_a,&          ! Input
 	     wthl_sfc,wqw_sfc,pdel,&        ! Input
 	     rho_zt,tke,pint,&              ! Input
-	     host_temp)                     ! Input/Output
+	     host_dse)                      ! Input/Output
 	     
   implicit none
 
@@ -2377,7 +2378,7 @@ subroutine shoc_energy_fixer(&
   
   ! INPUT VARIABLES
   !host temperature [K] 
-  real(r8), intent(inout) :: host_temp(shcol,nlev)         
+  real(r8), intent(inout) :: host_dse(shcol,nlev)         
   
   ! LOCAL VARIABLES
   ! density on interface grid [kg/m^3]
@@ -2417,7 +2418,7 @@ subroutine shoc_energy_fixer(&
 
   do i=1,shcol
     do k=shoctop(i),nlev
-      host_temp(i,k) = host_temp(i,k) - se_dis(i)*ggr
+      host_dse(i,k) = host_dse(i,k) - se_dis(i)*ggr
     enddo
   enddo	
 	     
