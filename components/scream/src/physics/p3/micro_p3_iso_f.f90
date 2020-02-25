@@ -100,6 +100,14 @@ interface
     real(kind=c_real), intent(inout) :: qrheti, nrheti
   end subroutine rain_immersion_freezing_f
 
+  subroutine droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
+    real(kind=c_real), intent(inout) :: ncslf
+  end subroutine droplet_self_collection_f
+
   subroutine cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
     use iso_c_binding
 
