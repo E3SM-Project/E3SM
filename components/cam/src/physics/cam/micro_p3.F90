@@ -2693,6 +2693,11 @@ end subroutine droplet_activation
 
 subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
    ncslf)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: droplet_self_collection_f
+#endif
+
    !............................
    ! self-collection of droplets
 
@@ -2707,6 +2712,12 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
 
    real(rtype), intent(out) :: ncslf
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf)
+      return
+   endif
+#endif
    if (qc_incld.ge.qsmall) then
 
       if (iparam.eq.1) then
