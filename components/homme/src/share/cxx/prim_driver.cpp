@@ -66,11 +66,10 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   tl.update_tracers_levels(params.qsplit);
 
-#if 0
+#ifndef HOMMEXX_GB_CONFIG
 #ifndef CAM
   apply_test_forcing ();
 #endif
-
 
   // Apply forcing.
   // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
@@ -143,7 +142,9 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   // time step is complete.  update some diagnostic variables:
   // Q    (mixing ratio)
   ////////////////////////////////////////////////////////////////////////
+#ifndef HOMMEXX_GB_CONFIG
   update_q(tl.np1_qdp,tl.np1);
+#endif
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();

@@ -72,3 +72,6 @@
 
 /* Detect whether this is a kokkos target */
 #cmakedefine01 KOKKOS_TARGET
+
+/* Macro used to optimize code for GB submission */
+#cmakedefine01 HOMMEXX_GB_CONFIG

@@ -277,7 +277,10 @@ void init_elements_c (const int& num_elems)
   c.create_ref<ElementsGeometry>(e.m_geometry);
   c.create_ref<ElementsState>(e.m_state);
   c.create_ref<ElementsDerivedState>(e.m_derived);
+#ifndef HOMMEXX_GB_CONFIG
+  // For GB submission, skip forcing
   c.create_ref<ElementsForcing>(e.m_forcing);
+#endif
 }
 
 void init_functors_c ()
