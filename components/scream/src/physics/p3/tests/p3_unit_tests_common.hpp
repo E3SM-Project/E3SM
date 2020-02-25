@@ -67,6 +67,7 @@ struct UnitWrap {
     struct TestDsd2;
     struct TestP3Conservation;
     struct TestP3CloudWaterAutoconversion;
+    struct TestRainImmersionFreezing;
     struct TestCloudSed;
     struct TestCloudRainAccretion;
     struct TestIceSed;
