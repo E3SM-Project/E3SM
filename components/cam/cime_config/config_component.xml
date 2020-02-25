@@ -282,18 +282,24 @@
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
       <value compset="_CAM5%RCE"      >RCEMIP_EAMv1</value>
-      <!-- Super-Parameterization -->
+      <!-- MMF / Super-Parameterization -->
       <value compset="1850_CAM5%SP1"     >1850_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="1850_CAM5%SP2"     >1850_cam5_av1c-04p2-MMF-2mom</value>
       <value compset="2000_CAM5%SP1"     >2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000_CAM5%SP2"     >2000_cam5_av1c-04p2-MMF-2mom</value>
       <value compset="20TR_CAM5%SP1"     >20TR_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="20TR_CAM5%SP2"     >20TR_cam5_av1c-04p2-MMF-2mom</value>
+      <value compset="1850_CAM5%MMF1"    >1850_cam5_av1c-04p2-MMF-1mom</value>
+      <value compset="1850_CAM5%MMF2"    >1850_cam5_av1c-04p2-MMF-2mom</value>
+      <value compset="2000_CAM5%MMF1"    >2000_cam5_av1c-04p2-MMF-1mom</value>
+      <value compset="2000_CAM5%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
+      <value compset="20TR_CAM5%MMF1"    >20TR_cam5_av1c-04p2-MMF-1mom</value>
+      <value compset="20TR_CAM5%MMF2"    >20TR_cam5_av1c-04p2-MMF-2mom</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
     <desc>CAM namelist use_case.  Provides the use_case option for the
-      CAM build-namelist utility (which is called from
+      CAM build-namelist utility (which its called from
       $CASEROOT/Buildconf/cam.buildnml).  The CAM build-namelist
       leverages groups of namelist options (use cases) that are often
       paired with the CAM configure options.  These use cases are xml
