@@ -48,6 +48,7 @@ module ocn_analysis_driver
    use ocn_transect_transport
    use ocn_eddy_product_variables
    use ocn_moc_streamfunction
+   use ocn_ocean_heat_content
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -193,6 +194,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'transectTransport', 1)
       call mpas_pool_add_config(analysisMemberList, 'eddyProductVariables', 1)
       call mpas_pool_add_config(analysisMemberList, 'mocStreamfunction', 1)
+      call mpas_pool_add_config(analysisMemberList, 'oceanHeatContent', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -300,6 +302,7 @@ contains
 
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
+         print *, poolItr % memberName(1:nameLength)
          if ( config_AM_enable ) then
             timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
@@ -1122,6 +1125,8 @@ contains
         call ocn_init_eddy_product_variables(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
          call ocn_init_moc_streamfunction(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
+         call ocn_init_ocean_heat_content(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1214,6 +1219,8 @@ contains
         call ocn_compute_eddy_product_variables(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
          call ocn_compute_moc_streamfunction(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
+         call ocn_compute_ocean_heat_content(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1311,6 +1318,8 @@ contains
         call ocn_restart_eddy_product_variables(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
          call ocn_restart_moc_streamfunction(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
+         call ocn_restart_ocean_heat_content(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1402,6 +1411,8 @@ contains
         call ocn_finalize_eddy_product_variables(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mocStreamfunction' ) then
          call ocn_finalize_moc_streamfunction(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
+         call ocn_finalize_ocean_heat_content(domain,err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
