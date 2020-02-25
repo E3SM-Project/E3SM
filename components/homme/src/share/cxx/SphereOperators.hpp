@@ -48,6 +48,9 @@ class SphereOperators
   struct Min {
     static constexpr int value = M > N ? N : M;
   };
+
+  template<int NUM_LEVELS>
+  using DefaultProvider = ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEVELS]>;
 public:
 
 
@@ -424,14 +427,27 @@ public:
     kv.team_barrier();
   }
 
-  template<typename InputProvider,
-           int NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT,
-           CombineMode CM = CombineMode::Replace>
+  template<int NUM_LEV_OUT, typename InputProvider, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere (const KernelVariables &kv,
                      const InputProvider& v,
                      const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
                      const Real alpha = 1.0, const Real beta = 0.0) const
+  {
+    divergence_sphere_cm<CombineMode::Replace,
+                         InputProvider,
+                         NUM_LEV_OUT,
+                         NUM_LEV_REQUEST>(kv,v,div_v,alpha,beta);
+
+  }
+
+  template<CombineMode CM, typename InputProvider,
+           int NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
+  KOKKOS_INLINE_FUNCTION void
+  divergence_sphere_cm (const KernelVariables &kv,
+                        const InputProvider& v,
+                        const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
+                        const Real alpha = 1.0, const Real beta = 0.0) const
   {
     static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
     static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
@@ -952,7 +968,7 @@ public:
     constexpr int np_squared = NP * NP;
 
     // grad(div(v))
-    divergence_sphere<decltype(vector),NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,vector,div);
+    divergence_sphere<NUM_LEV_REQUEST>(kv,vector,div);
     if (nu_ratio>0 && nu_ratio!=1.0) {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                           [&](const int loop_idx) {

@@ -1061,7 +1061,7 @@ struct CaarFunctorImpl {
         using CM = CombineMode;
         // If you want a CombineMode different than Replace, unfortunately you have to specify
         // all the template args, since the CombineMode is the last one...
-        m_sphere_ops.divergence_sphere<decltype(v_times_vtheta),NUM_LEV,NUM_LEV,CM::Add>(kv,v_times_vtheta,
+        m_sphere_ops.divergence_sphere_cm<CM::Add>(kv,v_times_vtheta,
                                           Homme::subview(m_buffers.theta_tens,kv.team_idx));
       } else {
         m_sphere_ops.divergence_sphere(kv,v_times_vtheta,
