@@ -11,45 +11,45 @@ module controlMod
   !
   ! !USES:
   use clm_varctl
-  use shr_kind_mod            , only: r8 => shr_kind_r8, SHR_KIND_CL
-  use shr_nl_mod              , only: shr_nl_find_group_name
-  use shr_const_mod           , only: SHR_CONST_CDAY
-  use shr_log_mod             , only: errMsg => shr_log_errMsg
-  use abortutils              , only: endrun
-  use spmdMod                 , only: masterproc
-  use decompMod               , only: clump_pproc
-  use clm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers
-  use histFileMod             , only: max_tapes, max_namlen
-  use histFileMod             , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape
-  use histFileMod             , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
-  use histFileMod             , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
-  use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
-  use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact
-  use AllocationMod         , only: suplnitro
-  use AllocationMod         , only: suplphos
-  use ColumnDataType          , only: nfix_timeconst
+  use shr_kind_mod  , only: r8 => shr_kind_r8, SHR_KIND_CL
+  use shr_nl_mod    , only: shr_nl_find_group_name
+  use shr_const_mod , only: SHR_CONST_CDAY
+  use shr_log_mod   , only: errMsg => shr_log_errMsg
+  use abortutils    , only: endrun
+  use spmdMod       , only: masterproc
+  use decompMod     , only: clump_pproc
+  use clm_varpar    , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers
+  use histFileMod   , only: max_tapes, max_namlen
+  use histFileMod   , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape
+  use histFileMod   , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
+  use histFileMod   , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
+  use histFileMod   , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
+  use LakeCon       , only: deepmixing_depthcrit, deepmixing_mixfact
+  use AllocationMod , only: suplnitro
+  use AllocationMod , only: suplphos
+  use ColumnDataType, only: nfix_timeconst
   use NitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
   use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
   use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp
   use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile
   use SharedParamsMod       , only: anoxia_wtsat
-  use CanopyfluxesMod         , only: perchroot_canopyflux,  perchroot_alt_canopyflux
-  use CanopyHydrologyMod      , only: CanopyHydrology_readnl
-  use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
-  use UrbanParamsType         , only: urban_hac, urban_traffic
-  use clm_varcon              , only: h2osno_max
-  use clm_varctl              , only: use_dynroot
-  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
-  use clm_varctl              , only: nu_com, use_var_soil_thick
-  use seq_drydep_mod_elm          , only: drydep_method, DD_XLND, n_drydep
-  use clm_varctl              , only: forest_fert_exp
-  use clm_varctl              , only: ECA_Pconst_RGspin
-  use clm_varctl              , only: NFIX_PTASE_plant
-  use clm_varctl              , only : use_pheno_flux_limiter
-  use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
-  use clm_varctl              , only: add_temperature, add_co2
-  use clm_varctl              , only: const_climate_hist
+  use CanopyfluxesMod    , only: perchroot_canopyflux,  perchroot_alt_canopyflux
+  use CanopyHydrologyMod , only: CanopyHydrology_readnl
+  use SurfaceAlbedoMod   , only: albice, lake_melt_icealb
+  use UrbanParamsType    , only: urban_hac, urban_traffic
+  use UrbanParamsType    , only: urban_hac_int, urban_hac_off,urban_hac_on,urban_wasteheat_on !Added for ACC
+  use clm_varcon         , only: h2osno_max
+  use clm_varctl         , only: use_dynroot
+  use AllocationMod      , only: nu_com_phosphatase,nu_com_nfix
+  use clm_varctl         , only: nu_com, use_var_soil_thick
+  use seq_drydep_mod_elm , only: drydep_method, DD_XLND, n_drydep
+  use clm_varctl         , only: forest_fert_exp
+  use clm_varctl         , only: ECA_Pconst_RGspin
+  use clm_varctl         , only: NFIX_PTASE_plant
+  use clm_varctl         , only : use_pheno_flux_limiter
+  use clm_varctl         , only: startdate_add_temperature, startdate_add_co2
+  use clm_varctl         , only: add_temperature, add_co2
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -222,7 +222,7 @@ contains
     namelist /clm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, tw_irr, all_active
+         albice, more_vertlayers, subgridflag, irrigate, all_active
     ! Urban options
 
     namelist /clm_inparm/  &
@@ -263,11 +263,11 @@ contains
     namelist /clm_inparm/ &
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
-         use_snicar_ad, use_vancouver, use_mexicocity, use_noio
+         use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
-         co2_file, aero_file,const_climate_hist
+         co2_file, aero_file
 
     ! bgc & pflotran interface
     namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
@@ -280,8 +280,6 @@ contains
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
          vsfm_lateral_model_type, vsfm_include_seepage_bc
 
-    namelist /clm_inparm/ use_hydrstress
-
     namelist /clm_inparm/ &
        lateral_connectivity, domain_decomp_type
 
@@ -291,9 +289,6 @@ contains
     namelist /clm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
-
-    namelist /clm_inparm/ &
-         use_erosion, ero_ccycle
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -335,7 +330,6 @@ contains
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
           if (ierr /= 0) then
-             print *, "errcode :",ierr
              call endrun(msg='ERROR reading clm_inparm namelist'//errMsg(__FILE__, __LINE__))
           end if
        end if
@@ -357,7 +351,9 @@ contains
        ! History and restart files
 
        do i = 1, max_tapes
-          if (hist_nhtfrq(i) < 0) then
+          if (hist_nhtfrq(i) == 0) then
+             hist_mfilt(i) = 1
+          else if (hist_nhtfrq(i) < 0) then
              hist_nhtfrq(i) = nint(-hist_nhtfrq(i)*SHR_CONST_CDAY/(24._r8*dtime))
           endif
        end do
@@ -419,11 +415,6 @@ contains
 
        if (.not. use_crop .and. irrigate) then
           call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
-            errMsg(__FILE__, __LINE__))
-       end if
-
-       if (.not. use_erosion .and. ero_ccycle) then
-          call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
 
@@ -614,7 +605,6 @@ contains
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_voc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_snicar_ad, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -635,7 +625,6 @@ contains
 
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Landunit generation
     call mpi_bcast(create_crop_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -737,7 +726,6 @@ contains
     call mpi_bcast (co2_ppmv, 1, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (more_vertlayers,1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -798,8 +786,6 @@ contains
      call mpi_bcast (co2_file,       len(co2_file),       MPI_CHARACTER, 0, mpicom, ier)
      call mpi_bcast (aero_file,      len(aero_file),      MPI_CHARACTER, 0, mpicom, ier)
 
-    ! plant hydraulics
-    call mpi_bcast (use_hydrstress, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! VSFM variable
 
@@ -813,10 +799,6 @@ contains
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    ! soil erosion
-    call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
-
     ! Budget
     call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (budget_inst  , 1, MPI_INTEGER, 0, mpicom, ier)
@@ -825,6 +807,19 @@ contains
     call mpi_bcast (budget_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (budget_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (budget_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
+
+    !!Doing Adjustments for variables that need to be converted from
+    !!variable character data types to integers
+    if(urban_hac == 'OFF') then
+      urban_hac_int = urban_hac_off
+    else if(urban_hac == 'ON') then
+      urban_hac_int = urban_hac_on
+    else if(urban_hac == 'ON_WASTEHEAT')then
+      urban_hac_int = urban_wasteheat_on
+    end if
+
+
+
 
   end subroutine control_spmd
 
@@ -866,7 +861,6 @@ contains
     write(iulog,*) '    use_cn = ', use_cn
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
-    write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
@@ -1001,8 +995,6 @@ contains
     else
        write(iulog,*) '   CO2 volume mixing ratio                = ', co2_type
     end if
-
-    write(iulog,*) '   constant historical climate during transient simulation = ', const_climate_hist
 
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac

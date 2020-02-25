@@ -9,8 +9,8 @@ module EcosystemDynMod
    !#py use shr_sys_mod         , only : shr_sys_flush
   use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod           , only : bounds_type
-   !#py use perf_mod            , only : t_startf, t_stopf
-   !#py use spmdMod             , only : masterproc
+   use perf_mod            , only : t_startf, t_stopf
+   use spmdMod             , only : masterproc
   use clm_varctl          , only : use_century_decomp
   use clm_varctl          , only : use_erosion
   use CNStateType         , only : cnstate_type
@@ -36,8 +36,8 @@ module EcosystemDynMod
 
   ! bgc interface & pflotran
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
-  use VerticalProfileMod   , only : decomp_vertprofiles
-  use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
+  use VerticalProfileMod  , only : decomp_vertprofiles
+  use AllocationMod       , only : nu_com_nfix, nu_com_phosphatase
   use clm_varctl          , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
   !
@@ -66,14 +66,13 @@ contains
     ! !USES:
     use AllocationMod, only : AllocationInit
     use PhenologyMod , only : PhenologyInit
-     use FireMod      , only : FireInit
-     use C14DecayMod  , only : C14_init_BombSpike
+    use FireMod      , only : FireInit
+    use C14DecayMod  , only : C14_init_BombSpike
     !
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds
     !-----------------------------------------------------------------------
-
 
     call AllocationInit (bounds)
     call PhenologyInit  (bounds)
@@ -292,7 +291,6 @@ contains
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
-    !type(temperature_type)   , intent(inout) :: temperature_vars
     type(crop_type)          , intent(in)    :: crop_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
@@ -432,7 +430,7 @@ contains
         num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,    &
         cnstate_vars, atm2lnd_vars,  &
         canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
-        photosyns_vars, soilhydrology_vars, energyflux_vars,  sedflux_vars &
+        photosyns_vars, soilhydrology_vars, energyflux_vars, sedflux_vars,  &
         year, mon, day, sec, tod, offset, dayspyr, dt, nstep )
      !-------------------------------------------------------------------
      ! bgc interface
@@ -459,7 +457,6 @@ contains
      use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
      use PhosphorusStateUpdate2Mod   , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
      use FireMod              , only: FireArea, FireFluxes
-     use ErosionMod           , only: ErosionFluxes
      use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
      use CarbonIsoFluxMod          , only: CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
      use C14DecayMod          , only: C14Decay, C14BombSpike
@@ -479,6 +476,7 @@ contains
      use Method_procs_acc      , only : vegcf_summary_rr_acc
      use Method_procs_acc      , only : colcf_Summary_for_CH4_acc
      use Method_procs_acc      , only : vegcf_summary_for_CH4_acc
+     use ErosionMod            , only : ErosionFluxes
 
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds
@@ -490,15 +488,15 @@ contains
      integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
      logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
      type(cnstate_type)       , intent(inout) :: cnstate_vars
-     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-     type(canopystate_type)   , intent(in)    :: canopystate_vars
-     type(soilstate_type)     , intent(inout) :: soilstate_vars
-     type(crop_type)          , intent(inout) :: crop_vars
-     type(ch4_type)           , intent(in)    :: ch4_vars
-     type(photosyns_type)     , intent(in)    :: photosyns_vars
-     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-     type(energyflux_type)    , intent(in)    :: energyflux_vars
-     type(sedflux_type)       , intent(in)    :: sedflux_vars
+     type(atm2lnd_type)       , intent(inout)    :: atm2lnd_vars
+     type(canopystate_type)   , intent(inout)    :: canopystate_vars
+     type(soilstate_type)     , intent(inout)    :: soilstate_vars
+     type(crop_type)          , intent(inout)    :: crop_vars
+     type(ch4_type)           , intent(inout)    :: ch4_vars
+     type(photosyns_type)     , intent(inout)    :: photosyns_vars
+     type(soilhydrology_type) , intent(inout)    :: soilhydrology_vars
+     type(energyflux_type)    , intent(inout)    :: energyflux_vars
+     type(sedflux_type)       , intent(inout)    :: sedflux_vars
      integer, intent(in)  :: year, mon, day,sec, tod, offset
      real(r8), intent(in) :: dayspyr ! days per year
      real(r8), intent(in) :: dt
@@ -744,11 +742,8 @@ contains
              cnstate_vars, dt, dayspyr, year, mon, day, sec)
 
         if ( use_erosion ) then
-            call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, &
-                 carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars, carbonflux_vars, &
-                 nitrogenflux_vars, phosphorusflux_vars)
+            call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, dt)
         end if
-
         !#py call t_stopf('CNUpdate2')
 
         !--------------------------------------------

@@ -14,14 +14,11 @@ module UrbanFluxesMod
   use clm_varctl           , only : iulog
   !#py use abortutils           , only : endrun
   use UrbanParamsType      , only : urbanparams_type
-  use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac
+  use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac_int
   use atm2lndType          , only : atm2lnd_type
   use SoilStateType        , only : soilstate_type
-  !use TemperatureType      , only : temperature_type
-  !use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
   use EnergyFluxType       , only : energyflux_type
-  !use WaterfluxType        , only : waterflux_type
   use SurfaceResistanceMod , only : do_soilevap_beta
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_as
@@ -382,20 +379,20 @@ contains
 
       ! Start stability iteration
       iter = 0
-      ITERATION : do while(iter <=niters)
+      ITERATION : do while(iter < niters)
 
          ! Get friction velocity, relation for potential
          ! temperature and humidity profiles of surface boundary layer.
-
+         iter = iter + 1 
          if (num_urbanl > 0) then
             call FrictionVelocity(begl, endl, &
                  num_urbanl, filter_urbanl, &
                  z_d_town, z_0_town, z_0_town, z_0_town, &
-                 obu, iter+1, ur, um, ustar, &
+                 obu, iter, ur, um, ustar, &
                  temp1, temp2, temp12m, temp22m, fm, &
                  frictionvel_vars, landunit_index=.true.)
          end if
-
+        
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
             t = lun_pp%topounit(l)
@@ -403,7 +400,6 @@ contains
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
             ! atmosphere
-
             ramu(l) = 1._r8/(ustar(l)*ustar(l)/um(l))
             rahu(l) = 1._r8/(temp1(l)*ustar(l))
             rawu(l) = 1._r8/(temp2(l)*ustar(l))
@@ -472,7 +468,7 @@ contains
                wtuq_roof_unscl(l) = fwet_roof*(1._r8/canyon_resistance(l))
 
                ! wasteheat from heating/cooling
-               if (urban_hac == urban_wasteheat_on) then
+               if (urban_hac_int == urban_wasteheat_on) then
                   eflx_wasteheat_roof(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
                        ht_wasteheat_factor * eflx_urban_heat(c)
                else
@@ -480,7 +476,7 @@ contains
                end if
 
                ! If air conditioning on, always replace heat removed with heat into canyon
-               if (urban_hac == urban_hac_on .or. urban_hac == urban_wasteheat_on) then
+               if (urban_hac_int == urban_hac_on .or. urban_hac_int == urban_wasteheat_on) then
                   eflx_heat_from_ac_roof(l) = abs(eflx_urban_ac(c))
                else
                   eflx_heat_from_ac_roof(l) = 0._r8
@@ -546,7 +542,7 @@ contains
                wtuq_sunwall_unscl(l) = 0._r8
 
                ! wasteheat from heating/cooling
-               if (urban_hac == urban_wasteheat_on) then
+               if (urban_hac_int == urban_wasteheat_on) then
                   eflx_wasteheat_sunwall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
                        ht_wasteheat_factor * eflx_urban_heat(c)
                else
@@ -554,7 +550,7 @@ contains
                end if
 
                ! If air conditioning on, always replace heat removed with heat into canyon
-               if (urban_hac == urban_hac_on .or. urban_hac == urban_wasteheat_on) then
+               if (urban_hac_int == urban_hac_on .or. urban_hac_int == urban_wasteheat_on) then
                   eflx_heat_from_ac_sunwall(l) = abs(eflx_urban_ac(c))
                else
                   eflx_heat_from_ac_sunwall(l) = 0._r8
@@ -575,7 +571,7 @@ contains
                wtuq_shadewall_unscl(l) = 0._r8
 
                ! wasteheat from heating/cooling
-               if (urban_hac == urban_wasteheat_on) then
+               if (urban_hac_int == urban_wasteheat_on) then
                   eflx_wasteheat_shadewall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
                        ht_wasteheat_factor * eflx_urban_heat(c)
                else
@@ -583,7 +579,7 @@ contains
                end if
 
                ! If air conditioning on, always replace heat removed with heat into canyon
-               if (urban_hac == urban_hac_on .or. urban_hac == urban_wasteheat_on) then
+               if (urban_hac_int == urban_hac_on .or. urban_hac_int == urban_wasteheat_on) then
                   eflx_heat_from_ac_shadewall(l) = abs(eflx_urban_ac(c))
                else
                   eflx_heat_from_ac_shadewall(l) = 0._r8
@@ -664,7 +660,6 @@ contains
 
             obu(l) = zldis(l)/zeta
          end do
-         iter = iter +1
 
       end do ITERATION  ! end iteration
 

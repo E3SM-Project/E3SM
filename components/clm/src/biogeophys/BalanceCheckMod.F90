@@ -6,20 +6,18 @@ module BalanceCheckMod
   !
   ! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
-  use shr_log_mod        , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
-  use abortutils         , only : endrun
+  !#py use abortutils         , only : endrun
   use clm_varctl         , only : iulog, use_var_soil_thick, tw_irr
   use clm_varcon         , only : namep, namec
-  use GetGlobalValuesMod , only : GetGlobalIndex
+  !#py use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
   use glc2lndMod         , only : glc2lnd_type
   use EnergyFluxType     , only : energyflux_type
   use SolarAbsorbedType  , only : solarabs_type
   use SurfaceAlbedoType  , only : surfalb_type
   use SoilHydrologyType  , only : soilhydrology_type
-  use WaterstateType     , only : waterstate_type
-  use WaterfluxType      , only : waterflux_type
   use GridcellType       , only : grc_pp
   use GridcellDataType   , only : grc_ef, grc_wf, grc_ws
   use TopounitDataType   , only : top_af ! atmospheric flux variables
@@ -170,7 +168,7 @@ contains
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use clm_varctl        , only : create_glacier_mec_landunit
-     !#py use domainMod         , only : ldomain
+     use domainMod         , only : ldomain
      !#py use clm_time_manager  , only : get_step_size, get_nstep
      !#py use clm_initializeMod , only : surfalb_vars !TODO FIGURE THIS OUT
      use CanopyStateType   , only : canopystate_type
@@ -818,31 +816,31 @@ contains
 
       call c2g(bounds, begwb_col(bounds%begc:bounds%endc), &
            begwb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
       call c2g(bounds, wa_local_col(bounds%begc:bounds%endc), &
            beg_wa_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
       call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc), &
            beg_h2ocan_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
       call c2g(bounds, h2osno(bounds%begc:bounds%endc), &
            beg_h2osno_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
       call c2g(bounds, h2osfc(bounds%begc:bounds%endc), &
            beg_h2osfc_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
       call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
            beg_h2osoi_liq_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
       call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
            beg_h2osoi_ice_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
     end associate
 
@@ -857,6 +855,7 @@ contains
      ! !DESCRIPTION:
      !
      ! !USES:
+      !$acc routine seq 
      use clm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
@@ -1034,37 +1033,37 @@ contains
 
       end do
 
-      call c2g(bounds, endwb_col(bounds%begc:bounds%endc)             , &
-           endwb_grc(bounds%begg:bounds%endg)                         , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, endwb_col             , &
+           endwb_grc                         , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc)          , &
-           end_wa_grc(bounds%begg:bounds%endg)                        , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, wa_local_col          , &
+           end_wa_grc                        , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc)            , &
-           end_h2ocan_grc(bounds%begg:bounds%endg)                    , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, h2ocan_col            , &
+           end_h2ocan_grc                    , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osno_col(bounds%begc:bounds%endc)            , &
-           end_h2osno_grc(bounds%begg:bounds%endg)                    , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, h2osno_col            , &
+           end_h2osno_grc                    , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osfc_col(bounds%begc:bounds%endc)            , &
-           end_h2osfc_grc(bounds%begg:bounds%endg)                    , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, h2osfc_col            , &
+           end_h2osfc_grc                    , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc) , &
-           end_h2osoi_liq_grc(bounds%begg:bounds%endg)                , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, h2osoi_liq_depth_intg , &
+           end_h2osoi_liq_grc                , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc) , &
-           end_h2osoi_ice_grc(bounds%begg:bounds%endg)                , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, h2osoi_ice_depth_intg , &
+           end_h2osoi_ice_grc                , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, errh2o(bounds%begc:bounds%endc)                , &
-           errh2o_grc(bounds%begg:bounds%endg)                        , &
-           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      call c2g(bounds, errh2o                , &
+           errh2o_grc                        , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
 
     end associate
 

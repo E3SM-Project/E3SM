@@ -5,7 +5,7 @@ module SoilHydrologyMod
   ! Calculate soil hydrology
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use clm_varctl        , only : iulog, use_vichydro
   use clm_varcon        , only : e_ice, denh2o, denice, rpi
@@ -13,8 +13,6 @@ module SoilHydrologyMod
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use WaterfluxType     , only : waterflux_type
-  use WaterstateType    , only : waterstate_type
-  use TemperatureType   , only : temperature_type
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws, col_wf
@@ -63,8 +61,6 @@ contains
     integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    !type(waterflux_type)     , intent(inout) :: waterflux_vars
-    !type(waterstate_type)    , intent(inout) :: waterstate_vars
     real(r8), intent(in)  :: dtime
     !
     ! !LOCAL VARIABLES:

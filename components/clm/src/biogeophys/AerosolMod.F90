@@ -29,7 +29,7 @@ module AerosolMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine AerosolMasses(bounds, num_on, filter_on, num_off, filter_off, aerosol_vars)
+  subroutine AerosolMasses(bounds, num_on, filter_on, num_off, filter_off, aerosol_vars, dtime)
     !
     ! !DESCRIPTION:
     ! Calculate column-integrated aerosol masses, and
@@ -48,9 +48,10 @@ contains
     !type(waterflux_type)  , intent(in)    :: waterflux_vars
     !type(waterstate_type) , intent(inout) :: waterstate_vars
     type(aerosol_type)    , intent(inout) :: aerosol_vars
+    real(r8), intent(in)                  :: dtime           ! land model time step (sec)
+
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: dtime           ! land model time step (sec)
     integer  :: g,l,c,j,fc      ! indices
     real(r8) :: snowmass        ! liquid+ice snow mass in a layer [kg/m2]
     real(r8) :: snowcap_scl_fct ! temporary factor used to correct for snow capping
@@ -188,7 +189,6 @@ contains
 
       do fc = 1, num_off
          c = filter_off(fc)
-
          mss_bc_top(c)      = 0._r8
          mss_bc_col(c)      = 0._r8
          mss_bcpho(c,:)     = 0._r8

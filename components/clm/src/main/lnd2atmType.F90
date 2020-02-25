@@ -73,7 +73,7 @@ module lnd2atmType
    contains
 
      procedure, public  :: Init
-     procedure, private :: InitAllocate
+     procedure, public :: InitAllocate
      procedure, private :: InitHistory
 
   end type lnd2atm_type

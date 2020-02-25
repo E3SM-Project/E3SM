@@ -32,13 +32,9 @@ module CanopyFluxesMod
   use SoilStateType         , only : soilstate_type
   use SolarAbsorbedType     , only : solarabs_type
   use SurfaceAlbedoType     , only : surfalb_type
-  use TemperatureType       , only : temperature_type
   use WaterfluxType         , only : waterflux_type
-  use WaterstateType        , only : waterstate_type
   use CH4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use CNNitrogenStateType   , only : nitrogenstate_type
   !#py use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
   use GridcellType          , only : grc_pp
   use TopounitDataType      , only : top_as, top_af
@@ -73,7 +69,7 @@ contains
   subroutine CanopyFluxes(bounds,  num_nolakeurbanp, filter_nolakeurbanp, &
        atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars, &
        frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
-       ch4_vars, photosyns_vars, &
+       ch4_vars, photosyns_vars,  &
        dtime, yr, mon, day, time)
        !#fates_py alm_fates)    !
     ! !DESCRIPTION:
@@ -304,10 +300,6 @@ contains
     real(r8) :: delq_snow
     real(r8) :: delq_soil
     real(r8) :: delq_h2osfc
-    !# integer  :: yr                                       ! year at start of time step
-    !# integer  :: mon                                      ! month at start of time step
-    !# integer  :: day                                      ! day at start of time step
-    !# integer  :: time                                     ! time at start of time step (seconds after 0Z)
     integer  :: local_time                               ! local time at start of time step (seconds after solar midnight)
     integer  :: seconds_since_irrig_start_time
     integer  :: irrig_nsteps_per_day                     ! number of time steps per day in which we irrigate
@@ -859,12 +851,11 @@ contains
 
             if ( use_hydrstress ) then
                call PhotosynthesisHydraulicStress (bounds, fn, filterp, &
-                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
-                    bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
-                    qsatl(begp:endp), qaf(begp:endp),     &
-                    atm2lnd_vars, temperature_vars, soilstate_vars, waterstate_vars, surfalb_vars, solarabs_vars,    &
-                    canopystate_vars, photosyns_vars, waterflux_vars, &
-                    nitrogenstate_vars, phosphorusstate_vars)
+                    svpts, eah, o2, co2, rb, bsun, &
+                    bsha, btran, dayl_factor, &
+                    qsatl, qaf,     &
+                    atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
+                    canopystate_vars, photosyns_vars)
             else
               call Photosynthesis (bounds, fn, filterp, &
                    svpts, eah, o2, co2, rb, btran, &
@@ -1236,7 +1227,6 @@ contains
       else
 
          ! Determine total photosynthesis
-
          call PhotosynthesisTotal(fn, filterp, &
               atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
 

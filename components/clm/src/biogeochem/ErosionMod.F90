@@ -1,22 +1,15 @@
-module ErosionMod 
+module ErosionMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Calculate erosion induced soil particulate C, N and P fluxes 
+  ! Calculate erosion induced soil particulate C, N and P fluxes
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use clm_time_manager  , only : get_step_size
+  !#py use clm_time_manager  , only : get_step_size
   use clm_varcon        , only : dzsoi_decomp
   use clm_varpar        , only : ndecomp_pools, nlevdecomp
-  use CNCarbonFluxType  , only : carbonflux_type
-  use CNCarbonStateType , only : carbonstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use PhosphorusFluxType  , only : phosphorusflux_type
-  use PhosphorusStateType , only : phosphorusstate_type
   use SedFluxType       , only : sedflux_type
   use SoilStateType     , only : soilstate_type
   use ColumnDataType    , only : col_cs, col_ns, col_ps
@@ -28,7 +21,7 @@ module ErosionMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: ErosionFluxes           ! Calculate erosion introduced CNP fluxes 
+  public :: ErosionFluxes           ! Calculate erosion introduced CNP fluxes
   ! !MODULE CONSTANTS
   !-----------------------------------------------------------------------
 
@@ -36,34 +29,27 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ErosionFluxes (bounds, num_soilc, filter_soilc, &
-    soilstate_vars, sedflux_vars, carbonstate_vars, nitrogenstate_vars, & 
-    phosphorusstate_vars, carbonflux_vars, nitrogenflux_vars, &
-    phosphorusflux_vars)
+    soilstate_vars, sedflux_vars, dt)
     !
     ! !DESCRIPTION:
-    ! Calculate erosion introduced soil C, N, P fluxes 
+    ! Calculate erosion introduced soil C, N, P fluxes
     !
     ! !USES:
-    use clm_varctl      , only : iulog
-    use spmdMod         , only : masterproc
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(sedflux_type)       , intent(in)    :: sedflux_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
+    real(r8)                 , intent(in)    :: dt                                       ! radiation time step (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c, fc, l, j                              ! indices
     integer  :: kc, kn, kp                               ! new layer indices
-    integer  :: k1, k2                                   ! new layer indices     
+    integer  :: k1, k2                                   ! new layer indices
     real(r8) :: dh, dhn, dhp                             ! erosion height (m)
     real(r8) :: dm_ero, dm_yld, dm                       ! erosion mass (kg/m2)
     real(r8) :: soc_yld                                  ! SOC erosion (gC/m2)
@@ -78,8 +64,7 @@ contains
     real(r8) :: secondp_vr_new                           ! new secondary mineral P (gP/m3)
     real(r8) :: occlp_vr_new                             ! new occluded mineral P (gP/m3)
     real(r8) :: primp_vr_new                             ! new primary mineral P (gP/m3)
-    real(r8) :: dt                                       ! radiation time step (seconds)
-    character(len=32) :: subname = 'ErosionFluxes'       ! subroutine name
+    !character(len=32) :: subname = 'ErosionFluxes'       ! subroutine name
     !-----------------------------------------------------------------------
 
     associate(                                                        &
@@ -93,7 +78,7 @@ contains
 
          flx_sed_ero      =>    sedflux_vars%sed_ero_col      , & ! Input: [real(r8) (:) ] sed total detachment (kg/m2/s)
          flx_sed_yld      =>    sedflux_vars%sed_yld_col      , & ! Input: [real(r8) (:) ] sed total yield (kg/m2/s)
-         
+
          bd               =>    soilstate_vars%bd_col         , & ! Input: [real(r8) (:,:) ] soil bulk density (kg/m3)
 
          labilep_erode    =>    col_pf%labilep_erode          , & ! Output: [real(r8) (:) ] labile mineral P detachment (gP/m2/s)
@@ -112,22 +97,23 @@ contains
          cpools_erode     =>    col_cf%decomp_cpools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing C detachment (gC/m2/s)
          cpools_deposit   =>    col_cf%decomp_cpools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing C redeposition (gC/m2/s)
          cpools_yield_vr  =>    col_cf%decomp_cpools_yield_vr , & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing C loss (gC/m3/s)
-                  
+
          npools_erode     =>    col_nf%decomp_npools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing N detachment (gN/m2/s)
          npools_deposit   =>    col_nf%decomp_npools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing N redeposition (gN/m2/s)
          npools_yield_vr  =>    col_nf%decomp_npools_yield_vr , & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing N loss (gN/m3/s)
-         
+
          ppools_erode     =>    col_pf%decomp_ppools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing P detachment (gP/m2/s)
          ppools_deposit   =>    col_pf%decomp_ppools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing P redeposition (gP/m2/s)
          ppools_yield_vr  =>    col_pf%decomp_ppools_yield_vr   & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing P loss (gP/m3/s)
          )
 
-         dt = real( get_step_size(), r8 )
+         !#py dt = real( get_step_size(), r8 )
 
          ! soil col filters
          do fc = 1, num_soilc
             c = filter_soilc(fc)
-
+            
+            print *, "fc, c:", fc, c
             ! initialization
             labilep_erode(c)        = 0._r8
             labilep_deposit(c)      = 0._r8
@@ -145,18 +131,18 @@ contains
             cpools_erode(c,:)       = 0._r8
             cpools_deposit(c,:)     = 0._r8
             cpools_yield_vr(c,:,:)  = 0._r8
-            
+
             npools_erode(c,:)       = 0._r8
             npools_deposit(c,:)     = 0._r8
             npools_yield_vr(c,:,:)  = 0._r8
-            
+
             ppools_erode(c,:)       = 0._r8
             ppools_deposit(c,:)     = 0._r8
-            ppools_yield_vr(c,:,:)  = 0._r8    
+            ppools_yield_vr(c,:,:)  = 0._r8
 
             dm_ero = max(0._r8, flx_sed_ero(c)) * dt
             dm_yld = max(0._r8, flx_sed_yld(c)) * dt
-            ! calculate erosion heights 
+            ! calculate erosion heights
             dh = 0._r8
             dm = dm_yld
             soc_yld = 0._r8
@@ -169,11 +155,11 @@ contains
                   end if
                end do
                if (dm<=bd(c,j)*dzsoi_decomp(j)) then
-                  dh = dh + dm/bd(c,j) 
+                  dh = dh + dm/bd(c,j)
                   soc_yld = soc_yld + ctot*dm/bd(c,j)
                   exit
                end if
-               dh = dh + dzsoi_decomp(j) 
+               dh = dh + dzsoi_decomp(j)
                dm = dm - bd(c,j)*dzsoi_decomp(j)
                soc_yld = soc_yld + ctot*dzsoi_decomp(j)
                kc = kc + 1
@@ -189,7 +175,7 @@ contains
             end if
             son = 0.116_r8 * soc - 0.019_r8     ! Beusen et al. (2005)
             if (soc>0._r8 .and. son>0._r8) then
-               pn2poc = son / soc 
+               pn2poc = son / soc
             else
                pn2poc = 1._r8 / 10.2_r8         ! Beusen et al. (2005)
             end if
@@ -203,7 +189,7 @@ contains
                ntot = 0._r8
                do l = 1, ndecomp_pools
                   if ( decomp_cascade_con%is_soil(l) .and. all(decomp_npools_vr(c,:,l)>=0._r8) ) then
-                     ntot = ntot + decomp_npools_vr(c,j,l)   
+                     ntot = ntot + decomp_npools_vr(c,j,l)
                   end if
                end do
                if (dm<=ntot*dzsoi_decomp(j)) then
@@ -277,7 +263,7 @@ contains
                         if ( all(decomp_cpools_vr(c,:,l)>=0._r8) ) then
                            if (k2<=nlevdecomp) then
                               decomp_cpools_vr_new(l) = decomp_cpools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
-                                 decomp_cpools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j)) 
+                                 decomp_cpools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
                            else
                               decomp_cpools_vr_new(l) = decomp_cpools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j)
                            end if
@@ -302,7 +288,7 @@ contains
             ! particulate N loss
             if ( soc_yld > 0._r8 .and. kn <= nlevdecomp ) then
                k1 = kn
-               do j = 1, nlevdecomp 
+               do j = 1, nlevdecomp
                   ! update bottom index
                   if (k1<=nlevdecomp) then
                      zsoi_tot = sum(dzsoi_decomp(1:k1))
@@ -329,7 +315,7 @@ contains
                      do l = 1, ndecomp_pools
                         if ( all(decomp_npools_vr(c,:,l)>=0._r8) ) then
                            if (k2<=nlevdecomp) then
-                              decomp_npools_vr_new(l) = decomp_npools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + & 
+                              decomp_npools_vr_new(l) = decomp_npools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                                  decomp_npools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
                            else
                               decomp_npools_vr_new(l) = decomp_npools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j)
@@ -341,9 +327,9 @@ contains
                   end if
                   do l = 1, ndecomp_pools
                      if ( decomp_cascade_con%is_soil(l) ) then
-                        npools_yield_vr(c,j,l) = (decomp_npools_vr(c,j,l)-decomp_npools_vr_new(l))/dt 
+                        npools_yield_vr(c,j,l) = (decomp_npools_vr(c,j,l)-decomp_npools_vr_new(l))/dt
                         npools_erode(c,l) = npools_erode(c,l) + npools_yield_vr(c,j,l)* &
-                           dzsoi_decomp(j)*dm_ero/dm_yld 
+                           dzsoi_decomp(j)*dm_ero/dm_yld
                         npools_deposit(c,l) = npools_deposit(c,l) + npools_erode(c,l) - &
                            npools_yield_vr(c,j,l)*dzsoi_decomp(j)
                      end if
@@ -385,7 +371,7 @@ contains
                            labilep_vr_new = 0._r8
                         end if
                      else
-                        labilep_vr_new = labilep_vr(c,j) 
+                        labilep_vr_new = labilep_vr(c,j)
                      end if
                      if ( all(secondp_vr(c,:)>=0._r8) ) then
                         if (k1<=nlevdecomp) then
@@ -419,9 +405,9 @@ contains
                         if ( all(decomp_ppools_vr(c,:,l)>=0._r8) ) then
                            if (k2<=nlevdecomp) then
                               decomp_ppools_vr_new(l) = decomp_ppools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
-                                 decomp_ppools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j)) 
+                                 decomp_ppools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
                            else
-                              decomp_ppools_vr_new(l) = decomp_ppools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) 
+                              decomp_ppools_vr_new(l) = decomp_ppools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j)
                            end if
                         else
                            decomp_ppools_vr_new(l) = decomp_ppools_vr(c,j,l)
@@ -430,7 +416,7 @@ contains
                      if ( all(labilep_vr(c,:)>=0._r8) ) then
                         if (k2<=nlevdecomp) then
                            labilep_vr_new = labilep_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
-                              labilep_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j)) 
+                              labilep_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
                         else
                            labilep_vr_new = labilep_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j)
                         end if
@@ -506,9 +492,9 @@ contains
             end if
 
          end do
-    
+
     end associate
 
   end subroutine ErosionFluxes
 
-end module ErosionMod 
+end module ErosionMod

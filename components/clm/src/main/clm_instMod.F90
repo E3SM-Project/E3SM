@@ -183,26 +183,31 @@ contains
                c12_carbonstate_vars=col_cs)
           call c14_veg_cs%Init(begp, endp, carbon_type='c14', ratio=c14ratio)
        end if
-
+       print *, " made it 1"
        ! Note - always initialize the memory for the c13_carbonflux_vars and
        ! c14_carbonflux_vars data structure so that they can be used in
        ! associate statements (nag compiler complains otherwise)
 
        call grc_cf%Init(begg, endg, carbon_type='c12')
        call col_cf%Init(begc, endc, carbon_type='c12')
+       print *, "did col_cf"
        call veg_cf%Init(begp, endp, carbon_type='c12')
+       print *, "did veg_cf"
        if (use_c13) then
           call c13_grc_cf%Init(begg, endg, carbon_type='c13')
           call c13_col_cf%Init(begc, endc, carbon_type='c13')
           call c13_veg_cf%Init(begp, endp, carbon_type='c13')
+       print *, "done with cf13"
        end if
        if (use_c14) then
           call c14_grc_cf%Init(begg, endg, carbon_type='c14')
           call c14_col_cf%Init(begc, endc, carbon_type='c14')
           call c14_veg_cf%Init(begp, endp, carbon_type='c14')
+       print *, "done with cf14"
        end if
     endif
 
+       print *, " made it 2"
     if (use_cn) then
        call grc_ns%Init(begg, endg)
        call col_ns%Init(begc, endc, col_cs)
@@ -226,7 +231,7 @@ contains
          call PlantMicKinetics_vars%Init(bounds_proc)
        endif
     end if
-
+       
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
        call alm_fates%Init(bounds_proc)
@@ -277,7 +282,6 @@ contains
     begp = bounds_proc%begp; endp = bounds_proc%endp
     begc = bounds_proc%begc; endc = bounds_proc%endc
     begl = bounds_proc%begl; endl = bounds_proc%endl
-
     allocate (h2osno_col(begc:endc))
     allocate (snow_depth_col(begc:endc))
 
@@ -380,7 +384,6 @@ contains
     call grc_wf%Init(bounds_proc%begg_all, bounds_proc%endg_all, bounds_proc)
     call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_wf%Init(bounds_proc%begp_all, bounds_proc%endp_all)
-
     call chemstate_vars%Init(bounds_proc)
     ! WJS (6-24-14): Without the following write statement, the assertion in
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
@@ -412,20 +415,16 @@ contains
     call dust_vars%Init(bounds_proc)
 
     call glc_diagnostics_vars%Init(bounds_proc)
-
     ! Once namelist options are added to control the soil water retention curve method,
     ! we'll need to either pass the namelist file as an argument to this routine, or pass
     ! the namelist value itself (if the namelist is read elsewhere).
     allocate(soil_water_retention_curve, &
          source=create_soil_water_retention_curve())
 
-
     ! Note - always initialize the memory for ch4_vars
     call ch4_vars%Init(bounds_proc, soilstate_vars%cellorg_col(begc:endc, 1:))
-
     ! Note - always initialize the memory for cnstate_vars (used in biogeophys/)
     call cnstate_vars%Init(bounds_proc)
-
     call sedflux_vars%Init(bounds_proc)
     ! --------------------------------------------------------------
     ! Initialise the BeTR
@@ -436,44 +435,6 @@ contains
 
     end subroutine clm_inst_biogeophys
 
-    subroutine print_frictionvel_vars(frictionvel_vars, bounds)
-
-      use FrictionVelocityType       , only : frictionvel_type
-      use decompMod,       only : bounds_type
-      !use clm_instMod                , only : frictionvel_vars
-
-      implicit none
-
-      type(frictionvel_type), intent(in)  :: frictionvel_vars
-      type(bounds_type),   intent(in) :: bounds
-      integer :: p, c
-
-      !$acc serial
-      do p = bounds%begp, bounds%endp
-        print *, "forc_hgt_u_patch",frictionvel_vars%forc_hgt_u_patch (p)
-        print *, "forc_hgt_t_patch",frictionvel_vars%forc_hgt_t_patch (p)
-        print *, "forc_hgt_q_patch",frictionvel_vars%forc_hgt_q_patch (p)
-        print *, "u10_patch       ",frictionvel_vars%u10_patch        (p)
-        print *, "u10_clm_patch   ",frictionvel_vars%u10_clm_patch    (p)
-        print *, "va_patch        ",frictionvel_vars%va_patch         (p)
-        print *, "vds_patch       ",frictionvel_vars%vds_patch        (p)
-        print *, "fv_patch        ",frictionvel_vars%fv_patch         (p)
-        print *, "rb1_patch       ",frictionvel_vars%rb1_patch        (p)
-        print *, "ram1_patch      ",frictionvel_vars%ram1_patch       (p)
-        print *, "z0m_patch       ",frictionvel_vars%z0m_patch        (p)
-        print *, "z0mv_patch      ",frictionvel_vars%z0mv_patch       (p)
-        print *, "z0hv_patch      ",frictionvel_vars%z0hv_patch       (p)
-        print *, "z0qv_patch      ",frictionvel_vars%z0qv_patch       (p)
-      end do
-      do c = bounds%begc, bounds%endc
-        print *,"z0mg_col", frictionvel_vars%z0mg_col         (c)
-        print *,"z0qg_col", frictionvel_vars%z0qg_col         (c)
-        print *,"z0hg_col", frictionvel_vars%z0hg_col         (c)
-      end do
-      !$acc end serial
-
-
-    end subroutine print_frictionvel_vars
 
 
 end module clm_instMod

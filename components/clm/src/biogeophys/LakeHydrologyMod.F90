@@ -48,7 +48,7 @@ contains
        num_lakec, filter_lakec, num_lakep, filter_lakep, &
        num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc, &
        atm2lnd_vars, soilstate_vars,  &
-       energyflux_vars, aerosol_vars, lakestate_vars)
+       energyflux_vars, aerosol_vars, lakestate_vars, dtime)
     !
     ! !DESCRIPTION:
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
@@ -88,17 +88,15 @@ contains
     integer                , intent(out)   :: num_shlakenosnowc       ! number of column non-snow points
     integer                , intent(out)   :: filter_shlakenosnowc(:) ! column filter for non-snow points
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    !type(temperature_type) , intent(inout) :: temperature_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    !type(waterstate_type)  , intent(inout) :: waterstate_vars
-    !type(waterflux_type)   , intent(inout) :: waterflux_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(aerosol_type)     , intent(inout) :: aerosol_vars
     type(lakestate_type)   , intent(inout) :: lakestate_vars
+    real(r8), intent(in)    :: dtime                                           ! land model time step (sec)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: p,fp,g,t,l,c,j,fc,jtop                          ! indices
-    real(r8) :: dtime                                           ! land model time step (sec)
     integer  :: newnode                                         ! flag when new snow node is set, (1=yes, 0=no)
     real(r8) :: dz_snowf                                        ! layer thickness rate change due to precipitation [mm/s]
     real(r8) :: bifall                                          ! bulk density of newly fallen dry snow [kg/m3]
@@ -468,7 +466,6 @@ contains
       call SnowWater(bounds, &
            num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc, &
            atm2lnd_vars, aerosol_vars, dtime)
-
       ! Determine soil hydrology
       ! Here this consists only of making sure that soil is saturated even as it melts and
       ! pore space opens up. Conversely, if excess ice is melting and the liquid water exceeds the

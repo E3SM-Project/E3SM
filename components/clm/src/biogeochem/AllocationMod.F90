@@ -15,13 +15,7 @@ module AllocationMod
   use decompMod           , only : bounds_type
   use subgridAveMod       , only : p2c
   use CanopyStateType     , only : canopystate_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
   !!! add phosphorus
-  use PhosphorusFluxType            , only : phosphorusflux_type
-  use PhosphorusStateType           , only : phosphorusstate_type
   use CNStateType                   , only : cnstate_type
   use PhotosynthesisType            , only : photosyns_type
   use CropType                      , only : crop_type
@@ -38,7 +32,6 @@ module AllocationMod
   use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
-  use WaterStateType      , only : waterstate_type
   use clm_varctl          , only : NFIX_PTASE_plant
 
   !
@@ -137,7 +130,7 @@ contains
     !
     ! !USES:
     use ncdio_pio , only : file_desc_t,ncd_io
-
+!#py
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -149,49 +142,49 @@ contains
     real(r8)           :: tempr ! temporary to read in parameter
     character(len=100) :: tString ! temp. var for reading
     !-----------------------------------------------------------------------
-
+!#py
     ! read in parameters
-
+!#py
     tString='bdnr'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%bdnr=tempr
-
+!#py
     tString='dayscrecover'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%dayscrecover=tempr
-
+!#py
     tString='compet_plant_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_plant_no3=tempr
-
+!#py
     tString='compet_plant_nh4'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_plant_nh4=tempr
-
+!#py
     tString='compet_decomp_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_decomp_no3=tempr
-
+!#py
     tString='compet_decomp_nh4'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_decomp_nh4=tempr
-
+!#py
     tString='compet_denit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_denit=tempr
-
+!#py
     tString='compet_nit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_nit=tempr
-
+!#py
   end subroutine readCNAllocParams
 
   !-----------------------------------------------------------------------
@@ -212,12 +205,11 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds
-    real(r8) ::  dt
-    integer  :: yr
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'AllocationInit'
-    integer ::  mon, day, sec
+    real(r8) :: dt
+    integer ::  yr, mon, day, sec
     logical :: carbon_only
     logical :: carbonnitrogen_only
     logical :: carbonphosphorus_only
@@ -2872,6 +2864,15 @@ contains
 
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
+    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+    !type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+    !type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+!    !!  add phosphorus  -X.YANG
+    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(crop_type)          , intent(inout) :: crop_vars
     real(r8)                  , intent(in)   :: dt
     !

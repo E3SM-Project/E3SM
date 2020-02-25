@@ -794,7 +794,7 @@ contains
     endif
 
     if (seq_comms(ID)%iamroot) then
-       write(logunit,F11) trim(subname),'  init ID ',ID,seq_comms(ID)%name, &
+       write(logunit,*) trim(subname),'  init ID ',ID,seq_comms(ID)%name, &
             ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads,&
             ' suffix =',trim(seq_comms(ID)%suffix)
     endif

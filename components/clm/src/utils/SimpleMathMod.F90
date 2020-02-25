@@ -76,7 +76,7 @@ contains
   end subroutine array_normalization_2d
 
 !--------------------------------------------------------------------------------
-  subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, arr2d_inout)
+subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, arr2d_inout)
   !$acc routine seq
   !DESCRIPTIONS
   !do normalization with filter for the input array along dimension 2
@@ -219,5 +219,47 @@ contains
   endif
   return
   end subroutine array_div_vector_nofilter
+
+  PURE INTEGER FUNCTION MAXLOC_(ARR)
+        !$ACC ROUTINE SEQ
+        use shr_kind_mod, only: r8 => shr_kind_r8
+        REAL(R8),DIMENSION(:),INTENT(IN) :: ARR
+        REAL(R8),DIMENSION(SIZE(ARR)) :: LIS
+        REAL(R8) :: VAL
+        INTEGER :: I
+        VAL=MAXVAL(ARR)
+        DO I=1,SIZE(ARR),1
+            IF(ARR(I)==VAL)THEN
+                MAXLOC_=I
+                RETURN
+            END IF
+        END DO
+    END FUNCTION MAXLOC_
+
+    subroutine matvec_acc(START,END_,RES,A,X)
+      !$acc routine seq
+      !As of Cuda 10.1 calling cuBlas functions from device code
+      !is not supported.  So must have create any blas routines with
+      !acc routine seq manually.  This is for square matrices Matrix Vector Multiplication
+      !used only in PhotosynthesisMod::calcstressroot so far
+
+      use shr_kind_mod , only : r8 => shr_kind_r8
+      INTEGER, INTENT(IN) :: START, END_ !section of matrices/vector to multiply
+      REAL(R8) , INTENT(INOUT) :: RES(START:END_)
+      REAL(R8) , INTENT(IN)  :: A(START:END_,START:END_), X(START:END_)
+      REAL(R8)  :: transA(START:END_,START:END_)
+      REAL(R8) :: SUM
+      INTEGER :: COL, ROW
+
+      transA = transpose(A)
+
+      DO COL = START, END_
+
+        RES(COL) = DOT_PRODUCT(transA(start:end_,col),X(start:end_))
+
+      END DO
+
+    end subroutine matvec_acc
+
 
 end module SimpleMathMod

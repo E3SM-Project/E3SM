@@ -99,12 +99,14 @@ module UrbanParamsType
   integer, parameter, public :: urban_hac_off      = 0
   integer, parameter, public :: urban_hac_on       = 1
   integer, parameter, public :: urban_wasteheat_on = 2
-  integer, public            :: urban_hac          = urban_hac_off
+  character(len= 16), public :: urban_hac = 'OFF'
+  integer, public            :: urban_hac_int = urban_hac_off
   logical, public            :: urban_traffic      = .false.   ! urban traffic fluxes
   !$acc declare copyin(urban_hac_off     )
   !$acc declare copyin(urban_hac_on      )
   !$acc declare copyin(urban_wasteheat_on)
-  !$acc declare copyin(urban_hac         )
+  !$acc declare copyin(urban_hac_int     )
+  !!!$acc declare copyin(urban_hac       )
   !$acc declare copyin(urban_traffic     )
   !-----------------------------------------------------------------------
 
@@ -250,7 +252,7 @@ module UrbanParamsType
              this%t_building_max(l) = 380.00_r8
              this%t_building_min(l) = 200.00_r8
           else
-             if (urban_hac == urban_hac_off) then
+             if (urban_hac_int == urban_hac_off) then
                 ! Overwrite values read in from urbinp by freely evolving values
                 this%t_building_max(l) = 380.00_r8
                 this%t_building_min(l) = 200.00_r8
