@@ -398,13 +398,24 @@
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
-    <!-- Super-Parameterization -->
-    <desc compset="_CAM5%SP1V1_"    >Super-parameterized E3SM with 64x1km CRM, RRTMG radiation, 1-moment microphysics and prescribed aerosol</desc>
-    <desc compset="_CAM5%SP1V1-MAML">Super-parameterized E3SM with 64x1km CRM, RRTMG radiation, 1-moment microphysics, prescribed aerosol, MAML, dtime = 5 min (for ne30) and disabled reduced radiation (the last two are specific changes to enable MAML).</desc>
-    <desc compset="_CAM5%SP2V1_"    >Super-parameterized E3SM with 64x1km CRM, RRTMG radiation, and 2-moment microphysics</desc>
-    <desc compset="_CAM5%SP1V1-TEST">Super-parameterized E3SM with  8x1km CRM, RRTMG radiation, and 1-moment microphysics</desc>
-    <desc compset="_CAM5%SP1V1-MAML-TEST">Super-parameterized E3SM with  8x1km CRM, RRTMG radiation, 1-moment microphysics, prescribed aerosol and MAML </desc>
-    <desc compset="_CAM5%SP2V1-TEST">Super-parameterized E3SM with  8x1km CRM, RRTMG radiation, and 2-moment microphysics</desc>
+    <!-- old MMF / Super-Parameterization -->
+    <desc compset="_CAM5%SP1V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%SP2V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%SP1V1-MAML">SP-E3SM with 64x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol, MAML</desc>
+    <desc compset="_CAM5%SP2V1-ECPP">SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol, ECPP</desc>
+    <desc compset="_CAM5%SP1V1-TEST"     >SP-E3SM with 8x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%SP2V1-TEST"     >SP-E3SM with 8x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%SP1V1-MAML-TEST">SP-E3SM with 8x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol, MAML </desc>
+    <desc compset="_CAM5%SP2V1-ECPP-TEST">SP-E3SM with 8x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <!-- new MMF / Super-Parameterization -->
+    <desc compset="_CAM5%MMF1_"    >E3SM-MMF with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%MMF2_"    >E3SM-MMF with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%MMF1-MAML">E3SM-MMF with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol, MAML </desc>
+    <desc compset="_CAM5%MMF2-ECPP">E3SM-MMF with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <desc compset="_CAM5%MMF1-TEST"     >E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%MMF2-TEST"     >E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%MMF1-MAML-TEST">E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol, MAML </desc>
+    <desc compset="_CAM5%MMF2-ECPP-TEST">E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
     <!--  -->
   </description>
 
