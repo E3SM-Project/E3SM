@@ -7,7 +7,7 @@ module CanopyStateType
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type
   use landunit_varcon , only : istsoil, istcrop
-  use clm_varcon      , only : spval
+  use clm_varcon      , only : spval,ispval
   use clm_varpar      , only : nlevcan, nvegwcs
   use clm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress
   use LandunitType    , only : lun_pp
@@ -57,7 +57,7 @@ module CanopyStateType
    contains
 
      procedure, public  :: Init
-     procedure, private :: InitAllocate
+     procedure, public  :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
      procedure, public  :: InitAccBuffer
@@ -129,10 +129,10 @@ contains
     allocate(this%altmax_indx_col          (begc:endc))           ; this%altmax_indx_col          (:)   = huge(1)
     allocate(this%altmax_lastyear_indx_col (begc:endc))           ; this%altmax_lastyear_indx_col (:)   = huge(1)
 
-    allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
-    allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = nan
-    allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
-    allocate(this%vegwp_patch              (begp:endp,1:nvegwcs)) ; this%vegwp_patch              (:,:) = nan
+    allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = spval
+    allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = spval
+    allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = spval
+    allocate(this%vegwp_patch              (begp:endp,1:nvegwcs)) ; this%vegwp_patch              (:,:) = spval
 
 
   end subroutine InitAllocate
@@ -387,19 +387,19 @@ contains
     integer :: begp, endp
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
-
+!#py
     begp = bounds%begp; endp = bounds%endp
-
+!#py
     nstep = get_nstep()
-
+!#py
     ! Allocate needed dynamic memory for single level pft field
-
+!#py
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-
+!#py
     ! Accumulate and extract fsun24 & fsun240
     do p = begp,endp
        rbufslp(p) = this%fsun_patch(p)
@@ -408,16 +408,16 @@ contains
     call extract_accum_field ('FSUN24' , this%fsun24_patch    , nstep)
     call update_accum_field  ('FSUN240', rbufslp              , nstep)
     call extract_accum_field ('FSUN240', this%fsun240_patch   , nstep)
-
+!#py
     ! Accumulate and extract elai_patch
     do p = begp,endp
        rbufslp(p) = this%elai_patch(p)
     end do
     call update_accum_field  ('LAIP', rbufslp                 , nstep)
     call extract_accum_field ('LAIP', this%elai_p_patch       , nstep)
-
+!#py
     deallocate(rbufslp)
-
+!#py
   end subroutine UpdateAccVars
 
   !-----------------------------------------------------------------------
@@ -488,41 +488,41 @@ contains
     logical :: readvar      ! determine if variable is on initial file
     integer :: begp, endp
     !-----------------------------------------------------------------------
-
+!#py
     begp = bounds%begp; endp = bounds%endp
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='FRAC_VEG_NOSNO_ALB', xtype=ncd_int,  &
          dim1name='pft', long_name='fraction of vegetation not covered by snow (0 or 1)', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frac_veg_nosno_alb_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tlai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided leaf area index, no burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tlai_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tsai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided stem area index, no burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tsai_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='elai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided leaf area index, with burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%elai_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='esai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided stem area index, with burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%esai_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='htop', xtype=ncd_double,  &
          dim1name='pft', long_name='canopy top', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%htop_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='hbot', xtype=ncd_double,  &
          dim1name='pft', long_name='canopy botton', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%hbot_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='mlaidiff', xtype=ncd_double,  &
          dim1name='pft', long_name='difference between lai month one and month two', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%mlaidiff_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='fsun', xtype=ncd_double,  &
          dim1name='pft', long_name='sunlit fraction of canopy', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%fsun_patch)
@@ -533,33 +533,33 @@ contains
           end if
        end do
     end if
-
+!#py
     if (use_cn .or. use_fates) then
        call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_col)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_col)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='altmax_indx', xtype=ncd_int,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_indx_col)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear_indx', xtype=ncd_int,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_indx_col)
     end if
-
+!#py
     if ( use_hydrstress ) then
        call restartvar(ncid=ncid, flag=flag, varname='vegwp', xtype=ncd_double, &
             dim1name='pft', dim2name='vegwcs', switchdim=.true., &
             long_name='vegetation water matric potential', units='mm', &
             interpinic_flag='interp', readvar=readvar, data=this%vegwp_patch)
-
+!#py
     end if
-
+!#py
   end subroutine Restart
 
 end module CanopyStateType

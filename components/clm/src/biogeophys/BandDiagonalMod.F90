@@ -152,21 +152,21 @@ contains
 !!$*  elements of U because of fill-in resulting from the row interchanges.
 
 
-!Set up input matrix AB
-!An m-by-n band matrix with kl subdiagonals and ku superdiagonals
-!may be stored compactly in a two-dimensional array with
-!kl+ku+1 rows and n columns
-!AB(KL+KU+1+i-j,j) = A(i,j)
+        !Set up input matrix AB
+        !An m-by-n band matrix with kl subdiagonals and ku superdiagonals
+        !may be stored compactly in a two-dimensional array with
+        !kl+ku+1 rows and n columns
+        !AB(KL+KU+1+i-j,j) = A(i,j)
 
     do fc = 1,numf
        ci = filter(fc)
 
        kl=(nband-1)/2
        ku=kl
-! m is the number of rows required for storage space by dgbsv
+        ! m is the number of rows required for storage space by dgbsv
        m=2*kl+ku+1
-! n is the number of levels (snow/soil)
-!scs: replace ubj with jbot
+        ! n is the number of levels (snow/soil)
+        !scs: replace ubj with jbot
        n=jbot(ci)-jtop(ci)+1
 
        allocate(ab(m,n))
@@ -184,17 +184,20 @@ contains
        allocate(ipiv(n))
        allocate(result(n))
 
-! on input result is rhs, on output result is solution vector
+       ! on input result is rhs, on output result is solution vector
        result(:)=r(ci,jtop(ci):jbot(ci))
-
-!       DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
-       !call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
+        #ifdef _OPENACC
+          call dgbsv_oacc(n, kl, ku, 1, ab, m ,ipiv, result,n,info)
+        #else
+        ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
+       call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
+       #endif
        u(ci,jtop(ci):jbot(ci))=result(:)
 
        if(info /= 0) then
           !#py write(iulog,*)'index: ', ci
           !#py write(iulog,*)'n,kl,ku,m ',n,kl,ku,m
-          !#py write(iulog,*)'dgbsv info: ',ci,info
+          print *, 'dgbsv info: ',ci,info
 
           !#py write(iulog,*) ''
           !#py write(iulog,*) 'ab matrix'

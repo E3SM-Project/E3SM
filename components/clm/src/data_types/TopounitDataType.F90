@@ -293,19 +293,19 @@ module TopounitDataType
      integer :: begt, endt
      real(r8), pointer :: rbufslt(:)      ! temporary single level - topounit level
      !---------------------------------------------------------------------
-
+!#py
      begt = bounds%begt; endt = bounds%endt
-
+!#py
       nstep = get_nstep()
-
+!#py
      ! Allocate needed dynamic memory for single level topounit field
-
+!#py
      allocate(rbufslt(begt:endt), stat=ier)
      if (ier/=0) then
          write(iulog,*)'update_accum_hist allocation error for rbufslt'
           call endrun(msg=errMsg(__FILE__, __LINE__))
      endif
-
+!#py
      ! Accumulate 24-hour running mean of relative humidity
      do t = begt,endt
         rbufslt(t) = this%rhbot(t)
@@ -314,7 +314,7 @@ module TopounitDataType
         call update_accum_field  ('RH24H', rbufslt, nstep)
         call extract_accum_field ('RH24H', this%rh24h, nstep)
      end if
-
+!#py
      ! Accumulate 24-hour running mean of wind speed
      do t = begt,endt
         rbufslt(t) = this%windbot(t)
@@ -323,7 +323,7 @@ module TopounitDataType
         call update_accum_field  ('WIND24H', rbufslt, nstep)
         call extract_accum_field ('WIND24H', this%wind24h, nstep)
      end if
-
+!#py
      deallocate(rbufslt)
     end subroutine update_acc_vars_top_as
 
@@ -532,19 +532,19 @@ module TopounitDataType
     integer :: begt, endt
     real(r8), pointer :: rbufslt(:)      ! temporary single level - topounit level
     !---------------------------------------------------------------------
-
+!#py
     begt = bounds%begt; endt = bounds%endt
-
+!#py
     nstep = get_nstep()
-
+!#py
     ! Allocate needed dynamic memory for single level topounit field
-
+!#py
     allocate(rbufslt(begt:endt), stat=ier)
     if (ier/=0) then
        write(iulog,*)'update_accum_hist allocation error for rbufslt'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-
+!#py
     ! Accumulate and extract forc_solad24 & forc_solad240
     do t = begt,endt
        rbufslt(t) = this%solad(t,1)
@@ -553,7 +553,7 @@ module TopounitDataType
     !call extract_accum_field ('FSD240H', this%fsd240h         , nstep)
     !call update_accum_field  ('FSD24H' , rbufslt              , nstep)
     !call extract_accum_field ('FSD24H' , this%fsd24h          , nstep)
-
+!#py
     ! Accumulate and extract forc_solai24 & forc_solai240
     do t = begt,endt
        rbufslt(t) = this%solai(t,1)
@@ -562,7 +562,7 @@ module TopounitDataType
     !call extract_accum_field ('FSI24H' , this%fsi24h          , nstep)
     !call update_accum_field  ('FSI240H', rbufslt              , nstep)
     !call extract_accum_field ('FSI240H', this%fsi240h         , nstep)
-
+!#py
     ! Accumulate and extract total precip
     do t = begt,endt
        rbufslt(t) = this%rain(t) + this%snow(t)
@@ -571,19 +571,19 @@ module TopounitDataType
        ! Accumulate and extract PREC60D (accumulates total precipitation as 60-day running mean)
        call update_accum_field  ('PREC60D', rbufslt, nstep)
        call extract_accum_field ('PREC60D', this%prec60d, nstep)
-
+!#py
        ! Accumulate and extract PREC10D (accumulates total precipitation as 10-day running mean)
        call update_accum_field  ('PREC10D', rbufslt, nstep)
        call extract_accum_field ('PREC10D', this%prec10d, nstep)
     end if
-
+!#py
     if (use_fates) then
        call update_accum_field  ('PREC24H', rbufslt, nstep)
        call extract_accum_field ('PREC24H', this%prec24h, nstep)
     end if
-
+!#py
     deallocate(rbufslt)
-
+!#py
   end subroutine update_acc_vars_top_af
 
   !-----------------------------------------------------------------------

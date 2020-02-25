@@ -6,7 +6,7 @@ module VegetationDataType
   ! --------------------------------------------------------
   !
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=),isnan => shr_infnan_isnan
+  use shr_infnan_mod  , only : nan => shr_inf_nan, assignment(=),isnan => shr_infnan_isnan
   use shr_const_mod   , only : SHR_CONST_PDB
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc
@@ -218,8 +218,8 @@ module VegetationDataType
     real(r8), pointer :: benefit_pgpp_pleafn    (:)   => null()  ! partial gpp / partial leaf nitrogen (used by phosphatase activity and dynamic allocation)
     real(r8), pointer :: benefit_pgpp_pleafp    (:)   => null()  ! partial gpp / partial leaf phosphorus (used by phosphatase activity and dynamic allocation)
     real(r8), pointer :: cost_pgpp_pfrootc      (:)   => null()  ! partial gpp /  partial fine root carbon (used by dynamic allocation)
-    real(r8), pointer :: cost_plmr_pleafc       (:)   => null()  ! partial maintenance respiration /  partial leaf carbon (used by dynamic allocation)
-    real(r8), pointer :: cost_plmr_pleafn       (:)   => null()  ! partial maintenance respiration /  partial leaf nitrogen (used by dynamic allocation)
+    real(r8), pointer :: cost_plmr_pleafc       (:)   => null()  ! partial maintespvalce respiration /  partial leaf carbon (used by dynamic allocation)
+    real(r8), pointer :: cost_plmr_pleafn       (:)   => null()  ! partial maintespvalce respiration /  partial leaf nitrogen (used by dynamic allocation)
     ! variables supporting multi-layer canopy
     real(r8), pointer :: ppsn_ptlai_z           (:,:) => null()
     real(r8), pointer :: ppsn_pleafn_z          (:,:) => null()
@@ -507,21 +507,21 @@ module VegetationDataType
     real(r8), pointer :: livestemc_to_litter                 (:) => null()    ! live stem C litterfall (gC/m2/s)
     real(r8), pointer :: grainc_to_food                      (:) => null()    ! grain C to food for prognostic crop(gC/m2/s)
 
-    ! maintenance respiration fluxes
-    real(r8), pointer :: leaf_mr                             (:) => null()    ! leaf maintenance respiration (gC/m2/s)
-    real(r8), pointer :: froot_mr                            (:) => null()    ! fine root maintenance respiration (gC/m2/s)
-    real(r8), pointer :: livestem_mr                         (:) => null()    ! live stem maintenance respiration (gC/m2/s)
-    real(r8), pointer :: livecroot_mr                        (:) => null()    ! live coarse root maintenance respiration (gC/m2/s)
+    ! maintespvalce respiration fluxes
+    real(r8), pointer :: leaf_mr                             (:) => null()    ! leaf maintespvalce respiration (gC/m2/s)
+    real(r8), pointer :: froot_mr                            (:) => null()    ! fine root maintespvalce respiration (gC/m2/s)
+    real(r8), pointer :: livestem_mr                         (:) => null()    ! live stem maintespvalce respiration (gC/m2/s)
+    real(r8), pointer :: livecroot_mr                        (:) => null()    ! live coarse root maintespvalce respiration (gC/m2/s)
     real(r8), pointer :: grain_mr                            (:) => null()    ! crop grain or organs maint. respiration (gC/m2/s)
-    real(r8), pointer :: leaf_curmr                          (:) => null()    ! leaf maintenance respiration from current GPP (gC/m2/s)
-    real(r8), pointer :: froot_curmr                         (:) => null()    ! fine root maintenance respiration from current GPP (gC/m2/s)
-    real(r8), pointer :: livestem_curmr                      (:) => null()    ! live stem maintenance respiration from current GPP (gC/m2/s)
-    real(r8), pointer :: livecroot_curmr                     (:) => null()    ! live coarse root maintenance respiration from current GPP (gC/m2/s)
+    real(r8), pointer :: leaf_curmr                          (:) => null()    ! leaf maintespvalce respiration from current GPP (gC/m2/s)
+    real(r8), pointer :: froot_curmr                         (:) => null()    ! fine root maintespvalce respiration from current GPP (gC/m2/s)
+    real(r8), pointer :: livestem_curmr                      (:) => null()    ! live stem maintespvalce respiration from current GPP (gC/m2/s)
+    real(r8), pointer :: livecroot_curmr                     (:) => null()    ! live coarse root maintespvalce respiration from current GPP (gC/m2/s)
     real(r8), pointer :: grain_curmr                         (:) => null()    ! crop grain or organs maint. respiration from current GPP (gC/m2/s)
-    real(r8), pointer :: leaf_xsmr                           (:) => null()    ! leaf maintenance respiration from storage (gC/m2/s)
-    real(r8), pointer :: froot_xsmr                          (:) => null()    ! fine root maintenance respiration from storage (gC/m2/s)
-    real(r8), pointer :: livestem_xsmr                       (:) => null()    ! live stem maintenance respiration from storage (gC/m2/s)
-    real(r8), pointer :: livecroot_xsmr                      (:) => null()    ! live coarse root maintenance respiration from storage (gC/m2/s)
+    real(r8), pointer :: leaf_xsmr                           (:) => null()    ! leaf maintespvalce respiration from storage (gC/m2/s)
+    real(r8), pointer :: froot_xsmr                          (:) => null()    ! fine root maintespvalce respiration from storage (gC/m2/s)
+    real(r8), pointer :: livestem_xsmr                       (:) => null()    ! live stem maintespvalce respiration from storage (gC/m2/s)
+    real(r8), pointer :: livecroot_xsmr                      (:) => null()    ! live coarse root maintespvalce respiration from storage (gC/m2/s)
     real(r8), pointer :: grain_xsmr                          (:) => null()    ! crop grain or organs maint. respiration from storage (gC/m2/s)
     !turnover of excess carbon
     real(r8), pointer :: xr                                  (:) => null()    ! respiration from excess carbon cpool (gC/m2/s)
@@ -531,7 +531,7 @@ module VegetationDataType
     real(r8), pointer :: psnshade_to_cpool                   (:) => null()    ! C fixation from shaded canopy (gC/m2/s)
 
     ! allocation fluxes, from current GPP
-    real(r8), pointer :: cpool_to_xsmrpool                   (:) => null()    ! allocation to maintenance respiration storage pool (gC/m2/s)
+    real(r8), pointer :: cpool_to_xsmrpool                   (:) => null()    ! allocation to maintespvalce respiration storage pool (gC/m2/s)
     real(r8), pointer :: cpool_to_grainc                     (:) => null()    ! allocation to grain C for prognostic crop(gC/m2/s)
     real(r8), pointer :: cpool_to_grainc_storage             (:) => null()    ! allocation to grain C storage for prognostic crop(gC/m2/s)
     real(r8), pointer :: cpool_to_leafc                      (:) => null()    ! allocation to leaf C (gC/m2/s)
@@ -591,7 +591,7 @@ module VegetationDataType
     ! summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: gpp                                 (:) => null()    ! (gC/m2/s) gross primary production
     real(r8), pointer :: gpp_before_downreg                  (:) => null()    ! (gC/m2/s) gross primary production before down regulation
-    real(r8), pointer :: mr                                  (:) => null()    ! (gC/m2/s) maintenance respiration
+    real(r8), pointer :: mr                                  (:) => null()    ! (gC/m2/s) maintespvalce respiration
     real(r8), pointer :: current_gr                          (:) => null()    ! (gC/m2/s) growth resp for new growth displayed in this timestep
     real(r8), pointer :: transfer_gr                         (:) => null()    ! (gC/m2/s) growth resp for transfer growth displayed in this timestep
     real(r8), pointer :: storage_gr                          (:) => null()    ! (gC/m2/s) growth resp for growth sent to storage for later display
@@ -645,9 +645,9 @@ module VegetationDataType
     real(r8), pointer :: annavg_bgnpp                        (:) => null()    ! (gC/m2/s) annual average belowground NPP
     real(r8), pointer :: tempavg_agnpp                       (:) => null()    ! (gC/m2/s) temp. average aboveground NPP
     real(r8), pointer :: tempavg_bgnpp                       (:) => null()    ! (gC/m2/s) temp. average belowground NPP
-    real(r8), pointer :: allocation_leaf 		                (:) => null()    ! check allocation to leaf for dynamic allocation scheme
-    real(r8), pointer :: allocation_stem 		                (:) => null()    ! check allocation to stem for dynamic allocation scheme
-    real(r8), pointer :: allocation_froot 		             (:) => null()    ! check allocation to fine root for dynamic allocation scheme
+    real(r8), pointer :: allocation_leaf 		                 (:) => null()    ! check allocation to leaf for dynamic allocation scheme
+    real(r8), pointer :: allocation_stem 		                 (:) => null()    ! check allocation to stem for dynamic allocation scheme
+    real(r8), pointer :: allocation_froot 		               (:) => null()    ! check allocation to fine root for dynamic allocation scheme
 
     ! For comparison with RAINFOR wood productivity data
     real(r8), pointer :: agwdnpp                             (:) => null()    !(gC/m2/s) aboveground NPP
@@ -1070,35 +1070,35 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_es
     !-----------------------------------------------------------------------
-    allocate(this%t_veg              (begp:endp))                   ; this%t_veg              (:)   = nan
-    allocate(this%t_ref2m            (begp:endp))                   ; this%t_ref2m            (:)   = nan
-    allocate(this%t_ref2m_r          (begp:endp))                   ; this%t_ref2m_r          (:)   = nan
-    allocate(this%t_ref2m_u          (begp:endp))                   ; this%t_ref2m_u          (:)   = nan
-    allocate(this%t_a10              (begp:endp))                   ; this%t_a10              (:)   = nan
-    allocate(this%t_a10min           (begp:endp))                   ; this%t_a10min           (:)   = nan
-    allocate(this%t_a5min            (begp:endp))                   ; this%t_a5min            (:)   = nan
-    allocate(this%t_ref2m_min        (begp:endp))                   ; this%t_ref2m_min        (:)   = nan
-    allocate(this%t_ref2m_min_r      (begp:endp))                   ; this%t_ref2m_min_r      (:)   = nan
-    allocate(this%t_ref2m_min_u      (begp:endp))                   ; this%t_ref2m_min_u      (:)   = nan
-    allocate(this%t_ref2m_max        (begp:endp))                   ; this%t_ref2m_max        (:)   = nan
-    allocate(this%t_ref2m_max_r      (begp:endp))                   ; this%t_ref2m_max_r      (:)   = nan
-    allocate(this%t_ref2m_max_u      (begp:endp))                   ; this%t_ref2m_max_u      (:)   = nan
-    allocate(this%t_ref2m_min_inst   (begp:endp))                   ; this%t_ref2m_min_inst   (:)   = nan
-    allocate(this%t_ref2m_min_inst_r (begp:endp))                   ; this%t_ref2m_min_inst_r (:)   = nan
-    allocate(this%t_ref2m_min_inst_u (begp:endp))                   ; this%t_ref2m_min_inst_u (:)   = nan
-    allocate(this%t_ref2m_max_inst   (begp:endp))                   ; this%t_ref2m_max_inst   (:)   = nan
-    allocate(this%t_ref2m_max_inst_r (begp:endp))                   ; this%t_ref2m_max_inst_r (:)   = nan
-    allocate(this%t_ref2m_max_inst_u (begp:endp))                   ; this%t_ref2m_max_inst_u (:)   = nan
-    allocate(this%t_veg24            (begp:endp))                   ; this%t_veg24            (:)   = nan
-    allocate(this%t_veg240           (begp:endp))                   ; this%t_veg240           (:)   = nan
+    allocate(this%t_veg              (begp:endp))                   ; this%t_veg              (:)   = spval
+    allocate(this%t_ref2m            (begp:endp))                   ; this%t_ref2m            (:)   = spval
+    allocate(this%t_ref2m_r          (begp:endp))                   ; this%t_ref2m_r          (:)   = spval
+    allocate(this%t_ref2m_u          (begp:endp))                   ; this%t_ref2m_u          (:)   = spval
+    allocate(this%t_a10              (begp:endp))                   ; this%t_a10              (:)   = spval
+    allocate(this%t_a10min           (begp:endp))                   ; this%t_a10min           (:)   = spval
+    allocate(this%t_a5min            (begp:endp))                   ; this%t_a5min            (:)   = spval
+    allocate(this%t_ref2m_min        (begp:endp))                   ; this%t_ref2m_min        (:)   = spval
+    allocate(this%t_ref2m_min_r      (begp:endp))                   ; this%t_ref2m_min_r      (:)   = spval
+    allocate(this%t_ref2m_min_u      (begp:endp))                   ; this%t_ref2m_min_u      (:)   = spval
+    allocate(this%t_ref2m_max        (begp:endp))                   ; this%t_ref2m_max        (:)   = spval
+    allocate(this%t_ref2m_max_r      (begp:endp))                   ; this%t_ref2m_max_r      (:)   = spval
+    allocate(this%t_ref2m_max_u      (begp:endp))                   ; this%t_ref2m_max_u      (:)   = spval
+    allocate(this%t_ref2m_min_inst   (begp:endp))                   ; this%t_ref2m_min_inst   (:)   = spval
+    allocate(this%t_ref2m_min_inst_r (begp:endp))                   ; this%t_ref2m_min_inst_r (:)   = spval
+    allocate(this%t_ref2m_min_inst_u (begp:endp))                   ; this%t_ref2m_min_inst_u (:)   = spval
+    allocate(this%t_ref2m_max_inst   (begp:endp))                   ; this%t_ref2m_max_inst   (:)   = spval
+    allocate(this%t_ref2m_max_inst_r (begp:endp))                   ; this%t_ref2m_max_inst_r (:)   = spval
+    allocate(this%t_ref2m_max_inst_u (begp:endp))                   ; this%t_ref2m_max_inst_u (:)   = spval
+    allocate(this%t_veg24            (begp:endp))                   ; this%t_veg24            (:)   = spval
+    allocate(this%t_veg240           (begp:endp))                   ; this%t_veg240           (:)   = spval
     allocate(this%gdd0               (begp:endp))                   ; this%gdd0               (:)   = spval
     allocate(this%gdd8               (begp:endp))                   ; this%gdd8               (:)   = spval
     allocate(this%gdd10              (begp:endp))                   ; this%gdd10              (:)   = spval
     allocate(this%gdd020             (begp:endp))                   ; this%gdd020             (:)   = spval
     allocate(this%gdd820             (begp:endp))                   ; this%gdd820             (:)   = spval
     allocate(this%gdd1020            (begp:endp))                   ; this%gdd1020            (:)   = spval
-    allocate(this%thm                (begp:endp))                   ; this%thm                (:)   = nan
-    allocate(this%emv                (begp:endp))                   ; this%emv                (:)   = nan
+    allocate(this%thm                (begp:endp))                   ; this%thm                (:)   = spval
+    allocate(this%emv                (begp:endp))                   ; this%emv                (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_es
@@ -1290,97 +1290,97 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_VEG', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='vegetation temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_veg)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='2m height surface air temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_R', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='Rural 2m height surface air temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_r)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_U', xtype=ncd_double, dim1name='pft',                      &
          long_name='Urban 2m height surface air temperature', units='K',                                              &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_u)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='daily minimum of average 2 m height surface air temperature (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_R', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='rural daily minimum of average 2 m height surface air temperature (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_r)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_U', xtype=ncd_double, dim1name='pft',                  &
          long_name='urban daily minimum of average 2 m height surface air temperature (K)', units='K',                &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_u)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='daily maximum of average 2 m height surface air temperature (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_R', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='rural daily maximum of average 2 m height surface air temperature (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_r)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_U', xtype=ncd_double, dim1name='pft',                  &
          long_name='urban daily maximum of average 2 m height surface air temperature (K)', units='K',                &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_u)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_INST', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='instantaneous daily min of average 2 m height surface air temp (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_inst)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_INST_R', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='rural instantaneous daily min of average 2 m height surface air temp (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_inst_r)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_INST_U', xtype=ncd_double, dim1name='pft',             &
          long_name='urban instantaneous daily min of average 2 m height surface air temp (K)', units='K',             &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_inst_u)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_INST', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='instantaneous daily max of average 2 m height surface air temp (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_inst)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_INST_R', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='rural instantaneous daily max of average 2 m height surface air temp (K)', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_inst_r)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_INST_U', xtype=ncd_double,  dim1name='pft',            &
          long_name='urban instantaneous daily max of average 2 m height surface air temp (K)', units='K',             &
          interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_inst_u)
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='gdd1020', xtype=ncd_double,  &
             dim1name='pft', long_name='20 year average of growing degree-days base 10C from planting', units='ddays', &
             interpinic_flag='interp', readvar=readvar, data=this%gdd1020)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='gdd820', xtype=ncd_double,  &
             dim1name='pft', long_name='20 year average of growing degree-days base 8C from planting', units='ddays', &
             interpinic_flag='interp', readvar=readvar, data=this%gdd820)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='gdd020', xtype=ncd_double,  &
             dim1name='pft', long_name='20 year average of growing degree-days base 0C from planting', units='ddays', &
             interpinic_flag='interp', readvar=readvar, data=this%gdd020)
     end if
-
-
+!#py
+!#py
   end subroutine veg_es_restart
 
   !------------------------------------------------------------------------
@@ -1581,41 +1581,41 @@ module VegetationDataType
     integer :: begp, endp
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
-
+!#py
     begp = bounds%begp; endp = bounds%endp
-
+!#py
     dtime = get_step_size()
     nstep = get_nstep()
     call get_curr_date (year, month, day, secs)
-
+!#py
     ! Allocate needed dynamic memory for single level pft field
-
+!#py
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-
+!#py
     ! fill the temporary variable
     do p = begp,endp
        rbufslp(p) = this%t_veg(p)
     end do
-
+!#py
     call update_accum_field  ('T10', this%t_ref2m, nstep)
     call extract_accum_field ('T10', this%t_a10  , nstep)
     call update_accum_field  ('T_VEG24' , rbufslp       , nstep)
     call extract_accum_field ('T_VEG24' , this%t_veg24  , nstep)
     call update_accum_field  ('T_VEG240', rbufslp       , nstep)
     call extract_accum_field ('T_VEG240', this%t_veg240 , nstep)
-
-
+!#py
+!#py
     ! Accumulate and extract TREFAV - hourly average 2m air temperature
     ! Used to compute maximum and minimum of hourly averaged 2m reference
     ! temperature over a day. Note that "spval" is returned by the call to
     ! accext if the time step does not correspond to the end of an
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
-
+!#py
     call update_accum_field  ('TREFAV', this%t_ref2m, nstep)
     call extract_accum_field ('TREFAV', rbufslp, nstep)
     end_cd = is_end_curr_day()
@@ -1634,14 +1634,14 @@ module VegetationDataType
           this%t_ref2m_min(p) = spval
        endif
     end do
-
+!#py
     ! Accumulate and extract TREFAV_U - hourly average urban 2m air temperature
     ! Used to compute maximum and minimum of hourly averaged 2m reference
     ! temperature over a day. Note that "spval" is returned by the call to
     ! accext if the time step does not correspond to the end of an
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
-
+!#py
     call update_accum_field  ('TREFAV_U', this%t_ref2m_u, nstep)
     call extract_accum_field ('TREFAV_U', rbufslp, nstep)
     do p = begp,endp
@@ -1662,14 +1662,14 @@ module VegetationDataType
           this%t_ref2m_min_u(p) = spval
        endif
     end do
-
+!#py
     ! Accumulate and extract TREFAV_R - hourly average rural 2m air temperature
     ! Used to compute maximum and minimum of hourly averaged 2m reference
     ! temperature over a day. Note that "spval" is returned by the call to
     ! accext if the time step does not correspond to the end of an
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
-
+!#py
     call update_accum_field  ('TREFAV_R', this%t_ref2m_r, nstep)
     call extract_accum_field ('TREFAV_R', rbufslp, nstep)
     do p = begp,endp
@@ -1690,28 +1690,28 @@ module VegetationDataType
           this%t_ref2m_min_r(p) = spval
        endif
     end do
-
+!#py
     if ( crop_prog )then
        ! Accumulate and extract TDM10
-
+!#py
        do p = begp,endp
           rbufslp(p) = min(this%t_ref2m_min(p),this%t_ref2m_min_inst(p))
           if (rbufslp(p) > 1.e30_r8) rbufslp(p) = SHR_CONST_TKFRZ !and were 'min'&
        end do                                                     !'min_inst' not initialized?
        call update_accum_field  ('TDM10', rbufslp, nstep)
        call extract_accum_field ('TDM10', this%t_a10min, nstep)
-
+!#py
        ! Accumulate and extract TDM5
-
+!#py
        do p = begp,endp
           rbufslp(p) = min(this%t_ref2m_min(p),this%t_ref2m_min_inst(p))
           if (rbufslp(p) > 1.e30_r8) rbufslp(p) = SHR_CONST_TKFRZ !and were 'min'&
        end do                                         !'min_inst' not initialized?
        call update_accum_field  ('TDM5', rbufslp, nstep)
        call extract_accum_field ('TDM5', this%t_a5min, nstep)
-
+!#py
        ! Accumulate and extract GDD0
-
+!#py
        do p = begp,endp
           g = veg_pp%gridcell(p)
           if (month==1 .and. day==1 .and. secs==int(dtime)) then
@@ -1725,9 +1725,9 @@ module VegetationDataType
        end do
        call update_accum_field  ('GDD0', rbufslp, nstep)
        call extract_accum_field ('GDD0', this%gdd0, nstep)
-
+!#py
        ! Accumulate and extract GDD8
-
+!#py
        do p = begp,endp
           g = veg_pp%gridcell(p)
           if (month==1 .and. day==1 .and. secs==int(dtime)) then
@@ -1742,9 +1742,9 @@ module VegetationDataType
        end do
        call update_accum_field  ('GDD8', rbufslp, nstep)
        call extract_accum_field ('GDD8', this%gdd8, nstep)
-
+!#py
        ! Accumulate and extract GDD10
-
+!#py
        do p = begp,endp
           g = veg_pp%gridcell(p)
           if (month==1 .and. day==1 .and. secs==int(dtime)) then
@@ -1760,9 +1760,9 @@ module VegetationDataType
        call update_accum_field  ('GDD10', rbufslp, nstep)
        call extract_accum_field ('GDD10', this%gdd10, nstep)
     end if
-
+!#py
     deallocate(rbufslp)
-
+!#py
   end subroutine update_acc_vars_veg_es
 
   !------------------------------------------------------------------------
@@ -1781,17 +1781,17 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_ws
     !-----------------------------------------------------------------------
-    allocate(this%h2ocan              (begp:endp))          ; this%h2ocan            (:) = nan
-    allocate(this%q_ref2m             (begp:endp))          ; this%q_ref2m           (:) = nan
-    allocate(this%rh_ref2m            (begp:endp))          ; this%rh_ref2m          (:) = nan
-    allocate(this%rh_ref2m_r          (begp:endp))          ; this%rh_ref2m_r        (:) = nan
-    allocate(this%rh_ref2m_u          (begp:endp))          ; this%rh_ref2m_u        (:) = nan
-    allocate(this%rh_af               (begp:endp))          ; this%rh_af             (:) = nan
-    allocate(this%fwet                (begp:endp))          ; this%fwet              (:) = nan
-    allocate(this%fdry                (begp:endp))          ; this%fdry              (:) = nan
-    allocate(this%begwb               (begp:endp))          ; this%begwb             (:) = nan
-    allocate(this%endwb               (begp:endp))          ; this%endwb             (:) = nan
-    allocate(this%errh2o              (begp:endp))          ; this%errh2o            (:) = nan
+    allocate(this%h2ocan              (begp:endp))          ; this%h2ocan            (:) = spval
+    allocate(this%q_ref2m             (begp:endp))          ; this%q_ref2m           (:) = spval
+    allocate(this%rh_ref2m            (begp:endp))          ; this%rh_ref2m          (:) = spval
+    allocate(this%rh_ref2m_r          (begp:endp))          ; this%rh_ref2m_r        (:) = spval
+    allocate(this%rh_ref2m_u          (begp:endp))          ; this%rh_ref2m_u        (:) = spval
+    allocate(this%rh_af               (begp:endp))          ; this%rh_af             (:) = spval
+    allocate(this%fwet                (begp:endp))          ; this%fwet              (:) = spval
+    allocate(this%fdry                (begp:endp))          ; this%fdry              (:) = spval
+    allocate(this%begwb               (begp:endp))          ; this%begwb             (:) = spval
+    allocate(this%endwb               (begp:endp))          ; this%endwb             (:) = spval
+    allocate(this%errh2o              (begp:endp))          ; this%errh2o            (:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_ws
@@ -1868,17 +1868,17 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     logical :: readvar      ! determine if variable is on initial file
     !------------------------------------------------------------------------
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='H2OCAN', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='canopy water', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2ocan)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='FWET', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='fraction of canopy that is wet (0 to 1)', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%fwet)
-
+!#py
   end subroutine veg_ws_restart
 
   !------------------------------------------------------------------------
@@ -1913,45 +1913,45 @@ module VegetationDataType
     ! allocate for each member of veg_cs
     !-----------------------------------------------------------------------
     if ( .not. use_fates ) then
-       allocate(this%leafc              (begp :endp))   ;  this%leafc              (:)   = nan
-       allocate(this%leafc_storage      (begp :endp))   ;  this%leafc_storage      (:)   = nan
-       allocate(this%leafc_xfer         (begp :endp))   ;  this%leafc_xfer         (:)   = nan
-       allocate(this%frootc             (begp :endp))   ;  this%frootc             (:)   = nan
-       allocate(this%frootc_storage     (begp :endp))   ;  this%frootc_storage     (:)   = nan
-       allocate(this%frootc_xfer        (begp :endp))   ;  this%frootc_xfer        (:)   = nan
-       allocate(this%livestemc          (begp :endp))   ;  this%livestemc          (:)   = nan
-       allocate(this%livestemc_storage  (begp :endp))   ;  this%livestemc_storage  (:)   = nan
-       allocate(this%livestemc_xfer     (begp :endp))   ;  this%livestemc_xfer     (:)   = nan
-       allocate(this%deadstemc          (begp :endp))   ;  this%deadstemc          (:)   = nan
-       allocate(this%deadstemc_storage  (begp :endp))   ;  this%deadstemc_storage  (:)   = nan
-       allocate(this%deadstemc_xfer     (begp :endp))   ;  this%deadstemc_xfer     (:)   = nan
-       allocate(this%livecrootc         (begp :endp))   ;  this%livecrootc         (:)   = nan
-       allocate(this%livecrootc_storage (begp :endp))   ;  this%livecrootc_storage (:)   = nan
-       allocate(this%livecrootc_xfer    (begp :endp))   ;  this%livecrootc_xfer    (:)   = nan
-       allocate(this%deadcrootc         (begp :endp))   ;  this%deadcrootc         (:)   = nan
-       allocate(this%deadcrootc_storage (begp :endp))   ;  this%deadcrootc_storage (:)   = nan
-       allocate(this%deadcrootc_xfer    (begp :endp))   ;  this%deadcrootc_xfer    (:)   = nan
-       allocate(this%gresp_storage      (begp :endp))   ;  this%gresp_storage      (:)   = nan
-       allocate(this%gresp_xfer         (begp :endp))   ;  this%gresp_xfer         (:)   = nan
-       allocate(this%cpool              (begp :endp))   ;  this%cpool              (:)   = nan
-       allocate(this%xsmrpool           (begp :endp))   ;  this%xsmrpool           (:)   = nan
-       allocate(this%ctrunc             (begp :endp))   ;  this%ctrunc             (:)   = nan
-       allocate(this%dispvegc           (begp :endp))   ;  this%dispvegc           (:)   = nan
-       allocate(this%storvegc           (begp :endp))   ;  this%storvegc           (:)   = nan
-       allocate(this%totvegc            (begp :endp))   ;  this%totvegc            (:)   = nan
-       allocate(this%totpftc            (begp :endp))   ;  this%totpftc            (:)   = nan
-       allocate(this%leafcmax           (begp :endp))   ;  this%leafcmax           (:)   = nan
-       allocate(this%grainc             (begp :endp))   ;  this%grainc             (:)   = nan
-       allocate(this%grainc_storage     (begp :endp))   ;  this%grainc_storage     (:)   = nan
-       allocate(this%grainc_xfer        (begp :endp))   ;  this%grainc_xfer        (:)   = nan
-       allocate(this%woodc              (begp :endp))   ;  this%woodc              (:)   = nan
-       allocate(this%totvegc_abg        (begp :endp))   ;  this%totvegc_abg        (:)   = nan
+       allocate(this%leafc              (begp :endp))   ;  this%leafc              (:)   = spval
+       allocate(this%leafc_storage      (begp :endp))   ;  this%leafc_storage      (:)   = spval
+       allocate(this%leafc_xfer         (begp :endp))   ;  this%leafc_xfer         (:)   = spval
+       allocate(this%frootc             (begp :endp))   ;  this%frootc             (:)   = spval
+       allocate(this%frootc_storage     (begp :endp))   ;  this%frootc_storage     (:)   = spval
+       allocate(this%frootc_xfer        (begp :endp))   ;  this%frootc_xfer        (:)   = spval
+       allocate(this%livestemc          (begp :endp))   ;  this%livestemc          (:)   = spval
+       allocate(this%livestemc_storage  (begp :endp))   ;  this%livestemc_storage  (:)   = spval
+       allocate(this%livestemc_xfer     (begp :endp))   ;  this%livestemc_xfer     (:)   = spval
+       allocate(this%deadstemc          (begp :endp))   ;  this%deadstemc          (:)   = spval
+       allocate(this%deadstemc_storage  (begp :endp))   ;  this%deadstemc_storage  (:)   = spval
+       allocate(this%deadstemc_xfer     (begp :endp))   ;  this%deadstemc_xfer     (:)   = spval
+       allocate(this%livecrootc         (begp :endp))   ;  this%livecrootc         (:)   = spval
+       allocate(this%livecrootc_storage (begp :endp))   ;  this%livecrootc_storage (:)   = spval
+       allocate(this%livecrootc_xfer    (begp :endp))   ;  this%livecrootc_xfer    (:)   = spval
+       allocate(this%deadcrootc         (begp :endp))   ;  this%deadcrootc         (:)   = spval
+       allocate(this%deadcrootc_storage (begp :endp))   ;  this%deadcrootc_storage (:)   = spval
+       allocate(this%deadcrootc_xfer    (begp :endp))   ;  this%deadcrootc_xfer    (:)   = spval
+       allocate(this%gresp_storage      (begp :endp))   ;  this%gresp_storage      (:)   = spval
+       allocate(this%gresp_xfer         (begp :endp))   ;  this%gresp_xfer         (:)   = spval
+       allocate(this%cpool              (begp :endp))   ;  this%cpool              (:)   = spval
+       allocate(this%xsmrpool           (begp :endp))   ;  this%xsmrpool           (:)   = spval
+       allocate(this%ctrunc             (begp :endp))   ;  this%ctrunc             (:)   = spval
+       allocate(this%dispvegc           (begp :endp))   ;  this%dispvegc           (:)   = spval
+       allocate(this%storvegc           (begp :endp))   ;  this%storvegc           (:)   = spval
+       allocate(this%totvegc            (begp :endp))   ;  this%totvegc            (:)   = spval
+       allocate(this%totpftc            (begp :endp))   ;  this%totpftc            (:)   = spval
+       allocate(this%leafcmax           (begp :endp))   ;  this%leafcmax           (:)   = spval
+       allocate(this%grainc             (begp :endp))   ;  this%grainc             (:)   = spval
+       allocate(this%grainc_storage     (begp :endp))   ;  this%grainc_storage     (:)   = spval
+       allocate(this%grainc_xfer        (begp :endp))   ;  this%grainc_xfer        (:)   = spval
+       allocate(this%woodc              (begp :endp))   ;  this%woodc              (:)   = spval
+       allocate(this%totvegc_abg        (begp :endp))   ;  this%totvegc_abg        (:)   = spval
     endif  !  not use_fates
 
-    allocate(this%begcb              (begp :endp))   ;  this%begcb              (:) = nan
-    allocate(this%endcb              (begp :endp))   ;  this%endcb              (:) = nan
-    allocate(this%errcb              (begp :endp))   ;  this%errcb              (:) = nan
-    allocate(this%cropseedc_deficit  (begp :endp))   ;  this%cropseedc_deficit  (:) = nan
+    allocate(this%begcb              (begp :endp))   ;  this%begcb              (:) = spval
+    allocate(this%endcb              (begp :endp))   ;  this%endcb              (:) = spval
+    allocate(this%errcb              (begp :endp))   ;  this%errcb              (:) = spval
+    allocate(this%cropseedc_deficit  (begp :endp))   ;  this%cropseedc_deficit  (:) = spval
     allocate(this%species)
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_cs
@@ -2636,14 +2636,14 @@ module VegetationDataType
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state
     !-----------------------------------------------------------------------
-
+!#py
     if (carbon_type == 'c13' .or. carbon_type == 'c14') then
        if (.not. present(c12_veg_cs)) then
           call endrun(msg=' ERROR: for C14 must pass in c12_veg_cs as argument' //&
                errMsg(__FILE__, __LINE__))
        end if
     end if
-
+!#py
     if ( .not. use_fates ) then
        !--------------------------------
        ! C12 vegetation carbon state variables
@@ -2652,119 +2652,119 @@ module VegetationDataType
           call restartvar(ncid=ncid, flag=flag, varname='leafc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='gresp_storage', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_storage)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='gresp_xfer', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_xfer)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='cpool', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%cpool)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='xsmrpool', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%xsmrpool)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='pft_ctrunc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%ctrunc)
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='totvegc', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%totvegc)
-
+!#py
           if (crop_prog) then
              call restartvar(ncid=ncid, flag=flag,  varname='grainc', xtype=ncd_double,  &
                   dim1name='pft', long_name='grain C', units='gC/m2', &
                   interpinic_flag='interp', readvar=readvar, data=this%grainc)
-
+!#py
              call restartvar(ncid=ncid, flag=flag,  varname='grainc_storage', xtype=ncd_double,  &
                   dim1name='pft', long_name='grain C storage', units='gC/m2', &
                   interpinic_flag='interp', readvar=readvar, data=this%grainc_storage)
-
+!#py
              call restartvar(ncid=ncid, flag=flag,  varname='grainc_xfer', xtype=ncd_double,  &
                   dim1name='pft', long_name='grain C transfer', units='gC/m2', &
                   interpinic_flag='interp', readvar=readvar, data=this%grainc_xfer)
-
+!#py
              call restartvar(ncid=ncid, flag=flag, varname='cropseedc_deficit', xtype=ncd_double,  &
                   dim1name='pft', long_name='pool for seeding new crop growth', units='gC/m2', &
                   interpinic_flag='interp', readvar=readvar, data=this%cropseedc_deficit)
           end if ! crop_prog
-
+!#py
        end if  ! c12
-
+!#py
        !--------------------------------
        ! C13 vegetation carbon state variables
        !--------------------------------
@@ -2776,7 +2776,7 @@ module VegetationDataType
              c3_r2 = c3_r1/(1._r8 + c3_r1)
              c4_r1 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
              c4_r2 = c4_r1/(1._r8 + c4_r1)
-
+!#py
              do i = bounds%begp,bounds%endp
                 if (veg_vp%c3psn(veg_pp%itype(i)) == 1._r8) then
                    this%grainc(i)            = c12_veg_cs%grainc(i)         * c3_r2
@@ -2799,7 +2799,7 @@ module VegetationDataType
                 end if
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc)
@@ -2813,7 +2813,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_storage)
@@ -2827,7 +2827,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_xfer_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_xfer)
@@ -2841,7 +2841,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc)
@@ -2855,7 +2855,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_storage)
@@ -2869,7 +2869,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_xfer_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_xfer)
@@ -2883,7 +2883,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc)
@@ -2897,7 +2897,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_storage)
@@ -2911,7 +2911,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_xfer_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_xfer)
@@ -2925,7 +2925,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc)
@@ -2939,7 +2939,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_storage)
@@ -2953,7 +2953,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_xfer_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_xfer)
@@ -2967,7 +2967,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc)
@@ -2981,7 +2981,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_storage)
@@ -2995,7 +2995,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_xfer_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_xfer)
@@ -3009,7 +3009,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc)
@@ -3023,7 +3023,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_storage)
@@ -3037,7 +3037,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_xfer_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_xfer)
@@ -3051,7 +3051,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='gresp_storage_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_storage)
@@ -3065,7 +3065,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='gresp_xfer_13', xtype=ncd_double,  &
                dim1name='pft', &
                long_name='', units='', &
@@ -3080,7 +3080,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='cpool_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%cpool)
@@ -3094,7 +3094,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='xsmrpool_13', xtype=ncd_double,  &
                dim1name='pft', &
                long_name='', units='', &
@@ -3109,7 +3109,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='pft_ctrunc_13', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%ctrunc)
@@ -3123,7 +3123,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='totvegc_13', xtype=ncd_double,  &
                dim1name='pft', &
                long_name='', units='', &
@@ -3138,9 +3138,9 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
        endif ! C13 block
-
+!#py
        !--------------------------------
        ! C14 pft carbon state variables
        !--------------------------------
@@ -3157,7 +3157,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_storage)
@@ -3170,7 +3170,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='leafc_xfer_14', xtype=ncd_double,  &
                dim1name='pft',    long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_xfer)
@@ -3182,7 +3182,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc)
@@ -3195,7 +3195,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_storage)
@@ -3208,7 +3208,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='frootc_xfer_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_xfer)
@@ -3221,7 +3221,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc)
@@ -3233,7 +3233,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_storage)
@@ -3245,7 +3245,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livestemc_xfer_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_xfer)
@@ -3257,7 +3257,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc)
@@ -3269,7 +3269,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_storage)
@@ -3281,7 +3281,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadstemc_xfer_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_xfer)
@@ -3293,7 +3293,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc)
@@ -3305,7 +3305,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_storage)
@@ -3317,7 +3317,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='livecrootc_xfer_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_xfer)
@@ -3329,7 +3329,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc)
@@ -3341,7 +3341,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_storage)
@@ -3353,7 +3353,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='deadcrootc_xfer_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_xfer)
@@ -3365,7 +3365,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='gresp_storage_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_storage)
@@ -3377,7 +3377,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='gresp_xfer_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_xfer)
@@ -3389,7 +3389,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='cpool_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%cpool)
@@ -3401,7 +3401,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='xsmrpool_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%xsmrpool)
@@ -3413,7 +3413,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='pft_ctrunc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%ctrunc)
@@ -3425,7 +3425,7 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
           call restartvar(ncid=ncid, flag=flag, varname='totvegc_14', xtype=ncd_double,  &
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%totvegc)
@@ -3437,11 +3437,11 @@ module VegetationDataType
                 endif
              end do
           end if
-
+!#py
        endif  ! C14 block
-
+!#py
     endif  ! .not. use_fates
-
+!#py
     !--------------------------------
     ! Spinup state operations happen on restart write/read
     !--------------------------------
@@ -3466,7 +3466,7 @@ module VegetationDataType
               end if
            end if
         end if
-
+!#py
         ! now compare the model and restart file spinup states, and either take the
         ! model into spinup mode or out of it if they are not identical
         ! taking model out of spinup mode requires multiplying each pool
@@ -3474,7 +3474,7 @@ module VegetationDataType
         ! putting model into spinup mode requires dividing each pool
         ! by the associated AD factor.
         ! only allow this to occur on first timestep of model run.
-
+!#py
         if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
            if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
               if ( masterproc ) write(iulog,*) ' veg_cs_restart: taking deadwood pools out of AD spinup mode'
@@ -3502,7 +3502,7 @@ module VegetationDataType
            end do
         end if ! read
      end if ! c12 or c14 (PET: why not c13?)
-
+!#py
   end subroutine veg_cs_restart
 
   !-----------------------------------------------------------------------
@@ -3667,75 +3667,75 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_ns
     !-----------------------------------------------------------------------
-    allocate(this%leafn                  (begp:endp))           ; this%leafn               (:)   = nan
-    allocate(this%leafn_storage          (begp:endp))           ; this%leafn_storage       (:)   = nan
-    allocate(this%leafn_xfer             (begp:endp))           ; this%leafn_xfer          (:)   = nan
-    allocate(this%frootn                 (begp:endp))           ; this%frootn              (:)   = nan
-    allocate(this%frootn_storage         (begp:endp))           ; this%frootn_storage      (:)   = nan
-    allocate(this%frootn_xfer            (begp:endp))           ; this%frootn_xfer         (:)   = nan
-    allocate(this%livestemn              (begp:endp))           ; this%livestemn           (:)   = nan
-    allocate(this%livestemn_storage      (begp:endp))           ; this%livestemn_storage   (:)   = nan
-    allocate(this%livestemn_xfer         (begp:endp))           ; this%livestemn_xfer      (:)   = nan
-    allocate(this%deadstemn              (begp:endp))           ; this%deadstemn           (:)   = nan
-    allocate(this%deadstemn_storage      (begp:endp))           ; this%deadstemn_storage   (:)   = nan
-    allocate(this%deadstemn_xfer         (begp:endp))           ; this%deadstemn_xfer      (:)   = nan
-    allocate(this%livecrootn             (begp:endp))           ; this%livecrootn          (:)   = nan
-    allocate(this%livecrootn_storage     (begp:endp))           ; this%livecrootn_storage  (:)   = nan
-    allocate(this%livecrootn_xfer        (begp:endp))           ; this%livecrootn_xfer     (:)   = nan
-    allocate(this%deadcrootn             (begp:endp))           ; this%deadcrootn          (:)   = nan
-    allocate(this%deadcrootn_storage     (begp:endp))           ; this%deadcrootn_storage  (:)   = nan
-    allocate(this%deadcrootn_xfer        (begp:endp))           ; this%deadcrootn_xfer     (:)   = nan
-    allocate(this%retransn               (begp:endp))           ; this%retransn            (:)   = nan
-    allocate(this%npool                  (begp:endp))           ; this%npool               (:)   = nan
-    allocate(this%ntrunc                 (begp:endp))           ; this%ntrunc              (:)   = nan
-    allocate(this%plant_n_buffer         (begp:endp))           ; this%plant_n_buffer      (:)   = nan
-    allocate(this%grainn                 (begp:endp))           ; this%grainn              (:)   = nan
-    allocate(this%grainn_storage         (begp:endp))           ; this%grainn_storage      (:)   = nan
-    allocate(this%grainn_xfer            (begp:endp))           ; this%grainn_xfer         (:)   = nan
-    allocate(this%cropseedn_deficit      (begp:endp))           ; this%cropseedn_deficit   (:)   = nan
-    allocate(this%dispvegn               (begp:endp))           ; this%dispvegn            (:)   = nan
-    allocate(this%storvegn               (begp:endp))           ; this%storvegn            (:)   = nan
-    allocate(this%totvegn                (begp:endp))           ; this%totvegn             (:)   = nan
-    allocate(this%totpftn                (begp:endp))           ; this%totpftn             (:)   = nan
-    allocate(this%begnb                  (begp:endp))           ; this%begnb               (:)   = nan
-    allocate(this%endnb                  (begp:endp))           ; this%endnb               (:)   = nan
-    allocate(this%errnb                  (begp:endp))           ; this%errnb               (:)   = nan
-    allocate(this%npimbalance            (begp:endp))           ; this%npimbalance         (:)   = nan
-    allocate(this%pnup_pfrootc           (begp:endp))           ; this%pnup_pfrootc        (:)   = nan
-    allocate(this%ppup_pfrootc           (begp:endp))           ; this%ppup_pfrootc        (:)   = nan
-    allocate(this%ptlai_pleafc           (begp:endp))           ; this%ptlai_pleafc        (:)   = nan
-    allocate(this%ppsnsun_ptlai          (begp:endp))           ; this%ppsnsun_ptlai       (:)   = nan
-    allocate(this%ppsnsun_pleafn         (begp:endp))           ; this%ppsnsun_pleafn      (:)   = nan
-    allocate(this%ppsnsun_pleafp         (begp:endp))           ; this%ppsnsun_pleafp      (:)   = nan
-    allocate(this%plmrsun_ptlai          (begp:endp))           ; this%plmrsun_ptlai       (:)   = nan
-    allocate(this%plmrsun_pleafn         (begp:endp))           ; this%plmrsun_pleafn      (:)   = nan
-    allocate(this%plaisun_ptlai          (begp:endp))           ; this%plaisun_ptlai       (:)   = nan
-    allocate(this%ppsnsha_ptlai          (begp:endp))           ; this%ppsnsha_ptlai       (:)   = nan
-    allocate(this%ppsnsha_pleafn         (begp:endp))           ; this%ppsnsha_pleafn      (:)   = nan
-    allocate(this%ppsnsha_pleafp         (begp:endp))           ; this%ppsnsha_pleafp      (:)   = nan
-    allocate(this%plmrsha_ptlai          (begp:endp))           ; this%plmrsha_ptlai       (:)   = nan
-    allocate(this%plmrsha_pleafn         (begp:endp))           ; this%plmrsha_pleafn      (:)   = nan
-    allocate(this%plaisha_ptlai          (begp:endp))           ; this%plaisha_ptlai       (:)   = nan
-    allocate(this%benefit_pgpp_pleafc    (begp:endp))           ; this%benefit_pgpp_pleafc (:)   = nan
-    allocate(this%benefit_pgpp_pleafn    (begp:endp))           ; this%benefit_pgpp_pleafn (:)   = nan
-    allocate(this%benefit_pgpp_pleafp    (begp:endp))           ; this%benefit_pgpp_pleafp (:)   = nan
-    allocate(this%cost_pgpp_pfrootc      (begp:endp))           ; this%cost_pgpp_pfrootc   (:)   = nan
-    allocate(this%cost_plmr_pleafc       (begp:endp))           ; this%cost_plmr_pleafc    (:)   = nan
-    allocate(this%cost_plmr_pleafn       (begp:endp))           ; this%cost_plmr_pleafn    (:)   = nan
-    allocate(this%ppsn_ptlai_z           (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z        (:,:) = nan
-    allocate(this%ppsn_pleafn_z          (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z       (:,:) = nan
-    allocate(this%ppsn_pleafp_z          (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z       (:,:) = nan
-    allocate(this%ppsn_ptlai_z_vcmax     (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_vcmax  (:,:) = nan
-    allocate(this%ppsn_pleafn_z_vcmax    (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_vcmax (:,:) = nan
-    allocate(this%ppsn_pleafp_z_vcmax    (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_vcmax (:,:) = nan
-    allocate(this%ppsn_ptlai_z_jmax      (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_jmax   (:,:) = nan
-    allocate(this%ppsn_pleafn_z_jmax     (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_jmax  (:,:) = nan
-    allocate(this%ppsn_pleafp_z_jmax     (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_jmax  (:,:) = nan
-    allocate(this%ppsn_ptlai_z_tpu       (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_tpu    (:,:) = nan
-    allocate(this%ppsn_pleafn_z_tpu      (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_tpu   (:,:) = nan
-    allocate(this%ppsn_pleafp_z_tpu      (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_tpu   (:,:) = nan
-    allocate(this%plmr_ptlai_z           (begp:endp,1:nlevcan)) ; this%plmr_ptlai_z        (:,:) = nan
-    allocate(this%plmr_pleafn_z          (begp:endp,1:nlevcan)) ; this%plmr_pleafn_z       (:,:) = nan
+    allocate(this%leafn                  (begp:endp))           ; this%leafn               (:)   = spval
+    allocate(this%leafn_storage          (begp:endp))           ; this%leafn_storage       (:)   = spval
+    allocate(this%leafn_xfer             (begp:endp))           ; this%leafn_xfer          (:)   = spval
+    allocate(this%frootn                 (begp:endp))           ; this%frootn              (:)   = spval
+    allocate(this%frootn_storage         (begp:endp))           ; this%frootn_storage      (:)   = spval
+    allocate(this%frootn_xfer            (begp:endp))           ; this%frootn_xfer         (:)   = spval
+    allocate(this%livestemn              (begp:endp))           ; this%livestemn           (:)   = spval
+    allocate(this%livestemn_storage      (begp:endp))           ; this%livestemn_storage   (:)   = spval
+    allocate(this%livestemn_xfer         (begp:endp))           ; this%livestemn_xfer      (:)   = spval
+    allocate(this%deadstemn              (begp:endp))           ; this%deadstemn           (:)   = spval
+    allocate(this%deadstemn_storage      (begp:endp))           ; this%deadstemn_storage   (:)   = spval
+    allocate(this%deadstemn_xfer         (begp:endp))           ; this%deadstemn_xfer      (:)   = spval
+    allocate(this%livecrootn             (begp:endp))           ; this%livecrootn          (:)   = spval
+    allocate(this%livecrootn_storage     (begp:endp))           ; this%livecrootn_storage  (:)   = spval
+    allocate(this%livecrootn_xfer        (begp:endp))           ; this%livecrootn_xfer     (:)   = spval
+    allocate(this%deadcrootn             (begp:endp))           ; this%deadcrootn          (:)   = spval
+    allocate(this%deadcrootn_storage     (begp:endp))           ; this%deadcrootn_storage  (:)   = spval
+    allocate(this%deadcrootn_xfer        (begp:endp))           ; this%deadcrootn_xfer     (:)   = spval
+    allocate(this%retransn               (begp:endp))           ; this%retransn            (:)   = spval
+    allocate(this%npool                  (begp:endp))           ; this%npool               (:)   = spval
+    allocate(this%ntrunc                 (begp:endp))           ; this%ntrunc              (:)   = spval
+    allocate(this%plant_n_buffer         (begp:endp))           ; this%plant_n_buffer      (:)   = spval
+    allocate(this%grainn                 (begp:endp))           ; this%grainn              (:)   = spval
+    allocate(this%grainn_storage         (begp:endp))           ; this%grainn_storage      (:)   = spval
+    allocate(this%grainn_xfer            (begp:endp))           ; this%grainn_xfer         (:)   = spval
+    allocate(this%cropseedn_deficit      (begp:endp))           ; this%cropseedn_deficit   (:)   = spval
+    allocate(this%dispvegn               (begp:endp))           ; this%dispvegn            (:)   = spval
+    allocate(this%storvegn               (begp:endp))           ; this%storvegn            (:)   = spval
+    allocate(this%totvegn                (begp:endp))           ; this%totvegn             (:)   = spval
+    allocate(this%totpftn                (begp:endp))           ; this%totpftn             (:)   = spval
+    allocate(this%begnb                  (begp:endp))           ; this%begnb               (:)   = spval
+    allocate(this%endnb                  (begp:endp))           ; this%endnb               (:)   = spval
+    allocate(this%errnb                  (begp:endp))           ; this%errnb               (:)   = spval
+    allocate(this%npimbalance            (begp:endp))           ; this%npimbalance         (:)   = spval
+    allocate(this%pnup_pfrootc           (begp:endp))           ; this%pnup_pfrootc        (:)   = spval
+    allocate(this%ppup_pfrootc           (begp:endp))           ; this%ppup_pfrootc        (:)   = spval
+    allocate(this%ptlai_pleafc           (begp:endp))           ; this%ptlai_pleafc        (:)   = spval
+    allocate(this%ppsnsun_ptlai          (begp:endp))           ; this%ppsnsun_ptlai       (:)   = spval
+    allocate(this%ppsnsun_pleafn         (begp:endp))           ; this%ppsnsun_pleafn      (:)   = spval
+    allocate(this%ppsnsun_pleafp         (begp:endp))           ; this%ppsnsun_pleafp      (:)   = spval
+    allocate(this%plmrsun_ptlai          (begp:endp))           ; this%plmrsun_ptlai       (:)   = spval
+    allocate(this%plmrsun_pleafn         (begp:endp))           ; this%plmrsun_pleafn      (:)   = spval
+    allocate(this%plaisun_ptlai          (begp:endp))           ; this%plaisun_ptlai       (:)   = spval
+    allocate(this%ppsnsha_ptlai          (begp:endp))           ; this%ppsnsha_ptlai       (:)   = spval
+    allocate(this%ppsnsha_pleafn         (begp:endp))           ; this%ppsnsha_pleafn      (:)   = spval
+    allocate(this%ppsnsha_pleafp         (begp:endp))           ; this%ppsnsha_pleafp      (:)   = spval
+    allocate(this%plmrsha_ptlai          (begp:endp))           ; this%plmrsha_ptlai       (:)   = spval
+    allocate(this%plmrsha_pleafn         (begp:endp))           ; this%plmrsha_pleafn      (:)   = spval
+    allocate(this%plaisha_ptlai          (begp:endp))           ; this%plaisha_ptlai       (:)   = spval
+    allocate(this%benefit_pgpp_pleafc    (begp:endp))           ; this%benefit_pgpp_pleafc (:)   = spval
+    allocate(this%benefit_pgpp_pleafn    (begp:endp))           ; this%benefit_pgpp_pleafn (:)   = spval
+    allocate(this%benefit_pgpp_pleafp    (begp:endp))           ; this%benefit_pgpp_pleafp (:)   = spval
+    allocate(this%cost_pgpp_pfrootc      (begp:endp))           ; this%cost_pgpp_pfrootc   (:)   = spval
+    allocate(this%cost_plmr_pleafc       (begp:endp))           ; this%cost_plmr_pleafc    (:)   = spval
+    allocate(this%cost_plmr_pleafn       (begp:endp))           ; this%cost_plmr_pleafn    (:)   = spval
+    allocate(this%ppsn_ptlai_z           (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z        (:,:) = spval
+    allocate(this%ppsn_pleafn_z          (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z       (:,:) = spval
+    allocate(this%ppsn_pleafp_z          (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z       (:,:) = spval
+    allocate(this%ppsn_ptlai_z_vcmax     (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_vcmax  (:,:) = spval
+    allocate(this%ppsn_pleafn_z_vcmax    (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_vcmax (:,:) = spval
+    allocate(this%ppsn_pleafp_z_vcmax    (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_vcmax (:,:) = spval
+    allocate(this%ppsn_ptlai_z_jmax      (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_jmax   (:,:) = spval
+    allocate(this%ppsn_pleafn_z_jmax     (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_jmax  (:,:) = spval
+    allocate(this%ppsn_pleafp_z_jmax     (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_jmax  (:,:) = spval
+    allocate(this%ppsn_ptlai_z_tpu       (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_tpu    (:,:) = spval
+    allocate(this%ppsn_pleafn_z_tpu      (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_tpu   (:,:) = spval
+    allocate(this%ppsn_pleafp_z_tpu      (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_tpu   (:,:) = spval
+    allocate(this%plmr_ptlai_z           (begp:endp,1:nlevcan)) ; this%plmr_ptlai_z        (:,:) = spval
+    allocate(this%plmr_pleafn_z          (begp:endp,1:nlevcan)) ; this%plmr_pleafn_z       (:,:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_ns
@@ -3999,105 +3999,105 @@ module VegetationDataType
     ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
     integer            :: restart_file_spinup_state
     !------------------------------------------------------------------------
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='leafn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%leafn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='leafn_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%leafn_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='leafn_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%leafn_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='frootn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frootn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='frootn_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frootn_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='frootn_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frootn_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livestemn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livestemn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livestemn_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livestemn_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livestemn_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livestemn_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadstemn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadstemn_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemn_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadstemn_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemn_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livecrootn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livecrootn_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootn_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livecrootn_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootn_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadcrootn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootn_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadcrootn_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootn_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadcrootn_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='retransn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%retransn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='npool', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%npool)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='pft_ntrunc', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ntrunc)
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainn', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain N', units='gN/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_storage', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain N storage', units='gN/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_storage)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain N transfer', units='gN/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer)
     end if
-
+!#py
     call restartvar(ncid=ncid, flag=flag,  varname='npimbalance_patch', xtype=ncd_double,  &
         dim1name='pft',    long_name='npimbalance_patch', units='-', &
         interpinic_flag='interp', readvar=readvar, data=this%npimbalance)
@@ -4107,7 +4107,7 @@ module VegetationDataType
     call restartvar(ncid=ncid, flag=flag,  varname='benefit_pgpp_pleafc_patch', xtype=ncd_double,  &
         dim1name='pft',    long_name='benefit_pgpp_pleafc_patch', units='-', &
         interpinic_flag='interp', readvar=readvar, data=this%benefit_pgpp_pleafc)
-
+!#py
     !--------------------------------
     ! Spinup state operations happen on restart write/read
     !--------------------------------
@@ -4131,7 +4131,7 @@ module VegetationDataType
            end if
         end if
      end if ! read
-
+!#py
      ! now compare the model and restart file spinup states, and either take the
      ! model into spinup mode or out of it if they are not identical.
      ! taking model out of spinup mode requires multiplying each pool
@@ -4139,7 +4139,7 @@ module VegetationDataType
      ! putting model into spinup mode requires dividing each pool
      ! by the associated AD factor.
      ! only allow this to occur on first timestep of model run.
-
+!#py
      if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
         if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
            if ( masterproc ) write(iulog,*) ' veg_cs_restart: taking deadwood pools out of AD spinup mode'
@@ -4166,7 +4166,7 @@ module VegetationDataType
            this%deadcrootn(i) = this%deadcrootn(i) * m_veg
         end do
      end if ! read
-
+!#py
   end subroutine veg_ns_restart
 
 
@@ -4368,39 +4368,39 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_ps
     !-----------------------------------------------------------------------
-    allocate(this%grainp             (begp:endp)) ; this%grainp             (:) = nan
-    allocate(this%grainp_storage     (begp:endp)) ; this%grainp_storage     (:) = nan
-    allocate(this%grainp_xfer        (begp:endp)) ; this%grainp_xfer        (:) = nan
-    allocate(this%leafp              (begp:endp)) ; this%leafp              (:) = nan
-    allocate(this%leafp_storage      (begp:endp)) ; this%leafp_storage      (:) = nan
-    allocate(this%leafp_xfer         (begp:endp)) ; this%leafp_xfer         (:) = nan
-    allocate(this%frootp             (begp:endp)) ; this%frootp             (:) = nan
-    allocate(this%frootp_storage     (begp:endp)) ; this%frootp_storage     (:) = nan
-    allocate(this%frootp_xfer        (begp:endp)) ; this%frootp_xfer        (:) = nan
-    allocate(this%livestemp          (begp:endp)) ; this%livestemp          (:) = nan
-    allocate(this%livestemp_storage  (begp:endp)) ; this%livestemp_storage  (:) = nan
-    allocate(this%livestemp_xfer     (begp:endp)) ; this%livestemp_xfer     (:) = nan
-    allocate(this%deadstemp          (begp:endp)) ; this%deadstemp          (:) = nan
-    allocate(this%deadstemp_storage  (begp:endp)) ; this%deadstemp_storage  (:) = nan
-    allocate(this%deadstemp_xfer     (begp:endp)) ; this%deadstemp_xfer     (:) = nan
-    allocate(this%livecrootp         (begp:endp)) ; this%livecrootp         (:) = nan
-    allocate(this%livecrootp_storage (begp:endp)) ; this%livecrootp_storage (:) = nan
-    allocate(this%livecrootp_xfer    (begp:endp)) ; this%livecrootp_xfer    (:) = nan
-    allocate(this%deadcrootp         (begp:endp)) ; this%deadcrootp         (:) = nan
-    allocate(this%deadcrootp_storage (begp:endp)) ; this%deadcrootp_storage (:) = nan
-    allocate(this%deadcrootp_xfer    (begp:endp)) ; this%deadcrootp_xfer    (:) = nan
-    allocate(this%retransp           (begp:endp)) ; this%retransp           (:) = nan
-    allocate(this%ppool              (begp:endp)) ; this%ppool              (:) = nan
-    allocate(this%ptrunc             (begp:endp)) ; this%ptrunc             (:) = nan
-    allocate(this%dispvegp           (begp:endp)) ; this%dispvegp           (:) = nan
-    allocate(this%storvegp           (begp:endp)) ; this%storvegp           (:) = nan
-    allocate(this%totvegp            (begp:endp)) ; this%totvegp            (:) = nan
-    allocate(this%totpftp            (begp:endp)) ; this%totpftp            (:) = nan
-    allocate(this%plant_p_buffer     (begp:endp)) ; this%plant_p_buffer     (:) = nan
-    allocate(this%cropseedp_deficit  (begp:endp)) ; this%cropseedp_deficit  (:) = nan
-    allocate(this%begpb              (begp:endp)) ; this%begpb              (:) = nan
-    allocate(this%endpb              (begp:endp)) ; this%endpb              (:) = nan
-    allocate(this%errpb              (begp:endp)) ; this%errpb              (:) = nan
+    allocate(this%grainp             (begp:endp)) ; this%grainp             (:) = spval
+    allocate(this%grainp_storage     (begp:endp)) ; this%grainp_storage     (:) = spval
+    allocate(this%grainp_xfer        (begp:endp)) ; this%grainp_xfer        (:) = spval
+    allocate(this%leafp              (begp:endp)) ; this%leafp              (:) = spval
+    allocate(this%leafp_storage      (begp:endp)) ; this%leafp_storage      (:) = spval
+    allocate(this%leafp_xfer         (begp:endp)) ; this%leafp_xfer         (:) = spval
+    allocate(this%frootp             (begp:endp)) ; this%frootp             (:) = spval
+    allocate(this%frootp_storage     (begp:endp)) ; this%frootp_storage     (:) = spval
+    allocate(this%frootp_xfer        (begp:endp)) ; this%frootp_xfer        (:) = spval
+    allocate(this%livestemp          (begp:endp)) ; this%livestemp          (:) = spval
+    allocate(this%livestemp_storage  (begp:endp)) ; this%livestemp_storage  (:) = spval
+    allocate(this%livestemp_xfer     (begp:endp)) ; this%livestemp_xfer     (:) = spval
+    allocate(this%deadstemp          (begp:endp)) ; this%deadstemp          (:) = spval
+    allocate(this%deadstemp_storage  (begp:endp)) ; this%deadstemp_storage  (:) = spval
+    allocate(this%deadstemp_xfer     (begp:endp)) ; this%deadstemp_xfer     (:) = spval
+    allocate(this%livecrootp         (begp:endp)) ; this%livecrootp         (:) = spval
+    allocate(this%livecrootp_storage (begp:endp)) ; this%livecrootp_storage (:) = spval
+    allocate(this%livecrootp_xfer    (begp:endp)) ; this%livecrootp_xfer    (:) = spval
+    allocate(this%deadcrootp         (begp:endp)) ; this%deadcrootp         (:) = spval
+    allocate(this%deadcrootp_storage (begp:endp)) ; this%deadcrootp_storage (:) = spval
+    allocate(this%deadcrootp_xfer    (begp:endp)) ; this%deadcrootp_xfer    (:) = spval
+    allocate(this%retransp           (begp:endp)) ; this%retransp           (:) = spval
+    allocate(this%ppool              (begp:endp)) ; this%ppool              (:) = spval
+    allocate(this%ptrunc             (begp:endp)) ; this%ptrunc             (:) = spval
+    allocate(this%dispvegp           (begp:endp)) ; this%dispvegp           (:) = spval
+    allocate(this%storvegp           (begp:endp)) ; this%storvegp           (:) = spval
+    allocate(this%totvegp            (begp:endp)) ; this%totvegp            (:) = spval
+    allocate(this%totpftp            (begp:endp)) ; this%totpftp            (:) = spval
+    allocate(this%plant_p_buffer     (begp:endp)) ; this%plant_p_buffer     (:) = spval
+    allocate(this%cropseedp_deficit  (begp:endp)) ; this%cropseedp_deficit  (:) = spval
+    allocate(this%begpb              (begp:endp)) ; this%begpb              (:) = spval
+    allocate(this%endpb              (begp:endp)) ; this%endpb              (:) = spval
+    allocate(this%errpb              (begp:endp)) ; this%errpb              (:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_ps
@@ -4666,105 +4666,105 @@ module VegetationDataType
     call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%leafp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='leafp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%leafp_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='leafp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%leafp_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='frootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frootp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='frootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frootp_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='frootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frootp_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livestemp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livestemp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livestemp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livestemp_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livestemp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livestemp_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemp_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadstemp_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootp_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%livecrootp_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadcrootp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_storage)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_xfer)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='retransp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%retransp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='ppool', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ppool)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='pft_ptrunc', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ptrunc)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='plant_p_buffer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_p_buffer)
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainp', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P', units='gP/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_storage', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P storage', units='gP/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_storage)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P transfer', units='gP/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer)
     end if
-
+!#py
     !--------------------------------
     ! Spinup state
     !--------------------------------
@@ -4824,7 +4824,7 @@ module VegetationDataType
           end if
        end do
     end if
-
+!#py
   end subroutine veg_ps_restart
 
   !-----------------------------------------------------------------------
@@ -5015,48 +5015,48 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_ef
     !-----------------------------------------------------------------------
-    allocate(this%eflx_sh_grnd        (begp:endp))   ; this%eflx_sh_grnd       (:)   = nan
-    allocate(this%eflx_sh_veg         (begp:endp))   ; this%eflx_sh_veg        (:)   = nan
-    allocate(this%eflx_sh_snow        (begp:endp))   ; this%eflx_sh_snow       (:)   = nan
-    allocate(this%eflx_sh_soil        (begp:endp))   ; this%eflx_sh_soil       (:)   = nan
-    allocate(this%eflx_sh_h2osfc      (begp:endp))   ; this%eflx_sh_h2osfc     (:)   = nan
-    allocate(this%eflx_sh_tot         (begp:endp))   ; this%eflx_sh_tot        (:)   = nan
-    allocate(this%eflx_sh_tot_u       (begp:endp))   ; this%eflx_sh_tot_u      (:)   = nan
-    allocate(this%eflx_sh_tot_r       (begp:endp))   ; this%eflx_sh_tot_r      (:)   = nan
-    allocate(this%eflx_lh_tot         (begp:endp))   ; this%eflx_lh_tot        (:)   = nan
-    allocate(this%eflx_lh_tot_u       (begp:endp))   ; this%eflx_lh_tot_u      (:)   = nan
-    allocate(this%eflx_lh_tot_r       (begp:endp))   ; this%eflx_lh_tot_r      (:)   = nan
-    allocate(this%eflx_lh_vegt        (begp:endp))   ; this%eflx_lh_vegt       (:)   = nan
-    allocate(this%eflx_lh_vege        (begp:endp))   ; this%eflx_lh_vege       (:)   = nan
-    allocate(this%eflx_lh_grnd        (begp:endp))   ; this%eflx_lh_grnd       (:)   = nan
-    allocate(this%eflx_soil_grnd      (begp:endp))   ; this%eflx_soil_grnd     (:)   = nan
-    allocate(this%eflx_soil_grnd_u    (begp:endp))   ; this%eflx_soil_grnd_u   (:)   = nan
-    allocate(this%eflx_soil_grnd_r    (begp:endp))   ; this%eflx_soil_grnd_r   (:)   = nan
-    allocate(this%eflx_lwrad_net      (begp:endp))   ; this%eflx_lwrad_net     (:)   = nan
-    allocate(this%eflx_lwrad_net_r    (begp:endp))   ; this%eflx_lwrad_net_r   (:)   = nan
-    allocate(this%eflx_lwrad_net_u    (begp:endp))   ; this%eflx_lwrad_net_u   (:)   = nan
-    allocate(this%eflx_lwrad_out      (begp:endp))   ; this%eflx_lwrad_out     (:)   = nan
-    allocate(this%eflx_lwrad_out_r    (begp:endp))   ; this%eflx_lwrad_out_r   (:)   = nan
-    allocate(this%eflx_lwrad_out_u    (begp:endp))   ; this%eflx_lwrad_out_u   (:)   = nan
-    allocate(this%eflx_gnet           (begp:endp))   ; this%eflx_gnet          (:)   = nan
-    allocate(this%eflx_grnd_lake      (begp:endp))   ; this%eflx_grnd_lake     (:)   = nan
-    allocate(this%eflx_anthro         (begp:endp))   ; this%eflx_anthro        (:)   = nan
-    allocate(this%eflx_traffic        (begp:endp))   ; this%eflx_traffic       (:)   = nan
-    allocate(this%eflx_wasteheat      (begp:endp))   ; this%eflx_wasteheat     (:)   = nan
-    allocate(this%eflx_heat_from_ac   (begp:endp))   ; this%eflx_heat_from_ac  (:)   = nan
-    allocate(this%dlrad               (begp:endp))   ; this%dlrad              (:)   = nan
-    allocate(this%ulrad               (begp:endp))   ; this%ulrad              (:)   = nan
-    allocate(this%taux                (begp:endp))   ; this%taux               (:)   = nan
-    allocate(this%tauy                (begp:endp))   ; this%tauy               (:)   = nan
-    allocate(this%dgnetdT             (begp:endp))   ; this%dgnetdT            (:)   = nan
-    allocate(this%netrad              (begp:endp))   ; this%netrad             (:)   = nan
-    allocate(this%cgrnd               (begp:endp))   ; this%cgrnd              (:)   = nan
-    allocate(this%cgrndl              (begp:endp))   ; this%cgrndl             (:)   = nan
-    allocate(this%cgrnds              (begp:endp))   ; this%cgrnds             (:)   = nan
-    allocate(this%errsoi              (begp:endp))   ; this%errsoi             (:)   = nan
-    allocate(this%errseb              (begp:endp))   ; this%errseb             (:)   = nan
-    allocate(this%errsol              (begp:endp))   ; this%errsol             (:)   = nan
-    allocate(this%errlon              (begp:endp))   ; this%errlon             (:)   = nan
+    allocate(this%eflx_sh_grnd        (begp:endp))   ; this%eflx_sh_grnd       (:)   = spval
+    allocate(this%eflx_sh_veg         (begp:endp))   ; this%eflx_sh_veg        (:)   = spval
+    allocate(this%eflx_sh_snow        (begp:endp))   ; this%eflx_sh_snow       (:)   = spval
+    allocate(this%eflx_sh_soil        (begp:endp))   ; this%eflx_sh_soil       (:)   = spval
+    allocate(this%eflx_sh_h2osfc      (begp:endp))   ; this%eflx_sh_h2osfc     (:)   = spval
+    allocate(this%eflx_sh_tot         (begp:endp))   ; this%eflx_sh_tot        (:)   = spval
+    allocate(this%eflx_sh_tot_u       (begp:endp))   ; this%eflx_sh_tot_u      (:)   = spval
+    allocate(this%eflx_sh_tot_r       (begp:endp))   ; this%eflx_sh_tot_r      (:)   = spval
+    allocate(this%eflx_lh_tot         (begp:endp))   ; this%eflx_lh_tot        (:)   = spval
+    allocate(this%eflx_lh_tot_u       (begp:endp))   ; this%eflx_lh_tot_u      (:)   = spval
+    allocate(this%eflx_lh_tot_r       (begp:endp))   ; this%eflx_lh_tot_r      (:)   = spval
+    allocate(this%eflx_lh_vegt        (begp:endp))   ; this%eflx_lh_vegt       (:)   = spval
+    allocate(this%eflx_lh_vege        (begp:endp))   ; this%eflx_lh_vege       (:)   = spval
+    allocate(this%eflx_lh_grnd        (begp:endp))   ; this%eflx_lh_grnd       (:)   = spval
+    allocate(this%eflx_soil_grnd      (begp:endp))   ; this%eflx_soil_grnd     (:)   = spval
+    allocate(this%eflx_soil_grnd_u    (begp:endp))   ; this%eflx_soil_grnd_u   (:)   = spval
+    allocate(this%eflx_soil_grnd_r    (begp:endp))   ; this%eflx_soil_grnd_r   (:)   = spval
+    allocate(this%eflx_lwrad_net      (begp:endp))   ; this%eflx_lwrad_net     (:)   = spval
+    allocate(this%eflx_lwrad_net_r    (begp:endp))   ; this%eflx_lwrad_net_r   (:)   = spval
+    allocate(this%eflx_lwrad_net_u    (begp:endp))   ; this%eflx_lwrad_net_u   (:)   = spval
+    allocate(this%eflx_lwrad_out      (begp:endp))   ; this%eflx_lwrad_out     (:)   = spval
+    allocate(this%eflx_lwrad_out_r    (begp:endp))   ; this%eflx_lwrad_out_r   (:)   = spval
+    allocate(this%eflx_lwrad_out_u    (begp:endp))   ; this%eflx_lwrad_out_u   (:)   = spval
+    allocate(this%eflx_gnet           (begp:endp))   ; this%eflx_gnet          (:)   = spval
+    allocate(this%eflx_grnd_lake      (begp:endp))   ; this%eflx_grnd_lake     (:)   = spval
+    allocate(this%eflx_anthro         (begp:endp))   ; this%eflx_anthro        (:)   = spval
+    allocate(this%eflx_traffic        (begp:endp))   ; this%eflx_traffic       (:)   = spval
+    allocate(this%eflx_wasteheat      (begp:endp))   ; this%eflx_wasteheat     (:)   = spval
+    allocate(this%eflx_heat_from_ac   (begp:endp))   ; this%eflx_heat_from_ac  (:)   = spval
+    allocate(this%dlrad               (begp:endp))   ; this%dlrad              (:)   = spval
+    allocate(this%ulrad               (begp:endp))   ; this%ulrad              (:)   = spval
+    allocate(this%taux                (begp:endp))   ; this%taux               (:)   = spval
+    allocate(this%tauy                (begp:endp))   ; this%tauy               (:)   = spval
+    allocate(this%dgnetdT             (begp:endp))   ; this%dgnetdT            (:)   = spval
+    allocate(this%netrad              (begp:endp))   ; this%netrad             (:)   = spval
+    allocate(this%cgrnd               (begp:endp))   ; this%cgrnd              (:)   = spval
+    allocate(this%cgrndl              (begp:endp))   ; this%cgrndl             (:)   = spval
+    allocate(this%cgrnds              (begp:endp))   ; this%cgrnds             (:)   = spval
+    allocate(this%errsoi              (begp:endp))   ; this%errsoi             (:)   = spval
+    allocate(this%errseb              (begp:endp))   ; this%errseb             (:)   = spval
+    allocate(this%errsol              (begp:endp))   ; this%errsol             (:)   = spval
+    allocate(this%errlon              (begp:endp))   ; this%errlon             (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_ef
@@ -5322,12 +5322,12 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='EFLX_LWRAD_OUT', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='emitted infrared (longwave) radiation', units='watt/m^2', &
          interpinic_flag='interp', readvar=readvar, data=this%eflx_lwrad_out)
-
+!#py
   end subroutine veg_ef_restart
 
   !------------------------------------------------------------------------
@@ -5355,35 +5355,35 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_wf
     !-----------------------------------------------------------------------
-    allocate(this%qflx_prec_grnd         (begp:endp))             ; this%qflx_prec_grnd       (:)   = nan
-    allocate(this%qflx_rain_grnd         (begp:endp))             ; this%qflx_rain_grnd       (:)   = nan
-    allocate(this%qflx_snow_grnd         (begp:endp))             ; this%qflx_snow_grnd       (:)   = nan
+    allocate(this%qflx_prec_grnd         (begp:endp))             ; this%qflx_prec_grnd       (:)   = spval
+    allocate(this%qflx_rain_grnd         (begp:endp))             ; this%qflx_rain_grnd       (:)   = spval
+    allocate(this%qflx_snow_grnd         (begp:endp))             ; this%qflx_snow_grnd       (:)   = spval
     allocate(this%qflx_sub_snow          (begp:endp))             ; this%qflx_sub_snow        (:)   = 0._r8
-    allocate(this%qflx_evap_soi          (begp:endp))             ; this%qflx_evap_soi        (:)   = nan
-    allocate(this%qflx_evap_veg          (begp:endp))             ; this%qflx_evap_veg        (:)   = nan
-    allocate(this%qflx_evap_can          (begp:endp))             ; this%qflx_evap_can        (:)   = nan
-    allocate(this%qflx_evap_tot          (begp:endp))             ; this%qflx_evap_tot        (:)   = nan
-    allocate(this%qflx_evap_grnd         (begp:endp))             ; this%qflx_evap_grnd       (:)   = nan
-    allocate(this%qflx_snwcp_liq         (begp:endp))             ; this%qflx_snwcp_liq       (:)   = nan
-    allocate(this%qflx_snwcp_ice         (begp:endp))             ; this%qflx_snwcp_ice       (:)   = nan
-    allocate(this%qflx_tran_veg          (begp:endp))             ; this%qflx_tran_veg        (:)   = nan
-    allocate(this%qflx_dew_snow          (begp:endp))             ; this%qflx_dew_snow        (:)   = nan
-    allocate(this%qflx_dew_grnd          (begp:endp))             ; this%qflx_dew_grnd        (:)   = nan
-    allocate(this%qflx_prec_intr         (begp:endp))             ; this%qflx_prec_intr       (:)   = nan
-    allocate(this%qflx_dirct_rain        (begp:endp))             ; this%qflx_dirct_rain      (:)   = nan
-    allocate(this%qflx_leafdrip          (begp:endp))             ; this%qflx_leafdrip        (:)   = nan
-    allocate(this%qflx_ev_snow           (begp:endp))             ; this%qflx_ev_snow         (:)   = nan
-    allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = nan
-    allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = nan
-    allocate(this%qflx_rootsoi_frac      (begp:endp,1:nlevgrnd))  ; this%qflx_rootsoi_frac    (:,:) = nan
+    allocate(this%qflx_evap_soi          (begp:endp))             ; this%qflx_evap_soi        (:)   = spval
+    allocate(this%qflx_evap_veg          (begp:endp))             ; this%qflx_evap_veg        (:)   = spval
+    allocate(this%qflx_evap_can          (begp:endp))             ; this%qflx_evap_can        (:)   = spval
+    allocate(this%qflx_evap_tot          (begp:endp))             ; this%qflx_evap_tot        (:)   = spval
+    allocate(this%qflx_evap_grnd         (begp:endp))             ; this%qflx_evap_grnd       (:)   = spval
+    allocate(this%qflx_snwcp_liq         (begp:endp))             ; this%qflx_snwcp_liq       (:)   = spval
+    allocate(this%qflx_snwcp_ice         (begp:endp))             ; this%qflx_snwcp_ice       (:)   = spval
+    allocate(this%qflx_tran_veg          (begp:endp))             ; this%qflx_tran_veg        (:)   = spval
+    allocate(this%qflx_dew_snow          (begp:endp))             ; this%qflx_dew_snow        (:)   = spval
+    allocate(this%qflx_dew_grnd          (begp:endp))             ; this%qflx_dew_grnd        (:)   = spval
+    allocate(this%qflx_prec_intr         (begp:endp))             ; this%qflx_prec_intr       (:)   = spval
+    allocate(this%qflx_dirct_rain        (begp:endp))             ; this%qflx_dirct_rain      (:)   = spval
+    allocate(this%qflx_leafdrip          (begp:endp))             ; this%qflx_leafdrip        (:)   = spval
+    allocate(this%qflx_ev_snow           (begp:endp))             ; this%qflx_ev_snow         (:)   = spval
+    allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = spval
+    allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = spval
+    allocate(this%qflx_rootsoi_frac      (begp:endp,1:nlevgrnd))  ; this%qflx_rootsoi_frac    (:,:) = spval
 
-    allocate(this%irrig_rate               (begp:endp))              ; this%irrig_rate               (:)   = nan
-    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
-    allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = nan
-    allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = nan
-    allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = nan
-    allocate(this%qflx_supply_patch        (begp:endp))              ; this%qflx_supply_patch        (:)   = nan
-    allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = nan
+    allocate(this%irrig_rate               (begp:endp))              ; this%irrig_rate               (:)   = spval
+    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = spval
+    allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = spval
+    allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = spval
+    allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = spval
+    allocate(this%qflx_supply_patch        (begp:endp))              ; this%qflx_supply_patch        (:)   = spval
+    allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = spval
     allocate(this%n_irrig_steps_left       (begp:endp))              ; this%n_irrig_steps_left       (:)   = 0
 
     !-----------------------------------------------------------------------
@@ -5553,10 +5553,10 @@ module VegetationDataType
     integer :: err_code     ! error code
     logical :: do_io
     !-----------------------------------------------------------------------
-
+!#py
     ! Get expected total number of points, for later error checks
     call get_proc_global(np=nump_global)
-
+!#py
     do_io = .true.
     readvar = .false.
     if (flag == 'read') then
@@ -5577,7 +5577,7 @@ module VegetationDataType
     if (flag=='read' .and. .not. readvar) then
        this%n_irrig_steps_left = 0
     end if
-
+!#py
     do_io = .true.
     readvar = .false.
     if (flag == 'read') then
@@ -5598,7 +5598,7 @@ module VegetationDataType
     if (flag=='read' .and. .not. readvar) then
        this%irrig_rate = 0.0_r8
     end if
-
+!#py
   end subroutine veg_wf_restart
 
 
@@ -5631,218 +5631,218 @@ module VegetationDataType
     ! allocate for each member of veg_cf
     !-----------------------------------------------------------------------
     if (.not. use_fates) then
-       allocate(this%m_leafc_to_litter                   (begp:endp)) ;    this%m_leafc_to_litter                    (:) = nan
-       allocate(this%m_leafc_storage_to_litter           (begp:endp)) ;    this%m_leafc_storage_to_litter            (:) = nan
-       allocate(this%m_leafc_xfer_to_litter              (begp:endp)) ;    this%m_leafc_xfer_to_litter               (:) = nan
-       allocate(this%m_frootc_to_litter                  (begp:endp)) ;    this%m_frootc_to_litter                   (:) = nan
-       allocate(this%m_frootc_storage_to_litter          (begp:endp)) ;    this%m_frootc_storage_to_litter           (:) = nan
-       allocate(this%m_frootc_xfer_to_litter             (begp:endp)) ;    this%m_frootc_xfer_to_litter              (:) = nan
-       allocate(this%m_livestemc_to_litter               (begp:endp)) ;    this%m_livestemc_to_litter                (:) = nan
-       allocate(this%m_livestemc_storage_to_litter       (begp:endp)) ;    this%m_livestemc_storage_to_litter        (:) = nan
-       allocate(this%m_livestemc_xfer_to_litter          (begp:endp)) ;    this%m_livestemc_xfer_to_litter           (:) = nan
-       allocate(this%m_deadstemc_to_litter               (begp:endp)) ;    this%m_deadstemc_to_litter                (:) = nan
-       allocate(this%m_deadstemc_storage_to_litter       (begp:endp)) ;    this%m_deadstemc_storage_to_litter        (:) = nan
-       allocate(this%m_deadstemc_xfer_to_litter          (begp:endp)) ;    this%m_deadstemc_xfer_to_litter           (:) = nan
-       allocate(this%m_livecrootc_to_litter              (begp:endp)) ;    this%m_livecrootc_to_litter               (:) = nan
-       allocate(this%m_livecrootc_storage_to_litter      (begp:endp)) ;    this%m_livecrootc_storage_to_litter       (:) = nan
-       allocate(this%m_livecrootc_xfer_to_litter         (begp:endp)) ;    this%m_livecrootc_xfer_to_litter          (:) = nan
-       allocate(this%m_deadcrootc_to_litter              (begp:endp)) ;    this%m_deadcrootc_to_litter               (:) = nan
-       allocate(this%m_deadcrootc_storage_to_litter      (begp:endp)) ;    this%m_deadcrootc_storage_to_litter       (:) = nan
-       allocate(this%m_deadcrootc_xfer_to_litter         (begp:endp)) ;    this%m_deadcrootc_xfer_to_litter          (:) = nan
-       allocate(this%m_gresp_storage_to_litter           (begp:endp)) ;    this%m_gresp_storage_to_litter            (:) = nan
-       allocate(this%m_gresp_xfer_to_litter              (begp:endp)) ;    this%m_gresp_xfer_to_litter               (:) = nan
-       allocate(this%m_cpool_to_litter                   (begp:endp)) ;    this%m_cpool_to_litter                    (:) = nan
-       allocate(this%hrv_leafc_to_litter                 (begp:endp)) ;    this%hrv_leafc_to_litter                  (:) = nan
-       allocate(this%hrv_leafc_storage_to_litter         (begp:endp)) ;    this%hrv_leafc_storage_to_litter          (:) = nan
-       allocate(this%hrv_leafc_xfer_to_litter            (begp:endp)) ;    this%hrv_leafc_xfer_to_litter             (:) = nan
-       allocate(this%hrv_frootc_to_litter                (begp:endp)) ;    this%hrv_frootc_to_litter                 (:) = nan
-       allocate(this%hrv_frootc_storage_to_litter        (begp:endp)) ;    this%hrv_frootc_storage_to_litter         (:) = nan
-       allocate(this%hrv_frootc_xfer_to_litter           (begp:endp)) ;    this%hrv_frootc_xfer_to_litter            (:) = nan
-       allocate(this%hrv_livestemc_to_litter             (begp:endp)) ;    this%hrv_livestemc_to_litter              (:) = nan
-       allocate(this%hrv_livestemc_storage_to_litter     (begp:endp)) ;    this%hrv_livestemc_storage_to_litter      (:) = nan
-       allocate(this%hrv_livestemc_xfer_to_litter        (begp:endp)) ;    this%hrv_livestemc_xfer_to_litter         (:) = nan
-       allocate(this%hrv_deadstemc_to_prod10c            (begp:endp)) ;    this%hrv_deadstemc_to_prod10c             (:) = nan
-       allocate(this%hrv_deadstemc_to_prod100c           (begp:endp)) ;    this%hrv_deadstemc_to_prod100c            (:) = nan
-       allocate(this%hrv_deadstemc_storage_to_litter     (begp:endp)) ;    this%hrv_deadstemc_storage_to_litter      (:) = nan
-       allocate(this%hrv_deadstemc_xfer_to_litter        (begp:endp)) ;    this%hrv_deadstemc_xfer_to_litter         (:) = nan
-       allocate(this%hrv_livecrootc_to_litter            (begp:endp)) ;    this%hrv_livecrootc_to_litter             (:) = nan
-       allocate(this%hrv_livecrootc_storage_to_litter    (begp:endp)) ;    this%hrv_livecrootc_storage_to_litter     (:) = nan
-       allocate(this%hrv_livecrootc_xfer_to_litter       (begp:endp)) ;    this%hrv_livecrootc_xfer_to_litter        (:) = nan
-       allocate(this%hrv_deadcrootc_to_litter            (begp:endp)) ;    this%hrv_deadcrootc_to_litter             (:) = nan
-       allocate(this%hrv_deadcrootc_storage_to_litter    (begp:endp)) ;    this%hrv_deadcrootc_storage_to_litter     (:) = nan
-       allocate(this%hrv_deadcrootc_xfer_to_litter       (begp:endp)) ;    this%hrv_deadcrootc_xfer_to_litter        (:) = nan
-       allocate(this%hrv_gresp_storage_to_litter         (begp:endp)) ;    this%hrv_gresp_storage_to_litter          (:) = nan
-       allocate(this%hrv_gresp_xfer_to_litter            (begp:endp)) ;    this%hrv_gresp_xfer_to_litter             (:) = nan
-       allocate(this%hrv_xsmrpool_to_atm                 (begp:endp)) ;    this%hrv_xsmrpool_to_atm                  (:) = nan
-       allocate(this%hrv_cpool_to_litter                 (begp:endp)) ;    this%hrv_cpool_to_litter                  (:) = nan
-       allocate(this%hrv_leafc_to_prod1c                 (begp:endp)) ;    this%hrv_leafc_to_prod1c                  (:) = nan
-       allocate(this%hrv_livestemc_to_prod1c             (begp:endp)) ;    this%hrv_livestemc_to_prod1c              (:) = nan
-       allocate(this%hrv_grainc_to_prod1c                (begp:endp)) ;    this%hrv_grainc_to_prod1c                 (:) = nan
-       allocate(this%hrv_cropc_to_prod1c                 (begp:endp)) ;    this%hrv_cropc_to_prod1c                  (:) = nan
-       allocate(this%m_leafc_to_fire                     (begp:endp)) ;    this%m_leafc_to_fire                      (:) = nan
-       allocate(this%m_leafc_storage_to_fire             (begp:endp)) ;    this%m_leafc_storage_to_fire              (:) = nan
-       allocate(this%m_leafc_xfer_to_fire                (begp:endp)) ;    this%m_leafc_xfer_to_fire                 (:) = nan
-       allocate(this%m_livestemc_to_fire                 (begp:endp)) ;    this%m_livestemc_to_fire                  (:) = nan
-       allocate(this%m_livestemc_storage_to_fire         (begp:endp)) ;    this%m_livestemc_storage_to_fire          (:) = nan
-       allocate(this%m_livestemc_xfer_to_fire            (begp:endp)) ;    this%m_livestemc_xfer_to_fire             (:) = nan
-       allocate(this%m_deadstemc_to_fire                 (begp:endp)) ;    this%m_deadstemc_to_fire                  (:) = nan
-       allocate(this%m_deadstemc_storage_to_fire         (begp:endp)) ;    this%m_deadstemc_storage_to_fire          (:) = nan
-       allocate(this%m_deadstemc_xfer_to_fire            (begp:endp)) ;    this%m_deadstemc_xfer_to_fire             (:) = nan
-       allocate(this%m_frootc_to_fire                    (begp:endp)) ;    this%m_frootc_to_fire                     (:) = nan
-       allocate(this%m_frootc_storage_to_fire            (begp:endp)) ;    this%m_frootc_storage_to_fire             (:) = nan
-       allocate(this%m_frootc_xfer_to_fire               (begp:endp)) ;    this%m_frootc_xfer_to_fire                (:) = nan
-       allocate(this%m_livecrootc_to_fire                (begp:endp)) ;    this%m_livecrootc_to_fire                 (:) = nan
-       allocate(this%m_livecrootc_storage_to_fire        (begp:endp)) ;    this%m_livecrootc_storage_to_fire         (:) = nan
-       allocate(this%m_livecrootc_xfer_to_fire           (begp:endp)) ;    this%m_livecrootc_xfer_to_fire            (:) = nan
-       allocate(this%m_deadcrootc_to_fire                (begp:endp)) ;    this%m_deadcrootc_to_fire                 (:) = nan
-       allocate(this%m_deadcrootc_storage_to_fire        (begp:endp)) ;    this%m_deadcrootc_storage_to_fire         (:) = nan
-       allocate(this%m_deadcrootc_xfer_to_fire           (begp:endp)) ;    this%m_deadcrootc_xfer_to_fire            (:) = nan
-       allocate(this%m_gresp_storage_to_fire             (begp:endp)) ;    this%m_gresp_storage_to_fire              (:) = nan
-       allocate(this%m_gresp_xfer_to_fire                (begp:endp)) ;    this%m_gresp_xfer_to_fire                 (:) = nan
-       allocate(this%m_cpool_to_fire                     (begp:endp)) ;    this%m_cpool_to_fire                      (:) = nan
-       allocate(this%m_leafc_to_litter_fire              (begp:endp)) ;    this%m_leafc_to_litter_fire               (:) = nan
-       allocate(this%m_leafc_storage_to_litter_fire      (begp:endp)) ;    this%m_leafc_storage_to_litter_fire       (:) = nan
-       allocate(this%m_leafc_xfer_to_litter_fire         (begp:endp)) ;    this%m_leafc_xfer_to_litter_fire          (:) = nan
-       allocate(this%m_livestemc_to_litter_fire          (begp:endp)) ;    this%m_livestemc_to_litter_fire           (:) = nan
-       allocate(this%m_livestemc_storage_to_litter_fire  (begp:endp)) ;    this%m_livestemc_storage_to_litter_fire   (:) = nan
-       allocate(this%m_livestemc_xfer_to_litter_fire     (begp:endp)) ;    this%m_livestemc_xfer_to_litter_fire      (:) = nan
-       allocate(this%m_livestemc_to_deadstemc_fire       (begp:endp)) ;    this%m_livestemc_to_deadstemc_fire        (:) = nan
-       allocate(this%m_deadstemc_to_litter_fire          (begp:endp)) ;    this%m_deadstemc_to_litter_fire           (:) = nan
-       allocate(this%m_deadstemc_storage_to_litter_fire  (begp:endp)) ;    this%m_deadstemc_storage_to_litter_fire   (:) = nan
-       allocate(this%m_deadstemc_xfer_to_litter_fire     (begp:endp)) ;    this%m_deadstemc_xfer_to_litter_fire      (:) = nan
-       allocate(this%m_frootc_to_litter_fire             (begp:endp)) ;    this%m_frootc_to_litter_fire              (:) = nan
-       allocate(this%m_frootc_storage_to_litter_fire     (begp:endp)) ;    this%m_frootc_storage_to_litter_fire      (:) = nan
-       allocate(this%m_frootc_xfer_to_litter_fire        (begp:endp)) ;    this%m_frootc_xfer_to_litter_fire         (:) = nan
-       allocate(this%m_livecrootc_to_litter_fire         (begp:endp)) ;    this%m_livecrootc_to_litter_fire          (:) = nan
-       allocate(this%m_livecrootc_storage_to_litter_fire (begp:endp)) ;    this%m_livecrootc_storage_to_litter_fire  (:) = nan
-       allocate(this%m_livecrootc_xfer_to_litter_fire    (begp:endp)) ;    this%m_livecrootc_xfer_to_litter_fire     (:) = nan
-       allocate(this%m_livecrootc_to_deadcrootc_fire     (begp:endp)) ;    this%m_livecrootc_to_deadcrootc_fire      (:) = nan
-       allocate(this%m_deadcrootc_to_litter_fire         (begp:endp)) ;    this%m_deadcrootc_to_litter_fire          (:) = nan
-       allocate(this%m_deadcrootc_storage_to_litter_fire (begp:endp)) ;    this%m_deadcrootc_storage_to_litter_fire  (:) = nan
-       allocate(this%m_deadcrootc_xfer_to_litter_fire    (begp:endp)) ;    this%m_deadcrootc_xfer_to_litter_fire     (:) = nan
-       allocate(this%m_gresp_storage_to_litter_fire      (begp:endp)) ;    this%m_gresp_storage_to_litter_fire       (:) = nan
-       allocate(this%m_gresp_xfer_to_litter_fire         (begp:endp)) ;    this%m_gresp_xfer_to_litter_fire          (:) = nan
-       allocate(this%m_cpool_to_litter_fire              (begp:endp)) ;    this%m_cpool_to_litter_fire               (:) = nan
-       allocate(this%grainc_xfer_to_grainc               (begp:endp)) ;    this%grainc_xfer_to_grainc                (:) = nan
-       allocate(this%leafc_xfer_to_leafc                 (begp:endp)) ;    this%leafc_xfer_to_leafc                  (:) = nan
-       allocate(this%frootc_xfer_to_frootc               (begp:endp)) ;    this%frootc_xfer_to_frootc                (:) = nan
-       allocate(this%livestemc_xfer_to_livestemc         (begp:endp)) ;    this%livestemc_xfer_to_livestemc          (:) = nan
-       allocate(this%deadstemc_xfer_to_deadstemc         (begp:endp)) ;    this%deadstemc_xfer_to_deadstemc          (:) = nan
-       allocate(this%livecrootc_xfer_to_livecrootc       (begp:endp)) ;    this%livecrootc_xfer_to_livecrootc        (:) = nan
-       allocate(this%deadcrootc_xfer_to_deadcrootc       (begp:endp)) ;    this%deadcrootc_xfer_to_deadcrootc        (:) = nan
-       allocate(this%leafc_to_litter                     (begp:endp)) ;    this%leafc_to_litter                      (:) = nan
-       allocate(this%frootc_to_litter                    (begp:endp)) ;    this%frootc_to_litter                     (:) = nan
-       allocate(this%livestemc_to_litter                 (begp:endp)) ;    this%livestemc_to_litter                  (:) = nan
-       allocate(this%grainc_to_food                      (begp:endp)) ;    this%grainc_to_food                       (:) = nan
-       allocate(this%leaf_mr                             (begp:endp)) ;    this%leaf_mr                              (:) = nan
-       allocate(this%froot_mr                            (begp:endp)) ;    this%froot_mr                             (:) = nan
-       allocate(this%livestem_mr                         (begp:endp)) ;    this%livestem_mr                          (:) = nan
-       allocate(this%livecroot_mr                        (begp:endp)) ;    this%livecroot_mr                         (:) = nan
-       allocate(this%grain_mr                            (begp:endp)) ;    this%grain_mr                             (:) = nan
-       allocate(this%leaf_curmr                          (begp:endp)) ;    this%leaf_curmr                           (:) = nan
-       allocate(this%froot_curmr                         (begp:endp)) ;    this%froot_curmr                          (:) = nan
-       allocate(this%livestem_curmr                      (begp:endp)) ;    this%livestem_curmr                       (:) = nan
-       allocate(this%livecroot_curmr                     (begp:endp)) ;    this%livecroot_curmr                      (:) = nan
-       allocate(this%grain_curmr                         (begp:endp)) ;    this%grain_curmr                          (:) = nan
-       allocate(this%leaf_xsmr                           (begp:endp)) ;    this%leaf_xsmr                            (:) = nan
-       allocate(this%froot_xsmr                          (begp:endp)) ;    this%froot_xsmr                           (:) = nan
-       allocate(this%livestem_xsmr                       (begp:endp)) ;    this%livestem_xsmr                        (:) = nan
-       allocate(this%livecroot_xsmr                      (begp:endp)) ;    this%livecroot_xsmr                       (:) = nan
-       allocate(this%grain_xsmr                          (begp:endp)) ;    this%grain_xsmr                           (:) = nan
-       allocate(this%xr                                  (begp:endp)) ;    this%xr                                   (:) = nan
-       allocate(this%psnsun_to_cpool                     (begp:endp)) ;    this%psnsun_to_cpool                      (:) = nan
-       allocate(this%psnshade_to_cpool                   (begp:endp)) ;    this%psnshade_to_cpool                    (:) = nan
-       allocate(this%cpool_to_xsmrpool                   (begp:endp)) ;    this%cpool_to_xsmrpool                    (:) = nan
-       allocate(this%cpool_to_grainc                     (begp:endp)) ;    this%cpool_to_grainc                      (:) = nan
-       allocate(this%cpool_to_grainc_storage             (begp:endp)) ;    this%cpool_to_grainc_storage              (:) = nan
-       allocate(this%cpool_to_leafc                      (begp:endp)) ;    this%cpool_to_leafc                       (:) = nan
-       allocate(this%cpool_to_leafc_storage              (begp:endp)) ;    this%cpool_to_leafc_storage               (:) = nan
-       allocate(this%cpool_to_frootc                     (begp:endp)) ;    this%cpool_to_frootc                      (:) = nan
-       allocate(this%cpool_to_frootc_storage             (begp:endp)) ;    this%cpool_to_frootc_storage              (:) = nan
-       allocate(this%cpool_to_livestemc                  (begp:endp)) ;    this%cpool_to_livestemc                   (:) = nan
-       allocate(this%cpool_to_livestemc_storage          (begp:endp)) ;    this%cpool_to_livestemc_storage           (:) = nan
-       allocate(this%cpool_to_deadstemc                  (begp:endp)) ;    this%cpool_to_deadstemc                   (:) = nan
-       allocate(this%cpool_to_deadstemc_storage          (begp:endp)) ;    this%cpool_to_deadstemc_storage           (:) = nan
-       allocate(this%cpool_to_livecrootc                 (begp:endp)) ;    this%cpool_to_livecrootc                  (:) = nan
-       allocate(this%cpool_to_livecrootc_storage         (begp:endp)) ;    this%cpool_to_livecrootc_storage          (:) = nan
-       allocate(this%cpool_to_deadcrootc                 (begp:endp)) ;    this%cpool_to_deadcrootc                  (:) = nan
-       allocate(this%cpool_to_deadcrootc_storage         (begp:endp)) ;    this%cpool_to_deadcrootc_storage          (:) = nan
-       allocate(this%cpool_to_gresp_storage              (begp:endp)) ;    this%cpool_to_gresp_storage               (:) = nan
-       allocate(this%xsmrpool_to_atm                     (begp:endp)) ;    this%xsmrpool_to_atm                      (:) = nan
-       allocate(this%cpool_leaf_gr                       (begp:endp)) ;    this%cpool_leaf_gr                        (:) = nan
-       allocate(this%cpool_leaf_storage_gr               (begp:endp)) ;    this%cpool_leaf_storage_gr                (:) = nan
-       allocate(this%transfer_leaf_gr                    (begp:endp)) ;    this%transfer_leaf_gr                     (:) = nan
-       allocate(this%cpool_froot_gr                      (begp:endp)) ;    this%cpool_froot_gr                       (:) = nan
-       allocate(this%cpool_froot_storage_gr              (begp:endp)) ;    this%cpool_froot_storage_gr               (:) = nan
-       allocate(this%transfer_froot_gr                   (begp:endp)) ;    this%transfer_froot_gr                    (:) = nan
-       allocate(this%cpool_livestem_gr                   (begp:endp)) ;    this%cpool_livestem_gr                    (:) = nan
-       allocate(this%cpool_livestem_storage_gr           (begp:endp)) ;    this%cpool_livestem_storage_gr            (:) = nan
-       allocate(this%transfer_livestem_gr                (begp:endp)) ;    this%transfer_livestem_gr                 (:) = nan
-       allocate(this%cpool_deadstem_gr                   (begp:endp)) ;    this%cpool_deadstem_gr                    (:) = nan
-       allocate(this%cpool_deadstem_storage_gr           (begp:endp)) ;    this%cpool_deadstem_storage_gr            (:) = nan
-       allocate(this%transfer_deadstem_gr                (begp:endp)) ;    this%transfer_deadstem_gr                 (:) = nan
-       allocate(this%cpool_livecroot_gr                  (begp:endp)) ;    this%cpool_livecroot_gr                   (:) = nan
-       allocate(this%cpool_livecroot_storage_gr          (begp:endp)) ;    this%cpool_livecroot_storage_gr           (:) = nan
-       allocate(this%transfer_livecroot_gr               (begp:endp)) ;    this%transfer_livecroot_gr                (:) = nan
-       allocate(this%cpool_deadcroot_gr                  (begp:endp)) ;    this%cpool_deadcroot_gr                   (:) = nan
-       allocate(this%cpool_deadcroot_storage_gr          (begp:endp)) ;    this%cpool_deadcroot_storage_gr           (:) = nan
-       allocate(this%transfer_deadcroot_gr               (begp:endp)) ;    this%transfer_deadcroot_gr                (:) = nan
-       allocate(this%cpool_grain_gr                      (begp:endp)) ;    this%cpool_grain_gr                       (:) = nan
-       allocate(this%cpool_grain_storage_gr              (begp:endp)) ;    this%cpool_grain_storage_gr               (:) = nan
-       allocate(this%transfer_grain_gr                   (begp:endp)) ;    this%transfer_grain_gr                    (:) = nan
-       allocate(this%grainc_storage_to_xfer              (begp:endp)) ;    this%grainc_storage_to_xfer               (:) = nan
-       allocate(this%leafc_storage_to_xfer               (begp:endp)) ;    this%leafc_storage_to_xfer                (:) = nan
-       allocate(this%frootc_storage_to_xfer              (begp:endp)) ;    this%frootc_storage_to_xfer               (:) = nan
-       allocate(this%livestemc_storage_to_xfer           (begp:endp)) ;    this%livestemc_storage_to_xfer            (:) = nan
-       allocate(this%deadstemc_storage_to_xfer           (begp:endp)) ;    this%deadstemc_storage_to_xfer            (:) = nan
-       allocate(this%livecrootc_storage_to_xfer          (begp:endp)) ;    this%livecrootc_storage_to_xfer           (:) = nan
-       allocate(this%deadcrootc_storage_to_xfer          (begp:endp)) ;    this%deadcrootc_storage_to_xfer           (:) = nan
-       allocate(this%gresp_storage_to_xfer               (begp:endp)) ;    this%gresp_storage_to_xfer                (:) = nan
-       allocate(this%livestemc_to_deadstemc              (begp:endp)) ;    this%livestemc_to_deadstemc               (:) = nan
-       allocate(this%livecrootc_to_deadcrootc            (begp:endp)) ;    this%livecrootc_to_deadcrootc             (:) = nan
-       allocate(this%gpp                                 (begp:endp)) ;    this%gpp                                  (:) = nan
-       allocate(this%gpp_before_downreg                  (begp:endp)) ;    this%gpp_before_downreg                   (:) = nan
-       allocate(this%mr                                  (begp:endp)) ;    this%mr                                   (:) = nan
-       allocate(this%current_gr                          (begp:endp)) ;    this%current_gr                           (:) = nan
-       allocate(this%transfer_gr                         (begp:endp)) ;    this%transfer_gr                          (:) = nan
-       allocate(this%storage_gr                          (begp:endp)) ;    this%storage_gr                           (:) = nan
-       allocate(this%gr                                  (begp:endp)) ;    this%gr                                   (:) = nan
-       allocate(this%ar                                  (begp:endp)) ;    this%ar                                   (:) = nan
-       allocate(this%rr                                  (begp:endp)) ;    this%rr                                   (:) = nan
-       allocate(this%npp                                 (begp:endp)) ;    this%npp                                  (:) = nan
-       allocate(this%agnpp                               (begp:endp)) ;    this%agnpp                                (:) = nan
-       allocate(this%bgnpp                               (begp:endp)) ;    this%bgnpp                                (:) = nan
-       allocate(this%litfall                             (begp:endp)) ;    this%litfall                              (:) = nan
-       allocate(this%vegfire                             (begp:endp)) ;    this%vegfire                              (:) = nan
-       allocate(this%wood_harvestc                       (begp:endp)) ;    this%wood_harvestc                        (:) = nan
-       allocate(this%cinputs                             (begp:endp)) ;    this%cinputs                              (:) = nan
-       allocate(this%coutputs                            (begp:endp)) ;    this%coutputs                             (:) = nan
-       allocate(this%plant_calloc                        (begp:endp)) ;    this%plant_calloc                         (:) = nan
-       allocate(this%excess_cflux                        (begp:endp)) ;    this%excess_cflux                         (:) = nan
-       allocate(this%prev_leafc_to_litter                (begp:endp)) ;    this%prev_leafc_to_litter                 (:) = nan
-       allocate(this%prev_frootc_to_litter               (begp:endp)) ;    this%prev_frootc_to_litter                (:) = nan
-       allocate(this%availc                              (begp:endp)) ;    this%availc                               (:) = nan
-       allocate(this%xsmrpool_recover                    (begp:endp)) ;    this%xsmrpool_recover                     (:) = nan
-       allocate(this%xsmrpool_c13ratio                   (begp:endp)) ;    this%xsmrpool_c13ratio                    (:) = nan
-       allocate(this%xsmrpool_turnover                   (begp:endp)) ;    this%xsmrpool_turnover                    (:) = nan
-       allocate(this%frootc_alloc                        (begp:endp)) ;    this%frootc_alloc                         (:) = nan
-       allocate(this%frootc_loss                         (begp:endp)) ;    this%frootc_loss                          (:) = nan
-       allocate(this%leafc_alloc                         (begp:endp)) ;    this%leafc_alloc                          (:) = nan
-       allocate(this%leafc_loss                          (begp:endp)) ;    this%leafc_loss                           (:) = nan
-       allocate(this%woodc_alloc                         (begp:endp)) ;    this%woodc_alloc                          (:) = nan
-       allocate(this%woodc_loss                          (begp:endp)) ;    this%woodc_loss                           (:) = nan
-       allocate(this%fire_closs                          (begp:endp)) ;    this%fire_closs                           (:) = nan
-       allocate(this%crop_seedc_to_leaf                  (begp:endp)) ;    this%crop_seedc_to_leaf                   (:) = nan
+       allocate(this%m_leafc_to_litter                   (begp:endp)) ;    this%m_leafc_to_litter                    (:) = spval
+       allocate(this%m_leafc_storage_to_litter           (begp:endp)) ;    this%m_leafc_storage_to_litter            (:) = spval
+       allocate(this%m_leafc_xfer_to_litter              (begp:endp)) ;    this%m_leafc_xfer_to_litter               (:) = spval
+       allocate(this%m_frootc_to_litter                  (begp:endp)) ;    this%m_frootc_to_litter                   (:) = spval
+       allocate(this%m_frootc_storage_to_litter          (begp:endp)) ;    this%m_frootc_storage_to_litter           (:) = spval
+       allocate(this%m_frootc_xfer_to_litter             (begp:endp)) ;    this%m_frootc_xfer_to_litter              (:) = spval
+       allocate(this%m_livestemc_to_litter               (begp:endp)) ;    this%m_livestemc_to_litter                (:) = spval
+       allocate(this%m_livestemc_storage_to_litter       (begp:endp)) ;    this%m_livestemc_storage_to_litter        (:) = spval
+       allocate(this%m_livestemc_xfer_to_litter          (begp:endp)) ;    this%m_livestemc_xfer_to_litter           (:) = spval
+       allocate(this%m_deadstemc_to_litter               (begp:endp)) ;    this%m_deadstemc_to_litter                (:) = spval
+       allocate(this%m_deadstemc_storage_to_litter       (begp:endp)) ;    this%m_deadstemc_storage_to_litter        (:) = spval
+       allocate(this%m_deadstemc_xfer_to_litter          (begp:endp)) ;    this%m_deadstemc_xfer_to_litter           (:) = spval
+       allocate(this%m_livecrootc_to_litter              (begp:endp)) ;    this%m_livecrootc_to_litter               (:) = spval
+       allocate(this%m_livecrootc_storage_to_litter      (begp:endp)) ;    this%m_livecrootc_storage_to_litter       (:) = spval
+       allocate(this%m_livecrootc_xfer_to_litter         (begp:endp)) ;    this%m_livecrootc_xfer_to_litter          (:) = spval
+       allocate(this%m_deadcrootc_to_litter              (begp:endp)) ;    this%m_deadcrootc_to_litter               (:) = spval
+       allocate(this%m_deadcrootc_storage_to_litter      (begp:endp)) ;    this%m_deadcrootc_storage_to_litter       (:) = spval
+       allocate(this%m_deadcrootc_xfer_to_litter         (begp:endp)) ;    this%m_deadcrootc_xfer_to_litter          (:) = spval
+       allocate(this%m_gresp_storage_to_litter           (begp:endp)) ;    this%m_gresp_storage_to_litter            (:) = spval
+       allocate(this%m_gresp_xfer_to_litter              (begp:endp)) ;    this%m_gresp_xfer_to_litter               (:) = spval
+       allocate(this%m_cpool_to_litter                   (begp:endp)) ;    this%m_cpool_to_litter                    (:) = spval
+       allocate(this%hrv_leafc_to_litter                 (begp:endp)) ;    this%hrv_leafc_to_litter                  (:) = spval
+       allocate(this%hrv_leafc_storage_to_litter         (begp:endp)) ;    this%hrv_leafc_storage_to_litter          (:) = spval
+       allocate(this%hrv_leafc_xfer_to_litter            (begp:endp)) ;    this%hrv_leafc_xfer_to_litter             (:) = spval
+       allocate(this%hrv_frootc_to_litter                (begp:endp)) ;    this%hrv_frootc_to_litter                 (:) = spval
+       allocate(this%hrv_frootc_storage_to_litter        (begp:endp)) ;    this%hrv_frootc_storage_to_litter         (:) = spval
+       allocate(this%hrv_frootc_xfer_to_litter           (begp:endp)) ;    this%hrv_frootc_xfer_to_litter            (:) = spval
+       allocate(this%hrv_livestemc_to_litter             (begp:endp)) ;    this%hrv_livestemc_to_litter              (:) = spval
+       allocate(this%hrv_livestemc_storage_to_litter     (begp:endp)) ;    this%hrv_livestemc_storage_to_litter      (:) = spval
+       allocate(this%hrv_livestemc_xfer_to_litter        (begp:endp)) ;    this%hrv_livestemc_xfer_to_litter         (:) = spval
+       allocate(this%hrv_deadstemc_to_prod10c            (begp:endp)) ;    this%hrv_deadstemc_to_prod10c             (:) = spval
+       allocate(this%hrv_deadstemc_to_prod100c           (begp:endp)) ;    this%hrv_deadstemc_to_prod100c            (:) = spval
+       allocate(this%hrv_deadstemc_storage_to_litter     (begp:endp)) ;    this%hrv_deadstemc_storage_to_litter      (:) = spval
+       allocate(this%hrv_deadstemc_xfer_to_litter        (begp:endp)) ;    this%hrv_deadstemc_xfer_to_litter         (:) = spval
+       allocate(this%hrv_livecrootc_to_litter            (begp:endp)) ;    this%hrv_livecrootc_to_litter             (:) = spval
+       allocate(this%hrv_livecrootc_storage_to_litter    (begp:endp)) ;    this%hrv_livecrootc_storage_to_litter     (:) = spval
+       allocate(this%hrv_livecrootc_xfer_to_litter       (begp:endp)) ;    this%hrv_livecrootc_xfer_to_litter        (:) = spval
+       allocate(this%hrv_deadcrootc_to_litter            (begp:endp)) ;    this%hrv_deadcrootc_to_litter             (:) = spval
+       allocate(this%hrv_deadcrootc_storage_to_litter    (begp:endp)) ;    this%hrv_deadcrootc_storage_to_litter     (:) = spval
+       allocate(this%hrv_deadcrootc_xfer_to_litter       (begp:endp)) ;    this%hrv_deadcrootc_xfer_to_litter        (:) = spval
+       allocate(this%hrv_gresp_storage_to_litter         (begp:endp)) ;    this%hrv_gresp_storage_to_litter          (:) = spval
+       allocate(this%hrv_gresp_xfer_to_litter            (begp:endp)) ;    this%hrv_gresp_xfer_to_litter             (:) = spval
+       allocate(this%hrv_xsmrpool_to_atm                 (begp:endp)) ;    this%hrv_xsmrpool_to_atm                  (:) = spval
+       allocate(this%hrv_cpool_to_litter                 (begp:endp)) ;    this%hrv_cpool_to_litter                  (:) = spval
+       allocate(this%hrv_leafc_to_prod1c                 (begp:endp)) ;    this%hrv_leafc_to_prod1c                  (:) = spval
+       allocate(this%hrv_livestemc_to_prod1c             (begp:endp)) ;    this%hrv_livestemc_to_prod1c              (:) = spval
+       allocate(this%hrv_grainc_to_prod1c                (begp:endp)) ;    this%hrv_grainc_to_prod1c                 (:) = spval
+       allocate(this%hrv_cropc_to_prod1c                 (begp:endp)) ;    this%hrv_cropc_to_prod1c                  (:) = spval
+       allocate(this%m_leafc_to_fire                     (begp:endp)) ;    this%m_leafc_to_fire                      (:) = spval
+       allocate(this%m_leafc_storage_to_fire             (begp:endp)) ;    this%m_leafc_storage_to_fire              (:) = spval
+       allocate(this%m_leafc_xfer_to_fire                (begp:endp)) ;    this%m_leafc_xfer_to_fire                 (:) = spval
+       allocate(this%m_livestemc_to_fire                 (begp:endp)) ;    this%m_livestemc_to_fire                  (:) = spval
+       allocate(this%m_livestemc_storage_to_fire         (begp:endp)) ;    this%m_livestemc_storage_to_fire          (:) = spval
+       allocate(this%m_livestemc_xfer_to_fire            (begp:endp)) ;    this%m_livestemc_xfer_to_fire             (:) = spval
+       allocate(this%m_deadstemc_to_fire                 (begp:endp)) ;    this%m_deadstemc_to_fire                  (:) = spval
+       allocate(this%m_deadstemc_storage_to_fire         (begp:endp)) ;    this%m_deadstemc_storage_to_fire          (:) = spval
+       allocate(this%m_deadstemc_xfer_to_fire            (begp:endp)) ;    this%m_deadstemc_xfer_to_fire             (:) = spval
+       allocate(this%m_frootc_to_fire                    (begp:endp)) ;    this%m_frootc_to_fire                     (:) = spval
+       allocate(this%m_frootc_storage_to_fire            (begp:endp)) ;    this%m_frootc_storage_to_fire             (:) = spval
+       allocate(this%m_frootc_xfer_to_fire               (begp:endp)) ;    this%m_frootc_xfer_to_fire                (:) = spval
+       allocate(this%m_livecrootc_to_fire                (begp:endp)) ;    this%m_livecrootc_to_fire                 (:) = spval
+       allocate(this%m_livecrootc_storage_to_fire        (begp:endp)) ;    this%m_livecrootc_storage_to_fire         (:) = spval
+       allocate(this%m_livecrootc_xfer_to_fire           (begp:endp)) ;    this%m_livecrootc_xfer_to_fire            (:) = spval
+       allocate(this%m_deadcrootc_to_fire                (begp:endp)) ;    this%m_deadcrootc_to_fire                 (:) = spval
+       allocate(this%m_deadcrootc_storage_to_fire        (begp:endp)) ;    this%m_deadcrootc_storage_to_fire         (:) = spval
+       allocate(this%m_deadcrootc_xfer_to_fire           (begp:endp)) ;    this%m_deadcrootc_xfer_to_fire            (:) = spval
+       allocate(this%m_gresp_storage_to_fire             (begp:endp)) ;    this%m_gresp_storage_to_fire              (:) = spval
+       allocate(this%m_gresp_xfer_to_fire                (begp:endp)) ;    this%m_gresp_xfer_to_fire                 (:) = spval
+       allocate(this%m_cpool_to_fire                     (begp:endp)) ;    this%m_cpool_to_fire                      (:) = spval
+       allocate(this%m_leafc_to_litter_fire              (begp:endp)) ;    this%m_leafc_to_litter_fire               (:) = spval
+       allocate(this%m_leafc_storage_to_litter_fire      (begp:endp)) ;    this%m_leafc_storage_to_litter_fire       (:) = spval
+       allocate(this%m_leafc_xfer_to_litter_fire         (begp:endp)) ;    this%m_leafc_xfer_to_litter_fire          (:) = spval
+       allocate(this%m_livestemc_to_litter_fire          (begp:endp)) ;    this%m_livestemc_to_litter_fire           (:) = spval
+       allocate(this%m_livestemc_storage_to_litter_fire  (begp:endp)) ;    this%m_livestemc_storage_to_litter_fire   (:) = spval
+       allocate(this%m_livestemc_xfer_to_litter_fire     (begp:endp)) ;    this%m_livestemc_xfer_to_litter_fire      (:) = spval
+       allocate(this%m_livestemc_to_deadstemc_fire       (begp:endp)) ;    this%m_livestemc_to_deadstemc_fire        (:) = spval
+       allocate(this%m_deadstemc_to_litter_fire          (begp:endp)) ;    this%m_deadstemc_to_litter_fire           (:) = spval
+       allocate(this%m_deadstemc_storage_to_litter_fire  (begp:endp)) ;    this%m_deadstemc_storage_to_litter_fire   (:) = spval
+       allocate(this%m_deadstemc_xfer_to_litter_fire     (begp:endp)) ;    this%m_deadstemc_xfer_to_litter_fire      (:) = spval
+       allocate(this%m_frootc_to_litter_fire             (begp:endp)) ;    this%m_frootc_to_litter_fire              (:) = spval
+       allocate(this%m_frootc_storage_to_litter_fire     (begp:endp)) ;    this%m_frootc_storage_to_litter_fire      (:) = spval
+       allocate(this%m_frootc_xfer_to_litter_fire        (begp:endp)) ;    this%m_frootc_xfer_to_litter_fire         (:) = spval
+       allocate(this%m_livecrootc_to_litter_fire         (begp:endp)) ;    this%m_livecrootc_to_litter_fire          (:) = spval
+       allocate(this%m_livecrootc_storage_to_litter_fire (begp:endp)) ;    this%m_livecrootc_storage_to_litter_fire  (:) = spval
+       allocate(this%m_livecrootc_xfer_to_litter_fire    (begp:endp)) ;    this%m_livecrootc_xfer_to_litter_fire     (:) = spval
+       allocate(this%m_livecrootc_to_deadcrootc_fire     (begp:endp)) ;    this%m_livecrootc_to_deadcrootc_fire      (:) = spval
+       allocate(this%m_deadcrootc_to_litter_fire         (begp:endp)) ;    this%m_deadcrootc_to_litter_fire          (:) = spval
+       allocate(this%m_deadcrootc_storage_to_litter_fire (begp:endp)) ;    this%m_deadcrootc_storage_to_litter_fire  (:) = spval
+       allocate(this%m_deadcrootc_xfer_to_litter_fire    (begp:endp)) ;    this%m_deadcrootc_xfer_to_litter_fire     (:) = spval
+       allocate(this%m_gresp_storage_to_litter_fire      (begp:endp)) ;    this%m_gresp_storage_to_litter_fire       (:) = spval
+       allocate(this%m_gresp_xfer_to_litter_fire         (begp:endp)) ;    this%m_gresp_xfer_to_litter_fire          (:) = spval
+       allocate(this%m_cpool_to_litter_fire              (begp:endp)) ;    this%m_cpool_to_litter_fire               (:) = spval
+       allocate(this%grainc_xfer_to_grainc               (begp:endp)) ;    this%grainc_xfer_to_grainc                (:) = spval
+       allocate(this%leafc_xfer_to_leafc                 (begp:endp)) ;    this%leafc_xfer_to_leafc                  (:) = spval
+       allocate(this%frootc_xfer_to_frootc               (begp:endp)) ;    this%frootc_xfer_to_frootc                (:) = spval
+       allocate(this%livestemc_xfer_to_livestemc         (begp:endp)) ;    this%livestemc_xfer_to_livestemc          (:) = spval
+       allocate(this%deadstemc_xfer_to_deadstemc         (begp:endp)) ;    this%deadstemc_xfer_to_deadstemc          (:) = spval
+       allocate(this%livecrootc_xfer_to_livecrootc       (begp:endp)) ;    this%livecrootc_xfer_to_livecrootc        (:) = spval
+       allocate(this%deadcrootc_xfer_to_deadcrootc       (begp:endp)) ;    this%deadcrootc_xfer_to_deadcrootc        (:) = spval
+       allocate(this%leafc_to_litter                     (begp:endp)) ;    this%leafc_to_litter                      (:) = spval
+       allocate(this%frootc_to_litter                    (begp:endp)) ;    this%frootc_to_litter                     (:) = spval
+       allocate(this%livestemc_to_litter                 (begp:endp)) ;    this%livestemc_to_litter                  (:) = spval
+       allocate(this%grainc_to_food                      (begp:endp)) ;    this%grainc_to_food                       (:) = spval
+       allocate(this%leaf_mr                             (begp:endp)) ;    this%leaf_mr                              (:) = spval
+       allocate(this%froot_mr                            (begp:endp)) ;    this%froot_mr                             (:) = spval
+       allocate(this%livestem_mr                         (begp:endp)) ;    this%livestem_mr                          (:) = spval
+       allocate(this%livecroot_mr                        (begp:endp)) ;    this%livecroot_mr                         (:) = spval
+       allocate(this%grain_mr                            (begp:endp)) ;    this%grain_mr                             (:) = spval
+       allocate(this%leaf_curmr                          (begp:endp)) ;    this%leaf_curmr                           (:) = spval
+       allocate(this%froot_curmr                         (begp:endp)) ;    this%froot_curmr                          (:) = spval
+       allocate(this%livestem_curmr                      (begp:endp)) ;    this%livestem_curmr                       (:) = spval
+       allocate(this%livecroot_curmr                     (begp:endp)) ;    this%livecroot_curmr                      (:) = spval
+       allocate(this%grain_curmr                         (begp:endp)) ;    this%grain_curmr                          (:) = spval
+       allocate(this%leaf_xsmr                           (begp:endp)) ;    this%leaf_xsmr                            (:) = spval
+       allocate(this%froot_xsmr                          (begp:endp)) ;    this%froot_xsmr                           (:) = spval
+       allocate(this%livestem_xsmr                       (begp:endp)) ;    this%livestem_xsmr                        (:) = spval
+       allocate(this%livecroot_xsmr                      (begp:endp)) ;    this%livecroot_xsmr                       (:) = spval
+       allocate(this%grain_xsmr                          (begp:endp)) ;    this%grain_xsmr                           (:) = spval
+       allocate(this%xr                                  (begp:endp)) ;    this%xr                                   (:) = spval
+       allocate(this%psnsun_to_cpool                     (begp:endp)) ;    this%psnsun_to_cpool                      (:) = spval
+       allocate(this%psnshade_to_cpool                   (begp:endp)) ;    this%psnshade_to_cpool                    (:) = spval
+       allocate(this%cpool_to_xsmrpool                   (begp:endp)) ;    this%cpool_to_xsmrpool                    (:) = spval
+       allocate(this%cpool_to_grainc                     (begp:endp)) ;    this%cpool_to_grainc                      (:) = spval
+       allocate(this%cpool_to_grainc_storage             (begp:endp)) ;    this%cpool_to_grainc_storage              (:) = spval
+       allocate(this%cpool_to_leafc                      (begp:endp)) ;    this%cpool_to_leafc                       (:) = spval
+       allocate(this%cpool_to_leafc_storage              (begp:endp)) ;    this%cpool_to_leafc_storage               (:) = spval
+       allocate(this%cpool_to_frootc                     (begp:endp)) ;    this%cpool_to_frootc                      (:) = spval
+       allocate(this%cpool_to_frootc_storage             (begp:endp)) ;    this%cpool_to_frootc_storage              (:) = spval
+       allocate(this%cpool_to_livestemc                  (begp:endp)) ;    this%cpool_to_livestemc                   (:) = spval
+       allocate(this%cpool_to_livestemc_storage          (begp:endp)) ;    this%cpool_to_livestemc_storage           (:) = spval
+       allocate(this%cpool_to_deadstemc                  (begp:endp)) ;    this%cpool_to_deadstemc                   (:) = spval
+       allocate(this%cpool_to_deadstemc_storage          (begp:endp)) ;    this%cpool_to_deadstemc_storage           (:) = spval
+       allocate(this%cpool_to_livecrootc                 (begp:endp)) ;    this%cpool_to_livecrootc                  (:) = spval
+       allocate(this%cpool_to_livecrootc_storage         (begp:endp)) ;    this%cpool_to_livecrootc_storage          (:) = spval
+       allocate(this%cpool_to_deadcrootc                 (begp:endp)) ;    this%cpool_to_deadcrootc                  (:) = spval
+       allocate(this%cpool_to_deadcrootc_storage         (begp:endp)) ;    this%cpool_to_deadcrootc_storage          (:) = spval
+       allocate(this%cpool_to_gresp_storage              (begp:endp)) ;    this%cpool_to_gresp_storage               (:) = spval
+       allocate(this%xsmrpool_to_atm                     (begp:endp)) ;    this%xsmrpool_to_atm                      (:) = spval
+       allocate(this%cpool_leaf_gr                       (begp:endp)) ;    this%cpool_leaf_gr                        (:) = spval
+       allocate(this%cpool_leaf_storage_gr               (begp:endp)) ;    this%cpool_leaf_storage_gr                (:) = spval
+       allocate(this%transfer_leaf_gr                    (begp:endp)) ;    this%transfer_leaf_gr                     (:) = spval
+       allocate(this%cpool_froot_gr                      (begp:endp)) ;    this%cpool_froot_gr                       (:) = spval
+       allocate(this%cpool_froot_storage_gr              (begp:endp)) ;    this%cpool_froot_storage_gr               (:) = spval
+       allocate(this%transfer_froot_gr                   (begp:endp)) ;    this%transfer_froot_gr                    (:) = spval
+       allocate(this%cpool_livestem_gr                   (begp:endp)) ;    this%cpool_livestem_gr                    (:) = spval
+       allocate(this%cpool_livestem_storage_gr           (begp:endp)) ;    this%cpool_livestem_storage_gr            (:) = spval
+       allocate(this%transfer_livestem_gr                (begp:endp)) ;    this%transfer_livestem_gr                 (:) = spval
+       allocate(this%cpool_deadstem_gr                   (begp:endp)) ;    this%cpool_deadstem_gr                    (:) = spval
+       allocate(this%cpool_deadstem_storage_gr           (begp:endp)) ;    this%cpool_deadstem_storage_gr            (:) = spval
+       allocate(this%transfer_deadstem_gr                (begp:endp)) ;    this%transfer_deadstem_gr                 (:) = spval
+       allocate(this%cpool_livecroot_gr                  (begp:endp)) ;    this%cpool_livecroot_gr                   (:) = spval
+       allocate(this%cpool_livecroot_storage_gr          (begp:endp)) ;    this%cpool_livecroot_storage_gr           (:) = spval
+       allocate(this%transfer_livecroot_gr               (begp:endp)) ;    this%transfer_livecroot_gr                (:) = spval
+       allocate(this%cpool_deadcroot_gr                  (begp:endp)) ;    this%cpool_deadcroot_gr                   (:) = spval
+       allocate(this%cpool_deadcroot_storage_gr          (begp:endp)) ;    this%cpool_deadcroot_storage_gr           (:) = spval
+       allocate(this%transfer_deadcroot_gr               (begp:endp)) ;    this%transfer_deadcroot_gr                (:) = spval
+       allocate(this%cpool_grain_gr                      (begp:endp)) ;    this%cpool_grain_gr                       (:) = spval
+       allocate(this%cpool_grain_storage_gr              (begp:endp)) ;    this%cpool_grain_storage_gr               (:) = spval
+       allocate(this%transfer_grain_gr                   (begp:endp)) ;    this%transfer_grain_gr                    (:) = spval
+       allocate(this%grainc_storage_to_xfer              (begp:endp)) ;    this%grainc_storage_to_xfer               (:) = spval
+       allocate(this%leafc_storage_to_xfer               (begp:endp)) ;    this%leafc_storage_to_xfer                (:) = spval
+       allocate(this%frootc_storage_to_xfer              (begp:endp)) ;    this%frootc_storage_to_xfer               (:) = spval
+       allocate(this%livestemc_storage_to_xfer           (begp:endp)) ;    this%livestemc_storage_to_xfer            (:) = spval
+       allocate(this%deadstemc_storage_to_xfer           (begp:endp)) ;    this%deadstemc_storage_to_xfer            (:) = spval
+       allocate(this%livecrootc_storage_to_xfer          (begp:endp)) ;    this%livecrootc_storage_to_xfer           (:) = spval
+       allocate(this%deadcrootc_storage_to_xfer          (begp:endp)) ;    this%deadcrootc_storage_to_xfer           (:) = spval
+       allocate(this%gresp_storage_to_xfer               (begp:endp)) ;    this%gresp_storage_to_xfer                (:) = spval
+       allocate(this%livestemc_to_deadstemc              (begp:endp)) ;    this%livestemc_to_deadstemc               (:) = spval
+       allocate(this%livecrootc_to_deadcrootc            (begp:endp)) ;    this%livecrootc_to_deadcrootc             (:) = spval
+       allocate(this%gpp                                 (begp:endp)) ;    this%gpp                                  (:) = spval
+       allocate(this%gpp_before_downreg                  (begp:endp)) ;    this%gpp_before_downreg                   (:) = spval
+       allocate(this%mr                                  (begp:endp)) ;    this%mr                                   (:) = spval
+       allocate(this%current_gr                          (begp:endp)) ;    this%current_gr                           (:) = spval
+       allocate(this%transfer_gr                         (begp:endp)) ;    this%transfer_gr                          (:) = spval
+       allocate(this%storage_gr                          (begp:endp)) ;    this%storage_gr                           (:) = spval
+       allocate(this%gr                                  (begp:endp)) ;    this%gr                                   (:) = spval
+       allocate(this%ar                                  (begp:endp)) ;    this%ar                                   (:) = spval
+       allocate(this%rr                                  (begp:endp)) ;    this%rr                                   (:) = spval
+       allocate(this%npp                                 (begp:endp)) ;    this%npp                                  (:) = spval
+       allocate(this%agnpp                               (begp:endp)) ;    this%agnpp                                (:) = spval
+       allocate(this%bgnpp                               (begp:endp)) ;    this%bgnpp                                (:) = spval
+       allocate(this%litfall                             (begp:endp)) ;    this%litfall                              (:) = spval
+       allocate(this%vegfire                             (begp:endp)) ;    this%vegfire                              (:) = spval
+       allocate(this%wood_harvestc                       (begp:endp)) ;    this%wood_harvestc                        (:) = spval
+       allocate(this%cinputs                             (begp:endp)) ;    this%cinputs                              (:) = spval
+       allocate(this%coutputs                            (begp:endp)) ;    this%coutputs                             (:) = spval
+       allocate(this%plant_calloc                        (begp:endp)) ;    this%plant_calloc                         (:) = spval
+       allocate(this%excess_cflux                        (begp:endp)) ;    this%excess_cflux                         (:) = spval
+       allocate(this%prev_leafc_to_litter                (begp:endp)) ;    this%prev_leafc_to_litter                 (:) = spval
+       allocate(this%prev_frootc_to_litter               (begp:endp)) ;    this%prev_frootc_to_litter                (:) = spval
+       allocate(this%availc                              (begp:endp)) ;    this%availc                               (:) = spval
+       allocate(this%xsmrpool_recover                    (begp:endp)) ;    this%xsmrpool_recover                     (:) = spval
+       allocate(this%xsmrpool_c13ratio                   (begp:endp)) ;    this%xsmrpool_c13ratio                    (:) = spval
+       allocate(this%xsmrpool_turnover                   (begp:endp)) ;    this%xsmrpool_turnover                    (:) = spval
+       allocate(this%frootc_alloc                        (begp:endp)) ;    this%frootc_alloc                         (:) = spval
+       allocate(this%frootc_loss                         (begp:endp)) ;    this%frootc_loss                          (:) = spval
+       allocate(this%leafc_alloc                         (begp:endp)) ;    this%leafc_alloc                          (:) = spval
+       allocate(this%leafc_loss                          (begp:endp)) ;    this%leafc_loss                           (:) = spval
+       allocate(this%woodc_alloc                         (begp:endp)) ;    this%woodc_alloc                          (:) = spval
+       allocate(this%woodc_loss                          (begp:endp)) ;    this%woodc_loss                           (:) = spval
+       allocate(this%fire_closs                          (begp:endp)) ;    this%fire_closs                           (:) = spval
+       allocate(this%crop_seedc_to_leaf                  (begp:endp)) ;    this%crop_seedc_to_leaf                   (:) = spval
     end if ! .not use fates
 
-    allocate(this%dwt_seedc_to_leaf                   (begp:endp)) ;    this%dwt_seedc_to_leaf                    (:) = nan
-    allocate(this%dwt_seedc_to_deadstem               (begp:endp)) ;    this%dwt_seedc_to_deadstem                (:) = nan
-    allocate(this%dwt_conv_cflux                      (begp:endp)) ;    this%dwt_conv_cflux                       (:) = nan
-    allocate(this%dwt_prod10c_gain                    (begp:endp)) ;    this%dwt_prod10c_gain                     (:) = nan
-    allocate(this%dwt_prod100c_gain                   (begp:endp)) ;    this%dwt_prod100c_gain                    (:) = nan
-    allocate(this%dwt_crop_productc_gain              (begp:endp)) ;    this%dwt_crop_productc_gain               (:) = nan
-    allocate(this%tempsum_npp                         (begp:endp)) ;    this%tempsum_npp                          (:) = nan
-    allocate(this%annsum_npp                          (begp:endp)) ;    this%annsum_npp                           (:) = nan
+    allocate(this%dwt_seedc_to_leaf                   (begp:endp)) ;    this%dwt_seedc_to_leaf                    (:) = spval
+    allocate(this%dwt_seedc_to_deadstem               (begp:endp)) ;    this%dwt_seedc_to_deadstem                (:) = spval
+    allocate(this%dwt_conv_cflux                      (begp:endp)) ;    this%dwt_conv_cflux                       (:) = spval
+    allocate(this%dwt_prod10c_gain                    (begp:endp)) ;    this%dwt_prod10c_gain                     (:) = spval
+    allocate(this%dwt_prod100c_gain                   (begp:endp)) ;    this%dwt_prod100c_gain                    (:) = spval
+    allocate(this%dwt_crop_productc_gain              (begp:endp)) ;    this%dwt_crop_productc_gain               (:) = spval
+    allocate(this%tempsum_npp                         (begp:endp)) ;    this%tempsum_npp                          (:) = spval
+    allocate(this%annsum_npp                          (begp:endp)) ;    this%annsum_npp                           (:) = spval
 
     allocate(this%annavg_agnpp                        (begp:endp)) ;    this%annavg_agnpp                         (:) = spval
     allocate(this%annavg_bgnpp                        (begp:endp)) ;    this%annavg_bgnpp                         (:) = spval
@@ -6270,22 +6270,22 @@ module VegetationDataType
 
        this%leaf_mr(begp:endp) = spval
        call hist_addfld1d (fname='LEAF_MR', units='gC/m^2/s', &
-            avgflag='A', long_name='leaf maintenance respiration', &
+            avgflag='A', long_name='leaf maintespvalce respiration', &
             ptr_patch=this%leaf_mr)
 
        this%froot_mr(begp:endp) = spval
        call hist_addfld1d (fname='FROOT_MR', units='gC/m^2/s', &
-            avgflag='A', long_name='fine root maintenance respiration', &
+            avgflag='A', long_name='fine root maintespvalce respiration', &
             ptr_patch=this%froot_mr, default='inactive')
 
        this%livestem_mr(begp:endp) = spval
        call hist_addfld1d (fname='LIVESTEM_MR', units='gC/m^2/s', &
-            avgflag='A', long_name='live stem maintenance respiration', &
+            avgflag='A', long_name='live stem maintespvalce respiration', &
             ptr_patch=this%livestem_mr, default='inactive')
 
        this%livecroot_mr(begp:endp) = spval
        call hist_addfld1d (fname='LIVECROOT_MR', units='gC/m^2/s', &
-            avgflag='A', long_name='live coarse root maintenance respiration', &
+            avgflag='A', long_name='live coarse root maintespvalce respiration', &
             ptr_patch=this%livecroot_mr, default='inactive')
 
        this%psnsun_to_cpool(begp:endp) = spval
@@ -6510,7 +6510,7 @@ module VegetationDataType
 
        this%mr(begp:endp) = spval
        call hist_addfld1d (fname='MR', units='gC/m^2/s', &
-            avgflag='A', long_name='maintenance respiration', &
+            avgflag='A', long_name='maintespvalce respiration', &
             ptr_patch=this%mr)
 
        this%current_gr(begp:endp) = spval
@@ -6931,22 +6931,22 @@ module VegetationDataType
 
        this%leaf_mr(begp:endp) = spval
        call hist_addfld1d (fname='C13_LEAF_MR', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 leaf maintenance respiration', &
+            avgflag='A', long_name='C13 leaf maintespvalce respiration', &
             ptr_patch=this%leaf_mr, default='inactive')
 
        this%froot_mr(begp:endp) = spval
        call hist_addfld1d (fname='C13_FROOT_MR', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 fine root maintenance respiration', &
+            avgflag='A', long_name='C13 fine root maintespvalce respiration', &
             ptr_patch=this%froot_mr, default='inactive')
 
        this%livestem_mr(begp:endp) = spval
        call hist_addfld1d (fname='C13_LIVESTEM_MR', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 live stem maintenance respiration', &
+            avgflag='A', long_name='C13 live stem maintespvalce respiration', &
             ptr_patch=this%livestem_mr, default='inactive')
 
        this%livecroot_mr(begp:endp) = spval
        call hist_addfld1d (fname='C13_LIVECROOT_MR', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 live coarse root maintenance respiration', &
+            avgflag='A', long_name='C13 live coarse root maintespvalce respiration', &
             ptr_patch=this%livecroot_mr, default='inactive')
 
        this%psnsun_to_cpool(begp:endp) = spval
@@ -7166,7 +7166,7 @@ module VegetationDataType
 
        this%mr(begp:endp) = spval
        call hist_addfld1d (fname='C13_MR', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 maintenance respiration', &
+            avgflag='A', long_name='C13 maintespvalce respiration', &
             ptr_patch=this%mr)
 
        this%current_gr(begp:endp) = spval
@@ -7526,22 +7526,22 @@ module VegetationDataType
 
        this%leaf_mr(begp:endp) = spval
        call hist_addfld1d (fname='C14_LEAF_MR', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 leaf maintenance respiration', &
+            avgflag='A', long_name='C14 leaf maintespvalce respiration', &
             ptr_patch=this%leaf_mr, default='inactive')
 
        this%froot_mr(begp:endp) = spval
        call hist_addfld1d (fname='C14_FROOT_MR', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 fine root maintenance respiration', &
+            avgflag='A', long_name='C14 fine root maintespvalce respiration', &
             ptr_patch=this%froot_mr, default='inactive')
 
        this%livestem_mr(begp:endp) = spval
        call hist_addfld1d (fname='C14_LIVESTEM_MR', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 live stem maintenance respiration', &
+            avgflag='A', long_name='C14 live stem maintespvalce respiration', &
             ptr_patch=this%livestem_mr, default='inactive')
 
        this%livecroot_mr(begp:endp) = spval
        call hist_addfld1d (fname='C14_LIVECROOT_MR', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 live coarse root maintenance respiration', &
+            avgflag='A', long_name='C14 live coarse root maintespvalce respiration', &
             ptr_patch=this%livecroot_mr, default='inactive')
 
        this%psnsun_to_cpool(begp:endp) = spval
@@ -7761,7 +7761,7 @@ module VegetationDataType
 
        this%mr(begp:endp) = spval
        call hist_addfld1d (fname='C14_MR', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 maintenance respiration', &
+            avgflag='A', long_name='C14 maintespvalce respiration', &
             ptr_patch=this%mr)
 
        this%current_gr(begp:endp) = spval
@@ -7933,126 +7933,126 @@ module VegetationDataType
     integer :: j,c ! indices
     logical :: readvar      ! determine if variable is on initial file
     !------------------------------------------------------------------------
-
+!#py
     ! -------------------------------------------
     ! None of these restarts are needed for FATES
     ! -------------------------------------------
     if (use_fates) return
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainc_xfer_to_grainc', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain C growth from storage', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainc_xfer_to_grainc)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='livestemc_to_litter', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='live stem C litterfall', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%livestemc_to_litter)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainc_to_food', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain C to food', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainc_to_food)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='cpool_to_grainc', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='allocation to grain C', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%cpool_to_grainc)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='cpool_to_grainc_storage', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='allocation to grain C storage', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%cpool_to_grainc_storage)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='cpool_grain_gr', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain growth respiration', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%cpool_grain_gr)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='cpool_grain_storage_gr', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain growth respiration to storage', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%cpool_grain_storage_gr)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='transfer_grain_gr', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain growth respiration from storage', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%transfer_grain_gr)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainc_storage_to_xfer', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain C shift storage to transfer', units='gC/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainc_storage_to_xfer)
     end if
-
+!#py
     if (use_lch4 .or. use_betr) then
        call restartvar(ncid=ncid, flag=flag, varname='tempavg_agnpp', xtype=ncd_double,  &
             dim1name='pft',&
             long_name='Temp. Average AGNPP',units='gC/m^2/s', &
             readvar=readvar, interpinic_flag='interp', data=this%tempavg_agnpp)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='tempavg_bgnpp', xtype=ncd_double,  &
             dim1name='pft',&
             long_name='Temp. Average BGNPP',units='gC/m^2/s', &
             readvar=readvar, interpinic_flag='interp', data=this%tempavg_bgnpp)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='annavg_agnpp', xtype=ncd_double,  &
             dim1name='pft',&
             long_name='Ann. Average AGNPP',units='gC/m^2/s', &
             readvar=readvar, interpinic_flag='interp', data=this%annavg_agnpp)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='annavg_bgnpp', xtype=ncd_double,  &
             dim1name='pft',&
             long_name='Ann. Average BGNPP',units='gC/m^2/s', &
             readvar=readvar, interpinic_flag='interp', data=this%annavg_bgnpp)
     end if
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='gpp_pepv', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%gpp_before_downreg)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='availc', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%availc)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='xsmrpool_recover', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%xsmrpool_recover)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='plant_calloc', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_calloc)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='excess_cflux', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%excess_cflux)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='prev_leafc_to_litter', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prev_leafc_to_litter)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='prev_frootc_to_litter', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prev_frootc_to_litter)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tempsum_npp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tempsum_npp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='annsum_npp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annsum_npp)
-
+!#py
   end subroutine veg_cf_restart
 
 
@@ -8092,7 +8092,7 @@ module VegetationDataType
             this%psnsun_to_cpool(p) + &
             this%psnshade_to_cpool(p)
 
-       ! maintenance respiration (MR)
+       ! maintespvalce respiration (MR)
        if ( trim(isotope) == 'c13' .or. trim(isotope) == 'c14') then
           this%leaf_mr(p)      = this%leaf_curmr(p)      + this%leaf_xsmr(p)
           this%froot_mr(p)     = this%froot_curmr(p)     + this%froot_xsmr(p)
@@ -8780,166 +8780,166 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_nf
     !-----------------------------------------------------------------------
-    allocate(this%m_leafn_to_litter                   (begp:endp)) ; this%m_leafn_to_litter                   (:) = nan
-    allocate(this%m_frootn_to_litter                  (begp:endp)) ; this%m_frootn_to_litter                  (:) = nan
-    allocate(this%m_leafn_storage_to_litter           (begp:endp)) ; this%m_leafn_storage_to_litter           (:) = nan
-    allocate(this%m_frootn_storage_to_litter          (begp:endp)) ; this%m_frootn_storage_to_litter          (:) = nan
-    allocate(this%m_livestemn_storage_to_litter       (begp:endp)) ; this%m_livestemn_storage_to_litter       (:) = nan
-    allocate(this%m_deadstemn_storage_to_litter       (begp:endp)) ; this%m_deadstemn_storage_to_litter       (:) = nan
-    allocate(this%m_livecrootn_storage_to_litter      (begp:endp)) ; this%m_livecrootn_storage_to_litter      (:) = nan
-    allocate(this%m_deadcrootn_storage_to_litter      (begp:endp)) ; this%m_deadcrootn_storage_to_litter      (:) = nan
-    allocate(this%m_leafn_xfer_to_litter              (begp:endp)) ; this%m_leafn_xfer_to_litter              (:) = nan
-    allocate(this%m_frootn_xfer_to_litter             (begp:endp)) ; this%m_frootn_xfer_to_litter             (:) = nan
-    allocate(this%m_livestemn_xfer_to_litter          (begp:endp)) ; this%m_livestemn_xfer_to_litter          (:) = nan
-    allocate(this%m_deadstemn_xfer_to_litter          (begp:endp)) ; this%m_deadstemn_xfer_to_litter          (:) = nan
-    allocate(this%m_livecrootn_xfer_to_litter         (begp:endp)) ; this%m_livecrootn_xfer_to_litter         (:) = nan
-    allocate(this%m_deadcrootn_xfer_to_litter         (begp:endp)) ; this%m_deadcrootn_xfer_to_litter         (:) = nan
-    allocate(this%m_livestemn_to_litter               (begp:endp)) ; this%m_livestemn_to_litter               (:) = nan
-    allocate(this%m_deadstemn_to_litter               (begp:endp)) ; this%m_deadstemn_to_litter               (:) = nan
-    allocate(this%m_livecrootn_to_litter              (begp:endp)) ; this%m_livecrootn_to_litter              (:) = nan
-    allocate(this%m_deadcrootn_to_litter              (begp:endp)) ; this%m_deadcrootn_to_litter              (:) = nan
-    allocate(this%m_retransn_to_litter                (begp:endp)) ; this%m_retransn_to_litter                (:) = nan
-    allocate(this%m_npool_to_litter                   (begp:endp)) ; this%m_npool_to_litter                   (:) = nan
-    allocate(this%hrv_leafn_to_litter                 (begp:endp)) ; this%hrv_leafn_to_litter                 (:) = nan
-    allocate(this%hrv_frootn_to_litter                (begp:endp)) ; this%hrv_frootn_to_litter                (:) = nan
-    allocate(this%hrv_leafn_storage_to_litter         (begp:endp)) ; this%hrv_leafn_storage_to_litter         (:) = nan
-    allocate(this%hrv_frootn_storage_to_litter        (begp:endp)) ; this%hrv_frootn_storage_to_litter        (:) = nan
-    allocate(this%hrv_livestemn_storage_to_litter     (begp:endp)) ; this%hrv_livestemn_storage_to_litter     (:) = nan
-    allocate(this%hrv_deadstemn_storage_to_litter     (begp:endp)) ; this%hrv_deadstemn_storage_to_litter     (:) = nan
-    allocate(this%hrv_livecrootn_storage_to_litter    (begp:endp)) ; this%hrv_livecrootn_storage_to_litter    (:) = nan
-    allocate(this%hrv_deadcrootn_storage_to_litter    (begp:endp)) ; this%hrv_deadcrootn_storage_to_litter    (:) = nan
-    allocate(this%hrv_leafn_xfer_to_litter            (begp:endp)) ; this%hrv_leafn_xfer_to_litter            (:) = nan
-    allocate(this%hrv_frootn_xfer_to_litter           (begp:endp)) ; this%hrv_frootn_xfer_to_litter           (:) = nan
-    allocate(this%hrv_livestemn_xfer_to_litter        (begp:endp)) ; this%hrv_livestemn_xfer_to_litter        (:) = nan
-    allocate(this%hrv_deadstemn_xfer_to_litter        (begp:endp)) ; this%hrv_deadstemn_xfer_to_litter        (:) = nan
-    allocate(this%hrv_livecrootn_xfer_to_litter       (begp:endp)) ; this%hrv_livecrootn_xfer_to_litter       (:) = nan
-    allocate(this%hrv_deadcrootn_xfer_to_litter       (begp:endp)) ; this%hrv_deadcrootn_xfer_to_litter       (:) = nan
-    allocate(this%hrv_livestemn_to_litter             (begp:endp)) ; this%hrv_livestemn_to_litter             (:) = nan
-    allocate(this%hrv_deadstemn_to_prod10n            (begp:endp)) ; this%hrv_deadstemn_to_prod10n            (:) = nan
-    allocate(this%hrv_deadstemn_to_prod100n           (begp:endp)) ; this%hrv_deadstemn_to_prod100n           (:) = nan
-    allocate(this%hrv_leafn_to_prod1n                 (begp:endp)) ; this%hrv_leafn_to_prod1n                 (:) = nan
-    allocate(this%hrv_livestemn_to_prod1n             (begp:endp)) ; this%hrv_livestemn_to_prod1n             (:) = nan
-    allocate(this%hrv_grainn_to_prod1n                (begp:endp)) ; this%hrv_grainn_to_prod1n                (:) = nan
-    allocate(this%hrv_cropn_to_prod1n                 (begp:endp)) ; this%hrv_cropn_to_prod1n                 (:) = nan
-    allocate(this%hrv_livecrootn_to_litter            (begp:endp)) ; this%hrv_livecrootn_to_litter            (:) = nan
-    allocate(this%hrv_deadcrootn_to_litter            (begp:endp)) ; this%hrv_deadcrootn_to_litter            (:) = nan
-    allocate(this%hrv_retransn_to_litter              (begp:endp)) ; this%hrv_retransn_to_litter              (:) = nan
-    allocate(this%hrv_npool_to_litter                 (begp:endp)) ; this%hrv_npool_to_litter                 (:) = nan
-    allocate(this%m_leafn_to_fire                     (begp:endp)) ; this%m_leafn_to_fire                     (:) = nan
-    allocate(this%m_leafn_storage_to_fire             (begp:endp)) ; this%m_leafn_storage_to_fire             (:) = nan
-    allocate(this%m_leafn_xfer_to_fire                (begp:endp)) ; this%m_leafn_xfer_to_fire                (:) = nan
-    allocate(this%m_livestemn_to_fire                 (begp:endp)) ; this%m_livestemn_to_fire                 (:) = nan
-    allocate(this%m_livestemn_storage_to_fire         (begp:endp)) ; this%m_livestemn_storage_to_fire         (:) = nan
-    allocate(this%m_livestemn_xfer_to_fire            (begp:endp)) ; this%m_livestemn_xfer_to_fire            (:) = nan
-    allocate(this%m_deadstemn_to_fire                 (begp:endp)) ; this%m_deadstemn_to_fire                 (:) = nan
-    allocate(this%m_deadstemn_storage_to_fire         (begp:endp)) ; this%m_deadstemn_storage_to_fire         (:) = nan
-    allocate(this%m_deadstemn_xfer_to_fire            (begp:endp)) ; this%m_deadstemn_xfer_to_fire            (:) = nan
-    allocate(this%m_frootn_to_fire                    (begp:endp)) ; this%m_frootn_to_fire                    (:) = nan
-    allocate(this%m_frootn_storage_to_fire            (begp:endp)) ; this%m_frootn_storage_to_fire            (:) = nan
-    allocate(this%m_frootn_xfer_to_fire               (begp:endp)) ; this%m_frootn_xfer_to_fire               (:) = nan
-    allocate(this%m_livecrootn_to_fire                (begp:endp)) ; this%m_livecrootn_to_fire                (:) = nan
-    allocate(this%m_livecrootn_storage_to_fire        (begp:endp)) ; this%m_livecrootn_storage_to_fire        (:) = nan
-    allocate(this%m_livecrootn_xfer_to_fire           (begp:endp)) ; this%m_livecrootn_xfer_to_fire           (:) = nan
-    allocate(this%m_deadcrootn_to_fire                (begp:endp)) ; this%m_deadcrootn_to_fire                (:) = nan
-    allocate(this%m_deadcrootn_storage_to_fire        (begp:endp)) ; this%m_deadcrootn_storage_to_fire        (:) = nan
-    allocate(this%m_deadcrootn_xfer_to_fire           (begp:endp)) ; this%m_deadcrootn_xfer_to_fire           (:) = nan
-    allocate(this%m_retransn_to_fire                  (begp:endp)) ; this%m_retransn_to_fire                  (:) = nan
-    allocate(this%m_npool_to_fire                     (begp:endp)) ; this%m_npool_to_fire                     (:) = nan
-    allocate(this%m_leafn_to_litter_fire              (begp:endp)) ; this%m_leafn_to_litter_fire              (:) = nan
-    allocate(this%m_leafn_storage_to_litter_fire      (begp:endp)) ; this%m_leafn_storage_to_litter_fire      (:) = nan
-    allocate(this%m_leafn_xfer_to_litter_fire         (begp:endp)) ; this%m_leafn_xfer_to_litter_fire         (:) = nan
-    allocate(this%m_livestemn_to_litter_fire          (begp:endp)) ; this%m_livestemn_to_litter_fire          (:) = nan
-    allocate(this%m_livestemn_storage_to_litter_fire  (begp:endp)) ; this%m_livestemn_storage_to_litter_fire  (:) = nan
-    allocate(this%m_livestemn_xfer_to_litter_fire     (begp:endp)) ; this%m_livestemn_xfer_to_litter_fire     (:) = nan
-    allocate(this%m_livestemn_to_deadstemn_fire       (begp:endp)) ; this%m_livestemn_to_deadstemn_fire       (:) = nan
-    allocate(this%m_deadstemn_to_litter_fire          (begp:endp)) ; this%m_deadstemn_to_litter_fire          (:) = nan
-    allocate(this%m_deadstemn_storage_to_litter_fire  (begp:endp)) ; this%m_deadstemn_storage_to_litter_fire  (:) = nan
-    allocate(this%m_deadstemn_xfer_to_litter_fire     (begp:endp)) ; this%m_deadstemn_xfer_to_litter_fire     (:) = nan
-    allocate(this%m_frootn_to_litter_fire             (begp:endp)) ; this%m_frootn_to_litter_fire             (:) = nan
-    allocate(this%m_frootn_storage_to_litter_fire     (begp:endp)) ; this%m_frootn_storage_to_litter_fire     (:) = nan
-    allocate(this%m_frootn_xfer_to_litter_fire        (begp:endp)) ; this%m_frootn_xfer_to_litter_fire        (:) = nan
-    allocate(this%m_livecrootn_to_litter_fire         (begp:endp)) ; this%m_livecrootn_to_litter_fire         (:) = nan
-    allocate(this%m_livecrootn_storage_to_litter_fire (begp:endp)) ; this%m_livecrootn_storage_to_litter_fire (:) = nan
-    allocate(this%m_livecrootn_xfer_to_litter_fire    (begp:endp)) ; this%m_livecrootn_xfer_to_litter_fire    (:) = nan
-    allocate(this%m_livecrootn_to_deadcrootn_fire     (begp:endp)) ; this%m_livecrootn_to_deadcrootn_fire     (:) = nan
-    allocate(this%m_deadcrootn_to_litter_fire         (begp:endp)) ; this%m_deadcrootn_to_litter_fire         (:) = nan
-    allocate(this%m_deadcrootn_storage_to_litter_fire (begp:endp)) ; this%m_deadcrootn_storage_to_litter_fire (:) = nan
-    allocate(this%m_deadcrootn_xfer_to_litter_fire    (begp:endp)) ; this%m_deadcrootn_xfer_to_litter_fire    (:) = nan
-    allocate(this%m_retransn_to_litter_fire           (begp:endp)) ; this%m_retransn_to_litter_fire           (:) = nan
-    allocate(this%m_npool_to_litter_fire              (begp:endp)) ; this%m_npool_to_litter_fire              (:) = nan
-    allocate(this%leafn_xfer_to_leafn                 (begp:endp)) ; this%leafn_xfer_to_leafn                 (:) = nan
-    allocate(this%frootn_xfer_to_frootn               (begp:endp)) ; this%frootn_xfer_to_frootn               (:) = nan
-    allocate(this%livestemn_xfer_to_livestemn         (begp:endp)) ; this%livestemn_xfer_to_livestemn         (:) = nan
-    allocate(this%deadstemn_xfer_to_deadstemn         (begp:endp)) ; this%deadstemn_xfer_to_deadstemn         (:) = nan
-    allocate(this%livecrootn_xfer_to_livecrootn       (begp:endp)) ; this%livecrootn_xfer_to_livecrootn       (:) = nan
-    allocate(this%deadcrootn_xfer_to_deadcrootn       (begp:endp)) ; this%deadcrootn_xfer_to_deadcrootn       (:) = nan
-    allocate(this%leafn_to_litter                     (begp:endp)) ; this%leafn_to_litter                     (:) = nan
-    allocate(this%leafn_to_retransn                   (begp:endp)) ; this%leafn_to_retransn                   (:) = nan
-    allocate(this%frootn_to_retransn                  (begp:endp)) ; this%frootn_to_retransn                  (:) = nan
-    allocate(this%frootn_to_litter                    (begp:endp)) ; this%frootn_to_litter                    (:) = nan
-    allocate(this%retransn_to_npool                   (begp:endp)) ; this%retransn_to_npool                   (:) = nan
-    allocate(this%sminn_to_npool                      (begp:endp)) ; this%sminn_to_npool                      (:) = nan
-    allocate(this%npool_to_leafn                      (begp:endp)) ; this%npool_to_leafn                      (:) = nan
-    allocate(this%npool_to_leafn_storage              (begp:endp)) ; this%npool_to_leafn_storage              (:) = nan
-    allocate(this%npool_to_frootn                     (begp:endp)) ; this%npool_to_frootn                     (:) = nan
-    allocate(this%npool_to_frootn_storage             (begp:endp)) ; this%npool_to_frootn_storage             (:) = nan
-    allocate(this%npool_to_livestemn                  (begp:endp)) ; this%npool_to_livestemn                  (:) = nan
-    allocate(this%npool_to_livestemn_storage          (begp:endp)) ; this%npool_to_livestemn_storage          (:) = nan
-    allocate(this%npool_to_deadstemn                  (begp:endp)) ; this%npool_to_deadstemn                  (:) = nan
-    allocate(this%npool_to_deadstemn_storage          (begp:endp)) ; this%npool_to_deadstemn_storage          (:) = nan
-    allocate(this%npool_to_livecrootn                 (begp:endp)) ; this%npool_to_livecrootn                 (:) = nan
-    allocate(this%npool_to_livecrootn_storage         (begp:endp)) ; this%npool_to_livecrootn_storage         (:) = nan
-    allocate(this%npool_to_deadcrootn                 (begp:endp)) ; this%npool_to_deadcrootn                 (:) = nan
-    allocate(this%npool_to_deadcrootn_storage         (begp:endp)) ; this%npool_to_deadcrootn_storage         (:) = nan
-    allocate(this%leafn_storage_to_xfer               (begp:endp)) ; this%leafn_storage_to_xfer               (:) = nan
-    allocate(this%frootn_storage_to_xfer              (begp:endp)) ; this%frootn_storage_to_xfer              (:) = nan
-    allocate(this%livestemn_storage_to_xfer           (begp:endp)) ; this%livestemn_storage_to_xfer           (:) = nan
-    allocate(this%deadstemn_storage_to_xfer           (begp:endp)) ; this%deadstemn_storage_to_xfer           (:) = nan
-    allocate(this%livecrootn_storage_to_xfer          (begp:endp)) ; this%livecrootn_storage_to_xfer          (:) = nan
-    allocate(this%deadcrootn_storage_to_xfer          (begp:endp)) ; this%deadcrootn_storage_to_xfer          (:) = nan
-    allocate(this%livestemn_to_deadstemn              (begp:endp)) ; this%livestemn_to_deadstemn              (:) = nan
-    allocate(this%livestemn_to_retransn               (begp:endp)) ; this%livestemn_to_retransn               (:) = nan
-    allocate(this%livecrootn_to_deadcrootn            (begp:endp)) ; this%livecrootn_to_deadcrootn            (:) = nan
-    allocate(this%livecrootn_to_retransn              (begp:endp)) ; this%livecrootn_to_retransn              (:) = nan
-    allocate(this%ndeploy                             (begp:endp)) ; this%ndeploy                             (:) = nan
-    allocate(this%ninputs                             (begp:endp)) ; this%ninputs                             (:) = nan
-    allocate(this%noutputs                            (begp:endp)) ; this%noutputs                            (:) = nan
-    allocate(this%wood_harvestn                       (begp:endp)) ; this%wood_harvestn                       (:) = nan
-    allocate(this%fire_nloss                          (begp:endp)) ; this%fire_nloss                          (:) = nan
-    allocate(this%npool_to_grainn                     (begp:endp)) ; this%npool_to_grainn                     (:) = nan
-    allocate(this%npool_to_grainn_storage             (begp:endp)) ; this%npool_to_grainn_storage             (:) = nan
-    allocate(this%livestemn_to_litter                 (begp:endp)) ; this%livestemn_to_litter                 (:) = nan
-    allocate(this%grainn_to_food                      (begp:endp)) ; this%grainn_to_food                      (:) = nan
-    allocate(this%grainn_xfer_to_grainn               (begp:endp)) ; this%grainn_xfer_to_grainn               (:) = nan
-    allocate(this%grainn_storage_to_xfer              (begp:endp)) ; this%grainn_storage_to_xfer              (:) = nan
-    allocate(this%fert                                (begp:endp)) ; this%fert                                (:) = nan
-    allocate(this%fert_counter                        (begp:endp)) ; this%fert_counter                        (:) = nan
-    allocate(this%soyfixn                             (begp:endp)) ; this%soyfixn                             (:) = nan
-    allocate(this%nfix_to_plantn                      (begp:endp)) ; this%nfix_to_plantn                      (:) = nan
-    allocate(this%crop_seedn_to_leaf                  (begp:endp)) ; this%crop_seedn_to_leaf                  (:) = nan
-    allocate(this%dwt_seedn_to_leaf                   (begp:endp)) ; this%dwt_seedn_to_leaf                   (:) = nan
-    allocate(this%dwt_seedn_to_deadstem               (begp:endp)) ; this%dwt_seedn_to_deadstem               (:) = nan
-    allocate(this%dwt_conv_nflux                      (begp:endp)) ; this%dwt_conv_nflux                      (:) = nan
-    allocate(this%dwt_prod10n_gain                    (begp:endp)) ; this%dwt_prod10n_gain                    (:) = nan
-    allocate(this%dwt_prod100n_gain                   (begp:endp)) ; this%dwt_prod100n_gain                   (:) = nan
-    allocate(this%dwt_crop_productn_gain              (begp:endp)) ; this%dwt_crop_productn_gain              (:) = nan
-    allocate(this%dwt_seedn_to_npool                  (begp:endp)) ; this%dwt_seedn_to_npool                  (:) = nan
-    allocate(this%plant_ndemand                       (begp:endp)) ; this%plant_ndemand                       (:) = nan
-    allocate(this%avail_retransn                      (begp:endp)) ; this%avail_retransn                      (:) = nan
-    allocate(this%plant_nalloc                        (begp:endp)) ; this%plant_nalloc                        (:) = nan
-    allocate(this%smin_no3_to_plant                   (begp:endp)) ; this%smin_no3_to_plant                   (:) = nan
-    allocate(this%smin_nh4_to_plant                   (begp:endp)) ; this%smin_nh4_to_plant                   (:) = nan
-    allocate(this%sminn_to_plant                      (begp:endp)) ; this%sminn_to_plant                      (:) = nan
-    allocate(this%plant_nh4demand_vr                  (begp:endp,1:nlevdecomp)); this%plant_nh4demand_vr    (:,:) = nan
-    allocate(this%plant_no3demand_vr                  (begp:endp,1:nlevdecomp)); this%plant_no3demand_vr    (:,:) = nan
-    allocate(this%plant_ndemand_vr                    (begp:endp,1:nlevdecomp)); this%plant_ndemand_vr      (:,:) = nan
-    allocate(this%prev_leafn_to_litter                (begp:endp)) ; this%prev_leafn_to_litter                (:) = nan
-    allocate(this%prev_frootn_to_litter               (begp:endp)) ; this%prev_frootn_to_litter               (:) = nan
+    allocate(this%m_leafn_to_litter                   (begp:endp)) ; this%m_leafn_to_litter                   (:) = spval
+    allocate(this%m_frootn_to_litter                  (begp:endp)) ; this%m_frootn_to_litter                  (:) = spval
+    allocate(this%m_leafn_storage_to_litter           (begp:endp)) ; this%m_leafn_storage_to_litter           (:) = spval
+    allocate(this%m_frootn_storage_to_litter          (begp:endp)) ; this%m_frootn_storage_to_litter          (:) = spval
+    allocate(this%m_livestemn_storage_to_litter       (begp:endp)) ; this%m_livestemn_storage_to_litter       (:) = spval
+    allocate(this%m_deadstemn_storage_to_litter       (begp:endp)) ; this%m_deadstemn_storage_to_litter       (:) = spval
+    allocate(this%m_livecrootn_storage_to_litter      (begp:endp)) ; this%m_livecrootn_storage_to_litter      (:) = spval
+    allocate(this%m_deadcrootn_storage_to_litter      (begp:endp)) ; this%m_deadcrootn_storage_to_litter      (:) = spval
+    allocate(this%m_leafn_xfer_to_litter              (begp:endp)) ; this%m_leafn_xfer_to_litter              (:) = spval
+    allocate(this%m_frootn_xfer_to_litter             (begp:endp)) ; this%m_frootn_xfer_to_litter             (:) = spval
+    allocate(this%m_livestemn_xfer_to_litter          (begp:endp)) ; this%m_livestemn_xfer_to_litter          (:) = spval
+    allocate(this%m_deadstemn_xfer_to_litter          (begp:endp)) ; this%m_deadstemn_xfer_to_litter          (:) = spval
+    allocate(this%m_livecrootn_xfer_to_litter         (begp:endp)) ; this%m_livecrootn_xfer_to_litter         (:) = spval
+    allocate(this%m_deadcrootn_xfer_to_litter         (begp:endp)) ; this%m_deadcrootn_xfer_to_litter         (:) = spval
+    allocate(this%m_livestemn_to_litter               (begp:endp)) ; this%m_livestemn_to_litter               (:) = spval
+    allocate(this%m_deadstemn_to_litter               (begp:endp)) ; this%m_deadstemn_to_litter               (:) = spval
+    allocate(this%m_livecrootn_to_litter              (begp:endp)) ; this%m_livecrootn_to_litter              (:) = spval
+    allocate(this%m_deadcrootn_to_litter              (begp:endp)) ; this%m_deadcrootn_to_litter              (:) = spval
+    allocate(this%m_retransn_to_litter                (begp:endp)) ; this%m_retransn_to_litter                (:) = spval
+    allocate(this%m_npool_to_litter                   (begp:endp)) ; this%m_npool_to_litter                   (:) = spval
+    allocate(this%hrv_leafn_to_litter                 (begp:endp)) ; this%hrv_leafn_to_litter                 (:) = spval
+    allocate(this%hrv_frootn_to_litter                (begp:endp)) ; this%hrv_frootn_to_litter                (:) = spval
+    allocate(this%hrv_leafn_storage_to_litter         (begp:endp)) ; this%hrv_leafn_storage_to_litter         (:) = spval
+    allocate(this%hrv_frootn_storage_to_litter        (begp:endp)) ; this%hrv_frootn_storage_to_litter        (:) = spval
+    allocate(this%hrv_livestemn_storage_to_litter     (begp:endp)) ; this%hrv_livestemn_storage_to_litter     (:) = spval
+    allocate(this%hrv_deadstemn_storage_to_litter     (begp:endp)) ; this%hrv_deadstemn_storage_to_litter     (:) = spval
+    allocate(this%hrv_livecrootn_storage_to_litter    (begp:endp)) ; this%hrv_livecrootn_storage_to_litter    (:) = spval
+    allocate(this%hrv_deadcrootn_storage_to_litter    (begp:endp)) ; this%hrv_deadcrootn_storage_to_litter    (:) = spval
+    allocate(this%hrv_leafn_xfer_to_litter            (begp:endp)) ; this%hrv_leafn_xfer_to_litter            (:) = spval
+    allocate(this%hrv_frootn_xfer_to_litter           (begp:endp)) ; this%hrv_frootn_xfer_to_litter           (:) = spval
+    allocate(this%hrv_livestemn_xfer_to_litter        (begp:endp)) ; this%hrv_livestemn_xfer_to_litter        (:) = spval
+    allocate(this%hrv_deadstemn_xfer_to_litter        (begp:endp)) ; this%hrv_deadstemn_xfer_to_litter        (:) = spval
+    allocate(this%hrv_livecrootn_xfer_to_litter       (begp:endp)) ; this%hrv_livecrootn_xfer_to_litter       (:) = spval
+    allocate(this%hrv_deadcrootn_xfer_to_litter       (begp:endp)) ; this%hrv_deadcrootn_xfer_to_litter       (:) = spval
+    allocate(this%hrv_livestemn_to_litter             (begp:endp)) ; this%hrv_livestemn_to_litter             (:) = spval
+    allocate(this%hrv_deadstemn_to_prod10n            (begp:endp)) ; this%hrv_deadstemn_to_prod10n            (:) = spval
+    allocate(this%hrv_deadstemn_to_prod100n           (begp:endp)) ; this%hrv_deadstemn_to_prod100n           (:) = spval
+    allocate(this%hrv_leafn_to_prod1n                 (begp:endp)) ; this%hrv_leafn_to_prod1n                 (:) = spval
+    allocate(this%hrv_livestemn_to_prod1n             (begp:endp)) ; this%hrv_livestemn_to_prod1n             (:) = spval
+    allocate(this%hrv_grainn_to_prod1n                (begp:endp)) ; this%hrv_grainn_to_prod1n                (:) = spval
+    allocate(this%hrv_cropn_to_prod1n                 (begp:endp)) ; this%hrv_cropn_to_prod1n                 (:) = spval
+    allocate(this%hrv_livecrootn_to_litter            (begp:endp)) ; this%hrv_livecrootn_to_litter            (:) = spval
+    allocate(this%hrv_deadcrootn_to_litter            (begp:endp)) ; this%hrv_deadcrootn_to_litter            (:) = spval
+    allocate(this%hrv_retransn_to_litter              (begp:endp)) ; this%hrv_retransn_to_litter              (:) = spval
+    allocate(this%hrv_npool_to_litter                 (begp:endp)) ; this%hrv_npool_to_litter                 (:) = spval
+    allocate(this%m_leafn_to_fire                     (begp:endp)) ; this%m_leafn_to_fire                     (:) = spval
+    allocate(this%m_leafn_storage_to_fire             (begp:endp)) ; this%m_leafn_storage_to_fire             (:) = spval
+    allocate(this%m_leafn_xfer_to_fire                (begp:endp)) ; this%m_leafn_xfer_to_fire                (:) = spval
+    allocate(this%m_livestemn_to_fire                 (begp:endp)) ; this%m_livestemn_to_fire                 (:) = spval
+    allocate(this%m_livestemn_storage_to_fire         (begp:endp)) ; this%m_livestemn_storage_to_fire         (:) = spval
+    allocate(this%m_livestemn_xfer_to_fire            (begp:endp)) ; this%m_livestemn_xfer_to_fire            (:) = spval
+    allocate(this%m_deadstemn_to_fire                 (begp:endp)) ; this%m_deadstemn_to_fire                 (:) = spval
+    allocate(this%m_deadstemn_storage_to_fire         (begp:endp)) ; this%m_deadstemn_storage_to_fire         (:) = spval
+    allocate(this%m_deadstemn_xfer_to_fire            (begp:endp)) ; this%m_deadstemn_xfer_to_fire            (:) = spval
+    allocate(this%m_frootn_to_fire                    (begp:endp)) ; this%m_frootn_to_fire                    (:) = spval
+    allocate(this%m_frootn_storage_to_fire            (begp:endp)) ; this%m_frootn_storage_to_fire            (:) = spval
+    allocate(this%m_frootn_xfer_to_fire               (begp:endp)) ; this%m_frootn_xfer_to_fire               (:) = spval
+    allocate(this%m_livecrootn_to_fire                (begp:endp)) ; this%m_livecrootn_to_fire                (:) = spval
+    allocate(this%m_livecrootn_storage_to_fire        (begp:endp)) ; this%m_livecrootn_storage_to_fire        (:) = spval
+    allocate(this%m_livecrootn_xfer_to_fire           (begp:endp)) ; this%m_livecrootn_xfer_to_fire           (:) = spval
+    allocate(this%m_deadcrootn_to_fire                (begp:endp)) ; this%m_deadcrootn_to_fire                (:) = spval
+    allocate(this%m_deadcrootn_storage_to_fire        (begp:endp)) ; this%m_deadcrootn_storage_to_fire        (:) = spval
+    allocate(this%m_deadcrootn_xfer_to_fire           (begp:endp)) ; this%m_deadcrootn_xfer_to_fire           (:) = spval
+    allocate(this%m_retransn_to_fire                  (begp:endp)) ; this%m_retransn_to_fire                  (:) = spval
+    allocate(this%m_npool_to_fire                     (begp:endp)) ; this%m_npool_to_fire                     (:) = spval
+    allocate(this%m_leafn_to_litter_fire              (begp:endp)) ; this%m_leafn_to_litter_fire              (:) = spval
+    allocate(this%m_leafn_storage_to_litter_fire      (begp:endp)) ; this%m_leafn_storage_to_litter_fire      (:) = spval
+    allocate(this%m_leafn_xfer_to_litter_fire         (begp:endp)) ; this%m_leafn_xfer_to_litter_fire         (:) = spval
+    allocate(this%m_livestemn_to_litter_fire          (begp:endp)) ; this%m_livestemn_to_litter_fire          (:) = spval
+    allocate(this%m_livestemn_storage_to_litter_fire  (begp:endp)) ; this%m_livestemn_storage_to_litter_fire  (:) = spval
+    allocate(this%m_livestemn_xfer_to_litter_fire     (begp:endp)) ; this%m_livestemn_xfer_to_litter_fire     (:) = spval
+    allocate(this%m_livestemn_to_deadstemn_fire       (begp:endp)) ; this%m_livestemn_to_deadstemn_fire       (:) = spval
+    allocate(this%m_deadstemn_to_litter_fire          (begp:endp)) ; this%m_deadstemn_to_litter_fire          (:) = spval
+    allocate(this%m_deadstemn_storage_to_litter_fire  (begp:endp)) ; this%m_deadstemn_storage_to_litter_fire  (:) = spval
+    allocate(this%m_deadstemn_xfer_to_litter_fire     (begp:endp)) ; this%m_deadstemn_xfer_to_litter_fire     (:) = spval
+    allocate(this%m_frootn_to_litter_fire             (begp:endp)) ; this%m_frootn_to_litter_fire             (:) = spval
+    allocate(this%m_frootn_storage_to_litter_fire     (begp:endp)) ; this%m_frootn_storage_to_litter_fire     (:) = spval
+    allocate(this%m_frootn_xfer_to_litter_fire        (begp:endp)) ; this%m_frootn_xfer_to_litter_fire        (:) = spval
+    allocate(this%m_livecrootn_to_litter_fire         (begp:endp)) ; this%m_livecrootn_to_litter_fire         (:) = spval
+    allocate(this%m_livecrootn_storage_to_litter_fire (begp:endp)) ; this%m_livecrootn_storage_to_litter_fire (:) = spval
+    allocate(this%m_livecrootn_xfer_to_litter_fire    (begp:endp)) ; this%m_livecrootn_xfer_to_litter_fire    (:) = spval
+    allocate(this%m_livecrootn_to_deadcrootn_fire     (begp:endp)) ; this%m_livecrootn_to_deadcrootn_fire     (:) = spval
+    allocate(this%m_deadcrootn_to_litter_fire         (begp:endp)) ; this%m_deadcrootn_to_litter_fire         (:) = spval
+    allocate(this%m_deadcrootn_storage_to_litter_fire (begp:endp)) ; this%m_deadcrootn_storage_to_litter_fire (:) = spval
+    allocate(this%m_deadcrootn_xfer_to_litter_fire    (begp:endp)) ; this%m_deadcrootn_xfer_to_litter_fire    (:) = spval
+    allocate(this%m_retransn_to_litter_fire           (begp:endp)) ; this%m_retransn_to_litter_fire           (:) = spval
+    allocate(this%m_npool_to_litter_fire              (begp:endp)) ; this%m_npool_to_litter_fire              (:) = spval
+    allocate(this%leafn_xfer_to_leafn                 (begp:endp)) ; this%leafn_xfer_to_leafn                 (:) = spval
+    allocate(this%frootn_xfer_to_frootn               (begp:endp)) ; this%frootn_xfer_to_frootn               (:) = spval
+    allocate(this%livestemn_xfer_to_livestemn         (begp:endp)) ; this%livestemn_xfer_to_livestemn         (:) = spval
+    allocate(this%deadstemn_xfer_to_deadstemn         (begp:endp)) ; this%deadstemn_xfer_to_deadstemn         (:) = spval
+    allocate(this%livecrootn_xfer_to_livecrootn       (begp:endp)) ; this%livecrootn_xfer_to_livecrootn       (:) = spval
+    allocate(this%deadcrootn_xfer_to_deadcrootn       (begp:endp)) ; this%deadcrootn_xfer_to_deadcrootn       (:) = spval
+    allocate(this%leafn_to_litter                     (begp:endp)) ; this%leafn_to_litter                     (:) = spval
+    allocate(this%leafn_to_retransn                   (begp:endp)) ; this%leafn_to_retransn                   (:) = spval
+    allocate(this%frootn_to_retransn                  (begp:endp)) ; this%frootn_to_retransn                  (:) = spval
+    allocate(this%frootn_to_litter                    (begp:endp)) ; this%frootn_to_litter                    (:) = spval
+    allocate(this%retransn_to_npool                   (begp:endp)) ; this%retransn_to_npool                   (:) = spval
+    allocate(this%sminn_to_npool                      (begp:endp)) ; this%sminn_to_npool                      (:) = spval
+    allocate(this%npool_to_leafn                      (begp:endp)) ; this%npool_to_leafn                      (:) = spval
+    allocate(this%npool_to_leafn_storage              (begp:endp)) ; this%npool_to_leafn_storage              (:) = spval
+    allocate(this%npool_to_frootn                     (begp:endp)) ; this%npool_to_frootn                     (:) = spval
+    allocate(this%npool_to_frootn_storage             (begp:endp)) ; this%npool_to_frootn_storage             (:) = spval
+    allocate(this%npool_to_livestemn                  (begp:endp)) ; this%npool_to_livestemn                  (:) = spval
+    allocate(this%npool_to_livestemn_storage          (begp:endp)) ; this%npool_to_livestemn_storage          (:) = spval
+    allocate(this%npool_to_deadstemn                  (begp:endp)) ; this%npool_to_deadstemn                  (:) = spval
+    allocate(this%npool_to_deadstemn_storage          (begp:endp)) ; this%npool_to_deadstemn_storage          (:) = spval
+    allocate(this%npool_to_livecrootn                 (begp:endp)) ; this%npool_to_livecrootn                 (:) = spval
+    allocate(this%npool_to_livecrootn_storage         (begp:endp)) ; this%npool_to_livecrootn_storage         (:) = spval
+    allocate(this%npool_to_deadcrootn                 (begp:endp)) ; this%npool_to_deadcrootn                 (:) = spval
+    allocate(this%npool_to_deadcrootn_storage         (begp:endp)) ; this%npool_to_deadcrootn_storage         (:) = spval
+    allocate(this%leafn_storage_to_xfer               (begp:endp)) ; this%leafn_storage_to_xfer               (:) = spval
+    allocate(this%frootn_storage_to_xfer              (begp:endp)) ; this%frootn_storage_to_xfer              (:) = spval
+    allocate(this%livestemn_storage_to_xfer           (begp:endp)) ; this%livestemn_storage_to_xfer           (:) = spval
+    allocate(this%deadstemn_storage_to_xfer           (begp:endp)) ; this%deadstemn_storage_to_xfer           (:) = spval
+    allocate(this%livecrootn_storage_to_xfer          (begp:endp)) ; this%livecrootn_storage_to_xfer          (:) = spval
+    allocate(this%deadcrootn_storage_to_xfer          (begp:endp)) ; this%deadcrootn_storage_to_xfer          (:) = spval
+    allocate(this%livestemn_to_deadstemn              (begp:endp)) ; this%livestemn_to_deadstemn              (:) = spval
+    allocate(this%livestemn_to_retransn               (begp:endp)) ; this%livestemn_to_retransn               (:) = spval
+    allocate(this%livecrootn_to_deadcrootn            (begp:endp)) ; this%livecrootn_to_deadcrootn            (:) = spval
+    allocate(this%livecrootn_to_retransn              (begp:endp)) ; this%livecrootn_to_retransn              (:) = spval
+    allocate(this%ndeploy                             (begp:endp)) ; this%ndeploy                             (:) = spval
+    allocate(this%ninputs                             (begp:endp)) ; this%ninputs                             (:) = spval
+    allocate(this%noutputs                            (begp:endp)) ; this%noutputs                            (:) = spval
+    allocate(this%wood_harvestn                       (begp:endp)) ; this%wood_harvestn                       (:) = spval
+    allocate(this%fire_nloss                          (begp:endp)) ; this%fire_nloss                          (:) = spval
+    allocate(this%npool_to_grainn                     (begp:endp)) ; this%npool_to_grainn                     (:) = spval
+    allocate(this%npool_to_grainn_storage             (begp:endp)) ; this%npool_to_grainn_storage             (:) = spval
+    allocate(this%livestemn_to_litter                 (begp:endp)) ; this%livestemn_to_litter                 (:) = spval
+    allocate(this%grainn_to_food                      (begp:endp)) ; this%grainn_to_food                      (:) = spval
+    allocate(this%grainn_xfer_to_grainn               (begp:endp)) ; this%grainn_xfer_to_grainn               (:) = spval
+    allocate(this%grainn_storage_to_xfer              (begp:endp)) ; this%grainn_storage_to_xfer              (:) = spval
+    allocate(this%fert                                (begp:endp)) ; this%fert                                (:) = spval
+    allocate(this%fert_counter                        (begp:endp)) ; this%fert_counter                        (:) = spval
+    allocate(this%soyfixn                             (begp:endp)) ; this%soyfixn                             (:) = spval
+    allocate(this%nfix_to_plantn                      (begp:endp)) ; this%nfix_to_plantn                      (:) = spval
+    allocate(this%crop_seedn_to_leaf                  (begp:endp)) ; this%crop_seedn_to_leaf                  (:) = spval
+    allocate(this%dwt_seedn_to_leaf                   (begp:endp)) ; this%dwt_seedn_to_leaf                   (:) = spval
+    allocate(this%dwt_seedn_to_deadstem               (begp:endp)) ; this%dwt_seedn_to_deadstem               (:) = spval
+    allocate(this%dwt_conv_nflux                      (begp:endp)) ; this%dwt_conv_nflux                      (:) = spval
+    allocate(this%dwt_prod10n_gain                    (begp:endp)) ; this%dwt_prod10n_gain                    (:) = spval
+    allocate(this%dwt_prod100n_gain                   (begp:endp)) ; this%dwt_prod100n_gain                   (:) = spval
+    allocate(this%dwt_crop_productn_gain              (begp:endp)) ; this%dwt_crop_productn_gain              (:) = spval
+    allocate(this%dwt_seedn_to_npool                  (begp:endp)) ; this%dwt_seedn_to_npool                  (:) = spval
+    allocate(this%plant_ndemand                       (begp:endp)) ; this%plant_ndemand                       (:) = spval
+    allocate(this%avail_retransn                      (begp:endp)) ; this%avail_retransn                      (:) = spval
+    allocate(this%plant_nalloc                        (begp:endp)) ; this%plant_nalloc                        (:) = spval
+    allocate(this%smin_no3_to_plant                   (begp:endp)) ; this%smin_no3_to_plant                   (:) = spval
+    allocate(this%smin_nh4_to_plant                   (begp:endp)) ; this%smin_nh4_to_plant                   (:) = spval
+    allocate(this%sminn_to_plant                      (begp:endp)) ; this%sminn_to_plant                      (:) = spval
+    allocate(this%plant_nh4demand_vr                  (begp:endp,1:nlevdecomp)); this%plant_nh4demand_vr    (:,:) = spval
+    allocate(this%plant_no3demand_vr                  (begp:endp,1:nlevdecomp)); this%plant_no3demand_vr    (:,:) = spval
+    allocate(this%plant_ndemand_vr                    (begp:endp,1:nlevdecomp)); this%plant_ndemand_vr      (:,:) = spval
+    allocate(this%prev_leafn_to_litter                (begp:endp)) ; this%prev_leafn_to_litter                (:) = spval
+    allocate(this%prev_frootn_to_litter               (begp:endp)) ; this%prev_frootn_to_litter               (:) = spval
     allocate(this%supplement_to_plantn                (begp:endp)) ; this%supplement_to_plantn                (:) = 0.d0
-    allocate(this%gap_nloss_litter                    (begp:endp)) ; this%gap_nloss_litter                    (:) = nan
-    allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = nan
-    allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = nan
-    allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = nan
+    allocate(this%gap_nloss_litter                    (begp:endp)) ; this%gap_nloss_litter                    (:) = spval
+    allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = spval
+    allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = spval
+    allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_nf
@@ -9497,58 +9497,58 @@ module VegetationDataType
             dim1name='pft', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fert_counter)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='fert', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fert)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer_to_grainn', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain N growth from storage', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer_to_grainn)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='livestemn_to_litter', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='livestem N to litter', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%livestemn_to_litter)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_to_food', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain N to food', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_to_food)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='npool_to_grainn', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='allocation to grain N', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%npool_to_grainn)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='npool_to_grainn_storage', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='allocation to grain N storage', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%npool_to_grainn_storage)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='grainn_storage_to_xfer', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain N shift storage to transfer', units='gN/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_storage_to_xfer)
     end if ! crop_prog
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='plant_ndemand', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_ndemand)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='avail_retransn', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%avail_retransn)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='plant_nalloc', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_nalloc)
-
+!#py
   end subroutine veg_nf_restart
 
   !-----------------------------------------------------------------------
@@ -9899,161 +9899,161 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_pf
     !-----------------------------------------------------------------------
-    allocate(this%m_leafp_to_litter                   (begp:endp)) ; this%m_leafp_to_litter                   (:) = nan
-    allocate(this%m_frootp_to_litter                  (begp:endp)) ; this%m_frootp_to_litter                  (:) = nan
-    allocate(this%m_leafp_storage_to_litter           (begp:endp)) ; this%m_leafp_storage_to_litter           (:) = nan
-    allocate(this%m_frootp_storage_to_litter          (begp:endp)) ; this%m_frootp_storage_to_litter          (:) = nan
-    allocate(this%m_livestemp_storage_to_litter       (begp:endp)) ; this%m_livestemp_storage_to_litter       (:) = nan
-    allocate(this%m_deadstemp_storage_to_litter       (begp:endp)) ; this%m_deadstemp_storage_to_litter       (:) = nan
-    allocate(this%m_livecrootp_storage_to_litter      (begp:endp)) ; this%m_livecrootp_storage_to_litter      (:) = nan
-    allocate(this%m_deadcrootp_storage_to_litter      (begp:endp)) ; this%m_deadcrootp_storage_to_litter      (:) = nan
-    allocate(this%m_leafp_xfer_to_litter              (begp:endp)) ; this%m_leafp_xfer_to_litter              (:) = nan
-    allocate(this%m_frootp_xfer_to_litter             (begp:endp)) ; this%m_frootp_xfer_to_litter             (:) = nan
-    allocate(this%m_livestemp_xfer_to_litter          (begp:endp)) ; this%m_livestemp_xfer_to_litter          (:) = nan
-    allocate(this%m_deadstemp_xfer_to_litter          (begp:endp)) ; this%m_deadstemp_xfer_to_litter          (:) = nan
-    allocate(this%m_livecrootp_xfer_to_litter         (begp:endp)) ; this%m_livecrootp_xfer_to_litter         (:) = nan
-    allocate(this%m_deadcrootp_xfer_to_litter         (begp:endp)) ; this%m_deadcrootp_xfer_to_litter         (:) = nan
-    allocate(this%m_livestemp_to_litter               (begp:endp)) ; this%m_livestemp_to_litter               (:) = nan
-    allocate(this%m_deadstemp_to_litter               (begp:endp)) ; this%m_deadstemp_to_litter               (:) = nan
-    allocate(this%m_livecrootp_to_litter              (begp:endp)) ; this%m_livecrootp_to_litter              (:) = nan
-    allocate(this%m_deadcrootp_to_litter              (begp:endp)) ; this%m_deadcrootp_to_litter              (:) = nan
-    allocate(this%m_retransp_to_litter                (begp:endp)) ; this%m_retransp_to_litter                (:) = nan
-    allocate(this%m_ppool_to_litter                   (begp:endp)) ; this%m_ppool_to_litter                   (:) = nan
-    allocate(this%hrv_leafp_to_litter                 (begp:endp)) ; this%hrv_leafp_to_litter                 (:) = nan
-    allocate(this%hrv_frootp_to_litter                (begp:endp)) ; this%hrv_frootp_to_litter                (:) = nan
-    allocate(this%hrv_leafp_storage_to_litter         (begp:endp)) ; this%hrv_leafp_storage_to_litter         (:) = nan
-    allocate(this%hrv_frootp_storage_to_litter        (begp:endp)) ; this%hrv_frootp_storage_to_litter        (:) = nan
-    allocate(this%hrv_livestemp_storage_to_litter     (begp:endp)) ; this%hrv_livestemp_storage_to_litter     (:) = nan
-    allocate(this%hrv_deadstemp_storage_to_litter     (begp:endp)) ; this%hrv_deadstemp_storage_to_litter     (:) = nan
-    allocate(this%hrv_livecrootp_storage_to_litter    (begp:endp)) ; this%hrv_livecrootp_storage_to_litter    (:) = nan
-    allocate(this%hrv_deadcrootp_storage_to_litter    (begp:endp)) ; this%hrv_deadcrootp_storage_to_litter    (:) = nan
-    allocate(this%hrv_leafp_xfer_to_litter            (begp:endp)) ; this%hrv_leafp_xfer_to_litter            (:) = nan
-    allocate(this%hrv_frootp_xfer_to_litter           (begp:endp)) ; this%hrv_frootp_xfer_to_litter           (:) = nan
-    allocate(this%hrv_livestemp_xfer_to_litter        (begp:endp)) ; this%hrv_livestemp_xfer_to_litter        (:) = nan
-    allocate(this%hrv_deadstemp_xfer_to_litter        (begp:endp)) ; this%hrv_deadstemp_xfer_to_litter        (:) = nan
-    allocate(this%hrv_livecrootp_xfer_to_litter       (begp:endp)) ; this%hrv_livecrootp_xfer_to_litter       (:) = nan
-    allocate(this%hrv_deadcrootp_xfer_to_litter       (begp:endp)) ; this%hrv_deadcrootp_xfer_to_litter       (:) = nan
-    allocate(this%hrv_livestemp_to_litter             (begp:endp)) ; this%hrv_livestemp_to_litter             (:) = nan
-    allocate(this%hrv_deadstemp_to_prod10p            (begp:endp)) ; this%hrv_deadstemp_to_prod10p            (:) = nan
-    allocate(this%hrv_deadstemp_to_prod100p           (begp:endp)) ; this%hrv_deadstemp_to_prod100p           (:) = nan
-    allocate(this%hrv_leafp_to_prod1p                 (begp:endp)) ; this%hrv_leafp_to_prod1p                 (:) = nan
-    allocate(this%hrv_livestemp_to_prod1p             (begp:endp)) ; this%hrv_livestemp_to_prod1p             (:) = nan
-    allocate(this%hrv_grainp_to_prod1p                (begp:endp)) ; this%hrv_grainp_to_prod1p                (:) = nan
-    allocate(this%hrv_cropp_to_prod1p                 (begp:endp)) ; this%hrv_cropp_to_prod1p                 (:) = nan
-    allocate(this%hrv_livecrootp_to_litter            (begp:endp)) ; this%hrv_livecrootp_to_litter            (:) = nan
-    allocate(this%hrv_deadcrootp_to_litter            (begp:endp)) ; this%hrv_deadcrootp_to_litter            (:) = nan
-    allocate(this%hrv_retransp_to_litter              (begp:endp)) ; this%hrv_retransp_to_litter              (:) = nan
-    allocate(this%hrv_ppool_to_litter                 (begp:endp)) ; this%hrv_ppool_to_litter                 (:) = nan
-    allocate(this%m_leafp_to_fire                     (begp:endp)) ; this%m_leafp_to_fire                     (:) = nan
-    allocate(this%m_leafp_storage_to_fire             (begp:endp)) ; this%m_leafp_storage_to_fire             (:) = nan
-    allocate(this%m_leafp_xfer_to_fire                (begp:endp)) ; this%m_leafp_xfer_to_fire                (:) = nan
-    allocate(this%m_livestemp_to_fire                 (begp:endp)) ; this%m_livestemp_to_fire                 (:) = nan
-    allocate(this%m_livestemp_storage_to_fire         (begp:endp)) ; this%m_livestemp_storage_to_fire         (:) = nan
-    allocate(this%m_livestemp_xfer_to_fire            (begp:endp)) ; this%m_livestemp_xfer_to_fire            (:) = nan
-    allocate(this%m_deadstemp_to_fire                 (begp:endp)) ; this%m_deadstemp_to_fire                 (:) = nan
-    allocate(this%m_deadstemp_storage_to_fire         (begp:endp)) ; this%m_deadstemp_storage_to_fire         (:) = nan
-    allocate(this%m_deadstemp_xfer_to_fire            (begp:endp)) ; this%m_deadstemp_xfer_to_fire            (:) = nan
-    allocate(this%m_frootp_to_fire                    (begp:endp)) ; this%m_frootp_to_fire                    (:) = nan
-    allocate(this%m_frootp_storage_to_fire            (begp:endp)) ; this%m_frootp_storage_to_fire            (:) = nan
-    allocate(this%m_frootp_xfer_to_fire               (begp:endp)) ; this%m_frootp_xfer_to_fire               (:) = nan
-    allocate(this%m_livecrootp_to_fire                (begp:endp)) ; this%m_livecrootp_to_fire                (:) = nan
-    allocate(this%m_livecrootp_storage_to_fire        (begp:endp)) ; this%m_livecrootp_storage_to_fire        (:) = nan
-    allocate(this%m_livecrootp_xfer_to_fire           (begp:endp)) ; this%m_livecrootp_xfer_to_fire           (:) = nan
-    allocate(this%m_deadcrootp_to_fire                (begp:endp)) ; this%m_deadcrootp_to_fire                (:) = nan
-    allocate(this%m_deadcrootp_storage_to_fire        (begp:endp)) ; this%m_deadcrootp_storage_to_fire        (:) = nan
-    allocate(this%m_deadcrootp_xfer_to_fire           (begp:endp)) ; this%m_deadcrootp_xfer_to_fire           (:) = nan
-    allocate(this%m_retransp_to_fire                  (begp:endp)) ; this%m_retransp_to_fire                  (:) = nan
-    allocate(this%m_ppool_to_fire                     (begp:endp)) ; this%m_ppool_to_fire                     (:) = nan
-    allocate(this%m_leafp_to_litter_fire              (begp:endp)) ; this%m_leafp_to_litter_fire              (:) = nan
-    allocate(this%m_leafp_storage_to_litter_fire      (begp:endp)) ; this%m_leafp_storage_to_litter_fire      (:) = nan
-    allocate(this%m_leafp_xfer_to_litter_fire         (begp:endp)) ; this%m_leafp_xfer_to_litter_fire         (:) = nan
-    allocate(this%m_livestemp_to_litter_fire          (begp:endp)) ; this%m_livestemp_to_litter_fire          (:) = nan
-    allocate(this%m_livestemp_storage_to_litter_fire  (begp:endp)) ; this%m_livestemp_storage_to_litter_fire  (:) = nan
-    allocate(this%m_livestemp_xfer_to_litter_fire     (begp:endp)) ; this%m_livestemp_xfer_to_litter_fire     (:) = nan
-    allocate(this%m_livestemp_to_deadstemp_fire       (begp:endp)) ; this%m_livestemp_to_deadstemp_fire       (:) = nan
-    allocate(this%m_deadstemp_to_litter_fire          (begp:endp)) ; this%m_deadstemp_to_litter_fire          (:) = nan
-    allocate(this%m_deadstemp_storage_to_litter_fire  (begp:endp)) ; this%m_deadstemp_storage_to_litter_fire  (:) = nan
-    allocate(this%m_deadstemp_xfer_to_litter_fire     (begp:endp)) ; this%m_deadstemp_xfer_to_litter_fire     (:) = nan
-    allocate(this%m_frootp_to_litter_fire             (begp:endp)) ; this%m_frootp_to_litter_fire             (:) = nan
-    allocate(this%m_frootp_storage_to_litter_fire     (begp:endp)) ; this%m_frootp_storage_to_litter_fire     (:) = nan
-    allocate(this%m_frootp_xfer_to_litter_fire        (begp:endp)) ; this%m_frootp_xfer_to_litter_fire        (:) = nan
-    allocate(this%m_livecrootp_to_litter_fire         (begp:endp)) ; this%m_livecrootp_to_litter_fire         (:) = nan
-    allocate(this%m_livecrootp_storage_to_litter_fire (begp:endp)) ; this%m_livecrootp_storage_to_litter_fire (:) = nan
-    allocate(this%m_livecrootp_xfer_to_litter_fire    (begp:endp)) ; this%m_livecrootp_xfer_to_litter_fire    (:) = nan
-    allocate(this%m_livecrootp_to_deadcrootp_fire     (begp:endp)) ; this%m_livecrootp_to_deadcrootp_fire     (:) = nan
-    allocate(this%m_deadcrootp_to_litter_fire         (begp:endp)) ; this%m_deadcrootp_to_litter_fire         (:) = nan
-    allocate(this%m_deadcrootp_storage_to_litter_fire (begp:endp)) ; this%m_deadcrootp_storage_to_litter_fire (:) = nan
-    allocate(this%m_deadcrootp_xfer_to_litter_fire    (begp:endp)) ; this%m_deadcrootp_xfer_to_litter_fire    (:) = nan
-    allocate(this%m_retransp_to_litter_fire           (begp:endp)) ; this%m_retransp_to_litter_fire           (:) = nan
-    allocate(this%m_ppool_to_litter_fire              (begp:endp)) ; this%m_ppool_to_litter_fire              (:) = nan
-    allocate(this%leafp_xfer_to_leafp                 (begp:endp)) ; this%leafp_xfer_to_leafp                 (:) = nan
-    allocate(this%frootp_xfer_to_frootp               (begp:endp)) ; this%frootp_xfer_to_frootp               (:) = nan
-    allocate(this%livestemp_xfer_to_livestemp         (begp:endp)) ; this%livestemp_xfer_to_livestemp         (:) = nan
-    allocate(this%deadstemp_xfer_to_deadstemp         (begp:endp)) ; this%deadstemp_xfer_to_deadstemp         (:) = nan
-    allocate(this%livecrootp_xfer_to_livecrootp       (begp:endp)) ; this%livecrootp_xfer_to_livecrootp       (:) = nan
-    allocate(this%deadcrootp_xfer_to_deadcrootp       (begp:endp)) ; this%deadcrootp_xfer_to_deadcrootp       (:) = nan
-    allocate(this%leafp_to_litter                     (begp:endp)) ; this%leafp_to_litter                     (:) = nan
-    allocate(this%leafp_to_retransp                   (begp:endp)) ; this%leafp_to_retransp                   (:) = nan
-    allocate(this%frootp_to_retransp                  (begp:endp)) ; this%frootp_to_retransp                  (:) = nan
-    allocate(this%frootp_to_litter                    (begp:endp)) ; this%frootp_to_litter                    (:) = nan
-    allocate(this%retransp_to_ppool                   (begp:endp)) ; this%retransp_to_ppool                   (:) = nan
-    allocate(this%sminp_to_ppool                      (begp:endp)) ; this%sminp_to_ppool                      (:) = nan
-    allocate(this%biochem_pmin_to_plant               (begp:endp)) ; this%biochem_pmin_to_plant               (:) = nan
-    allocate(this%ppool_to_leafp                      (begp:endp)) ; this%ppool_to_leafp                      (:) = nan
-    allocate(this%ppool_to_leafp_storage              (begp:endp)) ; this%ppool_to_leafp_storage              (:) = nan
-    allocate(this%ppool_to_frootp                     (begp:endp)) ; this%ppool_to_frootp                     (:) = nan
-    allocate(this%ppool_to_frootp_storage             (begp:endp)) ; this%ppool_to_frootp_storage             (:) = nan
-    allocate(this%ppool_to_livestemp                  (begp:endp)) ; this%ppool_to_livestemp                  (:) = nan
-    allocate(this%ppool_to_livestemp_storage          (begp:endp)) ; this%ppool_to_livestemp_storage          (:) = nan
-    allocate(this%ppool_to_deadstemp                  (begp:endp)) ; this%ppool_to_deadstemp                  (:) = nan
-    allocate(this%ppool_to_deadstemp_storage          (begp:endp)) ; this%ppool_to_deadstemp_storage          (:) = nan
-    allocate(this%ppool_to_livecrootp                 (begp:endp)) ; this%ppool_to_livecrootp                 (:) = nan
-    allocate(this%ppool_to_livecrootp_storage         (begp:endp)) ; this%ppool_to_livecrootp_storage         (:) = nan
-    allocate(this%ppool_to_deadcrootp                 (begp:endp)) ; this%ppool_to_deadcrootp                 (:) = nan
-    allocate(this%ppool_to_deadcrootp_storage         (begp:endp)) ; this%ppool_to_deadcrootp_storage         (:) = nan
-    allocate(this%leafp_storage_to_xfer               (begp:endp)) ; this%leafp_storage_to_xfer               (:) = nan
-    allocate(this%frootp_storage_to_xfer              (begp:endp)) ; this%frootp_storage_to_xfer              (:) = nan
-    allocate(this%livestemp_storage_to_xfer           (begp:endp)) ; this%livestemp_storage_to_xfer           (:) = nan
-    allocate(this%deadstemp_storage_to_xfer           (begp:endp)) ; this%deadstemp_storage_to_xfer           (:) = nan
-    allocate(this%livecrootp_storage_to_xfer          (begp:endp)) ; this%livecrootp_storage_to_xfer          (:) = nan
-    allocate(this%deadcrootp_storage_to_xfer          (begp:endp)) ; this%deadcrootp_storage_to_xfer          (:) = nan
-    allocate(this%livestemp_to_deadstemp              (begp:endp)) ; this%livestemp_to_deadstemp              (:) = nan
-    allocate(this%livestemp_to_retransp               (begp:endp)) ; this%livestemp_to_retransp               (:) = nan
-    allocate(this%livecrootp_to_deadcrootp            (begp:endp)) ; this%livecrootp_to_deadcrootp            (:) = nan
-    allocate(this%livecrootp_to_retransp              (begp:endp)) ; this%livecrootp_to_retransp              (:) = nan
-    allocate(this%pdeploy                             (begp:endp)) ; this%pdeploy                             (:) = nan
-    allocate(this%pinputs                             (begp:endp)) ; this%pinputs                             (:) = nan
-    allocate(this%poutputs                            (begp:endp)) ; this%poutputs                            (:) = nan
-    allocate(this%wood_harvestp                       (begp:endp)) ; this%wood_harvestp                       (:) = nan
-    allocate(this%fire_ploss                          (begp:endp)) ; this%fire_ploss                          (:) = nan
-    allocate(this%ppool_to_grainp                     (begp:endp)) ; this%ppool_to_grainp                     (:) = nan
-    allocate(this%ppool_to_grainp_storage             (begp:endp)) ; this%ppool_to_grainp_storage             (:) = nan
-    allocate(this%livestemp_to_litter                 (begp:endp)) ; this%livestemp_to_litter                 (:) = nan
-    allocate(this%grainp_to_food                      (begp:endp)) ; this%grainp_to_food                      (:) = nan
-    allocate(this%grainp_xfer_to_grainp               (begp:endp)) ; this%grainp_xfer_to_grainp               (:) = nan
-    allocate(this%grainp_storage_to_xfer              (begp:endp)) ; this%grainp_storage_to_xfer              (:) = nan
-    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = nan
-    allocate(this%fert_p_counter                      (begp:endp)) ; this%fert_p_counter                      (:) = nan
-    allocate(this%crop_seedp_to_leaf                  (begp:endp)) ; this%crop_seedp_to_leaf                  (:) = nan
-    allocate(this%dwt_seedp_to_leaf                   (begp:endp)) ; this%dwt_seedp_to_leaf                   (:) = nan
-    allocate(this%dwt_seedp_to_deadstem               (begp:endp)) ; this%dwt_seedp_to_deadstem               (:) = nan
-    allocate(this%dwt_conv_pflux                      (begp:endp)) ; this%dwt_conv_pflux                      (:) = nan
-    allocate(this%dwt_prod10p_gain                    (begp:endp)) ; this%dwt_prod10p_gain                    (:) = nan
-    allocate(this%dwt_prod100p_gain                   (begp:endp)) ; this%dwt_prod100p_gain                   (:) = nan
-    allocate(this%dwt_crop_productp_gain              (begp:endp)) ; this%dwt_crop_productp_gain              (:) = nan
-    allocate(this%dwt_seedp_to_ppool                  (begp:endp)) ; this%dwt_seedp_to_ppool                  (:) = nan
-    allocate(this%plant_pdemand                       (begp:endp)) ; this%plant_pdemand                       (:) = nan
-    allocate(this%avail_retransp                      (begp:endp)) ; this%avail_retransp                      (:) = nan
-    allocate(this%plant_palloc                        (begp:endp)) ; this%plant_palloc                        (:) = nan
-    allocate(this%sminp_to_plant                      (begp:endp)) ; this%sminp_to_plant                      (:) = nan
-    allocate(this%plant_pdemand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr (:,:) = nan
-    allocate(this%prev_leafp_to_litter                (begp:endp)) ; this%prev_leafp_to_litter                (:) = nan
-    allocate(this%prev_frootp_to_litter               (begp:endp)) ; this%prev_frootp_to_litter               (:) = nan
+    allocate(this%m_leafp_to_litter                   (begp:endp)) ; this%m_leafp_to_litter                   (:) = spval
+    allocate(this%m_frootp_to_litter                  (begp:endp)) ; this%m_frootp_to_litter                  (:) = spval
+    allocate(this%m_leafp_storage_to_litter           (begp:endp)) ; this%m_leafp_storage_to_litter           (:) = spval
+    allocate(this%m_frootp_storage_to_litter          (begp:endp)) ; this%m_frootp_storage_to_litter          (:) = spval
+    allocate(this%m_livestemp_storage_to_litter       (begp:endp)) ; this%m_livestemp_storage_to_litter       (:) = spval
+    allocate(this%m_deadstemp_storage_to_litter       (begp:endp)) ; this%m_deadstemp_storage_to_litter       (:) = spval
+    allocate(this%m_livecrootp_storage_to_litter      (begp:endp)) ; this%m_livecrootp_storage_to_litter      (:) = spval
+    allocate(this%m_deadcrootp_storage_to_litter      (begp:endp)) ; this%m_deadcrootp_storage_to_litter      (:) = spval
+    allocate(this%m_leafp_xfer_to_litter              (begp:endp)) ; this%m_leafp_xfer_to_litter              (:) = spval
+    allocate(this%m_frootp_xfer_to_litter             (begp:endp)) ; this%m_frootp_xfer_to_litter             (:) = spval
+    allocate(this%m_livestemp_xfer_to_litter          (begp:endp)) ; this%m_livestemp_xfer_to_litter          (:) = spval
+    allocate(this%m_deadstemp_xfer_to_litter          (begp:endp)) ; this%m_deadstemp_xfer_to_litter          (:) = spval
+    allocate(this%m_livecrootp_xfer_to_litter         (begp:endp)) ; this%m_livecrootp_xfer_to_litter         (:) = spval
+    allocate(this%m_deadcrootp_xfer_to_litter         (begp:endp)) ; this%m_deadcrootp_xfer_to_litter         (:) = spval
+    allocate(this%m_livestemp_to_litter               (begp:endp)) ; this%m_livestemp_to_litter               (:) = spval
+    allocate(this%m_deadstemp_to_litter               (begp:endp)) ; this%m_deadstemp_to_litter               (:) = spval
+    allocate(this%m_livecrootp_to_litter              (begp:endp)) ; this%m_livecrootp_to_litter              (:) = spval
+    allocate(this%m_deadcrootp_to_litter              (begp:endp)) ; this%m_deadcrootp_to_litter              (:) = spval
+    allocate(this%m_retransp_to_litter                (begp:endp)) ; this%m_retransp_to_litter                (:) = spval
+    allocate(this%m_ppool_to_litter                   (begp:endp)) ; this%m_ppool_to_litter                   (:) = spval
+    allocate(this%hrv_leafp_to_litter                 (begp:endp)) ; this%hrv_leafp_to_litter                 (:) = spval
+    allocate(this%hrv_frootp_to_litter                (begp:endp)) ; this%hrv_frootp_to_litter                (:) = spval
+    allocate(this%hrv_leafp_storage_to_litter         (begp:endp)) ; this%hrv_leafp_storage_to_litter         (:) = spval
+    allocate(this%hrv_frootp_storage_to_litter        (begp:endp)) ; this%hrv_frootp_storage_to_litter        (:) = spval
+    allocate(this%hrv_livestemp_storage_to_litter     (begp:endp)) ; this%hrv_livestemp_storage_to_litter     (:) = spval
+    allocate(this%hrv_deadstemp_storage_to_litter     (begp:endp)) ; this%hrv_deadstemp_storage_to_litter     (:) = spval
+    allocate(this%hrv_livecrootp_storage_to_litter    (begp:endp)) ; this%hrv_livecrootp_storage_to_litter    (:) = spval
+    allocate(this%hrv_deadcrootp_storage_to_litter    (begp:endp)) ; this%hrv_deadcrootp_storage_to_litter    (:) = spval
+    allocate(this%hrv_leafp_xfer_to_litter            (begp:endp)) ; this%hrv_leafp_xfer_to_litter            (:) = spval
+    allocate(this%hrv_frootp_xfer_to_litter           (begp:endp)) ; this%hrv_frootp_xfer_to_litter           (:) = spval
+    allocate(this%hrv_livestemp_xfer_to_litter        (begp:endp)) ; this%hrv_livestemp_xfer_to_litter        (:) = spval
+    allocate(this%hrv_deadstemp_xfer_to_litter        (begp:endp)) ; this%hrv_deadstemp_xfer_to_litter        (:) = spval
+    allocate(this%hrv_livecrootp_xfer_to_litter       (begp:endp)) ; this%hrv_livecrootp_xfer_to_litter       (:) = spval
+    allocate(this%hrv_deadcrootp_xfer_to_litter       (begp:endp)) ; this%hrv_deadcrootp_xfer_to_litter       (:) = spval
+    allocate(this%hrv_livestemp_to_litter             (begp:endp)) ; this%hrv_livestemp_to_litter             (:) = spval
+    allocate(this%hrv_deadstemp_to_prod10p            (begp:endp)) ; this%hrv_deadstemp_to_prod10p            (:) = spval
+    allocate(this%hrv_deadstemp_to_prod100p           (begp:endp)) ; this%hrv_deadstemp_to_prod100p           (:) = spval
+    allocate(this%hrv_leafp_to_prod1p                 (begp:endp)) ; this%hrv_leafp_to_prod1p                 (:) = spval
+    allocate(this%hrv_livestemp_to_prod1p             (begp:endp)) ; this%hrv_livestemp_to_prod1p             (:) = spval
+    allocate(this%hrv_grainp_to_prod1p                (begp:endp)) ; this%hrv_grainp_to_prod1p                (:) = spval
+    allocate(this%hrv_cropp_to_prod1p                 (begp:endp)) ; this%hrv_cropp_to_prod1p                 (:) = spval
+    allocate(this%hrv_livecrootp_to_litter            (begp:endp)) ; this%hrv_livecrootp_to_litter            (:) = spval
+    allocate(this%hrv_deadcrootp_to_litter            (begp:endp)) ; this%hrv_deadcrootp_to_litter            (:) = spval
+    allocate(this%hrv_retransp_to_litter              (begp:endp)) ; this%hrv_retransp_to_litter              (:) = spval
+    allocate(this%hrv_ppool_to_litter                 (begp:endp)) ; this%hrv_ppool_to_litter                 (:) = spval
+    allocate(this%m_leafp_to_fire                     (begp:endp)) ; this%m_leafp_to_fire                     (:) = spval
+    allocate(this%m_leafp_storage_to_fire             (begp:endp)) ; this%m_leafp_storage_to_fire             (:) = spval
+    allocate(this%m_leafp_xfer_to_fire                (begp:endp)) ; this%m_leafp_xfer_to_fire                (:) = spval
+    allocate(this%m_livestemp_to_fire                 (begp:endp)) ; this%m_livestemp_to_fire                 (:) = spval
+    allocate(this%m_livestemp_storage_to_fire         (begp:endp)) ; this%m_livestemp_storage_to_fire         (:) = spval
+    allocate(this%m_livestemp_xfer_to_fire            (begp:endp)) ; this%m_livestemp_xfer_to_fire            (:) = spval
+    allocate(this%m_deadstemp_to_fire                 (begp:endp)) ; this%m_deadstemp_to_fire                 (:) = spval
+    allocate(this%m_deadstemp_storage_to_fire         (begp:endp)) ; this%m_deadstemp_storage_to_fire         (:) = spval
+    allocate(this%m_deadstemp_xfer_to_fire            (begp:endp)) ; this%m_deadstemp_xfer_to_fire            (:) = spval
+    allocate(this%m_frootp_to_fire                    (begp:endp)) ; this%m_frootp_to_fire                    (:) = spval
+    allocate(this%m_frootp_storage_to_fire            (begp:endp)) ; this%m_frootp_storage_to_fire            (:) = spval
+    allocate(this%m_frootp_xfer_to_fire               (begp:endp)) ; this%m_frootp_xfer_to_fire               (:) = spval
+    allocate(this%m_livecrootp_to_fire                (begp:endp)) ; this%m_livecrootp_to_fire                (:) = spval
+    allocate(this%m_livecrootp_storage_to_fire        (begp:endp)) ; this%m_livecrootp_storage_to_fire        (:) = spval
+    allocate(this%m_livecrootp_xfer_to_fire           (begp:endp)) ; this%m_livecrootp_xfer_to_fire           (:) = spval
+    allocate(this%m_deadcrootp_to_fire                (begp:endp)) ; this%m_deadcrootp_to_fire                (:) = spval
+    allocate(this%m_deadcrootp_storage_to_fire        (begp:endp)) ; this%m_deadcrootp_storage_to_fire        (:) = spval
+    allocate(this%m_deadcrootp_xfer_to_fire           (begp:endp)) ; this%m_deadcrootp_xfer_to_fire           (:) = spval
+    allocate(this%m_retransp_to_fire                  (begp:endp)) ; this%m_retransp_to_fire                  (:) = spval
+    allocate(this%m_ppool_to_fire                     (begp:endp)) ; this%m_ppool_to_fire                     (:) = spval
+    allocate(this%m_leafp_to_litter_fire              (begp:endp)) ; this%m_leafp_to_litter_fire              (:) = spval
+    allocate(this%m_leafp_storage_to_litter_fire      (begp:endp)) ; this%m_leafp_storage_to_litter_fire      (:) = spval
+    allocate(this%m_leafp_xfer_to_litter_fire         (begp:endp)) ; this%m_leafp_xfer_to_litter_fire         (:) = spval
+    allocate(this%m_livestemp_to_litter_fire          (begp:endp)) ; this%m_livestemp_to_litter_fire          (:) = spval
+    allocate(this%m_livestemp_storage_to_litter_fire  (begp:endp)) ; this%m_livestemp_storage_to_litter_fire  (:) = spval
+    allocate(this%m_livestemp_xfer_to_litter_fire     (begp:endp)) ; this%m_livestemp_xfer_to_litter_fire     (:) = spval
+    allocate(this%m_livestemp_to_deadstemp_fire       (begp:endp)) ; this%m_livestemp_to_deadstemp_fire       (:) = spval
+    allocate(this%m_deadstemp_to_litter_fire          (begp:endp)) ; this%m_deadstemp_to_litter_fire          (:) = spval
+    allocate(this%m_deadstemp_storage_to_litter_fire  (begp:endp)) ; this%m_deadstemp_storage_to_litter_fire  (:) = spval
+    allocate(this%m_deadstemp_xfer_to_litter_fire     (begp:endp)) ; this%m_deadstemp_xfer_to_litter_fire     (:) = spval
+    allocate(this%m_frootp_to_litter_fire             (begp:endp)) ; this%m_frootp_to_litter_fire             (:) = spval
+    allocate(this%m_frootp_storage_to_litter_fire     (begp:endp)) ; this%m_frootp_storage_to_litter_fire     (:) = spval
+    allocate(this%m_frootp_xfer_to_litter_fire        (begp:endp)) ; this%m_frootp_xfer_to_litter_fire        (:) = spval
+    allocate(this%m_livecrootp_to_litter_fire         (begp:endp)) ; this%m_livecrootp_to_litter_fire         (:) = spval
+    allocate(this%m_livecrootp_storage_to_litter_fire (begp:endp)) ; this%m_livecrootp_storage_to_litter_fire (:) = spval
+    allocate(this%m_livecrootp_xfer_to_litter_fire    (begp:endp)) ; this%m_livecrootp_xfer_to_litter_fire    (:) = spval
+    allocate(this%m_livecrootp_to_deadcrootp_fire     (begp:endp)) ; this%m_livecrootp_to_deadcrootp_fire     (:) = spval
+    allocate(this%m_deadcrootp_to_litter_fire         (begp:endp)) ; this%m_deadcrootp_to_litter_fire         (:) = spval
+    allocate(this%m_deadcrootp_storage_to_litter_fire (begp:endp)) ; this%m_deadcrootp_storage_to_litter_fire (:) = spval
+    allocate(this%m_deadcrootp_xfer_to_litter_fire    (begp:endp)) ; this%m_deadcrootp_xfer_to_litter_fire    (:) = spval
+    allocate(this%m_retransp_to_litter_fire           (begp:endp)) ; this%m_retransp_to_litter_fire           (:) = spval
+    allocate(this%m_ppool_to_litter_fire              (begp:endp)) ; this%m_ppool_to_litter_fire              (:) = spval
+    allocate(this%leafp_xfer_to_leafp                 (begp:endp)) ; this%leafp_xfer_to_leafp                 (:) = spval
+    allocate(this%frootp_xfer_to_frootp               (begp:endp)) ; this%frootp_xfer_to_frootp               (:) = spval
+    allocate(this%livestemp_xfer_to_livestemp         (begp:endp)) ; this%livestemp_xfer_to_livestemp         (:) = spval
+    allocate(this%deadstemp_xfer_to_deadstemp         (begp:endp)) ; this%deadstemp_xfer_to_deadstemp         (:) = spval
+    allocate(this%livecrootp_xfer_to_livecrootp       (begp:endp)) ; this%livecrootp_xfer_to_livecrootp       (:) = spval
+    allocate(this%deadcrootp_xfer_to_deadcrootp       (begp:endp)) ; this%deadcrootp_xfer_to_deadcrootp       (:) = spval
+    allocate(this%leafp_to_litter                     (begp:endp)) ; this%leafp_to_litter                     (:) = spval
+    allocate(this%leafp_to_retransp                   (begp:endp)) ; this%leafp_to_retransp                   (:) = spval
+    allocate(this%frootp_to_retransp                  (begp:endp)) ; this%frootp_to_retransp                  (:) = spval
+    allocate(this%frootp_to_litter                    (begp:endp)) ; this%frootp_to_litter                    (:) = spval
+    allocate(this%retransp_to_ppool                   (begp:endp)) ; this%retransp_to_ppool                   (:) = spval
+    allocate(this%sminp_to_ppool                      (begp:endp)) ; this%sminp_to_ppool                      (:) = spval
+    allocate(this%biochem_pmin_to_plant               (begp:endp)) ; this%biochem_pmin_to_plant               (:) = spval
+    allocate(this%ppool_to_leafp                      (begp:endp)) ; this%ppool_to_leafp                      (:) = spval
+    allocate(this%ppool_to_leafp_storage              (begp:endp)) ; this%ppool_to_leafp_storage              (:) = spval
+    allocate(this%ppool_to_frootp                     (begp:endp)) ; this%ppool_to_frootp                     (:) = spval
+    allocate(this%ppool_to_frootp_storage             (begp:endp)) ; this%ppool_to_frootp_storage             (:) = spval
+    allocate(this%ppool_to_livestemp                  (begp:endp)) ; this%ppool_to_livestemp                  (:) = spval
+    allocate(this%ppool_to_livestemp_storage          (begp:endp)) ; this%ppool_to_livestemp_storage          (:) = spval
+    allocate(this%ppool_to_deadstemp                  (begp:endp)) ; this%ppool_to_deadstemp                  (:) = spval
+    allocate(this%ppool_to_deadstemp_storage          (begp:endp)) ; this%ppool_to_deadstemp_storage          (:) = spval
+    allocate(this%ppool_to_livecrootp                 (begp:endp)) ; this%ppool_to_livecrootp                 (:) = spval
+    allocate(this%ppool_to_livecrootp_storage         (begp:endp)) ; this%ppool_to_livecrootp_storage         (:) = spval
+    allocate(this%ppool_to_deadcrootp                 (begp:endp)) ; this%ppool_to_deadcrootp                 (:) = spval
+    allocate(this%ppool_to_deadcrootp_storage         (begp:endp)) ; this%ppool_to_deadcrootp_storage         (:) = spval
+    allocate(this%leafp_storage_to_xfer               (begp:endp)) ; this%leafp_storage_to_xfer               (:) = spval
+    allocate(this%frootp_storage_to_xfer              (begp:endp)) ; this%frootp_storage_to_xfer              (:) = spval
+    allocate(this%livestemp_storage_to_xfer           (begp:endp)) ; this%livestemp_storage_to_xfer           (:) = spval
+    allocate(this%deadstemp_storage_to_xfer           (begp:endp)) ; this%deadstemp_storage_to_xfer           (:) = spval
+    allocate(this%livecrootp_storage_to_xfer          (begp:endp)) ; this%livecrootp_storage_to_xfer          (:) = spval
+    allocate(this%deadcrootp_storage_to_xfer          (begp:endp)) ; this%deadcrootp_storage_to_xfer          (:) = spval
+    allocate(this%livestemp_to_deadstemp              (begp:endp)) ; this%livestemp_to_deadstemp              (:) = spval
+    allocate(this%livestemp_to_retransp               (begp:endp)) ; this%livestemp_to_retransp               (:) = spval
+    allocate(this%livecrootp_to_deadcrootp            (begp:endp)) ; this%livecrootp_to_deadcrootp            (:) = spval
+    allocate(this%livecrootp_to_retransp              (begp:endp)) ; this%livecrootp_to_retransp              (:) = spval
+    allocate(this%pdeploy                             (begp:endp)) ; this%pdeploy                             (:) = spval
+    allocate(this%pinputs                             (begp:endp)) ; this%pinputs                             (:) = spval
+    allocate(this%poutputs                            (begp:endp)) ; this%poutputs                            (:) = spval
+    allocate(this%wood_harvestp                       (begp:endp)) ; this%wood_harvestp                       (:) = spval
+    allocate(this%fire_ploss                          (begp:endp)) ; this%fire_ploss                          (:) = spval
+    allocate(this%ppool_to_grainp                     (begp:endp)) ; this%ppool_to_grainp                     (:) = spval
+    allocate(this%ppool_to_grainp_storage             (begp:endp)) ; this%ppool_to_grainp_storage             (:) = spval
+    allocate(this%livestemp_to_litter                 (begp:endp)) ; this%livestemp_to_litter                 (:) = spval
+    allocate(this%grainp_to_food                      (begp:endp)) ; this%grainp_to_food                      (:) = spval
+    allocate(this%grainp_xfer_to_grainp               (begp:endp)) ; this%grainp_xfer_to_grainp               (:) = spval
+    allocate(this%grainp_storage_to_xfer              (begp:endp)) ; this%grainp_storage_to_xfer              (:) = spval
+    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = spval
+    allocate(this%fert_p_counter                      (begp:endp)) ; this%fert_p_counter                      (:) = spval
+    allocate(this%crop_seedp_to_leaf                  (begp:endp)) ; this%crop_seedp_to_leaf                  (:) = spval
+    allocate(this%dwt_seedp_to_leaf                   (begp:endp)) ; this%dwt_seedp_to_leaf                   (:) = spval
+    allocate(this%dwt_seedp_to_deadstem               (begp:endp)) ; this%dwt_seedp_to_deadstem               (:) = spval
+    allocate(this%dwt_conv_pflux                      (begp:endp)) ; this%dwt_conv_pflux                      (:) = spval
+    allocate(this%dwt_prod10p_gain                    (begp:endp)) ; this%dwt_prod10p_gain                    (:) = spval
+    allocate(this%dwt_prod100p_gain                   (begp:endp)) ; this%dwt_prod100p_gain                   (:) = spval
+    allocate(this%dwt_crop_productp_gain              (begp:endp)) ; this%dwt_crop_productp_gain              (:) = spval
+    allocate(this%dwt_seedp_to_ppool                  (begp:endp)) ; this%dwt_seedp_to_ppool                  (:) = spval
+    allocate(this%plant_pdemand                       (begp:endp)) ; this%plant_pdemand                       (:) = spval
+    allocate(this%avail_retransp                      (begp:endp)) ; this%avail_retransp                      (:) = spval
+    allocate(this%plant_palloc                        (begp:endp)) ; this%plant_palloc                        (:) = spval
+    allocate(this%sminp_to_plant                      (begp:endp)) ; this%sminp_to_plant                      (:) = spval
+    allocate(this%plant_pdemand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr (:,:) = spval
+    allocate(this%prev_leafp_to_litter                (begp:endp)) ; this%prev_leafp_to_litter                (:) = spval
+    allocate(this%prev_frootp_to_litter               (begp:endp)) ; this%prev_frootp_to_litter               (:) = spval
     allocate(this%supplement_to_plantp                (begp:endp)) ; this%supplement_to_plantp                (:) = 0.d0
-    allocate(this%gap_ploss_litter                    (begp:endp)) ; this%gap_ploss_litter                    (:) = nan
-    allocate(this%fire_ploss_litter                   (begp:endp)) ; this%fire_ploss_litter                   (:) = nan
-    allocate(this%hrv_ploss_litter                    (begp:endp)) ; this%hrv_ploss_litter                    (:) = nan
-    allocate(this%sen_ploss_litter                    (begp:endp)) ; this%sen_ploss_litter                    (:) = nan
+    allocate(this%gap_ploss_litter                    (begp:endp)) ; this%gap_ploss_litter                    (:) = spval
+    allocate(this%fire_ploss_litter                   (begp:endp)) ; this%fire_ploss_litter                   (:) = spval
+    allocate(this%hrv_ploss_litter                    (begp:endp)) ; this%hrv_ploss_litter                    (:) = spval
+    allocate(this%sen_ploss_litter                    (begp:endp)) ; this%sen_ploss_litter                    (:) = spval
 
 
     !-----------------------------------------------------------------------
@@ -10596,76 +10596,76 @@ module VegetationDataType
     integer :: j,c ! indices
     logical :: readvar      ! determine if variable is on initial file
     !------------------------------------------------------------------------
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag, varname='fert_p_counter', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fert_p_counter)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='fert_p', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fert_p)
     end if
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer_to_grainp', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain P growth from storage', units='gP/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer_to_grainp)
     end if
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='livestemp_to_litter', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='livestem P to litter', units='gP/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%livestemp_to_litter)
     end if
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_to_food', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain P to food', units='gP/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_to_food)
     end if
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='ppool_to_grainp', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='allocation to grain P', units='gP/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%ppool_to_grainp)
     end if
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='ppool_to_grainp_storage', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='allocation to grain P storage', units='gP/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%ppool_to_grainp_storage)
     end if
-
+!#py
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag, varname='grainp_storage_to_xfer', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='grain P shift storage to transfer', units='gP/m2/s', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_storage_to_xfer)
     end if
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='plant_pdemand', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_pdemand)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='avail_retransp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%avail_retransp)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='plant_palloc', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_palloc)
-
+!#py
   end subroutine veg_pf_restart
 
 

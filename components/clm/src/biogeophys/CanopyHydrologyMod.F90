@@ -12,10 +12,10 @@ module CanopyHydrologyMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
-  !#py use shr_infnan_mod    , only : isnan => shr_infnan_isnan
+  use shr_infnan_mod    , only : isnan => shr_infnan_isnan
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
-  !#py use abortutils        , only : endrun
+  use abortutils        , only : endrun
   use clm_varctl        , only : iulog, tw_irr
   use LandunitType      , only : lun_pp
   use atm2lndType       , only : atm2lnd_type
@@ -68,7 +68,6 @@ contains
     integer :: unitn                ! unit for namelist file
     character(len=32) :: subname = 'CanopyHydrology_readnl'  ! subroutine name
     !-----------------------------------------------------------------------
-
     namelist / clm_canopyhydrology_inparm / oldfflag
 
     ! ----------------------------------------------------------------------
@@ -120,7 +119,7 @@ contains
      use clm_varpar         , only : nlevsoi,nlevsno
      use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain !NEW
-     use clm_time_manager   , only : get_step_size
+     !#py use clm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
      !
      ! !ARGUMENTS:
@@ -261,16 +260,16 @@ contains
        !--------------- temp solution for the irrigation mapping issue, if ELM and MOSART share the same grid, no such problem
        gridnum = bounds%endg - bounds%begg + 1 !number of grid on this processer
         do pp = bounds%begp,bounds%endp
-             if (isnan(irrig_rate (pp))) then  !change NAN (if any) to zero so that the grid level irrig_rate can be calculated
+             if (not (irrig_rate (pp) == irrig_rate(pp)) ) then  !change NAN (if any) to zero so that the grid level irrig_rate can be calculated
                irrig_rate(pp)=0._r8
              endif
         end do
 
        ! Find gridcell level irrigation rate based on pft level
        call p2g(bounds, &
-         irrig_rate (bounds%begp:bounds%endp), &
-         irrig_rate_grid (bounds%begg:bounds%endg), &
-         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+         irrig_rate , &
+         irrig_rate_grid , &
+         p2c_scale_type=0, c2l_scale_type= 0, l2g_scale_type=0)
 
 		! initialize the qflx_irrig_grid
          do gg = bounds%begg,bounds%endg
@@ -299,7 +298,7 @@ contains
           g = currentg + gg - 1
 
           !!
-          if (isnan(atm2lnd_vars%supply_grc(g))) then  !change NAN (if any) to zero
+          if (not(atm2lnd_vars%supply_grc(g) == atm2lnd_vars%supply_grc(g))) then  !change NAN (if any) to zero
             atm2lnd_vars%supply_grc(g)=0._r8
           end if
 
@@ -410,20 +409,20 @@ contains
           ! Precipitation onto ground (kg/(m2 s))
           if (ctype(c) /= icol_sunwall .and. ctype(c) /= icol_shadewall) then
              if (frac_veg_nosno(p) == 0) then
-                qflx_prec_grnd_snow(p) = forc_snow(t)
-                qflx_prec_grnd_rain(p) = forc_rain(t)
+                qflx_prec_grnd_snow = forc_snow(t)
+                qflx_prec_grnd_rain = forc_rain(t)
                 qflx_dirct_rain(p) = forc_rain(t)
                 qflx_leafdrip(p) = 0._r8
              else
-                qflx_prec_grnd_snow(p) = qflx_through_snow(p) + (qflx_candrip(p) * fracsnow(p))
-                qflx_prec_grnd_rain(p) = qflx_through_rain(p) + (qflx_candrip(p) * fracrain(p))
-                qflx_dirct_rain(p) = qflx_through_rain(p)
-                qflx_leafdrip(p) = qflx_candrip(p) * fracrain(p)
+                qflx_prec_grnd_snow = qflx_through_snow + (qflx_candrip * fracsnow)
+                qflx_prec_grnd_rain = qflx_through_rain + (qflx_candrip * fracrain)
+                qflx_dirct_rain(p) = qflx_through_rain
+                qflx_leafdrip(p) = qflx_candrip * fracrain
              end if
              ! Urban sunwall and shadewall have no intercepted precipitation
           else
-             qflx_prec_grnd_snow(p) = 0.
-             qflx_prec_grnd_rain(p) = 0.
+             qflx_prec_grnd_snow = 0.
+             qflx_prec_grnd_rain = 0.
              qflx_dirct_rain(p) = 0._r8
              qflx_leafdrip(p) = 0._r8
           end if
@@ -471,23 +470,23 @@ contains
 
                    qflx_grnd_irrig(p) = qflx_real_irrig(p) - qflx_surf_irrig(p)
                    !groundwater irrigation may be less than 'ldomain%f_grd(g)*qflx_irrig(p)' if real irrigation is greater than demand
-                   qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) + qflx_over_supply(p)
+                   qflx_prec_grnd_rain = qflx_prec_grnd_rain + qflx_real_irrig(p) + qflx_over_supply(p)
                    !applying irrigation, the over supply is included to balance water
 
              else !this pft doesn't need water
-               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p)
+               qflx_prec_grnd_rain = qflx_prec_grnd_rain
                qflx_real_irrig(p) = 0 ! this should be zero, just leave it here for testing
                qflx_surf_irrig(p) = 0
                qflx_grnd_irrig(p) = 0
                qflx_over_supply(p) = 0
 
                if (qflx_irrig(p) > 0) then
-                 write(iulog,*)'warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
+                 !#py write(iulog,*)'warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
                end if
              end if
 
           else  ! one way coupling
-             qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p)
+             qflx_prec_grnd_rain = qflx_prec_grnd_rain + ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p)
              qflx_real_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p)
 
                qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)

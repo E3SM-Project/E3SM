@@ -200,17 +200,14 @@ contains
        call shr_sys_flush(iulog)
     endif
     if (create_glacier_mec_landunit) then
-        print *,"surfrd_get_grid"
        call surfrd_get_grid(begg, endg, ldomain, fatmlndfrc, fglcmask)
     else
-       print *,"else surfrd_get_grid"
        call surfrd_get_grid(begg, endg, ldomain, fatmlndfrc)
     endif
     if (masterproc) then
        call domain_check(ldomain)
     endif
     ldomain%mask = 1  !!! TODO - is this needed?
-    print *, "finished ldomain read"
     ! Get topo if appropriate (set ldomain%topo)
 
     if (flndtopo /= " ") then
@@ -224,9 +221,7 @@ contains
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban
-    print *, "urban input"
     call UrbanInput(begg, endg, mode='initialize')
-    print*,"allocated surface grid"
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
     allocate (wt_lunit     (begg:endg, max_lunit           ))
@@ -288,9 +283,7 @@ contains
     endif
 
     ! *** Get ALL processor bounds - for gridcells, landunit, columns and patches ***
-
     call get_proc_bounds(bounds_proc)
-
     ! Allocate memory for subgrid data structures
     ! This is needed here BEFORE the following call to initGridcells
     ! Note that the assumption is made that none of the subgrid initialization
@@ -338,9 +331,8 @@ contains
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
-
     nclumps = get_proc_clumps()
-
+        
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -576,7 +568,7 @@ contains
     call hist_addfld1d (fname='ZII', units='m', &
          avgflag='A', long_name='convective boundary height', &
          ptr_col=col_pp%zii, default='inactive')
-
+    
     call clm_inst_biogeophys(bounds_proc)
 
     if(use_betr)then
@@ -618,7 +610,6 @@ contains
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
     call clm_inst_biogeochem(bounds_proc)
-
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
     ! ------------------------------------------------------------------------
@@ -647,7 +638,6 @@ contains
     call print_accum_fields()
 
     call t_stopf('init_accflds')
-
     ! ------------------------------------------------------------------------
     ! Initializate dynamic subgrid weights (for prescribed transient Patches,
     ! and/or dynamic landunits); note that these will be overwritten in a
@@ -674,7 +664,6 @@ contains
        ! differences in LAI can be computed
        call SatellitePhenologyInit(bounds_proc)
     end if
-
     ! ------------------------------------------------------------------------
     ! On restart only - process the history namelist.
     ! ------------------------------------------------------------------------

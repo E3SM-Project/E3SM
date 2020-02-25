@@ -433,7 +433,7 @@ flags should be captured within MPAS CMake files.
     <append MODEL="dwav"> -Mnovect </append>
     <append MODEL="dice"> -Mnovect </append>
     <append MODEL="docn"> -Mnovect </append>
-    <append MODEL="clm">-O0 -ta=tesla:deepcopy,cc70,debug -Mcuda</append>
+    <append MODEL="clm">-O0 -ta=tesla:deepcopy,cc70 -Mcuda</append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -949,22 +949,23 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="excl" COMPILER="pgi">
    <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
-   <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH> 	
+   <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+   <LAPACK_LIBDIR>$ENV{BLASLAPACK_DIR}</LAPACK_LIBDIR>   
    <LDFLAGS>
     <append MODEL="driver">-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
     <append MODEL="driver">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
-    <append MODEL="driver">-L$ENV{BLASLAPACK_DIR} -llapack -lblas</append>
+    <append MODEL="driver">-L$(LAPACK_LIBDIR) -llapack -lblas</append>
     <append MODEL="driver">-acc -Mcuda</append>
   </LDFLAGS>
   <FFLAGS>
 	  <append MODEL="clm"></append>
   </FFLAGS>
-  <SFC>$(FC_ROOT)/bin/pgfortran</SFC>
-  <SCC>$(CC_ROOT)/bin/pgcc</SCC>
-  <SCXX>$(CC_ROOT)/bin/pgc++</SCXX>
-  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
-  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
-  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
+  <SFC>$ENV{FC_ROOT}/bin/pgfortran</SFC>
+  <SCC>$ENV{CC_ROOT}/bin/pgcc</SCC>
+  <SCXX>$ENV{CC_ROOT}/bin/pgc++</SCXX>
+  <MPICC>$ENV{MPI_ROOT}/bin/mpicc</MPICC>
+  <MPICXX>$ENV{MPI_ROOT}/bin/mpicxx</MPICXX>
+  <MPIFC>$ENV{MPI_ROOT}/bin/mpifort</MPIFC>
 </compiler>
 
 

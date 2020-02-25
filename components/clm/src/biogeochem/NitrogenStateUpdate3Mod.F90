@@ -13,8 +13,6 @@ module NitrogenStateUpdate3Mod
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use clm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use CNNitrogenFLuxType  , only : nitrogenflux_type
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationDataType  , only : veg_ns, veg_nf
   ! bgc interface & pflotran:
@@ -47,8 +45,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     real(r8)                  , intent(in)   :: dt         ! radiation time step (seconds)
 
     !

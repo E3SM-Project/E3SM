@@ -131,8 +131,9 @@ contains
     ! Initialize clm MPI communicator
 
     call spmd_init( mpicom_lnd, LNDID )
+    #ifdef _OPENACC
     call acc_initialization()
-
+    #endif
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
@@ -285,9 +286,11 @@ contains
     call mct_aVect_zero(l2x_l)
 
     ! Finish initializing clm
-
+    print *, " call initialize2 "
     call initialize2()
+    print *, "call initialize3"
     call initialize3()
+    print *, "done with initialize3"
 
     ! Check that clm internal dtime aligns with clm coupling interval
 

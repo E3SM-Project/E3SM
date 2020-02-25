@@ -51,6 +51,7 @@ contains
        if (abs(sum(arr(nl,:)) - 1._r8) > eps) then
           found = .true.
           nindx = nl
+          print *, nindx
           exit
        end if
     end do

@@ -428,7 +428,7 @@ contains
          dim1name='gridcell', &
          long_name='surface watertotal water storage at the beginning of a month', units='mm', &
           interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg)
-
+!#py
   end subroutine grc_ws_restart
   !------------------------------------------------------------------------
   subroutine grc_ws_clean(this)
@@ -500,10 +500,10 @@ contains
      ! !LOCAL VARIABLES:
      logical :: readvar   ! determine if variable is on initial file
      !-----------------------------------------------------------------------
-
+!#py
      call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
      call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
-
+!#py
    end subroutine grc_wf_restart
 
   !------------------------------------------------------------------------

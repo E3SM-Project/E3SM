@@ -195,13 +195,11 @@ contains
 
     class(cnstate_type) :: this
     type(bounds_type), intent(in) :: bounds
-
     call this%InitAllocate ( bounds )
     if (use_cn) then
        call this%InitHistory ( bounds )
     end if
     call this%InitCold ( bounds )
-
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -290,44 +288,44 @@ contains
     allocate(this%dtrotr_col          (begc:endc))                   ; this%dtrotr_col          (:)   = 0._r8
     allocate(this%trotr1_col          (begc:endc))                   ; this%trotr1_col          (:)   = 0._r8
     allocate(this%trotr2_col          (begc:endc))                   ; this%trotr2_col          (:)   = 0._r8
-    allocate(this%cropf_col           (begc:endc))                   ; this%cropf_col           (:)   = nan
-    allocate(this%baf_crop_col        (begc:endc))                   ; this%baf_crop_col        (:)   = nan
-    allocate(this%baf_peatf_col       (begc:endc))                   ; this%baf_peatf_col       (:)   = nan
-    allocate(this%fbac_col            (begc:endc))                   ; this%fbac_col            (:)   = nan
-    allocate(this%fbac1_col           (begc:endc))                   ; this%fbac1_col           (:)   = nan
-    allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = nan
-    allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = nan
-    allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = nan
-    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = nan
-    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = nan
+    allocate(this%cropf_col           (begc:endc))                   ; this%cropf_col           (:)   = spval
+    allocate(this%baf_crop_col        (begc:endc))                   ; this%baf_crop_col        (:)   = spval
+    allocate(this%baf_peatf_col       (begc:endc))                   ; this%baf_peatf_col       (:)   = spval
+    allocate(this%fbac_col            (begc:endc))                   ; this%fbac_col            (:)   = spval
+    allocate(this%fbac1_col           (begc:endc))                   ; this%fbac1_col           (:)   = spval
+    allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = spval
+    allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = spval
+    allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = spval
+    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = spval
+    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = spval
 
-    allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = nan
-    allocate(this%days_active_patch           (begp:endp)) ;    this%days_active_patch           (:) = nan
-    allocate(this%onset_flag_patch            (begp:endp)) ;    this%onset_flag_patch            (:) = nan
-    allocate(this%onset_counter_patch         (begp:endp)) ;    this%onset_counter_patch         (:) = nan
-    allocate(this%onset_gddflag_patch         (begp:endp)) ;    this%onset_gddflag_patch         (:) = nan
-    allocate(this%onset_fdd_patch             (begp:endp)) ;    this%onset_fdd_patch             (:) = nan
-    allocate(this%onset_gdd_patch             (begp:endp)) ;    this%onset_gdd_patch             (:) = nan
-    allocate(this%onset_swi_patch             (begp:endp)) ;    this%onset_swi_patch             (:) = nan
-    allocate(this%offset_flag_patch           (begp:endp)) ;    this%offset_flag_patch           (:) = nan
-    allocate(this%offset_counter_patch        (begp:endp)) ;    this%offset_counter_patch        (:) = nan
-    allocate(this%offset_fdd_patch            (begp:endp)) ;    this%offset_fdd_patch            (:) = nan
-    allocate(this%offset_swi_patch            (begp:endp)) ;    this%offset_swi_patch            (:) = nan
-    allocate(this%grain_flag_patch            (begp:endp)) ;    this%grain_flag_patch            (:) = nan
-    allocate(this%lgsf_patch                  (begp:endp)) ;    this%lgsf_patch                  (:) = nan
-    allocate(this%bglfr_patch                 (begp:endp)) ;    this%bglfr_patch                 (:) = nan
-    allocate(this%bglfr_leaf_patch            (begp:endp)) ;    this%bglfr_leaf_patch            (:) = nan
-    allocate(this%bglfr_froot_patch           (begp:endp)) ;    this%bglfr_froot_patch           (:) = nan
-    allocate(this%bgtr_patch                  (begp:endp)) ;    this%bgtr_patch                  (:) = nan
-    allocate(this%alloc_pnow_patch            (begp:endp)) ;    this%alloc_pnow_patch            (:) = nan
-    allocate(this%c_allometry_patch           (begp:endp)) ;    this%c_allometry_patch           (:) = nan
-    allocate(this%n_allometry_patch           (begp:endp)) ;    this%n_allometry_patch           (:) = nan
-    allocate(this%tempsum_potential_gpp_patch (begp:endp)) ;    this%tempsum_potential_gpp_patch (:) = nan
-    allocate(this%annsum_potential_gpp_patch  (begp:endp)) ;    this%annsum_potential_gpp_patch  (:) = nan
-    allocate(this%tempmax_retransn_patch      (begp:endp)) ;    this%tempmax_retransn_patch      (:) = nan
-    allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = nan
-    allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = nan
-    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan
+    allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = spval
+    allocate(this%days_active_patch           (begp:endp)) ;    this%days_active_patch           (:) = spval
+    allocate(this%onset_flag_patch            (begp:endp)) ;    this%onset_flag_patch            (:) = spval
+    allocate(this%onset_counter_patch         (begp:endp)) ;    this%onset_counter_patch         (:) = spval
+    allocate(this%onset_gddflag_patch         (begp:endp)) ;    this%onset_gddflag_patch         (:) = spval
+    allocate(this%onset_fdd_patch             (begp:endp)) ;    this%onset_fdd_patch             (:) = spval
+    allocate(this%onset_gdd_patch             (begp:endp)) ;    this%onset_gdd_patch             (:) = spval
+    allocate(this%onset_swi_patch             (begp:endp)) ;    this%onset_swi_patch             (:) = spval
+    allocate(this%offset_flag_patch           (begp:endp)) ;    this%offset_flag_patch           (:) = spval
+    allocate(this%offset_counter_patch        (begp:endp)) ;    this%offset_counter_patch        (:) = spval
+    allocate(this%offset_fdd_patch            (begp:endp)) ;    this%offset_fdd_patch            (:) = spval
+    allocate(this%offset_swi_patch            (begp:endp)) ;    this%offset_swi_patch            (:) = spval
+    allocate(this%grain_flag_patch            (begp:endp)) ;    this%grain_flag_patch            (:) = spval
+    allocate(this%lgsf_patch                  (begp:endp)) ;    this%lgsf_patch                  (:) = spval
+    allocate(this%bglfr_patch                 (begp:endp)) ;    this%bglfr_patch                 (:) = spval
+    allocate(this%bglfr_leaf_patch            (begp:endp)) ;    this%bglfr_leaf_patch            (:) = spval
+    allocate(this%bglfr_froot_patch           (begp:endp)) ;    this%bglfr_froot_patch           (:) = spval
+    allocate(this%bgtr_patch                  (begp:endp)) ;    this%bgtr_patch                  (:) = spval
+    allocate(this%alloc_pnow_patch            (begp:endp)) ;    this%alloc_pnow_patch            (:) = spval
+    allocate(this%c_allometry_patch           (begp:endp)) ;    this%c_allometry_patch           (:) = spval
+    allocate(this%n_allometry_patch           (begp:endp)) ;    this%n_allometry_patch           (:) = spval
+    allocate(this%tempsum_potential_gpp_patch (begp:endp)) ;    this%tempsum_potential_gpp_patch (:) = spval
+    allocate(this%annsum_potential_gpp_patch  (begp:endp)) ;    this%annsum_potential_gpp_patch  (:) = spval
+    allocate(this%tempmax_retransn_patch      (begp:endp)) ;    this%tempmax_retransn_patch      (:) = spval
+    allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = spval
+    allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = spval
+    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = spval
 
 
     !! add phosphorus -X.YANG
@@ -690,7 +688,7 @@ contains
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
-  subroutine initCold(this, bounds)
+  subroutine InitCold(this, bounds)
     !
     ! !USES:
     use spmdMod    , only : masterproc
@@ -757,7 +755,6 @@ contains
     ! --------------------------------------------------------------------
     ! Read in GDP data
     ! --------------------------------------------------------------------
-
     allocate(gdp(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='gdp', flag='read', data=gdp, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -772,7 +769,6 @@ contains
     ! --------------------------------------------------------------------
     ! Read in peatf data
     ! --------------------------------------------------------------------
-
     allocate(peatf(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='peatf', flag='read', data=peatf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -869,7 +865,6 @@ contains
        deallocate(fert_end_rdin)
 
     end if
-
     ! --------------------------------------------------------------------
 
     ! --------------------------------------------------------------------
@@ -886,7 +881,6 @@ contains
        this%abm_lf_col(c) = abm(g)
     end do
     deallocate(abm)
-
     ! Close file
 
     call ncd_pio_closefile(ncid)
@@ -905,6 +899,7 @@ contains
 
     ! Read soil phosphorus pool Qing Z. 2017
     this%pdatasets_present = .true.
+    
     allocate(labp_g(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='LABILE_P', flag='read', data=labp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -916,7 +911,6 @@ contains
        end do
     end if
     deallocate(labp_g)
-
     allocate(secp_g(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='SECONDARY_P', flag='read', data=secp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -928,7 +922,6 @@ contains
        end do
     end if
     deallocate(secp_g)
-
     allocate(occp_g(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='OCCLUDED_P', flag='read', data=occp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -940,7 +933,6 @@ contains
        end do
     end if
     deallocate(occp_g)
-
     allocate(prip_g(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='APATITE_P', flag='read', data=prip_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -957,7 +949,6 @@ contains
     ! Initialize terms needed for dust model
     ! TODO - move these terms to DUSTMod module variables
     ! --------------------------------------------------------------------
-
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
        if (lun_pp%ifspecial(l)) then
@@ -1136,158 +1127,158 @@ contains
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     !-----------------------------------------------------------------------
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='dormant_flag', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='dormancy flag', units='unitless', &
          interpinic_flag='interp', readvar=readvar, data=this%dormant_flag_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='days_active', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='number of days since last dormancy', units='days' , &
          interpinic_flag='interp', readvar=readvar, data=this%days_active_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='onset_flag', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='flag if critical growing degree-day sum is exceeded', units='unitless' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_flag_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='onset_counter', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='onset days counter', units='sec' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_counter_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='onset_gddflag', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='onset flag for growing degree day sum', units='' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_gddflag_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='onset_fdd', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='onset freezing degree days counter', units='days' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_fdd_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='onset_gdd', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='onset growing degree days', units='days' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_gdd_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='onset_swi', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='onset soil water index', units='days' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_swi_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='offset_flag', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='offset flag', units='unitless' , &
          interpinic_flag='interp', readvar=readvar, data=this%offset_flag_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='offset_counter', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='offset days counter', units='sec' , &
          interpinic_flag='interp', readvar=readvar, data=this%offset_counter_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='offset_fdd', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='offset freezing degree days counter', units='days' , &
          interpinic_flag='interp', readvar=readvar, data=this%offset_fdd_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='offset_swi', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%offset_swi_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='lgsf', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%lgsf_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='bglfr', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%bglfr_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='bglfr_leaf', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%bglfr_leaf_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='bglfr_froot', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%bglfr_froot_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='bgtr', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%bgtr_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='annavg_t2m', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annavg_t2m_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tempavg_t2m', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tempavg_t2m_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='alloc_pnow', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%alloc_pnow_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='c_allometry', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%c_allometry_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='n_allometry', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%n_allometry_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tempsum_potential_gpp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tempsum_potential_gpp_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='annsum_potential_gpp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annsum_potential_gpp_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tempmax_retransn', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tempmax_retransn_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='annmax_retransn', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annmax_retransn_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='downreg', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%downreg_patch)
-
-
+!#py
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='p_allometry', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%p_allometry_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='tempmax_retransp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tempmax_retransp_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='annmax_retransp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annmax_retransp_patch)
-
+!#py
     if (use_vertsoilc) then
        ptr2d => this%fpi_vr_col
        call restartvar(ncid=ncid, flag=flag, varname='fpi_vr', xtype=ncd_double,  &
@@ -1311,7 +1302,7 @@ contains
             long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
-
+!#py
     if (use_vertsoilc) then
        ptr2d => this%som_adv_coef_col
        call restartvar(ncid=ncid, flag=flag, varname='som_adv_coef_vr', xtype=ncd_double,  &
@@ -1319,7 +1310,7 @@ contains
             long_name='SOM advective flux', units='m/s', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     end if
-
+!#py
     if (use_vertsoilc) then
        ptr2d => this%som_diffus_coef_col
        call restartvar(ncid=ncid, flag=flag, varname='som_diffus_coef_vr', xtype=ncd_double,  &
@@ -1327,101 +1318,101 @@ contains
             long_name='SOM diffusivity due to bio/cryo-turbation',  units='m^2/s', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     end if
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='fpg', xtype=ncd_double,  &
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%fpg_col)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='fpg_p', xtype=ncd_double,  &
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%fpg_p_col)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='annsum_counter', xtype=ncd_double,  &
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annsum_counter_col)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='burndate', xtype=ncd_int,  &
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%burndate_patch)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='lfc', xtype=ncd_double,  &
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%lfc_col)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='cannavg_t2m', xtype=ncd_double,  &
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annavg_t2m_col)
-
+!#py
     ptr2d => this%scalaravg_col
     call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
             long_name='fraction of potential immobilization of phosphorus', units='unitless', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
-
+!#py
     if (crop_prog) then
-
-
+!#py
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='htmx', xtype=ncd_double,  &
             dim1name='pft', long_name='max height attained by a crop during year', units='m', &
             interpinic_flag='interp', readvar=readvar, data=this%htmx_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='peaklai', xtype=ncd_int,  &
             dim1name='pft', long_name='Flag if at max allowed LAI or not', &
             flag_values=(/0,1/), nvalid_range=(/0,1/), &
             flag_meanings=(/'NOT-at-peak', 'AT_peak-LAI' /) , &
             interpinic_flag='interp', readvar=readvar, data=this%peaklai_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='idop', xtype=ncd_int,  &
             dim1name='pft', long_name='Date of planting', units='jday', nvalid_range=(/1,366/), &
             interpinic_flag='interp', readvar=readvar, data=this%idop_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='aleaf', xtype=ncd_double,  &
             dim1name='pft', long_name='leaf allocation coefficient', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%aleaf_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='aleafi', xtype=ncd_double,  &
             dim1name='pft', long_name='Saved leaf allocation coefficient from phase 2', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%aleafi_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='astem', xtype=ncd_double,  &
             dim1name='pft', long_name='stem allocation coefficient', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%astem_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='astemi', xtype=ncd_double,  &
             dim1name='pft', long_name='Saved stem allocation coefficient from phase 2', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%astemi_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='hdidx', xtype=ncd_double,  &
             dim1name='pft', long_name='cold hardening index', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%hdidx_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='cumvd', xtype=ncd_double,  &
             dim1name='pft', long_name='cumulative vernalization d', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%cumvd_patch)
-
+!#py
       call restartvar(ncid=ncid, flag=flag,  varname='gddmaturity', xtype=ncd_double,  &
             dim1name='pft', long_name='Growing degree days needed to harvest', units='ddays', &
             interpinic_flag='interp', readvar=readvar, data=this%gddmaturity_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='huileaf', xtype=ncd_double,  &
             dim1name='pft', long_name='heat unit index needed from planting to leaf emergence', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%huileaf_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag,  varname='huigrain', xtype=ncd_double,  &
             dim1name='pft', long_name='heat unit index needed to reach vegetative maturity', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%huigrain_patch)
-
+!#py
        call restartvar(ncid=ncid, flag=flag, varname='grain_flag', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%grain_flag_patch)
     end if
-
+!#py
     if (use_c14) then
        call restartvar(ncid=ncid, flag=flag, varname='rc14_atm', xtype=ncd_double,  &
             dim1name='pft',    long_name='', units='', &
@@ -1433,21 +1424,21 @@ contains
           end do
        end if
     end if
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='cn_scalar', xtype=ncd_double,  &
             dim1name='pft', long_name='cn_scalar', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cn_scalar)
     call restartvar(ncid=ncid, flag=flag, varname='cp_scalar', xtype=ncd_double,  &
             dim1name='pft', long_name='cp_scalar', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cp_scalar)
-
+!#py
     call restartvar(ncid=ncid, flag=flag, varname='nlim_m', xtype=ncd_double,  &
             dim1name='pft', long_name='cn_scalar_runmean', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cn_scalar_runmean)
     call restartvar(ncid=ncid, flag=flag, varname='plim_m', xtype=ncd_double,  &
             dim1name='pft', long_name='cp_scalar_runmean', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cp_scalar_runmean)
-
+!#py
   end subroutine Restart
 
   !-----------------------------------------------------------------------
@@ -1539,21 +1530,21 @@ contains
     integer :: begp, endp
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
-
+!#py
     begp = bounds%begp; endp = bounds%endp
-
+!#py
     dtime = get_step_size()
     nstep = get_nstep()
     call get_curr_date (year, month, day, secs)
-
+!#py
     ! Allocate needed dynamic memory for single level pft field
-
+!#py
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-
+!#py
     ! Accumulate and extract
     do p = begp,endp
        rbufslp(p) = this%cn_scalar(p)
@@ -1566,7 +1557,7 @@ contains
     call update_accum_field  ('plim_m' , rbufslp             , nstep)
     call extract_accum_field ('plim_m' , this%cp_scalar_runmean  , nstep)
     deallocate(rbufslp)
-
+!#py
   end subroutine UpdateAccVars
 
 

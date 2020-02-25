@@ -12,13 +12,14 @@ Module HydrologyNoDrainageMod
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use EnergyFluxType    , only : energyflux_type
-  use CanopyStateType  , only : canopystate_type
+  use CanopyStateType  , only  : canopystate_type
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws
   use VegetationType    , only : veg_pp
+  use WaterfluxType     , only : waterflux_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -221,7 +222,7 @@ contains
       endif
 
       call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
-           filter_hydrologyc, soilstate_vars, canopystate_vars,energyflux_vars)
+           filter_hydrologyc, soilstate_vars, canopystate_vars, energyflux_vars)
 
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
       !#py if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &

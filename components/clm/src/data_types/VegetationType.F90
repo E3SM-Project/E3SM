@@ -34,8 +34,8 @@ module VegetationType
   ! --------------------------------------------------------
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varcon     , only : ispval
+  !#py use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use clm_varcon     , only : ispval, spval
 
   use clm_varctl     , only : use_fates
   !
@@ -118,7 +118,7 @@ contains
     if (use_fates) then
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
-       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan
+       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = spval
     end if
 
 	end subroutine veg_pp_init

@@ -45,8 +45,6 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(carbonflux_type)  , intent(inout) :: carbonflux_vars
-    !type(carbonstate_type) , intent(inout) :: carbonstate_vars
     type(column_carbon_state),intent(inout):: col_cs
     type(vegetation_carbon_state),intent(inout) :: veg_cs
     type(column_carbon_flux)     ,intent(inout) :: col_cf
@@ -101,7 +99,7 @@ contains
                do j = 1, nlevdecomp
                   do fc = 1, num_soilc
                      c = filter_soilc(fc)
-                     csv2%decomp_cpools_vr(c,j,l) = csv2%decomp_cpools_vr(c,j,l) - ccfv2%decomp_cpools_yield_vr(c,j,l) * dt
+                     col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%decomp_cpools_yield_vr(c,j,l) * dt
                   end do
                end do
             end if

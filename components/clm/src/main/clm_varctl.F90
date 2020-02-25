@@ -453,11 +453,12 @@ module clm_varctl
   !$acc declare copyin(use_cn             )
   !$acc declare copyin(use_crop           )
   !$acc declare copyin(use_snicar_frc     )
+  !$acc declare copyin(use_snicar_ad      )
   !$acc declare copyin(use_vancouver      )
   !$acc declare copyin(use_mexicocity     )
   !$acc declare copyin(use_noio           )
   !$acc declare copyin(use_var_soil_thick )
-
+  !$acc declare copyin(tw_irr)
   !$acc declare copyin(use_vsfm                   )
   !$acc declare copyin(vsfm_use_dynamic_linesearch)
   !$acc declare copyin(vsfm_include_seepage_bc    )

@@ -18,19 +18,11 @@ module PhenologyMod
   use clm_varcon          , only : tfrz
   use abortutils          , only : endrun
   use CanopyStateType     , only : canopystate_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
   use CropType            , only : crop_type
   use VegetationPropertiesType      , only : veg_vp
   use SoilStateType       , only : soilstate_type
   use atm2lndType         , only : atm2lnd_type
-  use TemperatureType     , only : temperature_type
-  use WaterstateType      , only : waterstate_type
-  use PhosphorusFluxType  , only : phosphorusflux_type
-  use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : nu_com
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_cf, col_nf, col_pf
@@ -39,6 +31,7 @@ module PhenologyMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es, veg_ef, veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
+  use timeinfoMod
 
   !
   implicit none
@@ -71,7 +64,7 @@ module PhenologyMod
   ! PhenolParamsInst is populated in readPhenolParams
   type(PnenolParamsType), public ::  PhenolParamsInst
 
-  real(r8) :: dt                            ! radiation time step delta t (seconds)
+  !real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
   real(r8) :: crit_dayl                     ! critical daylength for offset (seconds)
   real(r8) :: crit_dayl_stress              ! critical day length for senescence (stress)
@@ -86,7 +79,6 @@ module PhenologyMod
   real(r8) :: crit_offset_swi               ! water stress days for offset trigger
   real(r8) :: soilpsi_off                   ! water potential for offset trigger (MPa)
   real(r8) :: lwtop                         ! live wood turnover proportion (annual fraction)
-  !$acc declare create(dt              )
   !$acc declare create(fracday         )
   !$acc declare create(crit_dayl       )
   !$acc declare create(crit_dayl_stress)
@@ -136,7 +128,7 @@ contains
      ! !USES:
      use ncdio_pio    , only: file_desc_t,ncd_io
      use clm_varcon   , only: secspday
-
+!#py
      ! !ARGUMENTS:
      implicit none
      type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -148,7 +140,7 @@ contains
      real(r8)           :: tempr ! temporary to read in parameter
      character(len=100) :: tString ! temp. var for reading
      !-----------------------------------------------------------------------
-
+!#py
      !
      ! read in parameters
      !
@@ -156,7 +148,7 @@ contains
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_dayl=tempr
-
+!#py
      tString='crit_dayl_stress'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) then
@@ -164,7 +156,7 @@ contains
      else
          PhenolParamsInst%crit_dayl_stress=tempr
      end if
-
+!#py
      tString='cumprec_onset'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) then
@@ -172,57 +164,57 @@ contains
      else
          PhenolParamsInst%cumprec_onset=tempr
      end if
-
+!#py
      tString='ndays_on'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%ndays_on=tempr
-
+!#py
      tString='ndays_off'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%ndays_off=tempr
-
+!#py
      tString='fstor2tran'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%fstor2tran=tempr
-
+!#py
      tString='crit_onset_fdd'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_onset_fdd=tempr
-
+!#py
      tString='crit_onset_swi'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_onset_swi=tempr
-
+!#py
      tString='soilpsi_on'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%soilpsi_on=tempr
-
+!#py
      tString='crit_offset_fdd'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_offset_fdd=tempr
-
+!#py
      tString='crit_offset_swi'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_offset_swi=tempr
-
+!#py
      tString='soilpsi_off'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%soilpsi_off=tempr
-
+!#py
      tString='lwtop_ann'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%lwtop=tempr
-
+!#py
    end subroutine readPhenolParams
 
   !-----------------------------------------------------------------------
@@ -268,7 +260,7 @@ contains
 
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
-            temperature_vars, cnstate_vars, crop_vars)
+            cnstate_vars, crop_vars)
    end if
 
     if (doalb .and. num_pcropp > 0 ) then
@@ -309,19 +301,20 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-     use clm_time_manager, only: get_step_size
+    use clm_time_manager, only: get_step_size
     use clm_varpar      , only: crop_prog
     use clm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds
+    real(r8) :: dt 
     !------------------------------------------------------------------------
 
     !
     ! Get time-step and what fraction of a day it is
     !
-     dt      = real( get_step_size(), r8 )
+    dt      = real( get_step_size(), r8 )
     fracday = dt/secspday
 
     ! set constants for CNSeasonDecidPhenology
@@ -381,6 +374,7 @@ contains
     ! !USES:
     !#py use clm_time_manager , only : get_days_per_year
     !#py use clm_time_manager , only : get_curr_date, is_first_step
+    use timeinfoMod
     !
     ! !ARGUMENTS:
       !$acc routine seq
@@ -402,6 +396,7 @@ contains
     integer mcsec                   !         seconds of day (0, ..., seconds/day)
     real(r8), parameter :: yravg   = 20.0_r8      ! length of years to average for gdd
     real(r8), parameter :: yravgm1 = yravg-1.0_r8 ! minus 1 of above
+    real(r8) :: dt
     !-----------------------------------------------------------------------
 
     associate(                                                  &
@@ -419,7 +414,12 @@ contains
          )
 
       ! set time steps
-
+      dt = dtime_mod
+      dayspyr = dayspyr_mod
+      kyr = year_mod
+      kda = day_mod
+      kmo = mon_mod
+      mcsec = secs_mod
       !#py dayspyr = get_days_per_year()
 
       do fp = 1,num_soilp
@@ -498,6 +498,7 @@ contains
          )
 
       !#py dayspyr   = get_days_per_year()
+      dayspyr = dayspyr_mod
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -529,14 +530,7 @@ contains
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(temperature_type)   , intent(in)    :: temperature_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: g,c,p          !indices
@@ -544,6 +538,7 @@ contains
     real(r8):: ws_flag        !winter-summer solstice flag (0 or 1)
     real(r8):: crit_onset_gdd !critical onset growing degree-day sum
     real(r8):: soilt
+    real(r8):: dt
     !-----------------------------------------------------------------------
 
     associate(                                                                                             &
@@ -654,7 +649,7 @@ contains
          deadcrootp_storage_to_xfer          =>    veg_pf%deadcrootp_storage_to_xfer      & ! Output:  [real(r8) (:)   ]
 
          )
-
+         dt = dtime_mod
       ! start pft loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -879,7 +874,6 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    !type(temperature_type)   , intent(in)    :: temperature_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     !
@@ -888,6 +882,7 @@ contains
     integer :: g,t,c,p           ! indices
     integer :: fp              ! lake filter pft index
     real(r8):: dayspyr         ! days per year
+    real(r8) :: dt
     real(r8):: crit_onset_gdd  ! degree days for onset trigger
     real(r8):: soilt           ! temperature of top soil layer
     real(r8):: psi             ! water stress of top soil layer
@@ -1012,6 +1007,9 @@ contains
 
       ! set time steps
       !#py dayspyr = get_days_per_year()
+      dt = dtime_mod
+      dayspyr = dayspyr_mod
+
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -1390,6 +1388,7 @@ contains
     real(r8), parameter :: minrain = 0.1_r8    ! minimum rainfall for planting
     real(r8), parameter :: minwet = 0.2_r8     ! minimum fraction of saturation for planting
     real(r8), parameter :: maxwet = 0.8_r8     ! maximum fraction of saturation for planting
+    real(r8) :: dt
     !------------------------------------------------------------------------
 
     associate(                                                                   &
@@ -1461,6 +1460,13 @@ contains
       !#py dayspyr = get_days_per_year()
       !#py jday    = get_curr_calday()
       !#py call get_curr_date(kyr, kmo, kda, mcsec)
+      dt = dtime_mod
+      dayspyr = dayspyr_mod
+      kyr = year_mod
+      kda = day_mod
+      kmo = mon_mod
+      mcsec = secs_mod
+      jday  = jday_mod
 
       ndays_on = 20._r8 ! number of days to fertilize
 
@@ -1893,7 +1899,7 @@ contains
     use pftvarcon       , only: npcropmin, npcropmax, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
-     use clm_time_manager, only: get_calday
+    use clm_time_manager, only: get_calday
     !
     ! !ARGUMENTS:
     implicit none
@@ -1901,6 +1907,7 @@ contains
     !
     ! LOCAL VARAIBLES:
     integer           :: p,g,n,i                     ! indices
+
     !------------------------------------------------------------------------
 
     allocate( inhemi(bounds%begp:bounds%endp) )
@@ -2094,15 +2101,16 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-        temperature_vars, cnstate_vars, crop_vars)
+        cnstate_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! For determining the plant month for crops, plant day is established in
     ! CropPhenologyMod
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date
-    use clm_time_manager , only : get_step_size
+    !#py use clm_time_manager , only : get_curr_date
+    !#py use clm_time_manager , only : get_step_size
+      !$acc routine seq
     use clm_varcon       , only : secspday
     use clm_varpar       , only : numpft
     use pftvarcon        , only : planttemp
@@ -2114,7 +2122,6 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     integer                , intent(in)    :: num_pcropp      ! number of prognostic crops in filter
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
-    type(temperature_type) , intent(in)    :: temperature_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
 
@@ -2133,6 +2140,7 @@ contains
     real(r8) :: es, ETout
     integer, dimension(12) :: ndaypm= &
          (/31,28,31,30,31,30,31,31,30,31,30,31/) !days per month
+    real(r8) :: dt
     !-----------------------------------------------------------------------
 
     associate(                                                &
@@ -2174,12 +2182,19 @@ contains
       ! and wet season are determined from either temperature thresholds or the
       ! P:PET ratio
 
-      dt      = real( get_step_size(), r8 )
+      !#py dt      = real( get_step_size(), r8 )
+      dt = dtime_mod
+
+
       fracday = dt/secspday
 
       if (num_pcropp > 0) then
          ! get time-related info
-         call get_curr_date(kyr, kmo, kda, mcsec)
+         !#py call get_curr_date(kyr, kmo, kda, mcsec)
+         kyr = year_mod
+         kmo = mon_mod
+         kda = day_mod
+         mcsec = secs_mod
       end if
 
       do fp = 1,num_pcropp
@@ -2294,17 +2309,13 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
     !
     ! !LOCAL VARIABLES:
     integer :: p            ! indices
     integer :: fp           ! lake filter pft index
     real(r8):: t1           ! temporary variable
+    real(r8) :: dt
     !-----------------------------------------------------------------------
 
     associate(                                                                                             &
@@ -2362,6 +2373,9 @@ contains
          )
 
       ! patch loop
+
+      dt = dtime_mod
+      print *, "dt, t1:",dt,t1
       do fp = 1,num_soilp
          p = filter_soilp(fp)
 
@@ -2452,19 +2466,14 @@ contains
 
     type(crop_type)         , intent(inout) :: crop_vars
     type(cnstate_type)      , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)  , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-    !type(nitrogenstate_type), intent(in)    :: nitrogenstate_vars
-    !type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusstate_type),intent(inout):: phosphorusstate_vars
-    !type(phosphorusflux_type), intent(inout):: phosphorusflux_vars
-   !
+
    ! !LOCAL VARIABLES:
    ! local pointers to implicit in scalars
    integer :: p                             ! indices
    integer :: fp                            ! lake filter pft index
    real(r8):: t1                            ! temporary variable
    real(r8):: cgrain                        ! amount of carbon in the grain
+   real(r8):: dt
    !-------------------------------------------------------------------------
    associate(&
    ivt                   =>    veg_pp%itype                                   , & ! Input:  [integer (:)]  pft vegetation type
@@ -2506,6 +2515,7 @@ contains
    dmyield               =>    crop_vars%dmyield_patch                       & ! InOut:  [real(r8) ):)]  dry matter harvested crop (t/ha)
    )
 
+   dt = dtime_mod
    cgrain = 0.50_r8
    do fp = 1,num_pcropp
       p = filter_pcropp(fp)
@@ -2565,17 +2575,13 @@ contains
     integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                 , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)      , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)  , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-    !type(nitrogenstate_type)  , intent(in)   :: nitrogenstate_vars
-    !type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
+
     !
     ! !LOCAL VARIABLES:
     integer :: p, c         ! indices
     integer :: fp           ! lake filter pft index
     real(r8):: t1           ! temporary variable
+    real(r8):: dt
     !-----------------------------------------------------------------------
 
     associate(                                                                     &
@@ -2651,7 +2657,7 @@ contains
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
       ! over time, with displayed growth going to 0.0 on the last day of litterfall
-
+      dt = dtime_mod
       do fp = 1,num_soilp
          p = filter_soilp(fp)
 
@@ -2768,13 +2774,7 @@ contains
     integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                 , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)      , intent(in)    :: cnstate_vars
-    !type(carbonstate_type)  , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-    !type(nitrogenstate_type)  , intent(in)    :: nitrogenstate_vars
-    !type(phosphorusstate_type), intent(in)    :: phosphorusstate_vars
-    !
+
     ! !LOCAL VARIABLES:
     integer :: p            ! indices
     integer :: fp           ! lake filter pft index
@@ -2813,6 +2813,7 @@ contains
          leafp             =>    veg_ps%leafp            , &
          frootp            =>    veg_ps%frootp             &
          )
+
 
       ! patch loop
       do fp = 1,num_soilp
@@ -2872,12 +2873,6 @@ contains
       !$acc routine seq
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p            ! indices
@@ -3002,10 +2997,7 @@ contains
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)      , intent(in)    :: cnstate_vars
-    !type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-    !type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-    !
+
     ! !LOCAL VARIABLES:
     integer :: fc,c,pi,p,j       ! indices
     !-----------------------------------------------------------------------
@@ -3162,9 +3154,6 @@ contains
       !$acc routine seq
    use clm_varpar, only : maxpatch_pft
    type(cnstate_type)       , intent(in)    :: cnstate_vars
-   !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-   !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-   !type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
    !
    ! !ARGUMENTS:
    integer, intent(in) :: num_soilc       ! number of soil columns in filter

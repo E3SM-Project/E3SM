@@ -51,7 +51,7 @@ contains
     use domainMod        , only : ldomain
     use atm2lndType      , only : atm2lnd_type
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
-    use clm_time_manager , only : get_step_size, get_nstep
+    !#py use clm_time_manager , only : get_step_size
     use SoilHydrologyMod , only : CLMVICMap, Drainage
     use clm_varctl       , only : use_vsfm
     !#betr_py use BeTRSimulationALM, only : betr_simulation_alm_type
