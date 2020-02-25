@@ -246,6 +246,11 @@
       <value compset=".+" grid="a%ne240np4.pg2">384</value>
       <value compset=".+" grid="a%ne240np4.pg3">384</value>
       <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
+      <value compset=".+" grid="a%C24">48</value>
+      <value compset=".+" grid="a%C48">48</value>
+      <value compset=".+" grid="a%C96">48</value>
+      <value compset=".+" grid="a%C192">96</value>
+      <value compset=".+" grid="a%C384">192</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
