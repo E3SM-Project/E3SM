@@ -1400,17 +1400,6 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="lawrencium-lr2" COMPILER="intel">
-  <CPPDEFS>
-    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
-  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
-  <SLIBS>
-    <append> -lnetcdff -lnetcdf -mkl</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="lawrencium-lr3" COMPILER="intel">
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>

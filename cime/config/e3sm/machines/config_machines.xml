@@ -2563,83 +2563,6 @@
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
   </machine>
 
-  <machine MACH="lawrencium-lr2">
-    <DESC>Lawrencium LR6 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
-    <NODENAME_REGEX>n000*</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
-    <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="mpi-serial">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks">-np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks">-np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-      <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/Modules/python.py</init_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
-      <modules>
-        <command name="purge"/>
-        <command name="load">cmake</command>
-        <command name="load">perl xml-libxml switch python/2.7</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">intel/2016.4.072</command>
-        <command name="load">mkl</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
-        <command name="load">netcdf/4.4.1.1-intel-s</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial">
-        <command name="load">openmpi</command>
-        <command name="load">netcdf/4.4.1.1-intel-p</command>
-      </modules>
-      <modules compiler="gnu">
-        <command name="load">gcc/6.3.0</command>
-        <command name="load">lapack/3.8.0-gcc</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial">
-        <command name="load">netcdf/5.4.1.1-gcc-s</command>
-        <command name="unload">openmpi/2.0.2-gcc</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">openmpi/3.0.1-gcc</command>
-        <command name="load">netcdf/4.4.1.1-gcc-p</command>
-        <command name="unload">openmpi/2.0.2-gcc</command>
-      </modules>
-
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-  </machine>
-
   <machine MACH="lawrencium-lr3">
     <DESC>Lawrencium LR6 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
     <NODENAME_REGEX>n000*</NODENAME_REGEX>
@@ -2684,7 +2607,6 @@
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake</command>
         <command name="load">perl xml-libxml switch python/2.7</command>
       </modules>
       <modules compiler="intel">
@@ -2761,7 +2683,6 @@
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake</command>
         <command name="load">perl xml-libxml switch python/2.7</command>
       </modules>
       <modules compiler="intel">
