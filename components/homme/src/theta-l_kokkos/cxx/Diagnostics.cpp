@@ -54,7 +54,7 @@ void Diagnostics::init (const ElementsState& state, const ElementsGeometry& geom
 }
 
 int Diagnostics::requested_buffer_size () const {
-  const int nteams = get_num_concurrent_teams(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems));
+  const int nteams = m_tu.get_num_concurrent_teams();
 
   constexpr int size_mid_scalar = NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_int_scalar = NP*NP*NUM_LEV_P*VECTOR_SIZE;
@@ -65,7 +65,7 @@ int Diagnostics::requested_buffer_size () const {
 void Diagnostics::init_buffers (const FunctorsBuffersManager& fbm) {
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
 
-  const int nteams = get_num_concurrent_teams(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems));
+  const int nteams = m_tu.get_num_concurrent_teams();
 
   // If nteams is 0, something is wrong
   assert (nteams>0);
@@ -169,8 +169,7 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
     t1_qdp = tl.np1_qdp;
   }
 
-  auto policy = Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems);
-  Kokkos::parallel_for(policy, *this);
+  Kokkos::parallel_for(m_policy, *this);
 
   Kokkos::deep_copy(h_KEner, m_KEner);
 }
