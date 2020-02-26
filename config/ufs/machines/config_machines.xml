@@ -259,11 +259,11 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi</MPILIBS>
     <PROJECT>wrfruc</PROJECT>
-    <CIME_OUTPUT_ROOT>$ENV{CIME_OUTPUT_ROOT}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{DIN_LOC_ROOT}/ufs_inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{DIN_LOC_ROOT}/ufs_inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{DOUT_S_ROOT}/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{BASELINE_ROOT}/ufs_baselines</BASELINE_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/mnt/lfs1/projects/wrfruc/mhu/ufs/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
