@@ -460,12 +460,12 @@ contains
 
                zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
-               rValue = max(0.0_RKIND, min(1.0_RKIND, zEdge / verticalDisplacement))
+               rValue = max(0.0_RKIND, min(1.0_RKIND, abs(zEdge / verticalDisplacement)))
 
                sfcTaperUp = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
 
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadDown(k,iCellSelf,iEdge))
-               rValue = max(0.0_RKIND, min(1.0_RKIND,zEdge / verticalDisplacement))
+               rValue = max(0.0_RKIND, min(1.0_RKIND,abs(zEdge / verticalDisplacement)))
 
                sfcTaperDown = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
 
