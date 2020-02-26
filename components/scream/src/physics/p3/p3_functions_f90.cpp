@@ -95,6 +95,10 @@ void update_prognostic_liquid_c(
   Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
 
+void ice_deposition_sublimation_c(
+ Real qitot_incld, Real nitot_incld, Real t, Real qvs, Real qvi, Real epsi,
+ Real abi, Real qv, Real* qidep, Real* qisub, Real* nisub, Real* qiberg);
+
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
@@ -264,6 +268,12 @@ void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
 			      d.ncslf, d. qrevp, d.nrevp, d.nrslf , d.log_predictNc,
 			      d.inv_rho, d.exner, d.xxlv, d.dt, &d.th, &d.qv,
 			      &d.qc, &d.nc, &d.qr, &d.nr);
+  }
+
+void ice_deposition_sublimation(IceDepSublimationData& d){
+  p3_init(true);
+  ice_deposition_sublimation_c(d.qitot_incld, d.nitot_incld, d.t, d.qvs, d.qvi, d.epsi, d.abi,
+			       d.qv, &d.qidep, &d.qisub, &d.nisub, &d.qiberg);
   }
 
 CalcUpwindData::CalcUpwindData(
@@ -862,6 +872,42 @@ void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncau
   *nc_    = t_h(3);
   *qr_    = t_h(4);
   *nr_    = t_h(5);
+}
+
+void ice_deposition_sublimation_f(Real qitot_incld_, Real nitot_incld_, Real t_, Real qvs_,
+				  Real qvi_, Real epsi_, Real abi_, Real qv_,
+				  Real* qidep_, Real* qisub_, Real* nisub_, Real* qiberg_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 4);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qidep  = *qidep_;
+  Real local_qisub  = *qisub_;
+  Real local_nisub  = *nisub_;
+  Real local_qiberg = *qiberg_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qitot_incld(qitot_incld_), nitot_incld(nitot_incld_), t(t_), qvs(qvs_), qvi(qvi_),
+	epsi(epsi_), abi(abi_), qv(qv_);
+
+      typename P3F::Spack qidep(local_qidep), qisub(local_qisub), nisub(local_nisub), qiberg(local_qiberg);
+
+      P3F::ice_deposition_sublimation(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv,
+				      qidep, qisub, nisub, qiberg);
+
+      t_d(0) = qidep[0];
+      t_d(1) = qisub[0];
+      t_d(2) = nisub[0];
+      t_d(3) = qiberg[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qidep_  = t_h(0);
+  *qisub_  = t_h(1);
+  *nisub_  = t_h(2);
+  *qiberg_ = t_h(3);
 }
 
 template <int N, typename T>

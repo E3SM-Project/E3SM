@@ -3278,6 +3278,10 @@ subroutine ice_deposition_sublimation(qitot_incld,nitot_incld,t,    &
 qvs,qvi,epsi,abi,qv,    &
 qidep,qisub,nisub,qiberg)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: ice_deposition_sublimation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in)  :: qitot_incld
@@ -3295,6 +3299,14 @@ qidep,qisub,nisub,qiberg)
 
    real(rtype) :: oabi
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call ice_deposition_sublimation_f(qitot_incld,nitot_incld,t,    &
+           qvs,qvi,epsi,abi,qv,    &
+           qidep,qisub,nisub,qiberg)
+   endif
+#endif
+   write(103,*)'balli:',zerodegc
    oabi = 1._rtype/abi
    if (qitot_incld>=qsmall) then
       !Compute deposition/sublimation
