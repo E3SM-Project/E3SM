@@ -6,15 +6,13 @@ include("${PROJECT_BINARY_DIR}/Macros.cmake")
 set(CMAKE_Fortran_Compiler "${SFC}")
 set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 
-if (NOT NETCDF_PATH)
-  message(FATAL_ERROR "Requires NETCDF_PATH either from Macros.cmake or argument")
-endif()
-
 ENABLE_LANGUAGE(Fortran)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+# Find netcdf
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIMEROOT}/src/externals/pio2/cmake)
+find_package (NetCDF COMPONENTS Fortran REQUIRED)
 
 ADD_CUSTOM_COMMAND(
   OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
@@ -24,7 +22,7 @@ ADD_CUSTOM_COMMAND(
 )
 
 INCLUDE_DIRECTORIES(
-  ${NETCDF_PATH}/include
+  ${NetCDF_Fortran_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR}
 )
@@ -40,6 +38,4 @@ SET (CPRNC_SRCS
 ADD_EXECUTABLE(cprnc ${CPRNC_SRCS})
 ADD_DEPENDENCIES(cprnc COMPARE_VARS)
 
-# SLIBS comes from Macros.cmake
-separate_arguments(SLIBS_LIST UNIX_COMMAND "${SLIBS}")
-TARGET_LINK_LIBRARIES(cprnc ${SLIBS_LIST})
+TARGET_LINK_LIBRARIES(cprnc ${NetCDF_Fortran_LIBRARIES})
