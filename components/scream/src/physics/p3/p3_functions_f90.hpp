@@ -211,6 +211,60 @@ extern "C"{
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct RainImmersionFreezingData
+{
+  // inputs
+  Real t, lamr, mu_r, cdistr, qr_incld;
+
+  // output
+  Real qrheti, nrheti;
+};
+
+void rain_immersion_freezing(RainImmersionFreezingData& d);
+extern "C"{
+
+  void rain_immersion_freezing_f(Real t, Real lamr, Real mu_r,
+    Real cdistr, Real qr_incld, Real* qrheti, Real* nrheti);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct DropletSelfCollectionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, mu_c, nu, ncautc;
+
+  // output
+  Real ncslf;
+};
+
+void droplet_self_collection(DropletSelfCollectionData& d);
+extern "C"{
+
+  void droplet_self_collection_f(Real rho, Real inv_rho, Real qc_incld,
+    Real mu_c, Real nu, Real ncautc, Real* ncslf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CloudRainAccretionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
+
+  // output
+  Real qcacc, ncacc;
+};
+
+void cloud_rain_accretion(CloudRainAccretionData& d);
+extern "C"{
+
+  void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
+    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudWaterAutoconversionData
 {
   // inputs

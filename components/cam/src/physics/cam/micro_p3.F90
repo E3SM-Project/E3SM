@@ -2565,6 +2565,9 @@ subroutine rain_immersion_freezing(t,    &
 lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: rain_immersion_freezing_f, cxx_log, cxx_gamma, cxx_exp
+#endif
    !............................................................
    ! immersion freezing of rain
    ! for future: get rid of log statements below for rain freezing
@@ -2582,12 +2585,17 @@ qrheti, nrheti)
 
    real(rtype) :: Q_nuc, N_nuc
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti)
+      return
+   endif
+#endif
+
    if (qr_incld.ge.qsmall .and. t.le.rainfrze) then
 
-      Q_nuc = cons6*exp(log(cdistr)+log(gamma(7._rtype+mu_r))-6._rtype*log(lamr))* &
-      exp(aimm*(zerodegc-t))
-      N_nuc = cons5*exp(log(cdistr)+log(gamma(mu_r+4._rtype))-3._rtype*log(lamr))* &
-      exp(aimm*(zerodegc-t))
+      Q_nuc = cons6*bfb_exp(bfb_log(cdistr) + bfb_log(bfb_gamma(7._rtype+mu_r)) - 6._rtype*bfb_log(lamr))*bfb_exp(aimm*(zerodegc-t))
+      N_nuc = cons5*bfb_exp(bfb_log(cdistr) + bfb_log(bfb_gamma(mu_r+4._rtype)) - 3._rtype*bfb_log(lamr))*bfb_exp(aimm*(zerodegc-t))
 
       qrheti = Q_nuc
       nrheti = N_nuc
@@ -2693,6 +2701,11 @@ end subroutine droplet_activation
 
 subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
    ncslf)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: droplet_self_collection_f
+#endif
+
    !............................
    ! self-collection of droplets
 
@@ -2707,6 +2720,12 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
 
    real(rtype), intent(out) :: ncslf
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf)
+      return
+   endif
+#endif
    if (qc_incld.ge.qsmall) then
 
       if (iparam.eq.1) then
@@ -2728,6 +2747,10 @@ end subroutine droplet_self_collection
 subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
    qcacc,ncacc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_rain_accretion_f, cxx_pow
+#endif
+
 !............................
 ! accretion of cloud by rain
 
@@ -2744,6 +2767,13 @@ real(rtype), intent(out) :: ncacc
 
 real(rtype) :: dum, dum1
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld, &
+         qcacc, ncacc)
+      return
+   endif
+#endif
 if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
 
    if (iparam.eq.1) then
@@ -2760,7 +2790,7 @@ if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
            1.e+6_rtype*inv_rho
    elseif (iparam.eq.3) then
       !Khroutdinov and Kogan (2000)
-      qcacc = 67._rtype*(qc_incld*qr_incld)**1.15_rtype
+      qcacc = 67._rtype*bfb_pow(qc_incld*qr_incld,1.15_rtype)
       ncacc = qcacc*nc_incld/qc_incld
    endif
 

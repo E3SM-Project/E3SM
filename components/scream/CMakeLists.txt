@@ -8,6 +8,12 @@ else()
   set(CIME_BUILD TRUE)
 endif()
 
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
+  # The new behavior for cmp0074 makes cmake use (rather than ignore)
+  # any <PackageName>_ROOT env/cmake variable previously set.
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 # Add the ./cmake folder to cmake path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -183,8 +189,6 @@ print_var(SCREAM_LIB_ONLY)
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-# Run sed to change '/*...*/' comments into '!/*...*/'
-execute_process(COMMAND sed -i "s;^/;!/;g" ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 string(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
