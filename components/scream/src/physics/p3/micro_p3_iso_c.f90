@@ -293,11 +293,20 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine rain_immersion_freezing_c(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
+
+      use micro_p3, only: rain_immersion_freezing
+      real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
+      real(kind=c_real), intent(out) :: qrheti, nrheti
+
+      call rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti)
+  end subroutine rain_immersion_freezing_c
+
   subroutine droplet_self_collection_c(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
 
       use micro_p3, only: droplet_self_collection
       real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
-      real(kind=c_real), intent(inout) :: ncslf
+      real(kind=c_real), intent(out) :: ncslf
 
       call droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf)
   end subroutine droplet_self_collection_c
@@ -306,7 +315,7 @@ contains
 
       use micro_p3, only: cloud_rain_accretion
       real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
-      real(kind=c_real), intent(inout) :: qcacc, ncacc
+      real(kind=c_real), intent(out) :: qcacc, ncacc
 
       call cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc)
   end subroutine cloud_rain_accretion_c

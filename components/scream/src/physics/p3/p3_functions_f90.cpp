@@ -45,6 +45,9 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void rain_immersion_freezing_c(Real t, Real lamr, Real mu_r, Real cdistr,
+                               Real qr_incld, Real* qrheti, Real* nrheti);
+
 void droplet_self_collection_c(Real rho, Real inv_rho, Real qc_incld, Real mu_c,
                                Real nu, Real ncautc, Real* ncacc);
 
@@ -190,6 +193,13 @@ void droplet_self_collection(DropletSelfCollectionData& d)
   p3_init(true);
   droplet_self_collection_c(d.rho, d.inv_rho, d.qc_incld, d.mu_c, d.nu, d.ncautc,
                             &d.ncslf);
+}
+
+void rain_immersion_freezing(RainImmersionFreezingData& d)
+{
+  p3_init(true);
+  rain_immersion_freezing_c(d.t, d.lamr, d.mu_r, d.cdistr, d.qr_incld,
+                            &d.qrheti, &d.nrheti);
 }
 
 void cloud_rain_accretion(CloudRainAccretionData& d)
@@ -1335,6 +1345,34 @@ void rain_sedimentation_f(
   pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx}, sizes_out, inout_views);
 }
 
+
+void rain_immersion_freezing_f(
+  Real t_, Real lamr_, Real mu_r_, Real cdistr_, Real qr_incld_,
+  Real* qrheti_, Real* nrheti_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qrheti = *qrheti_;
+  Real local_nrheti = *nrheti_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack t(t_), lamr(lamr_), mu_r(mu_r_),
+                          cdistr(cdistr_), qr_incld(qr_incld_),
+                          qrheti(local_qrheti), nrheti(local_nrheti);
+      P3F::rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld,
+                                   qrheti, nrheti);
+
+      t_d(0) = qrheti[0];
+      t_d(1) = nrheti[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qrheti_ = t_h(0);
+  *nrheti_ = t_h(1);
+}
+
 void droplet_self_collection_f(
   Real rho_, Real inv_rho_, Real qc_incld_, Real mu_c_, Real nu_,
   Real ncautc_, Real* ncslf_)
@@ -1353,7 +1391,6 @@ void droplet_self_collection_f(
                                    ncslf);
 
       t_d(0) = ncslf[0];
-
     });
   Kokkos::deep_copy(t_h, t_d);
 

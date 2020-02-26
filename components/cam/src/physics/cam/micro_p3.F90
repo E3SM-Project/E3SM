@@ -2566,7 +2566,7 @@ lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_log, cxx_gamma, cxx_exp
+   use micro_p3_iso_f, only: rain_immersion_freezing_f, cxx_log, cxx_gamma, cxx_exp
 #endif
    !............................................................
    ! immersion freezing of rain
@@ -2584,6 +2584,13 @@ qrheti, nrheti)
    real(rtype), intent(out) :: nrheti
 
    real(rtype) :: Q_nuc, N_nuc
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti)
+      return
+   endif
+#endif
 
    if (qr_incld.ge.qsmall .and. t.le.rainfrze) then
 
