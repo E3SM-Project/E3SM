@@ -137,6 +137,11 @@ MODULE MOSART_physics_mod
        THeat%Tt_avg = 0._r8
        THeat%Tr_avg = 0._r8
     endif
+    
+    if (inundflag) then
+       TRunoff%se_rf = 0._r8
+    endif
+    
     negchan = 9999.0_r8
 
     !subcycling begins
@@ -226,6 +231,8 @@ MODULE MOSART_physics_mod
               TRunoff%yr(:,1) = TRunoff%yr_exchg
             ! Channel storage
               TRunoff%wr(:,1) = TRunoff%wr_exchg
+            ! Aggregate net floodplain storage change from subcycle to timestep 
+              TRunoff%se_rf = TRunoff%se_rf + TRunoff%netchange
         end if   
 	        	
        !------------------

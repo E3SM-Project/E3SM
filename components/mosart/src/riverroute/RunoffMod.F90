@@ -373,14 +373,15 @@ module RunoffMod
     real(r8), pointer :: ff_ini(:)      ! Floodplain water area fraction at beginning of step (dimensionless).
     real(r8), pointer :: ffunit_ini(:)      ! Flooded water area fraction at beginning of step (dimensionless).
 
-    real(r8), pointer :: se_rf(:)       ! Amount of channel--floodplain exchange (positive: flow from channel to floodplain; vice versa ) (m^3).
+    real(r8), pointer :: netchange(:)   ! Amount of channel--floodplain exchange during one subcycle in MOSART timestep (positive: flow from channel to floodplain; vice versa ) (m^3).
+    real(r8), pointer :: se_rf(:)       ! Amount of channel--floodplain exchange during one MOSART timestep(positive: flow from channel to floodplain; vice versa ) (m^3).
     real(r8), pointer :: ff_unit(:)       ! = area of inundated area (including channel area) divided by the computation-unit total area (dimensionless).
 
     real(r8), pointer :: ff_fp(:)       ! = area of inundated floodplain (not including channel area) divided by the computation-unit total area (dimensionless).
     real(r8), pointer :: fa_fp(:)       ! Area of inundated floodplain (not including channel area) (m^2).    
     real(r8), pointer :: wr_exchg(:)    ! Channel water volume after channel--floodplain exchange (m^3).
     real(r8), pointer :: wr_exchg_dstrm(:)  ! Downstream-channel water volume after channel--floodplain exchange (to 
-                                            ! constrain large upward flow from downstream channel to current channel ) (m^3).
+                                            ! constrain large upward flow from downstream channel to current channel) (m^3).
     real(r8), pointer :: yr_exchg(:)    ! Channel water depth after channel--floodplain exchange (m).
     real(r8), pointer :: yr_exchg_dstrm(:)  ! Downstream-channel water depth after channel--floodplain exchange (m).
     real(r8), pointer :: wf_exchg(:)    ! Floodplain water volume after channel--floodplain exchange (m^3).

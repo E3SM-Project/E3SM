@@ -168,14 +168,13 @@ MODULE MOSARTinund_PreProcs_MOD
       
     ! 2 -- use the hypothetical elevation profile :
     elseif ( Tctl%OPT_elevProf .eq. 2 ) then    
-      
       do iu = rtmCTL%begr, rtmCTL%endr
         !if ( TUnit%mask( iu ) .gt. 0 ) then
         if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
           do k = 1, 12
             TUnit%e_eprof( iu, k ) = Tctl%e_eprof_std(k)
-          end do        
-        end if  
+          end do
+        end if
       enddo
       
     end if
@@ -302,7 +301,8 @@ MODULE MOSARTinund_PreProcs_MOD
           if ( abs( TUnit%e_eprof3(iu, j+1) - TUnit%e_eprof3(iu, j) ) > 1.0e-10_r8 ) then      ! Precision is 15-16 decimal digits.
             TUnit%alfa3(iu, j) = (TUnit%a_eprof3(iu, j+1) - TUnit%a_eprof3(iu, j)) / (TUnit%e_eprof3(iu, j+1) - TUnit%e_eprof3(iu, j))    ! (1/m)
           else
-            write( iulog, * ) trim( subname ) // ' ERROR: Divided by zero !'
+		    TUnit%e_eprof( iu, k ) = Tctl%e_eprof_std(k)
+			write( iulog, * ) trim( subname ) // ' ERROR: Divided by zero !'
             call shr_sys_abort( trim( subname ) // ' ERROR: Divided by zero !' )
           end if
 

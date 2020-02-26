@@ -295,6 +295,7 @@ MODULE MOSARTinund_Core_MOD
     real( r8 ) :: hf        ! Floodplain max water depth, namely the elevation difference between the final water level and the banktop (i.e., channel bankfull water level) (m).
     real( r8 ) :: ff_unit   ! Flooded fraction in the computation unit (including channel area) (dimensionless).
     real( r8 ) :: wr_over   ! Channel water storage between the final water level and the banktop ( = channel storage - channel storage capacity ) (m^3).
+    
     character( len = * ), parameter :: subname = '(ChnlFPexchg)'
     
     !$OMP PARALLEL DO PRIVATE(wr_rcd, w_over, j, d_s, d_e, hf, ff_unit, wr_over) SCHEDULE(GUIDED)
@@ -400,7 +401,7 @@ MODULE MOSARTinund_Core_MOD
           endif      ! if ( wr + wf > wr_bf )
         
           ! Channel--floodplain exchange amount (Positive: flow from channel to floodplain; vice versa) (m^3) :
-          TRunoff%se_rf(iu) = wr_rcd - TRunoff%wr_exchg(iu)
+          TRunoff%netchange(iu) = wr_rcd - TRunoff%wr_exchg(iu)        
         
         ! ---------------------------------  
         ! No channel--floodplain exchange for two situations: 
@@ -412,7 +413,7 @@ MODULE MOSARTinund_Core_MOD
           TRunoff%yr_exchg( iu ) = TRunoff%yr( iu, 1 )
           TRunoff%wf_exchg( iu ) = TRunoff%wf_ini( iu )
           TRunoff%hf_exchg( iu ) = TRunoff%hf_ini( iu )          
-          TRunoff%se_rf( iu ) = 0._r8
+          TRunoff%netchange( iu ) = 0._r8
         end if    ! if ( the channel water level is higher than the floodplain water level, or on the contrary )
       end if      ! if ( TUnit%mask( iu ) .gt. 0 )
     end do

@@ -2234,11 +2234,11 @@ contains
           write(iulog,'(2a,i4,a,i10,i6)') trim(subname),' subcycling=',ns,': model date=',ymd,tod
        endif
      
-       if (inundflag .and. wrmflag .eq. 0) then !use Luo's scheme when inundation is on and WM is off
-          call t_startf('mosartr_inund_sim')
-          call MOSARTinund_simulate ( )
-          call t_stopf('mosartr_inund_sim')
-       else ! other cases
+       !if (inundflag .and. wrmflag .eq. 0) then !use Luo's scheme when inundation is on and WM is off (keep it for now - tz)       
+       !   call t_startf('mosartr_inund_sim')
+       !   call MOSARTinund_simulate ( )
+       !   call t_stopf('mosartr_inund_sim')
+       !else ! other cases
           call t_startf('mosartr_euler')
           ! debug 
 #ifdef DEBUG
@@ -2246,7 +2246,7 @@ contains
 #endif
           call Euler()
           call t_stopf('mosartr_euler')
-       endif
+       !endif
 
 ! tcraig - NOT using this now, but leave it here in case it's useful in the future
 !   for some runoff terms.
@@ -3511,7 +3511,7 @@ contains
           if (masterproc) write(iulog,FORMR) trim(subname),' set rslp_dstrm ',minval(Tunit%rslp_dstrm),maxval(Tunit%rslp_dstrm)
           call shr_sys_flush(iulog)
        end if
-
+	   
        if (Tctl%OPT_inund == 1) then
           allocate (TUnit%wr_bf(begr:endr))
           TUnit%wr_bf = 0.0_r8   
@@ -3782,12 +3782,16 @@ contains
 
            allocate (TRunoff%hf_ini(begr:endr))
            TRunoff%hf_ini = 0.0_r8
-           
+
            allocate (TRunoff%ff_ini(begr:endr))
            TRunoff%ff_ini = 0.0_r8 
 
            allocate (TRunoff%ffunit_ini(begr:endr))
            TRunoff%ffunit_ini = 0.0_r8
+
+           allocate (TRunoff%netchange(begr:endr))
+           TRunoff%netchange = 0.0_r8
+
            allocate (TRunoff%se_rf(begr:endr))
            TRunoff%se_rf = 0.0_r8
 
