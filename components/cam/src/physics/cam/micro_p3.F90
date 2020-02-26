@@ -2532,6 +2532,9 @@ end subroutine calc_rime_density
 subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cxx_gamma, cxx_exp
+#endif
    !............................................................
    ! contact and immersion freezing droplets
 
@@ -2551,8 +2554,8 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
    if (qc_incld.ge.qsmall .and. t.le.rainfrze) then
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
       dum   = (1._rtype/lamc)**3
-      Q_nuc = cons6*cdist1*gamma(7._rtype+mu_c)*exp(aimm*(zerodegc-t))*dum**2
-      N_nuc = cons5*cdist1*gamma(mu_c+4._rtype)*exp(aimm*(zerodegc-t))*dum
+      Q_nuc = cons6*cdist1*bfb_gamma(7._rtype+mu_c)*bfb_exp(aimm*(zerodegc-t))*dum**2
+      N_nuc = cons5*cdist1*bfb_gamma(mu_c+4._rtype)*bfb_exp(aimm*(zerodegc-t))*dum
       qcheti = Q_nuc
       ncheti = N_nuc
    endif
