@@ -20,9 +20,8 @@ ADD_CUSTOM_COMMAND(
   OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
   COMMAND perl ${PROJECT_SOURCE_DIR}/../../src/externals/genf90/genf90.pl
     ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in > ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
+  DEPENDS ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in ${PROJECT_SOURCE_DIR}/../../src/externals/genf90/genf90.pl
 )
-
-ADD_CUSTOM_TARGET(COMPARE_VARS DEPENDS ${PROJECT_BINARY_DIR}/compare_vars_mod.F90)
 
 INCLUDE_DIRECTORIES(
   ${NETCDF_PATH}/include
