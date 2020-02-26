@@ -619,7 +619,7 @@ contains
     !-----------------------------------------------------------------------------------!
     i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)
 
-       if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
+!      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 
 
        log_hydrometeorsPresent = .false.
@@ -713,11 +713,10 @@ contains
 
        enddo k_loop_1
 
-       if (debug_ON) then
-          tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-          call check_values(qv,tmparr1,i,it,debug_ABORT,200,col_location)
-
-       endif
+!      if (debug_ON) then
+!         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+!         call check_values(qv,tmparr1,i,it,debug_ABORT,200,col_location)
+!      endif
 
        !jump to end of i-loop if log_nucleationPossible=.false.  (i.e. skip everything)
        if (.not. (log_nucleationPossible .or. log_hydrometeorsPresent)) goto 333
@@ -1131,10 +1130,10 @@ contains
        !      (This is not done above simply for efficiency purposes.)
 
 
-       if (debug_ON) then
-          tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-          call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
-       endif
+!      if (debug_ON) then
+!         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+!         call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
+!      endif
 
        if (.not. log_hydrometeorsPresent) goto 333
 
@@ -2004,8 +2003,8 @@ contains
     logical(btype),                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
-    real(rtype), parameter :: T_low  = 173._rtype
-    real(rtype), parameter :: T_high = 323._rtype
+    real(rtype), parameter :: T_low  = 160._rtype !173._rtype
+    real(rtype), parameter :: T_high = 355._rtype !323._rtype
     real(rtype), parameter :: Q_high = 40.e-3_rtype
     real(rtype), parameter :: N_high = 1.e+20_rtype
     real(rtype), parameter :: B_high = Q_high*1.e-3_rtype
