@@ -2533,7 +2533,7 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_pow, cxx_gamma, cxx_exp
+   use micro_p3_iso_f, only: cldliq_immersion_freezing_f, cxx_pow, cxx_gamma, cxx_exp
 #endif
    !............................................................
    ! contact and immersion freezing droplets
