@@ -192,8 +192,10 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
                HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>(
                    elem_Q_ptr, num_elems));
 
+#ifndef HOMMEXX_GB_CONFIG
   Diagnostics& diags = Context::singleton().get<Diagnostics>();
   diags.sync_diags_to_host();
+#endif
 }
 
 void push_forcing_to_c (F90Ptr elem_derived_FM,
@@ -325,8 +327,10 @@ void init_functors_c ()
   auto& esf  = Context::singleton().create<EulerStepFunctor>();
   auto& hvf  = Context::singleton().create<HyperviscosityFunctor>();
   auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
+#ifndef HOMMEXX_GB_CONFIG
   auto& ff   = Context::singleton().create<ForcingFunctor>();
   auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems());
+#endif
   auto& vrm  = Context::singleton().create<VerticalRemapManager>();
 
   const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
@@ -344,8 +348,10 @@ void init_functors_c ()
   fbm.request_size(caar.requested_buffer_size());
   fbm.request_size(esf.requested_buffer_size());
   fbm.request_size(hvf.requested_buffer_size());
+#ifndef HOMMEXX_GB_CONFIG
   fbm.request_size(diag.requested_buffer_size());
   fbm.request_size(ff.requested_buffer_size());
+#endif
   fbm.request_size(vrm.requested_buffer_size());
   if (need_dirk) {
     const auto& dirk = Context::singleton().get<DirkFunctor>();
@@ -358,8 +364,10 @@ void init_functors_c ()
   caar.init_buffers(fbm);
   esf.init_buffers(fbm);
   hvf.init_buffers(fbm);
+#ifndef HOMMEXX_GB_CONFIG
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
+#endif
   vrm.init_buffers(fbm);
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
@@ -423,6 +431,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
                          F90Ptr& elem_accum_q1mass_ptr, F90Ptr& elem_accum_iener_ptr,
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
+#ifndef HOMMEXX_GB_CONFIG
   ElementsGeometry& geometry = Context::singleton().get<ElementsGeometry> ();
   ElementsState&    state    = Context::singleton().get<ElementsState> ();
   Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
@@ -433,6 +442,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   diags.init(state, geometry, hvcoord, params.theta_hydrostatic_mode,
              elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
              elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
+#endif
 }
 
 void init_boundary_exchanges_c ()
