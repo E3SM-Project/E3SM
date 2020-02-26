@@ -192,7 +192,8 @@ contains
 
       ! Set refBottomDepth, bottomDepth, and maxLevelCell
       do k = 1, nVertLevels
-        refBottomDepth(k) = config_tidal_boundary_right_bottom_depth * interfaceLocations(k+1)
+        refBottomDepth(k) = config_tidal_boundary_left_bottom_depth + &
+          (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)* interfaceLocations(k+1)
       end do
 
       if (config_tidal_boundary_use_distances) then
