@@ -5,11 +5,9 @@
 path='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/CERES-EBAF/'
 cd $path
 
-start_yr=2001
-end_yr=2015
 
 declare -a arr=("4.0" "2.8")
-#declare -a arr=("4.0")
+declare -a arr=("4.1")
 for i in "${arr[@]}"
     do
         original_data_path=$path"$i"_surface/original_data/
@@ -19,7 +17,17 @@ for i in "${arr[@]}"
         mkdir $climo_data_output_path
     
         echo $path"$i"_surface/original_data/CERES_EBAF-Surface_Ed*.nc
-        cdo chname,sfc_sw_down_all_mon,rsds,sfc_sw_down_clr_mon,rsdscs,sfc_sw_up_all_mon,rsus,sfc_sw_up_clr_mon,rsuscs,sfc_lw_down_all_mon,rlds,sfc_lw_down_clr_mon,rldscs,sfc_lw_up_all_mon,rlus,sfc_lw_up_clr_mon,rluscs ${original_data_path}CERES_EBAF-Surface_Ed*.nc ${original_data_path}ceres.nc
+        if [ $i == '4.1' ]
+        then
+            start_yr=2001
+            end_yr=2018
+            cdo chname,sfc_sw_down_all_mon,rsds,sfc_sw_down_clr_t_mon,rsdscs,sfc_sw_up_all_mon,rsus,sfc_sw_up_clr_t_mon,rsuscs,sfc_lw_down_all_mon,rlds,sfc_lw_down_clr_t_mon,rldscs,sfc_lw_up_all_mon,rlus,sfc_lw_up_clr_t_mon,rluscs ${original_data_path}CERES_EBAF-Surface_Ed*.nc ${original_data_path}ceres.nc
+        else
+            start_yr=2001
+            end_yr=2015
+            cdo chname,sfc_sw_down_all_mon,rsds,sfc_sw_down_clr_mon,rsdscs,sfc_sw_up_all_mon,rsus,sfc_sw_up_clr_mon,rsuscs,sfc_lw_down_all_mon,rlds,sfc_lw_down_clr_mon,rldscs,sfc_lw_up_all_mon,rlus,sfc_lw_up_clr_mon,rluscs ${original_data_path}CERES_EBAF-Surface_Ed*.nc ${original_data_path}ceres.nc
+        fi
+
         echo 'Ed'"$i"
         cdo setmissval,1e20 ${original_data_path}ceres.nc ${original_data_path}ceres_miss.nc
         cdo splityear ${original_data_path}ceres_miss.nc ${time_series_output_path}ceres_ebaf_surface_time_series

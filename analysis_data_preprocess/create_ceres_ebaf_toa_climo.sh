@@ -5,11 +5,9 @@
 path='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/CERES-EBAF/'
 cd $path
 
-start_yr=2001
-end_yr=2015
 
-declare -a arr=("4.0" "2.8")
-#declare -a arr=("4.0")
+#declare -a arr=("4.0" "2.8")
+declare -a arr=("4.1" "4.0")
 for i in "${arr[@]}"
     do
         original_data_path=$path"$i"_toa/original_data/
@@ -19,7 +17,17 @@ for i in "${arr[@]}"
         mkdir $climo_data_output_path
     
         echo $path"$i"_toa/original_data/CERES_EBAF-TOA_Ed*.nc
-        cdo chname,toa_sw_all_mon,rsut,toa_lw_all_mon,rlut,toa_sw_clr_mon,rsutcs,toa_lw_clr_mon,rlutcs,solar_mon,rsdt ${original_data_path}CERES_EBAF-TOA_Ed*.nc ${original_data_path}ceres.nc
+        if [ $i == '4.1' ]
+        then
+            start_yr=2001
+            end_yr=2018
+            cdo chname,toa_sw_all_mon,rsut,toa_lw_all_mon,rlut,toa_sw_clr_t_mon,rsutcs,toa_lw_clr_t_mon,rlutcs,solar_mon,rsdt ${original_data_path}CERES_EBAF-TOA_Ed*.nc ${original_data_path}ceres.nc
+        else
+            start_yr=2001
+            end_yr=2015
+            cdo chname,toa_sw_all_mon,rsut,toa_lw_all_mon,rlut,toa_sw_clr_mon,rsutcs,toa_lw_clr_mon,rlutcs,solar_mon,rsdt ${original_data_path}CERES_EBAF-TOA_Ed*.nc ${original_data_path}ceres.nc
+        fi
+
         echo 'Ed'"$i"
         cdo setmissval,1e20 ${original_data_path}ceres.nc ${original_data_path}ceres_miss.nc
         cdo splityear ${original_data_path}ceres_miss.nc ${time_series_output_path}ceres_ebaf_toa_time_series
@@ -33,7 +41,7 @@ for i in "${arr[@]}"
             done
         done
         rm ${time_series_output_path}ceres_ebaf_toa_time_series*.nc
-        ncrcat ${time_series_output_path}ceres_ebaf_toa_time_2*.nc ${time_series_output_path}ceres_ebaf_toa_v${i}_${start_yr}01_${end_yr}12.nc
+        ncrcat ${time_series_output_path}ceres_ebaf_toa_2*.nc ${time_series_output_path}ceres_ebaf_toa_v${i}_${start_yr}01_${end_yr}12.nc
         ncclimo -a sdd --lnk_flg -c ceres_ebaf_toa_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_data_output_path}
         cd ${climo_data_output_path}
         for f in ceres_ebaf_toa_*.nc; do mv -v "$f" "${f/toa/toa_v$i}"; done;
