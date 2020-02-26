@@ -709,7 +709,8 @@ void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
 extern "C" {
 
 Real cxx_pow(Real base, Real exp);
-Real cxx_ipow(Real base, int exp);
+Real cxx_square(Real input);
+Real cxx_cube(Real input);
 Real cxx_cbrt(Real base);
 Real cxx_gamma(Real input);
 Real cxx_log(Real input);

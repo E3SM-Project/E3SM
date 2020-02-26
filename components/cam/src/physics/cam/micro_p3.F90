@@ -37,7 +37,8 @@
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
-#  define bfb_ipow(base, exp) cxx_ipow(base, exp)
+#  define bfb_square(val) cxx_square(val)
+#  define bfb_cube(val) cxx_cube(val)
 #  define bfb_cbrt(base) cxx_cbrt(base)
 #  define bfb_gamma(val) cxx_gamma(val)
 #  define bfb_log(val) cxx_log(val)
@@ -45,7 +46,8 @@
 #  define bfb_exp(val) cxx_exp(val)
 #else
 #  define bfb_pow(base, exp) (base)**exp
-#  define bfb_ipow(base, exp) (base)**exp
+#  define bfb_square(val) (val)*(val)
+#  define bfb_cube(val) (val)*(val)*(val)
 #  define bfb_cbrt(base) (base)**thrd
 #  define bfb_gamma(val) gamma(val)
 #  define bfb_log(val) log(val)
@@ -2535,7 +2537,7 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_ipow, cxx_gamma, cxx_exp
+   use micro_p3_iso_f, only: cxx_cube, cxx_gamma, cxx_exp
 #endif
    !............................................................
    ! contact and immersion freezing droplets
@@ -2556,7 +2558,7 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
    if (qc_incld.ge.qsmall .and. t.le.rainfrze) then
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
       dum1 = bfb_exp(aimm*(zerodegc-t))
-      dum2 = bfb_ipow(1._rtype/lamc, 3)
+      dum2 = bfb_cube(1._rtype/lamc)
       Q_nuc = cons6*cdist1*bfb_gamma(7._rtype+mu_c)*dum1*dum2*dum2
       N_nuc = cons5*cdist1*bfb_gamma(mu_c+4._rtype)*dum1*dum2
       qcheti = Q_nuc
