@@ -1111,7 +1111,8 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
       REQUIRE(Spack::n <= max_pack_size);
 
       //fortran generated data is input to the following
-      //NOTE: This array has 8 values instad of 12 as 4 are intent-out at the end
+      //NOTE: This array has 8 values instead of 12 as 4 are intent-out at the end and we do not need
+      // to pass those (they are assumed to be zero)
       IceDepSublimationData ids[max_pack_size] = {
 	{1.0000E-04,4.5010E+05,2.8750E+02,1.1279E-02,1.1279E-02,0.0000E+00,3.3648E+00,5.0000E-03},
 	{5.1000E-03,4.5370E+05,2.8542E+02,9.9759E-03,9.9759E-03,0.0000E+00,3.1223E+00,5.0000E-03},

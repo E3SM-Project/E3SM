@@ -3306,7 +3306,7 @@ qidep,qisub,nisub,qiberg)
            qidep,qisub,nisub,qiberg)
    endif
 #endif
-   write(103,*)'balli:',zerodegc
+
    oabi = 1._rtype/abi
    if (qitot_incld>=qsmall) then
       !Compute deposition/sublimation
