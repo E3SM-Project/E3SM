@@ -15,7 +15,7 @@ void Functions<S,D>
 			     Spack& qidep, Spack& qisub, Spack& nisub, Spack& qiberg)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
-  constexpr Scalar ZERODEGC = C::ZeroDegC
+  constexpr Scalar ZERODEGC = C::ZeroDegC;
   const auto oabi           = sp(1.0)/abi;
 
   const auto qitot_incld_not_small = qitot_incld >= QSMALL;
