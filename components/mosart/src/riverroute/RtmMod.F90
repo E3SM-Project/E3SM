@@ -462,8 +462,9 @@ contains
     end if
 
     if (wrmflag .and. inundflag) then
-       write(iulog,*) subname,' ERROR MOSART wrmflag and inundflag cannot both be true'
-       call shr_sys_abort( subname//' ERROR: wrmflag and inundflag both set' )
+       !write(iulog,*) subname,' ERROR MOSART wrmflag and inundflag cannot both be true'
+       write(iulog,*) subname,' MOSART wrmflag and inundflag both set to be true'
+       !call shr_sys_abort( subname//' ERROR: wrmflag and inundflag both set' )
     endif
 
     if (coupling_period <= 0) then
@@ -1572,7 +1573,7 @@ contains
              TRunoff%wf_ini(:) = rtmCTL%inundwf(:)
              ! Inundation floodplain water depth (m)
              TRunoff%hf_ini(:) = rtmCTL%inundhf(:)
-             ! Inundation floodplain fraction      ! added by Tian
+             ! Inundation floodplain fraction
              TRunoff%ff_ini(:) = rtmCTL%inundff(:)
              ! Inundation flooded fraction      
              TRunoff%ffunit_ini(:) = rtmCTL%inundffunit(:)
@@ -1711,15 +1712,15 @@ contains
        endif
     else
 
-    do nt = 1,nt_rtm
-    do nr = rtmCTL%begr,rtmCTL%endr
+     do nt = 1,nt_rtm
+      do nr = rtmCTL%begr,rtmCTL%endr
        call UpdateState_hillslope(nr,nt)
        call UpdateState_subnetwork(nr,nt)
        call UpdateState_mainchannel(nr,nt)
        rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                              TRunoff%wh(nr,nt)*rtmCTL%area(nr))
-    enddo
-    enddo
+      enddo
+     enddo
     endif
 
     call t_stopf('mosarti_restart')
@@ -1995,7 +1996,7 @@ contains
        end if
 
        if (wrmflag) then
-          StorWater%supply = 0._r8             !initial supply at the start of Tian Feb 2018
+          StorWater%supply = 0._r8             !initial supply at the start
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
              budget_terms(bv_dsupp_i,nt) = budget_terms(bv_dsupp_i,nt) + StorWater%supply(nr)
@@ -2013,7 +2014,7 @@ contains
        TRunoff%qsur(nr,nt) = rtmCTL%qsur(nr,nt)
        TRunoff%qsub(nr,nt) = rtmCTL%qsub(nr,nt)
        TRunoff%qgwl(nr,nt) = rtmCTL%qgwl(nr,nt)
-       TRunoff%qdem(nr,nt) = rtmCTL%qdem(nr,nt) !added by Yuna 1/29/2018
+       TRunoff%qdem(nr,nt) = rtmCTL%qdem(nr,nt)
     enddo
     enddo
   
@@ -2213,7 +2214,7 @@ contains
        TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) / rtmCTL%area(nr)
        TRunoff%qsub(nr,nt) = TRunoff%qsub(nr,nt) / rtmCTL%area(nr)
        TRunoff%qgwl(nr,nt) = TRunoff%qgwl(nr,nt) / rtmCTL%area(nr)
-       TRunoff%qdem(nr,nt) = TRunoff%qdem(nr,nt) / rtmCTL%area(nr) !m3 to m added by Yuna 1/29/2018
+       TRunoff%qdem(nr,nt) = TRunoff%qdem(nr,nt) / rtmCTL%area(nr) !m3 to m
     enddo
     enddo
 
@@ -2233,11 +2234,11 @@ contains
           write(iulog,'(2a,i4,a,i10,i6)') trim(subname),' subcycling=',ns,': model date=',ymd,tod
        endif
      
-       if (inundflag) then
-          call t_startf('mosartr_inund_sim')
-          call MOSARTinund_simulate ( )
-          call t_stopf('mosartr_inund_sim')
-       else
+       !if (inundflag .and. wrmflag .eq. 0) then !use Luo's scheme when inundation is on and WM is off (keep it for now - tz)
+       !   call t_startf('mosartr_inund_sim')
+       !   call MOSARTinund_simulate ( )
+       !   call t_stopf('mosartr_inund_sim')
+       !else ! other cases
           call t_startf('mosartr_euler')
           ! debug 
 #ifdef DEBUG
@@ -2245,7 +2246,7 @@ contains
 #endif
           call Euler()
           call t_stopf('mosartr_euler')
-       endif
+       !endif
 
 ! tcraig - NOT using this now, but leave it here in case it's useful in the future
 !   for some runoff terms.
@@ -2633,8 +2634,7 @@ contains
           budget_volume =  budget_terms(bv_volt_f,nt) - budget_terms(bv_volt_i,nt) + &
                            budget_terms(bv_dstor_f,nt) - budget_terms(bv_dstor_i,nt)             ! (Volume change during a coupling period. --Inund.)
           budget_input  =  budget_terms(br_qsur,nt) + budget_terms(br_qsub,nt) + &
-                           budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt) !+ &
-                           ! budget_terms(br_qdem,nt) commented out by Tian 3/13/2018
+                           budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt)
           budget_output =  budget_terms(br_ocnout,nt) + budget_terms(br_flood,nt) + &
                            budget_terms(br_direct,nt) + &
                            budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt)
@@ -2663,8 +2663,7 @@ contains
             budget_volume = (budget_global(bv_volt_f,nt) - budget_global(bv_volt_i,nt) + &
                              budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt))   !(Global volume change during a coupling period. --Inund.)
             budget_input  = (budget_global(br_qsur,nt) + budget_global(br_qsub,nt) + &
-                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt)) !+ &
-                             ! budget_global(br_qdem,nt)) commented out by Tian 3/13/2018
+                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt))
             budget_output = (budget_global(br_ocnout,nt) + budget_global(br_flood,nt) + &
                              budget_global(br_direct,nt) + &
                              budget_global(bv_dsupp_f,nt) - budget_global(bv_dsupp_i,nt))
@@ -2718,7 +2717,6 @@ contains
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
                                                                               budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)), &
                      ' (should be zero)'
-                     ! + budget_global(br_qdem,nt)), commented out by Tian 3/13/2018
                                                                              
           endif
             write(iulog,'(2a)') trim(subname),'----------------'
@@ -3482,7 +3480,7 @@ contains
           allocate (TUnit%rslp_dstrm(begr:endr))
 
           ! --------------------------------- 
-          ! Need code to retrieve values of TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:) .
+          ! retrieve downstream values (TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:)) for DW routing.
           ! --------------------------------- 
 
           call mct_aVect_init(avsrc,rList='rlen:rslp',lsize=rtmCTL%lnumr)
@@ -3520,7 +3518,7 @@ contains
 
           allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
           ! --------------------------------- 
-          ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ). Tian Apr. 2018
+          ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
            
           ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
           call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)
@@ -3787,10 +3785,12 @@ contains
            TRunoff%hf_ini = 0.0_r8
            
            allocate (TRunoff%ff_ini(begr:endr))
-           TRunoff%ff_ini = 0.0_r8 ! added by Tian Dec 2017
+           TRunoff%ff_ini = 0.0_r8
 
            allocate (TRunoff%ffunit_ini(begr:endr))
            TRunoff%ffunit_ini = 0.0_r8
+           allocate (TRunoff%netchange(begr:endr))
+           TRunoff%netchange = 0.0_r8
            allocate (TRunoff%se_rf(begr:endr))
            TRunoff%se_rf = 0.0_r8
 
