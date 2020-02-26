@@ -35,6 +35,7 @@ if (NOT CUDA_BUILD)
     p3_functions_autoconversion.cpp
     p3_functions_conservation.cpp
     p3_functions_cloud_rain_acc.cpp
+    p3_functions_cldliq_imm_freezing.cpp
     p3_functions_droplet_self_coll.cpp
     p3_functions_update_prognostics.cpp
     p3_functions_impose_max_total_Ni.cpp)
