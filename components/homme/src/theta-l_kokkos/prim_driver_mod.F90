@@ -368,8 +368,7 @@ contains
       compute_diagnostics = .false.
     endif
 
-#if 0
-!!!!!!!!!!!! TODO: uncomment for CAM runs
+#ifndef HOMMEXX_GB_CONFIG
     call t_startf('push_to_cxx')
     call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                            elem_derived_FPHI, elem_derived_FQ)
