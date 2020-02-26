@@ -137,13 +137,16 @@ RemapStateAndThicknessProvider<true> {
   Kokkos::TeamPolicy<ExecSpace,TagPreProcess>  m_policy_pre;
   Kokkos::TeamPolicy<ExecSpace,TagPostProcess> m_policy_post;
 
+  TeamUtils<ExecSpace> m_tu;
+
   explicit
   RemapStateAndThicknessProvider (const Elements& elements)
     : m_dp3d (elements.m_state.m_dp3d)
     , m_tgt_layer_thickness("Target layer thickness", elements.num_elems())
     , m_state_provider (elements)
-    , m_policy_pre(Homme::get_default_team_policy<ExecSpace,TagPreProcess>(0))
-    , m_policy_post(Homme::get_default_team_policy<ExecSpace,TagPostProcess>(0))
+    , m_policy_pre(Homme::get_default_team_policy<ExecSpace,TagPreProcess>(1))
+    , m_policy_post(Homme::get_default_team_policy<ExecSpace,TagPostProcess>(1))
+    , m_tu(m_policy_pre)
   {
     // We do not init them in the initialization list, since they require info
     // from the state provider. Although, as they are declared in the class,
@@ -156,17 +159,21 @@ RemapStateAndThicknessProvider<true> {
     const int num_elems = elements.m_state.num_elems();
     m_policy_pre = Homme::get_default_team_policy<ExecSpace,TagPreProcess>(iters_pre*num_elems);
     m_policy_post = Homme::get_default_team_policy<ExecSpace,TagPostProcess>(iters_post*num_elems);
+
+    if (iters_pre*num_elems > 0) {
+      m_tu = TeamUtils<ExecSpace>(m_policy_pre);
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_remap () const { return m_state_provider.num_states_remap(); }
 
   int requested_buffer_size () const {
-    return m_state_provider.requested_buffer_size(Homme::get_num_concurrent_teams(m_policy_pre));
+    return m_state_provider.requested_buffer_size(m_tu.get_num_concurrent_teams());
   }
 
   void init_buffers(const FunctorsBuffersManager& fbm) {
-    m_state_provider.init_buffers(fbm, Homme::get_num_concurrent_teams(m_policy_pre));
+    m_state_provider.init_buffers(fbm, m_tu.get_num_concurrent_teams());
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -185,7 +192,7 @@ RemapStateAndThicknessProvider<true> {
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagPreProcess&,
                    const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     const int istate = kv.ie % m_state_provider.num_states_preprocess();
     kv.ie /= m_state_provider.num_states_preprocess();
     auto dp = get_source_thickness(kv.ie,m_np1);
@@ -203,7 +210,7 @@ RemapStateAndThicknessProvider<true> {
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagPostProcess&,
                    const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     const int istate = kv.ie % m_state_provider.num_states_preprocess();
     kv.ie /= m_state_provider.num_states_preprocess();
     auto dp = Homme::subview(m_tgt_layer_thickness,kv.ie);
@@ -268,6 +275,8 @@ struct RemapFunctor : public Remapper {
 
   RemapType m_remap;
 
+  TeamUtils<ExecSpace> m_tu;
+
   explicit
   RemapFunctor (const int qsize,
                 const Elements& elements,
@@ -279,6 +288,7 @@ struct RemapFunctor : public Remapper {
    , m_qdp(tracers.qdp)
    , m_hvcoord(hvcoord)
    , m_remap(elements.num_elems(), this->num_to_remap())
+   , m_tu(Homme::get_default_team_policy<ExecSpace>(1))
   {
     // Members used for sanity checks
     valid_layer_thickness = decltype(valid_layer_thickness)("Check for whether the surface thicknesses are positive",elements.num_elems());
@@ -324,7 +334,7 @@ struct RemapFunctor : public Remapper {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeThicknessTag, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     m_hvcoord.compute_ps_ref_from_dp(kv, Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),
                                          Homme::subview(m_state.m_ps_v, kv.ie, m_data.np1));
 
@@ -335,7 +345,7 @@ struct RemapFunctor : public Remapper {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeExtrinsicsTag, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
 
     assert(m_fields_provider.num_states_remap() > 0);
     const int den = (m_fields_provider.num_states_remap() > 0) ? m_fields_provider.num_states_remap() : 1;
@@ -356,7 +366,7 @@ struct RemapFunctor : public Remapper {
   // so it needs to be separated from the others to reduce latency on the GPU
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeGridsTag, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     m_remap.compute_grids_phase(
         kv, m_fields_provider.get_source_thickness(kv.ie, m_data.np1),
         Homme::subview(m_fields_provider.m_tgt_layer_thickness, kv.ie));
@@ -365,7 +375,7 @@ struct RemapFunctor : public Remapper {
   // This asserts if num_to_remap() == 0
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeRemapTag, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     assert(num_to_remap() != 0);
     const int var = kv.ie % num_to_remap();
     kv.ie /= num_to_remap();
@@ -376,7 +386,7 @@ struct RemapFunctor : public Remapper {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeIntrinsicsTag, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
 
     assert(m_fields_provider.num_states_remap() != 0);
     const int den = (m_fields_provider.num_states_remap() > 0) ? m_fields_provider.num_states_remap() : 1;
@@ -471,6 +481,7 @@ private:
   template <typename FunctorTag>
   void run_functor(const std::string functor_name, int num_exec) {
     const auto policy = remap_team_policy<FunctorTag>(num_exec);
+    m_tu = TeamUtils<ExecSpace>(policy);
     // Timers don't work on CUDA, so place them here
     GPTLstart(functor_name.c_str());
     profiling_resume();
