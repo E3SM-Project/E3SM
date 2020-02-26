@@ -2117,7 +2117,9 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrr_supply'
        call metadata_set(attname, longname, stdname, units)
-	   
+    endif
+    
+	if (trim(cime_model) == 'e3sm') then   
        call seq_flds_add(r2x_fluxes,'Flrr_deficit')
        call seq_flds_add(x2l_fluxes,'Flrr_deficit')
        longname = 'River model supply deficit'

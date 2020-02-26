@@ -462,9 +462,7 @@ contains
     end if
 
     if (wrmflag .and. inundflag) then
-       !write(iulog,*) subname,' ERROR MOSART wrmflag and inundflag cannot both be true'
        write(iulog,*) subname,' MOSART wrmflag and inundflag both set to be true'
-       !call shr_sys_abort( subname//' ERROR: wrmflag and inundflag both set' )
     endif
 
     if (coupling_period <= 0) then
@@ -2239,14 +2237,14 @@ contains
        !   call MOSARTinund_simulate ( )
        !   call t_stopf('mosartr_inund_sim')
        !else ! other cases
-          call t_startf('mosartr_euler')
-          ! debug 
+       
+       call t_startf('mosartr_euler')
 #ifdef DEBUG
-          write(iulog,*) 'clm-mosart subT: (call Euler) ns=', ns
+       write(iulog,*) 'clm-mosart subT: (call Euler) ns=', ns
 #endif
-          call Euler()
-          call t_stopf('mosartr_euler')
-       !endif
+       call Euler()
+       call t_stopf('mosartr_euler')
+
 
 ! tcraig - NOT using this now, but leave it here in case it's useful in the future
 !   for some runoff terms.

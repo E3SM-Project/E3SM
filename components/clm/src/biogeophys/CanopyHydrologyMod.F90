@@ -255,7 +255,7 @@ contains
        dtime = get_step_size()
 
        do gg = bounds%begg,bounds%endg
-          irrigated_ppg(gg) = 0
+          irrigated_ppg(gg) = 0._r8
        end do
          
        do f = 1, num_nolakep
@@ -389,9 +389,6 @@ contains
 
              if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
                if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
-                 !if (irrigated_ppg(g)<1) then
-                 !   write (iulog,*) 'DEBUG irrigated_ppg(g)', irrigated_ppg(g)
-                 !endif
                qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
                qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
  
