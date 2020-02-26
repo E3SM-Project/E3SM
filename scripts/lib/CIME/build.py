@@ -266,7 +266,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
         elif lib == "cprnc":
             full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
-            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path))
+            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory

@@ -2407,6 +2407,20 @@ class K_TestCimeCase(TestCreateTestCommon):
             man_env_contents = fd.read()
 
         self.assertEqual(case_env_contents, man_env_contents)
+    ###########################################################################
+    def test_self_build_cprnc(self):
+    ###########################################################################
+        self._create_test(["ERS.f19_g16_rx1.A", "--no-build"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "{}.{}".format(CIME.utils.get_full_test_name("ERS.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        run_cmd_assert_result(self, "./xmlchange CCSM_CPRNC=this_is_a_broken_cprnc",
+                              from_dir=casedir)
+        run_cmd_assert_result(self, "./case.build", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+
+        self._wait_for_tests(self._baseline_name)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
