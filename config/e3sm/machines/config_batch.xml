@@ -558,7 +558,8 @@
    <batch_system MACH="lawrencium-lr6" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--qos=condo_esd2 </directive>
+       <directive>--qos=lr_normal </directive>
+       <directive>--account={{ project }}</directive>
      </directives>
     <queues>
       <queue walltimemax="01:00:00" default="true">lr6</queue>
