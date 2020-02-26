@@ -358,14 +358,13 @@ public:
   //       succeeds, and then the copy constructor of View is used to produce a View<const T>
   //       from a View<T>. Magic.
 
-  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
+  template<int NUM_LEV_OUT, typename InputProvider, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere (const KernelVariables &kv,
-                   const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& scalar,
+                   const InputProvider& scalar,
                    const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& grad_s) const
   {
     static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
-    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
     static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
 
     // Make sure the buffers have been created
@@ -713,7 +712,7 @@ public:
     assert (vector_buf_ml.size()>0);
 
     vector_buf<NUM_LEV_REQUEST> grad_s(Homme::subview(vector_buf_ml, kv.team_idx, 0).data());
-    gradient_sphere<NUM_LEV_REQUEST,NUM_LEV_IN,NUM_LEV_REQUEST>(kv, field, grad_s);
+    gradient_sphere<NUM_LEV_REQUEST,decltype(field),NUM_LEV_REQUEST>(kv, field, grad_s);
     divergence_sphere_wk<NUM_LEV_OUT,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv, grad_s, laplace);
   }//end of laplace_simple
 
@@ -734,7 +733,7 @@ public:
     vector_buf<NUM_LEV_REQUEST> grad_s(Homme::subview(vector_buf_ml, kv.team_idx, 1).data());
     vector_buf<NUM_LEV_REQUEST> sphere_buf(Homme::subview(vector_buf_ml, kv.team_idx, 2).data());
 
-    gradient_sphere<NUM_LEV_REQUEST,NUM_LEV_IN,NUM_LEV_REQUEST>(kv, field, grad_s);
+    gradient_sphere<NUM_LEV_REQUEST,decltype(field),NUM_LEV_REQUEST>(kv, field, grad_s);
     //now multiply tensorVisc(:,:,i,j)*grad_s(i,j) (matrix*vector, independent of i,j )
     //but it requires a temp var to store a result. the result is then placed to grad_s,
     //or should it be an extra temp var instead of an extra loop?
