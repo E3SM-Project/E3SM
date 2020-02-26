@@ -1157,9 +1157,9 @@ class TestCreateTestCommon(unittest.TestCase):
             self._wait_for_tests(test_id, expect_works=(not pre_run_errors and not run_errors))
 
     ###########################################################################
-    def _wait_for_tests(self, test_id, expect_works=True):
+    def _wait_for_tests(self, test_id, expect_works=True, always_wait=False):
     ###########################################################################
-        if self._hasbatch:
+        if self._hasbatch or always_wait:
             timeout_arg = "--timeout={}".format(GLOBAL_TIMEOUT) if GLOBAL_TIMEOUT is not None else ""
             expected_stat = 0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE
             run_cmd_assert_result(self, "{}/wait_for_tests {} *{}/TestStatus".format(TOOLS_DIR, timeout_arg, test_id),
@@ -2407,6 +2407,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             man_env_contents = fd.read()
 
         self.assertEqual(case_env_contents, man_env_contents)
+
     ###########################################################################
     def test_self_build_cprnc(self):
     ###########################################################################
@@ -2420,7 +2421,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         run_cmd_assert_result(self, "./case.build", from_dir=casedir)
         run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
 
-        self._wait_for_tests(self._baseline_name)
+        self._wait_for_tests(self._baseline_name, always_wait=True)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
