@@ -3225,18 +3225,6 @@
 			 description="Accumulated cell area for normalization"
 		/>
 
-		<!-- defined to enable openmp -->
-		<var_array name="delsq_tracer" type="real" dimensions="nVertLevels nCells">
-			<var name="delsq_temperature" array_group="dynamics" units="degrees Celsius"
-				 description="potential temperature"
-			/>
-			<var name="delsq_salinity" array_group="dynamics" units="grams salt per kilogram seawater"
-				 description="salinity"
-			/>
-			<var name="delsq_tracer1" array_group="dynamics" units="na"
-				 description="tracer"
-			/>
-		</var_array>
 		<!-- FIELDS FOR RX1 INITIALIZATION -->
 		<var name="zInterfaceScratch"
 			persistence="scratch"
