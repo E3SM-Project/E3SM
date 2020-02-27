@@ -20,7 +20,8 @@ OBJS =  \
 	mpas_atmphys_functions.o \
 	mpas_atmphys_initialize_real.o \
 	mpas_atmphys_utilities.o \
-	mpas_stack.o
+	mpas_stack.o \
+	mpas_parse_geoindex.o
 
 all: core_hyd
 
@@ -75,12 +76,15 @@ mpas_init_atm_core.o: mpas_advection.o mpas_init_atm_cases.o
 
 mpas_stack.o:
 
+mpas_parse_geoindex.o:
+
 mpas_init_atm_static.o: \
 	mpas_atm_advection.o \
 	mpas_init_atm_hinterp.o \
 	mpas_init_atm_llxy.o \
 	mpas_atmphys_utilities.o \
-	mpas_stack.o
+	mpas_stack.o \
+	mpas_parse_geoindex.o
 
 mpas_init_atm_surface.o: \
 	mpas_init_atm_hinterp.o  \
