@@ -247,6 +247,12 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     if uses_kokkos(case):
         libs.append("kokkos")
 
+    # Check if we need to build our own cprnc
+    if case.get_value("TEST"):
+        cprnc_loc = case.get_value("CCSM_CPRNC")
+        if not cprnc_loc or not os.path.exists(cprnc_loc):
+            libs.append("cprnc")
+
     logs = []
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
     for lib in libs:
@@ -258,6 +264,9 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             full_lib_path = os.path.join(sharedlibroot, sharedpath)
         elif lib == "mpi-serial":
             full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
+        elif lib == "cprnc":
+            full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
+            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory
