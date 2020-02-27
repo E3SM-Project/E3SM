@@ -204,7 +204,7 @@ def create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_tim
     create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname, data_rel_path, git_commit)
 
 ###############################################################################
-def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname):
+def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname, force_log_upload):
 ###############################################################################
 
     data_rel_path = os.path.join("Testing", utc_time)
