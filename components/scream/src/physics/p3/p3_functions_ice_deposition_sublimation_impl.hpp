@@ -40,7 +40,9 @@ void Functions<S,D>
   qiberg.set(qitot_incld_not_small && t_lt_zerodegc, pack::max(epsi*oabi*(qvs - qvi), 0));
   qiberg.set(qitot_incld_not_small && !t_lt_zerodegc, 0);
 
-  nisub.set(qitot_incld_not_small, qisub*(nitot_incld/qitot_incld));
+  if (qitot_incld_not_small.any()) {
+    nisub.set(qitot_incld_not_small, qisub*(nitot_incld/qitot_incld));
+  }
 
   //if qitot_incld is small (i.e. !qitot_incld_not_small is true)
   qiberg.set(!qitot_incld_not_small, 0);
