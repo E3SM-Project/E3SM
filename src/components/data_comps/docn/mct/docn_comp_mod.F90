@@ -262,6 +262,13 @@ CONTAINS
     allocate(xc(lsize))
     allocate(yc(lsize))
 
+    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
+
+    ksomask = mct_aVect_indexRA(o2x,'So_omask', perrwith='quiet')
+    if (ksomask /= 0) then
+       o2x%rAttr(ksomask, :) = ggrid%data%rAttr(kfrac,:)
+    end if
+
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
@@ -481,6 +488,9 @@ CONTAINS
     case('SSTDATA')
        lsize = mct_avect_lsize(o2x)
        do n = 1,lsize
+          if (ksomask /= 0) then
+             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          end if
           o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
           o2x%rAttr(ks   ,n) = ocnsalt
           o2x%rAttr(ku   ,n) = 0.0_R8
