@@ -201,23 +201,6 @@
     </queues>
   </batch_system>
 
-  <!-- gaea is PBS -->
-  <batch_system MACH="gaea" type="pbs" >
-    <directives>
-      <directive>-A cpo</directive>
-      <directive>-l {{ partition }}</directive>
-      <directive>-l size={{ mppsize }}</directive>
-      <directive>-E </directive>
-      <directive>-d $RUNDIR</directive>
-      <directive>-o $RUNDIR/$CASE.out </directive>
-      <directive>-S /bin/bash  </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="01:00:00" nodemin="1" nodemax="35">debug</queue>
-      <queue walltimemax="24:00:00" nodemin="861" nodemax="4166" default="true">batch</queue>
-    </queues>
-  </batch_system>
-
   <batch_system MACH="hera" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <submit_args>
@@ -262,4 +245,19 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="gaea" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <jobid_pattern>Submitted batch job (\d+) on cluster .*</jobid_pattern>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="--qos" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$CHARGE_ACCOUNT"/>
+    </submit_args>
+    <directives>
+      <directive>--clusters=c4</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="171">debug</queue>
+    </queues>
+  </batch_system>
 </config_batch>
