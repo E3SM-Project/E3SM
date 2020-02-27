@@ -61,7 +61,7 @@
     <OS>CNL</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
-    <PROJECT>acme</PROJECT>
+    <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
@@ -210,7 +210,7 @@
     <OS>CNL</OS>
     <COMPILERS>intel,gnu,intel19</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
-    <PROJECT>acme</PROJECT>
+    <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
