@@ -119,7 +119,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False, i
         return False
     full_path = os.path.join(input_data_root, rel_path)
     if ic_filepath:
-        full_path = full_path.replace(ic_filepath, "")
+        full_path = full_path.replace(ic_filepath, "/")
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
@@ -276,7 +276,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     rundir = case.get_value("RUNDIR")
     # Fill in defaults as needed
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
-    input_ic_root = case.get_value("DIN_LOC_IC")
+    input_ic_root = case.get_value("DIN_LOC_IC", resolved=True)
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")

@@ -14,7 +14,7 @@
     <address>ftp.emc.ncep.noaa.gov/EIB/UFS/</address>
     <user>anonymous</user>
     <password>user@example.edu</password>
-    <ic_filepath>inputdata/</ic_filepath>
+    <ic_filepath>/inputdata/</ic_filepath>
   </server>
   <server>
     <comment>NOMADS site for grib initial conditions (depricated)</comment>
