@@ -249,7 +249,7 @@ using a fortran linker.
     <base> -qno-opt-dynamic-align -fp-model consistent </base>
   </FC_REPRO>
   <FC_FAST>
-    <base>  -xCORE-AVX2 -no-prec-div -no-preq-sqrt </base>
+    <base>  -xCORE-AVX2 -no-prec-div -no-prec-sqrt </base>
   </FC_FAST>
   <FFLAGS>
     <base> -fpp -fno-alias -auto -safe-cray-ptr -ftz -assume byterecl -nowarn -sox -align array64byte</base>
