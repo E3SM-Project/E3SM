@@ -247,10 +247,11 @@
 
   <batch_system MACH="gaea" type="slurm" >
     <batch_submit>sbatch</batch_submit>
+    <jobid_pattern>Submitted batch job (\d+) on cluster .*</jobid_pattern>
     <submit_args>
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="--qos" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
+      <arg flag="--account" name="$CHARGE_ACCOUNT"/>
     </submit_args>
     <directives>
       <directive>--clusters=c4</directive>

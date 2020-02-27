@@ -459,7 +459,7 @@ This allows using a different mpirun command to launch unit tests
     <OS>CNL</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
-    <PROJECT>esrl</PROJECT>
+    <CHARGE_ACCOUNT>esrl_bmcs</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/ufs-mrweather-app</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/f2/pdata/esrl/gsd/ufs/ufs-release-v1/CIME_UFSINPUT</DIN_LOC_ROOT>
