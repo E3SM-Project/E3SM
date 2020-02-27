@@ -53,7 +53,6 @@ struct CaarFunctorImpl {
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV]  >   vort;
 
     ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   grad_tmp;
-    ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   grad_press;
     ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   vdp;
 
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV_P]>   dp_i;
@@ -71,9 +70,6 @@ struct CaarFunctorImpl {
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV_P]>   w_tens;
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV_P]>   phi_tens;
   };
-
-  using ScalarM = ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>;
-  using ScalarI = ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>;
 
   using deriv_type = ReferenceElement::deriv_type;
 
@@ -220,12 +216,7 @@ struct CaarFunctorImpl {
     // Midpoints vectors
     m_buffers.grad_tmp = decltype(m_buffers.grad_tmp)(mem,nteams);
     mem += m_buffers.grad_tmp.size();
-#ifdef HOMMEXX_BFB_TESTING
-    m_buffers.grad_press = m_buffers.grad_tmp;
-#else
-    m_buffers.grad_press = decltype(m_buffers.grad_press)(mem,nteams);
-    mem += m_buffers.grad_press.size();
-#endif
+
     m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nteams);
     mem += m_buffers.vdp.size();
     m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nteams);
@@ -233,12 +224,12 @@ struct CaarFunctorImpl {
 
     // Interface scalars
     if (!m_theta_hydrostatic_mode || m_rsplit==0) {
-      m_buffers.dp_i         = decltype(m_buffers.dp_i        )(mem,nteams);
+      m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nteams);
       mem += m_buffers.dp_i.size();
     }
 
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.dpnh_dp_i    = decltype(m_buffers.dpnh_dp_i   )(mem,nteams);
+      m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nteams);
       mem += m_buffers.dpnh_dp_i.size();
     }
 
@@ -625,7 +616,7 @@ struct CaarFunctorImpl {
 
     // Compute grad(pi)
     m_sphere_ops.gradient_sphere(kv,Homme::subview(m_buffers.pi,kv.team_idx),
-                                    Homme::subview(m_buffers.grad_press,kv.team_idx));
+                                    Homme::subview(m_buffers.grad_tmp,kv.team_idx));
     kv.team_barrier();
 
     // Update omega with v*grad(p)
@@ -636,14 +627,14 @@ struct CaarFunctorImpl {
 
       auto omega = Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp);
       auto v = Homme::subview(m_state.m_v,kv.ie,m_data.n0);
-      auto grad_pi = Homme::subview(m_buffers.grad_press,kv.team_idx);
+      auto grad_pi = Homme::subview(m_buffers.grad_tmp,kv.team_idx);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         omega(ilev) += (v(0,igp,jgp,ilev)*grad_pi(0,igp,jgp,ilev) +
                         v(1,igp,jgp,ilev)*grad_pi(1,igp,jgp,ilev));
       });
 
-      // Use EOS to compute pnh, exner, and dpnh_dp_i. Use some unused buffers for pnh_i
+      // Use EOS to compute pnh/exner or exner/phi (depending on whether it's hydro mode).
       if (m_theta_hydrostatic_mode) {
         // Recall that, in this case, pnh aliases pi, and pi was already computed
         m_eos.compute_exner(kv,Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
@@ -719,13 +710,12 @@ struct CaarFunctorImpl {
         // Here, bcVal is 1.0 (to avoid nan/inf with division by 0)
         ColumnOps::compute_interface_delta<CM::Divide>(kv,exner,vtheta_i,1.0,0.0,1.0);
 
-        auto dpnh_dp_i = Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp);
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
+          vtheta_i(ilev) /= -PhysicalConstants::cp;
           if (!m_theta_hydrostatic_mode) {
-            vtheta_i(ilev) *= -dpnh_dp_i(ilev);
+            vtheta_i(ilev) *= m_buffers.dpnh_dp_i(kv.team_idx,igp,jgp,ilev);
           }
-          vtheta_i(ilev) /= PhysicalConstants::cp;
         });
       }
     });
@@ -1035,36 +1025,32 @@ struct CaarFunctorImpl {
     // Compute theta_tens=scale1*(-theta_vadv-div(v*vtheta_dp)
     // Note: div(v*vtheta_dp) can be computed in conservative or
     //       non concervative form (div(ab) vs a*div(b)+grad(a)*b)
+
+    // Use a couple of lambdas to compute input of diff operators on the fly
+    auto v         = Homme::subview(m_state.m_v,kv.ie,m_data.n0);
+    auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0);
+    auto dp        = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0);
+
+    auto vtheta = [&](const int igp,const int jgp,const int ilev)->Scalar {
+      return vtheta_dp(igp,jgp,ilev) / dp(igp,jgp,ilev);
+    };
+
+    auto v_vtheta_dp = [&](const int icomp, const int igp, const int jgp, const int ilev)->Scalar {
+      return v(icomp,igp,jgp,ilev) * vtheta_dp(igp,jgp,ilev);
+    };
+
     if (m_theta_advection_form==AdvectionForm::Conservative) {
-      auto v = Homme::subview(m_state.m_v,kv.ie,m_data.n0);
-      auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0);
-      auto v_times_vtheta = [&](const int icomp,
-                                const int igp,
-                                const int jgp,
-                                const int ilev)->Scalar {
-        return v(icomp,igp,jgp,ilev) * vtheta(igp,jgp,ilev);
-        
-      };
       if (m_rsplit==0) {
         using CM = CombineMode;
         // If you want a CombineMode different than Replace, unfortunately you have to specify
         // all the template args, since the CombineMode is the last one...
-        m_sphere_ops.divergence_sphere_cm<CM::Add>(kv,v_times_vtheta,
+        m_sphere_ops.divergence_sphere_cm<CM::Add>(kv,v_vtheta_dp,
                                           Homme::subview(m_buffers.theta_tens,kv.team_idx));
       } else {
-        m_sphere_ops.divergence_sphere(kv,v_times_vtheta,
+        m_sphere_ops.divergence_sphere(kv,v_vtheta_dp,
                                           Homme::subview(m_buffers.theta_tens,kv.team_idx));
       }
     } else {
-      auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0);
-      auto dp        = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0);
-
-      auto vtheta = [&](const int igp,
-                        const int jgp,
-                        const int ilev)->Scalar {
-        return vtheta_dp(igp,jgp,ilev) / dp(igp,jgp,ilev);
-
-      };
       m_sphere_ops.gradient_sphere(kv,vtheta,
                                       Homme::subview(m_buffers.grad_tmp,kv.team_idx));
     }
@@ -1098,11 +1084,15 @@ struct CaarFunctorImpl {
         // NOTE: if the condition is false, then theta_tens already contains div(v*theta*dp) already
         if (m_theta_advection_form==AdvectionForm::NonConservative) {
           // We need a temp, since, if rsplit=0, theta_tens is already storing theta_vadv
-          Scalar temp = m_rsplit>0 ? 0.0 : theta_tens(ilev);
-          theta_tens(ilev)  = div_vdp(ilev)*m_buffers.temp(kv.team_idx,igp,jgp,ilev);
-          theta_tens(ilev) += m_buffers.grad_tmp(kv.team_idx,0,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev);
-          theta_tens(ilev) += m_buffers.grad_tmp(kv.team_idx,1,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev);
-          theta_tens(ilev) += temp;
+
+          Scalar temp = div_vdp(ilev)*vtheta(igp,jgp,ilev);
+          temp += m_buffers.grad_tmp(kv.team_idx,0,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev);
+          temp += m_buffers.grad_tmp(kv.team_idx,1,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev);
+          if (m_rsplit>0) {
+            theta_tens(ilev) = temp;
+          } else {
+            theta_tens(ilev) += temp;
+          }
         }
       });
     });
@@ -1165,9 +1155,9 @@ struct CaarFunctorImpl {
     if (m_theta_hydrostatic_mode) {
       // In nh mode, gradphinh has already been computed, but in hydro mode
       // we skip the whole compute_w_and_phi_tens call
-      // m_sphere_ops.gradient_sphere(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0),
-      //                                 Homme::subview(m_buffers.grad_phinh_i,kv.team_idx));
-      // kv.team_barrier();
+      m_sphere_ops.gradient_sphere(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0),
+                                      Homme::subview(m_buffers.grad_phinh_i,kv.team_idx));
+      kv.team_barrier();
     } else {
       // Compute average(w^2/2)
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
@@ -1272,7 +1262,7 @@ struct CaarFunctorImpl {
 
     // Note: exner = (pi/p0)^k, therefore grad(exner) = k*(exner/pi)*grad(pi).
     //       So you *could* avoid computing this grad, at the price of some arithmetic op.
-    auto grad_exner = Homme::subview(m_buffers.grad_press,kv.team_idx);
+    auto grad_exner = Homme::subview(m_buffers.grad_tmp,kv.team_idx);
     m_sphere_ops.gradient_sphere(kv, Homme::subview(m_buffers.exner,kv.team_idx),
                                      grad_exner);
     kv.team_barrier();
@@ -1288,8 +1278,6 @@ struct CaarFunctorImpl {
       auto u_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp);
       auto v_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp);
       auto vort = Homme::subview(m_buffers.vort,kv.team_idx,igp,jgp);
-      auto exner = Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp);
-      auto pi = Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
