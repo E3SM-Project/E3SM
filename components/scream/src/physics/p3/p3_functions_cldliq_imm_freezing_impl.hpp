@@ -30,11 +30,10 @@ void Functions<S,D>
   if (qc_not_small_and_t_freezing.any()) {
     Spack expAimmDt, inv_lamc3;
     expAimmDt.set(qc_not_small_and_t_freezing, exp(AIMM * (ZeroDegC-t)));
-    inv_lamc3.set(qc_not_small_and_t_freezing,
-                  (sp(1.0)/lamc) * (sp(1.0)/lamc) * (sp(1.0)/lamc));
+    inv_lamc3.set(qc_not_small_and_t_freezing, cube(1/lamc));
     qcheti.set(qc_not_small_and_t_freezing,
                CONS6 * cdist1 * tgamma(sp(7.0)+mu_c) * expAimmDt *
-               (inv_lamc3 * inv_lamc3));
+               square(inv_lamc3));
     ncheti.set(qc_not_small_and_t_freezing,
                CONS5 * cdist1 * tgamma(sp(4.0)+mu_c) * expAimmDt * inv_lamc3);
   }
