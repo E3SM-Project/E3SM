@@ -157,8 +157,18 @@
 </compset>
 
 <compset>
+  <alias>BGCEXP_BCRC_CNPRDCTC_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC</lname>
+</compset>
+
+<compset>
   <alias>BGCEXP_BCRC_CNPRDCTC_20TRS</alias>
   <lname>20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRC_CNPRDCTC_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC</lname>
 </compset>
 
 <compset>
@@ -167,8 +177,18 @@
 </compset>
 
 <compset>
+  <alias>BGCEXP_BCRD_CNPRDCTC_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRD</lname>
+</compset>
+
+<compset>
   <alias>BGCEXP_BCRD_CNPRDCTC_20TRS</alias>
   <lname>20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRD_CNPRDCTC_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRD</lname>
 </compset>
 
 <compset>
@@ -177,13 +197,28 @@
 </compset>
 
 <compset>
+  <alias>BGCEXP_BDRC_CNPRDCTC_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRC</lname>
+</compset>
+
+<compset>
   <alias>BGCEXP_BDRC_CNPRDCTC_20TRS</alias>
   <lname>20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRC</lname>
 </compset>
 
 <compset>
+  <alias>BGCEXP_BDRC_CNPRDCTC_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRC</lname>
+</compset>
+
+<compset>
   <alias>BGCEXP_BDRD_CNPRDCTC_20TR</alias>
   <lname>20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRD_CNPRDCTC_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
 <compset>
@@ -197,8 +232,33 @@
 </compset>
 
 <compset>
+  <alias>BGCEXP_BDRD_CNPRDCTC_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_CNTL_CNPECACNT_1850S</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC</lname>
+</compset>
+
+<compset>
   <alias>BGCEXP_BCRC_CNPECACNT_20TR</alias>
   <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRC_CNPECACNT_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRC_CNPECACNT_20TRS</alias>
+  <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRC_CNPECACNT_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC</lname>
 </compset>
 
 <compset>
@@ -207,8 +267,38 @@
 </compset>
 
 <compset>
+  <alias>BGCEXP_BCRD_CNPECACNT_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRD_CNPECACNT_20TRS</alias>
+  <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BCRD_CNPECACNT_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRD</lname>
+</compset>
+
+<compset>
   <alias>BGCEXP_BDRC_CNPECACNT_20TR</alias>
   <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRC_CNPECACNT_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRC_CNPECACNT_20TRS</alias>
+  <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRC</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRC_CNPECACNT_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRC</lname>
 </compset>
 
 <compset>
@@ -236,6 +326,21 @@
 <compset>
   <alias>A_WCYCL1850-DIB-ISMF_CMIP6</alias>
   <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+<compset>
+
+</compset>
+  <alias>BGCEXP_BDRD_CNPECACNT_SSP585_CMIP6</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRD_CNPECACNT_20TRS</alias>
+  <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRD_CNPECACNT_SSP585_CMIP6S</alias>
+  <lname>SSP585_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
 <!-- E3SM backup compsets -->
@@ -338,5 +443,44 @@
     </values>
   </entry>
 
+  <entry id="RUN_REFDATE">
+     <values match="first">
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >0331-01-01</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRD"    >0370-01-01</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC"    >0370-01-01</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD"    >0510-01-01</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC"    >0510-01-01</value>
+      </values>
+  </entry>
+
+  <entry id="RUN_TYPE">
+     <values match="first">
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >hybrid</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRD"    >hybrid</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC"    >hybrid</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD"    >hybrid</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC"    >hybrid</value>
+      </values>
+  </entry>
+
+  <entry id="RUN_REFCASE">
+     <values match="first">
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >20171228.beta3rc13_1850.ne30_oECv3_ICG.edison</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRD"    >20181130_BCRC_1850SPINUP_OIBGC.ne30_oECv3.edison</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC"    >20181130_BCRC_1850SPINUP_OIBGC.ne30_oECv3.edison</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD"    >20181209.SPIN_CNPECACNT_1850.ne30_oECv3.edison</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC"    >20181209.SPIN_CNPECACNT_1850.ne30_oECv3.edison</value>
+      </values>
+  </entry>
+
+  <entry id="RUN_REFDIR">
+     <values match="first">
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >e3sm_init</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRD"    >e3sm_init</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC"    >e3sm_init</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BDRD"    >e3sm_init</value>
+       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV_BGC%BCRC"    >e3sm_init</value>
+      </values>
+  </entry>
 </entries>
 </compsets>
