@@ -347,7 +347,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
 
    integer  :: i, k, m, ii, jj                     ! loop iterators
-   integer  :: icol(pcols)                         ! column identifier 
    integer  :: ixcldliq, ixcldice                  ! constituent indices
    integer  :: ixnumliq, ixnumice                  ! constituent indices
    integer  :: ixrain, ixsnow                      ! constituent indices
@@ -781,13 +780,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          end do ! k=1,pver
       end do ! i=1,ncol
 
-      ! Set the global model column mapping
-      ! We do not need this anymore if we are not supporting 
-      ! the stand-alone CRM dump routines in crm_module.
-      do i = 1,ncol
-         icol(i) = i
-      end do
-
       !---------------------------------------------------------------------------------------------
       ! Run the CRM
       !---------------------------------------------------------------------------------------------
@@ -795,8 +787,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if (.not.allocated(ptend%s)) write(*,*) '=== ptend%s not allocated ==='
 
       call t_startf ('crm_call')
-      call crm( lchnk, icol(:ncol), ncol, ztodt, pver,   &
-                crm_input, crm_state, crm_rad,           &
+      call crm( lchnk, ncol, ztodt, pver,       &
+                crm_input, crm_state, crm_rad,  &
                 crm_ecpp_output, crm_output )
       call t_stopf('crm_call')
 

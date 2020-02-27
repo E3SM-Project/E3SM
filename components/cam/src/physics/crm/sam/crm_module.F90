@@ -42,7 +42,7 @@ use setparm_mod, only : setparm
 
 contains
 
-subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
+subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
                 crm_ecpp_output, crm_output )
     !-----------------------------------------------------------------------------------------------
@@ -82,7 +82,6 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
     integer , intent(in   ) :: ncrms                            ! Number of "vector" GCM columns to push down into CRM for SIMD vectorization / more threading
     integer , intent(in   ) :: plev                             ! number of levels in parent model
     real(r8), intent(in   ) :: dt_gl                            ! global model's time step
-    integer , intent(in   ) :: icol                (ncrms)      ! column identifier (only for lat/lon and random seed)
     type(crm_input_type),      intent(in   ) :: crm_input
     type(crm_state_type),      intent(inout) :: crm_state
     type(crm_rad_type), target,intent(inout) :: crm_rad
@@ -250,8 +249,8 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 
   !Loop over "vector columns"
   do icrm = 1 , ncrms
-    latitude0 (icrm) = get_rlat_p(lchnk, icol(icrm)) * 57.296_r8
-    longitude0(icrm) = get_rlon_p(lchnk, icol(icrm)) * 57.296_r8
+    latitude0 (icrm) = get_rlat_p(lchnk, icrm) * 57.296_r8
+    longitude0(icrm) = get_rlon_p(lchnk, icrm) * 57.296_r8
   enddo
 
   igstep = get_nstep()
@@ -640,9 +639,9 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 #endif
   !$acc wait(asyncid)
 
-  do icrm = 1 , ncrms
+  do icrm = 1, ncrms
     if ( igstep <= 1 ) then
-        iseed = get_gcol_p(lchnk,icol(icrm)) * perturb_seed_scale
+        iseed = get_gcol_p(lchnk,icrm) * perturb_seed_scale
         call setperturb(ncrms,icrm,iseed)
     end if
 
