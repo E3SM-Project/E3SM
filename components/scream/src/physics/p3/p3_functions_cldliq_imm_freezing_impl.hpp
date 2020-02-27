@@ -27,14 +27,15 @@ void Functions<S,D>
   const auto qc_not_small_and_t_freezing = (qc_incld >= qsmall) &&
                                            (t <= RainFrze);
   if (qc_not_small_and_t_freezing.any()) {
+    Spack expAimmDt, lamc_inv, lamc_inv3;
+    expAimmDt.set(qc_not_small_and_t_freezing, exp(AIMM * (ZeroDegC-t)));
+    lamc_inv.set(qc_not_small_and_t_freezing, sp(1.0)/lamc);
+    lamc_inv3.set(qc_not_small_and_t_freezing, lamc_inv*lamc_inv*lamc_inv);
     qcheti.set(qc_not_small_and_t_freezing,
-               CONS6 * cdist1 *
-               tgamma(sp(7.0)+mu_c) * exp(AIMM * (ZeroDegC-t)) *
-               pow(lamc, sp(-6.0)));
+               CONS6 * cdist1 * tgamma(sp(7.0)+mu_c) * expAimmDt *
+               lamc_inv3 * lamc_inv);
     ncheti.set(qc_not_small_and_t_freezing,
-               CONS5 * cdist1 *
-               tgamma(sp(4.0)+mu_c) * exp(AIMM * (ZeroDegC-t)) *
-               pow(lamc, sp(-3.0)));
+               CONS5 * cdist1 * tgamma(sp(4.0)+mu_c) * expAimmDt * lamc_inv3);
   }
 }
 
