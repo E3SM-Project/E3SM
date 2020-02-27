@@ -191,7 +191,7 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
-void cldliq_immersion_freezing(CldLiqImmersionFreezingData& d)
+void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
 {
   p3_init(true);
   cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld,
