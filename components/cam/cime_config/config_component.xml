@@ -60,6 +60,8 @@
       <value compset="_CAM5%CMIP6-HR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%CMIP6-LR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%CMIP6-LRtunedHR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="1950_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
+      <value compset="2010_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
       <value compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-00"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-01"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_soag -rain_evap_to_coarse_aero -nlev 72</value>
@@ -211,8 +213,11 @@
       <value compset="20TR_CAM5.*AV1C-H01B">20TR_cam5_av1c-h01b</value>
       <value compset="20TR_CAM5.*AV1C-H01C">20TR_cam5_av1c-h01c</value>
       <value compset="20TR_CAM5.*CMIP6"  >20TR_cam5_CMIP6</value>
-      <value compset="20TR_CAM5.*CMIP6*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
-      <value compset="SSP585_CAM5.*CMIP6"  >SSP585_cam5_CMIP6</value>          <!-- PJC -->
+      <value compset="20TR_CAM5.*CMIP6.*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
+      <value compset="SSP585_CAM5.*CMIP6">SSP585_cam5_CMIP6</value>
+      <value compset="SSP585_CAM5.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
+      <value compset="2010_CAM5.*CMIP6-LR"  >2010_cam5_CMIP6-LR</value>
+      <value compset="2010_CAM5.*CMIP6-HR"  >2010_cam5_CMIP6-HR</value>
       <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
       <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
       <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>
@@ -273,9 +278,9 @@
     <values>
       <value compset="_CAM.*%RCO2"> scenario_ghg=&apos;RAMP_CO2_ONLY&apos;ramp_co2_annual_rate=1 </value> 
       <value compset="_BGC%BDRD"> co2_cycle_rad_passive=.true. </value>
-      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6  </value>
+      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.317e-6  </value>
       <value compset="_BGC%BCRD"> co2_cycle_rad_passive=.true. </value>
-      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6 </value>
+      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.317e-6 </value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>

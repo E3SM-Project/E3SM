@@ -1314,6 +1314,10 @@ sub setup_cmdl_nutrient_comp {
 
           $nl_flags->{$var} = 'ECA';
 
+          $var = "nfix_ptase_plant";
+          $val = '.true.';
+          $nl->set_variable_value($group, $var, $val);
+
         } else {
           fatal_error("-nutrient_comp_pathway has a value ($val) that is not valid. Valid values are: [rd, eca] \n");
         }
@@ -3683,6 +3687,7 @@ sub check_use_case_name {
                   "in namelist_files/use_cases/README\n";
   my $desc = "[a-zA-Z0-9]*";
   my $rcp  = "rcp[0-9\.]+";
+  my $rcp  = "(rcp|SSP)[0-9\.]+"; 
   if (      $use_case =~ /^[0-9]+-[0-9]+([a-zA-Z0-9_\.]*)_transient$/ ) {
     my $string = $1;
     if (      $string =~ /^_($rcp)_*($desc)$/ ) {

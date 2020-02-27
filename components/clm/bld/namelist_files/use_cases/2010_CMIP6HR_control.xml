@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc>Conditions to simulate 2010 land-use</use_case_desc>
+
+<sim_year>2015</sim_year>
+
+<sim_year_range>constant</sim_year_range>
+
+<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_first_ndep>
+<stream_year_last_ndep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_last_ndep>
+
+<stream_year_first_pdep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_first_pdep>
+<stream_year_last_pdep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_last_pdep>
+
+<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_first_popdens>
+<stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_last_popdens>
+
+<!-- CMIP6 HighResMIP compsets -->
+<fsurdat hgrid="ne120np4" >lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc </fsurdat>
+<finidat hgrid="ne120np4" >lnd/clm2/initdata_map/cori-knl.20190214_maint-1.0.F2010-CMIP6-HR.noCNT.ARE.nudgeUV.ne120_oRRS18v3.clm2.r.2011-01-01-00000.nc </finidat>
+<check_finidat_pct_consistency>.false.</check_finidat_pct_consistency>
+
+</namelist_defaults>
