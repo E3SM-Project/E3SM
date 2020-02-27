@@ -2711,7 +2711,7 @@
     <default_value>UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
-    <desc>standard full pathname of the cprnc executable</desc>
+    <desc>standard full pathname of the cprnc executable. One can skip defining the xml entry, CCSM_CPRNC, and the sharedlib build system will automatically build cprnc</desc>
   </entry>
 
   <!-- ===================================================================== -->
