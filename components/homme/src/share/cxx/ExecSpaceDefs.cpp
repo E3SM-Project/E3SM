@@ -41,7 +41,7 @@ void initialize_kokkos () {
     nd = 1;
   }
   std::stringstream ss;
-  ss << "--kokkos-ndevices=" << nd;
+  ss << "--kokkos-num-devices=" << nd;
   const auto key = ss.str();
   std::vector<char> str(key.size()+1);
   std::copy(key.begin(), key.end(), str.begin());
