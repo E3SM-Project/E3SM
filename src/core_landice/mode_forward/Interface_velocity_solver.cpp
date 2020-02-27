@@ -67,7 +67,7 @@ std::vector<int> indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> dissipationHeatOnPrisms, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, temperatureDataOnPrisms, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, muFrictionData, temperatureDataOnPrisms, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -235,7 +235,7 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F,
     double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
-    double const* effecPress_F,
+    double const* effecPress_F, double const* muFriction_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
@@ -264,7 +264,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   if (!isDomainEmpty) {
 
     std::map<int, int> bdExtensionMap;
-    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
+    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -280,7 +280,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
-        stiffnessFactorData, effecPressData,
+        stiffnessFactorData, effecPressData, muFrictionData,
         temperatureDataOnPrisms, dissipationHeatOnPrisms, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
@@ -1086,7 +1086,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 
 
 void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
+    double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F, double const* muFriction_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
   int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
@@ -1099,6 +1099,8 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
     stiffnessFactorData.assign(nVertices, 1.0);
   if (effecPress_F != 0)
     effecPressData.assign(nVertices, 1e10);
+  if (muFriction_F!= 0)
+    muFrictionData.assign(nVertices, 1e10);
   if(temperature_F != 0)
     temperatureDataOnPrisms.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
@@ -1119,6 +1121,8 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
       stiffnessFactorData[index] = stiffnessFactor_F[iCell];
     if (effecPress_F != 0)
       effecPressData[index] = effecPress_F[iCell] / unit_length;  
+    if (muFriction_F != 0)
+      muFrictionData[index] = muFriction_F[iCell];
   }
 
   int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
@@ -1222,6 +1226,8 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
       stiffnessFactorData[iv] = stiffnessFactor_F[ic];
     if (effecPress_F != 0)
       effecPressData[iv] = effecPress_F[ic] / unit_length;
+    if (muFriction_F != 0)
+      muFrictionData[iv] = muFriction_F[ic];
   }
 
 }
@@ -1571,7 +1577,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
     double const* stiffnessFactor_F,
-    double const* effecPress_F,
+    double const* effecPress_F, double const* muFriction_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -1649,7 +1655,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     std::map<int, int> bdExtensionMap;  // local map to be created by importFields
     importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
-                   stiffnessFactor_F, effecPress_F, temperature_F, smb_F, minThickness);
+                   stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
                     thicknessUncertainty_F,
