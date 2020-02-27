@@ -1,5 +1,243 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 2-27-2020
+Tag: cime5.8.16
+Answer Changes: None
+tests: scripts_regression_tests, aux_cam using fv3, various hand tests. 
+Dependencies:
+
+Brief Summary:
+    - Add SE grids for CAM.
+    - Improved cprnc build process.
+    - FV3 port to CAM.
+    - Fix izumi submit.
+    - maint-5.6 branch merge(2020-02-20).
+    - Fix the -n parameter to mpirun in chgres workflow template.
+    - Initial port of CIME to Hera for the UFS MR Weather App.
+    - Add rpath for netcdf.
+    - Update laramie modules.
+    - Fix typo.
+    - Fix pylint issue.
+    - Add ic_filepath to config_inputdata.
+    - Change homebrew to macos.
+    - Non-netcdf files should not be compared with cprnc.
+    - Fix an issue in downloading inputdata.
+    - Update cheyenne build.
+    - More updates of macros.
+    - Update macros.
+    - Strictly ufs updates.
+    - Fix for post-processing to work with netcdf files.
+    - Fix auto-triage.
+    - Add D0 to all namelist values added in PR 3231 and 3251.
+    - Revert "Update nuopc esmf".
+    - More fixes for UFS release.
+    - Put MAX_MPITASKS_PER_NODE back to config_workflow.xml.
+    - Fix chgres issue on cheyenne.
+    - Update for UFS model.
+    - Allow writing T-forcing cplhist files even when running with SGLC.
+    - Update nuopc esmf.
+    - Fix misspelling in comment.
+    - Fix issue with resubmit on systems that use ssh.
+    - Move orbital updates to nuopc caps and update nuopc dmodels.
+    - Latest developments from the CIME_MODEL=ufs project.
+    - Fix issue when input_ic_root is None.
+    - Fix misleading output casestatus.
+    - More work related with UFS.
+    - Update description for FORCE_BUILD_SMP.
+    - Revert "update esmf and netcdf on cheyenne".
+    - Remove redundant logic in _get_extension.
+    - Pop hist dd fix.
+    - Homebrew build fix.
+    - Cheyenne machine updates.
+    - Correction in get_model().
+    - Update ufs config_files.
+    - Implement automatic test traiging in e3sm test infrastructure.
+    - Rename fv3gfs to ufsatm.
+    - Extend archiving support to accept a regex pattern as well as a cesm style file extension.
+    - Updates needed to get aux_clm tests working with CMEPS.
+    - Add trouble shooting doc.
+    - Updates input directory for UFS application.
+    - Changes to build fv3gfs standalone using cime.
+    - Support new inputdata for ufs model.
+    - Fixed Empty .cesm_proj file results in a crash.
+    - Improve scripts_regression_tests test cleanup.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+b2e292597 Merge pull request #3420 from ESMCI/fischer/segrids
+5f75c600f Merge pull request #3400 from ESMCI/wpcoomb/improve_cprnc_build_process
+f6395d42d Merge pull request #3415 from jtruesdal/fv3port
+894562c87 Merge pull request #3413 from jedwards4b/fix_izumi_submit
+1d406ebfa Merge pull request #3409 from ESMCI/fischer/m_maint5.6
+a1ee2a564 Merge pull request #3405 from ESMCI/rsdunlapiv/chgres_mpirun_fix
+d7d30df71 Merge pull request #3407 from ESMCI/rsdunlapiv/heraport2
+3b42be3f0 Merge pull request #3406 from jedwards4b/mac_build_fix
+1f64cbe2a Merge pull request #3402 from ESMCI/laramie_update
+2a8bbd8e5 fix typo
+7fe3af99b fix pylint issue
+8884e2acf Merge pull request #3398 from jedwards4b/ufs_autodownload
+39ce78718 change homebrew to macos
+3835a137c Merge pull request #3397 from jedwards4b/dont_compare_nonnetcdf_hists
+3399dd0be Merge pull request #3395 from jedwards4b/fix_issue_in_download
+ae6b1a267 update cheyenne build for compatibility
+e11de4814 more updates for macos
+0c262b64b updates for macos
+7339b0b66 strictly ufs updates
+5b59975cf fix for post-processing to work with netcdf files
+b5c3ca048 Merge pull request #3388 from ESMCI/jgfouca/fix_auto_triage
+4c26f56e6 Merge pull request #3383 from cacraigucar/add_namelist_double
+e8e9f655a Merge pull request #3386 from ESMCI/revert-3377-update_nuopc_esmf
+e3b71c2f3 Merge pull request #3384 from ESMCI/uturuncoglu/ufs_release
+5fe1b20e2 put MAX_MPITASKS_PER_NODE back to config_workflow.xml
+846d089d8 fix chgres issue on cheyenne
+f09afb134 Merge pull request #3379 from ESMCI/ufs_release
+ce075935d Merge pull request #3358 from billsacks/t_forcing_cplhist_with_sglc_master
+6cfcb072d Merge pull request #3377 from jedwards4b/update_nuopc_esmf
+0d7fc13ab Fix misspelling in comment
+307d4bb4a Merge pull request #3375 from jedwards4b/ssh_resubmit_fix
+4de404425 Merge pull request #3373 from ESMCI/mvertens/update_nuopc_dmodels
+d3624d963 Merge pull request #3371 from ESMCI/ufs_release
+44673e0b8 fix issue when input_ic_root is None
+8b8b1df5a Merge pull request #3354 from ESMCI/wpcoomb/fix_misleading_output_casestatus
+bd4525df7 Merge pull request #3353 from ESMCI/ufs_release
+e6ddef63f Merge pull request #3351 from ESMCI/jgfouca/update_force_build_smp_desc
+5c32f2315 Merge pull request #3350 from ESMCI/revert-3343-cheyenne_machine_updates
+27fd20a50 Merge pull request #3348 from billsacks/cleanup_extension_dd_match
+d261fea15 Merge pull request #3346 from jedwards4b/pop_hist_dd_fix
+207d1ab7d Merge pull request #3345 from jedwards4b/homebrew_build_fix
+27b6d3405 Merge pull request #3343 from jedwards4b/cheyenne_machine_updates
+b373a0240 correction in get_model()
+2fd32ebef update ufs config_files
+6d5b5ba84 Merge pull request #3340 from ESMCI/jgfouca/cime_auto_triage
+5a35958e2 Merge pull request #3337 from jedwards4b/rename_fv3gfs_ufsatm
+047f4ffbf Merge pull request #3326 from jedwards4b/archive_extensions
+2f3876d4d Merge pull request #3335 from ESMCI/mvertens/updates_for_nuopc_regional
+33ad6e314 Merge pull request #3332 from billsacks/doc_troubleshooting
+00cfb7ed9 Merge pull request #3327 from jedwards4b/ufs_release_3
+d13f34f15 Merge pull request #3322 from jedwards4b/fv3gfs_cime_build2
+93931a0ec Merge pull request #3323 from jedwards4b/ufs_inputdata
+c00ce8ff4 Merge pull request #3319 from ESMCI/wpcoomb/fix_empty_.cesm_proj_crash
+2a7d36454 Merge pull request #3317 from ESMCI/jgfouca/better_regr_test_cleanup
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/config_grids_common.xml
+M	config/cesm/config_grids_mct.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_workflow.xml
+M	config/cesm/machines/cylc_suite.rc.template
+M	config/ufs/config_files.xml
+M	config/ufs/config_grids.xml
+D	config/ufs/config_grids_common.xml
+D	config/ufs/config_grids_mct.xml
+D	config/ufs/config_grids_nuopc.xml
+M	config/ufs/config_inputdata.xml
+M	config/ufs/machines/config_batch.xml
+M	config/ufs/machines/config_compilers.xml
+M	config/ufs/machines/config_machines.xml
+M	config/ufs/machines/config_workflow.xml
+A	config/ufs/machines/template.chgres.run
+A	config/ufs/machines/template.gfs_post.run
+M	config/xml_schemas/config_compilers_v2.xsd
+M	config/xml_schemas/config_inputdata.xsd
+M	config/xml_schemas/config_workflow.xsd
+M	config/xml_schemas/testlist.xsd
+M	doc/source/users_guide/troubleshooting.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/component_compare_copy
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/jenkins_script
+M	scripts/Tools/wait_for_tests
+M	scripts/create_test
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/mvk.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/tsc.py
+M	scripts/lib/CIME/XML/archive.py
+M	scripts/lib/CIME/XML/archive_base.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_workflow.py
+M	scripts/lib/CIME/XML/inputdata.py
+M	scripts/lib/CIME/XML/testlist.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+A	src/build_scripts/buildlib.cprnc
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/nuopc/atm_comp_nuopc.F90
+M	src/components/data_comps/datm/nuopc/datm_comp_mod.F90
+D	src/components/data_comps/datm/nuopc/datm_shr_mod.F90
+M	src/components/data_comps/dice/nuopc/dice_comp_mod.F90
+M	src/components/data_comps/dice/nuopc/dice_flux_atmice_mod.F90
+D	src/components/data_comps/dice/nuopc/dice_shr_mod.F90
+M	src/components/data_comps/dice/nuopc/ice_comp_nuopc.F90
+M	src/components/data_comps/dlnd/nuopc/dlnd_comp_mod.F90
+D	src/components/data_comps/dlnd/nuopc/dlnd_shr_mod.F90
+M	src/components/data_comps/dlnd/nuopc/lnd_comp_nuopc.F90
+M	src/components/data_comps/docn/mct/docn_comp_mod.F90
+M	src/components/data_comps/docn/nuopc/docn_comp_mod.F90
+D	src/components/data_comps/docn/nuopc/docn_shr_mod.F90
+M	src/components/data_comps/docn/nuopc/ocn_comp_nuopc.F90
+M	src/components/data_comps/drof/cime_config/config_component.xml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/components/data_comps/drof/nuopc/drof_comp_mod.F90
+D	src/components/data_comps/drof/nuopc/drof_shr_mod.F90
+M	src/components/data_comps/drof/nuopc/rof_comp_nuopc.F90
+A	src/components/data_comps/dshr_nuopc/dshr_dfield_mod.F90
+A	src/components/data_comps/dshr_nuopc/dshr_fldlist_mod.F90
+M	src/components/data_comps/dshr_nuopc/dshr_methods_mod.F90
+M	src/components/data_comps/dshr_nuopc/dshr_nuopc_mod.F90
+M	src/components/data_comps/dwav/nuopc/dwav_comp_mod.F90
+D	src/components/data_comps/dwav/nuopc/dwav_shr_mod.F90
+M	src/components/data_comps/dwav/nuopc/wav_comp_nuopc.F90
+M	src/components/xcpl_comps/xatm/nuopc/atm_comp_nuopc.F90
+M	src/components/xcpl_comps/xglc/nuopc/glc_comp_nuopc.F90
+M	src/components/xcpl_comps/xice/nuopc/ice_comp_nuopc.F90
+M	src/components/xcpl_comps/xlnd/nuopc/lnd_comp_nuopc.F90
+M	src/components/xcpl_comps/xocn/nuopc/ocn_comp_nuopc.F90
+M	src/components/xcpl_comps/xrof/nuopc/rof_comp_nuopc.F90
+M	src/components/xcpl_comps/xwav/nuopc/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/buildexe
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/prep_glc_mod.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/share/timing/perf_mod.F90
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
 Originator: Bill Sacks
 Date: 11-26-2019
 Tag: cime5.8.15
