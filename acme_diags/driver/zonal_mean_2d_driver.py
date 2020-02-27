@@ -143,6 +143,7 @@ def run_diag(parameter):
                     [ref_name, var, season, parameter.regions[0]])
                 parameter.main_title = str(
                     ' '.join([var, season]))
+  
 
                 # Regrid towards the lower resolution of the two
                 # variables for calculating the difference.
@@ -164,7 +165,7 @@ def run_diag(parameter):
                     # doesn't preserve the mask.
                     mv1_reg = MV2.masked_where(
                         mv1_reg == mv1_reg.fill_value, mv1_reg)
-                else:
+                else: 
                     mv1_reg = mv1_p
                     mv2_reg = mv2_p
 

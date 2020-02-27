@@ -123,7 +123,7 @@ def run_diag(parameter):
 
                 # Regrid towards the lower resolution of the two
                 # variables for calculating the difference.
-                if len(mv1_p.getLongitude()) <= len(mv2_p.getLongitude()):
+                if len(mv1_p.getLongitude()) < len(mv2_p.getLongitude()):
                     mv1_reg = mv1_p
                     lev_out = mv1_p.getLevel()
                     lon_out = mv1_p.getLongitude()
@@ -145,7 +145,7 @@ def run_diag(parameter):
                     # doesn't preserve the mask.
                     mv2_reg = MV2.masked_where(
                         mv2_reg == mv2_reg.fill_value, mv2_reg)
-                else:
+                elif len(mv1_p.getLongitude()) > len(mv2_p.getLongitude()):
                     mv2_reg = mv2_p
                     lev_out = mv2_p.getLevel()
                     lon_out = mv2_p.getLongitude()
@@ -169,6 +169,9 @@ def run_diag(parameter):
                     # doesn't preserve the mask.
                     mv1_reg = MV2.masked_where(
                         mv1_reg == mv1_reg.fill_value, mv1_reg)
+                else:
+                    mv1_reg = mv1_p
+                    mv2_reg = mv2_p
 
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(
