@@ -222,9 +222,26 @@ struct CldLiqImmersionFreezingData
 
 void cldliq_immersion_freezing(CldLiqImmersionFreezingData& d);
 extern "C"{
-
   void cldliq_immersion_freezing_f(Real t, Real lamc, Real mu_c,
     Real cdist1, Real qc_incld, Real* qcheti, Real* ncheti);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct RainImmersionFreezingData
+{
+  // inputs
+  Real t, lamr, mu_r, cdistr, qr_incld;
+
+  // output
+  Real qrheti, nrheti;
+};
+
+void rain_immersion_freezing(RainImmersionFreezingData& d);
+extern "C"{
+
+  void rain_immersion_freezing_f(Real t, Real lamr, Real mu_r,
+    Real cdistr, Real qr_incld, Real* qrheti, Real* nrheti);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

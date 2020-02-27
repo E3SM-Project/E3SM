@@ -49,25 +49,25 @@ static void run_bfb()
 
   DropletSelfCollectionData droplet_self_coll_data[max_pack_size] = {
     // rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small, 0.0, 0.0},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small, 0.0, 0.0},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small, 0.0, 0.0},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small, 0.0, 0.0},
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small},
 
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small, 0.0, 0.0},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small, 0.0, 0.0},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small, 0.0, 0.0},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small, 0.0, 0.0},
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small, 0.0, 0.0},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small, 0.0, 0.0},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small, 0.0, 0.0},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small, 0.0, 0.0},
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small, 0.0, 0.0},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small, 0.0, 0.0},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small, 0.0, 0.0},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small, 0.0, 0.0}
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small}
   };
 
   // Sync to device

@@ -100,12 +100,20 @@ interface
     real(kind=c_real), intent(out) :: qcheti, ncheti
   end subroutine cldliq_immersion_freezing_f
 
+  subroutine rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
+    real(kind=c_real), intent(out) :: qrheti, nrheti
+  end subroutine rain_immersion_freezing_f
+
   subroutine droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
-    real(kind=c_real), intent(inout) :: ncslf
+    real(kind=c_real), intent(out) :: ncslf
   end subroutine droplet_self_collection_f
 
   subroutine cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
@@ -113,7 +121,7 @@ interface
 
     !arguments:
     real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
-    real(kind=c_real), intent(inout) :: qcacc, ncacc
+    real(kind=c_real), intent(out) :: qcacc, ncacc
   end subroutine cloud_rain_accretion_f
 
   subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)
