@@ -379,6 +379,12 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Computes contact and immersion freezing droplets
+  KOKKOS_FUNCTION
+  static void cldliq_immersion_freezing(const Spack& t, const Spack& lamc,
+    const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld,
+    Spack& qcheti, Spack& ncheti);
+
   // Computes the immersion freezing of rain
   KOKKOS_FUNCTION
   static void rain_immersion_freezing(const Spack& t, const Spack& lamr,
@@ -496,6 +502,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_impose_max_total_Ni_impl.hpp"
+# include "p3_functions_cldliq_imm_freezing_impl.hpp"
 # include "p3_functions_droplet_self_coll_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_cloud_rain_acc_impl.hpp"

@@ -45,6 +45,9 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void cldliq_immersion_freezing_c(Real t, Real lamc, Real mu_c, Real cdist1,
+                                 Real qc_incld, Real* qcheti, Real* ncheti);
+
 void rain_immersion_freezing_c(Real t, Real lamr, Real mu_r, Real cdistr,
                                Real qr_incld, Real* qrheti, Real* nrheti);
 
@@ -186,6 +189,13 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
   p3_init(true); // need to initialize p3 first so that tables are loaded
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
+{
+  p3_init(true);
+  cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld,
+                              &d.qcheti, &d.ncheti);
 }
 
 void droplet_self_collection(DropletSelfCollectionData& d)
@@ -1345,6 +1355,32 @@ void rain_sedimentation_f(
   pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx}, sizes_out, inout_views);
 }
 
+void cldliq_immersion_freezing_f(
+  Real t_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_,
+  Real* qcheti_, Real* ncheti_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qcheti = *qcheti_;
+  Real local_ncheti = *ncheti_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack t(t_), lamc(lamc_), mu_c(mu_c_), cdist1(cdist1_),
+                          qc_incld(qc_incld_), qcheti(local_qcheti), ncheti(local_ncheti);
+      P3F::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld,
+                                     qcheti, ncheti);
+
+      t_d(0) = qcheti[0];
+      t_d(1) = ncheti[0];
+
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qcheti_ = t_h(0);
+  *ncheti_ = t_h(1);
+}
 
 void rain_immersion_freezing_f(
   Real t_, Real lamr_, Real mu_r_, Real cdistr_, Real qr_incld_,

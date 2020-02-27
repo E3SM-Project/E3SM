@@ -293,6 +293,15 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
+
+      use micro_p3, only: cldliq_immersion_freezing
+      real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld
+      real(kind=c_real), intent(out) :: qcheti, ncheti
+
+      call cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
+  end subroutine cldliq_immersion_freezing_c
+
   subroutine rain_immersion_freezing_c(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
 
       use micro_p3, only: rain_immersion_freezing
