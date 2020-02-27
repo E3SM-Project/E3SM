@@ -461,7 +461,7 @@ This allows using a different mpirun command to launch unit tests
     <MPILIBS>mpt</MPILIBS>
     <CHARGE_ACCOUNT>esrl_bmcs</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
-    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/ufs-mrweather-app</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/f2/pdata/esrl/gsd/ufs/ufs-release-v1/CIME_UFSINPUT</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/ufs-runs/archive/$CASE</DOUT_S_ROOT>
@@ -501,10 +501,6 @@ This allows using a different mpirun command to launch unit tests
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
-      <env name="NCEP_LIBS">$ENV{NCEPLIBS_DIR}</env>
-      <env name="SCRATCH">/lustre/f2/scratch</env>
-      <env name="NETCDF">$ENV{NETCDF}</env>
-      <!-- <env name="PATH">/opt/cray/pe/craype/2.5.5/bin:$ENV{NCEPLIBS_DIR}/bin:$ENV{PATH}</env> -->
       <env name="PATH">$ENV{NCEPLIBS_DIR}/bin:$ENV{PATH}</env>
     </environment_variables>
     <resource_limits>
