@@ -1701,26 +1701,6 @@ struct CudaWrap
     return result;
   }
 
-  static Scalar cxx_square(Scalar input)
-  {
-    Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) {
-        value = input*input;
-    }, result);
-
-    return result;
-  }
-
-  static Scalar cxx_cube(Scalar input)
-  {
-    Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) {
-        value = input*input*input;
-    }, result);
-
-    return result;
-  }
-
 #define cuda_wrap_single_arg(wrap_name, func_call)      \
 static Scalar wrap_name(Scalar input) {                 \
   Scalar result;                                        \
@@ -1745,24 +1725,6 @@ Real cxx_pow(Real base, Real exp)
   return CudaWrap<Real, DefaultDevice>::cxx_pow(base, exp);
 #else
   return std::pow(base, exp);
-#endif
-}
-
-Real cxx_square(Real input)
-{
-#ifdef KOKKOS_ENABLE_CUDA
-  return CudaWrap<Real, DefaultDevice>::cxx_square(input);
-#else
-  return input*input;
-#endif
-}
-
-Real cxx_cube(Real input)
-{
-#ifdef KOKKOS_ENABLE_CUDA
-  return CudaWrap<Real, DefaultDevice>::cxx_cube(input);
-#else
-  return input*input*input;
 #endif
 }
 
