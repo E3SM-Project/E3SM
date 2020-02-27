@@ -295,7 +295,7 @@ contains
 
   subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
 
-      use micro_p3, only: droplet_self_collection
+      use micro_p3, only: cldliq_immersion_freezing
       real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld
       real(kind=c_real), intent(out) :: qcheti, ncheti
 

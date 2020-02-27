@@ -19,6 +19,7 @@ void Functions<S,D>
                             const Spack& qc_incld, Spack& qcheti, Spack& ncheti)
 {
   constexpr Scalar qsmall = C::QSMALL;
+  constexpr Scalar AIMM = C::AIMM;
   constexpr Scalar RainFrze = C::RainFrze;
   constexpr Scalar ZeroDegC = C::ZeroDegC;
   constexpr Scalar CONS5 = C::CONS5;
