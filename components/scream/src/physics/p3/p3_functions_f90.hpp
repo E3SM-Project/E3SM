@@ -640,6 +640,25 @@ Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct EvapSublimatePrecipData
+{
+  // Inputs
+  Real qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv;
+
+  //Outs
+  Real qrevp, nrevp;
+};
+
+void evaporate_sublimate_precip(EvapSublimatePrecipData& d);
+
+extern "C"{
+
+void evaporate_sublimate_precip_f( Real qr_incld, Real qc_incld, Real nr_incld, Real qitot_incld,
+Real lcldm, Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real* nrevp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct P3UpdatePrognosticLiqData
 {
   // Inputs

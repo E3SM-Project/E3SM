@@ -3361,6 +3361,10 @@ subroutine evaporate_sublimate_precip(qr_incld,qc_incld,nr_incld,qitot_incld,   
 lcldm,rcldm,qvs,ab,epsr,qv,    &
 qrevp,nrevp)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: evaporate_sublimate_precip_f
+#endif
+
    implicit none
 
    real(rtype), intent(in)  :: qr_incld
@@ -3377,6 +3381,15 @@ qrevp,nrevp)
    real(rtype), intent(out) :: nrevp
 
    real(rtype) :: qclr, cld
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call evaporate_sublimate_precip_f(qr_incld,qc_incld,nr_incld,qitot_incld,    &
+           lcldm,rcldm,qvs,ab,epsr,qv,    &
+           qrevp,nrevp)
+   endif
+#endif
+
 
    ! Is is assumed that macrophysics handles condensation/evaporation of qc and
    ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have

@@ -98,6 +98,9 @@ void  update_prognostic_ice_c(
   Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
   Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
+void evaporate_sublimate_precip_c(Real qr_incld, Real qc_incld, Real nr_incld, Real qitot_incld, Real lcldm,
+  Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real* nrevp);
+
 void update_prognostic_liquid_c(
   Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
   Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
@@ -277,16 +280,25 @@ void ice_self_collection(IceSelfCollectionData& d)
 }
 
 
-  void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
-    p3_init(true);
-    update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
-            		    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
-			    d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
-			    d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
-			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
-			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
-			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
-  }
+void  update_prognostic_ice(P3UpdatePrognosticIceData& d)
+{
+  p3_init(true);
+  update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
+			  d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
+			  d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
+			  d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
+			  d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
+			  d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
+			  &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
+}
+
+void evaporate_sublimate_precip(EvapSublimatePrecipData& d)
+{
+  p3_init(true);
+  evaporate_sublimate_precip_c(d.qr_incld, d.qc_incld, d.nr_incld, d.qitot_incld,
+			       d.lcldm, d.rcldm, d.qvs, d.ab, d.epsr, d.qv,
+			       &d.qrevp, &d.nrevp);
+}
 
 void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
   p3_init(true);
@@ -841,6 +853,36 @@ void update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncco
   *nc_    = t_h(7);
   *qr_    = t_h(8);
   *nr_    = t_h(9);
+}
+
+void evaporate_sublimate_precip_f(Real qr_incld_, Real qc_incld_, Real nr_incld_, Real qitot_incld_, Real lcldm_,
+				  Real rcldm_, Real qvs_, Real ab_, Real epsr_, Real qv_,
+				  Real* qrevp_, Real* nrevp_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qrevp = *qrevp_;
+  Real local_nrevp = *nrevp_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qr_incld(qr_incld_), qc_incld(qc_incld_), nr_incld(nr_incld_), qitot_incld(qitot_incld_),
+	lcldm(lcldm_), rcldm(rcldm_), qvs(qvs_), ab(ab_), epsr(epsr_), qv(qv_);
+
+      typename P3F::Spack qrevp(local_qrevp), nrevp(local_nrevp);
+
+      P3F::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
+      epsr, qv, qrevp, nrevp);
+
+      t_d(0) = qrevp[0];
+      t_d(1) = nrevp[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qrevp_ = t_h(0);
+  *nrevp_ = t_h(1);
 }
 
 void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncautc_, Real qcnuc_, Real ncautr_,
