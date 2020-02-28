@@ -175,6 +175,11 @@ subroutine diag_init()
    call addfld ('PS',horiz_only,    'A','Pa','Surface pressure')
    call addfld ('T',(/ 'lev' /), 'A','K','Temperature')
    call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind')
+
+!u before after dycore
+   call addfld ('UBC',(/ 'lev' /), 'A','m/s','BZonal wind')
+   call addfld ('UAC',(/ 'lev' /), 'A','m/s','AZonal wind')
+
    call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind')
    call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
 
@@ -341,6 +346,8 @@ subroutine diag_init()
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
       call add_default ('TT      ', 1, ' ')
+      call add_default ('UAC     ', 1, ' ')
+      call add_default ('UBC     ', 1, ' ')
 
       if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('Vbc_a1  ', 1, ' ')

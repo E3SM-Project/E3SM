@@ -1837,6 +1837,8 @@ end if ! l_ac_energy_chk
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
+    call outfld('UBC',state%u, pcols   ,lchnk   )
+
 end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
@@ -2142,6 +2144,10 @@ subroutine tphysbc (ztodt,               &
 
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
     end if
+
+!!!!!!!!!!! dycore U
+    call outfld('UAC',state%u, pcols   ,lchnk   )
+
 
     ! Associate pointers with physics buffer fields
     itim_old = pbuf_old_tim_idx()
