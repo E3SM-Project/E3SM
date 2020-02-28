@@ -542,8 +542,6 @@ struct CaarFunctorImpl {
 #endif
     });
     kv.team_barrier();
-
-    m_tu.release_workspace_idx(team, kv.team_idx);
   }
 
   KOKKOS_INLINE_FUNCTION
