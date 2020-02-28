@@ -146,7 +146,7 @@ struct CaarFunctorImpl {
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
 
     // Make sure the buffers in sph op are large enough for this functor's needs
-    m_sphere_ops.allocate_buffers(m_policy_pre);
+    m_sphere_ops.allocate_buffers(m_tu);
   }
 
   int requested_buffer_size () const {

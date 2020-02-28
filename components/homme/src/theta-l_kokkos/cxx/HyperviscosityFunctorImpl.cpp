@@ -64,7 +64,7 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 #endif
 
   // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
-  m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_state.num_elems()));
+  m_sphere_ops.allocate_buffers(m_tu);
 }
 
 int HyperviscosityFunctorImpl::requested_buffer_size () const {

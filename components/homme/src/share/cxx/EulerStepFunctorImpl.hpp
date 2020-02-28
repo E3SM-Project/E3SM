@@ -145,7 +145,7 @@ public:
     m_tu_ne       = TeamUtils<ExecSpace>(tp_ne);
     m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize);
 
-    m_sphere_ops.allocate_buffers(tp_ne_qsize);
+    m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
   }
 
   int requested_buffer_size () const {
