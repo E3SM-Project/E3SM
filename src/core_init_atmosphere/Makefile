@@ -20,7 +20,8 @@ OBJS =  \
 	mpas_atmphys_functions.o \
 	mpas_atmphys_initialize_real.o \
 	mpas_atmphys_utilities.o \
-	mpas_stack.o
+	mpas_stack.o \
+	mpas_kd_tree.o
 
 all: core_hyd
 
@@ -67,6 +68,8 @@ mpas_init_atm_read_met.o:
 
 read_geogrid.o:
 
+mpas_kd_tree.o:
+
 mpas_init_atm_llxy.o:
 
 mpas_init_atm_core_interface.o: mpas_init_atm_core.o
@@ -80,7 +83,8 @@ mpas_init_atm_static.o: \
 	mpas_init_atm_hinterp.o \
 	mpas_init_atm_llxy.o \
 	mpas_atmphys_utilities.o \
-	mpas_stack.o
+	mpas_stack.o \
+	mpas_kd_tree.o
 
 mpas_init_atm_surface.o: \
 	mpas_init_atm_hinterp.o  \
