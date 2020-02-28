@@ -356,7 +356,11 @@
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
-		/>
+    />
+    <nml_option name="config_Redi_diabatic_limit" type="real" default_value="5e-7" units="s^{-2}"
+      description="Brunt Vaisala Frequency cutoff for diabatic convection"
+      possible_values="small positive real numbers or zero"
+    />
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
@@ -2593,7 +2597,7 @@
 			description="phase speed for the bolus velocity calculation"
 			packages="forwardMode;analysisMode"
 			/>
-		<var name="kappaGM3D" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="kappaGMVert" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
 		/>

@@ -9,6 +9,7 @@ src/operators/*.f90
 
 # All object files
 *.o
+*~
 
 # All mod files
 *.mod
