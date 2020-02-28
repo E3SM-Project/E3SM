@@ -30,8 +30,8 @@ module gllfvremap_mod
   !   This module supports all ftype values 0 to 4.
   !   We find in practice that pg1 is too coarse. To see this, run the
   ! Homme-standalone test dcmip2016_test1_pg1 and compare results with
-  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are nearly
-  ! identical out to day 30, whereas pg1 fields differ visibly.
+  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are
+  ! nearly identical out to day 30, whereas pg1 fields differ visibly.
   !
   ! AMB 2019/07 Initial
 
@@ -58,6 +58,7 @@ module gllfvremap_mod
        ! Remap phis.
        gfr_dyn_to_fv_phys_topo, &
        gfr_fv_phys_to_dyn_topo, &
+       gfr_dyn_to_fv_phys_topo_data, &
        ! If nphys == 1, reconstruct the field to boost the OOA. If
        ! nphys > 1, returns immediately.
        gfr_pg1_reconstruct_topo, & ! call after the gfr_fv_phys_to_dyn_topo and the DSS
@@ -94,8 +95,8 @@ module gllfvremap_mod
           ! Remap FV nphys <-> GLL np
           g2f_remapd(np,np,nphys_max*nphys_max), &
           f2g_remapd(nphys_max*nphys_max,np,np)
-     ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
      real(kind=real_kind), allocatable :: &
+          ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
           fv_metdet(:,:), & ! (nphys*nphys,nelemd)
           ! Vector on ref elem -> vector on sphere
           D_f(:,:,:,:,:), &   ! (nphys,nphys,2,2,nelemd)
@@ -128,9 +129,16 @@ module gllfvremap_mod
      module procedure gfr_fv_phys_to_dyn_dom_mt
   end interface gfr_fv_phys_to_dyn
 
+  interface gfr_dyn_to_fv_phys_topo
+     module procedure gfr_dyn_to_fv_phys_topo_hybrid
+     module procedure gfr_dyn_to_fv_phys_topo_dom_mt
+     module procedure gfr_dyn_to_fv_phys_topo_mpi_only
+  end interface gfr_dyn_to_fv_phys_topo
+
   interface gfr_fv_phys_to_dyn_topo
      module procedure gfr_fv_phys_to_dyn_topo_hybrid
      module procedure gfr_fv_phys_to_dyn_topo_dom_mt
+     module procedure gfr_fv_phys_to_dyn_topo_mpi_only
   end interface gfr_fv_phys_to_dyn_topo
 
   interface gfr_pg1_reconstruct
@@ -275,7 +283,7 @@ contains
        if (gfr%have_fv_topo_file_phis) then
           phis(:ncol,ie) = gfr%phis(:,ie)
        else
-          call gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis(:,ie))
+          call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phis(:,ie))
        end if
 
        dp = elem(ie)%state%dp3d(:,:,:,nt)
@@ -284,9 +292,9 @@ contains
        call get_temperature(elem(ie), wr2, hvcoord, nt)
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
-       wr2 = wr2*(p/p0)**kappa
+       wr2 = wr2*(p0/p)**kappa
        call gfr_g2f_scalar_dp(gfr, ie, elem(ie)%metdet, dp, dp_fv, wr2, wr1)
-       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)/(p_fv(:nf,:nf,:)/p0)**kappa
+       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
        T(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
 
        call gfr_g2f_vector(gfr, ie, elem, &
@@ -297,10 +305,12 @@ contains
 
        call get_field(elem(ie), 'omega', wr2, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, wr2, wr1)
-       ! When omega_p is switched to omega, remove the division by
-       ! p_fv.
+#ifdef MODEL_THETA_L
+       omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
+#else
+       ! for preqx, omega_p = omega/p
        omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:)/p_fv(:nf,:nf,:), (/ncol,nlev/))
-
+#endif
        do qi = 1,qsize
           call gfr_g2f_mixing_ratio(gfr, ie, elem(ie)%metdet, dp, dp_fv, &
                dp*elem(ie)%state%Q(:,:,:,qi), wr1)
@@ -355,9 +365,9 @@ contains
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr1(:nf,:nf,:) = reshape(T(:ncol,:,ie), (/nf,nf,nlev/))
-       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
+       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p0/p_fv(:nf,:nf,:))**kappa
        call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, elem(ie)%derived%FT)
-       elem(ie)%derived%FT = elem(ie)%derived%FT/(p/p0)**kappa
+       elem(ie)%derived%FT = elem(ie)%derived%FT*(p/p0)**kappa
 
        do qi = 1,qsize
           if (q_adjustment) then
@@ -445,7 +455,7 @@ contains
     end do
   end subroutine gfr_fv_phys_to_dyn_hybrid
 
-  subroutine gfr_dyn_to_fv_phys_topo(hybrid, elem, nets, nete, phis)
+  subroutine gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, nets, nete, phis)
     ! If needed, remap topography data defined on the GLL grid to the
     ! FV grid. The intended EAM configuration is to use topography
     ! data on the FV grid, so this routine is unlikely to be used.
@@ -458,10 +468,95 @@ contains
     integer :: ie
 
     do ie = nets,nete
-       call gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis(:,ie))
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phis(:,ie))
     end do
-  end subroutine gfr_dyn_to_fv_phys_topo
+  end subroutine gfr_dyn_to_fv_phys_topo_hybrid
 
+  subroutine gfr_dyn_to_fv_phys_topo_data(par, elem, nets, nete, g, gsz, p, psz, square, augment)
+    ! Remap SGH, SGH30, phis, landm_coslat, landfrac from GLL to FV grids. For
+    ! SGH* fields, square should be true. Then variance is remapped and so
+    ! conserved. For SGH, but not SGH30, set augment to true to add the variance
+    ! increases due to the additional smoothness of remapping from GLL to
+    ! (first-order) FV bases. SGH30 does not require additional variance to be
+    ! added since it's the variance due to truncation of wave numbers at a
+    ! separation length scale; this is independent of grid.
+
+    use parallel_mod, only: parallel_t, abortmp
+    use hybrid_mod, only: hybrid_create
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: nets, nete, gsz, psz
+    real(kind=real_kind), intent(in) :: g(gsz)
+    real(kind=real_kind), intent(out) :: p(psz)
+    logical, intent(in), optional :: square, augment
+
+    type (hybrid_t) :: hybrid
+    integer :: ie, ncol
+    logical :: augment_in
+
+    augment_in = .false.
+    if (present(augment)) augment_in = augment
+
+    ncol = gfr%nphys*gfr%nphys
+
+    do ie = nets,nete
+       call gfr_dyn_to_fv_phys_topo_data_elem(ie, elem, square, augment_in, &
+            g(npsq*(ie-nets)+1 : npsq*(ie-nets+1)), &
+            p(ncol*(ie-nets)+1 : ncol*(ie-nets+1)))
+    end do
+  end subroutine gfr_dyn_to_fv_phys_topo_data
+
+  subroutine gfr_dyn_to_fv_phys_topo_data_elem(ie, elem, square, augment_variance, g, p)
+    ! Element-level impl of gfr_dyn_to_fv_phys_topo_data.
+
+    use physical_constants, only: grav => g
+
+    integer, intent(in) :: ie
+    type (element_t), intent(in) :: elem(:)
+    logical, intent(in) :: square, augment_variance
+    real(kind=real_kind), intent(in) :: g(:)
+    real(kind=real_kind), intent(out) :: p(:)
+
+    real(kind=real_kind) :: wr(np,np,3), ones(np,np), qmin, qmax, phispg(npsq)
+    integer :: nf, ncol, i, j, k
+
+    ones = one
+    nf = gfr%nphys
+    ncol = nf*nf
+
+    if (augment_variance) then
+       ! Estimate additional variance due to remapping from GLL to FV
+       ! bases.
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phispg)
+       do j = 1,nf
+          do i = 1,nf
+             ! Integrate (phis_gll - phis_fv)^2 over FV subcell (i,j). Do this
+             ! using gfr_g2f_scalar; thus, only one entry out of nf^2 is used.
+             k = nf*(j-1) + i
+             wr(:,:,2) = ((elem(ie)%state%phis - phispg(k))/grav)**2
+             call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,2:2), wr(:,:,1:1))
+             ! Use just entry (i,j).
+             wr(i,j,3) = max(zero, wr(i,j,1))
+          end do
+       end do
+
+       ! Original SGH. augment_variance implies we need to square and sqrt
+       ! quantities.
+       wr(:,:,1) = reshape(g(:npsq)**2, (/np,np/))
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, wr(:,:,1), p(:ncol))
+
+       ! Combine the two sources of variance.
+       wr(:nf,:nf,2) = sqrt(reshape(p(:ncol), (/nf,nf/)) + wr(:nf,:nf,3))
+       p(:ncol) = reshape(wr(:nf,:nf,2), (/ncol/))
+    else
+       wr(:,:,1) = reshape(g(:npsq), (/np,np/))
+       if (square) wr(:,:,1) = wr(:,:,1)**2
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, wr(:,:,1), p(:ncol))
+       if (square) p(:ncol) = sqrt(p(:ncol))
+    end if
+  end subroutine gfr_dyn_to_fv_phys_topo_data_elem
+  
   subroutine gfr_fv_phys_to_dyn_topo_hybrid(hybrid, elem, nets, nete, phis)
     ! Remap FV topography data to the GLL grid. Prevent new
     ! extrema. Conserve the integral of height.
@@ -498,10 +593,8 @@ contains
        end if
     end do
 
-    if (hybrid%par%dynproc) then
-       call gfr_f2g_mixing_ratios_he(hybrid, nets, nete, gfr%qmin(:,:,nets:nete), &
-            gfr%qmax(:,:,nets:nete))
-    end if
+    call gfr_f2g_mixing_ratios_he(hybrid, nets, nete, gfr%qmin(:,:,nets:nete), &
+         gfr%qmax(:,:,nets:nete))
 
     if (nf > 1 .or. .not. gfr%boost_pg1) then
        do ie = nets,nete
@@ -545,6 +638,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
 
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -575,6 +669,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
 
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -584,6 +679,51 @@ contains
     !$omp end parallel
 #endif
   end subroutine gfr_fv_phys_to_dyn_dom_mt
+
+  subroutine gfr_dyn_to_fv_phys_topo_dom_mt(par, dom_mt, elem, phis)
+    ! Wrapper to the hybrid-threading main routine.
+
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use thread_mod, only: hthreads
+
+    type (parallel_t), intent(in) :: par
+    type (domain1d_t), intent(in) :: dom_mt(:)
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(out) :: phis(:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+#ifdef HORIZ_OPENMP
+    !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
+#endif
+    call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    call gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, nets, nete, phis)
+#ifdef HORIZ_OPENMP
+    !$omp end parallel
+#endif
+  end subroutine gfr_dyn_to_fv_phys_topo_dom_mt
+
+  subroutine gfr_dyn_to_fv_phys_topo_mpi_only(par, elem, phis)
+    ! Wrapper to the hybrid-threading main routine.
+
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use hybrid_mod, only: hybrid_create
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(out) :: phis(:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+    hybrid = hybrid_create(par, 0, 1)
+    call gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, 1, nelemd, phis)
+  end subroutine gfr_dyn_to_fv_phys_topo_mpi_only
 
   subroutine gfr_fv_phys_to_dyn_topo_dom_mt(par, dom_mt, elem, phis)
     ! Wrapper to the hybrid-threading main routine.
@@ -600,6 +740,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
 
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -609,6 +750,25 @@ contains
     !$omp end parallel
 #endif
   end subroutine gfr_fv_phys_to_dyn_topo_dom_mt
+
+  subroutine gfr_fv_phys_to_dyn_topo_mpi_only(par, elem, phis)
+    ! Wrapper to the hybrid-threading main routine.
+
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use hybrid_mod, only: hybrid_create
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    real(kind=real_kind), intent(in) :: phis(:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+    hybrid = hybrid_create(par, 0, 1)
+    call gfr_fv_phys_to_dyn_topo_hybrid(hybrid, elem, 1, nelemd, phis)
+  end subroutine gfr_fv_phys_to_dyn_topo_mpi_only
 
   ! ----------------------------------------------------------------------
   ! Internal initialization routines.
@@ -1094,7 +1254,7 @@ contains
 
     nf = gfr%nphys
     call gfr_g2f_scalar(ie, gll_metdet, dp_g*g, f)
-    f = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
+    f(:nf,:nf,:) = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
   end subroutine gfr_g2f_scalar_dp
 
   subroutine gfr_g2f_vector(gfr, ie, elem, u_g, v_g, u_f, v_f)
@@ -1194,6 +1354,30 @@ contains
     end do
   end subroutine gfr_g2f_mixing_ratios
 
+  subroutine gfr_g2f_scalar_and_limit(gfr, ie, gll_metdet, g, f)
+    ! After remap, limit using extremal values from g.
+
+    type (GllFvRemap_t), intent(in) :: gfr
+    integer, intent(in) :: ie
+    real(kind=real_kind), intent(in) :: gll_metdet(:,:), g(:,:)
+    real(kind=real_kind), intent(out) :: f(:)
+
+    real(kind=real_kind) :: wr(np,np,2), ones(np,np), qmin, qmax
+    integer :: nf, ncol
+
+    ones = one
+    nf = gfr%nphys
+    ncol = nf*nf
+
+    wr(:np,:np,1) = g
+    call gfr_g2f_scalar(ie, gll_metdet, wr(:,:,1:1), wr(:,:,2:2))
+    qmin = minval(g(:np,:np))
+    qmax = maxval(g(:np,:np))
+    wr(:nf,:nf,1) = reshape(gfr%w_ff(:ncol)*gfr%fv_metdet(:ncol,ie), (/nf,nf/))
+    call limiter_clip_and_sum(gfr%nphys, wr(:,:,1), qmin, qmax, ones, wr(:nf,:nf,2))
+    f(:ncol) = reshape(wr(:nf,:nf,2), (/ncol/))
+  end subroutine gfr_g2f_scalar_and_limit
+
   ! FV -> GLL (f2g)
 
   subroutine gfr_f2g_scalar(ie, gll_metdet, f, g) ! no gfr b/c public for testing
@@ -1290,7 +1474,7 @@ contains
     integer, intent(in) :: nets, nete
     real(kind=real_kind), intent(inout) :: qmin(:,:,:), qmax(:,:,:)
 
-    call neighbor_minmax(hybrid, edgeAdvQminmax, nets, nete, qmin, qmax)
+    if (hybrid%par%dynproc) call neighbor_minmax(hybrid, edgeAdvQminmax, nets, nete, qmin, qmax)
   end subroutine gfr_f2g_mixing_ratios_he
 
   subroutine gfr_f2g_dss(hybrid, elem, nets, nete)
@@ -1325,7 +1509,7 @@ contains
        end do
        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT, nlev, (qsize+2)*nlev, npack)
     end do
-    call bndry_exchangeV(hybrid, edge_g)
+    if (hybrid%par%dynproc) call bndry_exchangeV(hybrid, edge_g)
     do ie = nets, nete
        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FQ, qsize*nlev, 0, npack)
        do q = 1,qsize
@@ -1572,7 +1756,7 @@ contains
        dp = elem(ie)%state%dp3d(:,:,:,nt)
 
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
-       wr1 = (p/p0)**kappa
+       wr1 = (p0/p)**kappa
        elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
        call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
             elem(ie)%derived%FT)
@@ -1689,6 +1873,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
     
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -1713,6 +1898,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
     
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -1733,21 +1919,7 @@ contains
     integer, intent(in) :: ie
     real(kind=real_kind), intent(out) :: phis(:)
 
-    real(kind=real_kind) :: wr(np,np,2), ones(np,np), qmin, qmax
-    integer :: nf, nf2, ncol
-
-    ones = one
-    nf = gfr%nphys
-    nf2 = nf*nf
-    ncol = nf*nf
-
-    wr(:,:,1) = elem(ie)%state%phis(:,:)
-    call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,1:1), wr(:,:,2:2))
-    qmin = minval(elem(ie)%state%phis)
-    qmax = maxval(elem(ie)%state%phis)
-    wr(:nf,:nf,1) = reshape(gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie), (/nf,nf/))
-    call limiter_clip_and_sum(gfr%nphys, wr(:,:,1), qmin, qmax, ones, wr(:nf,:nf,2))
-    phis(:ncol) = reshape(wr(:nf,:nf,2), (/ncol/))
+    call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phis)
   end subroutine gfr_dyn_to_fv_phys_topo_elem
 
   subroutine gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
@@ -1755,7 +1927,7 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use hybrid_mod, only: hybrid_t, hybrid_create
+    use hybrid_mod, only: hybrid_create
     use thread_mod, only: omp_get_thread_num, hthreads
 
     type (parallel_t), intent(in) :: par
@@ -1764,7 +1936,7 @@ contains
     integer, intent(out) :: nets, nete
 
     integer :: ithr
-
+    
     ithr = omp_get_thread_num()
     nets = dom_mt(ithr+1)%start
     nete = dom_mt(ithr+1)%end
@@ -1904,7 +2076,7 @@ contains
 
   ! ----------------------------------------------------------------------
   ! Everything below is for internal unit testing of this module. For
-  ! integration-level testing, see gllfvremap_test_mod and
+  ! integration-level testing, see gllfvremap_util_mod and
   ! dcmip2016_test1_pg_forcing.
 
   subroutine set_ps_Q(elem, nets, nete, timeidx, qidx, nlev)
@@ -1993,12 +2165,12 @@ contains
        qmin_g = minval(q1_g(:,:,k))
        qmax_g = maxval(q1_g(:,:,k))
        den = gfr%tolfac*max(1e-10_real_kind, maxval(abs(q0_g(:,:,k))))
+       mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
+       mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        if (qmin_g < qmin_f - 50*eps*den .or. qmax_g > qmax_f + 50*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio limits:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
                qmin_f, qmin_g-qmin_f, qmax_g-qmax_f, qmax_f, mass0, mass1, 'ERROR'
        end if
-       mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
-       mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        den = sum(elem(ie)%spheremp*dp(:,:,k)*maxval(abs(q0_g(:,:,k))))
        if (abs(mass1 - mass0) > gfr%tolfac*20*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio mass:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
@@ -2068,6 +2240,8 @@ contains
     ! Purposely construct our own hybrid object to test gfr_hybrid_create.
     type (hybrid_t) :: hybrid
     integer :: nets, nete
+
+    if (.not. par%dynproc) return
 
     nf = gfr%nphys
     nf2 = nf*nf

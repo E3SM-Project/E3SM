@@ -96,7 +96,8 @@ CONTAINS
     use prim_driver_mod,  only: prim_init1
     use parallel_mod,     only: par, initmp
     use namelist_mod,     only: readnl
-    use control_mod,      only: runtype, qsplit, rsplit
+    use control_mod,      only: runtype, qsplit, rsplit, dt_tracer_factor, dt_remap_factor, &
+         timestep_make_eam_parameters_consistent
     use time_mod,         only: tstep
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
@@ -109,7 +110,7 @@ CONTAINS
     type (dyn_import_t), intent(OUT) :: dyn_in
     type (dyn_export_t), intent(OUT) :: dyn_out
 
-    integer :: neltmp(3)
+    integer :: neltmp(3), ierr, nstep_factor
     integer :: npes_se
     integer :: npes_se_stride
 
@@ -160,7 +161,7 @@ CONTAINS
 
        neltmp(1) = nelemdmax
        neltmp(2) = nelem
-       neltmp(3) = get_dyn_grid_parm('plon')
+       neltmp(3) = GlobalUniqueCols ! get_dyn_grid_parm('plon')
     else
        nelemd = 0
        neltmp(1) = 0
@@ -196,15 +197,12 @@ CONTAINS
     !        tstep = the dynamics timestep:  
     !
 
-    if (rsplit==0) then
-       ! non-lagrangian code
-       tstep = dtime/real(se_nsplit*qsplit,r8)
-       TimeLevel%nstep = get_nstep()*se_nsplit*qsplit
-   else
-      ! lagrangian code
-       tstep = dtime/real(se_nsplit*qsplit*rsplit,r8)
-       TimeLevel%nstep = get_nstep()*se_nsplit*qsplit*rsplit
-    endif
+    ! Ignore ierr, as on error, timestep_make_eam_parameters_consistent defaults
+    ! to printing an error and then aborting.
+    ierr = timestep_make_eam_parameters_consistent(par, dt_remap_factor, dt_tracer_factor, &
+         se_nsplit, nstep_factor, tstep, dtime)
+    tstep = dtime/real(nstep_factor,r8)
+    TimeLevel%nstep = get_nstep()*nstep_factor
 
     ! Initialize FV physics grid variables
     if (fv_nphys > 0) then

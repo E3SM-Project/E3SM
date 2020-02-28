@@ -43,6 +43,7 @@ module CLMFatesInterfaceMod
 
    use SoilStateType     , only : soilstate_type 
    use clm_varctl        , only : iulog
+   use clm_varctl        , only : use_fates
    use clm_varctl        , only : use_vertsoilc 
    use clm_varctl        , only : use_fates_spitfire
    use clm_varctl        , only : fates_parteh_mode
@@ -116,6 +117,7 @@ module CLMFatesInterfaceMod
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : InitPARTEHGlobals
+   use FatesInterfaceMod     , only : set_fates_global_elements
 
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
@@ -145,6 +147,7 @@ module CLMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : UpdateH2OVeg
    use FatesPlantHydraulicsMod, only : RestartHydrStates
    use FatesInterfaceMod      , only : bc_in_type, bc_out_type
+   use CLMFatesParamInterfaceMod         , only : FatesReadParameters
 
    implicit none
 
@@ -224,8 +227,169 @@ module CLMFatesInterfaceMod
 
    character(len=*), parameter, private :: sourcefile = &
         __FILE__
+
+   public  :: ELMFatesGlobalElements
    
 contains
+
+   
+
+  subroutine ELMFatesGlobalElements()
+
+     ! --------------------------------------------------------------------------------
+     ! This is one of the first calls to fates
+     ! Used for setting dimensions.  This MUST
+     ! be called after NL variables are specified and
+     ! after the FATES parameter file has been read in
+     ! Aside from setting global dimension info, which
+     ! is used in the history file, we also transfer
+     ! over the NL variables to FATES global settings.
+     ! --------------------------------------------------------------------------------  
+     
+     integer                                        :: pass_masterproc
+     integer                                        :: pass_vertsoilc
+     integer                                        :: pass_spitfire     
+     integer                                        :: pass_ed_st3
+     integer                                        :: pass_logging
+     integer                                        :: pass_ed_prescribed_phys
+     integer                                        :: pass_planthydro
+     integer                                        :: pass_inventory_init
+     integer                                        :: pass_is_restart
+     
+     if (use_fates) then
+
+           ! Force FATES parameters that are recieve type, to the unset value
+           call set_fates_ctrlparms('flush_to_unset')
+
+           ! Send parameters individually
+           call set_fates_ctrlparms('num_sw_bbands',ival=numrad)
+           call set_fates_ctrlparms('vis_sw_index',ival=ivis)
+           call set_fates_ctrlparms('nir_sw_index',ival=inir)
+
+           call set_fates_ctrlparms('num_lev_ground',ival=nlevgrnd)
+           call set_fates_ctrlparms('hlm_name',cval='CLM')
+           call set_fates_ctrlparms('hio_ignore_val',rval=spval)
+           call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
+           call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1))
+
+           call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
+
+           if((trim(nu_com).eq.'ECA') .or. (trim(nu_com).eq.'MIC')) then
+              call set_fates_ctrlparms('nu_com',cval='ECA')
+           else
+              call set_fates_ctrlparms('nu_com',cval='RD')
+           end if
+           
+           ! ELM ALWAYS has nitrogen and phosphorus "on"
+           ! These may be in a non-limiting status (ie when supplements)
+           ! are added, but they are always allocated and cycled non-the less
+           ! FATES may want to interact differently with other models
+           ! that don't even have these arrays allocated.
+           ! FATES also checks that if NO3 is cycled in ELM, then
+           ! any plant affinity parameters are checked.
+           
+           if(use_nitrif_denitrif) then
+              call set_fates_ctrlparms('nitrogen_spec',ival=1)
+           else
+              call set_fates_ctrlparms('nitrogen_spec',ival=2)
+           end if
+           call set_fates_ctrlparms('phosphorus_spec',ival=1)
+           
+           
+           if(is_restart()) then
+               pass_is_restart = 1
+           else
+               pass_is_restart = 0
+           end if
+           call set_fates_ctrlparms('is_restart',ival=pass_is_restart)
+
+           if(use_vertsoilc) then
+               pass_vertsoilc = 1
+           else
+               pass_vertsoilc = 0
+           end if
+           call set_fates_ctrlparms('use_vertsoilc',ival=pass_vertsoilc)
+
+           if(use_fates_spitfire) then
+               pass_spitfire = 1
+           else
+               pass_spitfire = 0
+           end if
+           call set_fates_ctrlparms('use_spitfire',ival=pass_spitfire)
+           
+           if(use_fates_ed_st3) then
+               pass_ed_st3 = 1
+           else
+               pass_ed_st3 = 0
+           end if
+           call set_fates_ctrlparms('use_ed_st3',ival=pass_ed_st3)
+
+           if(use_fates_logging) then
+               pass_logging = 1
+           else
+               pass_logging = 0
+           end if
+           call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
+           if(use_fates_ed_prescribed_phys) then
+               pass_ed_prescribed_phys = 1
+           else
+               pass_ed_prescribed_phys = 0
+           end if
+           call set_fates_ctrlparms('use_ed_prescribed_phys',ival=pass_ed_prescribed_phys)
+
+           if(use_fates_planthydro) then
+               pass_planthydro = 1
+           else
+               pass_planthydro = 0
+           end if
+           call set_fates_ctrlparms('use_planthydro',ival=pass_planthydro)
+
+           if(use_fates_inventory_init) then
+               pass_inventory_init = 1
+           else
+               pass_inventory_init = 0
+           end if
+           call set_fates_ctrlparms('use_inventory_init',ival=pass_inventory_init)
+
+           call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
+
+           if(masterproc)then
+               pass_masterproc = 1
+           else
+               pass_masterproc = 0
+           end if
+           call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
+           
+           ! Check through FATES parameters to see if all have been set
+           call set_fates_ctrlparms('check_allset')
+
+           ! This will initialize all globals associated with the chosen
+           ! Plant Allocation and Reactive Transport hypothesis. This includes
+           ! mapping tables and global variables. These will be read-only
+           ! and only required once per machine instance (thus no requirements
+           ! to have it instanced on each thread
+
+           call InitPARTEHGlobals()
+
+       end if
+
+       ! This determines the total amount of space it requires in its largest
+       ! dimension.  We are currently calling that the "cohort" dimension, but
+       ! it is really a utility dimension that captures the models largest
+       ! size need.
+       ! Sets:
+       ! fates_maxElementsPerPatch
+       ! num_elements
+       ! fates_maxElementsPerSite (where a site is roughly equivalent to a column)
+       ! (Note: this needs to be called when use_fates=.false. as well, becuase
+       ! it will return some nominal dimension sizes of 1
+
+       call set_fates_global_elements(use_fates)
+
+       return
+   end subroutine ELMFatesGlobalElements
+
 
   ! ====================================================================================
 
@@ -263,15 +427,6 @@ contains
       ! local variables
       integer                                        :: nclumps   ! Number of threads
       logical                                        :: verbose_output
-      integer                                        :: pass_masterproc
-      integer                                        :: pass_vertsoilc
-      integer                                        :: pass_spitfire     
-      integer                                        :: pass_ed_st3
-      integer                                        :: pass_logging
-      integer                                        :: pass_ed_prescribed_phys
-      integer                                        :: pass_planthydro
-      integer                                        :: pass_inventory_init
-      integer                                        :: pass_is_restart
       integer                                        :: nc        ! thread index
       integer                                        :: s         ! FATES site index
       integer                                        :: c         ! HLM column index
@@ -296,122 +451,7 @@ contains
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
 
-      ! ---------------------------------------------------------------------------------
-      ! Send dimensions and other model controling parameters to FATES.  These
-      ! are obviously only those parameters that are dictated by the host
-      ! ---------------------------------------------------------------------------------
       
-      ! Force FATES parameters that are recieve type, to the unset value
-      call set_fates_ctrlparms('flush_to_unset')
-      
-      ! Send parameters individually
-      call set_fates_ctrlparms('num_sw_bbands',ival=numrad)
-      call set_fates_ctrlparms('vis_sw_index',ival=ivis)
-      call set_fates_ctrlparms('nir_sw_index',ival=inir)
-      
-      call set_fates_ctrlparms('num_lev_ground',ival=nlevgrnd)
-      call set_fates_ctrlparms('hlm_name',cval='CLM')
-      call set_fates_ctrlparms('hio_ignore_val',rval=spval)
-      call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
-      call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1)) ! FATES IGNORES
-                                                                          ! AND DOESNT TOUCH
-                                                                          ! THE BARE SOIL PATCH
-      call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
-
-
-      if((trim(nu_com).eq.'ECA') .or. (trim(nu_com).eq.'MIC')) then
-         call set_fates_ctrlparms('nu_com',cval='ECA')
-      else
-         call set_fates_ctrlparms('nu_com',cval='RD')
-      end if
-
-
-      ! ELM ALWAYS has nitrogen and phosphorus "on"
-      ! These may be in a non-limiting status (ie when supplements)
-      ! are added, but they are always allocated and cycled non-the less
-      ! FATES may want to interact differently with other models
-      ! that don't even have these arrays allocated.
-      ! FATES also checks that if NO3 is cycled in ELM, then
-      ! any plant affinity parameters are checked.
-
-      if(use_nitrif_denitrif) then
-         call set_fates_ctrlparms('nitrogen_spec',ival=1)
-      else
-         call set_fates_ctrlparms('nitrogen_spec',ival=2)
-      end if
-      call set_fates_ctrlparms('phosphorus_spec',ival=1)
-      
-
-      if(is_restart()) then
-         pass_is_restart = 1
-      else
-         pass_is_restart = 0
-      end if
-      call set_fates_ctrlparms('is_restart',ival=pass_is_restart)
-
-      if(use_vertsoilc) then
-         pass_vertsoilc = 1
-      else
-         pass_vertsoilc = 0
-      end if
-      call set_fates_ctrlparms('use_vertsoilc',ival=pass_vertsoilc)
-      
-      if(use_fates_spitfire) then
-         pass_spitfire = 1
-      else
-         pass_spitfire = 0
-      end if
-      call set_fates_ctrlparms('use_spitfire',ival=pass_spitfire)
-
-      if(use_fates_ed_st3) then
-         pass_ed_st3 = 1
-      else
-         pass_ed_st3 = 0
-      end if
-      call set_fates_ctrlparms('use_ed_st3',ival=pass_ed_st3)
-      
-      if(use_fates_logging) then
-         pass_logging = 1
-      else
-         pass_logging = 0
-      end if
-      call set_fates_ctrlparms('use_logging',ival=pass_logging)
-
-      if(use_fates_ed_prescribed_phys) then
-         pass_ed_prescribed_phys = 1
-      else
-         pass_ed_prescribed_phys = 0
-      end if
-      call set_fates_ctrlparms('use_ed_prescribed_phys',ival=pass_ed_prescribed_phys)
-
-      if(use_fates_planthydro) then
-         pass_planthydro = 1
-      else
-         pass_planthydro = 0
-      end if
-      call set_fates_ctrlparms('use_planthydro',ival=pass_planthydro)
-
-      if(use_fates_inventory_init) then
-         pass_inventory_init = 1
-      else
-         pass_inventory_init = 0
-      end if
-      call set_fates_ctrlparms('use_inventory_init',ival=pass_inventory_init)
-
-      call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
-
-
-
-      if(masterproc)then
-         pass_masterproc = 1
-      else
-         pass_masterproc = 0
-      end if
-      call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
-
-      ! Check through FATES parameters to see if all have been set
-      call set_fates_ctrlparms('check_allset')
-
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
@@ -550,13 +590,7 @@ contains
       end do
       !$OMP END PARALLEL DO
 
-      ! This will initialize all globals associated with the chosen
-      ! Plant Allocation and Reactive Transport hypothesis. This includes
-      ! mapping tables and global variables. These will be read-only
-      ! and only required once per machine instance (thus no requirements
-      ! to have it instanced on each thread
-      
-      call InitPARTEHGlobals()
+
 
       call this%init_history_io(bounds_proc)
       
@@ -1583,6 +1617,13 @@ contains
      do s = 1, this%fates(nc)%nsites
         ! filter flag == 1 means that this patch has not been called for photosynthesis
         this%fates(nc)%bc_in(s)%filter_photo_pa(:) = 1
+
+        ! set transpiration input boundary condition to zero. The exposed
+        ! vegetation filter may not even call every patch.
+        if (use_fates_planthydro) then
+           this%fates(nc)%bc_in(s)%qflx_transp_pa(:) = 0._r8
+        end if
+        
      end do
   end subroutine prep_canopyfluxes
 
@@ -2408,6 +2449,7 @@ contains
  ! ======================================================================================
 
  subroutine wrap_hydraulics_drive(this, bounds_clump, &
+                                 fn, filterp, &
                                  soilstate_inst, waterstate_inst, waterflux_inst, &
                                  solarabs_inst, energyflux_inst)
 
@@ -2415,6 +2457,8 @@ contains
    implicit none
    class(hlm_fates_interface_type), intent(inout) :: this
    type(bounds_type),intent(in)                   :: bounds_clump
+   integer, intent(in)                            :: fn
+   integer, intent(in)                            :: filterp(fn)
    type(soilstate_type)    , intent(inout)        :: soilstate_inst
    type(waterstate_type)   , intent(inout)        :: waterstate_inst
    type(waterflux_type)    , intent(inout)        :: waterflux_inst
@@ -2425,6 +2469,7 @@ contains
    integer :: s
    integer :: c 
    integer :: j
+   integer :: f    ! filter loop index
    integer :: ifp
    integer :: p
    integer :: nc
@@ -2463,9 +2508,21 @@ contains
          p = ifp+col_pp%pfti(c)
          this%fates(nc)%bc_in(s)%swrad_net_pa(ifp) = solarabs_inst%fsa_patch(p)
          this%fates(nc)%bc_in(s)%lwrad_net_pa(ifp) = energyflux_inst%eflx_lwrad_net_patch(p)
-         this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = veg_wf%qflx_tran_veg(p)
       end do
    end do
+
+   ! The exposed vegetation filter "filterp" dictates which patches
+   ! had their transpiration updated during canopy_fluxes(). Patches
+   ! not in the filter had been zero'd during prep_canopyfluxes().
+   
+   do f = 1,fn
+      p = filterp(f)
+      c = veg_pp%column(p)
+      s = this%f2hmap(nc)%hsites(c)
+      ifp = p - col_pp%pfti(c)
+      this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = waterflux_inst%qflx_tran_veg_patch(p)
+   end do
+
 
    ! Call Fates Hydraulics
    ! ------------------------------------------------------------------------------------

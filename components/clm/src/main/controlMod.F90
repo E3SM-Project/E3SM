@@ -280,6 +280,8 @@ contains
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
          vsfm_lateral_model_type, vsfm_include_seepage_bc
 
+    namelist /clm_inparm/ use_hydrstress
+
     namelist /clm_inparm/ &
        lateral_connectivity, domain_decomp_type
 
@@ -828,6 +830,8 @@ contains
      call mpi_bcast (co2_file,       len(co2_file),       MPI_CHARACTER, 0, mpicom, ier)
      call mpi_bcast (aero_file,      len(aero_file),      MPI_CHARACTER, 0, mpicom, ier)
 
+    ! plant hydraulics
+    call mpi_bcast (use_hydrstress, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! VSFM variable
 

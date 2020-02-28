@@ -170,16 +170,16 @@ contains
        ! c14_cs data structure so that they can be used in
        ! associate statements (nag compiler complains otherwise)
 
-       call grc_cs%Init(begg, endg)
+       call grc_cs%Init(begg, endg, carbon_type='c12')
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
        
        if (use_c13) then
-          call c13_grc_cs%Init(begg, endg)
+          call c13_grc_cs%Init(begg, endg,carbon_type='c13')
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
        end if
        if (use_c14) then
-          call c14_grc_cs%Init(begg, endg)
+          call c14_grc_cs%Init(begg, endg,carbon_type='c14')
           call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
        end if
@@ -408,6 +408,7 @@ contains
     call col_ef%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_ef%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
+    call drydepvel_vars%Init(bounds_proc)
     call aerosol_vars%Init(bounds_proc)
 
     call frictionvel_vars%Init(bounds_proc)

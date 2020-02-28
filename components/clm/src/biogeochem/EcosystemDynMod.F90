@@ -439,13 +439,6 @@ contains
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
        call t_stopf('MaintenanceResp')
 
-    else
-
-       ! This wrapper will deposit mineralized nutrient
-       ! into the appropriate pools via source terms from
-       ! FATES. This could be fixation, or exudation
-       ! call WrapFatesNutrientSources(bounds)
-
     end if
     
 

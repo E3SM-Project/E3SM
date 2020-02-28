@@ -14,11 +14,12 @@ module CanopyFluxesMod
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
   use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
+  use clm_varctl            , only : use_hydrstress
   use clm_varpar            , only : nlevgrnd, nlevsno
   use clm_varcon            , only : namep 
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
   use decompMod             , only : bounds_type
-  use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation
+  use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SimpleMathMod         , only : array_div_vector
@@ -138,6 +139,8 @@ contains
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
+    real(r8), pointer   :: bsun(:)          ! sunlit canopy transpiration wetness factor (0 to 1)
+    real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
     real(r8), parameter :: beta = 1.0_r8    ! coefficient of conective velocity [-]
@@ -442,7 +445,10 @@ contains
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
          )
-
+      if (use_hydrstress) then
+        bsun                    => energyflux_vars%bsun_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
+        bsha                    => energyflux_vars%bsha_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
+      end if
       ! Determine step size
 
       dtime = get_step_size()
@@ -859,10 +865,20 @@ contains
 
          else ! not use_fates
 
-            call Photosynthesis (bounds, fn, filterp, &
+            if ( use_hydrstress ) then
+               call PhotosynthesisHydraulicStress (bounds, fn, filterp, &
+                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
+                    bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
+                    qsatl(begp:endp), qaf(begp:endp),     &
+                    atm2lnd_vars, temperature_vars, soilstate_vars, waterstate_vars, surfalb_vars, solarabs_vars,    &
+                    canopystate_vars, photosyns_vars, waterflux_vars, &
+                    nitrogenstate_vars, phosphorusstate_vars)
+            else
+               call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
                  canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sun')
+            end if
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp, &
@@ -877,11 +893,12 @@ contains
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if
             end do
-
-            call Photosynthesis (bounds, fn, filterp, &
+            if ( .not. use_hydrstress ) then
+              call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
                  canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sha')
+            end if
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp,  &
@@ -927,8 +944,23 @@ contains
             end if
 
             efpot = forc_rho(t)*wtl*(qsatl(p)-qaf(p))
+            ! When the hydraulic stress parameterization is active calculate rpp
+            ! but not transpiration
+            if ( use_hydrstress ) then
+              if (efpot > 0._r8) then
+                 if (btran(p) > btran0) then
+                   rpp = rppdry + fwet(p)
+                 else
+                   rpp = fwet(p)
+                 end if
+                 !Check total evapotranspiration from leaves
+                 rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime)/efpot)
+              else
+                 rpp = 1._r8
+              end if
+            else
 
-            if (efpot > 0._r8) then
+              if (efpot > 0._r8) then
                if (btran(p) > btran0) then
                   qflx_tran_veg(p) = efpot*rppdry
                   rpp = rppdry + fwet(p)
@@ -939,12 +971,12 @@ contains
                end if
                !Check total evapotranspiration from leaves
                rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime)/efpot)
-            else
+              else
                !No transpiration if potential evaporation less than zero
                rpp = 1._r8
                qflx_tran_veg(p) = 0._r8
+              end if
             end if
-
             ! Update conductances for changes in rpp
             ! Latent heat conductances for ground and leaf.
             ! Air has same conductance for both sensible and latent heat.
@@ -1026,15 +1058,20 @@ contains
             ! holds the excess energy if all intercepted water is evaporated
             ! during the timestep.  This energy is later added to the
             ! sensible heat flux.
-
-            ecidif = 0._r8
-            if (efpot > 0._r8 .and. btran(p) > btran0) then
-               qflx_tran_veg(p) = efpot*rppdry
+            if ( use_hydrstress ) then
+               ecidif = max(0._r8,qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
+               qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
             else
+
+              ecidif = 0._r8
+              if (efpot > 0._r8 .and. btran(p) > btran0) then
+               qflx_tran_veg(p) = efpot*rppdry
+              else
                qflx_tran_veg(p) = 0._r8
+              end if
+              ecidif = max(0._r8, qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
+              qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
             end if
-            ecidif = max(0._r8, qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
-            qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
 
             ! The energy loss due to above two limits is added to
             ! the sensible heat flux.
@@ -1199,7 +1236,7 @@ contains
 
       if ( use_fates ) then
          call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
-         call alm_fates%wrap_hydraulics_drive(bounds,soilstate_vars, &
+         call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
                waterstate_vars,waterflux_vars,solarabs_vars,energyflux_vars)
 
       else

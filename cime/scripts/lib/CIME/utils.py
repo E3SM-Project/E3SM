@@ -132,10 +132,8 @@ def expect(condition, error_msg, exc_type=CIMEError, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        try:
-            msg = str(error_prefix + " " + error_msg)
-        except UnicodeEncodeError:
-            msg = (error_prefix + " " + error_msg).encode('utf-8')
+
+        msg = error_prefix + " " + error_msg
         raise exc_type(msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
@@ -463,16 +461,28 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
                             env=env)
 
     output, errput = proc.communicate(input_str)
-    if output is not None:
-        try:
-            output = output.decode('utf-8', errors='ignore').strip()
-        except AttributeError:
-            pass
-    if errput is not None:
-        try:
-            errput = errput.decode('utf-8', errors='ignore').strip()
-        except AttributeError:
-            pass
+
+    # In Python3, subprocess.communicate returns bytes. We want to work with strings
+    # as much as possible, so we convert bytes to string (which is unicode in py3) via
+    # decode. For python2, we do NOT want to do this since decode will yield unicode
+    # strings which are not necessarily compatible with the system's default base str type.
+    if not six.PY2:
+        if output is not None:
+            try:
+                output = output.decode('utf-8', errors='ignore')
+            except AttributeError:
+                pass
+        if errput is not None:
+            try:
+                errput = errput.decode('utf-8', errors='ignore')
+            except AttributeError:
+                pass
+
+    # Always strip outputs
+    if output:
+        output = output.strip()
+    if errput:
+        errput = errput.strip()
 
     stat = proc.wait()
     if six.PY2:
@@ -531,7 +541,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
             else:
                 errput = ""
 
-        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput.encode('utf-8'), os.getcwd() if from_dir is None else from_dir))
+        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir))
 
     return output
 
@@ -1207,18 +1217,23 @@ def convert_to_seconds(time_str):
     """
     Convert time value in [[HH:]MM:]SS to seconds
 
+    We assume that XX:YY is likely to be HH:MM, not MM:SS
+
     >>> convert_to_seconds("42")
     42
     >>> convert_to_seconds("01:01:01")
     3661
+    >>> convert_to_seconds("01:01")
+    3660
     """
     components = time_str.split(":")
     expect(len(components) < 4, "Unusual time string: '{}'".format(time_str))
 
     components.reverse()
     result = 0
+    starting_exp = 1 if len(components) == 2 else 0
     for idx, component in enumerate(components):
-        result += int(component) * pow(60, idx)
+        result += int(component) * pow(60, idx + starting_exp)
 
     return result
 
@@ -1317,7 +1332,7 @@ def format_time(time_format, input_format, input_time):
     """
     input_fields = input_format.split("%")
     expect(input_fields[0] == input_time[:len(input_fields[0])],
-           "Failed to parse the input time; does not match the header string")
+           "Failed to parse the input time '{}'; does not match the header string '{}'".format(input_time, input_format))
     input_time = input_time[len(input_fields[0]):]
     timespec = {"H": None, "M": None, "S": None}
     maxvals = {"M": 60, "S": 60}
@@ -1579,6 +1594,9 @@ def _get_most_recent_lid_impl(files):
     >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160906_111212.gz']
     >>> _get_most_recent_lid_impl(files)
     ['20160905_111212', '20160906_111212']
+    >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160905_111212.gz']
+    >>> _get_most_recent_lid_impl(files)
+    ['20160905_111212']
     """
     results = []
     for item in files:
@@ -1589,7 +1607,7 @@ def _get_most_recent_lid_impl(files):
         else:
             logger.warning("Apparent model log file '{}' did not conform to expected name format".format(item))
 
-    return sorted(results)
+    return sorted(list(set(results)))
 
 def ls_sorted_by_mtime(path):
     ''' return list of path sorted by timestamp oldest first'''

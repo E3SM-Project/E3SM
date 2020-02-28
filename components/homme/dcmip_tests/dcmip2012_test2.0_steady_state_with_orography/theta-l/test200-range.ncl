@@ -183,7 +183,7 @@ begin
 	;gsn_panel(wks,plot,(/2,1/),pres)			; 2x1 plot
 
 	gsn_panel(wks,plot,(/1,1/),pres)			; 2x1 plot
-	frame(wks)
+	;frame(wks)
 
 
 

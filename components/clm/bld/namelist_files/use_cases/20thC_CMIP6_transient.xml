@@ -45,9 +45,16 @@
 
 <!-- CMIP6 DECK compsets -->
 
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
-<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
-<finidat>lnd/clm2/initdata_map/I1850CLM45.ne30_oECv3.edison.intel.36b43c9.clm2.r.0001-01-06-00000_c20171023.nc</finidat>
+<fsurdat res="ne30np4">lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
+<flanduse_timeseries res="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
+<finidat res="ne30np4" mask="oEC60to30v3">lnd/clm2/initdata_map/20180316.DECKv1b_A1.ne30_oEC.edison.clm2.r.1980-01-01-00000.8575c3f_c20190904.nc</finidat>
+
+<fsurdat res="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
+
+<fsurdat res="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</fsurdat>
+
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
+<check_dynpft_consistency>.false.</check_dynpft_consistency>
+
 
 </namelist_defaults>

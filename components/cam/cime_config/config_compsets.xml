@@ -208,12 +208,12 @@
 
   <compset>
     <alias>F20TRC5-CMIP6</alias>
-    <lname>20TR_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>20TR_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F2010SC5-CMIP6</alias>
-    <lname>2010S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -331,6 +331,14 @@
   <compset>
     <alias>F-EAMv1-AQPFILE</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- *********************************** -->
+  <!-- Radiative-Convective Equilibrium (RCE) -->
+  <!-- *********************************** -->
+  <compset>
+    <alias>F-EAMv1-RCEMIP</alias>
+    <lname>2000_CAM5%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->

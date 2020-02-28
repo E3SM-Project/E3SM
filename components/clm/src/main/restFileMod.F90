@@ -927,8 +927,8 @@ contains
     ! !USES:
     use clm_time_manager     , only : get_nstep
     use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
-    use clm_varctl           , only : conventions, source
-    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth
+    use clm_varctl           , only : conventions, source, use_hydrstress
+    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
     use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
@@ -973,6 +973,9 @@ contains
     call ncd_defdim(ncid , 'levtot'  , nlevsno+nlevgrnd, dimid)
     call ncd_defdim(ncid , 'numrad'  , numrad         ,  dimid)
     call ncd_defdim(ncid , 'levcan'  , nlevcan        ,  dimid)
+    if ( use_hydrstress ) then
+      call ncd_defdim(ncid , 'vegwcs'  , nvegwcs        ,  dimid)
+    end if
     call ncd_defdim(ncid , 'string_length', 64        ,  dimid)
     call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
     call ncd_defdim(ncid , 'month'   , nmonth         ,  dimid)

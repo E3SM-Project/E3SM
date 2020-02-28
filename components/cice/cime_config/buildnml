@@ -99,7 +99,7 @@ def buildnml(case, caseroot, compname):
     # this will force gmake to rebuild when $CASE.buildexe is called
 
     if testcase != "SBN":
-        with open(os.path.join(objroot, "ice/obj/CICE_cppdefs.new"), "w") as fd:
+        with open(os.path.join(objroot, "ice/obj/CCSM_cppdefs.new"), "w") as fd:
             fd.write(cppdefs + "\n")
 
     #--------------------------------------------------------------------

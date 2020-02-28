@@ -18,21 +18,36 @@ module compose_mod
      end subroutine cedr_unittest
 
      subroutine cedr_init_impl(comm, cdr_alg, use_sgi, gid_data, rank_data, &
-          ncell, nlclcell, nlev) bind(c)
+          ncell, nlclcell, nlev, independent_time_steps, hard_zero, &
+          gid_data_sz, rank_data_sz) bind(c)
        use iso_c_binding, only: c_int, c_bool
-       integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev
-       logical(kind=c_bool), value, intent(in) :: use_sgi
-       integer(kind=c_int), intent(in) :: gid_data(:), rank_data(:)
+       integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev, &
+            gid_data_sz, rank_data_sz
+       logical(kind=c_bool), value, intent(in) :: use_sgi, independent_time_steps, hard_zero
+       integer(kind=c_int), intent(in) :: gid_data(gid_data_sz), rank_data(rank_data_sz)
      end subroutine cedr_init_impl
 
      subroutine slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
           nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, nbr_id_rank, nirptr, &
-          sl_nearest_point_lev) bind(c)
+          sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, nbr_id_rank_sz, nirptr_sz) bind(c)
        use iso_c_binding, only: c_int
        integer(kind=c_int), value, intent(in) :: comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelem, nelemd, cubed_sphere_map, sl_nearest_point_lev
-       integer(kind=c_int), intent(in) :: lid2gid(:), lid2facenum(:), nbr_id_rank(:), nirptr(:)
+            nelem, nelemd, cubed_sphere_map, sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, &
+            nbr_id_rank_sz, nirptr_sz
+       integer(kind=c_int), intent(in) :: lid2gid(lid2gid_sz), lid2facenum(lid2facenum_sz), &
+            nbr_id_rank(nbr_id_rank_sz), nirptr(nirptr_sz)
      end subroutine slmm_init_impl
+
+     subroutine cedr_query_bufsz(sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_int
+       integer(kind=c_int), intent(out) :: sendsz, recvsz
+     end subroutine cedr_query_bufsz
+
+     subroutine cedr_set_bufs(sendbuf, recvbuf, sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_double, c_int
+       integer(kind=c_int), value, intent(in) :: sendsz, recvsz
+       real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
+     end subroutine cedr_set_bufs
 
      subroutine cedr_set_ie2gci(ie, gci) bind(c)
        use iso_c_binding, only: c_int
@@ -58,6 +73,12 @@ module compose_mod
        real(kind=c_double), intent(in) :: spheremp(np,np)
      end subroutine cedr_sl_set_spheremp
 
+     subroutine cedr_sl_set_dp0(dp0) bind(c)
+       use iso_c_binding, only: c_double
+       use dimensions_mod, only : nlev
+       real(kind=c_double), intent(in) :: dp0(nlev)
+     end subroutine cedr_sl_set_dp0
+
      subroutine cedr_sl_set_Qdp(ie, Qdp, n0_qdp, np1_qdp) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize_d
@@ -72,6 +93,14 @@ module compose_mod
        integer(kind=c_int), value, intent(in) :: ie, tl_np1
        real(kind=c_double), intent(in) :: dp3d(np,np,nlev,timelevels)
      end subroutine cedr_sl_set_dp3d
+
+     subroutine cedr_sl_set_dp(ie, dp) bind(c)
+       use kinds         , only : real_kind
+       use dimensions_mod, only : nlev, np
+       use element_state,  only : timelevels
+       integer, value, intent(in) :: ie
+       real(kind=real_kind), intent(in) :: dp(np,np,nlev)
+     end subroutine cedr_sl_set_dp
 
      subroutine cedr_sl_set_Q(ie, Q) bind(c)
        use iso_c_binding, only: c_int, c_double
@@ -107,12 +136,24 @@ module compose_mod
        integer(kind=c_int), value, intent(in) :: nets, nete
      end subroutine cedr_sl_check
 
-     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside) bind(c)
+     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside, &
+          patch_size) bind(c)
        use iso_c_binding, only: c_int
        use coordinate_systems_mod, only : cartesian3D_t
-       integer(kind=c_int), value, intent(in) :: ie, num_neighbors
-       type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
+       integer(kind=c_int), value, intent(in) :: ie, num_neighbors, patch_size
+       type(cartesian3D_t), intent(in) :: neigh_corners(4,patch_size), pinside
      end subroutine slmm_init_local_mesh
+
+     subroutine slmm_query_bufsz(sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_int
+       integer(kind=c_int), intent(out) :: sendsz, recvsz
+     end subroutine slmm_query_bufsz
+
+     subroutine slmm_set_bufs(sendbuf, recvbuf, sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_double, c_int
+       integer(kind=c_int), intent(in) :: sendsz, recvsz
+       real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
+     end subroutine slmm_set_bufs
 
      subroutine slmm_init_finalize() bind(c)
      end subroutine slmm_init_finalize
@@ -153,6 +194,12 @@ module compose_mod
      end subroutine slmm_get_mpi_pattern
 #endif
 
+     subroutine cedr_finalize() bind(c)
+     end subroutine cedr_finalize
+
+     subroutine slmm_finalize() bind(c)
+     end subroutine slmm_finalize
+
   end interface
 
 contains
@@ -164,7 +211,7 @@ contains
     use element_mod, only: element_t
     use gridgraph_mod, only: GridVertex_t
     use control_mod, only: semi_lagrange_cdr_alg, transport_alg, cubed_sphere_map, &
-         semi_lagrange_nearest_point_lev
+         semi_lagrange_nearest_point_lev, dt_remap_factor, dt_tracer_factor
     use scalable_grid_init_mod, only: sgi_is_initialized, sgi_get_rank2sfc, &
          sgi_gid2igv
     use perf_mod, only: t_startf, t_stopf
@@ -179,16 +226,22 @@ contains
     integer :: lid2gid(nelemd), lid2facenum(nelemd)
     integer :: i, j, k, sfc, gid, igv, sc
     ! To map SFC index to IDs and ranks
-    logical(kind=c_bool) :: use_sgi, owned
+    logical(kind=c_bool) :: use_sgi, owned, independent_time_steps, hard_zero
     integer, allocatable :: owned_ids(:)
     integer, pointer :: rank2sfc(:) => null()
     integer, target :: null_target(1)
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_startf('compose_init')
-    use_sgi = sgi_is_initialized()
+    call kokkos_init()
 
-    if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20) then
+    use_sgi = sgi_is_initialized()
+    hard_zero = .true.
+
+    independent_time_steps = dt_remap_factor < dt_tracer_factor
+
+    if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20 .or. &
+         semi_lagrange_cdr_alg == 21) then
        if (use_sgi) then
           call sgi_get_rank2sfc(rank2sfc)
           allocate(owned_ids(size(GridVertex)))
@@ -217,10 +270,12 @@ contains
     end if
     if (use_sgi) then
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev)
+            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, &
+            independent_time_steps, hard_zero, size(owned_ids), size(rank2sfc))
     else
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev)
+            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, &
+            independent_time_steps, hard_zero, size(sc2gci), size(sc2rank))
     end if
     if (allocated(sc2gci)) deallocate(sc2gci, sc2rank)
     if (allocated(owned_ids)) deallocate(owned_ids)
@@ -260,12 +315,47 @@ contains
        nirptr(nelemd+1) = k - 1
        call slmm_init_impl(par%comm, transport_alg, np, nlev, qsize, qsize_d, &
             nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, &
-            nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
+            nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev, &
+            size(lid2gid), size(lid2facenum), size(nbr_id_rank), size(nirptr))
        deallocate(nbr_id_rank, nirptr)
     end if
     call t_stopf('compose_init')
 #endif
   end subroutine compose_init
+
+  subroutine compose_finalize()
+#ifdef HOMME_ENABLE_COMPOSE
+    call cedr_finalize()
+    call slmm_finalize()
+    call kokkos_finalize()
+#endif
+  end subroutine compose_finalize
+  
+  subroutine compose_query_bufsz(sendsz, recvsz)
+    integer, intent(out) :: sendsz, recvsz
+
+#ifdef HOMME_ENABLE_COMPOSE
+    integer :: ssz, rsz
+
+    call slmm_query_bufsz(sendsz, recvsz)
+    call cedr_query_bufsz(ssz, rsz)
+    sendsz = max(sendsz, ssz)
+    recvsz = max(recvsz, rsz)
+#endif
+  end subroutine compose_query_bufsz
+
+  subroutine compose_set_bufs(sendbuf, recvbuf)
+    use kinds, only: real_kind
+
+    real(kind=real_kind), intent(in) :: sendbuf(:), recvbuf(:)
+
+#ifdef HOMME_ENABLE_COMPOSE
+    ! CEDR and SLMM can use the same buffers because they operate in sequence
+    ! and never leave persistent state in these buffers between top-level calls.
+    call slmm_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
+    call cedr_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
+#endif
+  end subroutine compose_set_bufs
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
     use iso_c_binding, only: c_int, c_double

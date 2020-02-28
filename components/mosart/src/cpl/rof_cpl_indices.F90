@@ -29,6 +29,19 @@ module rof_cpl_indices
   integer, public :: index_x2r_Flrl_rofdto = 0  ! lnd->rof liquid direct to ocean runoff
   integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
   integer, public :: index_x2r_Flrl_demand = 0  ! lnd->rof input total fluxes (<= 0)
+  integer, public :: index_x2r_Flrl_Tqsur  = 0  ! lnd->rof Temperature of surface runoff
+  integer, public :: index_x2r_Flrl_Tqsub  = 0  ! lnd->rof Temperature of subsurface runoff
+  integer, public :: index_x2r_Sa_tbot = 0      ! atm->rof air temperature
+  integer, public :: index_x2r_Sa_pbot = 0      ! atm->rof surface pressure
+  integer, public :: index_x2r_Sa_u    = 0      ! atm->rof zonal velocity
+  integer, public :: index_x2r_Sa_v    = 0      ! atm->rof merid velocity
+  integer, public :: index_x2r_Sa_shum = 0      ! atm->rof specific humidity
+  integer, public :: index_x2r_Faxa_lwdn  = 0   ! atm->rof longwave down flux
+  integer, public :: index_x2r_Faxa_swvdr = 0   ! atm->rof shorwave visible direct flux
+  integer, public :: index_x2r_Faxa_swvdf = 0   ! atm->rof shorwave visible diffus flux
+  integer, public :: index_x2r_Faxa_swndr = 0   ! atm->rof shorwave near-ir direct flux
+  integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
+
   integer, public :: nflds_x2r = 0
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
@@ -87,6 +100,19 @@ contains
     index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
     index_x2r_Flrl_demand = mct_avect_indexra(avtmp,'Flrl_demand')
+    index_x2r_Flrl_Tqsur  = mct_avect_indexra(avtmp,'Flrl_Tqsur')
+    index_x2r_Flrl_Tqsub  = mct_avect_indexra(avtmp,'Flrl_Tqsub')
+    index_x2r_Sa_tbot     = mct_avect_indexra(avtmp,'Sa_tbot')
+    index_x2r_Sa_pbot     = mct_avect_indexra(avtmp,'Sa_pbot')
+    index_x2r_Sa_u        = mct_avect_indexra(avtmp,'Sa_u')
+    index_x2r_Sa_v        = mct_avect_indexra(avtmp,'Sa_v')
+    index_x2r_Sa_shum     = mct_avect_indexra(avtmp,'Sa_shum')
+    index_x2r_Faxa_lwdn   = mct_avect_indexra(avtmp,'Faxa_lwdn')
+    index_x2r_Faxa_swvdr  = mct_avect_indexra(avtmp,'Faxa_swvdr')
+    index_x2r_Faxa_swvdf  = mct_avect_indexra(avtmp,'Faxa_swvdf')
+    index_x2r_Faxa_swndr  = mct_avect_indexra(avtmp,'Faxa_swndr')
+    index_x2r_Faxa_swndf  = mct_avect_indexra(avtmp,'Faxa_swndf')
+
     nflds_x2r = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)
