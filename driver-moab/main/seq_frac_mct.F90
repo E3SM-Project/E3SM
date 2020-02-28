@@ -266,6 +266,7 @@ contains
     integer :: n            ! indices
     integer :: ka, ki, kl, ko ! indices
     integer :: kf, kk, kr, kg ! indices
+    integer :: kz             ! indices
     integer :: lsize          ! local size of ice av
     integer :: debug_old      ! old debug value
 
