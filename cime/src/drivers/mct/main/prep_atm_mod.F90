@@ -96,7 +96,7 @@ contains
     !
     ! Local Variables
     integer                          :: lsize_a
-    integer                          :: eli, eii, emi
+    integer                          :: eli, eii, emi, ezi
     logical                          :: samegrid_ao    ! samegrid atm and ocean
     logical                          :: samegrid_al    ! samegrid atm and land
     logical                          :: samegrid_az    ! samegrid atm and iac
@@ -158,7 +158,7 @@ contains
           call mct_aVect_zero(i2x_ax(eii))
        enddo
        allocate(z2x_ax(num_inst_iac))
-       do ezi = 1,num_inst_ice
+       do ezi = 1,num_inst_iac
           call mct_aVect_init(z2x_ax(ezi), rList=seq_flds_z2x_fields, lsize=lsize_a)
           call mct_aVect_zero(z2x_ax(ezi))
        enddo
@@ -308,12 +308,13 @@ contains
     type(mct_aVect), intent(inout) :: x2a_a
     !
     ! Local workspace
-    real(r8) :: fracl, fraci, fraco
-    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1,kz
+    real(r8) :: fracl, fraci, fraco, fracz
+    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,kzf,i,i1,o1,kz
     integer  :: lsize
     integer  :: index_x2a_Sf_lfrac
     integer  :: index_x2a_Sf_ifrac
     integer  :: index_x2a_Sf_ofrac
+    integer  :: index_x2a_Sf_zfrac
     character(CL),allocatable :: field_atm(:)   ! string converted to char
     character(CL),allocatable :: field_lnd(:)   ! string converted to char
     character(CL),allocatable :: field_ice(:)   ! string converted to char
