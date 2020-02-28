@@ -5,7 +5,7 @@ module prep_lnd_mod
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct    , only: num_inst_atm, num_inst_rof, num_inst_glc
+  use seq_comm_mct    , only: num_inst_atm, num_inst_rof, num_inst_glc, num_inst_iac
   use seq_comm_mct    , only: num_inst_lnd, num_inst_frc
   use seq_comm_mct    , only: CPLID, LNDID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
@@ -17,7 +17,7 @@ module prep_lnd_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: lnd, atm, rof, glc
+  use component_type_mod, only: lnd, atm, rof, glc, iac
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
 
   implicit none
@@ -132,7 +132,7 @@ contains
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
          glc_gnam=glc_gnam,             &
-         iac_gnam=iac_gnam
+         iac_gnam=iac_gnam)
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
