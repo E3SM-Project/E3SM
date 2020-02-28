@@ -240,7 +240,11 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             os.makedirs(shared_item)
 
     mpilib = case.get_value("MPILIB")
-    libs = ["gptl", "mct", "pio", "csm_share"]
+    if 'CPL' in case.get_values("COMP_CLASSES"):
+        libs = ["gptl", "mct", "pio", "csm_share"]
+    else:
+        libs = []
+
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
@@ -514,7 +518,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     t2 = time.time()
     logs = []
 
-    if not model_only and 'CPL' in comp_classes:
+    if not model_only:
         logs = _build_libraries(case, exeroot, sharedpath, caseroot,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
