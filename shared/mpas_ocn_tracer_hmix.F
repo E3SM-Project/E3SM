@@ -81,7 +81,7 @@ contains
 
    subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                    redi_term1, redi_term2, redi_term3, RediKappa,           &
-                                   slopeTriadUp, slopeTriadDown, tend, err)!{{{
+                                   slopeTriadUp, slopeTriadDown, kappaGMVert, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -97,7 +97,8 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
-         zMid                 !< Input: Z coordinate at the center of a cell
+         zMid,               &!< Input: Z coordinate at the center of a cell
+         kappaGMVert          !< Input: vertical structure of GM/Redi limiter
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         slopeTriadUp, slopeTriadDown, &
@@ -144,7 +145,7 @@ contains
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
       call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                      redi_term1, redi_term2, redi_term3, RediKappa,           &
-                                     slopeTriadUp, slopeTriadDown, tend, err1)
+                                     slopeTriadUp, slopeTriadDown, kappaGMVert, tend, err1)
 
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")
