@@ -81,23 +81,25 @@ contains
     logical                 , intent(in)    :: lnd_c2_iac ! .true.  => lnd to iac coupling on
     !
     ! Local Variables
-    integer                  :: lsize_z
-    integer                  :: eli
+    integer                  :: lsize_z, lsize_l
+    integer                  :: eli,erl
     logical                  :: samegrid_lz   ! samegrid land and iac
+    logical                  :: lnd_present   ! .true. => land is present
     logical                  :: iac_present   ! .true. => iac is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
+    logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: iac_gnam      ! iac grid
-    type(mct_avect), pointer :: z2x_zx
+    type(mct_avect), pointer :: x2z_zx, l2x_lx
     character(*), parameter  :: subname = '(prep_iac_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
     call seq_infodata_getData(infodata, &
          lnd_present=lnd_present,       &
          lnd_gnam=lnd_gnam,             &
-         iac_gnam=iac_gnam
+         iac_gnam=iac_gnam)
 
-    allocate(mapper_Slz2)
+    allocate(mapper_Sl2z)
 
     if (iac_present .and. lnd_present) then
        call seq_comm_getData(CPLID, &
@@ -238,6 +240,7 @@ contains
     ! Local variables
     integer       :: i, n, mdx
     integer       :: nflds,lsize
+    integer       :: index_l2x, index_x2z
     logical       :: iamroot
     logical, save :: first_time = .true.
     character(CL) :: field        ! field string
@@ -312,7 +315,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
        l2x_lx => component_get_c2x_cx(lnd(eli))
-       call seq_map_map(mapper_Sl2z, l2x_zx, l2x_lx(eli), norm=.true.)
+       call seq_map_map(mapper_Sl2z, l2x_lx, l2x_zx(eli), norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
 
