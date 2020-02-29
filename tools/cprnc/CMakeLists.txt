@@ -1,10 +1,11 @@
-PROJECT(CPRNC C Fortran)
-
 # Generate this with: $cimeroot/tools/configure --mpilib=mpi-serial --macros-format=CMake
 #   You'll also need to source the .env_mach_specific.sh file before trying to build cprnc
-include("${PROJECT_BINARY_DIR}/Macros.cmake")
+
+include("$ENV{BLDROOT}/Macros.cmake")
 set(CMAKE_Fortran_Compiler "${SFC}")
 set(CMAKE_Fortran_FLAGS "${FFLAGS}")
+
+PROJECT(CPRNC C Fortran)
 
 ENABLE_LANGUAGE(Fortran)
 
