@@ -57,15 +57,13 @@ This allows using a different mpirun command to launch unit tests
     <MPIRUN_RETRY_REGEX>MPT: Launcher network accept (MPI_LAUNCH_TIMEOUT) timed out</MPIRUN_RETRY_REGEX>
     <MPIRUN_RETRY_COUNT>10</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu,pgi</COMPILERS>
-    <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
-    <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
-    <MPILIBS compiler="gnu" >mpt,openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/ufs_inputdata</DIN_LOC_ROOT>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{CESMDATAROOT}/ufs_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -91,25 +89,13 @@ This allows using a different mpirun command to launch unit tests
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>mpirun</executable>
-      <arguments>
-	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="default" unit_testing="true">
-      <!-- The only place we can build and run the unit tests is on cheyenne's
-	   shared nodes. However, running mpi jobs on the shared nodes currently
-	   requires some workarounds; these workarounds are implemented here -->
-      <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
-    </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/csh</init_path>
-      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/sh</init_path>
-      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -121,9 +107,6 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">intel/19.0.5</command>
 	<command name="load">mkl</command>
       </modules>
-      <modules compiler="pgi">
-	<command name="load">pgi/19.3</command>
-      </modules>
       <modules compiler="gnu">
         <command name="load">gnu/8.3.0</command>
         <command name="load">openblas/0.3.6</command>
@@ -134,18 +117,8 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
-	<!-- known failure in parallel netcdf with mpt, use serial -->
 	<command name="load">netcdf/4.7.3</command>
-	<command name="load">pnetcdf/1.11.1</command>
-      </modules>
-      <modules mpilib="mpt" compiler="pgi">
-	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
-	<command name="load">pnetcdf/1.11.1</command>
-      </modules>
-      <modules mpilib="openmpi" compiler="pgi">
-	<command name="load">openmpi/3.1.4</command>
-	<command name="load">netcdf/4.7.1</command>
+	<command name="load">pnetcdf/1.12.1</command>
       </modules>
       <modules mpilib="openmpi" compiler="gnu">
         <command name="load">openmpi/3.1.4</command>
@@ -156,19 +129,16 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/gnu-8.3.0/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0beta02</command>
+	<command name="load">NCEPlibs/1.0.0beta04</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-19.0.5/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0beta02</command>
+	<command name="load">NCEPlibs/1.0.0beta04</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
-	<command name="load">netcdf/4.7.1</command>
-      </modules>
-      <modules compiler="pgi" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
       </modules>
     </module_system>
@@ -239,7 +209,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">netcdf/4.7.0</command>
         <command name="load">impi/2018.0.4</command>
 	<command name="use">/scratch1/BMC/gmtb/software/modulefiles/intel-18.0.5.274/impi-2018.0.4</command>
-	<command name="load">NCEPlibs/1.0.0alpha01</command>
+	<command name="load">NCEPlibs/1.0.0beta04</command>
       </modules>
       <modules>
         <command name="use">/scratch1/BMC/gmtb/software/modulefiles/generic</command>
@@ -281,7 +251,7 @@ This allows using a different mpirun command to launch unit tests
       <executable></executable>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/apps/lmod/lmod/init/perl</init_path> 
+      <init_path lang="perl">/apps/lmod/lmod/init/perl</init_path>
       <init_path lang="python">/apps/lmod/lmod/init/env_modules_python.py</init_path>
       <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
       <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
@@ -298,7 +268,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">pnetcdf/1.6.1</command>
         <command name="load">netcdf/4.7.0</command>
         <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/intel-18.0.5.274/impi-2018.4.274</command>
-        <command name="load">NCEPlibs/1.0.0beta02</command>
+        <command name="load">NCEPlibs/1.0.0beta04</command>
       </modules>
       <modules>
         <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/generic</command>
@@ -496,7 +466,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/generic</command>
         <command name="load">cmake/3.16.4</command>
         <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/intel-18.0.3.222</command>
-        <command name="load">NCEPlibs/1.0.0.beta03</command>
+        <command name="load">NCEPlibs/1.0.0.beta04</command>
       </modules>
     </module_system>
     <environment_variables>
