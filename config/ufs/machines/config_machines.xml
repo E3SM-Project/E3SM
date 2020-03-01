@@ -64,7 +64,6 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -120,10 +119,6 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.7.3</command>
 	<command name="load">pnetcdf/1.12.1</command>
       </modules>
-      <modules mpilib="openmpi" compiler="gnu">
-        <command name="load">openmpi/3.1.4</command>
-        <command name="load">netcdf/4.7.1</command>
-      </modules>
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
@@ -142,17 +137,12 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.7.1</command>
       </modules>
     </module_system>
-    <environment_variables comp_interface="nuopc">
-      <env name="ESMF_RUNTIME_PROFILE">ON</env>
-      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-    </environment_variables>
-    <environment_variables unit_testing="true">
-      <env name="MPI_USE_ARRAY">false</env>
-    </environment_variables>
     <environment_variables queue="share">
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <environment_variables>
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
       <env name="OMP_NUM_THREADS">1</env>
       <env name="OMP_STACKSIZE">1024M</env>
       <env name="MPI_TYPE_DEPTH">16</env>

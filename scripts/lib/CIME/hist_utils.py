@@ -302,7 +302,7 @@ def compare_test(case, suffix1, suffix2, ignore_fieldlist_diffs=False):
                           ignore_fieldlist_diffs=ignore_fieldlist_diffs)
 
 def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix="",
-          ignore_fieldlist_diffs=False):
+          ignore_fieldlist_diffs=False, cprnc_exe=None):
     """
     Run cprnc to compare two individual nc files
 
@@ -322,7 +322,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
         where 'comment' is either an empty string or one of the module-level constants
         beginning with CPRNC_ (e.g., CPRNC_FIELDLISTS_DIFFER)
     """
-    cprnc_exe = case.get_value("CCSM_CPRNC")
+    if not cprnc_exe:
+        cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
     multiinst_regex = re.compile(r'.*%s[^_]*(_[0-9]{4})[.]h.?[.][^.]+?[.]nc' % model)
     mstr = ''
