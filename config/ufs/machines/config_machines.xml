@@ -163,11 +163,10 @@ This allows using a different mpirun command to launch unit tests
     <PROJECT>nems</PROJECT>
     <SAVE_TIMING_DIR/>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/CIME_UFSINPUT</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{UFS_INPUT}/CIME_UFSINPUT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/UFS_BASELINES</BASELINE_ROOT>
-    <CCSM_CPRNC></CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -224,7 +223,6 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/mnt/lfs1/projects/wrfruc/mhu/ufs/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>NOAA</SUPPORTED_BY>
@@ -285,7 +283,6 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
     <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -316,7 +313,6 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
     <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -345,7 +341,6 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{WORK}/ufs_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -411,7 +406,8 @@ This allows using a different mpirun command to launch unit tests
       <env name="W3NCO_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3nco_v2.0.6_d.a</env>
     </environment_variables>
   </machine>
- <machine MACH="gaea">
+
+  <machine MACH="gaea">
     <DESC>
       port to gaea
     </DESC>
@@ -422,11 +418,10 @@ This allows using a different mpirun command to launch unit tests
     <CHARGE_ACCOUNT>esrl_bmcs</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/f2/pdata/esrl/gsd/ufs/ufs-release-v1/CIME_UFSINPUT</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/ufs-runs/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>${CIME_OUTPUT_ROOT}/ufs-runs/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>${CIME_OUTPUT_ROOT}/ufs-runs/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs-runs/baselines</BASELINE_ROOT>
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
