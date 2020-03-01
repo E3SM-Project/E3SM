@@ -1401,6 +1401,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
 
+    use cam_history,     only: outfld
+
     implicit none
 
     !
@@ -1611,10 +1613,15 @@ end if ! l_tracer_aero
     !   surface fluxes need to be updated here for constituents 
     if (do_clubb_sgs) then
 
+    call outfld('Udiff1',state%u, pcols   ,lchnk   )
+
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
        
        ! Update surface flux constituents 
        call physics_update(state, ptend, ztodt, tend)
+
+    call outfld('Udiff2',state%u, pcols   ,lchnk   )
+
 
     else
     if (l_vdiff) then
@@ -1644,8 +1651,14 @@ if (l_rayleigh) then
     ! Rayleigh friction calculation
     !===================================================
     call t_startf('rayleigh_friction')
+
+    call outfld('Uray1',state%u, pcols   ,lchnk   )
+
     call rayleigh_friction_tend( ztodt, state, ptend)
     call physics_update(state, ptend, ztodt, tend)
+
+    call outfld('Uray2',state%u, pcols   ,lchnk   )
+
     call t_stopf('rayleigh_friction')
 
     if (do_clubb_sgs) then
@@ -1696,9 +1709,12 @@ if (l_gw_drag) then
     !===================================================
     call t_startf('gw_tend')
 
+    call outfld('Ugw1',state%u, pcols   ,lchnk   )
+
     call gw_tend(state, sgh, pbuf, ztodt, ptend, cam_in)
 
     call physics_update(state, ptend, ztodt, tend)
+    call outfld('Ugw2',state%u, pcols   ,lchnk   )
     ! Check energy integrals
     call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf('gw_tend')
@@ -1706,6 +1722,8 @@ if (l_gw_drag) then
     ! QBO relaxation
     call qbo_relax(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
+
+    call outfld('Ugw3',state%u, pcols   ,lchnk   )
     ! Check energy integrals
     call check_energy_chng(state, tend, "qborelax", nstep, ztodt, zero, zero, zero, zero)
 
@@ -1725,6 +1743,7 @@ if (l_gw_drag) then
     endif
 
     call physics_update(state, ptend, ztodt, tend)
+    call outfld('Ugw4',state%u, pcols   ,lchnk   )
     ! Check energy integrals
     call check_energy_chng(state, tend, "iondrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf  ( 'iondrag' )
@@ -1838,6 +1857,7 @@ end if ! l_ac_energy_chk
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
     call outfld('UBC',state%u, pcols   ,lchnk   )
+    call outfld('TBC',state%t, pcols   ,lchnk   )
 
 end subroutine tphysac
 
@@ -2147,6 +2167,7 @@ subroutine tphysbc (ztodt,               &
 
 !!!!!!!!!!! dycore U
     call outfld('UAC',state%u, pcols   ,lchnk   )
+    call outfld('TAC',state%t, pcols   ,lchnk   )
 
 
     ! Associate pointers with physics buffer fields
@@ -2384,9 +2405,14 @@ end if
     !
     call t_startf ('convect_shallow_tend')
 
+    call outfld('Usc1',state%u, pcols   ,lchnk   )
+
     call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
          dlf        , dlf2   ,  rliq   , rliq2, & 
          state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
+
+    call outfld('Usc2',state%u, pcols   ,lchnk   )
+
     call t_stopf ('convect_shallow_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2544,6 +2570,9 @@ end if
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
    
+    call outfld('Uclubb1',state%u, pcols   ,lchnk   )
+
+
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
@@ -2566,6 +2595,8 @@ end if
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
  
+    call outfld('Uclubb2',state%u, pcols   ,lchnk   )
+
           endif
 
           call t_stopf('macrop_tend')
