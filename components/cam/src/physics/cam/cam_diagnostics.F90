@@ -329,11 +329,11 @@ subroutine diag_init()
                      history_budget_histfile_num_out = history_budget_histfile_num, &
 		     presc_aero_data_out = presc_aero_data)
 
-   if (presc_aero_data) then
-     call add_default ('bc_a1_logm', 2, ' ')
-     call add_default ('soa_a2DDF', 2, ' ')
-     call add_default ('ncl_a3', 2, ' ')
-   endif
+!   if (presc_aero_data) then
+!     call add_default ('bc_a1_logm', 2, ' ')
+!     call add_default ('soa_a2DDF', 2, ' ')
+!     call add_default ('ncl_a3', 2, ' ')
+!   endif
 
    if (history_amwg) then
       call add_default ('PHIS    '  , 1, ' ')
