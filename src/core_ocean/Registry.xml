@@ -369,7 +369,7 @@
       description="If true, Redi slope is tapered near sfc based on Large et al 1997"
       possible_values=".true. or .false."
     />
-    <nml_option name="config_Redi_limit_term1" type="logical" default_value=".false." units="unitless"
+    <nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
       description="If true, the N2 limiting is applied to the horizontal diffusion term"
       possible_values=".true. or .false."
     />
