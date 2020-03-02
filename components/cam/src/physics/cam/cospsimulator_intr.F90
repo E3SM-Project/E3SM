@@ -500,7 +500,7 @@ CONTAINS
        lmisr_sim = .true.
     end if
     if (cosp_lmodis_sim) then
-       lmodis_sim = .true.
+       lmodis_sim = .false.
     end if
     
     if (cosp_histfile_aux .and. cosp_histfile_aux_num == -1) then
@@ -512,7 +512,7 @@ CONTAINS
        lparasol_sim = .true.
        lisccp_sim = .true.
        lmisr_sim = .true.
-       lmodis_sim = .true.
+       lmodis_sim = .false.
        cosp_ncolumns = 10
        cosp_nradsteps = 3
     end if
@@ -520,7 +520,7 @@ CONTAINS
     if (cosp_passive) then
        lisccp_sim = .true.
        lmisr_sim = .true.
-       lmodis_sim = .true.
+       lmodis_sim = .false.
        cosp_ncolumns = 10
        cosp_nradsteps = 3
     end if
@@ -545,7 +545,7 @@ CONTAINS
        lparasol_sim = .true.
        lisccp_sim = .true.
        lmisr_sim = .true.
-       lmodis_sim = .true.
+       lmodis_sim = .false.
        lfrac_out = .true.
     end if
     
@@ -560,7 +560,7 @@ CONTAINS
        lparasol_sim = .true.
        lisccp_sim = .true.
        lmisr_sim = .true.
-       lmodis_sim = .true.
+       lmodis_sim = .false.
        cosp_ncolumns = 10
        cosp_nradsteps = 3
     end if
@@ -585,7 +585,7 @@ CONTAINS
           write(iulog,*)'  Enable calipso simulator                   = ', llidar_sim
           write(iulog,*)'  Enable ISCCP simulator                   = ', lisccp_sim
           write(iulog,*)'  Enable MISR simulator                    = ', lmisr_sim
-          write(iulog,*)'  Enable MODIS simulator                   = ', lmodis_sim
+          write(iulog,*)'  Disable MODIS simulator until a hidden bug fixed (simulated cloud amount too low)     = ', lmodis_sim
           write(iulog,*)'  RADAR_SIM microphysics scheme            = ', trim(cloudsat_micro_scheme)
           write(iulog,*)'  Write COSP output to history file        = ', cosp_histfile_num
           write(iulog,*)'  Write COSP input fields                  = ', cosp_histfile_aux
