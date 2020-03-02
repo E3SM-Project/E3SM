@@ -48,7 +48,7 @@ module ocn_gm
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
    real (kind=RKIND), parameter :: local_config_GM_min_phase_speed = 0.1_RKIND
-
+   real (kind=RKIND) :: slopeTaperFactor, sfcTaperFactor
 !***********************************************************************
 
 contains
@@ -389,7 +389,45 @@ contains
       allocate(dTdzTop(nVertLevels+1))
       allocate(dSdzTop(nVertLevels+1))
       allocate(k33Norm(nVertLevels+1))
- 
+
+      !$omp do schedule(runtime)
+      do iEdge=1,nEdges
+         kappaGMVert(:,iEdge) = 1.0_RKIND
+      enddo
+      !$omp end do
+
+      if (local_config_GM_kappa_lat_depth_variable) then
+
+         !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
+         do iEdge = 1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            maxN = -1.0_RKIND
+            do k=2,maxLevelEdgeTop(iEdge)
+               BruntVaisalaFreqTopEdge = 0.25_RKIND * (BruntVaisalaFreqTop(k,cell1) +       &
+                            BruntVaisalaFreqTop(k,cell2) + BruntVaisalaFreqTop(k-1,cell1) + &
+                            BruntVaisalaFreqTop(k-1,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, config_Redi_diabatic_limit)
+
+               maxN = max(maxN,BruntVaisalaFreqTopEdge)
+
+            enddo
+
+            do k=2,maxLevelEdgeTop(iEdge)
+               BruntVaisalaFreqTopEdge = 0.25_RKIND * (BruntVaisalaFreqTop(k,cell1) +       &
+                            BruntVaisalaFreqTop(k,cell2) + BruntVaisalaFreqTop(k-1,cell1) + &
+                            BruntVaisalaFreqTop(k-1,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, config_Redi_diabatic_limit)
+
+               kappaGMVert(k,iEdge) = max(config_GM_min_stratification_ratio, &
+                                          BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
+            enddo
+         enddo
+         !$omp end do
+      endif
+
+
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
@@ -471,21 +509,21 @@ contains
 !                                                 slopeTriadDown(k,iCellSelf,iEdge)))
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
-               slopeTaperUp = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
+               slopeTaperUp = slopeTaperFactor * 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
                   config_Redi_half_slope)/config_Redi_half_width))
-               slopeTaperDown = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
+               slopeTaperDown = slopeTaperFactor * 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
                   config_Redi_half_slope)/config_Redi_half_width))
 
                zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
                rValue = max(0.0_RKIND, min(1.0_RKIND, abs(zEdge / verticalDisplacement)))
 
-               sfcTaperUp = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+               sfcTaperUp = sfcTaperFactor * 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
 
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadDown(k,iCellSelf,iEdge))
                rValue = max(0.0_RKIND, min(1.0_RKIND,abs(zEdge / verticalDisplacement)))
 
-               sfcTaperDown = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+               sfcTaperDown = sfcTaperFactor * 0.5_RKIND * (1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
 
                ! LPV move vertical lines up to not limit the vertical mixing term
                ! Griffies 1998 eqn 34
@@ -831,6 +869,18 @@ contains
          do iEdge=1,nEdges
            rediRossbyRadius(iEdge) = max(15000.0_RKIND,min(100000.0_RKIND,2.0_RKIND / fEdge(iEdge)))
          enddo
+
+         if (config_Redi_use_slope_taper) then
+           slopeTaperFactor = 1.0_RKIND
+         else
+           slopeTaperFactor = 0.0_RKIND
+         endif
+
+         if (config_Redi_use_surface_taper) then
+           sfcTaperFactor = 1.0_RKIND
+         else
+           sfcTaperFactor = 0.0_RKIND
+         endif
 
          if (config_GM_closure == 'constant') then
             !$omp do schedule(runtime)

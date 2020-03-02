@@ -361,6 +361,18 @@
       description="Brunt Vaisala Frequency cutoff for diabatic convection"
       possible_values="small positive real numbers or zero"
     />
+    <nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
+      description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
+      possible_values=".true. or .false."
+    />
+    <nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
+      description="If true, Redi slope is tapered near sfc based on Large et al 1997"
+      possible_values=".true. or .false."
+    />
+    <nml_option name="config_Redi_limit_term1" type="logical" default_value=".false." units="unitless"
+      description="If true, the N2 limiting is applied to the horizontal diffusion term"
+      possible_values=".true. or .false."
+    />
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
