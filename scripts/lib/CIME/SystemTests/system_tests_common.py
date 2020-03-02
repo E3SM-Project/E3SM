@@ -145,8 +145,9 @@ class SystemTestsCommon(object):
             logger.info(self._case.get_value('RESUBMIT'))
             logger.info(self._case.get_value('GENERATE_BASELINE'))
             logger.info("wpc0b")
-            resub_val = self._case1.get_value("RESUBMIT") == 1 # Only relevant for multi-submit tests
+            resub_val = self._case1.get_value("RESUBMIT")
             logger.info(resub_val)
+            logger.info("wpc0c")
             self.run_phase()
             logger.info("wpc1")
             logger.info(self._case.get_value('RESUBMIT'))
