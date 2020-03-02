@@ -1,14 +1,13 @@
 #!/bin/bash
 {{ batchdirectives }}
 
-# Set environment variables
+# Check environment variable
 if [ -z "${NCEPLIBS_DIR}" ]; then
-  echo "Set environment variables:"
-  cat software_environment.txt | grep NCEPLIBS_DIR | sed -e 's/^/export /' > .env
-  source .env
-else
-  echo "Environment variables are already set:"
+  echo "NCEPLIBS_DIR needs to be set! Exiting ..."
 fi
+
+# Set environment variables and load modules
+source {{ caseroot }}/.env_mach_specific.sh
 
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
@@ -22,9 +21,6 @@ blddir="$rundir/../bld"
 cd $blddir
 ln -sf $NCEPLIBS_DIR/bin/ncep_post .
 cd -
-
-# Set environment variables
-export LD_LIBRARY_PATH=$NCEPLIBS_DIR/lib:$NCEPLIBS_DIR/lib64:$LD_LIBRARY_PATH
 
 # Find date command
 OS=`uname -a`

@@ -396,15 +396,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
-    <environment_variables comp_interface="nuopc">
-      <env name="NETCDF">$ENV{TACC_NETCDF_DIR}</env>
-      <env name="NEMSIO_INC">$ENV{NCEPLIBS_DIR}/include</env>
-      <env name="NEMSIO_LIB">$ENV{NCEPLIBS_DIR}/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">$ENV{NCEPLIBS_DIR}/lib/libbacio_v2.1.0_4.a</env>
-      <env name="SP_LIBd">$ENV{NCEPLIBS_DIR}/lib/libsp_v2.0.2_d.a</env>
-      <env name="W3EMC_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3emc_v2.2.0_d.a</env>
-      <env name="W3NCO_LIBd">$ENV{NCEPLIBS_DIR}/lib/libw3nco_v2.0.6_d.a</env>
-    </environment_variables>
   </machine>
 
   <machine MACH="gaea">
