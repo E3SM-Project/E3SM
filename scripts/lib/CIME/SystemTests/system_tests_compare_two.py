@@ -223,20 +223,39 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # First run
         if not self._multisubmit or first_phase:
             logger.info('Doing first run: ' + self._run_one_description)
+            logger.info("wpc7")
+            logger.info(self._case.get_value('RESUBMIT'))
+            logger.info(self._case.get_value('GENERATE_BASELINE'))
+            logger.info("wpc7b")
 
             # Add a PENDing compare phase so that we'll notice if the second part of compare two
             # doesn't run.
             with self._test_status:
                 self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, self._run_one_suffix, self._run_two_suffix), TEST_PEND_STATUS)
 
+            logger.info("wpc7c")
+            logger.info(self._case.get_value('RESUBMIT'))
+            logger.info(self._case.get_value('GENERATE_BASELINE'))
+            logger.info("wpc7d")
+
             self._activate_case1()
             self._case_one_custom_prerun_action()
+            logger.info("wpc7e")
+            logger.info(self._case.get_value('RESUBMIT'))
+            logger.info(self._case.get_value('GENERATE_BASELINE'))
+            logger.info("wpc7f")
+
             self.run_indv(suffix = self._run_one_suffix)
             self._case_one_custom_postrun_action()
+            logger.info("wpc8")
+            logger.info(self._case.get_value('RESUBMIT'))
+            logger.info(self._case.get_value('GENERATE_BASELINE'))
+            logger.info("wpc8b")
 
         # Second run
         logger.info("_multisubmit {} first phase {}".format(self._multisubmit, first_phase))
         if not self._multisubmit or not first_phase:
+            logger.info("WPC5_multisubmit {} first phase {}".format(self._multisubmit, first_phase))
             # Subtle issue: case1 is already in a writeable state since it tends to be opened
             # with a with statement in all the API entrances in CIME. case2 was created via clone,
             # not a with statement, so it's not in a writeable state, so we need to use a with

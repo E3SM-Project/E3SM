@@ -141,12 +141,22 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
+            logger.info("wpc0")
+            logger.info(self._case.get_value('RESUBMIT'))
+            logger.info(self._case.get_value('GENERATE_BASELINE'))
+            logger.info("wpc0b")
+            resub_val = self._case1.get_value("RESUBMIT") == 1 # Only relevant for multi-submit tests
+            logger.info(resub_val)
             self.run_phase()
-
-            if self._case.get_value("GENERATE_BASELINE"):
+            logger.info("wpc1")
+            logger.info(self._case.get_value('RESUBMIT'))
+            logger.info(self._case.get_value('GENERATE_BASELINE'))
+            logger.info("wpc1b")
+            if (self._case.get_value("GENERATE_BASELINE") and (resub_val) == 0):
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
+                logger.info("wpc2")
 
-            if self._case.get_value("COMPARE_BASELINE"):
+            if (self._case.get_value("COMPARE_BASELINE") and (resub_val) == 0):
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
                 self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
@@ -528,23 +538,27 @@ class SystemTestsCommon(object):
         """
         generate a new baseline case based on the current test
         """
+        logger.info("wpc3")
+        logger.info(self._case.get_value('RESUBMIT'))
         with self._test_status:
-            # generate baseline
-            success, comments = generate_baseline(self._case)
-            append_testlog(comments, self._orig_caseroot)
-            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-            baseline_name = self._case.get_value("BASEGEN_CASE")
-            self._test_status.set_status(GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
-            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
-            # copy latest cpl log to baseline
-            # drop the date so that the name is generic
-            newestcpllogfiles = self._get_latest_cpl_logs()
-            for cpllog in newestcpllogfiles:
-                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
-                if m is not None:
-                    baselog = os.path.join(basegen_dir, m.group(1))+".gz"
-                    safe_copy(cpllog,
-                              os.path.join(basegen_dir,baselog))
+            if(self._case.get_value('RESUBMIT') == 0):
+                logger.info("wpc4")
+                # generate baseline
+                success, comments = generate_baseline(self._case)
+                append_testlog(comments, self._orig_caseroot)
+                status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
+                baseline_name = self._case.get_value("BASEGEN_CASE")
+                self._test_status.set_status(GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
+                basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+                # copy latest cpl log to baseline
+                # drop the date so that the name is generic
+                newestcpllogfiles = self._get_latest_cpl_logs()
+                for cpllog in newestcpllogfiles:
+                    m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
+                    if m is not None:
+                        baselog = os.path.join(basegen_dir, m.group(1))+".gz"
+                        safe_copy(cpllog,
+                                  os.path.join(basegen_dir,baselog))
 
 class FakeTest(SystemTestsCommon):
     """
