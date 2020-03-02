@@ -1523,6 +1523,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     ifld = pbuf_get_index('AST')
     call pbuf_get_field(pbuf, ifld, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
+    call outfld('UbeginAC',state%u, pcols   ,lchnk   )
     !
     ! accumulate fluxes into net flux array for spectral dycores
     ! jrm Include latent heat of fusion for snow
@@ -1612,7 +1613,7 @@ end if ! l_tracer_aero
     !   surface friction velocity still need to be computed.  In addition, 
     !   surface fluxes need to be updated here for constituents 
     if (do_clubb_sgs) then
-
+print *, 'OGG do_clubb_sgs'
     call outfld('Udiff1',state%u, pcols   ,lchnk   )
 
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
@@ -1625,7 +1626,7 @@ end if ! l_tracer_aero
 
     else
     if (l_vdiff) then
-
+print *, 'OGG l_vdiff'
        call t_startf('vertical_diffusion_tend')
        call vertical_diffusion_tend (ztodt ,state ,cam_in%wsx, cam_in%wsy,   &
             cam_in%shf     ,cam_in%cflx     ,surfric  ,obklen   ,ptend    ,ast    ,&
@@ -1856,8 +1857,9 @@ end if ! l_ac_energy_chk
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
-    call outfld('UBC',state%u, pcols   ,lchnk   )
-    call outfld('TBC',state%t, pcols   ,lchnk   )
+    call outfld('UendAC',state%u, pcols   ,lchnk   )
+    call outfld('UbeforeH',state%u, pcols   ,lchnk   )
+    call outfld('TbeforeH',state%t, pcols   ,lchnk   )
 
 end subroutine tphysac
 
@@ -2098,7 +2100,6 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
-
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
                        use_subcol_microp_out  = use_subcol_microp, &
@@ -2125,6 +2126,8 @@ subroutine tphysbc (ztodt,               &
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
+
+    call outfld('UbeginBC',state%u, pcols   ,lchnk   )
 
     if (pergro_test_active) then 
        !call outfld calls
@@ -2166,8 +2169,8 @@ subroutine tphysbc (ztodt,               &
     end if
 
 !!!!!!!!!!! dycore U
-    call outfld('UAC',state%u, pcols   ,lchnk   )
-    call outfld('TAC',state%t, pcols   ,lchnk   )
+    call outfld('UafterH',state%u, pcols   ,lchnk   )
+    call outfld('TafterH',state%t, pcols   ,lchnk   )
 
 
     ! Associate pointers with physics buffer fields
@@ -2572,7 +2575,6 @@ end if
    
     call outfld('Uclubb1',state%u, pcols   ,lchnk   )
 
-
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
@@ -2631,6 +2633,8 @@ end if
 
 
           if (use_subcol_microp) then
+
+print *, 'OG in use_subcol_microp ???????????'
              call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
 
              ! Average the sub-column ptend for use in gridded update - will not contain ptend_aero
@@ -2800,7 +2804,7 @@ if (l_rad) then
     !===================================================
     call t_startf('radiation')
 
-
+    call outfld('Ur1',state%u, pcols   ,lchnk   )
     call radiation_tend(state,ptend, pbuf, &
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
@@ -2812,6 +2816,8 @@ if (l_rad) then
        tend%flx_net(i) = net_flx(i)
     end do
     call physics_update(state, ptend, ztodt, tend)
+
+    call outfld('Ur2',state%u, pcols   ,lchnk   )
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
     call t_stopf('radiation')
@@ -2836,6 +2842,8 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+    call outfld('UendBC',state%u, pcols   ,lchnk   )
 
 end subroutine tphysbc
 
