@@ -2,6 +2,7 @@
 #   You'll also need to source the .env_mach_specific.sh file before trying to build cprnc
 
 include("${BLDROOT}/Macros.cmake")
+set(CMAKE_C_COMPILER "${SCC}")
 set(CMAKE_Fortran_COMPILER "${SFC}")
 set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 
