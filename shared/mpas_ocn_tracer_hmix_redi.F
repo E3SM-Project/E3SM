@@ -54,6 +54,8 @@ module ocn_tracer_hmix_Redi
    !
    !--------------------------------------------------------------------
 
+   real (kind=RKIND) :: term1TaperFactor
+
 !***********************************************************************
 
 contains
@@ -184,7 +186,8 @@ contains
                   tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
 
                   ! div(h \kappa_2 \nabla \phi) at cell center
-                  flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * kappaGMVert(k,iEdge) * RediKappa(iCell) * r_tmp
+                  flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * (1.0_RKIND + term1TaperFactor * &
+                          (kappaGMVert(k,iEdge) - 1.0_RKIND)) * RediKappa(iCell) * r_tmp
                   !LPV NOTE: do not limit horizontal diffusion term for now
                   redi_term1(iTr,k,iCell) = redi_term1(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
                   tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
@@ -376,6 +379,12 @@ contains
       err = 0
 
       if (.not.config_use_Redi) return
+
+      if (config_redi_N2_limit_term1) then
+        term1TaperFactor = 1.0_RKIND
+      else
+        term1TaperFactor = 0.0_RKIND
+      endif
 
       block => domain % blocklist
       do while (associated(block))
