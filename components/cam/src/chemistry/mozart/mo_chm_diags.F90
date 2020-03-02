@@ -77,6 +77,7 @@ contains
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
     logical :: history_amwg         ! output the variables used by the AMWG diag package
     logical :: history_verbose      ! produce verbose history output
+    logical :: presc_aero_data      ! output info needed for prescribed aerosols
     integer :: bulkaero_species(20)
 
     !-----------------------------------------------------------------------
@@ -84,6 +85,7 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_amwg_out    = history_amwg,  &
                        history_verbose_out = history_verbose,  &
+		       presc_aero_data_out = presc_aero_data, &
                        cam_chempkg_out     = chempkg   )
 
     id_bry     = get_spc_ndx( 'BRY' )
@@ -275,10 +277,26 @@ contains
 
        if ( any( aer_species == m ) ) then
           call addfld( spc_name,   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' concentration')
+	  
+	  if (presc_aero_data) then
+	    call addfld( trim(spc_name)//'_logm',   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' log concentration')
+	    call addfld( trim(spc_name)//'_logv',   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' log^2 concentration')
+	    
+	    write(*,*) 'ADDFLDHERE ', trim(spc_name)
+	  endif
+	  
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', unit_basename//'/kg', trim(attr)//" in bottom layer")    
        else
           call addfld( spc_name, (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' concentration')
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', 'mol/mol', trim(attr)//" in bottom layer")
+	  
+	  if (presc_aero_data) then
+	    call addfld( trim(spc_name)//'_logm',   (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' log concentration')
+	    call addfld( trim(spc_name)//'_logv',   (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' log^2 concentration')
+	    
+	    write(*,*) 'ADDFLDHERE2 ', trim(spc_name)
+	  endif	  
+	  
        endif
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
@@ -287,6 +305,11 @@ contains
              call add_default( spc_name, 1, ' ' )
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
           endif 
+!	  if (presc_aero_data) then
+!	    call add_default( spc_name, 2, ' ' )
+!	    call add_default( trim(spc_name)//'_logm', 2, ' ' )
+!	    call add_default( trim(spc_name)//'_logv', 2, ' ' )
+!	  endif
           if (history_amwg) then
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
           endif
@@ -385,6 +408,7 @@ contains
     real(r8), dimension(ncol)      :: df_noy, df_sox, df_nhx
 
     real(r8) :: area(ncol), mass(ncol,pver)
+    real(r8) :: mmr_log(ncol,pver), mmr_log2(ncol,pver)
     real(r8) :: wgt
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
@@ -392,11 +416,13 @@ contains
 
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
+    logical :: presc_aero_data      ! produce output to drive prescribed aerosol run
 
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
-                       history_verbose_out = history_verbose )
+                       history_verbose_out = history_verbose,&
+		       presc_aero_data_out = presc_aero_data )
     !--------------------------------------------------------------------
     !	... "diagnostic" groups
     !--------------------------------------------------------------------
@@ -499,6 +525,11 @@ contains
        
        if ( any( aer_species == m ) ) then
           call outfld( solsym(m), mmr(:ncol,:,m), ncol ,lchnk )
+	  
+!	  call outfld( trim(solsym(m))//'_logm', log(mmr(:ncol,:,m)), ncol, lchnk)
+!	  call outfld( trim(solsym(m))//'_logv', log(mmr(:ncol,:,m))*log(mmr(:ncol,:,m)),&
+!	     ncol, lchnk)
+	  
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
 #ifdef MODAL_AERO
           if (history_aerosol .and. .not. history_verbose) then
@@ -544,6 +575,25 @@ contains
           end do
        end do
        call outfld( dtchem_name(m), net_chem(:ncol,:), ncol, lchnk )
+
+       if (presc_aero_data) then
+       
+         do k=1,pver
+           do i=1,ncol
+             if (mmr(i,k,m) .gt. 0._r8) then 
+               mmr_log(i,k) = log(mmr(i,k,m))
+               mmr_log2(i,k) = log(mmr(i,k,m))*log(mmr(i,k,m))
+             else
+               mmr_log(i,k) = 0._r8
+               mmr_log2(i,k) = 0._r8
+             endif
+           end do
+         end do
+
+         call outfld( trim(solsym(m))//'_logm',mmr_log(:ncol,:), ncol, lchnk)
+         call outfld( trim(solsym(m))//'_logv',mmr_log2(:ncol,:), ncol, lchnk)    
+	 
+       endif          
 
     enddo
 

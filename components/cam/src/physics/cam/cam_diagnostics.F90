@@ -68,6 +68,7 @@ logical          :: history_amwg                   ! output the variables used b
 logical          :: history_verbose                ! produce verbose history output
 logical          :: history_vdiag                  ! output the variables used by the AMWG variability diag package
 logical          :: history_eddy                   ! output the eddy variables
+logical          :: presc_aero_data 
 logical          :: history_budget                 ! output tendencies and state variables for CAM4
                                                    ! temperature, water vapor, cloud ice and cloud
                                                    ! liquid budgets.
@@ -325,7 +326,14 @@ subroutine diag_init()
                      history_vdiag_out  = history_vdiag   , &
                      history_eddy_out   = history_eddy    , &
                      history_budget_out = history_budget  , &
-                     history_budget_histfile_num_out = history_budget_histfile_num)
+                     history_budget_histfile_num_out = history_budget_histfile_num, &
+		     presc_aero_data_out = presc_aero_data)
+
+   if (presc_aero_data) then
+     call add_default ('bc_a1_logm', 2, ' ')
+     call add_default ('soa_a2DDF', 2, ' ')
+     call add_default ('ncl_a3', 2, ' ')
+   endif
 
    if (history_amwg) then
       call add_default ('PHIS    '  , 1, ' ')

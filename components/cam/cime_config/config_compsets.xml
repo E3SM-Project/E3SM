@@ -343,6 +343,11 @@
   </compset> 
   
   <compset>
+    <alias>FSCREAM-LRA</alias>
+    <lname>2000_CAM5%SCREAM-LRA_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
     <alias>FSCREAM-HR</alias>
     <lname>2000_CAM5%SCREAM-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset> 

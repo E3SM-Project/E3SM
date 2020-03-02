@@ -117,6 +117,7 @@
 
       <!-- SCREAM configurations -->
       <value compset="_CAM5%SCREAM-LR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp</value>
+      <value compset="_CAM5%SCREAM-LRA">-phys cam5 -shoc_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates -nlev 72 -rad rrtmgp</value>
       <value compset="_CAM5%SCREAM-HR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp</value>
 
       <!-- Aquaplanet -->
@@ -251,6 +252,7 @@
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
       <value compset="2000_CAM5.*SCREAM-LR" >2000_scream_lr_av1c-04p2</value>
+      <value compset="2000_CAM5.*SCREAM-LRA" >2000_scream_lra_av1c-04p2</value>
       <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr_av1c-04p2</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
@@ -358,6 +360,7 @@
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
     <desc compset="_CAM5.*SCREAM-LR"   >Low Resolution Fortran version of SCREAM with SHOC, P3, and RRTMG.  All other aspects of this run are identical to E3SMv1</desc>
+    <desc compset="_CAM5.*SCREAM-LRA"   >Low Resolution Fortran version of SCREAM with SHOC, P3, and RRTMG.  All other aspects of this run are identical to E3SMv1</desc>
     <desc compset="_CAM5.*SCREAM-HR"   >Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.</desc> 
   </description>
 
