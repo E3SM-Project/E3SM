@@ -280,17 +280,16 @@ void ice_self_collection(IceSelfCollectionData& d)
 }
 
 
-void  update_prognostic_ice(P3UpdatePrognosticIceData& d)
-{
-  p3_init(true);
-  update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
-			  d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
-			  d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
-			  d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
-			  d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
-			  d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
-			  &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
-}
+  void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
+    p3_init(true);
+    update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
+            		    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
+			    d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
+			    d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
+			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
+			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
+			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
+  }
 
 void evaporate_sublimate_precip(EvapSublimatePrecipData& d)
 {

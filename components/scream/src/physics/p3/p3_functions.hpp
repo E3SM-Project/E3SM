@@ -453,7 +453,7 @@ struct Functions
                                   const Spack& qitot_incld, const Spack& nitot_incld,
                                   const Spack& qr_incld,
                                   Spack& qrcol, Spack& nrcol);
-
+  
   // TODO (comments)
   KOKKOS_FUNCTION
   static void ice_self_collection(const Spack& rho, const Spack& rhofaci,

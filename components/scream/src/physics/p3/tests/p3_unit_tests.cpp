@@ -806,6 +806,106 @@ static void cloud_water_conservation_tests_device(){
   };//TestP3UpdatePrognosticIce
 
   template <typename D>
+  struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
+  {
+    static void evaporate_sublimate_precip_unit_bfb_tests(){
+
+      static constexpr Int max_pack_size = 16;
+
+      REQUIRE(Spack::n <= max_pack_size);
+
+      //fortran generated data is input to the following
+      //This subroutine has 12 args, only 10 are supplied here for invoking it as last 2 are intent-outs
+      EvapSublimatePrecipData espd[max_pack_size] = {
+	{1.0010E-06,1.0000E-06,6.3726E+05,0.0000E+00,1.0000E+00,1.0000E+00,2.0321E-02,4.0889E+00,1.0080E-03,5.0000E-02},
+	{5.2632E-07,0.0000E+00,3.3506E+05,0.0000E+00,1.0000E+00,1.0000E+00,1.8120E-02,3.7933E+00,5.2700E-04,4.7222E-04},
+	{1.0526E-06,0.0000E+00,6.7013E+05,0.0000E+00,1.0000E+00,1.0000E+00,1.6134E-02,3.5224E+00,1.0480E-03,4.5833E-04},
+	{1.5789E-06,0.0000E+00,1.0000E+06,0.0000E+00,1.0000E+00,1.0000E+00,1.4342E-02,3.2745E+00,1.5575E-03,4.4444E-04},
+	{2.1053E-06,0.0000E+00,1.0000E+06,0.0000E+00,1.0000E+00,1.0000E+00,1.2729E-02,3.0478E+00,1.7094E-03,4.3056E-04},
+	{9.3221E-07,9.8393E-07,5.9346E+05,0.0000E+00,1.0000E+00,1.0000E+00,2.0948E-02,4.1736E+00,9.3997E-04,5.0000E-02},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,9.9759E-03,2.6520E+00,6.7694E-02,5.0000E-03},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,8.8076E-03,2.4801E+00,6.7248E-02,5.0000E-03},
+	{5.8084E-05,0.0000E+00,8.6199E+05,0.0000E+00,1.0000E+00,1.0000E+00,1.3928E-02,3.2192E+00,5.3678E-03,4.3266E-04},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,6.8265E-03,2.1817E+00,6.6348E-02,5.0000E-03},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,5.9921E-03,2.0529E+00,6.5893E-02,5.0000E-03},
+	{0.0000E+00,0.0000E+00,1.0000E-16,1.1762E-03,1.0000E+00,1.0000E+00,4.6974E-03,1.8502E+00,0.0000E+00,4.6667E-03},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,4.5879E-03,1.8310E+00,6.4975E-02,5.0000E-03},
+	{9.3232E-07,9.8402E-07,5.9353E+05,0.0000E+00,1.0000E+00,1.0000E+00,2.2254E-02,4.3493E+00,9.4247E-04,5.0000E-02},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,3.4821E-03,1.6504E+00,6.4044E-02,5.0000E-03},
+	{1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,3.0231E-03,1.5735E+00,6.3574E-02,5.0000E-03},
+      };
+
+      // Sync to device
+      view_1d<EvapSublimatePrecipData> espd_device("espd", Spack::n);
+      auto espd_host = Kokkos::create_mirror_view(espd_device);
+
+      // This copy only copies the input variables.
+      std::copy(&espd[0], &espd[0] + Spack::n, espd_host.data());
+      Kokkos::deep_copy(espd_device, espd_host);
+
+      // Get data from fortran
+      for (Int i = 0; i < max_pack_size; ++i) {
+        evaporate_sublimate_precip(espd[i]);
+      }
+
+      // Run the lookup from a kernel and copy results back to host
+      Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+
+          // Init pack inputs
+          Spack qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv, qrevp, nrevp;
+
+          for (Int s = 0; s < Spack::n; ++s) {
+            qr_incld[s]    = espd_device(s).qr_incld;
+	    qc_incld[s]    = espd_device(s).qc_incld;
+	    nr_incld[s]    = espd_device(s).nr_incld;
+	    qitot_incld[s] = espd_device(s).qitot_incld;
+	    lcldm[s]       = espd_device(s).lcldm;
+	    rcldm[s]       = espd_device(s).rcldm;
+	    qvs[s]         = espd_device(s).qvs;
+	    ab[s]          = espd_device(s).ab;
+	    epsr[s]        = espd_device(s).epsr;
+	    qv[s]          = espd_device(s).qv;
+	    qrevp[s]       = espd_device(s).qrevp;
+	    nrevp[s]       = espd_device(s).nrevp;
+          }
+
+	  Functions::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
+					      epsr, qv, qrevp, nrevp);
+
+	  // Copy results back into views
+          for (Int s = 0; s < Spack::n; ++s) {
+	    espd_device(s).qr_incld    = qr_incld[s];
+	    espd_device(s).qc_incld    = qc_incld[s];
+	    espd_device(s).nr_incld    = nr_incld[s];
+	    espd_device(s).qitot_incld = qitot_incld[s];
+	    espd_device(s).lcldm       = lcldm[s];
+	    espd_device(s).rcldm       = rcldm[s];
+	    espd_device(s).qvs         = qvs[s];
+	    espd_device(s).ab          = ab[s];
+	    espd_device(s).epsr        = epsr[s];
+	    espd_device(s).qv          = qv[s];
+	    espd_device(s).qrevp       = qrevp[s];
+	    espd_device(s).nrevp       = nrevp[s];
+          }
+        });
+
+      // Sync back to host
+      Kokkos::deep_copy(espd_host, espd_device);
+
+      // Validate results
+      for (Int s = 0; s < Spack::n; ++s) {
+        REQUIRE(espd[s].qrevp == espd_host(s).qrevp);
+	REQUIRE(espd[s].nrevp == espd_host(s).nrevp);
+      }
+    }
+
+    static void run_bfb(){
+      evaporate_sublimate_precip_unit_bfb_tests();
+    }
+
+  }; //TestEvapSublPrecip
+
+  template <typename D>
   struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
   {
     static void  update_prognostic_liquid_unit_bfb_tests(){
@@ -1087,6 +1187,10 @@ TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
 
 TEST_CASE("p3_update_prognostic_liquid_test", "[p3_update_prognostic_liquid_test]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
+}
+
+TEST_CASE("p3_evaporate_sublimate_precip_test", "[p3_evaporate_sublimate_precip_test]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip::run_bfb();
 }
 
 TEST_CASE("p3_impose_max_total_ni_test", "[p3_impose_max_total_ni_test]"){

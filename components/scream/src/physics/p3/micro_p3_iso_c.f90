@@ -598,7 +598,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
     ! arguments
     real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
-       rcldm, qvs, ab, epsr, qv
+        rcldm, qvs, ab, epsr, qv
     real(kind=c_real), intent(out) :: qrevp, nrevp
 
     call evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &

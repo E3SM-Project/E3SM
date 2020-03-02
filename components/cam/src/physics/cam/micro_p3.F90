@@ -3390,8 +3390,7 @@ qrevp,nrevp)
    endif
 #endif
 
-
-   ! Is is assumed that macrophysics handles condensation/evaporation of qc and
+   ! It is assumed that macrophysics handles condensation/evaporation of qc and
    ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
    ! been removed from the original P3-WRF.
 
