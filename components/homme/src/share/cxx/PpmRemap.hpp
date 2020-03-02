@@ -188,12 +188,12 @@ struct PpmVertRemap : public VertRemapAlg {
       , m_ppmdx("ppmdx", num_elems)
       , m_z2("z2", num_elems)
       , m_kid("kid", num_elems)
-      , m_ao("a0", get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_mass_o("mass_o",get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_dma("dma", get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_ai("ai", get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_parabola_coeffs("Coefficients for the interpolating parabola",
-            get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
+      , m_ppm_tu(get_default_team_policy<ExecSpace>(num_elems * num_remap))
+      , m_ao("a0", m_ppm_tu.get_num_ws_slots())
+      , m_mass_o("mass_o",m_ppm_tu.get_num_ws_slots())
+      , m_dma("dma", m_ppm_tu.get_num_ws_slots())
+      , m_ai("ai", m_ppm_tu.get_num_ws_slots())
+      , m_parabola_coeffs("Coefficients for the interpolating parabola", m_ppm_tu.get_num_ws_slots())
   {
     // Nothing to do here
   }
@@ -670,6 +670,7 @@ struct PpmVertRemap : public VertRemapAlg {
   ExecViewManaged<Real * [NP][NP][NUM_PHYSICAL_LEV]>  m_z2;
   ExecViewManaged<int * [NP][NP][NUM_PHYSICAL_LEV]>   m_kid;
 
+  TeamUtils<ExecSpace> m_ppm_tu;
   ExecViewManaged<Real * [NP][NP][_ppm_consts::AO_PHYSICAL_LEV]> m_ao;
   ExecViewManaged<Real * [NP][NP][_ppm_consts::MASS_O_PHYSICAL_LEV]> m_mass_o;
   ExecViewManaged<Real * [NP][NP][_ppm_consts::DMA_PHYSICAL_LEV]> m_dma;

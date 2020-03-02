@@ -169,11 +169,11 @@ RemapStateAndThicknessProvider<true> {
   int num_states_remap () const { return m_state_provider.num_states_remap(); }
 
   int requested_buffer_size () const {
-    return m_state_provider.requested_buffer_size(m_tu.get_num_concurrent_teams());
+    return m_state_provider.requested_buffer_size(m_tu.get_num_ws_slots());
   }
 
   void init_buffers(const FunctorsBuffersManager& fbm) {
-    m_state_provider.init_buffers(fbm, m_tu.get_num_concurrent_teams());
+    m_state_provider.init_buffers(fbm, m_tu.get_num_ws_slots());
   }
 
   KOKKOS_INLINE_FUNCTION

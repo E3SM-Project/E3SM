@@ -151,7 +151,7 @@ struct CaarFunctorImpl {
 
   int requested_buffer_size () const {
     // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
-    const int nteams = m_tu.get_num_concurrent_teams();
+    const int nslots = m_tu.get_num_ws_slots();
 
     int num_scalar_mid_buf = Buffers::num_3d_scalar_mid_buf;
     int num_scalar_int_buf = Buffers::num_3d_scalar_int_buf;
@@ -177,88 +177,88 @@ struct CaarFunctorImpl {
       }
     }
 
-    return num_scalar_mid_buf  *NP*NP*NUM_LEV  *VECTOR_SIZE*nteams
-         + num_scalar_int_buf  *NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams
-         + num_vector_mid_buf*2*NP*NP*NUM_LEV  *VECTOR_SIZE*nteams
-         + num_vector_int_buf*2*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams;
+    return num_scalar_mid_buf  *NP*NP*NUM_LEV  *VECTOR_SIZE*nslots
+         + num_scalar_int_buf  *NP*NP*NUM_LEV_P*VECTOR_SIZE*nslots
+         + num_vector_mid_buf*2*NP*NP*NUM_LEV  *VECTOR_SIZE*nslots
+         + num_vector_int_buf*2*NP*NP*NUM_LEV_P*VECTOR_SIZE*nslots;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
     Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-    const int nteams = m_tu.get_num_concurrent_teams();
+    const int nslots = m_tu.get_num_ws_slots();
 
     // Midpoints scalars
-    m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nteams);
+    m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nslots);
     mem += m_buffers.pnh.size();
     if (m_theta_hydrostatic_mode) {
       // pi = pnh
       m_buffers.pi = m_buffers.pnh;
     } else {
-      m_buffers.pi       = decltype(m_buffers.pi        )(mem,nteams);
+      m_buffers.pi       = decltype(m_buffers.pi        )(mem,nslots);
       mem += m_buffers.pi.size();
     }
 
-    m_buffers.temp       = decltype(m_buffers.temp      )(mem,nteams);
+    m_buffers.temp       = decltype(m_buffers.temp      )(mem,nslots);
     mem += m_buffers.temp.size();
-    m_buffers.exner      = decltype(m_buffers.exner     )(mem,nteams);
+    m_buffers.exner      = decltype(m_buffers.exner     )(mem,nslots);
     mem += m_buffers.exner.size();
-    m_buffers.phi        = decltype(m_buffers.phi       )(mem,nteams);
+    m_buffers.phi        = decltype(m_buffers.phi       )(mem,nslots);
     mem += m_buffers.phi.size();
-    m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nteams);
+    m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nslots);
     mem += m_buffers.div_vdp.size();
-    m_buffers.omega_p    = decltype(m_buffers.omega_p   )(mem,nteams);
+    m_buffers.omega_p    = decltype(m_buffers.omega_p   )(mem,nslots);
     mem += m_buffers.omega_p.size();
-    m_buffers.vort       = decltype(m_buffers.vort)(mem,nteams);
+    m_buffers.vort       = decltype(m_buffers.vort)(mem,nslots);
     mem += m_buffers.vort.size();
-    m_buffers.theta_tens = decltype(m_buffers.theta_tens)(mem,nteams);
+    m_buffers.theta_tens = decltype(m_buffers.theta_tens)(mem,nslots);
     mem += m_buffers.theta_tens.size();
-    m_buffers.dp_tens    = decltype(m_buffers.dp_tens   )(mem,nteams);
+    m_buffers.dp_tens    = decltype(m_buffers.dp_tens   )(mem,nslots);
     mem += m_buffers.dp_tens.size();
 
     // Midpoints vectors
-    m_buffers.grad_tmp = decltype(m_buffers.grad_tmp)(mem,nteams);
+    m_buffers.grad_tmp = decltype(m_buffers.grad_tmp)(mem,nslots);
     mem += m_buffers.grad_tmp.size();
 
-    m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nteams);
+    m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nslots);
     mem += m_buffers.vdp.size();
-    m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nteams);
+    m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nslots);
     mem += m_buffers.v_tens.size();
 
     // Interface scalars
     if (!m_theta_hydrostatic_mode || m_rsplit==0) {
-      m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nteams);
+      m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nslots);
       mem += m_buffers.dp_i.size();
     }
 
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nteams);
+      m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nslots);
       mem += m_buffers.dpnh_dp_i.size();
     }
 
     if (m_rsplit==0) {
-      m_buffers.eta_dot_dpdn = decltype(m_buffers.eta_dot_dpdn)(mem,nteams);
+      m_buffers.eta_dot_dpdn = decltype(m_buffers.eta_dot_dpdn)(mem,nslots);
       mem += m_buffers.eta_dot_dpdn.size();
-      m_buffers.vtheta_i     = decltype(m_buffers.vtheta_i    )(mem,nteams);
+      m_buffers.vtheta_i     = decltype(m_buffers.vtheta_i    )(mem,nslots);
       mem += m_buffers.vtheta_i.size();
     }
 
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nteams);
+      m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nslots);
       mem += m_buffers.phi_tens.size();
-      m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nteams);
+      m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
       mem += m_buffers.w_tens.size();
     }
 
     // Interface vectors
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.v_i          = decltype(m_buffers.v_i         )(mem,nteams);
+      m_buffers.v_i          = decltype(m_buffers.v_i         )(mem,nslots);
       mem += m_buffers.v_i.size();
-      m_buffers.grad_w_i     = decltype(m_buffers.grad_w_i    )(mem,nteams);
+      m_buffers.grad_w_i     = decltype(m_buffers.grad_w_i    )(mem,nslots);
       mem += m_buffers.grad_w_i.size();
     }
-    m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nteams);
+    m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nslots);
     mem += m_buffers.grad_phinh_i.size();
 
     int used_mem = (reinterpret_cast<Real*>(mem) - fbm.get_memory());

@@ -93,7 +93,7 @@ public:
 
   void allocate_buffers (const TeamUtils<ExecSpace>& tu)
   {
-    const int alloc_dim = tu.get_num_concurrent_teams();
+    const int alloc_dim = tu.get_num_ws_slots();
 
     if (vector_buf_ml.extent_int(0)<alloc_dim) {
       vector_buf_sl = decltype(vector_buf_sl)("",alloc_dim);

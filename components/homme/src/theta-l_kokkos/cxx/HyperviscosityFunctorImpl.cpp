@@ -75,7 +75,7 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
 
   const int nelems = m_geometry.num_elems();
-  const int nteams = m_tu.get_num_concurrent_teams();
+  const int nteams = m_tu.get_num_ws_slots();
 
   // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
   const int mid_vectors_nelems = 1;
@@ -105,7 +105,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   auto mem_in = fbm.get_memory();
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
   const int nelems = m_geometry.num_elems();
-  const int nteams = m_tu.get_num_concurrent_teams();
+  const int nteams = m_tu.get_num_ws_slots();
 
   // Tens quantities (persistent views => nelems)
   m_buffers.dptens = decltype(m_buffers.dptens)(mem,nelems);

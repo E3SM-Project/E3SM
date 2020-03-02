@@ -64,8 +64,8 @@ void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {
   auto eta_dot_dpdn = m_eta_dot_dpdn;
   auto policy = Homme::get_default_team_policy<ExecSpace>(m_num_elems);
   TeamUtils<ExecSpace> tu(policy);
-  const int nteams = tu.get_num_concurrent_teams();
-  ExecViewManaged<Scalar *[NP][NP][NUM_LEV]> delta_eta("",nteams);
+  const int nslots = tu.get_num_ws_slots();
+  ExecViewManaged<Scalar *[NP][NP][NUM_LEV]> delta_eta("",nslots);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const TeamMember& team) {
     KernelVariables kv(team, tu);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),

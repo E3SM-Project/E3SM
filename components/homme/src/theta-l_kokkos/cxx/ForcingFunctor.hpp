@@ -80,17 +80,17 @@ public:
   }
 
   int requested_buffer_size () const {
-    const int nteams = m_tu_tracers.get_num_concurrent_teams();
+    const int nslots = m_tu_tracers.get_num_ws_slots();
     const int nelems = m_state.num_elems();
     constexpr int mid_size = NP*NP*NUM_LEV*VECTOR_SIZE;
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
     // 3 persistent midlayers, 2 non-persistent midlayer, and 1 non-persistent interface
-    return mid_size*(nelems*4+nteams) + (m_hydrostatic ? int_size*nteams : 0);
+    return mid_size*(nelems*4+nslots) + (m_hydrostatic ? int_size*nslots : 0);
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    const int num_teams = m_tu_tracers.get_num_concurrent_teams();
+    const int num_slots = m_tu_tracers.get_num_ws_slots();
     const int num_elems = m_state.num_elems();
 
     constexpr int mid_size = NP*NP*NUM_LEV;
@@ -109,10 +109,10 @@ public:
     m_exner = decltype(m_exner)(mem,num_elems);
     mem += mid_size*num_elems;
 
-    m_Rstar = decltype(m_Rstar)(mem,num_teams);
-    mem += mid_size*num_teams;
+    m_Rstar = decltype(m_Rstar)(mem,num_slots);
+    mem += mid_size*num_slots;
 
-    m_pi_i = decltype(m_pi_i)(mem,num_teams);
+    m_pi_i = decltype(m_pi_i)(mem,num_slots);
   }
 
   void states_forcing (const Real dt, const int np1) {

@@ -48,10 +48,10 @@ void RefStates::compute(const bool hydrostatic,
 
   auto policy = get_default_team_policy<ExecSpace>(num_elems);
   TeamUtils<ExecSpace> tu(policy);
-  const int num_teams = tu.get_num_concurrent_teams();
+  const int num_slots = tu.get_num_ws_slots();
 
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> buf_p("",num_teams);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> buf_p_i("",num_teams);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> buf_p("",num_slots);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> buf_p_i("",num_slots);
   Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const TeamMember& team){
     KernelVariables kv(team, tu);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NP*NP),

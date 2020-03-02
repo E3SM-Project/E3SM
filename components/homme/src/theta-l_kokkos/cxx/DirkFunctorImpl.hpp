@@ -87,7 +87,7 @@ struct DirkFunctorImpl {
   LinearSystem m_ls;
   TeamPolicy m_policy, m_ig_policy;
   TeamUtils<ExecSpace> m_tu, m_tu_ig;
-  int nteam;
+  int nslot;
 
   KOKKOS_INLINE_FUNCTION
   size_t shmem_size (const int team_size) const {
@@ -123,21 +123,21 @@ struct DirkFunctorImpl {
       m_policy = TeamPolicy(nelem, p.first, 1);
     }
     m_tu = TeamUtils<ExecSpace>(m_policy);
-    nteam = std::min(nelem, m_tu.get_num_concurrent_teams());
+    nslot = std::min(nelem, m_tu.get_num_ws_slots());
     m_ig_policy = Homme::get_default_team_policy<ExecSpace>(nelem);
     m_tu_ig = TeamUtils<ExecSpace>(m_ig_policy);
   }
 
   int requested_buffer_size () const {
     // FunctorsBuffersManager wants the size in terms of sizeof(Real).
-    return (Work::shmem_size(nteam) + LinearSystem::shmem_size(nteam))/sizeof(Real);
+    return (Work::shmem_size(nslot) + LinearSystem::shmem_size(nslot))/sizeof(Real);
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-    m_work = Work(mem, nteam);
-    mem += Work::shmem_size(nteam)/sizeof(Scalar);
-    m_ls = LinearSystem(mem, nteam);
+    m_work = Work(mem, nslot);
+    mem += Work::shmem_size(nslot)/sizeof(Scalar);
+    m_ls = LinearSystem(mem, nslot);
   }
 
   void run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
