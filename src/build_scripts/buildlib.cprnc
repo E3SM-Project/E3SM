@@ -52,7 +52,7 @@ def buildlib(bldroot, installpath, case):
 
     cmake_args = get_standard_cmake_args(case, shared_lib=True)
 
-    cmake_cmd = "CIMEROOT={cimeroot} . .env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) CIMEROOT={cimeroot} cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
+    cmake_cmd = "CIMEROOT={cimeroot} . ./.env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) CIMEROOT={cimeroot} cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
         format(cimeroot=cimeroot, dest_path=installpath, cmake_args=cmake_args, bldroot=bldroot)
     run_bld_cmd_ensure_logging(cmake_cmd, logger, from_dir=bldroot)
 
