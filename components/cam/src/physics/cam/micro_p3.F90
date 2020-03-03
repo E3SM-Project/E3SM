@@ -2461,6 +2461,9 @@ subroutine calc_rime_density(t,rhofaci,    &
 f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cxx_gamma, cxx_pow
+#endif
    !.........................
    ! calculate rime density
 
@@ -2506,7 +2509,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
       if (qc_incld.ge.qsmall) then
          ! droplet fall speed
          ! (use Stokes' formulation (thus use analytic solution)
-         Vt_qc = acn*gamma(4._rtype+bcn+mu_c)/(lamc**bcn*gamma(mu_c+4._rtype))
+         Vt_qc = acn*bfb_gamma(4._rtype+bcn+mu_c)/(bfb_pow(lamc,bcn)*bfb_gamma(mu_c+4._rtype))
          ! use mass-weighted mean size
          D_c = (mu_c+4._rtype)/lamc
          V_impact  = abs(vtrmi1-Vt_qc)
@@ -2514,7 +2517,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          !               Ri        = max(1.,min(Ri,8.))
          Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
-            rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
+            rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*bfb_square(Ri))*1000._rtype
          else
             ! for Ri > 8 assume a linear fit between 8 and 12,
             ! rhorime = 900 kg m-3 at Ri = 12
