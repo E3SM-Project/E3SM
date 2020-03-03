@@ -408,10 +408,6 @@
 					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_mesoscale_eddy_isopycnal_slope_limit" type="real" default_value="0.01" units="non-dimensional"
-					description="Maximum value of isopycnal slope allowed for Redi and GM schemes. Slopes greater than this value (positive or negative) are capped at this value."
-					possible_values="Positive real numbers"
-		/>
 	</nml_record>
 	<nml_record name="hmix_del2_tensor" mode="forward">
 		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
