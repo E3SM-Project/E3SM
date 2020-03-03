@@ -38,6 +38,10 @@ static void run_bfb()
   constexpr Scalar qc_incld_small = 0.9 * qsmall;
   constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
 
+  // Same goes for qccol.
+  constexpr Scalar qccol_small = 0.9 * qsmall;
+  constexpr Scalar qccol_not_small = 2.0 * qsmall;
+
   // We need to test the calculation under freezing and not-freezing
   // conditions.
   constexpr Scalar t_freezing = 0.9 * C::RainFrze,
@@ -48,34 +52,37 @@ static void run_bfb()
   // computing Ri is complicated, and can't be done with black-box testing.
   // So maybe we run the gambit with various values given for other params
   // until we think of a better approach.
-  constexpr Scalar rhofaci1 = 0.25, rhofaci2 = 0.5, rhofaci3 = 0.75, rhofaci4 = 1.0;
-  constexpr Scalar f1pr021 = 0.125, f1pr022 = 0.25, f1pr023 = 0.375, f1pr024 = 0.5;
-  constexpr Scalar acn1 = 0.1, acn2 = 0.4, acn3 = 0.8, acn4 = 0.9;
-  constexpr Scalar lamc1 = 0.1, lamc2 = 0.2, lamc3 = 0.3, lamc4 = 0.4;
-  constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.4, mu_c3 = 0.6, mu_c4 = 0.8;
-  constexpr Scalar qccol1 = 0.3, qccol2 = 0.4, qccol3 = 0.5, qccol4 = 0.6;
+  constexpr Scalar rhofaci1 = 0.25, rhofaci2 = 0.5;
+  constexpr Scalar f1pr021 = 0.125, f1pr022 = 0.875;
+  constexpr Scalar acn1 = 0.1, acn2 = 0.6;
+  constexpr Scalar lamc1 = 0.4, lamc2 = 0.8;
+  constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.7;
 
   CalcRimeDensityData calc_rime_density_data[max_pack_size] = {
-    // t, lamc, mu_c, cdist1, qc_incld
-    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol1},
-    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol2},
-    {t_not_freezing, rhofaci3, f1pr023, acn3, lamc3, mu_c3, qc_incld_small, qccol3},
-    {t_not_freezing, rhofaci4, f1pr024, acn4, lamc4, mu_c4, qc_incld_small, qccol4},
+    // t, rhofaci, f1pr021, acn, lamc, mu_c, qc_incld, qccol
+    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_small},
+    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_small},
 
-    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol1},
-    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol2},
-    {t_not_freezing, rhofaci3, f1pr023, acn3, lamc3, mu_c3, qc_incld_not_small, qccol3},
-    {t_not_freezing, rhofaci4, f1pr024, acn4, lamc4, mu_c4, qc_incld_not_small, qccol4},
+    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_not_small},
+    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_not_small},
 
-    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol1},
-    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol2},
-    {t_freezing, rhofaci3, f1pr023, acn3, lamc3, mu_c3, qc_incld_small, qccol3},
-    {t_freezing, rhofaci4, f1pr024, acn4, lamc4, mu_c4, qc_incld_small, qccol4},
+    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_small},
+    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_small},
 
-    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol1},
-    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol2},
-    {t_freezing, rhofaci3, f1pr023, acn3, lamc3, mu_c3, qc_incld_not_small, qccol3},
-    {t_freezing, rhofaci4, f1pr024, acn4, lamc4, mu_c4, qc_incld_not_small, qccol4}
+    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_not_small},
+    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_not_small},
+
+    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_small},
+    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_small},
+
+    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_not_small},
+    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_not_small},
+
+    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_small},
+    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_small},
+
+    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_not_small},
+    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_not_small},
   };
 
   // Sync to device
