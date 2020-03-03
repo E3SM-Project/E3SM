@@ -598,6 +598,10 @@
 			description="Number of days to ramp up time varying forcing"
 			possible_values="Any positive real number"
 		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_ramp_delay" type="real" default_value="0.0" units="days"
+			description="Number of days to delay ramp time varying forcing"
+			possible_values="Any positive real number"
+		/>
 		<nml_option name="config_use_time_varying_land_ice_forcing" type="logical" default_value=".false." units="unitless"
 			description="If true calculate input forcing fields."
 			possible_values=".true. or .false."
