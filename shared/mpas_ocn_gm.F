@@ -394,6 +394,7 @@ contains
       !$omp do schedule(runtime)
       do iEdge=1,nEdges
          kappaGMVert(:,iEdge) = 1.0_RKIND
+         kappaRediVert(:,iEdge) = 1.0_RKIND
       enddo
       !$omp end do
 
@@ -535,9 +536,9 @@ contains
                ! Slope can be unbounded in regions of neutral stability.
                ! Reset slope to maximum slope limit.
                slopeTriadUp(k,iCellSelf,iEdge) = &
-                  diabaticTaper * slopeTaperUp * sfcTaperUp * slopeTriadUp(k,iCellSelf,iEdge)
+                  slopeTaperUp * sfcTaperUp * slopeTriadUp(k,iCellSelf,iEdge)
                slopeTriadDown(k,iCellSelf,iEdge) = &
-                  diabaticTaper * slopeTaperDown * sfcTaperDown * slopeTriadDown(k,iCellSelf,iEdge)
+                  slopeTaperDown * sfcTaperDown * slopeTriadDown(k,iCellSelf,iEdge)
 
             end do
          end do
@@ -599,43 +600,6 @@ contains
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
             cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
-         enddo
-         !$omp end do
-      endif
-
-      !$omp do schedule(runtime)
-      do iEdge=1,nEdges
-         kappaGMVert(:,iEdge) = 1.0_RKIND
-      enddo
-      !$omp end do
-
-      if (local_config_GM_kappa_lat_depth_variable) then
-
-         !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
-         do iEdge = 1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-
-            maxN = -1.0_RKIND
-            do k=2,maxLevelEdgeTop(iEdge)
-               BruntVaisalaFreqTopEdge = 0.25_RKIND * (BruntVaisalaFreqTop(k,cell1) +       &
-                            BruntVaisalaFreqTop(k,cell2) + BruntVaisalaFreqTop(k-1,cell1) + &
-                            BruntVaisalaFreqTop(k-1,cell2))
-               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, config_Redi_diabatic_limit)
-
-               maxN = max(maxN,BruntVaisalaFreqTopEdge)
-
-            enddo
-
-            do k=2,maxLevelEdgeTop(iEdge)
-               BruntVaisalaFreqTopEdge = 0.25_RKIND * (BruntVaisalaFreqTop(k,cell1) +       &
-                            BruntVaisalaFreqTop(k,cell2) + BruntVaisalaFreqTop(k-1,cell1) + &
-                            BruntVaisalaFreqTop(k-1,cell2))
-               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, config_Redi_diabatic_limit)
-
-               kappaGMVert(k,iEdge) = max(config_GM_min_stratification_ratio, &
-                                          BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
-            enddo
          enddo
          !$omp end do
       endif
