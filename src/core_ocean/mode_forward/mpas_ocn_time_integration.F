@@ -127,6 +127,7 @@ module ocn_time_integration
         call mpas_set_time(xtime_timeType, dateTimeString=xtime)
         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
         call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+
         daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
         block => block % next
