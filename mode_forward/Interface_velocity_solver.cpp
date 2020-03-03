@@ -67,7 +67,7 @@ std::vector<int> indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> dissipationHeatOnPrisms, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, muFrictionData, temperatureDataOnPrisms, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, muFrictionData, temperatureDataOnPrisms, smbData, thicknessOnCells, bodyForceOnBasalCell;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -233,11 +233,11 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 }
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F,
+    double const* thickness_F, double * beta_F,
     double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
     double const* effecPress_F, double const* muFriction_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
-    double* u_normal_F, double* dissipation_heat_F,
+    double* u_normal_F, double* bodyForce_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
     int *error) {
 
@@ -281,12 +281,15 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
         stiffnessFactorData, effecPressData, muFrictionData,
-        temperatureDataOnPrisms, dissipationHeatOnPrisms, velocityOnVertices,
+        temperatureDataOnPrisms, bodyForceOnBasalCell, dissipationHeatOnPrisms, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
   }
 
   exportDissipationHeat(dissipation_heat_F);
+
+  exportBodyForce(bodyForce_F);
+  exportBeta(beta_F);
 
   mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
       Ordering);
@@ -1308,6 +1311,30 @@ void exportDissipationHeat(double * dissipationHeat_F) {
   allToAll (dissipationHeat_F,  &sendVerticesListReversed, &recvVerticesListReversed, nLayers);
 #endif
   allToAll (dissipationHeat_F,  sendVerticesList_F, recvVerticesList_F, nLayers);
+}
+
+void exportBodyForce(double * bodyForce_F) {
+  std::fill(bodyForce_F, bodyForce_F + nVertices_F, 0.);
+  for (int index = 0; index < nTriangles; index++) {
+    int fVertex = triangleToFVertex[index];
+    bodyForce_F[fVertex] = bodyForceOnBasalCell[index];
+  }
+#ifdef  changeTrianglesOwnership
+  allToAll (bodyForce_F,  &sendVerticesListReversed, &recvVerticesListReversed, 1);
+#endif
+  allToAll (bodyForce_F,  sendVerticesList_F, recvVerticesList_F, 1);
+}
+
+void exportBeta(double * beta_F) {
+  std::fill(beta_F, beta_F + nCells_F, 0.);
+  for (int index = 0; index < nVertices; index++) {
+    int fCell = vertexToFCell[index];
+    beta_F[fCell] = betaData[index];
+  }
+#ifdef  changeTrianglesOwnership
+  allToAll (beta_F,  &sendVerticesListReversed, &recvVerticesListReversed, 1);
+#endif
+  allToAll (beta_F,  sendVerticesList_F, recvVerticesList_F, 1);
 }
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
