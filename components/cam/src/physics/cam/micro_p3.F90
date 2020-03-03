@@ -3572,7 +3572,7 @@ t,pres,rho,xxlv,xxls,qvs,qvi, &
 mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: cxx_pow, cxx_sqrt
+  use micro_p3_iso_f, only: get_time_space_phys_variables_f,cxx_pow, cxx_sqrt
 #endif
 
    implicit none
@@ -3595,6 +3595,13 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    real(rtype), intent(out) :: eii
 
    real(rtype) :: dum
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call get_time_space_phys_variables_f(t,pres,rho,xxlv,xxls,qvs,qvi, &
+           mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
+   endif
+#endif
 
    !time/space varying physical variables
    mu     = 1.496e-6_rtype*bfb_pow(t,1.5_rtype)/(t+120._rtype)

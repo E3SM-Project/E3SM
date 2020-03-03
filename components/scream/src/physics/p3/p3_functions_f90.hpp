@@ -737,6 +737,26 @@ void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
+struct GetTimeSpacePhysVars
+{
+  //Inputs
+  Real t, pres, rho, xxlv, xxls, qvs, qvi;
+
+//Outs
+  Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+};
+
+void get_time_space_phys_variables(GetTimeSpacePhysVars& d);
+
+extern "C"{
+
+void get_time_space_phys_variables_f(Real t, Real pres, Real rho, Real xxlv, Real xxls, Real qvs, Real qvi,
+Real* mu, Real* dv, Real* sc, Real* dqsdt, Real* dqsidt, Real* ab, Real* abi, Real* kap, Real* eii);
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct P3UpdatePrognosticIceData

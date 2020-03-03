@@ -116,6 +116,9 @@ void homogeneous_freezing_c(
   Real* t, Real* exner, Real* xlf,
   Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* th);
 
+void get_time_space_phys_variables_c(Real t, Real pres, Real rho, Real xxlv, Real xxls, Real qvs, Real qvi,
+  Real* mu, Real* dv, Real* sc, Real* dqsdt, Real* dqsidt, Real* ab, Real* abi, Real* kap, Real* eii);
+
 void  update_prognostic_ice_c(
   Real qcheti, Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
   Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr,
@@ -413,6 +416,11 @@ void ice_self_collection(IceSelfCollectionData& d)
                         &d.nislf);
 }
 
+void get_time_space_phys_variables(GetTimeSpacePhysVars& d){
+  p3_init(true);
+  get_time_space_phys_variables_c(d.t, d.pres, d.rho, d.xxlv, d.xxls, d.qvs, d.qvi, &d.mu, &d.dv,
+				  &d.sc, &d.dqsdt, &d.dqsidt, &d.ab, &d.abi, &d.kap, &d.eii);
+}
 
 void ice_relaxation_timescale(IceRelaxationData& d)
 {
@@ -992,6 +1000,56 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *lamr_   = t_h(2);
   *cdistr_ = t_h(3);
   *logn0r_ = t_h(4);
+}
+
+void get_time_space_phys_variables_f(Real t_, Real pres_, Real rho_, Real xxlv_, Real xxls_, Real qvs_, Real qvi_,
+				     Real* mu_, Real* dv_, Real* sc_, Real* dqsdt_, Real* dqsidt_, Real* ab_,
+				     Real* abi_, Real* kap_, Real* eii_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 9);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_mu     = *mu_;
+  Real local_dv     = *dv_;
+  Real local_sc     = *sc_;
+  Real local_dqsdt  = *dqsdt_;
+  Real local_dqsidt = *dqsidt_;
+  Real local_ab     = *ab_;
+  Real local_abi    = *abi_;
+  Real local_kap    = *kap_;
+  Real local_eii    = *eii_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack t(t_), pres(pres_), rho(rho_), xxlv(xxlv_), xxls(xxls_), qvs(qvs_), qvi(qvi_);
+      typename P3F::Spack mu(local_mu), dv(local_dv), sc(local_sc), dqsdt(local_dqsdt),
+	dqsidt(local_dqsidt), ab(local_ab), abi(local_abi), kap(local_kap), eii(local_eii);
+
+      P3F::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
+					 ab, abi, kap, eii);
+
+      t_d(0) = mu[0];
+      t_d(1) = dv[0];
+      t_d(2) = sc[0];
+      t_d(3) = dqsdt[0];
+      t_d(4) = dqsidt[0];
+      t_d(5) = ab[0];
+      t_d(6) = abi[0];
+      t_d(7) = kap[0];
+      t_d(8) = eii[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *mu_     = t_h(0);
+  *dv_     = t_h(1);
+  *sc_     = t_h(2);
+  *dqsdt_  = t_h(3);
+  *dqsidt_ = t_h(4);
+  *ab_     = t_h(5);
+  *abi_    = t_h(6);
+  *kap_    = t_h(7);
+  *eii_    = t_h(8);
 }
 
 void update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real nccol_,  Real ncheti_, Real ncshdc_,
