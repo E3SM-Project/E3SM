@@ -117,13 +117,13 @@ for baseline in ${ocn_baseline} ${lnd_baseline}; do
     fi
     if [[ ${last} =~ "DIFFERENT" ]]; then
 	echo ${last} >&2
-	echo ${baseline} DIFFERENT FROM ${testfile}
+	echo ${baseline} DIFFERENT FROM ${testfile} >&2
 	echo "cat ${test_log} for more info" >&2
 	exit 1
     fi
     if ! [[ ${last} =~ "IDENTICAL" ]]; then
 	echo ${last} >&2
-	echo "undetermined output from cprnc"
+	echo "undetermined output from cprnc" >&2
 	echo "cat ${test_log} for more info" >&2
 	exit 1
     fi
