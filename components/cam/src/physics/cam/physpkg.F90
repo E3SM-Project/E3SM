@@ -2127,7 +2127,7 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
-    call outfld('UbeginBC',state%u, pcols   ,lchnk   )
+call outfld('UbeginBC',state%u, pcols   ,lchnk   )
 
     if (pergro_test_active) then 
        !call outfld calls
@@ -2408,17 +2408,17 @@ end if
     !
     call t_startf ('convect_shallow_tend')
 
-    call outfld('Usc1',state%u, pcols   ,lchnk   )
+call outfld('Usc1',state%u, pcols   ,lchnk   )
 
     call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
          dlf        , dlf2   ,  rliq   , rliq2, & 
          state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
 
-    call outfld('Usc2',state%u, pcols   ,lchnk   )
-
     call t_stopf ('convect_shallow_tend')
 
     call physics_update(state, ptend, ztodt, tend)
+
+call outfld('Usc2',state%u, pcols   ,lchnk   )
 
     flx_cnd(:ncol) = prec_sh(:ncol) + rliq2(:ncol)
     call check_energy_chng(state, tend, "convect_shallow", nstep, ztodt, zero, flx_cnd, snow_sh, zero)
@@ -2428,7 +2428,7 @@ end if
     call t_stopf('moist_convection')
 
 if (l_tracer_aero) then
-
+!print *, 'OGG l_tracer_aero'
     ! Rebin the 4-bin version of sea salt into bins for coarse and accumulation
     ! modes that correspond to the available optics data.  This is only necessary
     ! for CAM-RT.  But it's done here so that the microphysics code which is called
@@ -2448,8 +2448,13 @@ if (l_tracer_aero) then
     call t_startf('carma_timestep_tend')
 
     if (carma_do_cldice .or. carma_do_cldliq) then
+
+!print *, 'OGG carma_do_cldice .or. carma_do_cldliq'
+
        call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, dlf=dlf, rliq=rliq, &
             prec_str=prec_str, snow_str=snow_str, prec_sed=prec_sed_carma, snow_sed=snow_sed_carma)
+
+!print *, 'OGG pu1'
        call physics_update(state, ptend, ztodt, tend)
 
        ! Before the detrainment, the reserved condensate is all liquid, but if CARMA is doing
@@ -2469,7 +2474,12 @@ end if
 
     if( microp_scheme == 'RK' ) then
 
+!print *, 'OGG microp_scheme == RK'
+
      if (l_st_mac.or.l_st_mic) then
+
+!print *, 'OGG l_st_mac.or.l_st_mic'
+
        !===================================================
        ! Calculate stratiform tendency (sedimentation, detrain, cloud fraction and microphysics )
        !===================================================
@@ -2483,6 +2493,8 @@ end if
             cmfmc,   cmfmc2, &
             cam_in%ts,      cam_in%sst,        zdu)
 
+!print *, 'OGG pu2'
+
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "cldwat_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)
 
@@ -2490,6 +2502,9 @@ end if
      end if !l_st_mac
 
     elseif( microp_scheme == 'MG' ) then
+
+!print *,'OGG microp_scheme == MG'
+
        ! Start co-substepping of macrophysics and microphysics
        cld_macmic_ztodt = ztodt/cld_macmic_num_steps
 
@@ -2499,9 +2514,13 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
 
+!print *, 'OGG before the loop, cld_macmic_num_steps = ', cld_macmic_num_steps
+
        do macmic_it = 1, cld_macmic_num_steps
 
         if (l_st_mac) then
+
+!print *, 'OGG l_st_mac, micro_do_icesupersat'
 
           if (micro_do_icesupersat) then 
 
@@ -2514,18 +2533,23 @@ end if
 
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
+!print *, 'OGG pu3'
             call physics_update(state, ptend, ztodt, tend)
             call check_energy_chng(state, tend, "mp_aero_tend", nstep, ztodt, zero, zero, zero, zero)      
 
-          endif
+          endif ! if micro_do_icesupersat
           !===================================================
           ! Calculate macrophysical tendency (sedimentation, detrain, cloud fraction)
           !===================================================
 
           call t_startf('macrop_tend')
 
+!print *, 'OGG end of macrop_tend'
+
           ! don't call Park macrophysics if CLUBB is called
           if (macrop_scheme .ne. 'CLUBB_SGS') then
+
+!print *, 'OGG macrop_scheme .ne. CLUBB_SGS'
 
              call macrop_driver_tend( &
                   state,           ptend,          cld_macmic_ztodt, &
@@ -2547,13 +2571,16 @@ end if
              ! ptend down by the number of substeps, then applying it for
              ! the full time (ztodt).
              call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
+!print *, 'OGG pu4'
              call physics_update(state, ptend, ztodt, tend)
              call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
        
           else ! Calculate CLUBB macrophysics
+          !else for macrop_scheme ne CLUBB_SGS
 
+!print *, 'OGG else ! calcu... CLUBB '
 
 !!== KZ_WATCON 
 
@@ -2562,6 +2589,9 @@ end if
     !!.................................................................
 
     if(use_qqflx_fixer) then
+
+!print *, 'OGG use_qqflx_fixer'
+
        call qqflx_fixer('TPHYSBC ', lchnk, ncol, cld_macmic_ztodt, &
             state%q(1,1,1), state%rpdel(1,1), cam_in%shf, &
             cam_in%lhf , cam_in%cflx/cld_macmic_num_steps )
@@ -2573,7 +2603,7 @@ end if
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
    
-    call outfld('Uclubb1',state%u, pcols   ,lchnk   )
+call outfld('Uclubb1',state%u, pcols   ,lchnk   )
 
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
@@ -2590,16 +2620,21 @@ end if
                 ! ptend down by the number of substeps, then applying it for
                 ! the full time (ztodt).
                 call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
+!print *, 'OGG pu5'
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
+
+!turn clubb on/off here
+#if 1
                 call physics_update(state, ptend, ztodt, tend)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
- 
-    call outfld('Uclubb2',state%u, pcols   ,lchnk   )
+                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+#endif 
 
-          endif
+call outfld('Uclubb2',state%u, pcols   ,lchnk   )
+
+          endif  ! if ... else ... macrop_scheme .ne. 'CLUBB_SGS'
 
           call t_stopf('macrop_tend')
         end if ! l_st_mac
@@ -2634,7 +2669,8 @@ end if
 
           if (use_subcol_microp) then
 
-print *, 'OG in use_subcol_microp ???????????'
+!print *, 'OG in use_subcol_microp ???????????'
+
              call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
 
              ! Average the sub-column ptend for use in gridded update - will not contain ptend_aero
@@ -2702,6 +2738,10 @@ print *, 'OG in use_subcol_microp ???????????'
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
      end if !microp_scheme
+
+
+    call outfld('UendBC',state%u, pcols   ,lchnk   )
+
 
 if (l_tracer_aero) then
 
@@ -2842,8 +2882,6 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
-
-    call outfld('UendBC',state%u, pcols   ,lchnk   )
 
 end subroutine tphysbc
 
