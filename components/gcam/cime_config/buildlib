@@ -42,6 +42,8 @@ print file "$SRCROOT/components/gcam/src/iac/coupling \n";
 # This looks ike the kind of thing that should be in a config file, but
 # for now lets just verify that it works. As we go to a new version of gcam
 # all this stuff will probably be in a different set of directories
+print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/include \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/logger/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/database/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/base/source \n";
