@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config case="initial_state">
+
+	<add_link source="../base_mesh/base_mesh.nc" dest="base_mesh.nc"/>
+	<add_link source="../base_mesh/graph.info" dest="graph.info"/>
+    <copy_file source_path="script_test_dir" source="add_initial_state.py" dest="add_initial_state.py"/>
+
+	<run_script name="run.py">
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+		</step>
+	</run_script>
+
+</config>
+

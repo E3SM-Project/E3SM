@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config case="base_mesh">
+
+	<run_script name="run.py">
+		<step executable="planar_hex">
+			<argument flag="--nx">4</argument>
+			<argument flag="--ny">80</argument>
+			<argument flag="--dc">40e3</argument>
+			<argument flag="--nonperiodic_y"></argument>
+			<argument flag="-o">planar_hex_mesh.nc</argument>
+		</step>
+		<step executable="MpasCellCuller.x">
+			<argument flag="">planar_hex_mesh.nc</argument>
+			<argument flag="">culled_mesh.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">culled_mesh.nc</argument>
+			<argument flag="">base_mesh.nc</argument>
+		</step>
+	</run_script>
+
+</config>

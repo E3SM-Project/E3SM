@@ -5,7 +5,6 @@
 		<option name="config_run_duration">'0000_03:00:00'</option>
 		<option name="config_mom_del4">3.2e12</option>
 		<option name="config_hmix_scaleWithMesh">.true.</option>
-		<option name="config_use_standardGM">.true.</option>
-		<option name="config_standardGM_tracer_kappa">600.0</option>
+		<option name="config_use_GM">.true.</option>
 	</namelist>
 </template>

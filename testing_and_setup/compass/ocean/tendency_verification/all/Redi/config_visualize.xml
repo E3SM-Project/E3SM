@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config case="visualize">
+
+	<add_link source="plot.py" source_path="script_test_dir" dest="plot.py"/>
+
+	<run_script name="run.py">
+		<step executable="python">
+			<argument flag="">plot.py</argument>
+		</step>
+	</run_script>
+</config>
