@@ -49,8 +49,7 @@ module ocn_vmix_coefs_redi
    !--------------------------------------------------------------------
 
    logical :: rediDiffOn
-   logical, pointer :: config_use_standardGM
-   real (kind=RKIND), pointer :: config_Redi_kappa
+   logical, pointer :: config_use_Redi
 
 !***********************************************************************
 
@@ -111,6 +110,8 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertDiffTopOfCell, k33
+      real (kind=RKIND), dimension(:), pointer :: &
+        RediKappa
 
       !-----------------------------------------------------------------
       !
@@ -123,10 +124,11 @@ contains
       err = 0
 
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'k33',k33)
+      call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
 
-      if (config_use_standardGM) then
-          call ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, err)
+      if (config_use_Redi) then
+          call ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, err)
       end if
 
    !--------------------------------------------------------------------
@@ -146,7 +148,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, vertRediDiff, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -171,7 +173,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(in)    :: vertRediDiff !< Output: Vertical diffusion
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         RediKappa
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         k33
 
       integer :: iCell, nCells
       integer, pointer :: nCellsSolve
@@ -196,7 +202,7 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + vertRediDiff(:, iCell)
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + RediKappa(iCell) * k33(:, iCell)
       end do
       !$omp end do
 
@@ -238,10 +244,9 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_standardGM',config_use_standardGM)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa',config_Redi_kappa)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi',config_use_Redi)
 
-      if (config_use_standardGM) then
+      if (config_use_Redi) then
          rediDiffOn = .True.
       else
          rediDiffOn = .False.

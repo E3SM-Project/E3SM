@@ -7,11 +7,9 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_hmix_redi
+!  ocn_tracer_hmix_Redi
 !
 !> \brief MPAS ocean horizontal tracer mixing driver
-!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date   September 2011
 !> \details
 !>  This module contains the main driver routine for computing
 !>  horizontal mixing tendencies.
@@ -20,13 +18,15 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_tracer_hmix_redi
+module ocn_tracer_hmix_Redi
 
    use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading
+   use mpas_constants
 
+   use ocn_config
    use ocn_constants
 
    implicit none
@@ -45,8 +45,8 @@ module ocn_tracer_hmix_redi
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_tracer_hmix_redi_tend, &
-             ocn_tracer_hmix_redi_init
+   public :: ocn_tracer_hmix_Redi_tend, &
+             ocn_tracer_hmix_Redi_init
 
    !--------------------------------------------------------------------
    !
@@ -54,33 +54,23 @@ module ocn_tracer_hmix_redi
    !
    !--------------------------------------------------------------------
 
-   logical :: rediOn
-   logical, pointer :: config_disable_redi_horizontal_term1
-   logical, pointer :: config_disable_redi_horizontal_term2
-   logical, pointer :: config_disable_redi_horizontal_term3
-   real (kind=RKIND), pointer :: config_Redi_kappa
-
-
 !***********************************************************************
 
 contains
 
 !***********************************************************************
 !
-!  routine ocn_tracer_hmix_redi_tend
+!  routine ocn_tracer_hmix_Redi_tend
 !
 !> \brief   Computes Laplacian tendency term for horizontal tracer mixing
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
 !> \details
 !>  This routine computes the horizontal mixing tendency for tracers
 !>  based on current state using a Laplacian parameterization.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
-                                        relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err)!{{{
-
+   subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
+                    RediKappa, slopeTriadUp, slopeTriadDown, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -91,15 +81,16 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         RediKappa
+
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
-         zMid,               &!< Input: Z coordinate at the center of a cell
-         relativeSlopeTopOfEdge,    &!< Input: slope of coordinate relative to neutral surface at edges
-         relativeSlopeTapering,     &!< Input: tapering of slope of coordinate relative to neutral surface at edges
-         relativeSlopeTaperingCell   !< Input: tapering of slope of coordinate relative to neutral surface at cells
+         zMid                 !< Input: Z coordinate at the center of a cell
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-        tracers !< Input: tracer quantities
+         slopeTriadUp, slopeTriadDown, &
+         tracers !< Input: tracer quantities
 
       !-----------------------------------------------------------------
       !
@@ -124,37 +115,34 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, iEdge, cell1, cell2
-      integer :: i, k, iTracer, num_tracers, nCells, nEdges
+      integer :: iCell, iEdge, cell1, cell2, iCellSelf
+      integer :: i, k, iTr, nTracers, nCells, nEdges, km1, kp1, nCellsP1
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:,:), allocatable :: boundaryMask
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnCell, maxLevelCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell, cellsOnCell
 
       real (kind=RKIND) :: invAreaCell1, invAreaCell2, invAreaCell, areaEdge
-      real (kind=RKIND) :: tracer_turb_flux, flux, s_tmp, r_tmp, h1, h2, s_tmpU, s_tmpD
-
+      real (kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, flux_terms12, sign_term1, dTracerDx, coef
+      real (kind=RKIND) :: r_tmp, tracer_turb_flux
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
+      real (kind=RKIND), dimension(:), allocatable :: areaSum
 
-      real (kind=RKIND), dimension(:,:), pointer :: gradTracerEdge, gradTracerTopOfEdge, gradHTracerSlopedTopOfCell, &
-         dTracerdZTopOfCell, dTracerdZTopOfEdge, areaCellSum
-
-      type (field2DReal), pointer :: gradTracerEdgeField, gradTracerTopOfEdgeField, gradHTracerSlopedTopOfCellField, &
-                                     dTracerdZTopOfCellField, dTracerdZTopOfEdgeField, areaCellSumField
+      real (kind=RKIND), dimension(:,:), allocatable :: fluxRediZTop
 
       err = 0
 
-      if (.not.rediOn) return
+      if (.not.config_use_Redi) return
 
       call mpas_timer_start("tracer redi")
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      num_tracers = size(tracers, dim=1)
+      nTracers = size(tracers, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -165,285 +153,279 @@ contains
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa',config_Redi_kappa)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_horizontal_term1',config_disable_redi_horizontal_term1)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_horizontal_term2',config_disable_redi_horizontal_term2)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_horizontal_term3',config_disable_redi_horizontal_term3)
-
-      !
-      ! COMPUTE the extra terms arising due to mismatch between the constant coordinate surfaces and the
-      ! isopycnal surfaces.
-      !
-
-      call mpas_pool_get_field(scratchPool, 'gradTracerEdge', gradTracerEdgeField)
-      call mpas_pool_get_field(scratchPool, 'gradTracerTopOfEdge', gradTracerTopOfEdgeField)
-      call mpas_pool_get_field(scratchPool, 'gradHTracerSlopedTopOfCell', gradHTracerSlopedTopOfCellField)
-      call mpas_pool_get_field(scratchPool, 'dTracerdZTopOfCell', dTracerdZTopOfCellField)
-      call mpas_pool_get_field(scratchPool, 'dTracerdZTopOfEdge', dTracerdZTopOfEdgeField)
-      call mpas_pool_get_field(scratchPool, 'areaCellSum', areaCellSumField)
-
-      call mpas_allocate_scratch_field(gradTracerEdgeField, .true., .false.)
-      call mpas_allocate_scratch_field(gradTracerTopOfEdgeField, .true., .false.)
-      call mpas_allocate_scratch_field(gradHTracerSlopedTopOfCellField, .true., .false.)
-      call mpas_allocate_scratch_field(dTracerdZTopOfCellField, .true., .false.)
-      call mpas_allocate_scratch_field(dTracerdZTopOfEdgeField, .true., .false.)
-      call mpas_allocate_scratch_field(areaCellSumField, .true., .false.)
-
-      gradTracerEdge => gradTracerEdgeField % array
-      gradTracerTopOfEdge => gradTracerTopOfEdgeField % array
-      gradHTracerSlopedTopOfCell => gradHTracerSlopedTopOfCellField % array
-      dTracerdZTopOfCell => dTracerdZTopOfCellField % array
-      dTracerdZTopOfEdge => dTracerdZTopOfEdgeField % array
-      areaCellSum => areaCellSumField % array
 
       nCells = nCellsArray( size(nCellsArray) )
       nEdges = nEdgesArray( size(nEdgesArray) )
 
+      ! mrp this is in original del2. Apparently we don't do halo cells for del2.
+      nCells = nCellsArray(1)
+
+      ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
+      ! \kappa_2 \nabla \phi on edge
+      ! mrp performance: merge term 1 into main cell loop later
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-        gradHTracerSlopedTopOfCell(:, iCell) = 0.0_RKIND
-        dTracerdZTopOfCell(:, iCell) = 0.0_RKIND
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            r_tmp = dvEdge(iEdge) / dcEdge(iEdge)
+
+            do k = 1, maxLevelEdgeTop(iEdge)
+
+               do iTr = 1, nTracers
+                  ! \kappa_2 \nabla \phi on edge
+                  tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
+
+                  ! div(h \kappa_2 \nabla \phi) at cell center
+                  flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * RediKappa(iCell) * r_tmp
+
+                  tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
+
+               end do
+            end do
+
+         end do
       end do
       !$omp end do
+
+      !mrp performance note: can try to reduce halo width later
+      nCells = nCellsArray( size(nCellsArray) )
+      nCellsP1 = nCellsArray( size(nCellsArray) ) + 1
+
+      ! Term 2: div( h S dphi/dz)
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
+
+         do i = 1, nEdgesOnCell(iCell)
+            ! Check if neighboring cell exists
+            if  (cellsOnCell(i,iCell).eq.nCellsP1) cycle
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            coef = edgeSignOnCell(i, iCell) * dvEdge(iEdge) * invAreaCell
+
+            k=1
+            do iTr = 1, nTracers
+
+               ! For top layer, only use triads pointing down:
+               flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                  0.5_RKIND * &
+                  (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
+                                  / (zMid(k,cell1) - zMid(k+1,cell1)) &
+                   + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
+                                  / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
+
+               ! Add tendency for Term 2: div( h S dphi/dz) at top layer
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
+            end do
+
+            do k = 2, maxLevelEdgeTop(iEdge)-1
+               do iTr = 1, nTracers
+                  ! There are four triads associated with each edge:
+                  flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                     0.25_RKIND * &
+                     (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+                                     / (zMid(k-1,cell1) - zMid(k,cell1)) &
+                      + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+                                     / (zMid(k-1,cell2) - zMid(k,cell2)) &
+                      + slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
+                                     / (zMid(k,cell1) - zMid(k+1,cell1)) &
+                      + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
+                                     / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
+
+                  ! Add tendency for Term 2: div( h S dphi/dz) at mid layers
+                  tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
+               end do
+            end do
+
+            k=maxLevelEdgeTop(iEdge)
+            do iTr = 1, nTracers
+               ! For bottom layer, only use triads pointing up:
+               flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                  0.5_RKIND * &
+                  (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+                                  / (zMid(k-1,cell1) - zMid(k,cell1)) &
+                   + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+                                  / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
+
+               ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
+            end do
+         end do
+      end do
+      !$omp end do
+
+      ! Term 3: d/dz ( h S grad phi) 
+      ! note that dz and h cancel, so this is (S grad phi)
+
+      allocate(fluxRediZTop(nTracers,nVertLevels+1))
+      allocate(areaSum(nVertLevels+1))
+      !mrp performance note: can try to reduce halo width later
+      !nCells = nCellsArray(1)
+      nCells = nCellsArray( size(nCellsArray) )
 
       !$omp do schedule(runtime)
-      do iEdge = 1, nEdges
-         gradTracerEdge(:, iEdge) = 0.0_RKIND
-         gradTracerTopOfEdge(:, iEdge) = 0.0_RKIND
-         dTracerdZTopOfEdge(:, iEdge) = 0.0_RKIND
+      do iCell = 1, nCells
+         areaSum(:) = 1.0e-34_RKIND
+         fluxRediZTop(:,:) = 0.0_RKIND
+
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
+            ! mrp performance note: Replace with a logical array on init later
+            if (cell1==iCell) then
+                iCellSelf = 1
+            elseif (cell2==iCell) then
+                iCellSelf = 2
+            else
+                print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
+            endif
+
+            do k = 1, maxLevelEdgeTop(iEdge)
+               areaSum(k) = areaSum(k) + areaEdge
+               areaSum(k+1) = areaSum(k+1) + areaEdge
+
+               do iTr = 1, nTracers
+                  ! Gradient of tracer at edge.
+                  ! dvEdge on following line is equal to areaEdge/dcEdge
+                  dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) * dvEdge(iEdge)
+                  fluxRediZTop(iTr,k) = fluxRediZTop(iTr,k) + &
+                     slopeTriadUp(k,iCellSelf,iEdge) * dTracerDx
+                  fluxRediZTop(iTr,k+1) = fluxRediZTop(iTr,k+1) + &
+                     slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx
+               end do
+            end do
+         end do
+
+         ! impose no-flux boundary conditions at top and bottom of column
+         fluxRediZTop(:,1) = 0.0_RKIND
+         fluxRediZTop(:,maxLevelCell(iCell)+1) = 0.0_RKIND
+         do k = 1, maxLevelCell(iCell)
+            do iTr = 1, nTracers
+               ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
+               ! 2.0 in next line is because a dot product on a C-grid
+               ! requires a factor of 1/2 to average to the cell center.
+               flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
+                   (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
+
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
+            end do
+         end do
       end do
       !$omp end do
-
-      ! this is the "standard" del2 term, but forced to use config_redi_kappa
-      if(.not.config_disable_redi_horizontal_term1) then
-
-         nCells = nCellsArray( 1 )
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            invAreaCell = 1.0_RKIND / areaCell(iCell)
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               r_tmp = config_redi_kappa * dvEdge(iEdge) / dcEdge(iEdge)
-
-               do k = 1, maxLevelEdgeTop(iEdge)
-
-                  do iTracer = 1, num_tracers
-                     ! \kappa_2 \nabla \phi on edge
-                     tracer_turb_flux = tracers(iTracer, k, cell2) - tracers(iTracer, k, cell1)
-
-                     ! div(h \kappa_2 \nabla \phi) at cell center
-                     flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * r_tmp
-
-                     tend(iTracer, k, iCell) = tend(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
-
-                  end do
-               end do
-
-            end do
-         end do
-         !$omp end do
-
-      endif
-
-      ! Compute vertical derivative of tracers at cell center and top of layer
-      do iTracer = 1, num_tracers
-
-         nCells = nCellsArray( 2 )
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            do k = 2, maxLevelCell(iCell)
-               dTracerdZTopOfCell(k,iCell) = (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) &
-                                           / (zMid(k-1,iCell) - zMid(k,iCell))
-            end do
-
-            ! Approximation of dTracerdZTopOfCell on the top and bottom interfaces through the idea of having
-            ! ghost cells above the top and below the bottom layers of the same depths and tracer density.
-            ! Essentially, this enforces the boundary condition (d tracer)/dz = 0 at the top and bottom.
-            dTracerdZTopOfCell(1,iCell) = 0.0_RKIND
-            dTracerdZTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
-         end do
-         !$omp end do
-
-         nEdges = nEdgesArray( 2 )
-         ! Compute tracer gradient (gradTracerEdge) along the constant coordinate surface.
-         ! The computed variables lives at edge and mid-layer depth
-         !$omp do schedule(runtime)
-         do iEdge = 1, nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-
-            do k=1,maxLevelEdgeTop(iEdge)
-               gradTracerEdge(k,iEdge) = (tracers(iTracer,k,cell2) - tracers(iTracer,k,cell1)) / dcEdge(iEdge)
-            end do
-         end do
-         !$omp end do
-
-         nEdges = nEdgesArray( 2 )
-         ! Interpolate dTracerdZTopOfCell to edge and top of layer
-         !$omp do schedule(runtime)
-         do iEdge = 1, nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            do k = 1, maxLevelEdgeTop(iEdge)
-               dTracerdZTopOfEdge(k,iEdge) = 0.5_RKIND * (dTracerdZTopOfCell(k,cell1) + dTracerdZTopOfCell(k,cell2))
-            end do
-            dTracerdZTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = 0.0_RKIND
-         end do
-         !$omp end do
-
-         nEdges = nEdgesArray( 2 )
-         ! Interpolate gradTracerEdge to edge and top of layer
-         !$omp do schedule(runtime)
-         do iEdge = 1, nEdges
-            do k = 2, maxLevelEdgeTop(iEdge)
-               h1 = layerThicknessEdge(k-1,iEdge)
-               h2 = layerThicknessEdge(k,iEdge)
-
-               ! Using second-order interpolation below
-               gradTracerTopOfEdge(k,iEdge) = (h2 * gradTracerEdge(k-1,iEdge) + h1 * gradTracerEdge(k,iEdge)) / (h1 + h2)
-            end do
-
-            ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells above
-            ! the top and below the bottom layers of the same depths and tracer concentration.
-            gradTracerTopOfEdge(1,iEdge) = gradTracerEdge(2,iEdge)
-            gradTracerTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradTracerEdge(max(maxLevelEdgeTop(iEdge),1),iEdge)
-         end do
-         !$omp end do
-
-         ! Compute \nabla\cdot(relativeSlope d\phi/dz)
-         if(.not.config_disable_redi_horizontal_term2) then
-            nCells = nCellsArray( 1 )
-            !$omp do schedule(runtime)
-            do iCell = 1, nCells
-               invAreaCell = 1.0_RKIND / areaCell(iCell)
-               do i = 1, nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i, iCell)
-                  do k = 1, maxLevelEdgeTop(iEdge)
-                     s_tmpU = relativeSlopeTapering(k, iEdge) * relativeSlopeTopOfEdge(k, iEdge) * dTracerdZTopOfEdge(k, iEdge)
-                     s_tmpD = relativeSlopeTapering(k+1, iEdge) * relativeSlopeTopOfEdge(k+1, iEdge) &
-                            * dTracerdZTopOfEdge(k+1, iEdge)
-
-                     flux = 0.5 * dvEdge(iEdge) * ( s_tmpU + s_tmpD )
-                     flux = flux * layerThicknessEdge(k, iEdge)
-                     tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * config_Redi_kappa * flux &
-                                             * invAreaCell
-                  end do
-               end do
-            end do
-            !$omp end do
-         endif
-
-         ! Compute dz * d(relativeSlope\cdot\nabla\phi)/dz  (so the dz cancel out)
-
-         ! Compute relativeSlope\cdot\nabla\phi (variable gradHTracerSlopedTopOfCell) at non-boundary edges
-
-         nCells = nCellsArray( 1 )
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            areaCellSum(:, iCell) = 1.0e-34_RKIND
-            gradHTracerSlopedTopOfCell(:, iCell) = 0.0_RKIND
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
-               do k = 1, maxLevelEdgeTop(iEdge)
-                  r_tmp = areaEdge * relativeSlopeTapering(k, iEdge) * relativeSlopeTopOfEdge(k,iEdge) &
-                        * gradTracerTopOfEdge(k,iEdge)
-                  gradHTracerSlopedTopOfCell(k, iCell) = gradHTracerSlopedTopOfCell(k, iCell) + r_tmp
-                  areaCellSum(k, iCell) = areaCellSum(k, iCell) + areaEdge
-               end do
-            end do
-         end do
-         !$omp end do
-
-         nCells = nCellsArray( 1 )
-         !$omp do schedule(runtime)
-         do iCell=1,nCells
-            do k = 1, maxLevelCell(iCell)
-               gradHTracerSlopedTopOfCell(k,iCell) = gradHTracerSlopedTopOfCell(k,iCell)/areaCellSum(k,iCell)
-            end do
-         end do
-         !$omp end do
-
-         if(.not.config_disable_redi_horizontal_term3) then
-            nCells = nCellsArray( 1 )
-            !$omp do schedule(runtime)
-            do iCell = 1, nCells
-               ! impose no-flux boundary conditions at top and bottom of column
-               gradHTracerSlopedTopOfCell(1,iCell) = 0.0_RKIND
-               gradHTracerSlopedTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
-               do k = 1, maxLevelCell(iCell)
-                  tend(iTracer,k,iCell) = tend(iTracer,k,iCell) + config_Redi_kappa * &
-                      (gradHTracerSlopedTopOfCell(k,iCell) - gradHTracerSlopedTopOfCell(k+1,iCell))
-               end do
-            end do
-            !$omp end do
-         endif
-
-      end do  ! iTracer
-
-      call mpas_deallocate_scratch_field(gradTracerEdgeField, .true.)
-      call mpas_deallocate_scratch_field(gradTracerTopOfEdgeField, .true.)
-      call mpas_deallocate_scratch_field(gradHTracerSlopedTopOfCellField, .true.)
-      call mpas_deallocate_scratch_field(dTracerdZTopOfCellField, .true.)
-      call mpas_deallocate_scratch_field(dTracerdZTopOfEdgeField, .true.)
-      call mpas_deallocate_scratch_field(areaCellSumField, .true.)
+      deallocate(fluxRediZTop)
+      deallocate(areaSum)
 
       call mpas_timer_stop("tracer redi")
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_tracer_hmix_redi_tend!}}}
+   end subroutine ocn_tracer_hmix_Redi_tend!}}}
 
 !***********************************************************************
 !
-!  routine ocn_tracer_hmix_redi_init
+!  routine ocn_tracer_hmix_Redi_init
 !
 !> \brief   Initializes ocean tracer horizontal mixing quantities
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
 !> \details
 !>  This routine initializes a variety of quantities related to
 !>  Laplacian horizontal velocity mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_redi_init(err)!{{{
+   subroutine ocn_tracer_hmix_Redi_init(domain, err)!{{{
 
-   !--------------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! call individual init routines for each parameterization
-      !
-      !-----------------------------------------------------------------
+      type (domain_type), intent(in) :: domain
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_standardGM
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: forcingPool
+
+      real (kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+
+      integer :: k, iCell
+      integer, pointer :: nVertLevels, nCells
+      real (kind=RKIND) :: sqrtPiInv2, avgCellDiameter
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_standardGM', config_use_standardGM)
+      if (.not.config_use_Redi) return
 
-      rediOn = .false.
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
+         call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
 
-      if ( config_use_standardGM ) then
-          rediOn = .true.
-      endif
+         ! initialize Redi kappa array
+         if (config_Redi_closure == 'constant') then
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               RediKappa(iCell) = config_Redi_kappa
+            end do
+            !$omp end do
+         else if (config_Redi_closure == 'data') then
+             ! read RediKappa in from input
+            call mpas_log_write( "config_Redi_closure = 'data'. "// &
+               "Make sure that the variable RediKappa is read in from an input file.")
+         else
+            call mpas_log_write( 'Invalid choice of config_Redi_closure.', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
 
+         ! Add resolution taper
+         if (config_eddying_resolution_taper == 'none') then
+            ! Nothing to do, as we just keep the same assignment as above.
+         else if (config_eddying_resolution_taper == 'ramp') then
+            sqrtPiInv2 = 2.0_RKIND / sqrt(pii)
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               avgCellDiameter = sqrtPiInv2*sqrt(areaCell(iCell))
+               if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
+                  RediKappa(iCell) = 0.0_RKIND
+               else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
+                  ! nothing to do, i.e. RediKappa(iCell) = RediKappa(iCell)
+               else
+                  RediKappa(iCell) = RediKappa(iCell) &
+                     *(avgCellDiameter - config_eddying_resolution_ramp_min) & 
+                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
+               end if
+            end do
+            !$omp end do
+         else
+            call mpas_log_write( 'Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+         block => block % next
+      end do
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_tracer_hmix_redi_init!}}}
+   end subroutine ocn_tracer_hmix_Redi_init!}}}
 
 !***********************************************************************
 
-end module ocn_tracer_hmix_redi
+end module ocn_tracer_hmix_Redi
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
