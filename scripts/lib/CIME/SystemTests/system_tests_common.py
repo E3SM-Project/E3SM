@@ -529,23 +529,21 @@ class SystemTestsCommon(object):
         generate a new baseline case based on the current test
         """
         with self._test_status:
-            if(self._case.get_value('RESUBMIT') == 0):
-                # generate baseline
-                success, comments = generate_baseline(self._case)
-                append_testlog(comments, self._orig_caseroot)
-                status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-                baseline_name = self._case.get_value("BASEGEN_CASE")
-                self._test_status.set_status(GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
-                basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
-                # copy latest cpl log to baseline
-                # drop the date so that the name is generic
-                newestcpllogfiles = self._get_latest_cpl_logs()
-                for cpllog in newestcpllogfiles:
-                    m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
-                    if m is not None:
-                        baselog = os.path.join(basegen_dir, m.group(1))+".gz"
-                        safe_copy(cpllog,
-                                  os.path.join(basegen_dir,baselog))
+            # generate baseline
+            success, comments = generate_baseline(self._case)
+            append_testlog(comments, self._orig_caseroot)
+            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
+            baseline_name = self._case.get_value("BASEGEN_CASE")
+            self._test_status.set_status(GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            # copy latest cpl log to baseline
+            # drop the date so that the name is generic
+            newestcpllogfiles = self._get_latest_cpl_logs()
+            for cpllog in newestcpllogfiles:
+                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
+                if m is not None:
+                    baselog = os.path.join(basegen_dir, m.group(1))+".gz"
+                    safe_copy(cpllog, os.path.join(basegen_dir,baselog))
 
 class FakeTest(SystemTestsCommon):
     """
