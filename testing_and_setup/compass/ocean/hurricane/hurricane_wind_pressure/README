@@ -1,0 +1,17 @@
+# Hurricane Winds
+
+A project to develop tools for creating sequences of vector wind and pressure  fields from hurricane storm track data.
+
+Inputs are:
+1- json file with the hurricane TRACK (Sandy example is  /data/ccia/data/forcings/hurricanes/mpaso_input/sandy/SANDY_017771.json )
+2- netcdf file with a list of long and lat of the mesh centroids (exampled used for Sandy is  /data/ccia/data/forcings/hurricanes/mpaso_input/sandy/sandy.nc)
+note the file had the long not correct so the code (see note above) corrects the coordinates
+see lines 100-104 in winds_io/import_data.py
+   lon = np.array(temp_lon) - 2. * math.pi
+   for i in range(0, len(lon)):
+   if lon[i] <= -math.pi:
+   lon[i] += 2. * math.pi
+3- Holland parameter (just leave it 1 for now)
+4- Ambient pressure (constant) not need to be changed
+
+If you need to read a different list of  centroids lat,long you just change the input netcdf

@@ -1,0 +1,5 @@
+SANDY_017771.json
+2				! grid flag 1 = regular grid (need further inputs), 2 = nc file (need file name)
+mesh.nc
+1013            ! mbar, ambient pressure
+1.              ! holland B parameter
