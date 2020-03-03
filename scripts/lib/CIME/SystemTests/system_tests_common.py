@@ -141,22 +141,11 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
-            logger.info("wpc0")
-            logger.info(self._case.get_value('RESUBMIT'))
-            logger.info(self._case.get_value('GENERATE_BASELINE'))
-            logger.info("wpc0b")
             resub_val = self._case1.get_value("RESUBMIT")
-            logger.info(resub_val)
-            logger.info("wpc0c")
             self.run_phase()
-            logger.info("wpc1")
-            logger.info(self._case.get_value('RESUBMIT'))
-            logger.info(self._case.get_value('GENERATE_BASELINE'))
-            logger.info("wpc1b")
             if (self._case.get_value("GENERATE_BASELINE") and (resub_val) == 0):
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
-                logger.info("wpc2")
-
+            
             if (self._case.get_value("COMPARE_BASELINE") and (resub_val) == 0):
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
@@ -539,11 +528,8 @@ class SystemTestsCommon(object):
         """
         generate a new baseline case based on the current test
         """
-        logger.info("wpc3")
-        logger.info(self._case.get_value('RESUBMIT'))
         with self._test_status:
             if(self._case.get_value('RESUBMIT') == 0):
-                logger.info("wpc4")
                 # generate baseline
                 success, comments = generate_baseline(self._case)
                 append_testlog(comments, self._orig_caseroot)
