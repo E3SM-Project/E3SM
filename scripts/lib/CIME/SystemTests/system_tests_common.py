@@ -141,12 +141,12 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
+            resub_val = self._case1.get_value("RESUBMIT")
             self.run_phase()
-
-            if self._case.get_value("GENERATE_BASELINE"):
+            if (self._case.get_value("GENERATE_BASELINE") and (resub_val) == 0):
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
-
-            if self._case.get_value("COMPARE_BASELINE"):
+            
+            if (self._case.get_value("COMPARE_BASELINE") and (resub_val) == 0):
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
                 self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
@@ -543,8 +543,7 @@ class SystemTestsCommon(object):
                 m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
                 if m is not None:
                     baselog = os.path.join(basegen_dir, m.group(1))+".gz"
-                    safe_copy(cpllog,
-                              os.path.join(basegen_dir,baselog))
+                    safe_copy(cpllog, os.path.join(basegen_dir,baselog))
 
 class FakeTest(SystemTestsCommon):
     """
