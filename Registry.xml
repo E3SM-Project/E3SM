@@ -2613,6 +2613,10 @@
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
 		/>
+		<var name="kappaRediVert" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			description="spatially and depth varying Redi kappa"
+			packages="forwardMode;analysisMode"
+		/>
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 			 packages="forwardMode;analysisMode"

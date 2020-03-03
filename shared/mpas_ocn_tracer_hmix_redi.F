@@ -73,7 +73,7 @@ contains
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                     redi_term1, redi_term2, redi_term3, RediKappa, slopeTriadUp, slopeTriadDown,  &
-                    kappaGMVert, tend, err)!{{{
+                    kappaRediVert, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -90,7 +90,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
          zMid,               &!< Input: Z coordinate at the center of a cell
-         kappaGMVert          !< Input: vertical structure of GM/Redi limiter
+         kappaRediVert          !< Input: vertical structure of GM/Redi limiter
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          slopeTriadUp, slopeTriadDown, &
@@ -187,7 +187,7 @@ contains
 
                   ! div(h \kappa_2 \nabla \phi) at cell center
                   flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * (1.0_RKIND + term1TaperFactor * &
-                          (kappaGMVert(k,iEdge) - 1.0_RKIND)) * RediKappa(iCell) * r_tmp
+                          (kappaRediVert(k,iEdge) - 1.0_RKIND)) * RediKappa(iCell) * r_tmp
                   !LPV NOTE: do not limit horizontal diffusion term for now
                   redi_term1(iTr,k,iCell) = redi_term1(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
                   tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
@@ -221,7 +221,7 @@ contains
             do iTr = 1, nTracers
 
                ! For top layer, only use triads pointing down:
-               flux_term2 = coef * RediKappa(iCell) * kappaGMVert(k, iEdge) * layerThicknessEdge(k, iEdge) * &
+               flux_term2 = coef * RediKappa(iCell) * kappaRediVert(k, iEdge) * layerThicknessEdge(k, iEdge) * &
                   0.25_RKIND * &
                   (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
                                   / (zMid(k,cell1) - zMid(k+1,cell1)) &
@@ -236,7 +236,7 @@ contains
             do k = 2, maxLevelEdgeTop(iEdge)-1
                do iTr = 1, nTracers
                   ! There are four triads associated with each edge:
-                  flux_term2 = coef * RediKappa(iCell) * kappaGMVert(k, iEdge) * layerThicknessEdge(k, iEdge) * &
+                  flux_term2 = coef * RediKappa(iCell) * kappaRediVert(k, iEdge) * layerThicknessEdge(k, iEdge) * &
                      0.25_RKIND * &
                      (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                      / (zMid(k-1,cell1) - zMid(k,cell1)) &
@@ -256,7 +256,7 @@ contains
             k=maxLevelEdgeTop(iEdge)
             do iTr = 1, nTracers
                ! For bottom layer, only use triads pointing up:
-               flux_term2 = coef * RediKappa(iCell) * kappaGMVert(k, iEdge) * layerThicknessEdge(k, iEdge) * &
+               flux_term2 = coef * RediKappa(iCell) * kappaRediVert(k, iEdge) * layerThicknessEdge(k, iEdge) * &
                   0.25_RKIND * &
                   (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                   / (zMid(k-1,cell1) - zMid(k,cell1)) &
@@ -307,7 +307,7 @@ contains
                areaSum(k) = areaSum(k) + areaEdge
                areaSum(k+1) = areaSum(k+1) + areaEdge
 
-               kappaGMCent(k) = kappaGMCent(k) + kappaGMVert(k, iEdge) * areaEdge
+               kappaGMCent(k) = kappaGMCent(k) + kappaRediVert(k, iEdge) * areaEdge
                do iTr = 1, nTracers
                   ! Gradient of tracer at edge.
                   ! dvEdge on following line is equal to areaEdge/dcEdge
