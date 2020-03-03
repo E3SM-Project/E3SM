@@ -104,7 +104,7 @@ contains
          gradZMidTopOfEdge, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
          gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, &
          layerThickness, &
-         areaCellSum, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, kappaGMVert
+         areaCellSum, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, kappaGMVert, kappaRediVert
 
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
@@ -156,6 +156,7 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
       call mpas_pool_get_array(diagnosticsPool, 'kappaGMVert', kappaGMVert)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaRediVert', kappaRediVert)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
@@ -422,7 +423,13 @@ contains
 
                kappaGMVert(k,iEdge) = max(config_GM_min_stratification_ratio, &
                                           BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
-            enddo
+               diabaticTaper = 1.0_RKIND
+               if (BruntVaisalaFreqTopEdge <= config_Redi_diabatic_limit) then
+                  diabaticTaper = 0.0_RKIND
+               endif
+
+               kappaRediVert(k,iEdge) = diabaticTaper*kappaGMVert(k,iEdge)
+           enddo
          enddo
          !$omp end do
       endif
@@ -478,18 +485,6 @@ contains
                       * dcEdgeInv
                drhoDx = drhoDT * dTdx + drhoDS * dSdx
 
-               BVFedge1 = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
-                            BruntVaisalaFreqTop(k,cell2))
-
-               BVFedge2 = 0.5_RKIND*(BruntVaisalaFreqTop(k+1,cell1) + &
-                            BruntVaisalaFreqTop(k+1,cell2))
-
-               diabaticTaper = 1.0_RKIND
-               if (BVFedge1 <= config_Redi_diabatic_limit .or. &
-                    BVFedge2 <= config_Redi_diabatic_limit) then
-                  diabaticTaper = 0.0_RKIND
-               endif
-
                ! Always compute *Up on the top cell and *Down on the bottom
                ! cell, even though they are never used. This avoids an if
                ! statement or separate computation for top and bottom.
@@ -528,12 +523,12 @@ contains
                ! LPV move vertical lines up to not limit the vertical mixing term
                ! Griffies 1998 eqn 34
                if(k>1) then
-                  k33(k  ,iCell) = k33(k  ,iCell) + slopeTaperUp * sfcTaperUp * &
+                  k33(k  ,iCell) = k33(k  ,iCell) + kappaRediVert(k,iEdge) * slopeTaperUp * sfcTaperUp * &
                               areaEdge*dzTop(k)*slopeTriadUp(k,iCellSelf,iEdge)**2
                   k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
                endif
 
-               k33(k+1,iCell) = k33(k+1,iCell) + slopeTaperDown * sfcTaperDown * &
+               k33(k+1,iCell) = k33(k+1,iCell) + kappaRediVert(k,iEdge) * slopeTaperDown * sfcTaperDown * &
                           areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
                k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
 
