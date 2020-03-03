@@ -60,7 +60,6 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>${CIME_OUTPUT_ROOT}/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/jedwards/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY> @ pusan.ac.kr</SUPPORTED_BY>
@@ -1430,7 +1429,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>$ENV{HOME}/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
