@@ -150,8 +150,7 @@ module ocn_core_interface
       logical, pointer :: config_use_frazil_ice_formation
       logical, pointer :: config_use_tidal_forcing
       logical, pointer :: config_use_tidal_potential_forcing
-      logical, pointer :: config_use_GM
-      logical, pointer :: config_use_Redi
+      logical, pointer :: config_use_standardGM
       logical, pointer :: config_use_time_varying_atmospheric_forcing
       logical, pointer :: config_use_time_varying_land_ice_forcing
 
@@ -298,12 +297,21 @@ module ocn_core_interface
       end if
 
       !
+      ! test for form of pressure gradient computation
+      !
+      ! TDR: need to add PKG
+      call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
+      call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
+         inSituEOSActive = .true.
+      end if
+
+      !
       ! test for use of gm
       !
       call mpas_pool_get_package(packagePool, 'gmActive', gmActive)
-      call mpas_pool_get_config(configPool, 'config_use_GM', config_use_GM)
-      call mpas_pool_get_config(configPool, 'config_use_Redi', config_use_Redi)
-      if (config_use_GM.or.config_use_Redi) then
+      call mpas_pool_get_config(configPool, 'config_use_standardGM', config_use_standardGM)
+      if (config_use_standardGM) then
          gmActive = .true.
       end if
 
