@@ -45,6 +45,18 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void cldliq_immersion_freezing_c(Real t, Real lamc, Real mu_c, Real cdist1,
+                                 Real qc_incld, Real* qcheti, Real* ncheti);
+
+void rain_immersion_freezing_c(Real t, Real lamr, Real mu_r, Real cdistr,
+                               Real qr_incld, Real* qrheti, Real* nrheti);
+
+void droplet_self_collection_c(Real rho, Real inv_rho, Real qc_incld, Real mu_c,
+                               Real nu, Real ncautc, Real* ncacc);
+
+void cloud_rain_accretion_c(Real rho, Real inv_rho, Real qc_incld, Real nc_incld,
+                            Real qr_incld, Real* qcacc, Real* ncacc);
+
 void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
 
 void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
@@ -90,6 +102,12 @@ void  update_prognostic_ice_c(
   bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio,
   Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
   Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
+
+void update_prognostic_liquid_c(
+  Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+  Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
+  Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+  Real* qc, Real* nc, Real* qr, Real* nr);
 
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
@@ -175,6 +193,34 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
+void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
+{
+  p3_init(true);
+  cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld,
+                              &d.qcheti, &d.ncheti);
+}
+
+void droplet_self_collection(DropletSelfCollectionData& d)
+{
+  p3_init(true);
+  droplet_self_collection_c(d.rho, d.inv_rho, d.qc_incld, d.mu_c, d.nu, d.ncautc,
+                            &d.ncslf);
+}
+
+void rain_immersion_freezing(RainImmersionFreezingData& d)
+{
+  p3_init(true);
+  rain_immersion_freezing_c(d.t, d.lamr, d.mu_r, d.cdistr, d.qr_incld,
+                            &d.qrheti, &d.nrheti);
+}
+
+void cloud_rain_accretion(CloudRainAccretionData& d)
+{
+  p3_init(true);
+  cloud_rain_accretion_c(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld,
+                         &d.qcacc, &d.ncacc);
+}
+
 void cloud_water_conservation(CloudWaterConservationData& d){
   p3_init(true);
   cloud_water_conservation_c(d.qc, d.qcnuc, d.dt, &d.qcaut, &d.qcacc, &d.qccol, &d.qcheti,
@@ -258,6 +304,15 @@ void ice_self_collection(IceSelfCollectionData& d)
 			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
 			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
   }
+
+void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
+  p3_init(true);
+  update_prognostic_liquid_c(d.qcacc, d.ncacc, d.qcaut, d.ncautc, d.qcnuc, d.ncautr,
+			      d.ncslf, d. qrevp, d.nrevp, d.nrslf , d.log_predictNc,
+			      d.inv_rho, d.exner, d.xxlv, d.dt, &d.th, &d.qv,
+			      &d.qc, &d.nc, &d.qr, &d.nr);
+  }
+
 CalcUpwindData::CalcUpwindData(
   Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
   std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
@@ -805,6 +860,56 @@ void update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncco
   *nr_    = t_h(9);
 }
 
+void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncautc_, Real qcnuc_, Real ncautr_,
+				Real ncslf_, Real  qrevp_, Real nrevp_, Real nrslf_, bool log_predictNc_,
+				Real inv_rho_, Real exner_, Real xxlv_, Real dt_, Real* th_, Real* qv_,
+				Real* qc_, Real* nc_, Real* qr_, Real* nr_)
+
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 6);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_th = *th_;
+  Real local_qv = *qv_;
+  Real local_qc = *qc_;
+  Real local_nc = *nc_;
+  Real local_qr = *qr_;
+  Real local_nr = *nr_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qcacc(qcacc_), ncacc(ncacc_), qcaut(qcaut_), ncautc(ncautc_), qcnuc(qcnuc_),
+	ncautr(ncautr_), ncslf(ncslf_),  qrevp( qrevp_), nrevp(nrevp_), nrslf(nrslf_), inv_rho(inv_rho_),
+	exner(exner_), xxlv(xxlv_);
+
+      bool log_predictNc(log_predictNc_);
+
+      typename P3F::Scalar dt(dt_);
+
+      typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr), nr(local_nr);
+
+      P3F::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr,
+				    ncslf,  qrevp, nrevp, nrslf , log_predictNc,
+				    inv_rho, exner, xxlv, dt, th, qv,
+				    qc, nc, qr, nr);
+
+      t_d(0) = th[0];
+      t_d(1) = qv[0];
+      t_d(2) = qc[0];
+      t_d(3) = nc[0];
+      t_d(4) = qr[0];
+      t_d(5) = nr[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *th_    = t_h(0);
+  *qv_    = t_h(1);
+  *qc_    = t_h(2);
+  *nc_    = t_h(3);
+  *qr_    = t_h(4);
+  *nr_    = t_h(5);
+}
 
 template <int N, typename T>
 Kokkos::Array<T*, N> ptr_to_arr(T** data)
@@ -1255,6 +1360,112 @@ void rain_sedimentation_f(
 
   Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, qr_tend_d, nr_tend_d, rflx_d};
   pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx}, sizes_out, inout_views);
+}
+
+void cldliq_immersion_freezing_f(
+  Real t_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_,
+  Real* qcheti_, Real* ncheti_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qcheti = *qcheti_;
+  Real local_ncheti = *ncheti_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack t(t_), lamc(lamc_), mu_c(mu_c_), cdist1(cdist1_),
+                          qc_incld(qc_incld_), qcheti(local_qcheti), ncheti(local_ncheti);
+      P3F::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld,
+                                     qcheti, ncheti);
+
+      t_d(0) = qcheti[0];
+      t_d(1) = ncheti[0];
+
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qcheti_ = t_h(0);
+  *ncheti_ = t_h(1);
+}
+
+void rain_immersion_freezing_f(
+  Real t_, Real lamr_, Real mu_r_, Real cdistr_, Real qr_incld_,
+  Real* qrheti_, Real* nrheti_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qrheti = *qrheti_;
+  Real local_nrheti = *nrheti_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack t(t_), lamr(lamr_), mu_r(mu_r_),
+                          cdistr(cdistr_), qr_incld(qr_incld_),
+                          qrheti(local_qrheti), nrheti(local_nrheti);
+      P3F::rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld,
+                                   qrheti, nrheti);
+
+      t_d(0) = qrheti[0];
+      t_d(1) = nrheti[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qrheti_ = t_h(0);
+  *nrheti_ = t_h(1);
+}
+
+void droplet_self_collection_f(
+  Real rho_, Real inv_rho_, Real qc_incld_, Real mu_c_, Real nu_,
+  Real ncautc_, Real* ncslf_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_ncslf = *ncslf_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), inv_rho(inv_rho_), qc_incld(qc_incld_),
+                          mu_c(mu_c_), nu(nu_), ncautc(ncautc_),
+                          ncslf(local_ncslf);
+      P3F::droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc,
+                                   ncslf);
+
+      t_d(0) = ncslf[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *ncslf_ = t_h(0);
+}
+
+void cloud_rain_accretion_f(
+  Real rho_, Real inv_rho_, Real qc_incld_, Real nc_incld_, Real qr_incld_,
+  Real* qcacc_, Real* ncacc_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qcacc = *qcacc_;
+  Real local_ncacc = *ncacc_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), inv_rho(inv_rho_), qc_incld(qc_incld_),
+                          nc_incld(nc_incld_), qr_incld(qr_incld_),
+                          qcacc(local_qcacc), ncacc(local_ncacc);
+      P3F::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
+                                qcacc, ncacc);
+
+      t_d(0) = qcacc[0];
+      t_d(1) = ncacc[0];
+
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qcacc_ = t_h(0);
+  *ncacc_ = t_h(1);
 }
 
 void cloud_water_autoconversion_f(

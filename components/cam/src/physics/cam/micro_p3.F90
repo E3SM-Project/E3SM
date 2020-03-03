@@ -35,6 +35,9 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
+#define bfb_square(val) ((val)*(val))
+#define bfb_cube(val) ((val)*(val)*(val))
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
 #  define bfb_cbrt(base) cxx_cbrt(base)
@@ -2458,6 +2461,9 @@ subroutine calc_rime_density(t,rhofaci,    &
 f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cxx_gamma, cxx_pow
+#endif
    !.........................
    ! calculate rime density
 
@@ -2503,7 +2509,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
       if (qc_incld.ge.qsmall) then
          ! droplet fall speed
          ! (use Stokes' formulation (thus use analytic solution)
-         Vt_qc = acn*gamma(4._rtype+bcn+mu_c)/(lamc**bcn*gamma(mu_c+4._rtype))
+         Vt_qc = acn*bfb_gamma(4._rtype+bcn+mu_c)/(bfb_pow(lamc,bcn)*bfb_gamma(mu_c+4._rtype))
          ! use mass-weighted mean size
          D_c = (mu_c+4._rtype)/lamc
          V_impact  = abs(vtrmi1-Vt_qc)
@@ -2511,7 +2517,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          !               Ri        = max(1.,min(Ri,8.))
          Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
-            rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
+            rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*bfb_square(Ri))*1000._rtype
          else
             ! for Ri > 8 assume a linear fit between 8 and 12,
             ! rhorime = 900 kg m-3 at Ri = 12
@@ -2532,6 +2538,9 @@ end subroutine calc_rime_density
 subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cldliq_immersion_freezing_f, cxx_gamma, cxx_exp
+#endif
    !............................................................
    ! contact and immersion freezing droplets
 
@@ -2546,13 +2555,20 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
    real(rtype), intent(out) :: qcheti
    real(rtype), intent(out) :: ncheti
 
-   real(rtype) :: dum, Q_nuc, N_nuc
+   real(rtype) :: dum1, dum2, Q_nuc, N_nuc
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call cldliq_immersion_freezing_f(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti)
+      return
+   endif
+#endif
    if (qc_incld.ge.qsmall .and. t.le.rainfrze) then
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
-      dum   = (1._rtype/lamc)**3
-      Q_nuc = cons6*cdist1*gamma(7._rtype+mu_c)*exp(aimm*(zerodegc-t))*dum**2
-      N_nuc = cons5*cdist1*gamma(mu_c+4._rtype)*exp(aimm*(zerodegc-t))*dum
+      dum1 = bfb_exp(aimm*(zerodegc-t))
+      dum2 = bfb_cube(1._rtype/lamc)
+      Q_nuc = cons6*cdist1*bfb_gamma(7._rtype+mu_c)*dum1*bfb_square(dum2)
+      N_nuc = cons5*cdist1*bfb_gamma(mu_c+4._rtype)*dum1*dum2
       qcheti = Q_nuc
       ncheti = N_nuc
    endif
@@ -2565,6 +2581,9 @@ subroutine rain_immersion_freezing(t,    &
 lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: rain_immersion_freezing_f, cxx_log, cxx_gamma, cxx_exp
+#endif
    !............................................................
    ! immersion freezing of rain
    ! for future: get rid of log statements below for rain freezing
@@ -2582,12 +2601,17 @@ qrheti, nrheti)
 
    real(rtype) :: Q_nuc, N_nuc
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti)
+      return
+   endif
+#endif
+
    if (qr_incld.ge.qsmall .and. t.le.rainfrze) then
 
-      Q_nuc = cons6*exp(log(cdistr)+log(gamma(7._rtype+mu_r))-6._rtype*log(lamr))* &
-      exp(aimm*(zerodegc-t))
-      N_nuc = cons5*exp(log(cdistr)+log(gamma(mu_r+4._rtype))-3._rtype*log(lamr))* &
-      exp(aimm*(zerodegc-t))
+      Q_nuc = cons6*bfb_exp(bfb_log(cdistr) + bfb_log(bfb_gamma(7._rtype+mu_r)) - 6._rtype*bfb_log(lamr))*bfb_exp(aimm*(zerodegc-t))
+      N_nuc = cons5*bfb_exp(bfb_log(cdistr) + bfb_log(bfb_gamma(mu_r+4._rtype)) - 3._rtype*bfb_log(lamr))*bfb_exp(aimm*(zerodegc-t))
 
       qrheti = Q_nuc
       nrheti = N_nuc
@@ -2693,6 +2717,11 @@ end subroutine droplet_activation
 
 subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
    ncslf)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: droplet_self_collection_f
+#endif
+
    !............................
    ! self-collection of droplets
 
@@ -2707,6 +2736,12 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
 
    real(rtype), intent(out) :: ncslf
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf)
+      return
+   endif
+#endif
    if (qc_incld.ge.qsmall) then
 
       if (iparam.eq.1) then
@@ -2728,6 +2763,10 @@ end subroutine droplet_self_collection
 subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
    qcacc,ncacc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_rain_accretion_f, cxx_pow
+#endif
+
 !............................
 ! accretion of cloud by rain
 
@@ -2744,6 +2783,13 @@ real(rtype), intent(out) :: ncacc
 
 real(rtype) :: dum, dum1
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld, &
+         qcacc, ncacc)
+      return
+   endif
+#endif
 if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
 
    if (iparam.eq.1) then
@@ -2760,7 +2806,7 @@ if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
            1.e+6_rtype*inv_rho
    elseif (iparam.eq.3) then
       !Khroutdinov and Kogan (2000)
-      qcacc = 67._rtype*(qc_incld*qr_incld)**1.15_rtype
+      qcacc = 67._rtype*bfb_pow(qc_incld*qr_incld,1.15_rtype)
       ncacc = qcacc*nc_incld/qc_incld
    endif
 
@@ -3220,6 +3266,11 @@ subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,
     qrevp,nrevp,nrslf,    &
     log_predictNc,inv_rho,exner,xxlv,dt,    &
     th,qv,qc,nc,qr,nr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: update_prognostic_liquid_f
+#endif
+
    !-- warm-phase only processes:
    implicit none
 
@@ -3247,6 +3298,16 @@ subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,
    real(rtype), intent(inout) :: nc
    real(rtype), intent(inout) :: qr
    real(rtype), intent(inout) :: nr
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  update_prognostic_liquid_f(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,    &
+           qrevp,nrevp,nrslf,    &
+           log_predictNc,inv_rho,exner,xxlv,dt,    &
+           th,qv,qc,nc,qr,nr)
+      return
+   endif
+#endif
 
    qc = qc + (-qcacc-qcaut+qcnuc)*dt
    qr = qr + (qcacc+qcaut-qrevp)*dt

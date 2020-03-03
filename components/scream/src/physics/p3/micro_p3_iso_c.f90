@@ -302,6 +302,42 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
+
+      use micro_p3, only: cldliq_immersion_freezing
+      real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld
+      real(kind=c_real), intent(out) :: qcheti, ncheti
+
+      call cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
+  end subroutine cldliq_immersion_freezing_c
+
+  subroutine rain_immersion_freezing_c(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
+
+      use micro_p3, only: rain_immersion_freezing
+      real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
+      real(kind=c_real), intent(out) :: qrheti, nrheti
+
+      call rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti)
+  end subroutine rain_immersion_freezing_c
+
+  subroutine droplet_self_collection_c(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
+
+      use micro_p3, only: droplet_self_collection
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
+      real(kind=c_real), intent(out) :: ncslf
+
+      call droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf)
+  end subroutine droplet_self_collection_c
+
+  subroutine cloud_rain_accretion_c(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
+
+      use micro_p3, only: cloud_rain_accretion
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
+      real(kind=c_real), intent(out) :: qcacc, ncacc
+
+      call cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc)
+  end subroutine cloud_rain_accretion_c
+
   subroutine cloud_water_autoconversion_c(rho,qc_incld,nc_incld,qcaut,ncautc,ncautr) bind(C)
 
       use micro_p3, only: cloud_water_autoconversion
@@ -573,5 +609,24 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     call ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, &
                              qitot_incld, nitot_incld, nislf)
   end subroutine ice_self_collection_c
+
+  subroutine  update_prognostic_liquid_c(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
+    use micro_p3, only: update_prognostic_liquid
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, &
+         qrevp, nrevp, nrslf
+
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), value, intent(in) :: inv_rho, exner, xxlv, dt
+
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
+
+    call update_prognostic_liquid(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr)
+
+  end subroutine update_prognostic_liquid_c
 
 end module micro_p3_iso_c

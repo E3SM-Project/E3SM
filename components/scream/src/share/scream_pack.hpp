@@ -266,6 +266,19 @@ scream_pack_gen_bin_op_all(-)
 scream_pack_gen_bin_op_all(*)
 scream_pack_gen_bin_op_all(/)
 
+#define scream_pack_gen_unary_op(op)                           \
+  template <typename PackType>                                 \
+  KOKKOS_FORCEINLINE_FUNCTION                                  \
+  OnlyPack<PackType>                                           \
+  operator op (const PackType& a) {                            \
+    PackType b;                                                \
+    vector_simd                                                \
+    for (int i = 0; i < PackType::n; ++i) b[i] = op a[i];      \
+    return b;                                                  \
+  }
+
+scream_pack_gen_unary_op(-)
+
 #define scream_pack_gen_unary_fn(fn, impl)                            \
   template <typename PackType>                                        \
   KOKKOS_INLINE_FUNCTION                                              \
@@ -384,6 +397,24 @@ OnlyPack<PackType> pow (const PackType& a, const PackType& b) {
 
 template <typename PackType>
 KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> square (const PackType& a) {
+  PackType s;
+  vector_simd for (int i = 0; i < PackType::n; ++i)
+    s[i] = a[i] * a[i];
+  return s;
+}
+
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> cube (const PackType& a) {
+  PackType s;
+  vector_simd for (int i = 0; i < PackType::n; ++i)
+    s[i] = a[i] * a[i] * a[i];
+  return s;
+}
+
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
 OnlyPack<PackType> shift_right (const PackType& pm1, const PackType& p) {
   PackType s;
   s[0] = pm1[PackType::n-1];
@@ -480,6 +511,7 @@ OnlyPack<PackType> range (const typename PackType::scalar& start) {
 #undef scream_pack_gen_bin_op_ps
 #undef scream_pack_gen_bin_op_sp
 #undef scream_pack_gen_bin_op_all
+#undef scream_pack_gen_unary_op
 #undef scream_pack_gen_unary_fn
 #undef scream_pack_gen_unary_stdfn
 #undef scream_pack_gen_bin_fn_pp

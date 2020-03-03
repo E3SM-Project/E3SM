@@ -379,6 +379,30 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Computes contact and immersion freezing droplets
+  KOKKOS_FUNCTION
+  static void cldliq_immersion_freezing(const Spack& t, const Spack& lamc,
+    const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld,
+    Spack& qcheti, Spack& ncheti);
+
+  // Computes the immersion freezing of rain
+  KOKKOS_FUNCTION
+  static void rain_immersion_freezing(const Spack& t, const Spack& lamr,
+    const Spack& mu_r, const Spack& cdistr, const Spack& qr_incld,
+    Spack& qrheti, Spack& nrheti);
+
+  // Computes droplet self collection
+  KOKKOS_FUNCTION
+  static void droplet_self_collection(const Spack& rho, const Spack& inv_rho,
+    const Spack& qc_incld, const Spack& mu_c, const Spack& nu,
+    const Spack& ncautc, Spack& ncslf);
+
+  // Computes the accretion of clouds by rain
+  KOKKOS_FUNCTION
+  static void cloud_rain_accretion(const Spack& rho, const Spack& inv_rho,
+    const Spack& qc_incld, const Spack& nc_incld, const Spack& qr_incld,
+    Spack& qcacc, Spack& ncacc);
+
   // Computes cloud water autoconversion process rate
   KOKKOS_FUNCTION
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
@@ -391,7 +415,7 @@ struct Functions
   // Impose maximum ice number
   KOKKOS_FUNCTION
   static void impose_max_total_Ni(Spack& nitot_local, const Spack& max_total_Ni, const Spack& inv_rho_local);
-  
+
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
   //  and adjusts qirim and birim appropriately.
@@ -447,6 +471,15 @@ struct Functions
                                   const Spack& qirim_incld, const Spack& qitot_incld,
                                   const Spack& nitot_incld, Spack& nislf);
 
+  //liquid-phase dependent processes:
+  KOKKOS_FUNCTION
+  static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
+    const Spack& qcaut,const Spack& ncautc, const Spack& qcnuc, const Spack& ncautr,
+    const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
+    const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
+    const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
+
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -474,9 +507,13 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_rain_self_collection_impl.hpp"
 # include "p3_functions_impose_max_total_Ni_impl.hpp"
+# include "p3_functions_cldliq_imm_freezing_impl.hpp"
+# include "p3_functions_droplet_self_coll_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
+# include "p3_functions_cloud_rain_acc_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
+# include "p3_functions_rain_imm_freezing_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"
 #endif

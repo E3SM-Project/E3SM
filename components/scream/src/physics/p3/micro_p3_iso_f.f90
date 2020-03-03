@@ -92,6 +92,38 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine cldliq_immersion_freezing_f(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld
+    real(kind=c_real), intent(out) :: qcheti, ncheti
+  end subroutine cldliq_immersion_freezing_f
+
+  subroutine rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
+    real(kind=c_real), intent(out) :: qrheti, nrheti
+  end subroutine rain_immersion_freezing_f
+
+  subroutine droplet_self_collection_f(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
+    real(kind=c_real), intent(out) :: ncslf
+  end subroutine droplet_self_collection_f
+
+  subroutine cloud_rain_accretion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld
+    real(kind=c_real), intent(out) :: qcacc, ncacc
+  end subroutine cloud_rain_accretion_f
+
   subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)
     use iso_c_binding
 
@@ -310,6 +342,23 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld
     real(kind=c_real), intent(out) :: nislf
   end subroutine ice_self_collection_f
+
+  subroutine update_prognostic_liquid_f(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, &
+         qrevp, nrevp, nrslf
+
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), value, intent(in) :: inv_rho, exner, xxlv, dt
+
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
+
+  end subroutine update_prognostic_liquid_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

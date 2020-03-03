@@ -211,6 +211,77 @@ extern "C"{
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct CldliqImmersionFreezingData
+{
+  // inputs
+  Real t, lamc, mu_c, cdist1, qc_incld;
+
+  // output
+  Real qcheti, ncheti;
+};
+
+void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
+extern "C"{
+  void cldliq_immersion_freezing_f(Real t, Real lamc, Real mu_c,
+    Real cdist1, Real qc_incld, Real* qcheti, Real* ncheti);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct RainImmersionFreezingData
+{
+  // inputs
+  Real t, lamr, mu_r, cdistr, qr_incld;
+
+  // output
+  Real qrheti, nrheti;
+};
+
+void rain_immersion_freezing(RainImmersionFreezingData& d);
+extern "C"{
+
+  void rain_immersion_freezing_f(Real t, Real lamr, Real mu_r,
+    Real cdistr, Real qr_incld, Real* qrheti, Real* nrheti);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct DropletSelfCollectionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, mu_c, nu, ncautc;
+
+  // output
+  Real ncslf;
+};
+
+void droplet_self_collection(DropletSelfCollectionData& d);
+extern "C"{
+
+  void droplet_self_collection_f(Real rho, Real inv_rho, Real qc_incld,
+    Real mu_c, Real nu, Real ncautc, Real* ncslf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CloudRainAccretionData
+{
+  // inputs
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
+
+  // output
+  Real qcacc, ncacc;
+};
+
+void cloud_rain_accretion(CloudRainAccretionData& d);
+extern "C"{
+
+  void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
+    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudWaterAutoconversionData
 {
   // inputs
@@ -602,6 +673,30 @@ Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3UpdatePrognosticLiqData
+{
+  // Inputs
+  Real qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf;
+
+  bool log_predictNc;
+
+  Real inv_rho, exner, xxlv, dt;
+
+  // In/outs
+  Real th, qv, qc, nc, qr, nr;
+};
+
+void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
+
+extern "C"{
+
+void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
+Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+Real* qc, Real* nc, Real* qr, Real* nr);
+}
 
 struct IceCldliqCollectionData
 {

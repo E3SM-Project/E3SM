@@ -65,14 +65,19 @@ struct UnitWrap {
     struct TestGenSed;
     struct TestP3Func;
     struct TestDsd2;
-    struct TestP3Conservation; 
+    struct TestP3Conservation;
     struct TestP3CloudWaterAutoconversion;
+    struct TestCldliqImmersionFreezing;
+    struct TestRainImmersionFreezing;
+    struct TestDropletSelfCollection;
     struct TestCloudSed;
+    struct TestCloudRainAccretion;
     struct TestIceSed;
     struct TestRainSed;
     struct TestP3UpdatePrognosticIce;
     struct TestIceCollection;
     struct TestRainSelfCollection;
+    struct TestP3UpdatePrognosticLiq;
     struct TestP3FunctionsImposeMaxTotalNi;
   };
 
