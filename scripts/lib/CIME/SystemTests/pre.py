@@ -34,7 +34,7 @@ class PRE(SystemTestsCompareTwo):
                                        run_two_description='pause/resume')
         self._stopopt  = ''
         self._stopn    = 0
-        self._cprnc = None
+        self._cprnc_exe = None
     ###########################################################################
     def _case_one_setup(self):
     ###########################################################################
