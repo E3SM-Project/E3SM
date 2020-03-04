@@ -4,6 +4,7 @@
 # Check environment variable
 if [ -z "${NCEPLIBS_DIR}" ]; then
   echo "NCEPLIBS_DIR needs to be set! Exiting ..."
+  exit
 fi
 
 # Set environment variables and load modules
