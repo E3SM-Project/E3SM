@@ -38,7 +38,6 @@ void Functions<S,D>
   // cell-average quantities where applicable.
 
   // map warm-phase process rates to cell-avg
-printf("%g %g\n", qcacc[0], lr_cldm[0]);
   qcacc *= lr_cldm;  // Accretion of liquid to rain
   qrevp *= rcldm;    // Evaporation of rain
   qcaut *= lcldm;    // Autoconversion of liquid

@@ -245,7 +245,7 @@ contains
     qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
 
     use micro_p3, only: back_to_cell_average
-    real(kind=c_real), intent(in) :: lcldm, rcldm, icldm
+    real(kind=c_real), value, intent(in) :: lcldm, rcldm, icldm
 
     real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
                                         nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,  &
