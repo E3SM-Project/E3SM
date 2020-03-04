@@ -1824,6 +1824,7 @@ static Scalar wrap_name(Scalar input) {                 \
 }
 
   cuda_wrap_single_arg(cxx_gamma, std::tgamma)
+  cuda_wrap_single_arg(cxx_sqrt, std::sqrt)
   cuda_wrap_single_arg(cxx_cbrt, std::cbrt)
   cuda_wrap_single_arg(cxx_log, std::log)
   cuda_wrap_single_arg(cxx_log10, std::log10)
@@ -1856,6 +1857,15 @@ Real cxx_cbrt(Real input)
   return CudaWrap<Real, DefaultDevice>::cxx_cbrt(input);
 #else
   return std::cbrt(input);
+#endif
+}
+
+Real cxx_sqrt(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_sqrt(input);
+#else
+  return std::sqrt(input);
 #endif
 }
 
