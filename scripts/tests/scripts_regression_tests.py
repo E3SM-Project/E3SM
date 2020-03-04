@@ -1636,16 +1636,16 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     def test_bless_test_results(self):
     ###############################################################################
         # Generate some baselines
-        test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
+        test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A", "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
 
         if CIME.utils.get_model() == "e3sm":
-            genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
-            compargs = ["-c", "-b", self._baseline_name, test_name]
+            genargs = ["-g", "-o", "-b", self._baseline_name] + test_names
+            compargs = ["-c", "-b", self._baseline_name] + test_names
         else:
-            genargs = ["-g", self._baseline_name, "-o", test_name,
-                       "--baseline-root ", self._baseline_area]
-            compargs = ["-c", self._baseline_name, test_name,
-                       "--baseline-root ", self._baseline_area]
+            genargs = ["-g", self._baseline_name, "-o"] + test_names +
+                       ["--baseline-root ", self._baseline_area]
+            compargs = ["-c", self._baseline_name] + test_names +
+                       ["--baseline-root ", self._baseline_area]
         self._create_test(genargs)
 
         # Hist compare should pass
