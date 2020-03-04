@@ -141,15 +141,16 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
-            if (self._case.get_value("BATCH_SYSTEM") != "none"):
+            if self._case.get_value("BATCH_SYSTEM") != "none":
                 resub_val = self._case.get_value("RESUBMIT")
             else:
                 resub_val = 0
+
             self.run_phase()
-            if (self._case.get_value("GENERATE_BASELINE") and (resub_val) == 0):
+            if self._case.get_value("GENERATE_BASELINE") and resub_val == 0:
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
 
-            if (self._case.get_value("COMPARE_BASELINE") and (resub_val) == 0):
+            if self._case.get_value("COMPARE_BASELINE") and resub_val == 0:
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
                 self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
