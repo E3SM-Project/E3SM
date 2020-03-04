@@ -438,7 +438,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), pointer :: &
-         thickness, bedTopography, lowerSurface, upperSurface, layerThicknessFractions, betaSolve, bodyForce, sfcMassBal
+         thickness, bedTopography, lowerSurface, upperSurface, layerThicknessFractions, betaSolve, sfcMassBal
+      real (kind=RKIND), dimension(:), pointer :: drivingStressVert, drivingStress
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:), pointer :: temperature
@@ -501,7 +502,7 @@ contains
       call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
       call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
       call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
-      call mpas_pool_get_array(velocityPool, 'bodyForce', bodyForce)
+      call mpas_pool_get_array(velocityPool, 'drivingStressVert', drivingStressVert)
       call mpas_pool_get_array(velocityPool, 'muFriction', muFriction)
       call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
@@ -579,7 +580,7 @@ contains
                 betaSolve, sfcMassBal, temperature, stiffnessFactor, &
                 effectivePressure, muFriction, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
-                normalVelocity, bodyForce, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
+                normalVelocity, drivingStressVert, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
                 deltat, err_albany)  ! return values
           call mpas_timer_stop("velocity_solver_solve_FO")
 
@@ -594,6 +595,7 @@ contains
           call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
           heatDissipation = heatDissipation / (config_ice_density * cp_ice)
           call mpas_deallocate_scratch_field(dissipationVertexField, .true.)
+          !call li_interpolate_vertex_to_cell_2d(meshPool, drivingStressVert, drivingStress)
 
           if (config_output_external_velocity_solver_data) then
              call mpas_timer_start("velocity_solver export")
