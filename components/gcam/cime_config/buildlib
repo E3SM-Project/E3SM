@@ -65,6 +65,7 @@ print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/marketplace/source
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/containers/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/technologies/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/util/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/emissions/source \n";
