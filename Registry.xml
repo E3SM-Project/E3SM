@@ -1105,6 +1105,12 @@ is the value of that variable from the *previous* time level!
                 <var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
                      description="value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units); differs from beta due to any necessary adjustments made for internal consistency (e.g., zeroed out where the ice is found to be floating)"
                 />
+                <var name="drivingStressVert" type="real" dimensions="nVertices Time" units="Pa" default_value="0.0"
+                     description="driving stress calculated by Albany, on vertices"
+                />
+                <var name="drivingStress" type="real" dimensions="nCells Time" units="Pa" default_value="0.0"
+                     description="driving stress calculated by Albany, interpolated to cells"
+                />
                 <var name="muFriction" type="real" dimensions="nCells Time" units="(m yr^{-1})^(1-1/n) for Weertman, unitless for Schoof" default_value="1.0"
                      description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
                 />
