@@ -623,6 +623,9 @@ fi
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
+class TESTRUNDIFFRESUBMIT(TESTRUNDIFF):
+    pass
+
 class TESTTESTDIFF(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):

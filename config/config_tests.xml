@@ -465,6 +465,16 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="TESTRUNDIFFRESUBMIT" INFRASTRUCTURE_TEST="TRUE">
+    <DESC>For testing infra only. Produces a canned hist file. Sets Resubmit = 7.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+    <RESUBMIT>7</RESUBMIT>
+  </test>
+
   <test NAME="TESTTESTDIFF" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Simulates internal test diff (non baseline)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
