@@ -595,7 +595,7 @@ contains
           call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
           heatDissipation = heatDissipation / (config_ice_density * cp_ice)
           call mpas_deallocate_scratch_field(dissipationVertexField, .true.)
-          !call li_interpolate_vertex_to_cell_2d(meshPool, drivingStressVert, drivingStress)
+          call li_interpolate_vertex_to_cell_1d(meshPool, drivingStressVert, drivingStress)
 
           if (config_output_external_velocity_solver_data) then
              call mpas_timer_start("velocity_solver export")
