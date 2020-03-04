@@ -6,13 +6,11 @@
 
 	<add_link source="../base_mesh/base_mesh.nc" dest="base_mesh.nc"/>
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
-	<add_link source_path="geometric_data" source="." dest="geometric_data"/>
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/global_ocean/cull_mesh.py" dest="cull_mesh.py"/>
 	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
 
 	<run_script name="run.py">
 		<step executable="./cull_mesh.py">
-			<argument flag="-p">geometric_data</argument>
 			<argument flag="--with_critical_passages"></argument>
 			<argument flag="--preserve_floodplain"></argument>
 		</step>

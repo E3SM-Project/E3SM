@@ -34,31 +34,6 @@ In six places, replace `FULL_PATH_TO_MPAS_MODEL_REPO` with the path where you
 have checked out (and built) the branch of MPAS-Model you are planning to use.
 Five other paths are required, as explained below.
 
-### geometric\_data
-
-```
-geometric_data = FULL_PATH_TO_PATH_OF_CACHED_GEOMETRIC_FEATURES_DATA
-```
-In general, this can be any directory where geojson data files will be
-automatically downloaded and cached as test cases require them.  However, if
-working on compute nodes that cannot get to the internet (specifically GitHub),
-it may be necessary to download the full set of `geometric_data` ahead of time
-from:
-[https://github.com/MPAS-Dev/geometric\_features/tree/0.1/geometric\_data](https://github.com/MPAS-Dev/geometric_features/tree/0.1/geometric_data)
-The easiest way to do this is with:
-```
-git clone git@github.com:MPAS-Dev/geometric_features.git
-cd geometric_features
-git checkout 0.1
-```
-Then, point `geometric_data` in your config file to
-`geometric_features/geometirc_data/` in the location you have just placed it.
-
-On LANL IC, a full checkout is already available at:
-```
-geometric_data = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/geometric_data_v0.1
-```
-
 ### mesh\_database, initial\_condition\_database and bathymetry\_database
 
 These are directories for storing pre-generated mesh files, data sets for

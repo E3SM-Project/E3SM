@@ -2,12 +2,10 @@
 <config case="no_ISC_culled_mesh">
 
 	<add_link source="../base_mesh/base_mesh.nc" dest="base_mesh.nc"/>
-	<add_link source_path="geometric_data" source="." dest="geometric_data"/>
 	<add_link source_path="script_configuration_dir" source="cull_mesh.py" dest="cull_mesh.py"/>
 
 	<run_script name="run.py">
 		<step executable="./cull_mesh.py">
-			<argument flag="-p">geometric_data</argument>
 			<argument flag="--with_critical_passages"></argument>
 		</step>
 	</run_script>
