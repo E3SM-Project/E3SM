@@ -31,6 +31,19 @@ void access_lookup_table_c(Int dumjj, Int dumii, Int dumi, Int index,
 void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
+void back_to_cell_average_c(Real lcldm_, Real rcldm_, Real icldm_,
+                            Real* qcacc_, Real* qrevp_, Real* qcaut_,
+                            Real* ncacc_, Real* ncslf_, Real* ncautc_,
+                            Real* nrslf_, Real* nrevp_, Real* ncautr_,
+                            Real* qcnuc_, Real* ncnuc_, Real* qisub_,
+                            Real* nrshdr_, Real* qcheti_, Real* qrcol_,
+                            Real* qcshd_, Real* qimlt_, Real* qccol_,
+                            Real* qrheti_, Real* nimlt_, Real* nccol_,
+                            Real* ncshdc_, Real* ncheti_, Real* nrcol_,
+                            Real* nislf_, Real* qidep_, Real* nrheti_,
+                            Real* nisub_, Real* qinuc_, Real* ninuc_,
+                            Real* qiberg_);
+
 void cloud_water_conservation_c(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
   Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
 
@@ -189,6 +202,17 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
   p3_init(true); // need to initialize p3 first so that tables are loaded
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void back_to_cell_average(BackToCellAverageData& d)
+{
+  p3_init(true);
+  back_to_cell_average_c(d.lcldm, d.rcldm, d.icldm, &d.qcacc, &d.qrevp,
+    &d.qcaut, &d.ncacc, &d.ncslf, &d.ncautc, &d.nrslf, &d.nrevp, &d.ncautr,
+    &d.qcnuc, &d.ncnuc, &d.qisub, &d.nrshdr, &d.qcheti, &d.qrcol, &d.qcshd,
+    &d.qimlt, &d.qccol, &d.qrheti, &d.nimlt, &d.nccol, &d.ncshdc, &d.ncheti,
+    &d.nrcol, &d.nislf, &d.qidep, &d.nrheti, &d.nisub, &d.qinuc, &d.ninuc,
+    &d.qiberg);
 }
 
 void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
@@ -1353,6 +1377,109 @@ void rain_sedimentation_f(
 
   Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, qr_tend_d, nr_tend_d, rflx_d};
   pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx}, sizes_out, inout_views);
+}
+
+void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
+                            Real* qcacc_, Real* qrevp_, Real* qcaut_,
+                            Real* ncacc_, Real* ncslf_, Real* ncautc_,
+                            Real* nrslf_, Real* nrevp_, Real* ncautr_,
+                            Real* qcnuc_, Real* ncnuc_, Real* qisub_,
+                            Real* nrshdr_, Real* qcheti_, Real* qrcol_,
+                            Real* qcshd_, Real* qimlt_, Real* qccol_,
+                            Real* qrheti_, Real* nimlt_, Real* nccol_,
+                            Real* ncshdc_, Real* ncheti_, Real* nrcol_,
+                            Real* nislf_, Real* qidep_, Real* nrheti_,
+                            Real* nisub_, Real* qinuc_, Real* ninuc_,
+                            Real* qiberg_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 31);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    typename P3F::Spack lcldm(lcldm_), rcldm(rcldm_), icldm(icldm_),
+      qcacc(*qcacc_), qrevp(*qrevp_), qcaut(*qcaut_), ncacc(*ncacc_),
+      ncslf(*ncslf_), ncautc(*ncautc_), nrslf(*nrslf_), nrevp(*nrevp_),
+      ncautr(*ncautr_), qcnuc(*qcnuc_), ncnuc(*ncnuc_), qisub(*qisub_),
+      nrshdr(*nrshdr_), qcheti(*qcheti_), qrcol(*qrcol_), qcshd(*qcshd_),
+      qimlt(*qimlt_), qccol(*qccol_), qrheti(*qrheti_), nimlt(*nimlt_),
+      nccol(*nccol_), ncshdc(*ncshdc_), ncheti(*ncheti_), nrcol(*nrcol_),
+      nislf(*nislf_), qidep(*qidep_), nrheti(*nrheti_), nisub(*nisub_),
+      qinuc(*qinuc_), ninuc(*ninuc_), qiberg(*qiberg_);
+
+    P3F::back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,
+      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,
+      nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol,
+      ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
+      qiberg);
+
+    t_d(0) = qcacc[0];
+    t_d(1) = qrevp[0];
+    t_d(2) = qcaut[0];
+    t_d(3) = ncacc[0];
+    t_d(4) = ncslf[0];
+    t_d(5) = ncautc[0];
+    t_d(6) = nrslf[0];
+    t_d(7) = nrevp[0];
+    t_d(8) = ncautr[0];
+    t_d(9) = qcnuc[0];
+    t_d(10) = ncnuc[0];
+    t_d(11) = qisub[0];
+    t_d(12) = nrshdr[0];
+    t_d(13) = qcheti[0];
+    t_d(14) = qrcol[0];
+    t_d(15) = qcshd[0];
+    t_d(16) = qimlt[0];
+    t_d(17) = qccol[0];
+    t_d(18) = qrheti[0];
+    t_d(19) = nimlt[0];
+    t_d(20) = nccol[0];
+    t_d(21) = ncshdc[0];
+    t_d(22) = ncheti[0];
+    t_d(23) = nrcol[0];
+    t_d(24) = nislf[0];
+    t_d(25) = qidep[0];
+    t_d(26) = nrheti[0];
+    t_d(27) = nisub[0];
+    t_d(28) = qinuc[0];
+    t_d(29) = ninuc[0];
+    t_d(30) = qiberg[0];
+
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qcacc_ = t_h(0);
+  *qrevp_ = t_h(1);
+  *qcaut_ = t_h(2);
+  *ncacc_ = t_h(3);
+  *ncslf_ = t_h(4);
+  *ncautc_ = t_h(5);
+  *nrslf_ = t_h(6);
+  *nrevp_ = t_h(7);
+  *ncautr_ = t_h(8);
+  *qcnuc_ = t_h(9);
+  *ncnuc_ = t_h(10);
+  *qisub_ = t_h(11);
+  *nrshdr_ = t_h(12);
+  *qcheti_ = t_h(13);
+  *qrcol_ = t_h(14);
+  *qcshd_ = t_h(15);
+  *qimlt_ = t_h(16);
+  *qccol_ = t_h(17);
+  *qrheti_ = t_h(18);
+  *nimlt_ = t_h(19);
+  *nccol_ = t_h(20);
+  *ncshdc_ = t_h(21);
+  *ncheti_ = t_h(22);
+  *nrcol_ = t_h(23);
+  *nislf_ = t_h(24);
+  *qidep_ = t_h(25);
+  *nrheti_ = t_h(26);
+  *nisub_ = t_h(27);
+  *qinuc_ = t_h(28);
+  *ninuc_ = t_h(29);
+  *qiberg_ = t_h(30);
 }
 
 void cldliq_immersion_freezing_f(
