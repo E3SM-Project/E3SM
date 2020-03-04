@@ -505,21 +505,27 @@ contains
 !                                                 slopeTriadDown(k,iCellSelf,iEdge)))
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
-               slopeTaperUp = slopeTaperFactor * 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
+               slopeTaperUp = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
                   config_Redi_half_slope)/config_Redi_half_width))
-               slopeTaperDown = slopeTaperFactor * 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
+               slopeTaperDown = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
                   config_Redi_half_slope)/config_Redi_half_width))
+
+               slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
+               slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
                zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
                rValue = max(0.0_RKIND, min(1.0_RKIND, abs(zEdge / verticalDisplacement)))
 
-               sfcTaperUp = sfcTaperFactor * 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+               sfcTaperUp = 0.5_RKIND*(1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
 
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadDown(k,iCellSelf,iEdge))
                rValue = max(0.0_RKIND, min(1.0_RKIND,abs(zEdge / verticalDisplacement)))
 
-               sfcTaperDown = sfcTaperFactor * 0.5_RKIND * (1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+               sfcTaperDown = 0.5_RKIND * (1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
+
+               sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaperUp - 1.0_RKIND)
+               sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaperDown - 1.0_RKIND)
 
                ! LPV move vertical lines up to not limit the vertical mixing term
                ! Griffies 1998 eqn 34
