@@ -271,6 +271,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
       regulThk[index] = std::max(1e-4, thicknessData[index]);
 
     dissipationHeatOnPrisms.resize(nLayers * indexToTriangleID.size());
+    bodyForceOnBasalCell.resize(indexToTriangleID.size());
 
     std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
 
@@ -288,7 +289,9 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
   exportDissipationHeat(dissipation_heat_F);
 
-  exportBodyForce(bodyForce_F);
+  if (bodyForce_F!=nullptr) {
+    exportBodyForce(bodyForce_F);
+  }
   exportBeta(beta_F);
 
   mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
