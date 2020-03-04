@@ -4,10 +4,12 @@
 include("${BLDROOT}/Macros.cmake")
 set(CMAKE_C_COMPILER "${SCC}")
 set(CMAKE_Fortran_COMPILER "${SFC}")
-set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 
 PROJECT(CPRNC C Fortran)
 ENABLE_LANGUAGE(Fortran)
+set(CMAKE_Fortran_FLAGS "${FFLAGS}")
+
+message("HERE fortran flags are ${CMAKE_Fortran_FLAGS} FFLAGS are ${FFLAGS}")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
