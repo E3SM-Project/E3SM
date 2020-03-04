@@ -1332,7 +1332,7 @@ void exportBeta(double * beta_F) {
   std::fill(beta_F, beta_F + nCells_F, 0.);
   for (int index = 0; index < nVertices; index++) {
     int fCell = vertexToFCell[index];
-    beta_F[fCell] = betaData[index];
+    beta_F[fCell] = betaData[index] * unit_length;
   }
 #ifdef  changeTrianglesOwnership
   allToAll (beta_F,  &sendVerticesListReversed, &recvVerticesListReversed, 1);
