@@ -1438,16 +1438,48 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
   typename P3F::view_1d<Real> t_d("t_h", 31);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
+  Real local_qcacc = *qcacc_;
+  Real local_qrevp = *qrevp_;
+  Real local_qcaut = *qcaut_;
+  Real local_ncacc = *ncacc_;
+  Real local_ncslf = *ncslf_;
+  Real local_ncautc = *ncautc_;
+  Real local_nrslf = *nrslf_;
+  Real local_nrevp = *nrevp_;
+  Real local_ncautr = *ncautr_;
+  Real local_qcnuc = *qcnuc_;
+  Real local_ncnuc = *ncnuc_;
+  Real local_qisub = *qisub_;
+  Real local_nrshdr = *nrshdr_;
+  Real local_qcheti = *qcheti_;
+  Real local_qrcol = *qrcol_;
+  Real local_qcshd = *qcshd_;
+  Real local_qimlt = *qimlt_;
+  Real local_qccol = *qccol_;
+  Real local_qrheti = *qrheti_;
+  Real local_nimlt = *nimlt_;
+  Real local_nccol = *nccol_;
+  Real local_ncshdc = *ncshdc_;
+  Real local_ncheti = *ncheti_;
+  Real local_nrcol = *nrcol_;
+  Real local_nislf = *nislf_;
+  Real local_qidep = *qidep_;
+  Real local_nrheti = *nrheti_;
+  Real local_nisub = *nisub_;
+  Real local_qinuc = *qinuc_;
+  Real local_ninuc = *ninuc_;
+  Real local_qiberg = *qiberg_;
+
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     typename P3F::Spack lcldm(lcldm_), rcldm(rcldm_), icldm(icldm_),
-      qcacc(*qcacc_), qrevp(*qrevp_), qcaut(*qcaut_), ncacc(*ncacc_),
-      ncslf(*ncslf_), ncautc(*ncautc_), nrslf(*nrslf_), nrevp(*nrevp_),
-      ncautr(*ncautr_), qcnuc(*qcnuc_), ncnuc(*ncnuc_), qisub(*qisub_),
-      nrshdr(*nrshdr_), qcheti(*qcheti_), qrcol(*qrcol_), qcshd(*qcshd_),
-      qimlt(*qimlt_), qccol(*qccol_), qrheti(*qrheti_), nimlt(*nimlt_),
-      nccol(*nccol_), ncshdc(*ncshdc_), ncheti(*ncheti_), nrcol(*nrcol_),
-      nislf(*nislf_), qidep(*qidep_), nrheti(*nrheti_), nisub(*nisub_),
-      qinuc(*qinuc_), ninuc(*ninuc_), qiberg(*qiberg_);
+      qcacc(local_qcacc), qrevp(local_qrevp), qcaut(local_qcaut), ncacc(local_ncacc),
+      ncslf(local_ncslf), ncautc(local_ncautc), nrslf(local_nrslf), nrevp(local_nrevp),
+      ncautr(local_ncautr), qcnuc(local_qcnuc), ncnuc(local_ncnuc), qisub(local_qisub),
+      nrshdr(local_nrshdr), qcheti(local_qcheti), qrcol(local_qrcol), qcshd(local_qcshd),
+      qimlt(local_qimlt), qccol(local_qccol), qrheti(local_qrheti), nimlt(local_nimlt),
+      nccol(local_nccol), ncshdc(local_ncshdc), ncheti(local_ncheti), nrcol(local_nrcol),
+      nislf(local_nislf), qidep(local_qidep), nrheti(local_nrheti), nisub(local_nisub),
+      qinuc(local_qinuc), ninuc(local_ninuc), qiberg(local_qiberg);
 
     P3F::back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,
       ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,
