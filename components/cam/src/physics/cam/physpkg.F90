@@ -2761,10 +2761,6 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
 
      end if !microp_scheme
 
-
-    call outfld('UendBC',state%u, pcols   ,lchnk   )
-
-
 if (l_tracer_aero) then
 
     ! Add the precipitation from CARMA to the precipitation from stratiform.
@@ -2904,6 +2900,9 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+    call outfld('UendBC',state%u, pcols   ,lchnk   )
+
 
 end subroutine tphysbc
 
