@@ -29,8 +29,8 @@ static void run_phys()
 
 static void run_bfb()
 {
-  // Generate n test structs, each populated with random data by their
-  // default constructors.
+  // Generate n test structs, each populated with random data (values within
+  // [0,1]) by the default constructor.
   BackToCellAverageData back_to_cell_average_data[Spack::n];
 
   // Sync to device
@@ -48,7 +48,6 @@ static void run_bfb()
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     // Init pack inputs
-    Spack t, lamc, mu_c, cdist1, qc_incld;
     Spack lcldm, rcldm, icldm, qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf,
       nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt,
       qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti,
