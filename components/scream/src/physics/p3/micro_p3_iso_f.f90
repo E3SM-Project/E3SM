@@ -49,6 +49,21 @@ interface
     real(kind=c_real),   intent(out) :: proc
   end subroutine access_lookup_table_coll_f
 
+  subroutine back_to_cell_average_f(lcldm,rcldm,icldm, qcacc,qrevp,qcaut,&
+    ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,&
+    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
+    qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), intent(in) :: lcldm, rcldm, icldm
+    real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
+                                        nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,  &
+                                        nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, &
+                                        qrheti, nimlt, nccol, ncshdc, ncheti, nrcol,&
+                                        nislf, qidep, nrheti, nisub, qinuc, ninuc,  &
+                                        qiberg
+  end subroutine back_to_cell_average_f
+
   subroutine cloud_water_conservation_f(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
     use iso_c_binding
