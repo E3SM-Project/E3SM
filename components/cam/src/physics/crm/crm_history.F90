@@ -465,14 +465,13 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('SPDQI   ',ptend%q(1,1,ixcldice), pcols, lchnk )
 
    ! CRM radiative heating rate
-   ! NOTE: We output the heating rate here because this is the heating that
-   ! is applied to the CRM at this GCM timestep, but note that this heating
-   ! rate is offset in time from when the radiative heating rate is
-   ! calculated in the radiative transfer interface, which comes AFTER this
-   ! routine call (because we want it to use the clouds simulated from this
-   ! CRM call). Thus, comparing this heating rate with CRM_QRS + CRM_QRL
-   ! output in radiation_tend will show a time lag.
-   call outfld('CRM_QRAD',crm_rad%qrad, pcols, lchnk )
+   ! NOTE: We output the radiative heating rates (SPQRS and SPQRL) here 
+   ! because this is the heating thatis applied to the CRM at this GCM timestep, 
+   ! but note that this heating rate is offset in time from when the radiative 
+   ! heating rate is calculated in the radiative transfer interface, which comes 
+   ! AFTER this routine call (because we want it to use the clouds simulated 
+   ! from this CRM call). Thus, comparing this heating rate with 
+   ! CRM_QRS + CRM_QRL output in radiation_tend will show a time lag.
 
    ! GCM level rad heating tendencies
    call outfld('SPQRL   ',qrl/cpair, pcols, lchnk )

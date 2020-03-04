@@ -2568,6 +2568,7 @@ end function radiation_nextsw_cday
                crm_qrad(i,:,:,m) = crm_qrad(i,:,:,m) * state%pdel(i,k)
              end do
           end do
+          call outfld('CRM_QRAD', crm_qrad(1:ncol,:,:,:), ncol, state%lchnk)
        end if
     end if
 
@@ -2589,7 +2590,7 @@ end function radiation_nextsw_cday
 #ifndef MAML
      cam_out%netsw(:ncol) = fsns(:ncol)
 #endif
-  
+
   end subroutine radiation_tend
 
 !===============================================================================
