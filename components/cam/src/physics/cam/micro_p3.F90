@@ -2524,7 +2524,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          ! use mass-weighted mean size
          D_c = (mu_c+4._rtype)/lamc
          V_impact  = abs(vtrmi1-Vt_qc)
-         Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
+         Ri        = -0.5e+6_rtype * D_c * V_impact * iTc
          !               Ri        = max(1.,min(Ri,8.))
          Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
@@ -2536,9 +2536,11 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
             ! in rime density up to wet growth
             rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype)
          endif
-
+      else
+         rhorime_c = 400._rtype
       endif    !if qc>qsmall
    else
+      vtrmi1 = 0._rtype ! no velocity if no ice
       rhorime_c = 400._rtype
    endif ! qi > qsmall and T < 273.15
 
