@@ -1642,10 +1642,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             genargs = ["-g", "-o", "-b", self._baseline_name] + test_names
             compargs = ["-c", "-b", self._baseline_name] + test_names
         else:
-            genargs = ["-g", self._baseline_name, "-o"] + test_names +
-                       ["--baseline-root ", self._baseline_area]
-            compargs = ["-c", self._baseline_name] + test_names +
-                       ["--baseline-root ", self._baseline_area]
+            genargs = ["-g", self._baseline_name, "-o"] + test_names + ["--baseline-root ", self._baseline_area]
+            compargs = ["-c", self._baseline_name] + test_names + ["--baseline-root ", self._baseline_area]
         self._create_test(genargs)
 
         # Hist compare should pass
