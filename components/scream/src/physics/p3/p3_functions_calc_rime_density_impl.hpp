@@ -30,6 +30,9 @@ void Functions<S,D>
   const auto qccol_and_qc_not_small_and_t_freezing = (qccol >= qsmall) &&
                                                      (qc_incld >= qsmall) &&
                                                      (t < RainFrze);
+  const auto qccol_not_small_and_qc_small_and_t_freezing = (qccol >= qsmall) &&
+                                                           (qc_incld < qsmall) &&
+                                                           (t < RainFrze);
 
   // NOTE: applicable for cloud only; modify when rain is added back
   if (qccol_not_small_and_t_freezing.any()) {
@@ -50,8 +53,13 @@ void Functions<S,D>
       V_impact.set(qccol_and_qc_not_small_and_t_freezing, abs(vtrmi1-Vt_qc));
       inv_Tc.set(qccol_and_qc_not_small_and_t_freezing,
                  1/min(sp(-0.001), t-ZeroDegC));
+//      Ri.set(qccol_and_qc_not_small_and_t_freezing,
+//             sp(-0.5e+6) * D_c * V_impact * inv_Tc);
+//      Ri.set(qccol_and_qc_not_small_and_t_freezing,
+//             max(1, min(Ri, sp(12.0))));
       Ri.set(qccol_and_qc_not_small_and_t_freezing,
              max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, sp(12.0))));
+
       const auto Ri_le_8 = (Ri <= sp(8.0));
       rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and Ri_le_8,
                     (sp(0.051) + sp(0.114)*Ri - sp(0.0055)*square(Ri))*sp(1000.0));
@@ -63,9 +71,11 @@ void Functions<S,D>
       rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and not Ri_le_8,
                     sp(611.)+sp(72.25)*(Ri-sp(8.)));
     }
-    rhorime_c.set(not qccol_and_qc_not_small_and_t_freezing, 0);
+    rhorime_c.set(qccol_not_small_and_qc_small_and_t_freezing, sp(400.0));
   }
+
   // Handle the cases we haven't handled above.
+  vtrmi1.set(not qccol_not_small_and_t_freezing, 0);
   rhorime_c.set(not qccol_not_small_and_t_freezing, sp(400.0));
 }
 
