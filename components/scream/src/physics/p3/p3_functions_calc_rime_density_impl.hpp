@@ -26,10 +26,10 @@ void Functions<S,D>
   constexpr Scalar bcn = C::bcn;
 
   const auto qccol_not_small_and_t_freezing = (qccol >= qsmall) &&
-                                              (t <= RainFrze);
+                                              (t < RainFrze);
   const auto qccol_and_qc_not_small_and_t_freezing = (qccol >= qsmall) &&
                                                      (qc_incld >= qsmall) &&
-                                                     (t <= RainFrze);
+                                                     (t < RainFrze);
 
   // NOTE: applicable for cloud only; modify when rain is added back
   if (qccol_not_small_and_t_freezing.any()) {
@@ -53,14 +53,15 @@ void Functions<S,D>
       Ri.set(qccol_and_qc_not_small_and_t_freezing,
              max(1, min(-0.5e+6 * D_c * V_impact * inv_Tc, sp(12.0))));
       const auto Ri_le_8 = (Ri <= sp(8.0));
-      rhorime_c.set(Ri_le_8,
+      rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and Ri_le_8,
                     (sp(0.051) + sp(0.114)*Ri - sp(0.0055)*square(Ri))*sp(1000.0));
 
       // For Ri > 8, assume a linear fit between 8 and 12,
       // rhorime = 900 kg m-3 at Ri = 12
       // this is somewhat ad-hoc but allows a smoother transition
       // in rime density up to wet growth
-      rhorime_c.set(not Ri_le_8, sp(611.)+sp(72.25)*(Ri-sp(8.)));
+      rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and not Ri_le_8,
+                    sp(611.)+sp(72.25)*(Ri-sp(8.)));
     }
     rhorime_c.set(not qccol_and_qc_not_small_and_t_freezing, 0);
   }
