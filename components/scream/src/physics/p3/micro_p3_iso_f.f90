@@ -367,6 +367,16 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real)               :: cxx_pow
   end function cxx_pow
 
+  function cxx_sqrt(base) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+
+    ! return
+    real(kind=c_real)               :: cxx_sqrt
+  end function cxx_sqrt
+
   function cxx_cbrt(base) bind(C)
     use iso_c_binding
 
