@@ -169,11 +169,14 @@ struct BackToCellAverageData
   // inputs
   Real lcldm, rcldm, icldm;
 
-  // output
+  // in/out
   Real qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc,
        ncnuc, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt,
        nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
        qiberg;
+
+  // For testing purposes, all data can be random values between 0 and 1.
+  BackToCellAverageData();
 };
 
 void back_to_cell_average(BackToCellAverageData& d);

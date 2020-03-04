@@ -204,6 +204,47 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
+BackToCellAverageData::BackToCellAverageData()
+{
+  // Populate the struct with numbers between 0 and 1.
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  lcldm = data_dist(generator);
+  rcldm = data_dist(generator);
+  icldm = data_dist(generator);
+  qcacc = data_dist(generator);
+  qrevp = data_dist(generator);
+  qcaut = data_dist(generator);
+  ncacc = data_dist(generator);
+  ncslf = data_dist(generator);
+  ncautc = data_dist(generator);
+  nrslf = data_dist(generator);
+  nrevp = data_dist(generator);
+  ncautr = data_dist(generator);
+  qcnuc = data_dist(generator);
+  ncnuc = data_dist(generator);
+  qisub = data_dist(generator);
+  nrshdr = data_dist(generator);
+  qcheti = data_dist(generator);
+  qrcol = data_dist(generator);
+  qcshd = data_dist(generator);
+  qimlt = data_dist(generator);
+  qccol = data_dist(generator);
+  qrheti = data_dist(generator);
+  nimlt = data_dist(generator);
+  nccol = data_dist(generator);
+  ncshdc = data_dist(generator);
+  ncheti = data_dist(generator);
+  nrcol = data_dist(generator);
+  nislf = data_dist(generator);
+  qidep = data_dist(generator);
+  nrheti = data_dist(generator);
+  nisub = data_dist(generator);
+  qinuc = data_dist(generator);
+  ninuc = data_dist(generator);
+  qiberg = data_dist(generator);
+}
+
 void back_to_cell_average(BackToCellAverageData& d)
 {
   p3_init(true);

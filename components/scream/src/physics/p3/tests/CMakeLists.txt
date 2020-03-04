@@ -6,6 +6,7 @@ set(P3_TESTS_SRCS
   p3_unit_tests.cpp
   p3_ice_tables_unit_tests.cpp
   p3_table3_unit_tests.cpp
+  p3_back_to_cell_average_unit_tests.cpp
   p3_find_unit_tests.cpp
   p3_upwind_unit_tests.cpp
   p3_cldliq_imm_freezing_unit_tests.cpp
