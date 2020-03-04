@@ -1347,7 +1347,7 @@ module li_subglacial_hydro
 
       effectivePressure = rhoi * gravity * thickness - waterPressure
          ! < this should evalute to 0 for floating ice if Pw set correctly there.
-      where (.not. li_mask_is_ice(cellmask))
+      where (.not. li_mask_is_grounded_ice(cellmask))
          effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
 
