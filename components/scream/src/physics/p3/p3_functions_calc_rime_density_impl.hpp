@@ -49,9 +49,9 @@ void Functions<S,D>
       D_c.set(qccol_and_qc_not_small_and_t_freezing, (sp(4.0) + mu_c) / lamc);
       V_impact.set(qccol_and_qc_not_small_and_t_freezing, abs(vtrmi1-Vt_qc));
       inv_Tc.set(qccol_and_qc_not_small_and_t_freezing,
-                 1/min(-0.001, t-ZeroDegC));
+                 1/min(sp(-0.001), t-ZeroDegC));
       Ri.set(qccol_and_qc_not_small_and_t_freezing,
-             max(1, min(-0.5e+6 * D_c * V_impact * inv_Tc, sp(12.0))));
+             max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, sp(12.0))));
       const auto Ri_le_8 = (Ri <= sp(8.0));
       rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and Ri_le_8,
                     (sp(0.051) + sp(0.114)*Ri - sp(0.0055)*square(Ri))*sp(1000.0));
