@@ -1,7 +1,7 @@
 ! verify that crm-level outputs can be written and they don't break restarts
 
 ! file i/o
-nhtfrq = 0,-6,-6
+nhtfrq = 0,1,1
 mfilt = 1,120,120
 
 ! CRM-fields on subset of globe
