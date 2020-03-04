@@ -2472,6 +2472,10 @@ if (l_tracer_aero) then
 end if
 
 
+!print *, 'OGG microp_scheme = ', microp_scheme
+!print *, 'OGG l_st_mac ', l_st_mac
+!print *, 'OGG l_st_mic ', l_st_mic
+
     if( microp_scheme == 'RK' ) then
 
 !print *, 'OGG microp_scheme == RK'
@@ -2517,13 +2521,16 @@ end if
 !print *, 'OGG before the loop, cld_macmic_num_steps = ', cld_macmic_num_steps
 
        do macmic_it = 1, cld_macmic_num_steps
+!print *, 'OGG doloop'
 
         if (l_st_mac) then
+!print *, 'OGG. if11111111'
 
-!print *, 'OGG l_st_mac, micro_do_icesupersat'
+!print *, 'OGG  micro_do_icesupersat', micro_do_icesupersat
 
           if (micro_do_icesupersat) then 
 
+!print *, 'OGG if22222222'
             !===================================================
             ! Aerosol Activation
             !===================================================
@@ -2548,7 +2555,7 @@ end if
 
           ! don't call Park macrophysics if CLUBB is called
           if (macrop_scheme .ne. 'CLUBB_SGS') then
-
+!print *, 'OGG if33333333333'
 !print *, 'OGG macrop_scheme .ne. CLUBB_SGS'
 
              call macrop_driver_tend( &
@@ -2580,7 +2587,9 @@ end if
           else ! Calculate CLUBB macrophysics
           !else for macrop_scheme ne CLUBB_SGS
 
-!print *, 'OGG else ! calcu... CLUBB '
+!print *, 'OGG if4444444444'
+
+!print *, 'OGG else ! calculate CLUBB macrophysics'
 
 !!== KZ_WATCON 
 
@@ -2589,7 +2598,7 @@ end if
     !!.................................................................
 
     if(use_qqflx_fixer) then
-
+!print *, 'OGG if 55555555'
 !print *, 'OGG use_qqflx_fixer'
 
        call qqflx_fixer('TPHYSBC ', lchnk, ncol, cld_macmic_ztodt, &
@@ -2602,7 +2611,6 @@ end if
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
-   
 call outfld('Uclubb1',state%u, pcols   ,lchnk   )
 
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
@@ -2624,14 +2632,12 @@ call outfld('Uclubb1',state%u, pcols   ,lchnk   )
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
 
-!turn clubb on/off here
-#if 1
+#if 0
                 call physics_update(state, ptend, ztodt, tend)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                       cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                       det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-#endif 
-
+#endif
 call outfld('Uclubb2',state%u, pcols   ,lchnk   )
 
           endif  ! if ... else ... macrop_scheme .ne. 'CLUBB_SGS'
@@ -2643,8 +2649,12 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
           ! Calculate cloud microphysics 
           !===================================================
         if (l_st_mic) then
+!print *, 'OGG if666666666'
+!print *, 'OGG pu5'
 
           if (is_subcol_on()) then
+
+!print *, 'OGG if 7777777777'
              ! Allocate sub-column structures. 
              call physics_state_alloc(state_sc, lchnk, psubcols*pcols)
              call physics_tend_alloc(tend_sc, psubcols*pcols)
@@ -2656,7 +2666,10 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
              call check_energy_timestep_init(state_sc, tend_sc, pbuf, col_type_subcol)
           end if
 
+!print *, 'OGG micro_do_icesupersat', micro_do_icesupersat
           if (.not. micro_do_icesupersat) then 
+
+!print *, 'OGG if888888888'
 
             call t_startf('microp_aero_run')
             call microp_aero_run(state, ptend_aero, cld_macmic_ztodt, pbuf, lcldo)
@@ -2666,11 +2679,11 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
 
           call t_startf('microp_tend')
 
+!print *, 'OGG use_subcol_microp', use_subcol_microp
 
           if (use_subcol_microp) then
 
-!print *, 'OG in use_subcol_microp ???????????'
-
+!print *, 'OGG if999999'
              call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
 
              ! Average the sub-column ptend for use in gridded update - will not contain ptend_aero
@@ -2694,10 +2707,16 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
              call physics_tend_dealloc(tend_sc)
              call physics_ptend_dealloc(ptend_sc)
           else
+!print *, 'OGG if00000'
+!print *, 'OGG start microp_driver_tend'
              call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
           end if
           ! combine aero and micro tendencies for the grid
+
+!print *, 'OGG micro_do_icesupersat', micro_do_icesupersat
           if (.not. micro_do_icesupersat) then
+
+!print *, 'OGG if 01111'
              call physics_ptend_sum(ptend_aero, ptend, ncol)
              call physics_ptend_dealloc(ptend_aero)
           endif
@@ -2712,10 +2731,11 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
                snow_str(:ncol)/cld_macmic_num_steps, zero)
 
           call t_stopf('microp_tend')
-
+!print *, 'OGG end of microp_tend'
         else 
         ! If microphysics is off, set surface cloud liquid/ice and rain/snow fluxes to zero
 
+!print *, 'OGG iff0002222'
           prec_sed = 0._r8
           snow_sed = 0._r8
           prec_pcw = 0._r8
@@ -2723,6 +2743,7 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
 
         end if ! l_st_mic
 
+!print *, 'OGG if00033333'
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
@@ -2730,6 +2751,7 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
 
        end do ! end substepping over macrophysics/microphysics
 
+!print *, 'OGG enddo-------------------'
        prec_sed(:ncol) = prec_sed_macmic(:ncol)/cld_macmic_num_steps
        snow_sed(:ncol) = snow_sed_macmic(:ncol)/cld_macmic_num_steps
        prec_pcw(:ncol) = prec_pcw_macmic(:ncol)/cld_macmic_num_steps
