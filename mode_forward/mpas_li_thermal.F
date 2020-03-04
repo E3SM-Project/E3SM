@@ -1676,6 +1676,7 @@ module li_thermal
      type (block_type), pointer :: block
 
      type (mpas_pool_type), pointer :: meshPool
+     type (mpas_pool_type), pointer :: geometryPool
      type (mpas_pool_type), pointer :: velocityPool
      type (mpas_pool_type), pointer :: thermalPool
 
@@ -1691,10 +1692,15 @@ module li_thermal
      integer, pointer :: &
           nCellsSolve                ! number of cells
 
+     integer, pointer :: &
+          nCells                     ! number of cells
+
      real(kind=RKIND), dimension(:), pointer :: &
           basalSpeed,              & ! basal ice speed, reconstructed at cell centers (m s^{-1})
           betaSolve,               & ! basal traction parameter (Pa m^{-1} s); use betaSolve to treat floating ice correctly
           basalFrictionFlux          ! heat flux due to basal friction (W^{m-2}), computed in this subroutine
+
+     integer, dimension(:), pointer :: cellMask
 
      integer :: iCell
 
@@ -1723,14 +1729,19 @@ module li_thermal
 
         ! get pools
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
         ! get dimensions
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         ! get fields from the mesh pool
         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
+
+        ! get fields from the geometry pool
+        call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
         ! get fields from the velocity pool
         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
@@ -1747,8 +1758,14 @@ module li_thermal
         if (config_print_thermal_info) call mpas_log_write('Compute basal friction flux')
 
         ! Compute basal frictional heating for each cell
-        basalFrictionFlux(:) = betaSolve(:) * basalSpeed(:)**2 * scyr
-          ! < TODO: If beta units are changed to be SI, remove this factor
+        do iCell = 1, nCells
+           if (li_mask_is_grounded_ice(cellMask(iCell))) then
+              basalFrictionFlux(iCell) = betaSolve(iCell) * basalSpeed(iCell)**2 * scyr
+           else
+              basalFrictionFlux(iCell) = 0.0_RKIND ! Ensure no friction flux under floating ice
+           endif
+        enddo
+        ! < TODO: If beta units are changed to be SI, remove scyr factor
 
         ! Optional debugging output
         if (config_print_thermal_info) then
