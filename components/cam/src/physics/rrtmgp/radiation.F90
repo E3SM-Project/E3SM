@@ -2469,5 +2469,4 @@ end function string_in_list
 
    end subroutine expand_day_fluxes
 
-
 end module radiation
