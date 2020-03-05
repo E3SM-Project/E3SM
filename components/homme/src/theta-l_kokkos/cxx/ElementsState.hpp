@@ -8,6 +8,7 @@
 #define HOMMEXX_ELEMENTS_STATE_HPP
 
 #include "Types.hpp"
+#include "kokkos_utils.hpp"
 
 namespace Homme {
 
@@ -19,7 +20,11 @@ struct RefStates {
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> theta_ref;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> dp_ref;
 
-  RefStates () : m_num_elems(0) {}
+  RefStates () :
+    m_num_elems(0)
+    , m_policy(get_default_team_policy<ExecSpace>(1))
+    , m_tu(m_policy)
+  {}
 
   void init (const int num_elems);
   void compute (const bool hydrostatic,const HybridVCoord& hvcoord,
@@ -28,6 +33,8 @@ struct RefStates {
   int num_elems () const { return m_num_elems; }
 private:
   int m_num_elems;
+  Kokkos::TeamPolicy<ExecSpace> m_policy;
+  TeamUtils<ExecSpace> m_tu;
 };
 
 /* Per element data - specific velocity, temperature, pressure, etc. */
@@ -46,7 +53,11 @@ public:
 
   void init_storage(const int num_elems);
 
-  ElementsState() : m_num_elems(0) {}
+  ElementsState() :
+    m_num_elems(0)
+    , m_policy(get_default_team_policy<ExecSpace>(1))
+    , m_tu(m_policy)
+  {}
 
   void init(const int num_elems);
 
@@ -71,7 +82,8 @@ public:
 
 private:
   int m_num_elems;
-
+  Kokkos::TeamPolicy<ExecSpace> m_policy;
+  TeamUtils<ExecSpace> m_tu;
 };
 
 } // Homme
