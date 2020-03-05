@@ -162,7 +162,7 @@
 
   <entry id="PIO_VERSION">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>2</default_value>
     <valid_values>1,2</valid_values>
     <group>build_macros</group>
     <file>env_build.xml</file>
@@ -176,7 +176,7 @@
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
     <values>
-      <value>$PIO_VERSION</value>
+      <value>1</value>
       <value compclass="ATM"></value>
       <value compclass="CPL"></value>
       <value compclass="OCN"></value>
