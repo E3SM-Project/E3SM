@@ -5,11 +5,11 @@
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
 	<get_file dest_path="initial_condition_database" file_name="particle_full.171212.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="mesh_database" file_name="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/mesh_database/"/>
 	</get_file>
 
 	<add_link source_path="initial_condition_database" source="particle_full.171212.nc" dest="particle_full.nc"/>

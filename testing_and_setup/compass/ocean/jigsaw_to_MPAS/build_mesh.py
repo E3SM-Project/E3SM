@@ -16,6 +16,7 @@ import subprocess
 import os
 import xarray
 import argparse
+import matplotlib.pyplot as plt
 
 from mpas_tools.conversion import convert
 from mpas_tools.io import write_netcdf
@@ -30,38 +31,74 @@ from jigsaw_to_MPAS.inject_preserve_floodplain import \
 from define_base_mesh import define_base_mesh
 
 
-def build_mesh(preserve_floodplain=False, floodplain_elevation=20.0,
-               do_inject_bathymetry=False, geometry='sphere'):
+def build_mesh(
+        preserve_floodplain=False,
+        floodplain_elevation=20.0,
+        do_inject_bathymetry=False,
+        geometry='sphere',
+        plot_cellWidth=True):
 
-    if geometry=='sphere':
-        on_sphere=True
+    if geometry == 'sphere':
+        on_sphere = True
     else:
-        on_sphere=False
+        on_sphere = False
 
     print('Step 1. Build cellWidth array as function of horizontal coordinates')
     if on_sphere:
-       cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
-       da = xarray.DataArray(cellWidth,
-                          dims=['lat','lon'],
-                          coords={'lat':lat,'lon':lon},
-                          name='cellWidth')
-       cw_filename='cellWidthVsLatLon.nc'
-       da.to_netcdf(cw_filename)
-    else:
-       cellWidth, x, y, geom_points, geom_edges = define_base_mesh.cellWidthVsXY()
-       da = xarray.DataArray(cellWidth,
-                          dims=['y','x'],
-                          coords={'y':y,'x':x},
-                          name='cellWidth')
-       cw_filename='cellWidthVsXY.nc'
-       da.to_netcdf(cw_filename)
+        cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
+        da = xarray.DataArray(cellWidth,
+                              dims=['lat', 'lon'],
+                              coords={'lat': lat, 'lon': lon},
+                              name='cellWidth')
+        cw_filename = 'cellWidthVsLatLon.nc'
+        da.to_netcdf(cw_filename)
+        plot_cellWidth=True
+        if plot_cellWidth:
+            import matplotlib
+            from cartopy import config
+            import cartopy.crs as ccrs
+            matplotlib.use('Agg')
+            fig = plt.figure()
+            fig.set_size_inches(16.0, 8.0)
+            plt.clf()
+            ax = plt.axes(projection=ccrs.PlateCarree())
+            ax.set_global()
+            im = ax.imshow(cellWidth, origin='lower', transform=ccrs.PlateCarree(
+            ), extent=[-180, 180, -90, 90], cmap='jet')
+            ax.coastlines()
+            gl = ax.gridlines(
+                crs=ccrs.PlateCarree(),
+                draw_labels=True,
+                linewidth=1,
+                color='gray',
+                alpha=0.5,
+                linestyle='-')
+            gl.xlabels_top = False
+            gl.ylabels_right = False
+            plt.title('Grid cell size, km')
+            plt.colorbar(im, shrink=.60)
+            plt.savefig('cellWidthGlobal.png')
 
+    else:
+        cellWidth, x, y, geom_points, geom_edges = define_base_mesh.cellWidthVsXY()
+        da = xarray.DataArray(cellWidth,
+                              dims=['y', 'x'],
+                              coords={'y': y, 'x': x},
+                              name='cellWidth')
+        cw_filename = 'cellWidthVsXY.nc'
+        da.to_netcdf(cw_filename)
 
     print('Step 2. Generate mesh with JIGSAW')
     if on_sphere:
-       jigsaw_driver(cellWidth, lon, lat)
+        jigsaw_driver(cellWidth, lon, lat)
     else:
-       jigsaw_driver(cellWidth, x, y, on_sphere=False, geom_points=geom_points, geom_edges=geom_edges)
+        jigsaw_driver(
+            cellWidth,
+            x,
+            y,
+            on_sphere=False,
+            geom_points=geom_points,
+            geom_edges=geom_edges)
 
     print('Step 3. Convert triangles from jigsaw format to netcdf')
     jigsaw_to_netcdf(msh_filename='mesh-MESH.msh',
@@ -107,6 +144,8 @@ if __name__ == '__main__':
                         type=float, default=20.0)
     parser.add_argument('--inject_bathymetry', action='store_true')
     parser.add_argument('--geometry', default='sphere')
+    parser.add_argument('--plot_cellWidth', action='store_true')
     cl_args = parser.parse_args()
     build_mesh(cl_args.preserve_floodplain, cl_args.floodplain_elevation,
-               cl_args.inject_bathymetry, cl_args.geometry)
+               cl_args.inject_bathymetry, cl_args.geometry,
+               cl_args.plot_cellWidth)

@@ -1,30 +1,34 @@
+import numpy
+from netCDF4 import Dataset
+import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from netCDF4 import Dataset
-import numpy
 
 fig = plt.gcf()
-fig.set_size_inches(8.0,10.0)
-nRow=6
-nCol=2
-iTime=[8,16]
-nu=['0.01','0.1','1','10','100','200']
-time=['8 hrs','16 hrs']
+nRow = 6
+nCol = 2
+iTime = [8, 16]
+nu = ['0.01', '0.1', '1', '10', '100', '200']
+time = ['hour 8', 'hour 16']
+
+fig, axs = plt.subplots(nRow, nCol, figsize=(
+    5.3 * nCol, 2.0 * nRow), constrained_layout=True)
+
 for iRow in range(nRow):
-    ncfile = Dataset('output_'+str(iRow+1)+'.nc','r')
+    ncfile = Dataset('output_' + str(iRow + 1) + '.nc', 'r')
     var = ncfile.variables['temperature']
     xtime = ncfile.variables['xtime']
     for iCol in range(nCol):
-        plt.subplot(nRow, nCol, iRow*nCol+iCol+1) 
-        ax = plt.imshow(var[iTime[iCol],0:520:4,:].T,extent=[0,120,20,0],aspect=2)
-        plt.jet()
-        if iRow==nRow-1:
-            plt.xlabel('x, km')
-        if iCol==0:
-            plt.ylabel('depth, m')
-        plt.colorbar()
-        #print(xtime[iTime[iCol],11:13])
-        plt.title('time='+time[iCol]+', nu='+nu[iRow])
+        ax = axs[iRow, iCol]
+        dis = ax.imshow(var[iTime[iCol], 0:512:4, :].T, extent=[
+                        0, 120, 20, 0], aspect=2, cmap='jet', vmin=5, vmax=30)
+        if iRow == nRow - 1:
+            ax.set_xlabel('x, km')
+        if iCol == 0:
+            ax.set_ylabel('depth, m')
+        if iCol == nCol - 1:
+            fig.colorbar(dis, ax=axs[iRow, iCol], aspect=5)
+        ax.set_title(time[iCol] + ", " + r"$\nu_h=$" + nu[iRow])
     ncfile.close()
-plt.savefig('sections_lock_exchange.png')
+
+plt.savefig('sections_lock_exchange.png', bbox_inches='tight')

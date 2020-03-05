@@ -29,7 +29,7 @@ module ocn_tracer_hmix
    use ocn_config
    use ocn_tracer_hmix_del2
    use ocn_tracer_hmix_del4
-   use ocn_tracer_hmix_Redi
+   use ocn_tracer_hmix_redi
 
    implicit none
    private
@@ -80,7 +80,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
-                                   RediKappa, slopeTriadUp, slopeTriadDown, tend, err)!{{{
+                                   relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -91,16 +91,17 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         RediKappa
-
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
          zMid                 !< Input: Z coordinate at the center of a cell
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-        slopeTriadUp, slopeTriadDown, &
         tracers !< Input: tracer quantities
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         relativeSlopeTopOfEdge, &
+         relativeSlopeTapering, &
+         relativeSlopeTaperingCell
 
       !-----------------------------------------------------------------
       !
@@ -141,8 +142,8 @@ contains
 
       call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
-      call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
-                                     RediKappa, slopeTriadUp, slopeTriadDown, tend, err1)
+      call ocn_tracer_hmix_redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
+                                     relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err1)
 
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")

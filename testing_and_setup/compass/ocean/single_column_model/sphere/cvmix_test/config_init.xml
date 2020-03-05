@@ -2,7 +2,7 @@
 <config case="init_step">
 
 	<get_file hash="rku96q0z66" dest_path="mesh_database" file_name="mesh.QU.1920km.151026.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/mesh_database/"/>
 	</get_file>
 
 	<add_executable source="model" dest="ocean_model"/>
@@ -101,7 +101,7 @@
                 <member name="rainFlux" type="var"/>
 			</add_contents>
 		</stream>
- 
+
 	</streams>
 
 	<run_script name="run.py">
@@ -109,7 +109,7 @@
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
-		
+
 		<step executable="mpirun">
 			<argument flag="-n">1</argument>
 			<argument flag="">./ocean_model</argument>

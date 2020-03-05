@@ -2,7 +2,7 @@
 <config case="init_step1">
 
 	<get_file hash="kpqjir3tne" dest_path="mesh_database" file_name="doubly_periodic_5km_100x20km_planar.160926.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/mesh_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="Ocean1_input_geom_v1.01.nc">
