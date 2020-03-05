@@ -47,8 +47,8 @@ def buildlib(bldroot, installpath, case):
     cimeroot = case.get_value("CIMEROOT")
 
     # Generate macros and environment
-
-    run_bld_cmd_ensure_logging("{}/tools/configure --mpilib=mpi-serial --macros-format=CMake --machine={}".format(cimeroot, case.get_value("MACH")), logger, from_dir=bldroot)
+    compiler = case.get_value("COMPILER")
+    run_bld_cmd_ensure_logging("{}/tools/configure --mpilib=mpi-serial --macros-format=CMake --machine={} --compiler={}".format(cimeroot, case.get_value("MACH"), compiler), logger, from_dir=bldroot)
 
     cmake_args = get_standard_cmake_args(case, shared_lib=True)
 
