@@ -2345,15 +2345,6 @@
   <!-- definitions pio -->
   <!-- ===================================================================== -->
 
-  <entry id="PIO_VERSION">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <valid_values>1,2</valid_values>
-    <group>build_macros</group>
-    <file>env_build.xml</file>
-    <desc>PIO library version</desc>
-  </entry>
-
   <entry id="PIO_CONFIG_OPTS">
     <type>char</type>
     <default_value></default_value>
@@ -2521,27 +2512,6 @@
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
     <values>
-      <value compclass="ATM"></value>
-      <value compclass="CPL"></value>
-      <value compclass="OCN"></value>
-      <value compclass="WAV"></value>
-      <value compclass="GLC"></value>
-      <value compclass="ICE"></value>
-      <value compclass="ROF"></value>
-      <value compclass="LND"></value>
-      <value compclass="ESP"></value>
-      <value compclass="IAC"></value>
-    </values>
-  </entry>
-
-  <entry id="PIO_REARRANGER">
-    <type>integer</type>
-    <valid_values>1,2</valid_values>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-    <values>
-      <value>$PIO_VERSION</value>
       <value compclass="ATM"></value>
       <value compclass="CPL"></value>
       <value compclass="OCN"></value>
