@@ -275,7 +275,7 @@ struct RemapFunctor : public Remapper {
 
   RemapType m_remap;
 
-  TeamUtils<ExecSpace> m_tu;
+  TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_nsr, m_tu_ne_ntr;
 
   explicit
   RemapFunctor (const int qsize,
@@ -288,7 +288,10 @@ struct RemapFunctor : public Remapper {
    , m_qdp(tracers.qdp)
    , m_hvcoord(hvcoord)
    , m_remap(elements.num_elems(), this->num_to_remap())
-   , m_tu(Homme::get_default_team_policy<ExecSpace>(1))
+   // Functor tags are irrelevant below
+   , m_tu_ne(remap_team_policy<ComputeThicknessTag>(m_state.num_elems()))
+   , m_tu_ne_nsr(remap_team_policy<ComputeThicknessTag>(m_state.num_elems() * m_fields_provider.num_states_remap()))
+   , m_tu_ne_ntr(remap_team_policy<ComputeThicknessTag>(m_state.num_elems() * num_to_remap()))
   {
     // Members used for sanity checks
     valid_layer_thickness = decltype(valid_layer_thickness)("Check for whether the surface thicknesses are positive",elements.num_elems());
@@ -334,7 +337,7 @@ struct RemapFunctor : public Remapper {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeThicknessTag, const TeamMember &team) const {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, m_tu_ne);
     m_hvcoord.compute_ps_ref_from_dp(kv, Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),
                                          Homme::subview(m_state.m_ps_v, kv.ie, m_data.np1));
 
@@ -345,7 +348,7 @@ struct RemapFunctor : public Remapper {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeExtrinsicsTag, const TeamMember &team) const {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, m_tu_ne_nsr);
 
     assert(m_fields_provider.num_states_remap() > 0);
     const int den = (m_fields_provider.num_states_remap() > 0) ? m_fields_provider.num_states_remap() : 1;
@@ -366,7 +369,7 @@ struct RemapFunctor : public Remapper {
   // so it needs to be separated from the others to reduce latency on the GPU
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeGridsTag, const TeamMember &team) const {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, m_tu_ne);
     m_remap.compute_grids_phase(
         kv, m_fields_provider.get_source_thickness(kv.ie, m_data.np1),
         Homme::subview(m_fields_provider.m_tgt_layer_thickness, kv.ie));
@@ -375,7 +378,7 @@ struct RemapFunctor : public Remapper {
   // This asserts if num_to_remap() == 0
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeRemapTag, const TeamMember &team) const {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, m_tu_ne_ntr);
     assert(num_to_remap() != 0);
     const int var = kv.ie % num_to_remap();
     kv.ie /= num_to_remap();
@@ -386,7 +389,7 @@ struct RemapFunctor : public Remapper {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeIntrinsicsTag, const TeamMember &team) const {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, m_tu_ne_nsr);
 
     assert(m_fields_provider.num_states_remap() != 0);
     const int den = (m_fields_provider.num_states_remap() > 0) ? m_fields_provider.num_states_remap() : 1;
@@ -432,18 +435,15 @@ struct RemapFunctor : public Remapper {
         m_fields_provider.preprocess_states(m_data.np1);
 
         run_functor<ComputeExtrinsicsTag>("Remap Scale States Functor",
-                                          m_state.num_elems() *
-                                          m_fields_provider.num_states_remap());
+                                          m_state.num_elems() * m_fields_provider.num_states_remap());
       }
       run_functor<ComputeGridsTag>("Remap Compute Grids Functor",
                                    m_state.num_elems());
       run_functor<ComputeRemapTag>("Remap Compute Remap Functor",
-                                   m_state.num_elems() *
-                                       num_to_remap());
+                                   m_state.num_elems() * num_to_remap());
       if (nonzero_rsplit) {
         run_functor<ComputeIntrinsicsTag>("Remap Rescale States Functor",
-                                          m_state.num_elems() *
-                                          m_fields_provider.num_states_remap());
+                                          m_state.num_elems() * m_fields_provider.num_states_remap());
         m_fields_provider.postprocess_states(m_data.np1);
       }
     }
@@ -481,7 +481,6 @@ private:
   template <typename FunctorTag>
   void run_functor(const std::string functor_name, int num_exec) {
     const auto policy = remap_team_policy<FunctorTag>(num_exec);
-    m_tu = TeamUtils<ExecSpace>(policy);
     // Timers don't work on CUDA, so place them here
     GPTLstart(functor_name.c_str());
     profiling_resume();
