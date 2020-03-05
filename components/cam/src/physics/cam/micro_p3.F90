@@ -2376,6 +2376,9 @@ epsi,epsi_tot)
    ! calcualte total inverse ice relaxation timescale combined for all ice categories
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cxx_cbrt, cxx_sqrt
+#endif
    implicit none
 
 
@@ -2396,7 +2399,7 @@ epsi,epsi_tot)
 
 
    if (qitot_incld.ge.qsmall .and. t.lt.zerodegc) then
-      epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*2._rtype*pi* &
+      epsi = ((f1pr05+f1pr14*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*2._rtype*pi* &
       rho*dv)*nitot_incld
       epsi_tot   = epsi_tot + epsi
    else
