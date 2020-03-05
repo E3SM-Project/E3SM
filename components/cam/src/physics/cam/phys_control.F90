@@ -383,6 +383,23 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('trop_strat_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam7') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
+
+   ! Checks when generating output needed to force a prescribed aerosol run		      
+   if (presc_aero_data) then
+      ! Make sure history_aerosol is set 
+     if  (.not. history_aerosol) then
+       call endrun("Setting presc_aero_data requires also setting history_aerosol.")
+     endif
+     
+     ! Make sure that a prognostic aerosol scheme is used
+     if (.not. prog_modal_aero) then
+       call endrun("Setting presc_aero_data requires a prognostic aerosol scheme.")
+     endif
+     
+   endif
+   
+   
+		      
 end subroutine phys_ctl_readnl
 
 !===============================================================================

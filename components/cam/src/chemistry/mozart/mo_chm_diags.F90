@@ -281,8 +281,6 @@ contains
 	  if (presc_aero_data) then
 	    call addfld( trim(spc_name)//'_logm',   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' log concentration')
 	    call addfld( trim(spc_name)//'_logv',   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' log^2 concentration')
-	    
-	    write(*,*) 'ADDFLDHERE ', trim(spc_name)
 	  endif
 	  
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', unit_basename//'/kg', trim(attr)//" in bottom layer")    
@@ -293,8 +291,6 @@ contains
 	  if (presc_aero_data) then
 	    call addfld( trim(spc_name)//'_logm',   (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' log concentration')
 	    call addfld( trim(spc_name)//'_logv',   (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' log^2 concentration')
-	    
-	    write(*,*) 'ADDFLDHERE2 ', trim(spc_name)
 	  endif	  
 	  
        endif

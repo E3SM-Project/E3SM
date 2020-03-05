@@ -598,11 +598,7 @@ contains
                 call add_default (trim(wetdep_list(m))//'SFSES', 1, ' ')
              endif
           endif
-       endif
-       
-!       if (presc_aero_data) then
-!         call add_default (trim(wetdep_list(m))//'SFWET', 2, ' ')
-!       endif       
+       endif      
 
     enddo ! m = 1,nwetdep
 
@@ -679,7 +675,6 @@ contains
 
           if ( history_aerosol ) then 
              if (history_verbose) then
-                call add_default( cnst_name_cw(n), 1, ' ' )
                 call add_default (trim(cnst_name_cw(n))//'GVF', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'TBF', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'SFSBS', 1, ' ')      
@@ -687,16 +682,15 @@ contains
                 call add_default (trim(cnst_name_cw(n))//'SFSBC', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'SFSIS', 1, ' ')
              endif
-             call add_default (trim(cnst_name_cw(n))//'SFWET', 1, ' ') 
-             call add_default (trim(cnst_name_cw(n))//'DDF', 1, ' ')
-	     if (presc_aero_data) then 
+
+	     if (presc_aero_data .or. history_verbose) then 
 	       call add_default( cnst_name_cw(n), 1, ' ' )
 	     endif
-          endif
-	    
-!	  if (presc_aero_data) then
-!	    call add_default (trim(cnst_name_cw(n))//'DDF', 2, ' ')
-!	  endif	  
+
+             call add_default (trim(cnst_name_cw(n))//'SFWET', 1, ' ') 
+             call add_default (trim(cnst_name_cw(n))//'DDF', 1, ' ')
+
+          endif  
 	  
        endif
     enddo

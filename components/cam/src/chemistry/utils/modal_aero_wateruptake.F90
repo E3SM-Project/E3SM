@@ -102,9 +102,8 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          if (history_verbose) then
             call add_default('dgnd_a'//trnum(2:3), 1, ' ')
             call add_default('dgnw_a'//trnum(2:3), 1, ' ')
-            call add_default('wat_a'//trnum(3:3),  1, ' ')
          endif
-	 if (presc_aero_data) then 
+	 if (presc_aero_data .or. history_verbose) then 
 	   call add_default('wat_a'//trnum(3:3),  1, ' ')
 	 endif
       endif
