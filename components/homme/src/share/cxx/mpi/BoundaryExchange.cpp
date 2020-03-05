@@ -385,12 +385,11 @@ void BoundaryExchange::pack_and_send ()
           num_parallel_iterations, tp);
       const auto policy = Kokkos::TeamPolicy<ExecSpace>(
         num_parallel_iterations, threads_vectors.first, threads_vectors.second);
-      TeamUtils<ExecSpace> tu(policy);
       HOMMEXX_STATIC const ConnectionHelpers helpers;
       Kokkos::parallel_for(
         policy,
         KOKKOS_LAMBDA(const TeamMember& team) {
-          Homme::KernelVariables kv(team, num_3d_fields, tu);
+          Homme::KernelVariables kv(team, num_3d_fields);
           const int ie = kv.ie;
           const int ifield = kv.iq;
           for (int iconn = 0; iconn < 8; ++iconn) {
@@ -459,12 +458,11 @@ void BoundaryExchange::pack_and_send ()
           num_parallel_iterations, tp);
       const auto policy = Kokkos::TeamPolicy<ExecSpace>(
         num_parallel_iterations, threads_vectors.first, threads_vectors.second);
-      TeamUtils<ExecSpace> tu(policy);
       HOMMEXX_STATIC const ConnectionHelpers helpers;
       Kokkos::parallel_for(
         policy,
         KOKKOS_LAMBDA(const TeamMember& team) {
-          Homme::KernelVariables kv(team, num_fields, tu);
+          Homme::KernelVariables kv(team, num_fields);
           const int ie = kv.ie;
           const int ifield = kv.iq;
           for (int iconn = 0; iconn < 8; ++iconn) {
@@ -626,12 +624,10 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
       }
     } else {
       const auto num_parallel_iterations = m_num_elems*m_num_3d_fields;
-      Kokkos::TeamPolicy<ExecSpace> policy(num_parallel_iterations, 1, NUM_LEV);
-      TeamUtils<ExecSpace> tu(policy);
       Kokkos::parallel_for(
-        policy,
+        Kokkos::TeamPolicy<ExecSpace>(num_parallel_iterations, 1, NUM_LEV),
         KOKKOS_LAMBDA(const TeamMember& team) {
-          Homme::KernelVariables kv(team, num_3d_fields, tu);
+          Homme::KernelVariables kv(team, num_3d_fields);
           const int ie = kv.ie;
           const int ifield = kv.iq;
           const auto& f3 = fields_3d(ie, ifield);
@@ -727,12 +723,10 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
       }
     } else {
       const auto num_parallel_iterations = m_num_elems*num_fields;
-      Kokkos::TeamPolicy<ExecSpace> policy(num_parallel_iterations, 1, NUM_LEV_P);
-      TeamUtils<ExecSpace> tu(policy);
       Kokkos::parallel_for(
-        policy,
+        Kokkos::TeamPolicy<ExecSpace>(num_parallel_iterations, 1, NUM_LEV_P),
         KOKKOS_LAMBDA(const TeamMember& team) {
-          Homme::KernelVariables kv(team, num_fields, tu);
+          Homme::KernelVariables kv(team, num_fields);
           const int ie = kv.ie;
           const int ifield = kv.iq;
           const auto& f = fields(ie, ifield);
@@ -880,11 +874,10 @@ void BoundaryExchange::pack_and_send_min_max ()
         num_parallel_iterations, tp);
     const auto policy = Kokkos::TeamPolicy<ExecSpace>(
       num_parallel_iterations, threads_vectors.first, threads_vectors.second);
-    TeamUtils<ExecSpace> tu(policy);
     Kokkos::parallel_for(
       policy,
       KOKKOS_LAMBDA(const TeamMember& team) {
-        Homme::KernelVariables kv(team, num_1d_fields*NUM_CONNECTIONS, tu);
+        Homme::KernelVariables kv(team, num_1d_fields*NUM_CONNECTIONS);
         const int ie = kv.ie;
         const int iconn = kv.iq / num_1d_fields;
         const int ifield = kv.iq % num_1d_fields;
@@ -993,11 +986,10 @@ void BoundaryExchange::recv_and_unpack_min_max ()
         num_parallel_iterations, tp);
     const auto policy = Kokkos::TeamPolicy<ExecSpace>(
       num_parallel_iterations, threads_vectors.first, threads_vectors.second);
-    TeamUtils<ExecSpace> tu(policy);
     Kokkos::parallel_for(
       policy,
       KOKKOS_LAMBDA(const TeamMember& team) {
-        Homme::KernelVariables kv(team, num_1d_fields, tu);
+        Homme::KernelVariables kv(team, num_1d_fields);
         const int ie = kv.ie;
         const int ifield = kv.iq;
         for (int iconn = 0; iconn < NUM_CONNECTIONS; ++iconn) {
