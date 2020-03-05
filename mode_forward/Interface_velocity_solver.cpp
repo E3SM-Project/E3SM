@@ -1335,9 +1335,9 @@ void exportBeta(double * beta_F) {
     beta_F[fCell] = betaData[index] * unit_length;
   }
 #ifdef  changeTrianglesOwnership
-  allToAll (beta_F,  &sendVerticesListReversed, &recvVerticesListReversed, 1);
+  allToAll (beta_F,  &sendCellsListReversed, &recvCellsListReversed, 1);
 #endif
-  allToAll (beta_F,  sendVerticesList_F, recvVerticesList_F, 1);
+  allToAll (beta_F,  sendCellsList_F, recvCellsList_F, 1);
 }
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
