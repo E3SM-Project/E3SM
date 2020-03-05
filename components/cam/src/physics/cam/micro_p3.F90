@@ -30,7 +30,7 @@
 ! 1) Need to change the dz coordinate system in sedimentation to be consistent             !
 ! with E3SM's pressure based coordinate system, i.e. dp.                                   !
 ! 2) Move all physical constants into a micro_p3_util module and match them to             !
-! universal constants in E3SM for consistentcy.                                            !
+! universal constants in E3SM for consistency.                                            !
 ! 3) Need to include extra in/out values which correspond with microphysics PBUF           !
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
@@ -40,6 +40,7 @@
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
+#  define bfb_sqrt(base) cxx_sqrt(base)
 #  define bfb_cbrt(base) cxx_cbrt(base)
 #  define bfb_gamma(val) cxx_gamma(val)
 #  define bfb_log(val) cxx_log(val)
@@ -52,6 +53,7 @@
 #  define bfb_log(val) log(val)
 #  define bfb_log10(val) log10(val)
 #  define bfb_exp(val) exp(val)
+#  define bfb_sqrt(val) sqrt(val)
 #endif
 
 module micro_p3
@@ -2259,6 +2261,10 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
    ! currently enhanced melting from collision is neglected
    ! include RH dependence
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cxx_cbrt, cxx_sqrt
+#endif
+  
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2285,9 +2291,8 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
    if (qitot_incld .ge.qsmall .and. t.gt.zerodegc) then
       qsat0 = 0.622_rtype*e0/(pres-e0)
 
-      qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*((t-   &
+      qimlt = ((f1pr05+f1pr14*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*((t-   &
       zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
-
 
       qimlt = max(qimlt,0._rtype)
       nimlt = qimlt*(nitot_incld/qitot_incld)
@@ -2513,7 +2518,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          ! use mass-weighted mean size
          D_c = (mu_c+4._rtype)/lamc
          V_impact  = abs(vtrmi1-Vt_qc)
-         Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
+         Ri        = -0.5e+6_rtype * D_c * V_impact * iTc
          !               Ri        = max(1.,min(Ri,8.))
          Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
@@ -2525,9 +2530,11 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
             ! in rime density up to wet growth
             rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype)
          endif
-
+      else
+         rhorime_c = 400._rtype
       endif    !if qc>qsmall
    else
+      vtrmi1 = 0._rtype ! no velocity if no ice
       rhorime_c = 400._rtype
    endif ! qi > qsmall and T < 273.15
 
