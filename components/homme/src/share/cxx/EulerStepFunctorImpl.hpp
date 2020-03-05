@@ -102,6 +102,8 @@ class EulerStepFunctorImpl {
   Kokkos::TeamPolicy<ExecSpace> m_tv_policy;
   TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize, m_tu_tv;
 
+  int m_prev_num_elems, m_prev_qsize;
+
   bool                m_kernel_will_run_limiters;
 
   std::shared_ptr<BoundaryExchange> m_mm_be, m_mmqb_be;
@@ -119,9 +121,11 @@ public:
    , m_hvcoord       (Context::singleton().get<HybridVCoord>())
    , m_sphere_ops    (Context::singleton().get<SphereOperators>())
    , m_tv_policy     (Homme::get_default_team_policy<ExecSpace>(1))
-   , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1))
-   , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1))
-   , m_tu_tv         (Homme::get_default_team_policy<ExecSpace>(1))
+   , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1), 1.12)
+   , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1), 1.13)
+   , m_tu_tv         (Homme::get_default_team_policy<ExecSpace>(1), 1.14)
+   , m_prev_num_elems(0)
+   , m_prev_qsize    (0)
   {
     // Nothing to be done here
   }
@@ -142,24 +146,29 @@ public:
     }
 
     // Make sure sphere ops have buffers large enough to accommodate this functor's needs
-    const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
+    if (m_geometry.num_elems() != m_prev_num_elems || m_data.qsize != m_prev_qsize) {
+      m_prev_num_elems = m_geometry.num_elems();
+      m_prev_qsize     = m_data.qsize;
 
-    auto tp_ne       = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
-    auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(num_parallel_iterations);
+      const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
 
-    ThreadPreferences tp;
-    tp.max_threads_usable = NUM_LEV;
-    tp.max_vectors_usable = 1;
-    const auto tv =
-      DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
-        num_parallel_iterations, tp);
-    m_tv_policy = decltype(m_tv_policy)(num_parallel_iterations, tv.first, tv.second);
+      auto tp_ne       = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
+      auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(num_parallel_iterations);
 
-    m_tu_ne       = TeamUtils<ExecSpace>(tp_ne);
-    m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize);
-    m_tu_tv       = TeamUtils<ExecSpace>(m_tv_policy);
+      ThreadPreferences tp;
+      tp.max_threads_usable = NUM_LEV;
+      tp.max_vectors_usable = 1;
+      const auto tv =
+        DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
+          num_parallel_iterations, tp);
+      m_tv_policy = decltype(m_tv_policy)(num_parallel_iterations, tv.first, tv.second);
 
-    m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
+      m_tu_ne       = TeamUtils<ExecSpace>(tp_ne, 1.9);
+      m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize, 1.10);
+      m_tu_tv       = TeamUtils<ExecSpace>(m_tv_policy, 1.11);
+
+      m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
+    }
   }
 
   int requested_buffer_size () const {
