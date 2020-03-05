@@ -99,7 +99,8 @@ class EulerStepFunctorImpl {
   EulerStepData               m_data;
   SphereOperators             m_sphere_ops;
 
-  TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize;
+  Kokkos::TeamPolicy<ExecSpace> m_tv_policy;
+  TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize, m_tu_tv;
 
   bool                m_kernel_will_run_limiters;
 
@@ -117,8 +118,10 @@ public:
    , m_deriv         (Context::singleton().get<ReferenceElement>().get_deriv())
    , m_hvcoord       (Context::singleton().get<HybridVCoord>())
    , m_sphere_ops    (Context::singleton().get<SphereOperators>())
+   , m_tv_policy     (Homme::get_default_team_policy<ExecSpace>(1))
    , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1))
    , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1))
+   , m_tu_tv         (Homme::get_default_team_policy<ExecSpace>(1))
   {
     // Nothing to be done here
   }
@@ -139,11 +142,22 @@ public:
     }
 
     // Make sure sphere ops have buffers large enough to accommodate this functor's needs
+    const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
+
     auto tp_ne       = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
-    auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize);
+    auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(num_parallel_iterations);
+
+    ThreadPreferences tp;
+    tp.max_threads_usable = NUM_LEV;
+    tp.max_vectors_usable = 1;
+    const auto tv =
+      DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
+        num_parallel_iterations, tp);
+    m_tv_policy = decltype(m_tv_policy)(num_parallel_iterations, tv.first, tv.second);
 
     m_tu_ne       = TeamUtils<ExecSpace>(tp_ne);
     m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize);
+    m_tu_tv       = TeamUtils<ExecSpace>(m_tv_policy);
 
     m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
   }
@@ -492,20 +506,10 @@ public:
     const auto dp = m_buffers.dp;
     const auto qtens_biharmonic = m_tracers.qtens_biharmonic;
     const auto qlim = m_tracers.qlim;
-    const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
-    ThreadPreferences tp;
-    tp.max_threads_usable = NUM_LEV;
-    tp.max_vectors_usable = 1;
-    const auto tv =
-      DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
-        num_parallel_iterations, tp);
-    Kokkos::TeamPolicy<ExecSpace> policy(num_parallel_iterations,
-                                         tv.first, tv.second);
-    TeamUtils<ExecSpace> tu(policy);
     Kokkos::parallel_for(
-      policy,
+      m_tv_policy,
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team, qsize, tu);
+        KernelVariables kv(team, qsize, m_tu_tv);
         const auto dp_t = Homme::subview(dp, kv.ie);
         const auto qdp_t = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qtens_biharmonic_t = Homme::subview(qtens_biharmonic, kv.ie, kv.iq);
