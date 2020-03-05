@@ -532,12 +532,12 @@ contains
                if(k>1) then
                   k33(k  ,iCell) = k33(k  ,iCell) + kappaRediVert(k,iEdge) * slopeTaperUp * sfcTaperUp * &
                               areaEdge*dzTop(k)*slopeTriadUp(k,iCellSelf,iEdge)**2
-                  k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
+                  k33Norm(k  ) = k33Norm(k  ) + kappaRediVert(k,iEdge) * slopeTaperUp * sfcTaperUp * areaEdge*dzTop(k  )
                endif
 
-               k33(k+1,iCell) = k33(k+1,iCell) + kappaRediVert(k,iEdge) * slopeTaperDown * sfcTaperDown * &
+               k33(k+1,iCell) = k33(k+1,iCell) + kappaRediVert(k+1,iEdge) * slopeTaperDown * sfcTaperDown * &
                           areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
-               k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
+               k33Norm(k+1) = k33Norm(k+1) + kappaRediVert(k+1,iEdge) * slopeTaperUp * sfcTaperUp *areaEdge*dzTop(k+1)
 
                ! Slope can be unbounded in regions of neutral stability.
                ! Reset slope to maximum slope limit.
