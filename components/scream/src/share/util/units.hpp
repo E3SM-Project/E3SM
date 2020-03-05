@@ -76,7 +76,6 @@ public:
   }
 
   Units (const Units&) = default;
-  Units& operator= (const Units&) = default;
 
   static Units nondimensional () {
     return Units(RationalConstant::one());

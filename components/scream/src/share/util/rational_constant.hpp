@@ -70,7 +70,6 @@ public:
     // Nothing to do here
   }
   constexpr RationalConstant (const RationalConstant&) = default;
-  RationalConstant& operator= (const RationalConstant&) = default;
 
   constexpr RationalConstant operator- () const {
     return RationalConstant(-m_num,m_den,m_fmt);
