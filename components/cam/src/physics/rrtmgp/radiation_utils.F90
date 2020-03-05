@@ -2,7 +2,6 @@ module radiation_utils
 
    use shr_kind_mod, only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use assertions, only: assert
-   use cam_logfile, only: iulog
 
    implicit none
    private
@@ -196,11 +195,11 @@ contains
          ! Raise warning?
          if (warn_local) then
             if (present(varname)) then
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x < min_x), ' values are below threshold for variable ', &
                         trim(varname), '; min = ', minval(x)
             else
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x < min_x), ' values are below threshold; min = ', minval(x)
             end if
          end if
@@ -216,11 +215,11 @@ contains
          ! Raise warning?
          if (warn_local) then
             if (present(varname)) then
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x > max_x), ' values are above threshold for variable ', &
                         trim(varname), '; max = ', maxval(x)
             else
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x > max_x), ' values are above threshold; max = ', maxval(x)
             end if
          end if
@@ -251,11 +250,11 @@ contains
          ! Raise warning?
          if (warn_local) then
             if (present(varname)) then
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x < min_x), ' values are below threshold for variable ', &
                         trim(varname), '; min = ', minval(x)
             else
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x < min_x), ' values are below threshold; min = ', minval(x)
             end if
          end if
@@ -271,11 +270,11 @@ contains
          ! Raise warning?
          if (warn_local) then
             if (present(varname)) then
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x > max_x), ' values are above threshold for variable ', &
                         trim(varname), '; max = ', maxval(x)
             else
-               write(iulog,*) module_name // ' warning: ', &
+               print *, module_name // ' warning: ', &
                         count(x > max_x), ' values are above threshold; max = ', maxval(x)
             end if
          end if
@@ -311,7 +310,7 @@ contains
       do iz = 1,size(v, 2)
          do ix = 1,size(v, 1)
             if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
-               write(iulog,*) 'WARNING: ' // trim(vname) // &
+               print *, 'WARNING: ' // trim(vname) // &
                         ' out of range; value = ', v(ix,iz), &
                         '; lat, lon, lev = ', lat(ix), lon(ix), iz
                if (clip_values_local) then
@@ -348,7 +347,7 @@ contains
          do iy = 1,size(v,2)
             do ix = 1,size(v, 1)
                if (v(ix,iy,iz) < vmin .or. v(ix,iy,iz) > vmax) then
-                  write(iulog,*) 'WARNING: ' // trim(vname) // &
+                  print *, 'WARNING: ' // trim(vname) // &
                            ' out of range; value = ', v(ix,iy,iz), &
                            '; lat, lon, lev = ', lat(ix), lon(ix), iz
                   if (clip_values_local) then
