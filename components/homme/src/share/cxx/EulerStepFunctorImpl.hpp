@@ -121,9 +121,9 @@ public:
    , m_hvcoord       (Context::singleton().get<HybridVCoord>())
    , m_sphere_ops    (Context::singleton().get<SphereOperators>())
    , m_tv_policy     (Homme::get_default_team_policy<ExecSpace>(1))
-   , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1), 1.12)
-   , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1), 1.13)
-   , m_tu_tv         (Homme::get_default_team_policy<ExecSpace>(1), 1.14)
+   , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1))
+   , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1))
+   , m_tu_tv         (Homme::get_default_team_policy<ExecSpace>(1))
    , m_prev_num_elems(0)
    , m_prev_qsize    (0)
   {
@@ -163,9 +163,9 @@ public:
           num_parallel_iterations, tp);
       m_tv_policy = decltype(m_tv_policy)(num_parallel_iterations, tv.first, tv.second);
 
-      m_tu_ne       = TeamUtils<ExecSpace>(tp_ne, 1.9);
-      m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize, 1.10);
-      m_tu_tv       = TeamUtils<ExecSpace>(m_tv_policy, 1.11);
+      m_tu_ne       = TeamUtils<ExecSpace>(tp_ne);
+      m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize);
+      m_tu_tv       = TeamUtils<ExecSpace>(m_tv_policy);
 
       m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
     }
