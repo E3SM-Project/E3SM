@@ -124,11 +124,11 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/gnu-8.3.0/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0beta04</command>
+	<command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-19.0.5/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0beta04</command>
+	<command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
@@ -198,7 +198,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/generic</command>
         <command name="load">cmake/3.16.4</command>
         <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/intel-18.0.3.222</command>
-        <command name="load">NCEPlibs/1.0.0.beta04</command>
+        <command name="load">NCEPlibs/1.0.0</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -254,7 +254,7 @@ This allows using a different mpirun command to launch unit tests
       <modules mpilib="impi">
         <command name="load">impi/2018.0.4</command>
 	<command name="use">/scratch1/BMC/gmtb/software/modulefiles/intel-18.0.5.274/impi-2018.0.4</command>
-	<command name="load">NCEPlibs/1.0.0beta04</command>
+	<command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules>
         <command name="use">/scratch1/BMC/gmtb/software/modulefiles/generic</command>
@@ -312,7 +312,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">impi/2018.4.274</command>
         <command name="load">pnetcdf/1.6.1</command>
         <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/intel-18.0.5.274/impi-2018.4.274</command>
-        <command name="load">NCEPlibs/1.0.0beta04</command>
+        <command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules>
         <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/generic</command>
