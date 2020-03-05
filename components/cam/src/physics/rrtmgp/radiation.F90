@@ -1256,10 +1256,10 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use camsrfexch, only: cam_in_t
+      use mo_rrtmgp_clr_all_sky, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_clr_all_sky, only: rte_sw
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
@@ -1537,10 +1537,10 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use camsrfexch, only: cam_in_t
+      use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
