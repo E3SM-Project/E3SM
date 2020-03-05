@@ -190,10 +190,9 @@ void HybridVCoord::compute_deltas ()
   auto ldp0 = dp0;
   auto lps0 = ps0;
   auto policy = Homme::get_default_team_policy<ExecSpace>(1);
-  TeamUtils<ExecSpace> tu(policy);
   Kokkos::parallel_for("[HybridVCoord::compute_deltas]",policy,
                        KOKKOS_LAMBDA(const TeamMember& team) {
-    KernelVariables kv(team, tu);
+    KernelVariables kv(team);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,1),[&](int /*unused*/){
       ColumnOps::compute_midpoint_delta(kv,hyai,dhyai);
       ColumnOps::compute_midpoint_delta(kv,hybi,dhybi);
