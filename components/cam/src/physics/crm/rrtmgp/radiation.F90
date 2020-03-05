@@ -1349,7 +1349,7 @@ contains
 #endif
 
          ! Output CRM cloud fraction
-         call outfld('CRM_CLD_RAD', crm_cld, state%ncol, state%lchnk)
+         call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
       end if
 
       ! Save pbuf things to restore when we are done working with them. This is

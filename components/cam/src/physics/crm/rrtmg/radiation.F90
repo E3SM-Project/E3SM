@@ -1511,7 +1511,7 @@ end function radiation_nextsw_cday
 
          ! Get cloud fraction averaged over the CRM time integration
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), cld_rad)
-         call outfld('CRM_CLD_RAD', cld_rad, state%ncol, state%lchnk)
+         call outfld('CRM_CLD_RAD', cld_rad(1:ncol,:,:,:), state%ncol, state%lchnk)
 
          cicewp(1:ncol,1:pver) = 0.  
          cliqwp(1:ncol,1:pver) = 0.
