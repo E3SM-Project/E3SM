@@ -306,9 +306,9 @@ contains
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
           endif 
 	  if (presc_aero_data) then
-	    call add_default( spc_name, 2, ' ' )
-	    call add_default( trim(spc_name)//'_logm', 2, ' ' )
-	    call add_default( trim(spc_name)//'_logv', 2, ' ' )
+	    call add_default( spc_name, 1, ' ' )
+	    call add_default( trim(spc_name)//'_logm', 1, ' ' )
+	    call add_default( trim(spc_name)//'_logv', 1, ' ' )
 	  endif
           if (history_amwg) then
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
