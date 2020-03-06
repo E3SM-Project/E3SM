@@ -18,6 +18,7 @@ import traceback
 import sys
 # }}}
 
+
 def main():
 # {{{
 
@@ -99,7 +100,7 @@ def main():
         function_name = function.__name__
         print("****** " + function_name + " ******")
 
-        if (config.get(function_name, 'enable').lower() == 'false'):
+        if config.get(function_name, 'enable').lower() == 'false':
             print("Disabled in .ini file")
         else:
             make_dir(function_name)
@@ -120,6 +121,7 @@ def main():
     else:
         print("!!!!!! FAILURE: One or more steps failed. See output above !!!!!!")
 # }}}
+
 
 def initial_condition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -176,6 +178,7 @@ def graph_partition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../../graph_partition_ocean/' + file, './' + file)
 # }}}
 
+
 def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
@@ -203,6 +206,7 @@ def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities)
     make_link('../../../../../initial_condition_seaice/seaice.' +
               mesh_name + '.nc', 'seaice.' + mesh_name + '.nc')
 # }}}
+
 
 def scrip(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -238,6 +242,7 @@ def scrip(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../../scrip/' + scrip_file_mask, scrip_file_mask)
 # }}}
 
+
 def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
@@ -266,6 +271,7 @@ def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
         'masks_SingleRegionAtlanticWTransportTransects.' + mesh_name + '.nc')
 # }}}
 
+
 def mapping_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     atm_scrip_tag = config.get('mapping_CORE_Gcase', 'atm_scrip_tag')
@@ -277,6 +283,7 @@ def mapping_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../mapping_CORE_Gcase/' + file, './' + file)
 # }}}
+
 
 def mapping_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -290,6 +297,7 @@ def mapping_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../mapping_JRA_Gcase/' + file, './' + file)
 # }}}
 
+
 def mapping_ne30(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     atm_scrip_tag = config.get('mapping_ne30', 'atm_scrip_tag')
@@ -301,6 +309,7 @@ def mapping_ne30(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../mapping_CORE_Gcase/' + file, './' + file)
 # }}}
+
 
 def mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag):
 # {{{
@@ -380,6 +389,7 @@ def mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag):
             print('mapping_CORE_Gcase must be run on one compute node')
 # }}}
 
+
 def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     # obtain configuration settings
@@ -406,6 +416,7 @@ def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../domain/' + file, './' + file)
 # }}}
+
 
 def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -434,6 +445,7 @@ def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../domain/' + file, './' + file)
 # }}}
 
+
 def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     # obtain configuration settings
@@ -460,6 +472,7 @@ def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../domain/' + file, './' + file)
 # }}}
+
 
 def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -531,6 +544,7 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../mapping_runoff/' + file, './' + file)
 # }}}
+
 
 def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -638,6 +652,7 @@ def write_command_history(text):
         pass
 # }}}
 
+
 def run_command(args):
 # {{{
     try:
@@ -649,6 +664,7 @@ def run_command(args):
     except OSError:
         pass
 # }}}
+
 
 if __name__ == '__main__':
     # If called as a primary module, run main
