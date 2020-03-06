@@ -2834,6 +2834,10 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    ! self-collection and breakup of rain
    ! (breakup following modified Verlinde and Cotton scheme)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cxx_cbrt, cxx_exp
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2853,12 +2857,12 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       ! note there should be a factor of 6^(1/3), but we
       ! want to keep breakup threshold consistent so 'dum'
       ! is expressed in terms of lambda rather than mass-mean D
-
-      dum2 = (qr_incld/(pi*rhow*nr_incld))**thrd
+      
+      dum2 = bfb_cbrt(qr_incld/(pi*rhow*nr_incld))
       if (dum2.lt.dum1) then
          dum = 1._rtype
       else if (dum2.ge.dum1) then
-         dum = 2._rtype-exp(2300._rtype*(dum2-dum1))
+         dum = 2._rtype-bfb_exp(2300._rtype*(dum2-dum1))
       endif
 
       if (iparam.eq.1) then
