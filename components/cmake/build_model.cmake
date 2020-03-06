@@ -55,7 +55,7 @@ function(build_model COMP_CLASS COMP_NAME)
     # their compilation.
     set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
 
-    if (COSP_LIBDIR)
+    if (USE_COSP)
       include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
     endif()
 
@@ -161,7 +161,7 @@ function(build_model COMP_CLASS COMP_NAME)
   #-------------------------------------------------------------------------------
 
   if (MPILIB STREQUAL "mpi-serial")
-    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/lib-mpi-serial.a")
+    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
     set(MLIBS "${MLIBS} ${MPISERIAL}")
   endif()
 
