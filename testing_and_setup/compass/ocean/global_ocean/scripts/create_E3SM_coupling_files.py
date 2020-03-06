@@ -5,7 +5,7 @@ MPAS-seaice within E3SM.
 
 Load the lastest e3sm-unified conda package.
 """
-# import modules # {{{ 
+# import modules # {{{
 import os
 import shutil
 import subprocess
@@ -508,7 +508,7 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
 
     # Alter runoff mapping so runoff does not go under ice shelves
     # WARNING: this is not hooked up yet. I need to know which mapping files this applies to.
-    # Also, this is pointing to the correct -w and -n flags, but it only works if I 
+    # Also, this is pointing to the correct -w and -n flags, but it only works if I
     # switch those files.
     if ice_shelf_cavities:
         make_link('../copy_cell_indices_ISC.py', 'copy_cell_indices_ISC.py')
@@ -521,7 +521,7 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
             '-n', 'no_ISC_culled_mesh.nc.nc'
             ]
         run_command(args)
-   
+
     # make links in output directories
     files = glob.glob('map*.nc')
     os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
@@ -572,7 +572,7 @@ def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
         print('salinity_restoring must be run on compute node')
 
     # remap from 1x1 to model grid
-    args = ['ncremap', 
+    args = ['ncremap',
         '-i', 'salinity_restoring_input_file.nc',
         '-o', 'intermediate_file.nc',
         '-m', map_Levitus_file,
