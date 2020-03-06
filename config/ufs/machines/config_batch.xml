@@ -217,6 +217,22 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="orion" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive>--partition=orion</directive>
+    </directives>
+    <queues>
+      <queue default="true" walltimemax="08:00:00" nodemin="1" nodemax="210">batch</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="210">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="jet" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <submit_args>
