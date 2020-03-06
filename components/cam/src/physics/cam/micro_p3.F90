@@ -47,7 +47,7 @@
 #  define bfb_log10(val) cxx_log10(val)
 #  define bfb_exp(val) cxx_exp(val)
 #else
-#  define bfb_pow(base, exp) (base)**exp
+#  define bfb_pow(base, exp) (base)**(exp)
 #  define bfb_cbrt(base) (base)**thrd
 #  define bfb_gamma(val) gamma(val)
 #  define bfb_log(val) log(val)
