@@ -16,6 +16,8 @@ import glob
 from datetime import datetime
 import traceback
 import sys
+from geometric_features import GeometricFeatures
+from mpas_tools.ocean.moc import make_moc_basins_and_transects
 # }}}
 
 
@@ -246,29 +248,28 @@ def scrip(config, mesh_name, date_string, ice_shelf_cavities):
 def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
-    # obtain configuration settings
-    transect_region_geojson = config.get(
-        'transects_and_regions',
-        'transect_region_geojson')
+    # make the geojson file
+    gf = GeometricFeatures()
 
-    maskfile = 'masks_SingleRegionAtlanticWTransportTransects.' + mesh_name + '.nc'
+    mesh_filename = '../init.nc'
 
-    # make links
-    make_link('../init.nc', mesh_name + '.nc')
-    make_link(transect_region_geojson,
-              'SingleRegionAtlanticWTransportTransects.geojson')
+    mask_filename = '{}_moc_masks.nc'.format(mesh_name)
+    mask_and_transect_filename = '{}_moc_masks_and_transects.nc'.format(
+        mesh_name)
 
-    # check: how does this call MpasMaskCreator?
-    args = ['MpasMaskCreator.x', mesh_name + '.nc', maskfile,
-            '-f', 'SingleRegionAtlanticWTransportTransects.geojson']
-    run_command(args)
+    geojson_filename = 'moc_basins.geojson'
 
+    make_moc_basins_and_transects(gf, mesh_filename, mask_and_transect_filename,
+                                  geojson_filename=geojson_filename,
+                                  mask_filename=mask_filename)
+
+    output_dir = '../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
+        mesh_name)
     # make links in output directory
-    os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/' + mesh_name)
     make_link(
-        '../../../../../transects_and_regions/masks_SingleRegionAtlanticWTransportTransects.' +
-        mesh_name + '.nc',
-        'masks_SingleRegionAtlanticWTransportTransects.' + mesh_name + '.nc')
+        '../../../../../transects_and_regions/{}'.format(
+            mask_and_transect_filename),
+        '{}/{}'.format(output_dir, mask_and_transect_filename))
 # }}}
 
 
