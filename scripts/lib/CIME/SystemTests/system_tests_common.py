@@ -609,16 +609,20 @@ class TESTRUNDIFF(FakeTest):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
+        resubmit = self._case.get_value("RESUBMIT")
         script = \
 """
 echo Insta pass
+echo wpc1 TESTRUNDIFF
+echo {resubmit}
+echo wpc2 TESTRUNDIFF
 echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}{resubmit}.cpl.hi.0.nc
 else
-  cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}{resubmit}.cpl.hi.0.nc
 fi
-""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case, resubmit=resubmit)
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)

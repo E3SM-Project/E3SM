@@ -1645,9 +1645,10 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             genargs = ["-g", self._baseline_name, "-o"] + test_names + ["--baseline-root ", self._baseline_area]
             compargs = ["-c", self._baseline_name] + test_names + ["--baseline-root ", self._baseline_area]
         self._create_test(genargs)
-
+        logger.info("wpc3 tbtr")
         # Hist compare should pass
         self._create_test(compargs)
+        logger.info("wpc4 tbtr")
 
         # Change behavior
         os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
@@ -1655,12 +1656,12 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         # Hist compare should now fail
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
         self._create_test(compargs, test_id=test_id, run_errors=True)
-
+        logger.info("wpc5 tbtr")
         # compare_test_results should detect the fail
         cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
                   .format(TOOLS_DIR, self._testroot, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
-
+        logger.info("wpc6 tbtr")
         # use regex
         for test_name in test_names:
             expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
@@ -1668,12 +1669,14 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             self.assertNotEqual(the_match, None,
                                 msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
 
+        logger.info("wpc7 tbtr")
         # Bless
         run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
                         .format(TOOLS_DIR, self._testroot, test_id))
-
+        logger.info("wpc8 tbtr")
         # Hist compare should now pass again
         self._create_test(compargs)
+        logger.info("wpc9 tbtr")
 
         verify_perms(self, self._baseline_area)
 
