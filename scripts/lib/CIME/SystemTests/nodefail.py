@@ -46,7 +46,6 @@ if ((num_fails < times_to_fail)); then
   exit -1
 else
   echo Insta pass
-  echo wpc2
   echo SUCCESSFUL TERMINATION > $cpl_log
 fi
 """.format(self._fail_sentinel, rundir, get_model(), self._fail_str, logname)

@@ -613,9 +613,6 @@ class TESTRUNDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo wpc1 TESTRUNDIFF
-echo {resubmit}
-echo wpc2 TESTRUNDIFF
 echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
   cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}{resubmit}.cpl.hi.0.nc
