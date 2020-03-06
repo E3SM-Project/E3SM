@@ -18,7 +18,9 @@
 #
 import os
 import sys
-#import sphinx_rtd_theme
+# Note that we need a specific version of sphinx_rtd_theme. This can be obtained with:
+# pip install git+https://github.com/esmci/sphinx_rtd_theme.git@version-dropdown-with-fixes
+import sphinx_rtd_theme
 sys.path.insert(0, os.path.abspath('../../scripts/lib'))
 sys.path.insert(1, os.path.abspath('../../scripts'))
 
@@ -39,6 +41,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
+    'sphinx_rtd_theme',
     'sphinxcontrib.programoutput'
 ]
 todo_include_todos=True
@@ -79,7 +82,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_themes/**"]
+exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -96,9 +99,8 @@ todo_include_todos = True
 #html_theme = 'alabaster'
 #html_theme = 'bizstyle'
 #html_theme = 'classic'
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = ["_themes/sphinx_rtd_theme", ]
 #html_theme = 'sphinxdoc'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
