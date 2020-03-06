@@ -11,6 +11,7 @@
 
 #include "ExecSpaceDefs.hpp"
 #include "Dimensions.hpp"
+#include "utilities/MathUtils.hpp"
 
 #ifdef KOKKOS_ENABLE_CUDA
 # include <cuda.h>
@@ -64,29 +65,6 @@ ThreadPreferences::ThreadPreferences ()
 
 namespace Parallel {
 
-// For nextpow2 and prevpow2, see, e.g.,
-//   https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-unsigned short nextpow2 (unsigned short n) {
-  if (n == 0) return 0;
-  --n;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  ++n;
-  return n;
-}
-unsigned short prevpow2 (unsigned short n) {
-  if (n == 0) return 0;
-  n >>= 1;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  ++n;
-  return n;
-}
-
 std::pair<int, int>
 team_num_threads_vectors_from_pool (
   const int pool_size, const int num_parallel_iterations,
@@ -115,6 +93,9 @@ team_num_threads_vectors_for_gpu (
   const int min_num_warps, const int max_num_warps,
   const int num_parallel_iterations, const ThreadPreferences tp)
 {
+  using Homme::nextpow2;
+  using Homme::prevpow2;
+
   assert(num_warps_total > 0 && num_threads_per_warp > 0 && min_num_warps > 0);
   assert(num_parallel_iterations >= 0);
   assert(min_num_warps <= max_num_warps);

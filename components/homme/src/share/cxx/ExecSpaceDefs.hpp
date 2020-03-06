@@ -104,9 +104,6 @@ struct ThreadPreferences {
 };
 
 namespace Parallel {
-// Previous (inclusive) power of 2. E.g., prevpow2(4) -> 4, prevpow2(5) -> 4.
-unsigned short prevpow2(unsigned short n);
-
 // Determine (#threads, #vectors) as a function of a pool of threads provided to
 // the process and the number of parallel iterations to perform.
 std::pair<int, int>
