@@ -33,25 +33,19 @@ void Functions<S,D>
     vtrmi1.set(qccol_not_small_and_t_freezing, f1pr02 * rhofaci);
 
     // If qc_incld isn't small, compute the rime density.
-    const auto qccol_and_qc_not_small_and_t_freezing = (qccol >= qsmall) &&
-                                                       (qc_incld >= qsmall) &&
-                                                       (t < ZeroDegC);
+    const auto qccol_and_qc_not_small_and_t_freezing =
+      qccol_not_small_and_t_freezing && (qc_incld >= qsmall);
     if (qccol_and_qc_not_small_and_t_freezing.any()) {
 
       // Droplet fall speed (using Stokes' formulation, with analytic soln).
-      Spack Vt_qc;
-      Vt_qc.set(qccol_and_qc_not_small_and_t_freezing,
-                acn * tgamma(sp(4.)+bcn+mu_c) /
-                (pow(lamc, bcn) * tgamma(sp(4.)+mu_c)));
+      Spack Vt_qc = acn * tgamma(sp(4.)+bcn+mu_c) /
+        (pow(lamc, bcn) * tgamma(sp(4.)+mu_c));
 
       // Use mass-weighted mean size
-      Spack D_c, V_impact, inv_Tc, Ri;
-      D_c.set(qccol_and_qc_not_small_and_t_freezing, (sp(4.) + mu_c) / lamc);
-      V_impact.set(qccol_and_qc_not_small_and_t_freezing, abs(vtrmi1-Vt_qc));
-      inv_Tc.set(qccol_and_qc_not_small_and_t_freezing,
-                 1/min(sp(-0.001), t-ZeroDegC));
-      Ri.set(qccol_and_qc_not_small_and_t_freezing,
-             max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, sp(12.))));
+      Spack D_c = (sp(4.) + mu_c) / lamc;
+      Spack V_impact = abs(vtrmi1-Vt_qc);
+      Spack inv_Tc = 1/min(sp(-0.001), t-ZeroDegC);
+      Spack Ri = max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, sp(12.)));
 
       const auto Ri_le_8 = (Ri <= sp(8.0));
       rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and Ri_le_8,
@@ -66,9 +60,8 @@ void Functions<S,D>
     }
 
     // If qc_incld is small, just set rhorime_c to 400.
-    const auto qccol_not_small_and_qc_small_and_t_freezing = (qccol >= qsmall) &&
-                                                             (qc_incld < qsmall) &&
-                                                             (t < ZeroDegC);
+    const auto qccol_not_small_and_qc_small_and_t_freezing =
+      qccol_not_small_and_t_freezing && (qc_incld < qsmall);
     rhorime_c.set(qccol_not_small_and_qc_small_and_t_freezing, sp(400.));
   }
 
