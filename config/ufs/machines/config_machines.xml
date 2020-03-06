@@ -195,6 +195,9 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/6.0.3</command>
         <command name="load">intel/18.0.3.222</command>
+        <command name="unload">cray-mpich/7.4.0</command>
+        <command name="load">cray-mpich/7.7.3</command>
+        <command name="unload">cray-netcdf</command>
         <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/generic</command>
         <command name="load">cmake/3.16.4</command>
         <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/intel-18.0.3.222</command>
