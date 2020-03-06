@@ -351,9 +351,13 @@ contains
       real(r8), intent(in), dimension(:,:) :: pmid, cld, cldfsnow
       real(r8), intent(in), dimension(:,:,:) :: tau_bnd, ssa_bnd, asm_bnd
       real(r8), intent(out), dimension(:,:,:) :: tau_gpt, ssa_gpt, asm_gpt
-      logical, dimension(ngpt,ncol,nlev) :: iscloudy
       real(r8), dimension(ncol,nlev) :: combined_cld
-      integer, parameter :: changeseed = 1  ! how many times to permute random seed
+      logical, dimension(ngpt,ncol,nlev) :: iscloudy
+
+      ! For MCICA sampling routine, how many times to permute random seed
+      integer, parameter :: changeseed = 1
+
+      ! Loop variables
       integer :: icol, ilev, igpt
 
       ! Combined snow and cloud fraction
@@ -423,10 +427,10 @@ contains
       real(r8), intent(in), dimension(:,:) :: pmid, cld, cldfsnow
       real(r8), intent(in), dimension(:,:,:) :: tau_bnd
       real(r8), intent(out), dimension(:,:,:) :: tau_gpt
-      real(r8) :: combined_cld(ncol,nlev)
-      logical :: iscloudy(ngpt,ncol,nlev)
+      real(r8), dimension(ncol,nlev) :: combined_cld
+      logical, dimension(ngpt,ncol,nlev) :: iscloudy
 
-      ! For MCICA sampling routine
+      ! For MCICA sampling routine, how many times to permute random seed
       integer, parameter :: changeseed = 1
 
       ! Loop variables
