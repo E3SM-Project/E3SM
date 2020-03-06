@@ -61,7 +61,7 @@ ThreadPreferences::ThreadPreferences ()
   : max_threads_usable(NP*NP),
     max_vectors_usable(NUM_PHYSICAL_LEV),
     prefer_threads(true),
-    prefer_larger_team(false)
+    prefer_larger_team(true)
 {}
 
 namespace Parallel {
