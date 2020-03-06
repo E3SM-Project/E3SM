@@ -579,9 +579,7 @@ end subroutine clubb_init_cnst
 
 
     !----- Begin Code -----
-    !$OMP PARALLEL
     l_do_expldiff_rtm_thlm = do_expldiff
-    !$OMP END PARALLEL
     
     allocate( &
        pdf_params_chnk(pcols,begchunk:endchunk),   &
