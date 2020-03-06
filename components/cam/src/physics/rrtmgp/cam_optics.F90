@@ -4,8 +4,6 @@ module cam_optics
    use assertions, only: assert, assert_valid, assert_range
    use radconstants, only: nswbands, nlwbands
    use rad_constituents, only: icecldoptics, liqcldoptics
-   use ebert_curry, only: ec_ice_optics_sw, ec_ice_optics_lw
-   use slingo, only: slingo_liq_optics_sw, slingo_liq_optics_lw
    use cam_abortutils, only: endrun
    use ppgrid, only: pcols, pver
 
@@ -35,8 +33,9 @@ contains
 
       use ppgrid, only: pcols
       use physics_types, only: physics_state
-      use cloud_rad_props, only: mitchell_ice_optics_sw, &
-                                 gammadist_liq_optics_sw
+      use cloud_rad_props, only: mitchell_ice_optics_sw, gammadist_liq_optics_sw
+      use ebert_curry, only: ec_ice_optics_sw
+      use slingo, only: slingo_liq_optics_sw
 
       integer, intent(in) :: ncol, nlev, nbnd
       real(r8), intent(in), dimension(:,:) :: &
@@ -217,8 +216,9 @@ contains
          tau_out)
 
       use ppgrid, only: pcols
-      use cloud_rad_props, only: gammadist_liq_optics_lw, &
-                                 mitchell_ice_optics_lw
+      use cloud_rad_props, only: gammadist_liq_optics_lw, mitchell_ice_optics_lw
+      use ebert_curry, only: ec_ice_optics_lw
+      use slingo, only: slingo_liq_optics_lw
       use radconstants, only: nlwbands
 
       integer, intent(in) :: ncol, nlev, nbnd
