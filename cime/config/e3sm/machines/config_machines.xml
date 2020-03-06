@@ -1042,7 +1042,7 @@
       </modules>
       <modules compiler="intel" mpilib="mvapich">
         <command name="load">mvapich2/2.2-verbs-qwuab3b</command>
-        <command name="load">parallel-netcdf/1.7.0-lbykqph</command>
+        <command name="load">parallel-netcdf/1.11.0-6qz7skn</command>
       </modules>
       <modules compiler="intel18">
         <command name="load">intel/18.0.4-62uvgmb</command>
