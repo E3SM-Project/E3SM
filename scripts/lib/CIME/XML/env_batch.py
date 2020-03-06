@@ -63,7 +63,6 @@ class EnvBatch(EnvBase):
         node = self.get_optional_child(item, attribute)
         if node is None:
             # this will take the last instance of item listed in all batch_system elements
-            print ("batchtype is {}".format(self._batchtype))
             if self._batchtype and self._batchtype != 'none':
                 bs_nodes = self.get_children("batch_system")
                 for bsnode in bs_nodes:
