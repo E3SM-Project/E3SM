@@ -169,9 +169,10 @@ struct DirkFunctorImpl {
     elem_ops.init(hvcoord);
 
     const auto work = m_work;
+    const auto tu   = m_tu_ig;
 
     const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team, m_tu_ig);
+      KernelVariables kv(team, tu);
       const auto ie = kv.ie;
 
       const ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV_P]>
@@ -228,9 +229,10 @@ struct DirkFunctorImpl {
     const auto e_gradphis = e.m_geometry.m_gradphis;
     const auto e_initial_guess = e.m_derived.m_divdp_proj;
     const auto hybi = hvcoord.hybrid_bi;
+    const auto tu   = m_tu;
 
     const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team, m_tu);
+      KernelVariables kv(team, tu);
       const auto ie = kv.ie;
       const int nlev = num_phys_lev;
 

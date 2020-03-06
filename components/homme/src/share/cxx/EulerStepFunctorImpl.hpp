@@ -454,10 +454,11 @@ public:
     const int qsize = m_data.qsize;
     const auto qdp = m_tracers.qdp;
     const Real rkstage = 3.0;
+    const auto tu_ne_qsize = m_tu_ne_qsize;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize),
       KOKKOS_LAMBDA(const TeamMember& team) {
-        KernelVariables kv(team, qsize, m_tu_ne_qsize);
+        KernelVariables kv(team, qsize, tu_ne_qsize);
         const auto qdp_n0 = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qdp_np1 = Homme::subview(qdp, kv.ie, np1_qdp, kv.iq);
         Kokkos::parallel_for(
@@ -483,10 +484,11 @@ public:
     const auto divdp_proj = m_derived_state.m_divdp_proj;
     const auto rhsmdt = c.rhs_multiplier * c.dt;
     const auto buf = m_buffers.dp;
+    const auto tu_ne = m_tu_ne;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()),
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team, m_tu_ne);
+        KernelVariables kv(team, tu_ne);
         Kokkos::parallel_for (
           Kokkos::TeamThreadRange(kv.team, NP*NP),
           [&] (const int loop_idx) {
@@ -515,10 +517,11 @@ public:
     const auto dp = m_buffers.dp;
     const auto qtens_biharmonic = m_tracers.qtens_biharmonic;
     const auto qlim = m_tracers.qlim;
+    const auto tu_tv = m_tu_tv;
     Kokkos::parallel_for(
       m_tv_policy,
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team, qsize, m_tu_tv);
+        KernelVariables kv(team, qsize, tu_tv);
         const auto dp_t = Homme::subview(dp, kv.ie);
         const auto qdp_t = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qtens_biharmonic_t = Homme::subview(qtens_biharmonic, kv.ie, kv.iq);

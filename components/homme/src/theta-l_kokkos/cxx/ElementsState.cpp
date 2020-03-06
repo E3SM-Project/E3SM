@@ -50,11 +50,12 @@ void RefStates::compute(const bool hydrostatic,
   constexpr Real Tref = PhysicalConstants::Tref;
 
   const int num_slots = m_tu.get_num_ws_slots();
+  const auto tu = m_tu;
 
   ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> buf_p("",num_slots);
   ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> buf_p_i("",num_slots);
   Kokkos::parallel_for(m_policy,KOKKOS_LAMBDA(const TeamMember& team){
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, tu);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NP*NP),
                          [&](const int idx){
       const int igp = idx / NP;
@@ -287,8 +288,9 @@ void ElementsState::randomize(const int seed,
   hvcoord.m_inited = true;
   auto dp = m_dp3d;
   auto ps = m_ps_v;
+  const auto tu = m_tu;
   Kokkos::parallel_for(m_policy, KOKKOS_LAMBDA(const TeamMember& team) {
-    KernelVariables kv(team, m_tu);
+    KernelVariables kv(team, tu);
     const int ie = kv.ie / NUM_TIME_LEVELS;
     const int tl = kv.ie % NUM_TIME_LEVELS;
     hvcoord.compute_ps_ref_from_dp(kv,Homme::subview(dp,ie,tl),
