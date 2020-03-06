@@ -155,10 +155,11 @@ struct DefaultThreadsDistribution<Hommexx_Cuda> {
 // DefaultThreadsDistribution.
 template <typename ExecSpace, typename... Tags>
 Kokkos::TeamPolicy<ExecSpace, Tags...>
-get_default_team_policy(const int num_parallel_iterations) {
+get_default_team_policy(const int num_parallel_iterations,
+                        const ThreadPreferences tp = ThreadPreferences()) {
   const auto threads_vectors =
     DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
-      num_parallel_iterations);
+      num_parallel_iterations, tp);
   auto policy = Kokkos::TeamPolicy<ExecSpace, Tags...>(num_parallel_iterations,
                                                    threads_vectors.first,
                                                    threads_vectors.second);
