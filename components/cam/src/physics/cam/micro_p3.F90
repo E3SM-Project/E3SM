@@ -2639,6 +2639,9 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
    ! deposition/condensation-freezing nucleation
    ! allow ice nucleation if < -15 C and > 5% ice supersaturation
    ! use CELL-AVERAGE values, freezing of vapor
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cxx_exp
+#endif
 
    implicit none
 
@@ -2658,7 +2661,7 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
    if ( t .lt.icenuct .and. supi.ge.0.05_rtype) then
       if(.not. log_predictNc) then
 !         ! dum = exp(-0.639+0.1296*100.*supi(i,k))*1000.*inv_rho(i,k)  !Meyers et al. (1992)
-         dum = 0.005_rtype*exp(0.304_rtype*(zerodegc-t))*1000._rtype*inv_rho   !Cooper (1986)
+         dum = 0.005_rtype*bfb_exp(0.304_rtype*(zerodegc-t))*1000._rtype*inv_rho   !Cooper (1986)
          dum = min(dum,100.e3_rtype*inv_rho)
          N_nuc = max(0._rtype,(dum-nitot)*odt)
          if (N_nuc.ge.1.e-20_rtype) then
