@@ -1662,10 +1662,11 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
-        expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
-        the_match = expected_pattern.search(output)
-        self.assertNotEqual(the_match, None,
-                            msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
+        for test_name in test_names:
+            expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
+            the_match = expected_pattern.search(output)
+            self.assertNotEqual(the_match, None,
+                                msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
         run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"

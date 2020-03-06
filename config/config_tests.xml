@@ -472,7 +472,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_N>11</STOP_N>
     <CHECK_TIMING>FALSE</CHECK_TIMING>
     <DOUT_S>FALSE</DOUT_S>
-    <RESUBMIT>7</RESUBMIT>
+    <RESUBMIT>3</RESUBMIT>
   </test>
 
   <test NAME="TESTTESTDIFF" INFRASTRUCTURE_TEST="TRUE">
