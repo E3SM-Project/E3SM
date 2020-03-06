@@ -99,6 +99,8 @@ struct ThreadPreferences {
   int max_vectors_usable;
   // Prefer threads to vectors? Default: true.
   bool prefer_threads;
+  // Prefer larger teams even when league_size is large.
+  bool prefer_larger_team;
 
   ThreadPreferences();
 };
