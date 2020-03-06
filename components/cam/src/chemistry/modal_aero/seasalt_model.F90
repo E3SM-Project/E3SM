@@ -8,6 +8,8 @@ module seasalt_model
   use modal_aero_data,only: ntot_amode
   use tracer_data,    only: trfld, trfile
   use cam_logfile,    only: iulog
+use module_perturb
+  use time_manager,    only: is_first_step, get_nstep
 
   implicit none
   private
@@ -105,7 +107,7 @@ module seasalt_model
 
   logical :: seasalt_active = .false.
 
-  logical :: debug_mam_mom = .false.
+  logical :: debug_mam_mom = .true.
 
 ! Parameters for organic sea salt emissions
     real(r8), parameter :: Aw_carbon = 12.0107_r8       ! Atomic weight oc carbon
@@ -150,7 +152,7 @@ module seasalt_model
    integer             :: fmoa = 1
 
 ! TODO SMB: Implement better mechanism for setting this switch.
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_MOM)
    logical :: has_mam_mom = .true.
 #else
    logical :: has_mam_mom = .false.
@@ -216,10 +218,15 @@ contains
 
     do m = 1, seasalt_nbin
        call cnst_get_ind(seasalt_names(m), seasalt_indices(m),abort=.false.)
+       write(107,*)'sst_emissions_init_1:',m,seasalt_indices(m),seasalt_names(m),seasalt_nbin
     enddo
     do m = 1, seasalt_nnum
        call cnst_get_ind(seasalt_names(seasalt_nbin+m), seasalt_indices(seasalt_nbin+m),abort=.false.)
+       write(107,*)'sst_emissions_init_2:',m,seasalt_indices(seasalt_nbin+m),seasalt_names(seasalt_nbin+m),seasalt_nbin+m,seasalt_nnum
     enddo
+
+    write(107,*)'sst_emissions_init_3:',m
+    if(seasalt_nbin+seasalt_nnum>10)seasalt_indices(m+5)=43 !BALLI
 
     seasalt_active = any(seasalt_indices(:) > 0)
 
@@ -484,7 +491,7 @@ end subroutine ocean_data_readnl
 
    integer  :: m_om ! integer for iteration
 
-    fi(:ncol,:nsections) = fluxes( srf_temp, u10cubed, ncol )
+    fi(:ncol,:nsections) = fluxes( srf_temp, u10cubed, ncol,lchnk )
 
     calculate_organic_fraction: if ( has_mam_mom ) then
 
@@ -542,21 +549,26 @@ end subroutine ocean_data_readnl
        mm = seasalt_indices(ibin)
        ! Index of number mode
        mn = seasalt_indices(nslt+nslt_om+ibin)
+       if(icolprnt(lchnk)>0)write(108,*)'sst_emissions_index:',ibin,mm,mn,seasalt_nbin,seasalt_nnum
 
        if (mn>0) then
 !! Total number flux per mode
           section_loop_ssa_num: do i=1, nsections
              if ( has_mam_mom ) then
+                !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_0a1:',cflx(icolprnt(lchnk),mn),ibin,i,nsections,Dg(i),sst_sz_range_lo(ibin),sst_sz_range_hi(ibin)
              cflx_help2(:ncol) = 0.0_r8
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
-                if ((ibin==3).or.(ibin==4)) then
+                if ((ibin==3).or.(ibin==4)) then !BALLI- should we include ibin==5?
                    ! Don't apply OM parameterization to fine or coarse SS mode
+                   !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_0a2:',cflx(icolprnt(lchnk),mn)
                    cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)
+                   !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_0a:',cflx(icolprnt(lchnk),mn),fi(icolprnt(lchnk),i),ocnfrc(icolprnt(lchnk)),emis_scale 
                 else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
                    ! Mixing state 1: external mixture, add OM to mass and number
                    ! Mixing state 3: internal mixture, add OM to mass and number
                    cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)
+                   !if(icolprnt(lchnk)>0  .and. mn==41)write(110,*)'sst_emissions_0b:',cflx(icolprnt(lchnk),mn),ibin,i
                 else if ( ( mixing_state == 0 ) .or. ( mixing_state == 2 ) ) then
                    ! Apply OM parameterization to Aitken (m=2) and accumulation (m=1) modes
                    ! Mixing state 0: external mixture, replace mass and number
@@ -565,6 +577,7 @@ end subroutine ocean_data_readnl
                    !                 total number not modified
                    cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol) * &
                         (1._r8 - om_ssa(:ncol, i)) ! Subtract OM from SS (per section)
+                   !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_0c:',cflx(icolprnt(lchnk),mn),ibin,i
                 else
                    ! Unknown mixing state assumption
                    call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
@@ -573,25 +586,30 @@ end subroutine ocean_data_readnl
           else
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx(:ncol,mn)=cflx(:ncol,mn)+fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
+                !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_0d:',cflx(icolprnt(lchnk),mn),ibin,i
              endif
           end if
           enddo section_loop_ssa_num
        endif
 
+       !if(icolprnt(lchnk)>0)write(110,*)'sst_emissions_1:',cflx(icolprnt(lchnk),41),ibin
        cflx(:ncol,mm)=0.0_r8
        section_loop_sslt_mass: do i=1, nsections
           if ( has_mam_mom ) then
-          if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
+             !if(icolprnt(lchnk)>0)write(110,*)'sst_emissions_1a0:',cflx(icolprnt(lchnk),41),ibin,Dg(i),sst_sz_range_lo(ibin),sst_sz_range_hi(ibin),i
+             if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin) .and. mm .ne. 41) then !BALLI
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
              if ((ibin==3).or.(ibin==4)) then
                 ! Don't apply OM parameterization to fine or coarse SS mode
                 cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol)
+                !if(icolprnt(lchnk)>0  .and. mm==41)write(110,*)'sst_emissions_1a:',cflx(icolprnt(lchnk),mm),cflx_help2(icolprnt(lchnk)),ibin,i,mm
              else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
                 ! Mixing state 1: external mixture, add OM to mass and number
                 ! Mixing state 3: internal mixture, add OM to mass and number
                 cflx(:ncol,mm)      = cflx(:ncol,mm)      +cflx_help2(:ncol)
+                !if(icolprnt(lchnk)>0 .and. mm==41)write(110,*)'sst_emissions_1b:',cflx(icolprnt(lchnk),mm),cflx_help2(icolprnt(lchnk)),ibin,i
              else if ( ( mixing_state == 0 ) .or. ( mixing_state == 2 ) ) then
                 ! Apply OM parameterization to Aitken (m=2) and accumulation (m=1) modes
                 ! Mixing state 0: external mixture, replace mass and number
@@ -600,6 +618,7 @@ end subroutine ocean_data_readnl
                 !                 total number not modified
                 cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol) * &
                      (1._r8 - om_ssa(:ncol, i)) ! Subtract OM from SS (per section)
+                !if(icolprnt(lchnk)>0 .and. mm==41)write(110,*)'sst_emissions_1c:',cflx(icolprnt(lchnk),mm),cflx_help2(icolprnt(lchnk)),om_ssa(icolprnt(lchnk), i),ibin,i,mm
              else
                 ! Unknown mixing state assumption
                 call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
@@ -609,13 +628,16 @@ end subroutine ocean_data_readnl
           if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
              cflx(:ncol,mm)=cflx(:ncol,mm)+fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
+             !if(icolprnt(lchnk)>0 .and. mm==41)write(110,*)'sst_emissions_1d:',cflx(icolprnt(lchnk),mm),fi(icolprnt(lchnk),i),ocnfrc(icolprnt(lchnk)),emis_scale,rdry(i),dns_aer_sst
           endif
        endif
+       !if(icolprnt(lchnk)>0 .and. mm==41)write(110,*)'sst_emissions_2:',cflx(icolprnt(lchnk),mm),ibin,i
        enddo section_loop_sslt_mass
 
+       !if(icolprnt(lchnk)>0)write(110,*)'sst_emissions_3:',cflx(icolprnt(lchnk),41),ibin,has_mam_mom,mixing_state,om_num_modes
 enddo tracer_loop
 
-#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_MOM)
 
 add_om_species: if ( has_mam_mom ) then
 ! Calculate emission of MOM mass.
@@ -647,7 +669,7 @@ add_om_species: if ( has_mam_mom ) then
     else
        call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
     end if
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM  || MODAL_AERO_5MODE_MOM)
     if ((mixing_state == 1) .or. (mixing_state == 0)) then
        emit_this_mode = (/ .false., .true., .true. /)
     else if ((mixing_state == 2) .or. (mixing_state == 3)) then
@@ -675,17 +697,20 @@ add_om_species: if ( has_mam_mom ) then
                 cflx_help2(:ncol) = 0.0_r8
                 if (Dg(i).ge.sst_sz_range_lo(nslt+m_om) .and. Dg(i).lt.sst_sz_range_hi(nslt+m_om)) then
                    cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale
+                   !if(icolprnt(lchnk)>0  .and. mn==41)write(110,*)'sst_emissions_3a:',cflx(icolprnt(lchnk),mn),fi(icolprnt(lchnk),i),ocnfrc(icolprnt(lchnk)),emis_scale,i
                    if ( ( mixing_state == 0 ) .or. ( mixing_state == 2 ) ) then
                       ! Mixing state 0: external mixture, replace mass with OM,
                       !                 total number not modified
                       ! Mixing state 2: internal mixture, replace mass with OM,
                       !                 total number not modified
                       cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)*om_ssa(:ncol, i)
+                      !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_3b:',cflx(icolprnt(lchnk),mn),cflx_help2(icolprnt(lchnk)),om_ssa(icolprnt(lchnk), i),i
                    else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
                       ! Mixing state 1: external mixture, add OM to mass and number
                       ! Mixing state 3: internal mixture, add OM to mass and number
                       cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol) * &
                                        (1._r8 / (1._r8 - om_ssa(:ncol, i)) - 1._r8)
+                      !if(icolprnt(lchnk)>0 .and. mn==41)write(110,*)'sst_emissions_3c:',cflx(icolprnt(lchnk),mn),cflx_help2(icolprnt(lchnk)),om_ssa(icolprnt(lchnk), i),i
                    else
                       ! Unknown mixing state assumption
                       write(iulog, *) "Error: Unknown mixing_state value in seasalt_model.F90"
@@ -696,11 +721,12 @@ add_om_species: if ( has_mam_mom ) then
              end do section_loop_OM_num
           endif
        end do om_num_mode_loop
+       !if(icolprnt(lchnk)>0)write(110,*)'sst_emissions_4:',cflx(icolprnt(lchnk),41)
 
     om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
        mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || MODAL_AERO_5MODE_MOM ) 
        mm = seasalt_indices(nslt+m_om)
 #endif
 
@@ -741,6 +767,7 @@ add_om_species: if ( has_mam_mom ) then
        end do om_type_loop
     endif
 
+    !if(icolprnt(lchnk)>0)write(110,*)'sst_emissions_5:',cflx(icolprnt(lchnk),41),ibin
     if (debug_mam_mom) then
        call outfld('cflx_'//trim(seasalt_names(nslt+m_om))//'_debug',cflx(:ncol,mm),pcols,lchnk)
     endif
@@ -1234,7 +1261,7 @@ subroutine init_ocean_data()
        om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
           m = nslt+(n-1)*om_num_modes+m_om
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_MOM)
           m = nslt+m_om
 #endif
           call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 

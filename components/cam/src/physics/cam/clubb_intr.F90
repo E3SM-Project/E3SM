@@ -16,6 +16,7 @@ module clubb_intr
   !                                                                                                      ! 
   !----------------------------------------------------------------------------------------------------- !
   use module_perturb
+  use time_manager,    only: is_first_step, get_nstep
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: pver, pverp
   use phys_control,  only: phys_getopts
@@ -1355,7 +1356,6 @@ end subroutine clubb_init_cnst
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
 
-   if(icolprnt(state%lchnk)>0)write(102,*)'clb_top:',state%q(icolprnt(state%lchnk),kprnt,4)
    call t_startf('clubb_tend_cam_init')
    invrs_hdtime = 1._r8 / hdtime
    invrs_gravit = 1._r8 / gravit
@@ -1538,8 +1538,6 @@ end subroutine clubb_init_cnst
 
     ! Add the ice tendency to the output tendency
      call physics_ptend_sum(ptend_loc, ptend_all, ncol)
-
-     if(icolprnt(lchnk)>0)write(102,*)'b1:',state%q(icolprnt(lchnk),kprnt,ixnumliq)
 
     ! ptend_loc is reset to zero by this call
      call physics_update(state1, ptend_loc, hdtime)
@@ -2289,7 +2287,6 @@ end subroutine clubb_init_cnst
       call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice4')
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
-   if(icolprnt(lchnk)>0)write(102,*)'b2:',state%q(icolprnt(lchnk),kprnt,ixnumliq)
    call physics_update(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------------------ !
@@ -2360,7 +2357,6 @@ end subroutine clubb_init_cnst
    call outfld( 'DPDLFT',   ptend_loc%s(:,:)/cpair, pcols, lchnk)
   
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
-   if(icolprnt(lchnk)>0)write(102,*)'b3:',state%q(icolprnt(lchnk),kprnt,ixnumliq)
    call physics_update(state1,ptend_loc,hdtime)
 
    ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
@@ -2745,7 +2741,6 @@ end subroutine clubb_init_cnst
    
    return
 #endif
-   if(icolprnt(state%lchnk)>0)write(102,*)'clb_bot:',state%q(icolprnt(state%lchnk),kprnt,4)
   end subroutine clubb_tend_cam
     
   ! =============================================================================== !
@@ -2795,7 +2790,7 @@ end subroutine clubb_init_cnst
     type(physics_ptend), intent(out)    :: ptend                ! Individual parameterization tendencies
     real(r8),            intent(out)    :: obklen(pcols)        ! Obukhov length [ m ]
     real(r8),            intent(out)    :: ustar(pcols)         ! Surface friction velocity [ m/s ]
-    
+    integer :: nstep,lchnk
 #ifdef CLUBB_SGS 
 
     ! --------------- !
@@ -2825,6 +2820,8 @@ end subroutine clubb_init_cnst
     ustar(pcols)  = 0.0_r8
 #ifdef CLUBB_SGS
 
+    nstep = get_nstep()
+    lchnk = state%lchnk
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
@@ -2866,13 +2863,17 @@ end subroutine clubb_init_cnst
 
     rztodt                 = 1._r8/ztodt
     ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
+    if(icolprnt(lchnk)>0)write(108,*)'clbsrf_1:', ptend%q(icolprnt(lchnk),kprnt,40),nstep
     tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)
+    if(icolprnt(lchnk)>0)write(108,*)'clbsrf_2:', tmp1(icolprnt(lchnk)),ztodt,gravit,state%rpdel(icolprnt(lchnk),kprnt),nstep
 
     do m = 2, pcnst
       ptend%q(:ncol,pver,m) = ptend%q(:ncol,pver,m) + tmp1(:ncol) * cam_in%cflx(:ncol,m)
     enddo
-    
+    if(icolprnt(lchnk)>0)write(108,*)'clbsrf_3:',  ptend%q(icolprnt(lchnk),kprnt,40), cam_in%cflx(icolprnt(lchnk),40),nstep
+
     ptend%q(:ncol,:pver,:) = (ptend%q(:ncol,:pver,:) - state%q(:ncol,:pver,:)) * rztodt
+    if(icolprnt(lchnk)>0)write(108,*)'clbsrf_4:',  ptend%q(icolprnt(lchnk),kprnt,40), rztodt,nstep
 
     ! Convert tendencies of dry constituents to dry basis.
     do m = 1,pcnst

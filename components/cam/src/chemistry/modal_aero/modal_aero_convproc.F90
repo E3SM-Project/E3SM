@@ -3417,7 +3417,7 @@ end subroutine ma_convproc_tend
 !     real(r8) sigman(pmode) ! geometric standard deviation of aerosol size distribution
 !     real(r8) hygro(pmode)  ! hygroscopicity of aerosol mode
 
-   call activate_modal( .false.,                                                   &
+   call activate_modal(                                                    &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
          naerosol, ntot_amode, vaerosol, hygro,                            &
          fn, fm, fluxn, fluxm, flux_fullact                                )
@@ -3699,7 +3699,7 @@ end subroutine ma_convproc_tend
 !     real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation
    if (k == kactfirst) then
 ! at cloud base - do primary activation
-      call activate_modal( .false.,                                                &
+      call activate_modal(                                                 &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
          naerosol, ntot_amode, vaerosol, hygro,                            &
          fn, fm, fluxn, fluxm, flux_fullact                                )
@@ -3709,7 +3709,7 @@ end subroutine ma_convproc_tend
 ! above cloud base - do secondary activation with prescribed supersat 
 ! that is constant with height
       smax_prescribed = method2_activate_smaxmax
-      call activate_modal( .false.,                                                 &
+      call activate_modal(                                                 &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
          naerosol, ntot_amode, vaerosol, hygro,                            &
          fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed               )

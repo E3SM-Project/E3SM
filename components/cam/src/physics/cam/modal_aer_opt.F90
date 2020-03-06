@@ -9,6 +9,8 @@ module modal_aer_opt
 
 ! uses Wiscombe's (1979) mie scattering code
 
+use module_perturb
+use time_manager,       only: get_nstep
 
 use shr_kind_mod,      only: r8 => shr_kind_r8, shr_kind_cl
 use ppgrid,            only: pcols, pver, pverp
@@ -1248,10 +1250,10 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    integer, parameter :: nerrmax_dopaer=1000
    integer  :: nerr_dopaer = 0
    real(r8) :: volf             ! volume fraction of insoluble aerosol
-
+   integer :: iballi,jballi,kballi, nstep
    character(len=*), parameter :: subname = 'modal_aero_lw'
    !----------------------------------------------------------------------------
-
+   nstep = get_nstep()
    lchnk = state%lchnk
    ncol  = state%ncol
 
@@ -1281,7 +1283,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
                                      qaerwat_m, wetdens_m)
    endif
 
-   do m = 1, nmodes
+   do m = 1, 4!Bnmodes !BALLI
 
       dgnumwet => dgnumwet_m(:,:,m)
       qaerwat  => qaerwat_m(:,:,m)
@@ -1330,9 +1332,13 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
                                            refindex_aer_lw=specrefindex)
 
                do i = 1, ncol
+                  if(icolprnt(lchnk)==i .and. ilw == 1 .and. nstep <1 )write(106,*)'specmmr_1:',specmmr(i,k),m,l,k, get_nstep()
                   vol(i)    = specmmr(i,k)/specdens
+                  if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(105,*)'crefin_0:', vol(i), specmmr(i,k),specdens, get_nstep()
                   dryvol(i) = dryvol(i) + vol(i)
+                  if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(105,*)'crefin_1:', crefin(i),vol(i),specrefindex(ilw),ilw
                   crefin(i) = crefin(i) + vol(i)*specrefindex(ilw)
+                  if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(105,*)'crefin_2:', crefin(i)
                end do
             end do
 
@@ -1356,6 +1362,35 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
             ! interpolate coefficients linear in refractive index
             ! first call calcs itab,jtab,ttab,utab
             itab(:ncol) = 0
+
+!!!!!!!!!!!!!!!!!!!!!!!!BBBBBBBBBBBBBBBBBBBBB
+!            subroutine binterp(table,ncol,km,im,jm,x,y,xtab,ytab,ix,jy,t,u,out)
+
+!     bilinear interpolation of table
+!
+!      implicit none
+!      integer im,jm,km,ncol
+!      real(r8) table(km,im,jm),xtab(im),ytab(jm),out(pcols,km)
+!      integer i,ix(pcols),ip1,j,jy(pcols),jp1,k,ic
+!      real(r8) x(pcols),dx,t(pcols),y(pcols),dy,u(pcols), &
+!             tu(pcols),tuc(pcols),tcu(pcols),tcuc(pcols)
+
+!!!!!!!!!!!!!!!!!!!!!!!!BBBBBBBBBBBBBBBBBBBBB
+
+            if(icolprnt(lchnk)>0 .and. k==kprnt  .and. nstep <1) then
+                do i = 1, ncol
+                   write(104,*)'refr:',refr(i),refi(i), ttab(i), utab(i),itab(i), jtab(i),i,icolprnt(lchnk)
+                enddo
+
+                do iballi = 1,prefi
+                   write(104,*)'refitablw:',refitablw(iballi,ilw),iballi,ilw
+                enddo
+
+               do jballi = 1, prefr
+                  write(104,*)'refrtablw:',refrtablw(jballi,ilw),jballi,ilw
+               enddo
+            endif
+
             call binterp(absplw(:,:,:,ilw), ncol, ncoef, prefr, prefi, &
                          refr, refi, refrtablw(:,ilw), refitablw(:,ilw), &
                          itab, jtab, ttab, utab, cabs)
@@ -1363,12 +1398,17 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
             ! parameterized optical properties
             do i = 1, ncol
                pabs(i) = 0.5_r8*cabs(i,1)
+               if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(102,*)'modal_aer_opt_6:',pabs(i),cabs(i,1),m, ncoef, prefr, prefi
                do nc = 2, ncoef
                   pabs(i) = pabs(i) + cheby(nc,i,k)*cabs(i,nc)
+               if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(102,*)'modal_aer_opt_5:',pabs(i),cheby(nc,i,k),cabs(i,nc),nc
                end do
+               if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(102,*)'modal_aer_opt_4:',pabs(i),wetvol(i),rhoh2o,m
                pabs(i)   = pabs(i)*wetvol(i)*rhoh2o
+               if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(102,*)'modal_aer_opt_3:',pabs(i)
                pabs(i)   = max(0._r8,pabs(i))
                dopaer(i) = pabs(i)*mass(i,k)
+               if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(102,*)'modal_aer_opt_2:',dopaer(i),pabs(i),mass(i,k),m
             end do
 
             do i = 1, ncol
@@ -1411,6 +1451,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
 
             do i = 1, ncol
                tauxar(i,k,ilw) = tauxar(i,k,ilw) + dopaer(i)
+               if(icolprnt(lchnk)==i .and. k==kprnt .and. nstep <1)write(102,*)'modal_aer_opt_1:',tauxar(i,k,ilw),dopaer(i),m,ilw
             end do
 
          end do ! k = top_lev, pver

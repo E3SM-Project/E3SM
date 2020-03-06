@@ -5,6 +5,8 @@
 !
 
        module rrtmg_lw_rad
+         
+use module_perturb
 
 !  --------------------------------------------------------------------------
 ! |                                                                          |
@@ -532,12 +534,14 @@
                   pwvcm, fracs, taut, &
                   totuflux, totdflux, fnet, htr, &
                   totuclfl, totdclfl, fnetc, htrc ) 
+           if(icolprnt(lchnk)>0)write(102,*)'rrtmg_lw_rad_1:',htr(kprnt
         else
            call rtrnmr(nlayers, istart, iend, iout, pz, semiss, ncbands, &
                   cldfrac, taucloud, planklay, planklev, plankbnd, &
                   pwvcm, fracs, taut, &
                   totuflux, totdflux, fnet, htr, &
                   totuclfl, totdclfl, fnetc, htrc ) 
+           if(icolprnt(lchnk)>0)write(102,*)'rrtmg_lw_rad_2:',htr(kprnt)
         endif
 
 !  Transfer up and down fluxes and heating rate to output arrays.

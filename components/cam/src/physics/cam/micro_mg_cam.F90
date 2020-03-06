@@ -64,7 +64,7 @@ module micro_mg_cam
 ! added with post_proc%add_field.
 !
 !---------------------------------------------------------------------------------
-use module_perturb
+
 use shr_kind_mod,   only: r8=>shr_kind_r8
 use spmd_utils,     only: masterproc
 use ppgrid,         only: pcols, pver, pverp, psubcols
@@ -1588,7 +1588,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: pckdptr(:,:)
 
    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
-   integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx, iballi, jballi
+   integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
 
    !-------------------------------------------------------------------------------
 
@@ -1617,7 +1617,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, naai_hom_idx,    naai_hom,    col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp)
-   if(icolprnt(lchnk)>0) write(102,*)'micro_mg_packed_npccn_1:',npccn(icolprnt(lchnk),kprnt)
    call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp)
@@ -2191,7 +2190,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          case (0)
 
             call t_startf('micro_mg_tend2')
-            call micro_mg_tend2_0( lchnk, &
+            call micro_mg_tend2_0( &
                  mgncol,         nlev,           dtime/num_steps,&
                  packed_t,               packed_q,               &
                  packed_qc,              packed_qi,              &
@@ -2247,7 +2246,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 		 packed_prer_evap,                                     &
                  packed_frzimm,  packed_frzcnt,  packed_frzdep   )
             call t_stopf('micro_mg_tend2')
-            if(icolprnt(lchnk)>0) write(102,*)'micro_mg_packed_nctend_1:',packed_nctend(13,63)
          end select
       end select
 
@@ -2255,13 +2253,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
       call physics_ptend_init(ptend_loc, psetcols, "micro_mg", &
                               ls=.true., lq=lq)
-      if(icolprnt(lchnk)>0) then
-         if (mgncol >12 .and. nlev>62) then
-            write(102,*)'micro_mg_packed_nctend_2:',packed_nctend(13,63),mgncol,nlev
-         else
-            write(102,*)'micro_mg_packed_nctend_2_ELSE:',mgncol,nlev
-         endif
-      endif
 
       ! Set local tendency.
       ptend_loc%s               = packer%unpack(packed_tlat, 0._r8)
@@ -2289,14 +2280,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          ptend_loc%q(:,:,ixnumsnow) = packer%unpack(packed_nstend, &
               -state_loc%q(:,:,ixnumsnow)/(dtime/num_steps))
       end if
-      if(icolprnt(lchnk)>0) write(102,*)'micro_mg_ptend_loc:',ptend_loc%q(icolprnt(lchnk),kprnt,ixnumliq),state_loc%q(icolprnt(lchnk),kprnt,ixnumliq),mgncol,nlev
-      if(icolprnt(lchnk)>0) then
-         do jballi = 1,nlev
-            do iballi = 1, mgncol
-               !write(102,*)'micro_mg_packed_nctend:',packed_nctend(iballi,jballi),iballi,jballi
-            enddo
-         enddo
-      endif
+
       ! Sum into overall ptend
       call physics_ptend_sum(ptend_loc, ptend, ncol)
 

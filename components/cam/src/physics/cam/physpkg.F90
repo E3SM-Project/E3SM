@@ -1,4 +1,5 @@
 module physpkg
+use module_perturb
   !-----------------------------------------------------------------------
   ! Purpose:
   !
@@ -12,7 +13,7 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
-use module_perturb
+
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use shr_sys_mod,      only: shr_sys_irtc
   use spmd_utils,       only: masterproc
@@ -1490,6 +1491,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     if (phys_do_flux_avg()) then 
        call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
     endif
+    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0a:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
     ! Validate the physics state.
     if (state_debug_checks) &
@@ -1527,11 +1529,15 @@ subroutine tphysac (ztodt,   cam_in,  &
 if (l_tracer_aero) then
 
     ! emissions of aerosols and gas-phase chemistry constituents at surface
+   !if(icolprnt(lchnk)>0)write(110,*)'physpkg_110_1:',cam_in%cflx(icolprnt(lchnk),42),nstep
     call chem_emissions( state, cam_in )
+    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_110_2:',cam_in%cflx(icolprnt(lchnk),42),nstep
+    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0b:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
     if (carma_do_emission) then
        ! carma emissions
        call carma_emission_tend (state, ptend, cam_in, ztodt)
+       !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0c:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call physics_update(state, ptend, ztodt, tend)
     end if
 
@@ -1556,7 +1562,7 @@ end if ! l_tracer_aero
             cam_in%lhf , cam_in%cflx )
 
     end if 
-
+    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0d:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
@@ -1579,7 +1585,7 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
-
+    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0e:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
     ! Chemistry calculation
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
@@ -1602,10 +1608,11 @@ end if ! l_tracer_aero
     ! If CLUBB is called, do not call vertical diffusion, but obukov length and
     !   surface friction velocity still need to be computed.  In addition, 
     !   surface fluxes need to be updated here for constituents 
+!if(icolprnt(lchnk)>0)write(108,*)'physpkg_108_1:',state%q(icolprnt(lchnk),kprnt,42),nstep
     if (do_clubb_sgs) then
 
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
-       
+       !if(icolprnt(lchnk)>0)write(108,*)'physpkg_108_2:',ptend%q(icolprnt(lchnk),kprnt,42),nstep
        ! Update surface flux constituents 
        call physics_update(state, ptend, ztodt, tend)
 
@@ -2462,11 +2469,6 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
 
-       !if(pcnst>40)state%q(:,:,43) = 0.0_r8
-       if(icolprnt(lchnk)>0)then 
-          write(102,*)'before clb and mic:',nstep,state%q(icolprnt(lchnk),kprnt,4)
-          if(pcnst>40)write(103,*)nstep,state%q(icolprnt(lchnk),kprnt,41),state%q(icolprnt(lchnk),kprnt,42),state%q(icolprnt(lchnk),kprnt,43)
-       endif
        do macmic_it = 1, cld_macmic_num_steps
 
         if (l_st_mac) then
@@ -2483,7 +2485,6 @@ end if
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
             call physics_update(state, ptend, ztodt, tend)
-            if(icolprnt(lchnk)>0) write(102,*)'aft_microp_aero_run:',nstep,state%q(icolprnt(lchnk),kprnt,4)
             call check_energy_chng(state, tend, "mp_aero_tend", nstep, ztodt, zero, zero, zero, zero)      
 
           endif
@@ -2517,7 +2518,6 @@ end if
              ! the full time (ztodt).
              call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
              call physics_update(state, ptend, ztodt, tend)
-             if(icolprnt(lchnk)>0) write(102,*)'aft_macrop_driver_tend:',nstep,state%q(icolprnt(lchnk),kprnt,4)
              call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2561,7 +2561,6 @@ end if
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
-                if(icolprnt(lchnk)>0) write(102,*)'aft_clubb_tend_cam:',nstep,state%q(icolprnt(lchnk),kprnt,4)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2615,7 +2614,6 @@ end if
              call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, ncol)
 
              call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
-             if(icolprnt(lchnk)>0) write(102,*)'aft_subcol:',nstep,state%q(icolprnt(lchnk),kprnt,4)
              call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
                   nstep, ztodt, zero_sc, prec_str_sc(:ncol)/cld_macmic_num_steps, &
                   snow_str_sc(:ncol)/cld_macmic_num_steps, zero_sc)
@@ -2625,7 +2623,6 @@ end if
              call physics_ptend_dealloc(ptend_sc)
           else
              call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
-             if(icolprnt(lchnk)>0) write(102,*)'aft_microp_driver_tend:',nstep,state%q(icolprnt(lchnk),kprnt,4),ptend%q(icolprnt(lchnk),kprnt,4)
           end if
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then
@@ -2638,7 +2635,6 @@ end if
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
           call physics_update (state, ptend, ztodt, tend)
-          if(icolprnt(lchnk)>0) write(102,*)'aft_subcol_1:',nstep,state%q(icolprnt(lchnk),kprnt,4)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
                zero, prec_str(:ncol)/cld_macmic_num_steps, &
                snow_str(:ncol)/cld_macmic_num_steps, zero)
@@ -2661,7 +2657,6 @@ end if
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
 
        end do ! end substepping over macrophysics/microphysics
-       if(icolprnt(lchnk)>0) write(102,*)'aft_mic_clb:',nstep,state%q(icolprnt(lchnk),kprnt,4)
 
        prec_sed(:ncol) = prec_sed_macmic(:ncol)/cld_macmic_num_steps
        snow_sed(:ncol) = snow_sed_macmic(:ncol)/cld_macmic_num_steps
@@ -2700,16 +2695,16 @@ if (l_tracer_aero) then
        if (do_clubb_sgs) then
           sh_e_ed_ratio = 0.0_r8
        endif
-
+       if(icolprnt(lchnk)>0)write(108,*)'physpkg_2:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
             cam_out,                                                                 & !Intent-inout
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
-       
+       if(icolprnt(lchnk)>0)write(108,*)'physpkg_3:',ptend%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call physics_update(state, ptend, ztodt, tend)
 
-
+       if(icolprnt(lchnk)>0)write(108,*)'physpkg_4:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        if (carma_do_wetdep) then
           ! CARMA wet deposition
           !
@@ -2723,12 +2718,13 @@ if (l_tracer_aero) then
        end if
 
        call t_startf ('convect_deep_tend2')
+       if(icolprnt(lchnk)>0)write(108,*)'physpkg_5:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
-
+       if(icolprnt(lchnk)>0)write(108,*)'physpkg_6:',ptend%q(icolprnt(lchnk),kprnt,22),state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call physics_update(state, ptend, ztodt, tend)
-
+       if(icolprnt(lchnk)>0)write(108,*)'physpkg_7:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        ! check tracer integrals
        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
@@ -2772,13 +2768,15 @@ if (l_rad) then
     ! Radiation computations
     !===================================================
     call t_startf('radiation')
-
-
+    
+    if(icolprnt(lchnk)>0)write(108,*)'physpkg_8:',state%pmid(icolprnt(lchnk),kprnt),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
     call radiation_tend(state,ptend, pbuf, &
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
          fsds, net_flx,is_cmip6_volc)
+
+    if(icolprnt(lchnk)>0)write(108,*)'physpkg_9:',ptend%s(icolprnt(lchnk),kprnt),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol

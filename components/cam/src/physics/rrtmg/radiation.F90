@@ -1,5 +1,6 @@
 
 module radiation
+use module_perturb
 
 !---------------------------------------------------------------------------------
 ! Purpose:
@@ -1430,6 +1431,7 @@ end function radiation_nextsw_cday
                   call  rrtmg_state_update( state, pbuf, icall, r_state)
 
                   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs)
+                  if(icolprnt(lchnk)>0)write(102,*)'rad_2:',aer_lw_abs(icolprnt(lchnk),kprnt,1)
                   
                   call t_startf ('rad_rrtmg_lw')
                   call rad_rrtmg_lw( &
@@ -1597,6 +1599,7 @@ end function radiation_nextsw_cday
 
     call t_startf ('radheat_tend')
     ! Compute net radiative heating tendency
+    if(icolprnt(lchnk)>0 .and. nstep<1)write(102,*)'rad_1:',qrl(icolprnt(lchnk),kprnt),qrs(icolprnt(lchnk),kprnt)
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &
                       fsnt, flns, flnt, cam_in%asdir, net_flx)
     call t_stopf ('radheat_tend')

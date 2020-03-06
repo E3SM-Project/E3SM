@@ -1,5 +1,6 @@
 module chemistry
-
+  use module_perturb
+  use time_manager,    only: is_first_step, get_nstep
 !---------------------------------------------------------------------------------
 ! "Interactive" gas phase module
 !---------------------------------------------------------------------------------
@@ -1080,22 +1081,26 @@ end function chem_is_active
   ! local vars
 
     integer :: lchnk, ncol
-    integer :: i, m,n 
+    integer :: i, m,n, nstep 
 
     real(r8) :: sflx(pcols,gas_pcnst)
     real(r8) :: megflx(pcols)
 
     lchnk = state%lchnk
     ncol = state%ncol
-    
+    nstep = get_nstep()
+
     ! initialize chemistry constituent surface fluxes to zero
     do m = 2,pcnst
        n = map2chm(m)
        if (n>0) cam_in%cflx(:,m) = 0._r8 
     enddo
 
+    !if(icolprnt(lchnk)>0)write(110,*)'chem_emissions_1:',cam_in%cflx(icolprnt(lchnk),42),state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
     ! aerosol emissions ...
     call aero_model_emissions( state, cam_in )
+    !if(icolprnt(lchnk)>0)write(110,*)'chem_emissions_2:',cam_in%cflx(icolprnt(lchnk),42)
 
    ! MEGAN emissions ...
  
@@ -1113,7 +1118,7 @@ end function chem_is_active
        enddo
 
     endif
-
+    !if(icolprnt(lchnk)>0)write(110,*)'chem_emissions_3:',cam_in%cflx(icolprnt(lchnk),42)
    ! Fire Emissions ...
 
    ! prescribed emissions from file ...
@@ -1130,7 +1135,7 @@ end function chem_is_active
           call outfld( sflxnam(m), cam_in%cflx(:ncol,m), ncol,lchnk )
        endif
     enddo
-
+    !if(icolprnt(lchnk)>0)write(110,*)'chem_emissions_4:',cam_in%cflx(icolprnt(lchnk),42)
 
   end subroutine chem_emissions
 

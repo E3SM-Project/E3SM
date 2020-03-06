@@ -2,6 +2,7 @@
 ! Dust for Modal Aerosol Model
 !===============================================================================
 module dust_model 
+use module_perturb
   use shr_kind_mod, only: r8 => shr_kind_r8, cl => shr_kind_cl
   use spmd_utils,   only: masterproc
   use cam_abortutils,   only: endrun
@@ -108,9 +109,11 @@ module dust_model
 
     do n = 1, dust_nbin
        call cnst_get_ind(dust_names(n), dust_indices(n),abort=.false.)
+       write(109,*)'dust_model_1:',dust_names(n), dust_indices(n),n,dust_nbin
     end do
     do n = 1, dust_nnum
        call cnst_get_ind(dust_names(dust_nbin+n), dust_indices(dust_nbin+n),abort=.false.)
+       write(109,*)'dust_model_2:',dust_names(dust_nbin+n), dust_indices(dust_nbin+n),dust_nbin+n,dust_nbin,n,dust_nnum
     enddo 
     dust_active = any(dust_indices(:) > 0)
     if (.not.dust_active) return
@@ -159,6 +162,8 @@ module dust_model
 !          cflx(i,idst) = sum( -dust_flux_in(i,:) ) &
           cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 &
                * dust_emis_sclfctr(m)*soil_erod(i)/soil_erod_fact*1.15_r8
+          if(idst==42) cflx(i,idst) = 0.0_r8
+          if(icolprnt(lchnk)==i .and. idst==42)write(110,*)'dust_emis_0:',cflx(i,idst),dust_flux_in(i,1),dust_flux_in(i,2),dust_flux_in(i,3),dust_flux_in(i,4),dust_emis_sclfctr(m),m,soil_erod(i),soil_erod_fact
 
           x_mton = 6._r8 / (pi * dust_density * (dust_dmt_vwr(m)**3._r8))                
 
