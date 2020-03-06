@@ -78,8 +78,13 @@ public:
       : team(team_in)
       , ie(team_in.league_rank())
       , iq(-1)
+#if HOMMEXX_CUDA_SHARE_BUFFER
       , team_idx(utils.get_workspace_idx(team_in))
       , team_utils(&utils)
+#else
+      , team_idx(TeamInfo::get_team_idx<ExecSpace>(team_in.team_size(),team_in.league_rank()))
+      , team_utils(nullptr)
+#endif
   {
     // Nothing to be done here
   }
@@ -100,18 +105,25 @@ public:
       : team(team_in)
       , ie(team_in.league_rank() / qsize)
       , iq(team_in.league_rank() % qsize)
+#if HOMMEXX_CUDA_SHARE_BUFFER
       , team_idx(utils.get_workspace_idx(team_in))
       , team_utils(&utils)
+#else
+      , team_idx(TeamInfo::get_team_idx<ExecSpace>(team_in.team_size(),team_in.league_rank()))
+      , team_utils(nullptr)
+#endif
   {
     // Nothing to be done here
   }
 
+#if HOMMEXX_CUDA_SHARE_BUFFER
   KOKKOS_INLINE_FUNCTION
   ~KernelVariables() {
     if (team_utils != nullptr) {
       team_utils->release_workspace_idx(team, team_idx);
     }
   }
+#endif
 
   template <typename Primitive, typename Data>
   KOKKOS_INLINE_FUNCTION Primitive *allocate_team() const {

@@ -123,11 +123,17 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 2) :
     _TeamUtilsCommonBase<Kokkos::Cuda>(policy),
+#if HOMMEXX_CUDA_SHARE_BUFFER
     _num_ws_slots(_league_size > _num_teams
                   ? (overprov_factor * _num_teams > _league_size ? _league_size : overprov_factor * _num_teams)
                   : _num_teams),
-    _need_ws_sharing(_league_size > _num_ws_slots),
+    _need_ws_sharing(_league_size > _num_ws_slots)
     _open_ws_slots("open_ws_slots", _need_ws_sharing ? _num_ws_slots : 0),
+#else
+    _num_ws_slots(_league_size),
+    _need_ws_sharing(false),
+    _open_ws_slots(),
+#endif
     _rand_pool()
   {
     if (_need_ws_sharing) {

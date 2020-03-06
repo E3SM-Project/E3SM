@@ -187,6 +187,9 @@ IF (${HOMME_USE_KOKKOS})
 
   # An option to allow to use GPU pointers for MPI calls. The value of this option is irrelevant for CPU/KNL builds.
   OPTION (HOMMEXX_MPI_ON_DEVICE "Whether we want to use device pointers for MPI calls (relevant only for GPU builds)" ON)
+
+  # An option to allow workspace sharing on GPU
+  OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
 ENDIF()
 
 ##############################################################################
