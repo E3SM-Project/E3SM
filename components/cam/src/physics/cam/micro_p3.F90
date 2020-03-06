@@ -1503,7 +1503,7 @@ contains
        ! ICE
 
        !       Flatau formulation:
-       dt       = max(-80._rtype,t-273.16_rtype)
+       dt       = max(-80._rtype,t-273.15_rtype)
        polysvp1 = a0i + dt*(a1i+dt*(a2i+dt*(a3i+dt*(a4i+dt*(a5i+dt*(a6i+dt*(a7i+       &
             a8i*dt)))))))
        polysvp1 = polysvp1*100._rtype
@@ -1518,7 +1518,7 @@ contains
        ! LIQUID
 
        !       Flatau formulation:
-       dt       = max(-80._rtype,t-273.16_rtype)
+       dt       = max(-80._rtype,t-273.15_rtype)
        polysvp1 = a0 + dt*(a1+dt*(a2+dt*(a3+dt*(a4+dt*(a5+dt*(a6+dt*(a7+a8*dt)))))))
        polysvp1 = polysvp1*100._rtype
 
