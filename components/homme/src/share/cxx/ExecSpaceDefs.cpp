@@ -64,9 +64,18 @@ ThreadPreferences::ThreadPreferences ()
 
 namespace Parallel {
 
-// Use a well-known trick for nextpow2, with a few tweaks for prevpow2;
-// see, e.g.,
+// For nextpow2 and prevpow2, see, e.g.,
 //   https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+unsigned short nextpow2 (unsigned short n) {
+  if (n == 0) return 0;
+  --n;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  ++n;
+  return n;
+}
 unsigned short prevpow2 (unsigned short n) {
   if (n == 0) return 0;
   n >>= 1;
@@ -113,12 +122,16 @@ team_num_threads_vectors_for_gpu (
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
   const int num_warps =
-    std::max( min_num_warps,
-              std::min( max_num_warps,
-                        ( (num_parallel_iterations > 0 &&
-                           num_warps_total > num_parallel_iterations) ?
-                          (num_warps_total / num_parallel_iterations) :
-                          1 )));
+    // Min and max keep num_warps in bounds.
+    std::max<int>( min_num_warps,
+                   // We want num_warps to divide 32, the number of cores per SM, so
+                   // apply nextpow2.
+                   nextpow2(
+                     std::min( max_num_warps,
+                               ( (num_parallel_iterations > 0 &&
+                                  num_warps_total > num_parallel_iterations) ?
+                                 (num_warps_total / num_parallel_iterations) :
+                                 1 ))));
 
   const int num_device_threads = num_warps * num_threads_per_warp;
 
