@@ -14,6 +14,8 @@ import argparse
 import numpy as np
 import glob
 from datetime import datetime
+import traceback
+import sys
 # }}}
 
 def main():
@@ -108,6 +110,7 @@ def main():
                 print('SUCCESS')
             except BaseException:
                 print('!!! FAILURE !!!')
+                traceback.print_exc(file=sys.stdout)
                 success = False
             os.chdir(currentDir)
         print(" ")
