@@ -384,6 +384,12 @@ contains
 
    !----------------------------------------------------------------------------
 
+   ! Compress optics arrays to smaller arrays containing only daytime columns.
+   ! This is to work with the RRTMGP shortwave routines that will fail if they
+   ! encounter non-sunlit columns, and also allows us to perform less
+   ! computations. This routine is primarily a convenience routine to do all of
+   ! the shortwave optics arrays at once, as we do this for individual arrays
+   ! elsewhere in the code.
    subroutine compress_optics_sw(day_indices, tau, ssa, asm, tau_day, ssa_day, asm_day)
       integer, intent(in), dimension(:) :: day_indices
       real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
