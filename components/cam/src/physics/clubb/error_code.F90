@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id$
+! $Id: error_code.F90 7184 2014-08-11 15:23:43Z betlej@uwm.edu $
 !-------------------------------------------------------------------------------
 
 module error_code
@@ -21,69 +21,168 @@ module error_code
 !   None
 !-------------------------------------------------------------------------------
 
+  implicit none
+
+  private ! Default Scope
+
+  public :: & 
+    report_error,  & 
+    fatal_error, & 
+    lapack_error,     & 
+    clubb_at_least_debug_level,  & 
+    set_clubb_debug_level, & 
+    clubb_debug
+
+  private :: clubb_debug_level
+
+  ! Model-Wide Debug Level
+  integer, save :: clubb_debug_level = 0
+
+!$omp threadprivate(clubb_debug_level)
+
+  ! Error Code Values
+  integer, parameter, public :: & 
+    clubb_no_error                 =  0, & 
+    clubb_var_less_than_zero       =  1, & 
+    clubb_var_equals_NaN           =  2, & 
+    clubb_singular_matrix          =  3, & 
+    clubb_bad_lapack_arg           =  4, & 
+    clubb_rtm_level_not_found      =  5, & 
+    clubb_var_out_of_bounds        =  6, &
+    clubb_var_out_of_range         =  7
+
+  contains
+
+!-------------------------------------------------------------------------------
+  subroutine report_error( err_code )
+!
+! Description: 
+!   Reports meaning of error code to console.
+!
+!-------------------------------------------------------------------------------
+
+    use constants_clubb, only: & 
+        fstderr ! Variable(s)
+    use cam_abortutils, only: endrun
+
     implicit none
 
-    private ! Default Scope
+    ! Input Variable
+    integer, intent(in) :: err_code ! Error Code being examined
 
-    public :: & 
-        clubb_at_least_debug_level,  & 
-        set_clubb_debug_level, &
-        initialize_error_headers
+    ! ---- Begin Code ----
 
-    private :: clubb_debug_level
+    select case ( err_code )
 
-    ! Model-Wide Debug Level
-    integer, save :: clubb_debug_level = 0
+    case ( clubb_no_error )
+      write(fstderr,*) "No errors reported."
+      return
 
-    integer, public :: err_code = 0;
+    case ( clubb_var_less_than_zero )
+      write(fstderr,*) "Variable in CLUBB is less than zero."
+      call endrun()
 
-    character(len=35), public :: err_header
+    case ( clubb_singular_matrix )
+      write(fstderr,*) "Singular Matrix in CLUBB."
+      call endrun()
 
-    !$omp threadprivate(clubb_debug_level,err_code,err_header)
+    case ( clubb_var_equals_NaN )
+      write(fstderr,*) "Variable in CLUBB is NaN."
+      call endrun()
 
-    ! Error Code Values
-    integer, parameter, public :: & 
-        clubb_no_error                 = 0, & 
-        clubb_fatal_error              = 99
+    case ( clubb_bad_lapack_arg )
+      write(fstderr,*) "Argument passed to a LAPACK procedure is invalid."
+      call endrun()
 
-    contains
+    case ( clubb_rtm_level_not_found )
+      write(fstderr,*) "rtm level not found"
+      call endrun()
+
+    case ( clubb_var_out_of_bounds )
+      write(fstderr,*) "Input variable is out of bounds."
+      call endrun()
+
+    case ( clubb_var_out_of_range )
+      write(fstderr,*) "A CLUBB variable had a value outside the valid range."
+      call endrun()
+
+    case default
+      write(fstderr,*) "Unknown error: ", err_code
+      call endrun()
+
+    end select
+
+    return
+  end subroutine report_error
 !-------------------------------------------------------------------------------
+  elemental function lapack_error( err_code )
+!
+! Description: 
+!   Checks to see if the err_code is equal to one
+!   caused by an error encountered using LAPACK.
+! Reference:
+!   None
+!-------------------------------------------------------------------------------
+    implicit none
+
+    ! Input variable
+    integer,intent(in) :: err_code ! Error Code being examined
+
+    ! Output variable
+    logical :: lapack_error
+
+    ! ---- Begin Code ----
+
+    lapack_error = (err_code == clubb_singular_matrix .or. & 
+        err_code == clubb_bad_lapack_arg )
+
+    return
+  end function lapack_error
+
+!-------------------------------------------------------------------------------
+  elemental function fatal_error( err_code )
+!
+! Description: Checks to see if the err_code is one that usually
+!   causes an exit in other parts of CLUBB.
+! References:
+!   None
+!-------------------------------------------------------------------------------
+    implicit none
+
+    ! Input Variable
+    integer, intent(in) :: err_code ! Error Code being examined
+
+    ! Output variable
+    logical :: fatal_error
+
+    ! ---- Begin Code ----
+
+    fatal_error = err_code /= clubb_no_error .and. & 
+                  err_code /= clubb_var_less_than_zero
+    return
+  end function fatal_error
+
+!------------------------------------------------------------------	
+  logical function clubb_at_least_debug_level( level )
+!
 ! Description:
 !   Checks to see if clubb has been set to a specified debug level
-!-------------------------------------------------------------------------------
-    logical function clubb_at_least_debug_level( level )
+!------------------------------------------------------------------
+    implicit none
 
-        implicit none
+    ! Input variable
+    integer, intent(in) :: level   ! The debug level being checked against the current setting
 
-        ! Input variable
-        integer, intent(in) :: level   ! The debug level being checked against the current setting
+    ! ---- Begin Code ----
 
-        ! ---- Begin Code ----
+    clubb_at_least_debug_level = ( level <= clubb_debug_level )
 
-        clubb_at_least_debug_level = ( level <= clubb_debug_level )
-
-        return
-
-    end function clubb_at_least_debug_level
-
-
-    subroutine initialize_error_headers
-
-        implicit none
-
-#ifdef _OPENMP
-        integer :: omp_get_thread_num
-        write(err_header,'(A7,I7,A20)') "Thread ", omp_get_thread_num(), " -- CLUBB -- ERROR: "
-#else
-        integer :: getpid
-        write(err_header,'(A7,I7,A20)') "Process ", getpid(), " -- CLUBB -- ERROR: "
-#endif               
-        
-
-    end subroutine initialize_error_headers
-
+    return
+  end function clubb_at_least_debug_level
 
 !-------------------------------------------------------------------------------
+  subroutine set_clubb_debug_level( level )
+!
 !  Description:
 !    Accessor for clubb_debug_level
 !
@@ -94,18 +193,45 @@ module error_code
 !  References:
 !    None
 !-------------------------------------------------------------------------------
-    subroutine set_clubb_debug_level( level )
+    implicit none
 
-        implicit none
+    ! Input variable
+    integer, intent(in) :: level ! The debug level being checked against the current setting
 
-        ! Input variable
-        integer, intent(in) :: level ! The debug level being checked against the current setting
+    ! ---- Begin Code ----
 
-        ! ---- Begin Code ----
+    clubb_debug_level = level
 
-        clubb_debug_level = max(level,0)
+    return
+  end subroutine set_clubb_debug_level
 
-        return
-        end subroutine set_clubb_debug_level
+!-------------------------------------------------------------------------------
+  subroutine clubb_debug( level, str )
+!
+! Description:
+!   Prints a message to file unit fstderr if the level is greater
+!   than or equal to the current debug level.
+!-------------------------------------------------------------------------------
+    use constants_clubb, only: & 
+        fstderr ! Variable(s)
 
-    end module error_code
+    implicit none
+
+    ! Input Variable(s)
+
+    character(len=*), intent(in) :: str ! The message being reported
+
+    ! The debug level being checked against the current setting
+    integer, intent(in) :: level
+
+    ! ---- Begin Code ----
+
+    if ( level <= clubb_debug_level ) then
+      write(fstderr,*) str
+    end if
+
+    return
+  end subroutine clubb_debug
+
+end module error_code
+!-------------------------------------------------------------------------------
