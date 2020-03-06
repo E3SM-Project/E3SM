@@ -204,7 +204,7 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
-BackToCellAverageData::BackToCellAverageData()
+void BackToCellAverageData::randomize()
 {
   // Populate the struct with numbers between 0 and 1.
   std::default_random_engine generator;

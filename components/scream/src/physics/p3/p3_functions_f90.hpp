@@ -175,8 +175,8 @@ struct BackToCellAverageData
        nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
        qiberg;
 
-  // For testing purposes, all data can be random values between 0 and 1.
-  BackToCellAverageData();
+  // This populates all fields with test data within [0,1].
+  void randomize(); 
 };
 
 void back_to_cell_average(BackToCellAverageData& d);
