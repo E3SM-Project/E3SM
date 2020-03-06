@@ -162,7 +162,7 @@ This allows using a different mpirun command to launch unit tests
     <OS>CNL</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
-    <CHARGE_ACCOUNT>esrl_bmcs</CHARGE_ACCOUNT>
+    <PROJECT>esrl_bmcs</PROJECT>
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
@@ -394,7 +394,7 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
     <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
     <GMAKE>make</GMAKE>
@@ -424,7 +424,7 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
     <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
     <GMAKE>make</GMAKE>
