@@ -211,6 +211,24 @@ extern "C"{
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct CalcRimeDensityData
+{
+  // inputs
+  Real t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol;
+
+  // output
+  Real vtrmi1, rhorime_c;
+};
+
+void calc_rime_density(CalcRimeDensityData& d);
+extern "C"{
+  void calc_rime_density_f(Real t, Real rhofaci, Real f1pr02, Real acn,
+    Real lamc, Real mu_c, Real qc_incld, Real qccol, Real* vtrmi1,
+    Real* rhorime_c);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CldliqImmersionFreezingData
 {
   // inputs

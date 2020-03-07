@@ -2469,7 +2469,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_gamma, cxx_pow
+   use micro_p3_iso_f, only: calc_rime_density_f, cxx_gamma, cxx_pow
 #endif
    !.........................
    ! calculate rime density
@@ -2505,6 +2505,12 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    real(rtype) :: V_impact = 0.0_rtype
    real(rtype) :: Ri = 0.0_rtype
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call calc_rime_density_f(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol,vtrmi1,rhorime_c)
+      return
+   endif
+#endif
    ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
    !  NOTE:  condition applicable for cloud only; modify when rain is added back
    if (qccol.ge.qsmall .and. t.lt.zerodegc) then
