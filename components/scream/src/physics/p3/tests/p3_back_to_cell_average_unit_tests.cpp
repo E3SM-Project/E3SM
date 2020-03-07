@@ -32,8 +32,11 @@ static void run_bfb()
   // Generate n test structs, each populated with random data (values within
   // [0,1]) by the default constructor.
   BackToCellAverageData back_to_cell_average_data[Spack::n];
+  for (Int i = 0; i < Spack::n; ++i) {
+    back_to_cell_average_data[i].randomize();
+  }
 
-  // Sync to device
+  // Sync to device.
   view_1d<BackToCellAverageData> device_data("back_to_cell_average", Spack::n);
   const auto host_data = Kokkos::create_mirror_view(device_data);
   std::copy(&back_to_cell_average_data[0], &back_to_cell_average_data[0] + Spack::n,
