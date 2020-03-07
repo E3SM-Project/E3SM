@@ -3,7 +3,7 @@
 
 #include "share/remap/abstract_remapper.hpp"
 #include "share/atmosphere_process.hpp"
-#include "share/parameter_list.hpp"
+#include "share/scream_parameter_list.hpp"
 
 #include <string>
 #include <list>

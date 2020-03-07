@@ -1,8 +1,8 @@
 #ifndef SCREAM_UNITS_HPP
 #define SCREAM_UNITS_HPP
 
-#include "share/util/rational_constant.hpp"
-#include "share/util/scaling_factor.hpp"
+#include "share/util/scream_rational_constant.hpp"
+#include "share/util/scream_scaling_factor.hpp"
 
 namespace scream
 {

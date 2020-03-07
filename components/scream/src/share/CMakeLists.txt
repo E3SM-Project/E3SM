@@ -39,16 +39,19 @@ set(SHARE_HEADERS
   remap/abstract_remapper.hpp
   remap/identity_remapper.hpp
   remap/inverse_remapper.hpp
-  parameter_list.hpp
+  scream_parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
-  util/factory.hpp
+  util/scream_factory.hpp
   util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp
   util/scream_arch.hpp
   util/scream_kokkos.hpp
   util/scream_lin_interp.hpp
+  util/scream_rational_constant.hpp
+  util/scream_scaling_factor.hpp
+  util/scream_units.hpp
   util/time_stamp.hpp
   scream_workspace.hpp
 )
