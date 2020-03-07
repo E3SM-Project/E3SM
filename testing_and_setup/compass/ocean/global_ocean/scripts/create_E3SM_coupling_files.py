@@ -12,12 +12,15 @@ import subprocess
 import configparser
 import argparse
 import numpy as np
+import xarray as xr
 import glob
 from datetime import datetime
 import traceback
 import sys
-from geometric_features import GeometricFeatures
+from geometric_features import GeometricFeatures, FeatureCollection
 from mpas_tools.ocean.moc import make_moc_basins_and_transects
+from mpas_tools.io import write_netcdf
+import mpas_tools.conversion
 # }}}
 
 
@@ -95,6 +98,9 @@ def main():
     make_dir('assembled_files_for_upload/inputdata/ice/mpas-cice/' + mesh_name)
     make_dir('assembled_files_for_upload/inputdata/cpl/cpl6')
     make_dir('assembled_files_for_upload/inputdata/share/domains')
+    make_dir('assembled_files_for_upload/diagnostics/mpas_analysis/maps')
+    make_dir('assembled_files_for_upload/diagnostics/mpas_analysis/'
+             'region_masks')
 
     success = True
     print()
@@ -246,31 +252,33 @@ def scrip(config, mesh_name, date_string, ice_shelf_cavities):
 
 
 def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
-# {{{
+    # {{{
+    make_moc_masks(mesh_name)
 
-    # make the geojson file
     gf = GeometricFeatures()
 
-    mesh_filename = '../init.nc'
+    features = ['Southern Ocean', 'Southern Ocean 60S',
+                    'Eastern Weddell Sea Shelf', 'Eastern Weddell Sea Deep',
+                    'Western Weddell Sea Shelf', 'Western Weddell Sea Deep',
+                    'Weddell Sea Shelf', 'Weddell Sea Deep',
+                    'Bellingshausen Sea Shelf', 'Bellingshausen Sea Deep',
+                    'Amundsen Sea Shelf', 'Amundsen Sea Deep',
+                    'Eastern Ross Sea Shelf', 'Eastern Ross Sea Deep',
+                    'Western Ross Sea Shelf', 'Western Ross Sea Deep',
+                    'East Antarctic Seas Shelf', 'East Antarctic Seas Deep']
+    fcMask = gf.read('ocean', 'region', features)
+    make_region_masks(mesh_name, suffix='antarcticRegions', fcMask=fcMask)
 
-    mask_filename = '{}_moc_masks.nc'.format(mesh_name)
-    mask_and_transect_filename = '{}_moc_masks_and_transects.nc'.format(
-        mesh_name)
+    fcMask = make_ocean_basins_masks(gf)
+    make_region_masks(mesh_name, suffix='oceanBasins', fcMask=fcMask)
 
-    geojson_filename = 'moc_basins.geojson'
+    fcMask = gf.read('ocean', 'transect')
+    make_region_masks(mesh_name, suffix='transportTransects', fcMask=fcMask)
 
-    make_moc_basins_and_transects(gf, mesh_filename, mask_and_transect_filename,
-                                  geojson_filename=geojson_filename,
-                                  mask_filename=mask_filename)
-
-    output_dir = '../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
-        mesh_name)
-    # make links in output directory
-    make_link(
-        '../../../../../transects_and_regions/{}'.format(
-            mask_and_transect_filename),
-        '{}/{}'.format(output_dir, mask_and_transect_filename))
-# }}}
+    if ice_shelf_cavities:
+        fcMask = make_ice_shelf_masks(gf)
+        make_region_masks(mesh_name, suffix='iceShelfMasks', fcMask=fcMask)
+    # }}}
 
 
 def mapping_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
@@ -665,6 +673,263 @@ def run_command(args):
     except OSError:
         pass
 # }}}
+
+
+def make_moc_masks(mesh_name): # {{{
+    gf = GeometricFeatures()
+
+    mesh_filename = '../init.nc'
+
+    mask_filename = '{}_mocMasks.nc'.format(mesh_name)
+    mask_and_transect_filename = '{}_mocMasksAndTransects.nc'.format(
+        mesh_name)
+
+    geojson_filename = 'mocBasins.geojson'
+
+    make_moc_basins_and_transects(gf, mesh_filename, mask_and_transect_filename,
+                                  geojson_filename=geojson_filename,
+                                  mask_filename=mask_filename)
+
+    # make links in output directories (both inputdata and diagnostics)
+    output_dir = '../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
+        mesh_name)
+    make_link(
+        '../../../../../transects_and_regions/{}'.format(
+            mask_and_transect_filename),
+        '{}/{}'.format(output_dir, mask_and_transect_filename))
+
+    output_dir = '../assembled_files_for_upload/diagnostics/mpas_analysis/' \
+                 'region_masks'
+    make_link(
+        '../../../../transects_and_regions/{}'.format(
+            mask_and_transect_filename),
+        '{}/{}'.format(output_dir, mask_and_transect_filename))
+
+    # }}}
+
+
+def make_ocean_basins_masks(gf): # {{{
+    """
+    Builds features defining the major ocean basins
+    Parameters
+    ----------
+    gf : ``GeometricFeatures``
+        An object that knows how to download and read geometric featuers
+
+    Returns
+    -------
+    fc : ``FeatureCollection``
+        The new feature collection
+    """
+    # Authors
+    # -------
+    # Xylar Asay-Davis
+
+    fc = FeatureCollection()
+    fc.set_group_name(groupName='OceanBasinRegionsGroup')
+
+    # build ocean basins from regions with the appropriate tags
+    for oceanName in ['Atlantic', 'Pacific', 'Indian', 'Arctic',
+                      'Southern_Ocean', 'Mediterranean']:
+
+        basinName = '{}_Basin'.format(oceanName)
+        print(oceanName)
+
+        print(' * merging features')
+        fcBasin = gf.read(componentName='ocean', objectType='region',
+                          tags=[basinName])
+
+        print(' * combining features')
+        fcBasin = fcBasin.combine(featureName=basinName)
+
+        fc.merge(fcBasin)
+
+    # add the global ocean, global ocean between 65S and 65S, and
+    # equatorial region
+    fc.merge(gf.read(componentName='ocean', objectType='region',
+                     featureNames=['Global Ocean',
+                                   'Global Ocean 65N to 65S',
+                                   'Global Ocean 15S to 15N']))
+
+    return fc # }}}
+
+
+def make_ice_shelf_masks(gf):  # {{{
+    iceShelfNames = ['Abbot',
+                     'Amery',
+                     'Atka',
+                     'Aviator',
+                     'Bach',
+                     'Baudouin',
+                     'Borchgrevink',
+                     'Brahms',
+                     'Brunt_Stancomb',
+                     'Campbell',
+                     'Cheetham',
+                     'Conger_Glenzer',
+                     'Cook',
+                     'Cosgrove',
+                     'Crosson',
+                     'Dennistoun',
+                     'Dibble',
+                     'Dotson',
+                     'Drygalski',
+                     'Edward_VIII',
+                     'Ekstrom',
+                     'Ferrigno',
+                     'Filchner',
+                     'Fimbul',
+                     'Fitzgerald',
+                     'Frost',
+                     'GeikieInlet',
+                     'George_VI',
+                     'Getz',
+                     'Gillet',
+                     'Hamilton',
+                     'Hannan',
+                     'HarbordGlacier',
+                     'Helen',
+                     'Holmes',
+                     'HolmesWest',
+                     'Hull',
+                     'Jelbart',
+                     'Land',
+                     'Larsen_B',
+                     'Larsen_C',
+                     'Larsen_D',
+                     'Larsen_E',
+                     'Larsen_F',
+                     'Larsen_G',
+                     'Lazarev',
+                     'Lillie',
+                     'Mariner',
+                     'Matusevitch',
+                     'Mendelssohn',
+                     'Mertz',
+                     'Moscow_University',
+                     'Moubray',
+                     'Mulebreen',
+                     'Myers',
+                     'Nansen',
+                     'Nickerson',
+                     'Ninnis',
+                     'Nivl',
+                     'Noll',
+                     'Nordenskjold',
+                     'Pine_Island',
+                     'PourquoiPas',
+                     'Prince_Harald',
+                     'Publications',
+                     'Quar',
+                     'Rayner_Thyer',
+                     'Rennick',
+                     'Richter',
+                     'Riiser-Larsen',
+                     'Ronne',
+                     'Ross_East',
+                     'Ross_West',
+                     'Shackleton',
+                     'Shirase',
+                     'Slava',
+                     'SmithInlet',
+                     'Stange',
+                     'Sulzberger',
+                     'Suvorov',
+                     'Swinburne',
+                     'Thwaites',
+                     'Tinker',
+                     'Totten',
+                     'Tracy_Tremenchus',
+                     'Tucker',
+                     'Underwood',
+                     'Utsikkar',
+                     'Venable',
+                     'Verdi',
+                     'Vigrid',
+                     'Vincennes',
+                     'Voyeykov',
+                     'West',
+                     'Wilkins',
+                     'Wilma_Robert_Downer',
+                     'Withrow',
+                     'Wordie',
+                     'Wylde',
+                     'Zubchatyy']
+
+    combinedIceShelves = {'Filchner-Ronne': ['Filchner', 'Ronne'],
+                          'Ross': ['Ross_East', 'Ross_West'],
+                          'Antarctica': ['AntarcticPenninsulaIMBIE',
+                                         'WestAntarcticaIMBIE',
+                                         'EastAntarcticaIMBIE'],
+                          'Peninsula': ['AntarcticPenninsulaIMBIE'],
+                          'West Antarctica': ['WestAntarcticaIMBIE'],
+                          'East Antarctica': ['EastAntarcticaIMBIE']}
+
+    nIMBIEBasins = 27
+    for basinNumber in range(1, nIMBIEBasins + 1):
+        basinName = 'Antarctica_IMBIE{}'.format(basinNumber)
+        combinedIceShelves['IMBIE{}'.format(basinNumber)] = [basinName]
+
+    # create a FeatureCollection containing all ice shelves and combined ice-shelf
+    # regions
+    fc = FeatureCollection()
+
+    # build analysis regions from combining ice shelves from regions with the
+    # appropriate tags
+    for shelfName in combinedIceShelves:
+        subNames = combinedIceShelves[shelfName]
+        print(shelfName)
+
+        print(' * merging features')
+        fcShelf = gf.read(componentName='iceshelves', objectType='region',
+                          tags=subNames, allTags=False)
+
+        print(' * combining features')
+        fcShelf = fcShelf.combine(featureName=shelfName)
+
+        # merge the feature for the basin into the collection of all basins
+        fc.merge(fcShelf)
+
+    # build ice shelves from regions with the appropriate tags
+    for shelfName in iceShelfNames:
+        print(shelfName)
+
+        print(' * merging features')
+        fcShelf = gf.read(componentName='iceshelves', objectType='region',
+                          tags=[shelfName])
+
+        print(' * combining features')
+        fcShelf = fcShelf.combine(featureName=shelfName)
+
+        # merge the feature for the basin into the collection of all basins
+        fc.merge(fcShelf)
+
+    return fc # }}}
+
+
+def make_region_masks(mesh_name, suffix, fcMask): # {{{
+    mesh_filename = '../init.nc'
+
+    geojson_filename = '{}.geojson'.format(suffix)
+    mask_filename = '{}_{}.nc'.format(mesh_name, suffix)
+
+    fcMask.to_geojson(geojson_filename)
+
+    dsMesh = xr.open_dataset(mesh_filename)
+
+    dsMask = mpas_tools.conversion.mask(dsMesh, fcMask=fcMask)
+
+    write_netcdf(dsMask, mask_filename)
+
+    # make links in output directory
+    output_dir = '../assembled_files_for_upload/diagnostics/mpas_analysis/' \
+                 'region_masks'
+    make_link(
+        '../../../../transects_and_regions/{}'.format(
+            mask_filename),
+        '{}/{}'.format(output_dir, mask_filename))
+
+    # }}}
 
 
 if __name__ == '__main__':
