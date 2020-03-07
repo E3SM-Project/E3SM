@@ -21,6 +21,8 @@ from geometric_features import GeometricFeatures, FeatureCollection
 from mpas_tools.ocean.moc import make_moc_basins_and_transects
 from mpas_tools.io import write_netcdf
 import mpas_tools.conversion
+from pyremap import MpasMeshDescriptor, Remapper, get_lat_lon_descriptor, \
+    get_polar_descriptor
 # }}}
 
 
@@ -37,6 +39,7 @@ def main():
                      initial_condition_seaice,
                      scrip,
                      transects_and_regions,
+                     mapping_analysis,
                      mapping_CORE_Gcase,
                      mapping_JRA_Gcase,
                      mapping_ne30,
@@ -278,6 +281,24 @@ def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
     if ice_shelf_cavities:
         fcMask = make_ice_shelf_masks(gf)
         make_region_masks(mesh_name, suffix='iceShelfMasks', fcMask=fcMask)
+    # }}}
+
+
+def mapping_analysis(config, mesh_name, date_string, ice_shelf_cavities):
+    # {{{
+    make_analysis_lat_lon_map(config, mesh_name)
+    make_analysis_polar_map(config, mesh_name, projection='antarctic')
+    make_analysis_polar_map(config, mesh_name, projection='arctic')
+
+    # make links in output directory
+    files = glob.glob('map_*')
+
+    # make links in output directory
+    output_dir = '../assembled_files_for_upload/diagnostics/mpas_analysis/maps'
+    for filename in files:
+        make_link('../../../../mapping_analysis/{}'.format(filename),
+                  '{}/{}'.format(output_dir, filename))
+
     # }}}
 
 
@@ -708,7 +729,7 @@ def make_moc_masks(mesh_name): # {{{
     # }}}
 
 
-def make_ocean_basins_masks(gf): # {{{
+def make_ocean_basins_masks(gf):  # {{{
     """
     Builds features defining the major ocean basins
     Parameters
@@ -751,7 +772,7 @@ def make_ocean_basins_masks(gf): # {{{
                                    'Global Ocean 65N to 65S',
                                    'Global Ocean 15S to 15N']))
 
-    return fc # }}}
+    return fc  # }}}
 
 
 def make_ice_shelf_masks(gf):  # {{{
@@ -904,10 +925,10 @@ def make_ice_shelf_masks(gf):  # {{{
         # merge the feature for the basin into the collection of all basins
         fc.merge(fcShelf)
 
-    return fc # }}}
+    return fc  # }}}
 
 
-def make_region_masks(mesh_name, suffix, fcMask): # {{{
+def make_region_masks(mesh_name, suffix, fcMask):  # {{{
     mesh_filename = '../init.nc'
 
     geojson_filename = '{}.geojson'.format(suffix)
@@ -929,6 +950,63 @@ def make_region_masks(mesh_name, suffix, fcMask): # {{{
             mask_filename),
         '{}/{}'.format(output_dir, mask_filename))
 
+    # }}}
+
+
+def make_analysis_lat_lon_map(config, mesh_name):
+    # {{{
+    mesh_filename = '../init.nc'
+
+    inDescriptor = MpasMeshDescriptor(mesh_filename, mesh_name)
+
+    comparisonLatResolution = config.getfloat('mapping_analysis',
+                                              'comparisonLatResolution')
+    comparisonLonResolution = config.getfloat('mapping_analysis',
+                                              'comparisonLonResolution')
+
+    # modify the resolution of the global lat-lon grid as desired
+    outDescriptor = get_lat_lon_descriptor(dLon=comparisonLatResolution,
+                                           dLat=comparisonLonResolution)
+    outGridName = outDescriptor.meshName
+
+    mappingFileName = 'map_{}_to_{}_bilinear.nc'.format(mesh_name, outGridName)
+
+    remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
+
+    mpiTasks = config.getint('main', 'nprocs')
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    # }}}
+
+
+def make_analysis_polar_map(config, mesh_name, projection):
+    # {{{
+    mesh_filename = '../init.nc'
+
+    upperProj = projection[0].upper() + projection[1:]
+
+    inDescriptor = MpasMeshDescriptor(mesh_filename, mesh_name)
+
+    comparisonStereoWidth = config.getfloat(
+        'mapping_analysis', 'comparison{}StereoWidth'.format(upperProj))
+    comparisonStereoResolution = config.getfloat(
+        'mapping_analysis', 'comparison{}StereoResolution'.format(upperProj))
+
+    outDescriptor = get_polar_descriptor(Lx=comparisonStereoWidth,
+                                         Ly=comparisonStereoWidth,
+                                         dx=comparisonStereoResolution,
+                                         dy=comparisonStereoResolution,
+                                         projection=projection)
+
+    outGridName = '{}x{}km_{}km_{}_stereo'.format(
+        comparisonStereoWidth,  comparisonStereoWidth,
+        comparisonStereoResolution, upperProj)
+
+    mappingFileName = 'map_{}_to_{}_bilinear.nc'.format(mesh_name, outGridName)
+
+    remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
+
+    mpiTasks = config.getint('main', 'nprocs')
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
     # }}}
 
 
