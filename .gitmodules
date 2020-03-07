@@ -27,3 +27,6 @@
 	path = externals/scorpio_classic
 	url = git@github.com:E3SM-Project/scorpio.git
 	branch = scorpio_classic
+[submodule "externals/yaml-cpp"]
+	path = externals/yaml-cpp
+	url = git@github.com:jbeder/yaml-cpp.git
