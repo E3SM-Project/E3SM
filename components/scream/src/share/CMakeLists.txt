@@ -9,6 +9,7 @@ set(SHARE_SRC
   field/field_tracking.cpp
   mpi/scream_comm.cpp
   scream_parameter_list.cpp
+  scream_parse_yaml_file.cpp
   util/scream_utils.cpp
   util/scream_arch.cpp
   util/array_io.cpp
@@ -41,6 +42,7 @@ set(SHARE_HEADERS
   remap/identity_remapper.hpp
   remap/inverse_remapper.hpp
   scream_parameter_list.hpp
+  scream_parse_yaml_file.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
   util/scream_factory.hpp
