@@ -630,4 +630,21 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine update_prognostic_liquid_c
 
+
+  subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, f1pr05, f1pr14,   &
+                                        dv, mu, sc, qitot_incld, nitot_incld, &
+                                        epsi, epsi_tot) bind(C)
+    use micro_p3, only: calc_ice_relaxation_timescale
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr05, f1pr14, &
+                                            dv, mu, sc, qitot_incld, nitot_incld
+    real(kind=c_real), intent(out)   :: epsi
+    real(kind=c_real), intent(inout) :: epsi_tot
+
+    call calc_ice_relaxation_timescale(rho, temp, rhofaci, f1pr05, f1pr14,   &
+                                       dv, mu, sc, qitot_incld, nitot_incld, &
+                                       epsi, epsi_tot)
+  end subroutine ice_relaxation_timescale_c
+
 end module micro_p3_iso_c
