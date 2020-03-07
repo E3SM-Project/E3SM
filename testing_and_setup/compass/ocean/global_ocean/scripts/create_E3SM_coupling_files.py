@@ -680,11 +680,11 @@ def make_moc_masks(mesh_name): # {{{
 
     mesh_filename = '../init.nc'
 
-    mask_filename = '{}_mocMasks.nc'.format(mesh_name)
-    mask_and_transect_filename = '{}_mocMasksAndTransects.nc'.format(
+    mask_filename = '{}_moc_masks.nc'.format(mesh_name)
+    mask_and_transect_filename = '{}_moc_masks_and_transects.nc'.format(
         mesh_name)
 
-    geojson_filename = 'mocBasins.geojson'
+    geojson_filename = 'moc_basins.geojson'
 
     make_moc_basins_and_transects(gf, mesh_filename, mask_and_transect_filename,
                                   geojson_filename=geojson_filename,
