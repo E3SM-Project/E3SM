@@ -40,6 +40,8 @@ SET (ADD_Fortran_FLAGS "-fopenmp -O3" CACHE STRING "")
 SET (ADD_C_FLAGS       "-fopenmp -O3 --std=c++11" CACHE STRING "")
 SET (ADD_CXX_FLAGS     "-fopenmp -O3 --std=c++11" CACHE STRING "")
 
+SET(LINKER_ADD_ON "-lstdc++" CACHE STRING "")
+
 set (ENABLE_OPENMP ON CACHE BOOL "")
 set (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")
 set (ENABLE_HORIZ_OPENMP ON CACHE BOOL "")

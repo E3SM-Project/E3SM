@@ -44,6 +44,12 @@ set (ENABLE_OPENMP OFF CACHE BOOL "")
 set (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")
 set (ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")
 
+#it is really only for stdc++, not for anything else
+SET (HAVE_EXTRAE TRUE CACHE BOOL "")
+SET (Extrae_LIBRARY "-L${KOKKOS_PATH}/lib -lkokkos -ldl -lstdc++" CACHE STRING "")
+
+SET(LINKER_ADD_ON "-lstdc++" CACHE STRING "")
+
 set (HOMME_TESTING_PROFILE "dev" CACHE STRING "")
 
 set (USE_NUM_PROCS 4 CACHE STRING "")
