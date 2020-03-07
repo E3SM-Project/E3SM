@@ -8,6 +8,7 @@ set(SHARE_SRC
   field/field_layout.cpp
   field/field_tracking.cpp
   mpi/scream_comm.cpp
+  scream_parameter_list.cpp
   util/scream_utils.cpp
   util/scream_arch.cpp
   util/array_io.cpp

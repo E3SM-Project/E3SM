@@ -14,6 +14,10 @@ public:
   ParameterList () = default;
   explicit ParameterList (const std::string& name) : m_name(name) {}
 
+  ParameterList& operator= (const ParameterList&) = default;
+
+  const std::string& name () const { return m_name; }
+
   template<typename T>
   T& get (const std::string& name);
 
@@ -26,12 +30,14 @@ public:
   template<typename T>
   void set (const std::string& name, const T& value);
 
-  ParameterList& sublist (const std::string& name) { return m_sublists[name]; }
+  ParameterList& sublist (const std::string& name);
 
   const ParameterList& sublist (const std::string& name) const { return m_sublists.at(name); }
 
   bool isParameter (const std::string& name) const { return m_params.find(name)!=m_params.end(); }
   bool isSublist   (const std::string& name) const { return m_sublists.find(name)!=m_sublists.end(); }
+
+  void print (std::ostream& out = std::cout, const int indent = 0) const;
 private:
 
   std::string                           m_name;
