@@ -124,6 +124,11 @@ void ice_rain_collection_c(Real rho, Real temp, Real rhofaci, Real logn0r, Real 
 
 void ice_self_collection_c(Real rho, Real rhofaci, Real f1pr03, Real eii,
                            Real qirim_incld, Real qitot_incld, Real nitot_incld, Real* nislf);
+
+void ice_relaxation_timescale_c(Real rho, Real temp, Real rhofaci, Real f1pr05, Real f1pr14,
+                                Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
+                                Real* epsi, Real* epsi_tot);
+
 }
 
 namespace scream {
@@ -297,6 +302,14 @@ void ice_self_collection(IceSelfCollectionData& d)
                         &d.nislf);
 }
 
+
+void ice_relaxation_timescale(IceRelaxationData& d)
+{
+  p3_init(true);
+  ice_relaxation_timescale_c(d.rho, d.temp, d.rhofaci, d.f1pr05, d.f1pr14,
+                             d.dv, d.mu, d.sc, d.qitot_incld, d.nitot_incld,
+                             &d.epsi, &d.epsi_tot);
+}
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
     p3_init(true);
@@ -1795,6 +1808,38 @@ void ice_self_collection_f(Real rho_, Real rhofaci_, Real f1pr03_, Real eii_,
 
 }
 
+
+void ice_relaxation_timescale_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr05_, Real f1pr14_,
+                                Real dv_, Real mu_, Real sc_, Real qitot_incld_, Real nitot_incld_,
+                                Real* epsi_, Real* epsi_tot_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, temp{temp_}, rhofaci{rhofaci_}, f1pr05{f1pr05_}, f1pr14{f1pr14_}, dv{dv_},
+          mu{mu_}, sc{sc_}, qitot_incld{qitot_incld_}, nitot_incld{nitot_incld_};
+
+    Spack epsi{0.0}, epsi_tot{0.0};
+
+    P3F::ice_relaxation_timescale(rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld,
+                                  epsi, epsi_tot);
+
+    t_d(0) = epsi[0];
+    t_d(1) = epsi_tot[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *epsi_      = t_h(0);
+  *epsi_tot_  = t_h(1);
+}
 
 
 // Cuda implementations of std math routines are not necessarily BFB
