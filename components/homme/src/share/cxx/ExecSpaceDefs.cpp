@@ -11,6 +11,7 @@
 
 #include "ExecSpaceDefs.hpp"
 #include "Dimensions.hpp"
+#include "utilities/MathUtils.hpp"
 
 #ifdef KOKKOS_ENABLE_CUDA
 # include <cuda.h>
@@ -59,24 +60,11 @@ void initialize_kokkos () {
 ThreadPreferences::ThreadPreferences ()
   : max_threads_usable(NP*NP),
     max_vectors_usable(NUM_PHYSICAL_LEV),
-    prefer_threads(true)
+    prefer_threads(true),
+    prefer_larger_team(false)
 {}
 
 namespace Parallel {
-
-// Use a well-known trick for nextpow2, with a few tweaks for prevpow2;
-// see, e.g.,
-//   https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-unsigned short prevpow2 (unsigned short n) {
-  if (n == 0) return 0;
-  n >>= 1;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  ++n;
-  return n;
-}
 
 std::pair<int, int>
 team_num_threads_vectors_from_pool (
@@ -106,19 +94,41 @@ team_num_threads_vectors_for_gpu (
   const int min_num_warps, const int max_num_warps,
   const int num_parallel_iterations, const ThreadPreferences tp)
 {
+  using Homme::nextpow2;
+  using Homme::prevpow2;
+
   assert(num_warps_total > 0 && num_threads_per_warp > 0 && min_num_warps > 0);
   assert(num_parallel_iterations >= 0);
   assert(min_num_warps <= max_num_warps);
   assert(num_warps_total >= max_num_warps);
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
-  const int num_warps =
-    std::max( min_num_warps,
-              std::min( max_num_warps,
-                        ( (num_parallel_iterations > 0 &&
-                           num_warps_total > num_parallel_iterations) ?
-                          (num_warps_total / num_parallel_iterations) :
-                          1 )));
+  int num_warps;
+  if (tp.prefer_larger_team) {
+    const int num_warps_usable =
+      (tp.max_threads_usable *
+       // Vector size is limited to threads/warp.
+       std::min(num_threads_per_warp, tp.max_vectors_usable) +
+       num_threads_per_warp - 1) /
+      num_threads_per_warp;
+    num_warps =
+      std::max<int>( min_num_warps,
+                     nextpow2(
+                       std::min( max_num_warps,
+                                 std::max( 1, num_warps_usable ))));
+  } else {
+    num_warps =
+      // Min and max keep num_warps in bounds.
+      std::max<int>( min_num_warps,
+                     // We want num_warps to divide 32, the number of cores per SM, so
+                     // apply nextpow2.
+                     nextpow2(
+                       std::min( max_num_warps,
+                                 ( (num_parallel_iterations > 0 &&
+                                    num_warps_total > num_parallel_iterations) ?
+                                   (num_warps_total / num_parallel_iterations) :
+                                   1 ))));
+  }
 
   const int num_device_threads = num_warps * num_threads_per_warp;
 

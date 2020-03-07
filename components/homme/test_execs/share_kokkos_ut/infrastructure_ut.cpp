@@ -96,7 +96,7 @@ TEST_CASE("ExecSpaceDefs",
             npi, tp);
           // Correctness tests.
           test_basics(tp, tv);
-          REQUIRE(Homme::Parallel::prevpow2(tv.second) == tv.second);
+          REQUIRE(Homme::prevpow2(tv.second) == tv.second);
           REQUIRE(tv.first * tv.second >= num_threads_per_warp*min_warps_per_team);
           REQUIRE(tv.first * tv.second <= num_threads_per_warp*max_warps_per_team);
           // Tests for good behavior.
@@ -448,4 +448,14 @@ TEST_CASE("bfb_pow", "test taylor appx of pow function") {
     }
     REQUIRE(rworst<1e-6);
   }
+}
+
+TEST_CASE("", "test math functions") {
+  using Homme::nextpow2;
+  using Homme::prevpow2;
+
+  REQUIRE(nextpow2(16) == 16);
+  REQUIRE(nextpow2(17) == 32);
+  REQUIRE(prevpow2(16) == 16);
+  REQUIRE(prevpow2(17) == 16);
 }

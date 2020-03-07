@@ -105,6 +105,7 @@ struct DirkFunctorImpl {
       tp.max_threads_usable = NUM_PHYSICAL_LEV;
       tp.max_vectors_usable = NP*NP;
       tp.prefer_threads = false;
+      tp.prefer_larger_team = true;
       const auto p = DefaultThreadsDistribution<ExecSpace>
         ::team_num_threads_vectors(nelem, tp);
       const auto

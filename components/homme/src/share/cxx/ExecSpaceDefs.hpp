@@ -99,14 +99,13 @@ struct ThreadPreferences {
   int max_vectors_usable;
   // Prefer threads to vectors? Default: true.
   bool prefer_threads;
+  // Prefer larger teams even when league_size is large.
+  bool prefer_larger_team;
 
   ThreadPreferences();
 };
 
 namespace Parallel {
-// Previous (inclusive) power of 2. E.g., prevpow2(4) -> 4, prevpow2(5) -> 4.
-unsigned short prevpow2(unsigned short n);
-
 // Determine (#threads, #vectors) as a function of a pool of threads provided to
 // the process and the number of parallel iterations to perform.
 std::pair<int, int>
@@ -156,10 +155,11 @@ struct DefaultThreadsDistribution<Hommexx_Cuda> {
 // DefaultThreadsDistribution.
 template <typename ExecSpace, typename... Tags>
 Kokkos::TeamPolicy<ExecSpace, Tags...>
-get_default_team_policy(const int num_parallel_iterations) {
+get_default_team_policy(const int num_parallel_iterations,
+                        const ThreadPreferences tp = ThreadPreferences()) {
   const auto threads_vectors =
     DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
-      num_parallel_iterations);
+      num_parallel_iterations, tp);
   auto policy = Kokkos::TeamPolicy<ExecSpace, Tags...>(num_parallel_iterations,
                                                    threads_vectors.first,
                                                    threads_vectors.second);
