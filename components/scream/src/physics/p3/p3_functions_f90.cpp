@@ -58,6 +58,10 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void calc_rime_density_c(Real t, Real rhofaci, Real f1pr02, Real acn,
+                         Real lamc, Real mu_c, Real qc_incld, Real qccol,
+                         Real* vtrmi1, Real* rhorime_c);
+
 void cldliq_immersion_freezing_c(Real t, Real lamc, Real mu_c, Real cdist1,
                                  Real qc_incld, Real* qcheti, Real* ncheti);
 
@@ -254,6 +258,13 @@ void back_to_cell_average(BackToCellAverageData& d)
     &d.qimlt, &d.qccol, &d.qrheti, &d.nimlt, &d.nccol, &d.ncshdc, &d.ncheti,
     &d.nrcol, &d.nislf, &d.qidep, &d.nrheti, &d.nisub, &d.qinuc, &d.ninuc,
     &d.qiberg);
+}
+
+void calc_rime_density(CalcRimeDensityData& d)
+{
+  p3_init(true);
+  calc_rime_density_c(d.t, d.rhofaci, d.f1pr02, d.acn, d.lamc, d.mu_c,
+                      d.qc_incld, d.qccol, &d.vtrmi1, &d.rhorime_c);
 }
 
 void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
@@ -1555,6 +1566,35 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
   *qiberg_ = t_h(30);
 }
 
+void calc_rime_density_f(
+  Real t_, Real rhofaci_, Real f1pr02_, Real acn_, Real lamc_, Real mu_c_,
+  Real qc_incld_, Real qccol_, Real* vtrmi1_, Real* rhorime_c_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_vtrmi1 = *vtrmi1_;
+  Real local_rhorime_c = *rhorime_c_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack t(t_), rhofaci(rhofaci_), f1pr02(f1pr02_), acn(acn_),
+                          lamc(lamc_), mu_c(mu_c_), qc_incld(qc_incld_),
+                          qccol(qccol_), vtrmi1(local_vtrmi1),
+                          rhorime_c(local_rhorime_c);
+      P3F::calc_rime_density(t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld,
+                             qccol, vtrmi1, rhorime_c);
+
+      t_d(0) = vtrmi1[0];
+      t_d(1) = rhorime_c[0];
+
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *vtrmi1_ = t_h(0);
+  *rhorime_c_ = t_h(1);
+}
+
 void cldliq_immersion_freezing_f(
   Real t_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_,
   Real* qcheti_, Real* ncheti_)
@@ -1984,6 +2024,7 @@ static Scalar wrap_name(Scalar input) {                 \
 }
 
   cuda_wrap_single_arg(cxx_gamma, std::tgamma)
+  cuda_wrap_single_arg(cxx_sqrt, std::sqrt)
   cuda_wrap_single_arg(cxx_cbrt, std::cbrt)
   cuda_wrap_single_arg(cxx_log, std::log)
   cuda_wrap_single_arg(cxx_log10, std::log10)
@@ -2016,6 +2057,15 @@ Real cxx_cbrt(Real input)
   return CudaWrap<Real, DefaultDevice>::cxx_cbrt(input);
 #else
   return std::cbrt(input);
+#endif
+}
+
+Real cxx_sqrt(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_sqrt(input);
+#else
+  return std::sqrt(input);
 #endif
 }
 

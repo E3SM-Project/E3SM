@@ -31,7 +31,6 @@ struct ScalingFactor {
   }
 
   constexpr ScalingFactor (const ScalingFactor&) = default;
-  ScalingFactor& operator= (const ScalingFactor&) = default;
 
   static constexpr ScalingFactor one () { return ScalingFactor(1); }
   static constexpr ScalingFactor zero () { return ScalingFactor(0); }

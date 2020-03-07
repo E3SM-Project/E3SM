@@ -107,6 +107,14 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine calc_rime_density_f(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol,vtrmi1,rhorime_c) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol
+    real(kind=c_real), intent(out) :: vtrmi1, rhorime_c
+  end subroutine calc_rime_density_f
+
   subroutine cldliq_immersion_freezing_f(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
     use iso_c_binding
 
@@ -381,6 +389,16 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     ! return
     real(kind=c_real)               :: cxx_pow
   end function cxx_pow
+
+  function cxx_sqrt(base) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+
+    ! return
+    real(kind=c_real)               :: cxx_sqrt
+  end function cxx_sqrt
 
   function cxx_cbrt(base) bind(C)
     use iso_c_binding

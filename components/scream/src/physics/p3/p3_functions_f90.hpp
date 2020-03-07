@@ -247,6 +247,24 @@ extern "C"{
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct CalcRimeDensityData
+{
+  // inputs
+  Real t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol;
+
+  // output
+  Real vtrmi1, rhorime_c;
+};
+
+void calc_rime_density(CalcRimeDensityData& d);
+extern "C"{
+  void calc_rime_density_f(Real t, Real rhofaci, Real f1pr02, Real acn,
+    Real lamc, Real mu_c, Real qc_incld, Real qccol, Real* vtrmi1,
+    Real* rhorime_c);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CldliqImmersionFreezingData
 {
   // inputs
@@ -780,6 +798,7 @@ void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
 extern "C" {
 
 Real cxx_pow(Real base, Real exp);
+Real cxx_sqrt(Real base);
 Real cxx_cbrt(Real base);
 Real cxx_gamma(Real input);
 Real cxx_log(Real input);

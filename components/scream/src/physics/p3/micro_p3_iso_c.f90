@@ -314,6 +314,16 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine calc_rime_density_c(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol, &
+                                 vtrmi1,rhorime_c) bind(C)
+
+      use micro_p3, only: calc_rime_density
+      real(kind=c_real), value, intent(in) :: t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol
+      real(kind=c_real), intent(out) :: vtrmi1, rhorime_c
+
+      call calc_rime_density(t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol, vtrmi1, rhorime_c)
+  end subroutine calc_rime_density_c
+
   subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
 
       use micro_p3, only: cldliq_immersion_freezing

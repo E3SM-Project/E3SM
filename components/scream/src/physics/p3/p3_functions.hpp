@@ -394,6 +394,13 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Calculates rime density
+  KOKKOS_FUNCTION
+  static void calc_rime_density(const Spack& t, const Spack& rhofaci,
+    const Spack& f1pr02, const Spack& acn, const Spack& lamc,
+    const Spack& mu_c, const Spack& qc_incld, const Spack& qccol,
+    Spack& vtrmi1, Spack& rhorime_c);
+
   // Computes contact and immersion freezing droplets
   KOKKOS_FUNCTION
   static void cldliq_immersion_freezing(const Spack& t, const Spack& lamc,
@@ -518,6 +525,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_impose_max_total_Ni_impl.hpp"
+# include "p3_functions_calc_rime_density_impl.hpp"
 # include "p3_functions_cldliq_imm_freezing_impl.hpp"
 # include "p3_functions_droplet_self_coll_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"

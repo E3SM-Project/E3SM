@@ -9,6 +9,7 @@ set(P3_TESTS_SRCS
   p3_back_to_cell_average_unit_tests.cpp
   p3_find_unit_tests.cpp
   p3_upwind_unit_tests.cpp
+  p3_calc_rime_density_unit_tests.cpp
   p3_cldliq_imm_freezing_unit_tests.cpp
   p3_rain_imm_freezing_unit_tests.cpp
   p3_droplet_self_coll_unit_tests.cpp
