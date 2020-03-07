@@ -558,7 +558,7 @@ contains
     use domainMod   , only : domain_type, domain_init, domain_clean
     use clm_varsur  , only : wt_lunit, topo_glc_mec
     use GridcellType, only : grc_pp
-    use topounit_varcon, only : max_topounits
+    use topounit_varcon, only : max_topounits, has_topounit
     !
     ! !ARGUMENTS:
     integer,          intent(in) :: begg, endg      
@@ -576,7 +576,7 @@ contains
     real(r8)          :: rmaxlon,rmaxlat      ! local min/max vars
     type(file_desc_t) :: ncid                 ! netcdf id
     logical           :: istype_domain        ! true => input file is of type domain
-    logical           :: isgrid2d             ! true => intut grid is 2d     
+    logical           :: isgrid2d             ! true => intut grid is 2d    
     character(len=32) :: subname = 'surfrd_get_data'    ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -607,7 +607,14 @@ contains
     if (readvar) then
        call ncd_io(ncid=ncid, varname= 'TOPO2', flag='read', data=ldomain%topo2, &
          dim1name=grlnd, readvar=readvar)
-    endif
+    endif       
+        
+    ! Read the actual number of topounits per grid    
+	call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname= 'topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
+         dim1name=grlnd, readvar=readvar)
+    endif    
     
 	! Check if fsurdat grid is "close" to fatmlndfrc grid, exit if lats/lon > 0.001
 
@@ -662,18 +669,18 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     call domain_clean(surfdata_domain)
-    
+
     ! Obtain special landunit info
 
-    call surfrd_special(begg, endg, ncid, ldomain%ns)
+    call surfrd_special(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
 
     ! Obtain vegetated landunit info
 
-    call surfrd_veg_all(begg, endg, ncid, ldomain%ns)
+    call surfrd_veg_all(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
 
     call ncd_pio_closefile(ncid)
 
-    call check_sums_equal_1_3d(wt_lunit, begg, 'wt_lunit', subname)
+    call check_sums_equal_1_3d(wt_lunit, begg, 'wt_lunit', subname,ldomain%num_tunits_per_grd)
 
     if ( masterproc )then
        write(iulog,*) 'Successfully read surface boundary data'
@@ -683,7 +690,7 @@ contains
   end subroutine surfrd_get_data
 
 !-----------------------------------------------------------------------
-  subroutine surfrd_special(begg, endg, ncid, ns)
+  subroutine surfrd_special(begg, endg, ncid, ns,ntpu)
     !
     ! !DESCRIPTION:
     ! Determine weight with respect to gridcell of all special "pfts" as well
@@ -699,10 +706,11 @@ contains
     ! !ARGUMENTS:
     integer          , intent(in)    :: begg, endg 
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-    integer          , intent(in)    :: ns     ! domain size
+    integer          , intent(in)    :: ns     ! domain size 
+    integer          , intent(in)    :: ntpu(:)     ! Number of topounits per grid
     !
     ! !LOCAL VARIABLES:
-    integer  :: n,nl,nurb,g, t                ! indices
+    integer  :: n,nl,nurb,g, t,tm,ti                ! indices
     integer  :: dimid,varid                ! netCDF id's
     real(r8) :: nlevsoidata(nlevsoifl)
     logical  :: found                      ! temporary for error check
@@ -726,7 +734,7 @@ contains
     integer ,pointer :: urban_region_id(:,:) 
     real(r8),pointer :: pctglc_mec_tot(:,:) ! percent of grid cell is glacier (sum over classes)
     real(r8),pointer :: pcturb_tot(:,:)  ! percent of grid cell is urban (sum over density classes)
-    real(r8),pointer :: pctspec(:,:)     ! percent of spec lunits wrt gcell
+    real(r8),pointer :: pctspec(:,:)     ! percent of spec lunits wrt gcell    
     integer  :: dens_index             ! urban density index
     character(len=32) :: subname = 'surfrd_special'  ! subroutine name
     real(r8) closelat,closelon
@@ -741,11 +749,11 @@ contains
     allocate(urban_region_id(begg:endg,1:max_topounits))
     allocate(pctglc_mec_tot(begg:endg,1:max_topounits))
     allocate(pctspec(begg:endg,1:max_topounits))
-
+    
     call check_dim(ncid, 'nlevsoi', nlevsoifl)
 
        ! Obtain non-grid surface properties of surface dataset other than percent pft
-   ! if (has_topounit) then
+
     call ncd_io(ncid=ncid, varname='PCT_WETLAND', flag='read', data=pctwet, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_WETLAND  NOT on surfdata file'//errMsg(__FILE__, __LINE__))
@@ -803,7 +811,7 @@ contains
        if (.not. readvar) call endrun( msg=' ERROR: PCT_GLC_MEC NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
        wt_glc_mec(:,:,:) = wt_glc_mec(:,:,:) / 100._r8
-       call check_sums_equal_1_3d(wt_glc_mec, begg, 'wt_glc_mec', subname)
+       call check_sums_equal_1_3d(wt_glc_mec, begg, 'wt_glc_mec', subname,ntpu)
 
        call ncd_io(ncid=ncid, varname='TOPO_GLC_MEC',  flag='read', data=topo_glc_mec, &
             dim1name=grlnd, readvar=readvar)
@@ -829,13 +837,22 @@ contains
 
     found = .false.
     do nl = begg,endg
-       do t = 1, max_topounits
-         write(iulog,*)'pctlak = ',pctlak(nl,t) !TKT
-         write(iulog,*)'pctgla = ',pctgla(nl,t) !TKT
-         write(iulog,*)'pctwet = ',pctwet(nl,t) !TKT
-         write(iulog,*)'pcturb_tot = ',pcturb_tot(nl,t) !TKT
-         write(iulog,*)'PFT = ',pctspec(nl,t) !TKT
-         write(iulog,*)'Grid = ',nl, 'and Topounit = ',t !TKT
+       ti = (nl - begg) + 1
+       !write(iulog,*)'begg and endg are ',begg, ', ', endg !TKT
+       !write(iulog,*)'ntpu = ',ntpu(ti) !TKT
+       !write(iulog,*)'len(ntpu) = ',shape(ntpu) !TKT
+       if (.not. has_topounit) then
+          tm = max_topounits          
+       else
+          tm = ntpu(ti)
+       end if
+       do t = 1, tm
+         !write(iulog,*)'pctlak = ',pctlak(nl,t) !TKT
+         !write(iulog,*)'pctgla = ',pctgla(nl,t) !TKT
+         !write(iulog,*)'pctwet = ',pctwet(nl,t) !TKT
+         !write(iulog,*)'pcturb_tot = ',pcturb_tot(nl,t) !TKT
+         !write(iulog,*)'PFT = ',pctspec(nl,t) !TKT
+         !write(iulog,*)'Grid = ',nl, 'and Topounit = ',t !TKT
             
          if (pctspec(nl,t) > 100._r8+1.e-04_r8) then
             found = .true.
@@ -874,12 +891,11 @@ contains
       
     end do
 
-    call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname)
+    call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname,ntpu)
 
     deallocate(pctgla,pctlak,pctwet,pcturb,pcturb_tot,urban_region_id,pctglc_mec_tot,pctspec)
     
-   ! else
-    
+   ! else    
     
   end subroutine surfrd_special
 
@@ -992,7 +1008,7 @@ contains
   end subroutine surfrd_pftformat
 
   !-----------------------------------------------------------------------
-  subroutine surfrd_veg_all(begg, endg, ncid, ns)
+  subroutine surfrd_veg_all(begg, endg, ncid, ns,ntpu)
     !
     ! !DESCRIPTION:
     ! Determine weight arrays for non-dynamic landuse mode
@@ -1013,6 +1029,7 @@ contains
     integer, intent(in) :: begg, endg
     type(file_desc_t),intent(inout) :: ncid   ! netcdf id
     integer          ,intent(in)    :: ns     ! domain size
+    integer          ,intent(in)    :: ntpu(:)
     !
     ! !LOCAL VARIABLES:
     integer  :: nl, t                             ! index
@@ -1087,12 +1104,12 @@ contains
 
     if (cft_size > 0) then
        wt_cft(begg:endg,:,:) = wt_cft(begg:endg,:,:) / 100._r8
-       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
     end if
     wt_lunit(begg:endg,:,istsoil) = wt_lunit(begg:endg,:,istsoil) / 100._r8
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
-    call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
+    call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
 
     ! If no irrigation, merge irrigated CFTs with rainfed
     
@@ -1121,7 +1138,7 @@ contains
           end do
        end do
 
-       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
     end if
 
   end subroutine surfrd_veg_all

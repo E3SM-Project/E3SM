@@ -218,6 +218,7 @@ contains
        write(iulog,'(72a1)') ("_",i=1,71)
        do nf = 1, naccflds
           if (accum(nf)%period /= huge(1)) then
+             !write(iulog,1003) 'TKT check fields: ', nf, ' ', accum(nf)%name
              write(iulog,1003) nf,accum(nf)%name,accum(nf)%units,&
                   accum(nf)%acctype, accum(nf)%period, accum(nf)%initval, &
                   accum(nf)%desc

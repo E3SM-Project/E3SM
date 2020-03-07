@@ -137,7 +137,7 @@ contains
           grc_pp%topi(curg) = t
        endif
        grc_pp%topf(curg) = t
-       grc_pp%ntopounits(curg) = grc_pp%topf(curg) - grc_pp%topi(curg) + 1
+       !grc_pp%ntopounits(curg) = grc_pp%topf(curg) - grc_pp%topi(curg) + 1
     enddo
 
     ! Determine landunit_indices: indices into landunit-level arrays for each grid cell.

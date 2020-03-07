@@ -144,6 +144,8 @@ contains
                      is_tpu_active = .false.
                  endif                    
              endif
+             !write(iulog,*) ' wttopounit: ',wttopounit2gridcell !TKT
+             !write(iulog,*) ' Grid ID: ', gdc !TKT
              elv = grc_pp%televation(gdc,topounit) 
              slp = grc_pp%tslope(gdc,topounit) 
              asp = grc_pp%taspect(gdc,topounit) 

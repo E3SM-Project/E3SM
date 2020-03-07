@@ -101,6 +101,7 @@ module subgridWeightsMod
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
   use landunit_varcon, only : istsoil, istice, istice_mec
+  use topounit_varcon , only : max_topounits, has_topounit
   !
   ! PUBLIC TYPES:
   implicit none
@@ -589,9 +590,10 @@ contains
     logical, intent(in) :: active_only ! true => check sum of weights just of ACTIVE children, grandchildren, etc.
     !
     ! !LOCAL VARIABLES:
-    integer :: g,t,l,c,p     ! loop counters
+    integer :: g,t,l,c,p, tu     ! loop counters
     real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwtgcell(:), sumwttunit(:)
     logical :: error_found                ! true if we find an error
+    logical :: topo_active_only           ! Check the weights of the active topounits
     character(len=*), parameter :: subname = 'check_weights'
     !------------------------------------------------------------------------------
 
@@ -617,32 +619,46 @@ contains
        if ((active_only .and. veg_pp%active(p)) .or. .not. active_only) then 
           sumwtcol(c) = sumwtcol(c) + veg_pp%wtcol(p)
           sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
+          !topo_active_only = top_pp%active(t)
+          !if(topo_active_only) then  !TKT calculate only for active topounits
           sumwttunit(t) = sumwttunit(t) + veg_pp%wttopounit(p)
           sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
+          !end if
        end if
     end do
 
     do c = bounds%begc,bounds%endc
-       if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
-          write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
+       tu = col_pp%topounit(c)
+       topo_active_only = top_pp%active(tu)
+       if (topo_active_only) then ! Check only for the valid topounits
+          if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
+             write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
 
     do l = bounds%begl,bounds%endl
-       if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
-          write(iulog,*) trim(subname),' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
+       tu = lun_pp%topounit(l)
+       topo_active_only = top_pp%active(tu)
+       if (topo_active_only) then 
+          if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
+             write(iulog,*) trim(subname),' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
     
-    do t = bounds%begt,bounds%endt
-       if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
-          write(iulog,*) trim(subname),' ERROR: at t = ',t,'total PFT weight is ',sumwttunit(t), &
+    do t = bounds%begt,bounds%endt       
+       topo_active_only = top_pp%active(t)
+       if (topo_active_only) then 
+          if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
+             write(iulog,*) trim(subname),' ERROR: at t = ',t,'total PFT weight is ',sumwttunit(t), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
 
@@ -666,24 +682,34 @@ contains
 
        if ((active_only .and. col_pp%active(c)) .or. .not. active_only) then
           sumwtlunit(l) = sumwtlunit(l) + col_pp%wtlunit(c)
+          topo_active_only = top_pp%active(t)
+          !if(topo_active_only) then  !TKT calculate only for active topounits
           sumwttunit(t) = sumwttunit(t) + col_pp%wttopounit(c)
           sumwtgcell(g) = sumwtgcell(g) + col_pp%wtgcell(c)
+          !end if
        end if
     end do
 
     do l = bounds%begl,bounds%endl
-       if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
-          write(iulog,*) trim(subname),' ERROR: at l = ',l,'total col weight is ',sumwtlunit(l), &
+       tu = lun_pp%topounit(l)
+       topo_active_only = top_pp%active(tu)
+       if (topo_active_only) then ! Check only for the valid topounits
+          if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
+             write(iulog,*) trim(subname),' ERROR: at l = ',l,'total col weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
     
     do t = bounds%begt,bounds%endt
-       if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
-          write(iulog,*) trim(subname),' ERROR: at t = ',t,'total col weight is ',sumwttunit(t), &
+       topo_active_only = top_pp%active(t)
+       if (topo_active_only) then
+          if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
+             write(iulog,*) trim(subname),' ERROR: at t = ',t,'total col weight is ',sumwttunit(t), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
     
@@ -702,17 +728,20 @@ contains
     do l = bounds%begl,bounds%endl
        t = lun_pp%topounit(l)
        g = lun_pp%gridcell(l)
+       !topo_active_only = top_pp%active(t)       
        if ((active_only .and. lun_pp%active(l)) .or. .not. active_only) then
           sumwttunit(t) = sumwttunit(t) + lun_pp%wttopounit(l)
           sumwtgcell(g) = sumwtgcell(g) + lun_pp%wtgcell(l)
-       end if
+       end if       
     end do
 
     do t = bounds%begt,bounds%endt
-       if (.not. weights_okay(sumwttunit(t), active_only, i_am_active=.true.)) then
-          write(iulog,*) trim(subname),' ERROR: at t= ',t,'total lunit weight is ',sumwttunit(t), &
+       if (top_pp%active(t)) then
+          if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
+             write(iulog,*) trim(subname),' ERROR: at t= ',t,'total lunit weight is ',sumwttunit(t), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
     
@@ -723,7 +752,28 @@ contains
           error_found = .true.
        end if
     end do
+    
+    ! Check topounit-level weights
+    sumwtgcell(bounds%begg : bounds%endg) = 0._r8    
+    do t = bounds%begt,bounds%endt
+       g = top_pp%gridcell(t)     
+       if ((active_only .and. top_pp%active(t)) .or. .not. active_only) then          
+          sumwtgcell(g) = sumwtgcell(g) + top_pp%wtgcell(t)
+       end if       
+    end do
 
+    do g = bounds%begg,bounds%endg
+       if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
+          write(iulog,*) trim(subname),' ERROR: at g = ',g,'total topounit weight is ',sumwtgcell(g), &
+                         'active_only = ', active_only
+          write(iulog,*) trim(subname),' ERROR: at g = ',g,' ntopounits = ',grc_pp%ntopounits(g)
+          do t = 1, max_topounits
+             write(iulog,*) trim(subname),' ERROR: at g = ',g,' topounit weight = ',grc_pp%tfrc_area(g,t) 
+          end do
+          error_found = .true.
+       end if
+    end do
+    
     deallocate(sumwtcol, sumwtlunit, sumwttunit, sumwtgcell)
 
     if (error_found) then

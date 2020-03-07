@@ -28,20 +28,24 @@ module surfrdUtilsMod
 contains
   
   !-----------------------------------------------------------------------
-  subroutine check_sums_equal_1_3d(arr, lb, name, caller)
+  subroutine check_sums_equal_1_3d(arr, lb, name, caller,ntpu)
     !
     ! !DESCRIPTION:
     ! Confirm that sum(arr(n,:)) == 1 for all n. If this isn't true for any n, abort with a message.
     !
+    ! Uses
+    use topounit_varcon, only : max_topounits, has_topounit
+    
     ! !ARGUMENTS:
     integer         , intent(in) :: lb           ! lower bound of the first dimension of arr
     real(r8)        , intent(in) :: arr(lb:,:,:)   ! array to check
     character(len=*), intent(in) :: name         ! name of array
     character(len=*), intent(in) :: caller       ! identifier of caller, for more meaningful error messages
+    integer,          intent(in) :: ntpu(:)                  ! Actual number of topounit per grid
     !
     ! !LOCAL VARIABLES:
     logical :: found
-    integer :: nl, t
+    integer :: nl, t, tm, ti
     integer :: nindx
     integer :: tindx
     real(r8), parameter :: eps = 1.e-14_r8
@@ -50,7 +54,13 @@ contains
     found = .false.
 
     do nl = lbound(arr, 1), ubound(arr, 1)
-       do t = lbound(arr, 2), ubound(arr, 2)
+       ti = (nl - lbound(arr, 1)) + 1
+       if (.not. has_topounit) then
+          tm = max_topounits          
+       else
+          tm = ntpu(ti)
+       end if
+       do t = 1, tm
           if (abs(sum(arr(nl,t,:)) - 1._r8) > eps) then
              found = .true.
              nindx = nl

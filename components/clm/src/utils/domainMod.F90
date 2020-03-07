@@ -30,6 +30,7 @@ module domainMod
      real(r8),pointer :: frac(:)    ! fractional land
      real(r8),pointer :: topo(:)    ! topography this needs to be removed with the implementation of the topounit structure
 	 real(r8),pointer :: topo2(:)    ! Area weighted average topography (elevation) calculated based on the elevation o 
+     integer ,pointer :: num_tunits_per_grd(:)    ! Number of topountis per grid
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
      real(r8),pointer :: xCell(:)   ! x-position of grid cell (m)
@@ -119,7 +120,7 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%topo2(nb:ne),domain%glcmask(nb:ne), &
+             domain%topo(nb:ne),domain%topo2(nb:ne),domain%num_tunits_per_grd(nb:ne),domain%glcmask(nb:ne), &
              domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
@@ -157,6 +158,7 @@ contains
     domain%frac     = -1.0e36
     domain%topo     = 0._r8
 	domain%topo2    = 0._r8
+    domain%num_tunits_per_grd = -9999
     domain%latc     = nan
     domain%lonc     = nan
     domain%xCell    = nan
@@ -204,7 +206,7 @@ end subroutine domain_init
        endif
        deallocate(domain%mask,domain%frac,domain%latc, &
                   domain%lonc,domain%area,domain%pftm, &
-                  domain%topo,domain%topo2,domain%glcmask,stat=ier)
+                  domain%topo,domain%topo2,domain%num_tunits_per_grd,domain%glcmask,stat=ier)
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif

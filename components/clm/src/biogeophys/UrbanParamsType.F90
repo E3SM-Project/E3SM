@@ -13,7 +13,7 @@ module UrbanParamsType
   use clm_varcon   , only : namel, grlnd, spval
   use LandunitType , only : lun_pp          
   use GridcellType , only : grc_pp
-  use topounit_varcon , only : max_topounits ! maximum number of topounits
+  use topounit_varcon , only : max_topounits, has_topounit ! maximum number of topounits
   !
   implicit none
   save
@@ -719,7 +719,7 @@ module UrbanParamsType
   end subroutine UrbanInput
 
   !-----------------------------------------------------------------------
-  subroutine CheckUrban(begg, endg, pcturb, caller)
+  subroutine CheckUrban(begg, endg, pcturb, caller,ntpu)
 
     !-----------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -735,20 +735,27 @@ module UrbanParamsType
     integer         , intent(in) :: begg, endg           ! beg & end grid cell indices
     real(r8)        , intent(in) :: pcturb(begg:,:,:)      ! % urban
     character(len=*), intent(in) :: caller               ! identifier of caller, for more meaningful error messages
+    integer         , intent(in) :: ntpu(:)
     !
     ! !REVISION HISTORY:
     ! Created by Bill Sacks 7/2013, mostly by moving code from surfrd_special
     !
     ! !LOCAL VARIABLES:
     logical :: found
-    integer :: nl, n, t
+    integer :: nl, n, t,tm,ti
     integer :: nindx, dindx
     integer :: nlev
     !-----------------------------------------------------------------------
 
     found = .false.
     do nl = begg,endg
-	   do t = 1, max_topounits 
+       ti = (nl - begg) + 1
+       if (.not. has_topounit) then
+          tm = max_topounits          
+       else
+          tm = ntpu(ti)
+       end if
+	   do t = 1, tm 
        do n = 1, numurbl
           if ( pcturb(nl,t,n) > 0.0_r8 ) then
              if ( .not. urban_valid(nl,t) .or. &
