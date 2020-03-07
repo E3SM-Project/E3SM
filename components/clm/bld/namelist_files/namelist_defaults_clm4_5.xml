@@ -763,6 +763,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/1x1_brazil/map_360x720_cruncep_to_1x1_brazil_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="1x1_brazil"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/1x1_brazil/map_1km-merge-10min_HYDRO1K-merge-nomask_to_1x1_brazil_nomask_aave_da_c130403.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="1x1_brazil"   to_lmask="nomask" 
+>lnd/clm2/mappingdata/maps/1x1_brazil/map_0.5x0.5_GSDTG2000_to_1x1_brazil_nomask_aave_da_c171025.nc</map>
 
 <!-- mapping files for 1x1_brazil END --> 
 
