@@ -30,25 +30,24 @@ void Functions<S,D>
 
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
-   dum.set(any_if_not_log,
-           sp(0.005)*pack::exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho);
+   if (any_if_not_log.any()) {
+      dum = sp(0.005)*pack::exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
 
-   dum.set(any_if_not_log,
-           pack::min(dum, sp(1.0e5)*inv_rho));
+      dum = pack::min(dum, sp(1.0e5)*inv_rho);
+   
+      N_nuc = pack::max(zero, (dum-nitot)*odt);
 
-   N_nuc.set(any_if_not_log,
-             pack::max(zero, (dum-nitot)*odt));
+      const auto n_nuc_ge_nsmall = N_nuc >= nsmall;
 
-   const auto n_nuc_ge_nsmall = N_nuc >= nsmall;
+      if (n_nuc_ge_nsmall.any()) Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);
+   
 
-   Q_nuc.set(any_if_not_log && n_nuc_ge_nsmall,
-             pack::max(zero, (dum-nitot)*mi0*odt));
+      qinuc.set(any_if_not_log && n_nuc_ge_nsmall,
+                Q_nuc);
 
-   qinuc.set(any_if_not_log && n_nuc_ge_nsmall,
-             Q_nuc);
-
-   ninuc.set(any_if_not_log && n_nuc_ge_nsmall,
-             N_nuc);
+      ninuc.set(any_if_not_log && n_nuc_ge_nsmall,
+                N_nuc);
+   }
 
    ninuc.set(any_if_log,
              pack::max(zero, (naai-nitot)*odt));
