@@ -39,21 +39,24 @@ void Functions<S,D>
 
       const auto n_nuc_ge_nsmall = N_nuc >= nsmall;
 
-      if (n_nuc_ge_nsmall.any()) Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);
+      if (n_nuc_ge_nsmall.any()) {
+          Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);
    
 
-      qinuc.set(any_if_not_log && n_nuc_ge_nsmall,
-                Q_nuc);
+          qinuc.set(any_if_not_log && n_nuc_ge_nsmall,
+                    Q_nuc);
 
-      ninuc.set(any_if_not_log && n_nuc_ge_nsmall,
-                N_nuc);
-   }
+          ninuc.set(any_if_not_log && n_nuc_ge_nsmall,
+                    N_nuc);
+      }
+   } else {
 
-   ninuc.set(any_if_log,
-             pack::max(zero, (naai-nitot)*odt));
+     ninuc.set(any_if_log,
+               pack::max(zero, (naai-nitot)*odt));
 
-   qinuc.set(any_if_log,
-             ninuc*mi0);
+     qinuc.set(any_if_log,
+               ninuc*mi0);
+  }
 
 }
 
