@@ -129,6 +129,10 @@ void ice_relaxation_timescale_c(Real rho, Real temp, Real rhofaci, Real f1pr05, 
                                 Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
                                 Real* epsi, Real* epsi_tot);
 
+void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
+                      Real supi, Real odt, bool log_predictNc,
+                      Real* qinuc, Real* ninuc);
+
 }
 
 namespace scream {
@@ -310,6 +314,14 @@ void ice_relaxation_timescale(IceRelaxationData& d)
                              d.dv, d.mu, d.sc, d.qitot_incld, d.nitot_incld,
                              &d.epsi, &d.epsi_tot);
 }
+
+void ice_nucleation(IceNucleationData& d)
+{
+  p3_init(true);
+  ice_nucleation_c(d.temp, d.inv_rho, d.nitot, d.naai,
+                   d.supi, d.odt, d.log_predictNc,&d.qinuc, &d.ninuc);
+}
+
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
     p3_init(true);
@@ -1839,6 +1851,38 @@ void ice_relaxation_timescale_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr0
 
   *epsi_      = t_h(0);
   *epsi_tot_  = t_h(1);
+}
+
+void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
+                      Real supi_, Real odt_, bool log_predictNc_,
+                      Real* qinuc_, Real* ninuc_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack        = typename P3F::Spack;
+  using Smask        = typename P3F::Smask;
+  using view_1d      = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack temp{temp_}, inv_rho{inv_rho_}, nitot{nitot_}, naai{naai_}, supi{supi_}, odt{odt_};
+    Smask log_predictNc{log_predictNc_};
+    Spack qinuc{0.0}, ninuc{0.0};
+
+    P3F::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, log_predictNc,
+                        qinuc, ninuc);
+
+    t_d(0) = qinuc[0];
+    t_d(1) = ninuc[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qinuc_         = t_h(0);
+  *ninuc_         = t_h(1);
 }
 
 

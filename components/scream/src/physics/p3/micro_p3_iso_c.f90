@@ -647,4 +647,18 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                                        epsi, epsi_tot)
   end subroutine ice_relaxation_timescale_c
 
+  subroutine ice_nucleation_c(temp, inv_rho, nitot, naai, supi, odt, &
+                              log_predictNc, qinuc, ninuc) bind(C)
+    use micro_p3, only: ice_nucleation
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: temp, inv_rho, nitot, naai, supi, odt
+    logical(c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), intent(inout) :: qinuc, ninuc
+
+    call ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, &
+                        log_predictNc, qinuc, ninuc)
+ end subroutine ice_nucleation_c
+
 end module micro_p3_iso_c

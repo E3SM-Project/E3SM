@@ -80,6 +80,7 @@ struct UnitWrap {
     struct TestP3UpdatePrognosticLiq;
     struct TestP3FunctionsImposeMaxTotalNi;
     struct TestIceRelaxationTimescale;
+    struct TestIceNucleation;
   };
 
 };

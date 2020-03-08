@@ -370,6 +370,16 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(inout) :: epsi_tot
   end subroutine ice_relaxation_timescale_f
 
+  subroutine ice_nucleation_f(temp, inv_rho, nitot, naai, supi, odt, &
+                              log_predictNc, qinuc, ninuc) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: temp, inv_rho, nitot, naai, supi, odt
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+    real(kind=c_real), intent(inout) :: qinuc, ninuc
+ end subroutine ice_nucleation_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use
