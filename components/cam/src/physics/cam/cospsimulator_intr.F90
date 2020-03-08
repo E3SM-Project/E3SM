@@ -1554,6 +1554,11 @@ CONTAINS
 
     type(interp_type)  :: interp_wgts
     integer, parameter :: extrap_method = 1              ! sets extrapolation method to boundary value (1)
+
+    type(size_distribution) :: sd_wk       ! Work size distribution used by radar simulator
+                                           ! This is to avoid directly passing  sd_cs(lchnk) to
+                                           ! subsample_and_optics which would
+                                           ! fail runtime if compiled more strictly, like in debug mode 
     
     ! COSPv2 stuff
     character(len=256),dimension(100) :: cosp_status
@@ -2090,13 +2095,16 @@ CONTAINS
     call t_startf("construct_cospIN")
     call construct_cospIN(ncol,nscol_cosp,pver,cospIN)
     cospIN%emsfc_lw      = emsfc_lw
-    if (lradar_sim) cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
+    if (lradar_sim) then 
+       cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
+       sd_wk = sd_cs(lchnk)
+    end if
     call t_stopf("construct_cospIN")
 
     ! *NOTE* Fields passed into subsample_and_optics are ordered from TOA-2-SFC.
     call t_startf("subsample_and_optics")
     call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
-         use_precipitation_fluxes,lidar_ice_type,sd_cs(lchnk),cld(1:ncol,1:pver),&
+         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),&
          concld(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
          snow_ls_interp(1:ncol,1:pver),grpl_ls_interp(1:ncol,1:pver),          &
          rain_cv_interp(1:ncol,1:pver),snow_cv_interp(1:ncol,1:pver),          &
@@ -2106,6 +2114,7 @@ CONTAINS
          dtau_s(1:ncol,1:pver),dem_c(1:ncol,1:pver),                           &
          dem_s(1:ncol,1:pver),dtau_s_snow(1:ncol,1:pver),                      &
          dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
+    if (lradar_sim) sd_cs(lchnk) = sd_wk
     call t_stopf("subsample_and_optics")
     
     ! ######################################################################################
@@ -2835,7 +2844,7 @@ CONTAINS
          reffIN          !
     real(wp),intent(in),dimension(nPoints) :: &
          sfcP            ! Surface pressure 
-    type(size_distribution),intent(inout) :: &
+    type(size_distribution), intent(inout) :: &
          sd
     
     ! Outputs
