@@ -17,10 +17,10 @@ void Functions<S,D>
 {
    constexpr Scalar nsmall  = C::NSMALL;
    constexpr Scalar tmelt   = C::Tmelt;
-   constexpr Scalar icenuct = C::Tmelt-15.0;
+   constexpr Scalar icenuct = C::Tmelt-sp(15.0);
    constexpr Scalar zero    = C::ZERO;
    constexpr Scalar piov3   = C::PIOV3;
-   constexpr Scalar mi0     = 4.0*piov3*900.0*1.e-18;
+   constexpr Scalar mi0     = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
  
    const auto t_lt_icenuct = temp < icenuct;
    const auto supi_ge_005 = supi >= 0.05;
