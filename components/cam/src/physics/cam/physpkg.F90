@@ -1384,7 +1384,8 @@ subroutine tphysac (ztodt,   cam_in,  &
                                   check_water, & 
                                   check_prect, &
                                   check_qflx 
-    use check_energy,       only: check_tracers_data, check_tracers_init, check_tracers_chng
+    use check_energy,       only: check_tracers_data, check_tracers_init, &
+                                  check_tracers_chng, check_tracers_fini
     use time_manager,       only: get_nstep
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
@@ -1417,12 +1418,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
 
-
-    type(check_tracers_data):: tracerint             ! tracer mass integrals and cummulative boundary fluxes
-
     !
     !---------------------------Local workspace-----------------------------
     !
+    type(check_tracers_data):: tracerint           ! tracer mass integrals and cummulative boundary fluxes
     type(physics_ptend)     :: ptend               ! indivdual parameterization tendencies
 
     integer  :: nstep                              ! current timestep number
@@ -1837,6 +1836,8 @@ end if ! l_ac_energy_chk
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
+    call check_tracers_fini(tracerint)
+
 end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
@@ -1892,7 +1893,8 @@ subroutine tphysbc (ztodt,               &
                                check_water, & 
                                check_prect, & 
                                check_energy_timestep_init
-    use check_energy,    only: check_tracers_data, check_tracers_init, check_tracers_chng
+    use check_energy,    only: check_tracers_data, check_tracers_init, &
+                               check_tracers_chng, check_tracers_fini
     use dycore,          only: dycore_is
     use aero_model,      only: aero_model_wetdep
     use carma_intr,      only: carma_wetdep_tend, carma_timestep_tend
@@ -2799,6 +2801,8 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+    call check_tracers_fini(tracerint)
 
 end subroutine tphysbc
 
