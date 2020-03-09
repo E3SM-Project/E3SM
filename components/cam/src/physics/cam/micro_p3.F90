@@ -2308,6 +2308,10 @@ f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,    &
 qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
            log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cxx_cbrt, cxx_sqrt
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2341,7 +2345,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
    if (qitot_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t.lt.zerodegc) then
       qsat0  = 0.622_rtype*e0/(pres-e0)
 
-      qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*       &
+      qwgrth = ((f1pr05 + f1pr14*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*       &
       2._rtype*pi*(rho*xxlv*dv*(qsat0-qv)-(t-zerodegc)*           &
       kap)/(xlf+cpw*(t-zerodegc)))*nitot_incld
 

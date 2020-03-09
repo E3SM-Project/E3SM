@@ -32,3 +32,9 @@ CreateUnitTest(tridiag "tridiag_tests.cpp;tridiag_tests_correctness.cpp;tridiag_
 
 # Test units framework
 CreateUnitTest(units "units.cpp" scream_share)
+
+# YAML parser
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml
+                COPYONLY)
+CreateUnitTest(yaml_parser "yaml_parser.cpp" scream_share)
