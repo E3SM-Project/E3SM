@@ -73,10 +73,10 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
       // Init pack inputs
       Spack rho_local, qr_incld_local, nr_incld_local, nrslf_local;
       for (Int s = 0; s < Spack::n; ++s) {
-        rho_local[i] = dc_device(s).rho;
-        qr_incld_local[i] = dc_device(s).qr_incld;
-        nr_incld_local[i] = dc_device(s).nr_incld;
-        nrslf_local[i] = dc_device(s).nrslf;
+        rho_local[s] = dc_device(s).rho;
+        qr_incld_local[s] = dc_device(s).qr_incld;
+        nr_incld_local[s] = dc_device(s).nr_incld;
+        nrslf_local[s] = dc_device(s).nrslf;
        }
 
       Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nrslf_local);
