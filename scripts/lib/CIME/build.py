@@ -260,7 +260,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
             if not os.path.isdir(full_lib_path):
                 os.makedirs(full_lib_path)
-                libs.append("cprnc")
+                libs.insert(0,"cprnc")
 
 
     logs = []

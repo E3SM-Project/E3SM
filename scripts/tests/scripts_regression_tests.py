@@ -2390,10 +2390,11 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_configure(self):
     ###########################################################################
-        self._create_test(["SMS.f09_g16.X", "--no-build"], test_id=self._baseline_name)
+        testname = "SMS.f09_g16.X"
+        self._create_test([testname, "--no-build"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
-                               "{}.{}".format(CIME.utils.get_full_test_name("SMS.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "{}.{}".format(CIME.utils.get_full_test_name(testname, machine=self._machine, compiler=self._compiler), self._baseline_name))
 
         manual_config_dir = os.path.join(casedir, "manual_config")
         os.mkdir(manual_config_dir)
@@ -2411,10 +2412,11 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_self_build_cprnc(self):
     ###########################################################################
-        self._create_test(["ERS.f19_g16_rx1.A", "--no-build"], test_id=self._baseline_name)
+        testname = "ERS_Ln7.f19_g16.X"
+        self._create_test([testname, "--no-build"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
-                               "{}.{}".format(CIME.utils.get_full_test_name("ERS.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "{}.{}".format(CIME.utils.get_full_test_name(testname, machine=self._machine, compiler=self._compiler), self._baseline_name))
 
         run_cmd_assert_result(self, "./xmlchange CCSM_CPRNC=this_is_a_broken_cprnc",
                               from_dir=casedir)
