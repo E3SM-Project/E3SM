@@ -129,8 +129,8 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
     , _num_ws_slots(_league_size > _num_teams
                     ? (overprov_factor * _num_teams > _league_size ? _league_size : overprov_factor * _num_teams)
                     : _num_teams)
-    , _need_ws_sharing(_league_size > _num_ws_slots),
-    , _open_ws_slots("open_ws_slots", _need_ws_sharing ? _num_ws_slots : 0),
+    , _need_ws_sharing(_league_size > _num_ws_slots)
+    , _open_ws_slots("open_ws_slots", _need_ws_sharing ? _num_ws_slots : 0)
     , _rand_pool()
 #endif
   {
