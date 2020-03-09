@@ -55,7 +55,7 @@ interface
     qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
     use iso_c_binding
 
-    real(kind=c_real), intent(in) :: lcldm, rcldm, icldm
+    real(kind=c_real), value, intent(in) :: lcldm, rcldm, icldm
     real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
                                         nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,  &
                                         nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, &
