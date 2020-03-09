@@ -100,7 +100,7 @@ class EulerStepFunctorImpl {
   SphereOperators             m_sphere_ops;
 
   Kokkos::TeamPolicy<ExecSpace> m_tv_policy;
-  TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize, m_tu_tv;
+  TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize;
 
   int m_prev_num_elems, m_prev_qsize;
 
@@ -125,7 +125,6 @@ public:
    , m_tv_policy     (Homme::get_default_team_policy<ExecSpace>(1))
    , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1))
    , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1))
-   , m_tu_tv         (Homme::get_default_team_policy<ExecSpace>(1))
    , m_prev_num_elems(0)
    , m_prev_qsize    (0)
   {
@@ -167,7 +166,6 @@ public:
 
       m_tu_ne       = TeamUtils<ExecSpace>(tp_ne);
       m_tu_ne_qsize = TeamUtils<ExecSpace>(tp_ne_qsize);
-      m_tu_tv       = TeamUtils<ExecSpace>(m_tv_policy);
 
       m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
     }
@@ -456,12 +454,11 @@ public:
     const int qsize = m_data.qsize;
     const auto qdp = m_tracers.qdp;
     const Real rkstage = 3.0;
-    const auto tu_ne_qsize = m_tu_ne_qsize;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize,
                                                 m_tpref),
       KOKKOS_LAMBDA(const TeamMember& team) {
-        KernelVariables kv(team, qsize, tu_ne_qsize);
+        KernelVariables kv(team, qsize); // no team-idx used, so no need for TU
         const auto qdp_n0 = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qdp_np1 = Homme::subview(qdp, kv.ie, np1_qdp, kv.iq);
         Kokkos::parallel_for(
@@ -487,11 +484,10 @@ public:
     const auto divdp_proj = m_derived_state.m_divdp_proj;
     const auto rhsmdt = c.rhs_multiplier * c.dt;
     const auto buf = m_buffers.dp;
-    const auto tu_ne = m_tu_ne;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems(), m_tpref),
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team, tu_ne);
+        KernelVariables kv(team); // no team-idx used, so no need for TU
         Kokkos::parallel_for (
           Kokkos::TeamThreadRange(kv.team, NP*NP),
           [&] (const int loop_idx) {
@@ -520,11 +516,10 @@ public:
     const auto dp = m_buffers.dp;
     const auto qtens_biharmonic = m_tracers.qtens_biharmonic;
     const auto qlim = m_tracers.qlim;
-    const auto tu_tv = m_tu_tv;
     Kokkos::parallel_for(
       m_tv_policy,
       KOKKOS_LAMBDA (const TeamMember& team) {
-        KernelVariables kv(team, qsize, tu_tv);
+        KernelVariables kv(team, qsize); // no team-idx used, so no need for TU
         const auto dp_t = Homme::subview(dp, kv.ie);
         const auto qdp_t = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
         const auto qtens_biharmonic_t = Homme::subview(qtens_biharmonic, kv.ie, kv.iq);
