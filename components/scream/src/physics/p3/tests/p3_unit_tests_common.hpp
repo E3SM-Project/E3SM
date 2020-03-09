@@ -60,6 +60,7 @@ struct UnitWrap {
     // Put struct decls here
     struct TestTableIce;
     struct TestTable3;
+    struct TestBackToCellAverage;
     struct TestFind;
     struct TestUpwind;
     struct TestGenSed;

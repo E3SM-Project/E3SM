@@ -239,6 +239,27 @@ contains
     call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
   end subroutine access_lookup_table_coll_c
 
+  subroutine back_to_cell_average_c(lcldm,rcldm,icldm, qcacc,qrevp,qcaut,&
+    ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,&
+    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
+    qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
+
+    use micro_p3, only: back_to_cell_average
+    real(kind=c_real), value, intent(in) :: lcldm, rcldm, icldm
+
+    real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
+                                        nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,  &
+                                        nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, &
+                                        qrheti, nimlt, nccol, ncshdc, ncheti, nrcol,&
+                                        nislf, qidep, nrheti, nisub, qinuc, ninuc,  &
+                                        qiberg
+
+    call back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,&
+      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,&
+      qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,&
+      qidep, nrheti, nisub, qinuc, ninuc, qiberg)
+  end subroutine back_to_cell_average_c
+
 
   subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
