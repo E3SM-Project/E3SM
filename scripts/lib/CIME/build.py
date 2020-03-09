@@ -145,7 +145,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
     return logs
 
 ###############################################################################
-def _build_checks(case, build_threaded, comp_interface, 
+def _build_checks(case, build_threaded, comp_interface,
                   debug, compiler, mpilib, complist, ninst_build, smp_value,
                   model_only, buildlist):
 ###############################################################################
@@ -240,15 +240,31 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             os.makedirs(shared_item)
 
     mpilib = case.get_value("MPILIB")
-    libs = ["gptl", "mct", "pio", "csm_share"]
+    if 'CPL' in case.get_values("COMP_CLASSES"):
+        libs = ["gptl", "mct", "pio", "csm_share"]
+    else:
+        libs = []
+
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
     if uses_kokkos(case):
         libs.append("kokkos")
 
-    logs = []
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
+    # Check if we need to build our own cprnc
+    if case.get_value("TEST"):
+        cprnc_loc = case.get_value("CCSM_CPRNC")
+        if not cprnc_loc or not os.path.exists(cprnc_loc):
+            full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
+            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
+            if not os.path.isdir(full_lib_path):
+                os.makedirs(full_lib_path)
+                libs.append("cprnc")
+
+
+    logs = []
+
     for lib in libs:
         if buildlist is not None and lib not in buildlist:
             continue
@@ -258,6 +274,8 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             full_lib_path = os.path.join(sharedlibroot, sharedpath)
         elif lib == "mpi-serial":
             full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
+        elif lib == "cprnc":
+            full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory
@@ -499,13 +517,13 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     case.load_env()
 
     sharedpath = _build_checks(case, build_threaded, comp_interface,
-                               debug, compiler, mpilib, complist, ninst_build, smp_value, 
+                               debug, compiler, mpilib, complist, ninst_build, smp_value,
                                model_only, buildlist)
 
     t2 = time.time()
     logs = []
 
-    if not model_only and cime_model != "ufs":
+    if not model_only:
         logs = _build_libraries(case, exeroot, sharedpath, caseroot,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 

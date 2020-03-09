@@ -2,7 +2,7 @@
 {{ batchdirectives }}
 
 # Set environment variables
-if [ -z "${NCEP_LIBS}" ]; then
+if [ -z "${NCEPLIBS_DIR}" ]; then
   echo "Set environment variables:"
   cat software_environment.txt | grep "=" | sed -e 's/^/export /' > .env
   source .env
@@ -18,14 +18,15 @@ cd $rundir
 # Query build directory
 blddir="$rundir/../bld"
 
-# Set environment variables
-export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
+# Link chgres executable to build directory
+cd $blddir
+ln -sf $NCEPLIBS_DIR/bin/ncep_post .
+cd -
 
-# Copy executable to build directory
-cp $NCEP_LIBS/bin/ncep_post $blddir/.
+# Set environment variables
+export LD_LIBRARY_PATH=$NCEPLIBS_DIR/lib:$NCEPLIBS_DIR/lib64:$LD_LIBRARY_PATH
 
 # Query mpirun command
-
 runcmd='{{ mpirun }}'
 mpirun=`echo $runcmd | awk '{print $1}'`
 
@@ -49,7 +50,7 @@ nlines=`cat itag.tmp | wc -l`
 echo $nlines
 
 # Run post to process all output files one by one
-lst=`find ./${dyn_prefix}f*.nemsio  -printf "%f\n"`
+lst=`find ./${dyn_prefix}f*.$file_ext  -printf "%f\n"`
 for f in $lst
 do
   # Query time before starting post
@@ -57,7 +58,7 @@ do
 
   # Query time step and create new date for cycle
   time_step=`echo $f | tr -d "${dyn_prefix}f"`
-  time_step=`echo $time_step | tr -d ".nemsio"`
+  time_step=`echo $time_step | tr -d ".$file_ext"`
   time_step_num=`expr $time_step + 0`
   date_str_cycle=`date -d "$date_str $time_step_num hours" +%Y-%m-%d_%H:%M:%S`
 

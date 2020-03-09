@@ -803,7 +803,7 @@ class TestScheduler(object):
             return total_pes
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
-            if self._cime_model == "cesm":
+            if self._cime_model != "e3sm":
                 # Will force serialization of sharedlib builds
                 # TODO - instead of serializing, compute all library configs needed and build
                 # them all in parallel

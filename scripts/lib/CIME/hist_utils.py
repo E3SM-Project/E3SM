@@ -62,6 +62,9 @@ def copy_histfiles(case, suffix):
         num_copied += len(test_hists)
         for test_hist in test_hists:
             test_hist = os.path.join(rundir,test_hist)
+            if not test_hist.endswith('.nc'):
+                logger.info("Will not compare non-netcdf file {}".format(test_hist))
+                continue
             new_file = "{}.{}".format(test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)
@@ -246,6 +249,9 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         num_compared += len(match_ups)
 
         for hist1, hist2 in match_ups:
+            if not '.nc' in hist1:
+                logger.info("Ignoring non-netcdf file {}".format(hist1))
+                continue
             success, cprnc_log_file, cprnc_comment = cprnc(model, os.path.join(from_dir1,hist1),
                                                            os.path.join(from_dir2,hist2), case, from_dir1,
                                                            multiinst_driver_compare=multiinst_driver_compare,
@@ -296,7 +302,7 @@ def compare_test(case, suffix1, suffix2, ignore_fieldlist_diffs=False):
                           ignore_fieldlist_diffs=ignore_fieldlist_diffs)
 
 def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix="",
-          ignore_fieldlist_diffs=False):
+          ignore_fieldlist_diffs=False, cprnc_exe=None):
     """
     Run cprnc to compare two individual nc files
 
@@ -316,7 +322,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
         where 'comment' is either an empty string or one of the module-level constants
         beginning with CPRNC_ (e.g., CPRNC_FIELDLISTS_DIFFER)
     """
-    cprnc_exe = case.get_value("CCSM_CPRNC")
+    if not cprnc_exe:
+        cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
     multiinst_regex = re.compile(r'.*%s[^_]*(_[0-9]{4})[.]h.?[.][^.]+?[.]nc' % model)
     mstr = ''

@@ -496,9 +496,9 @@ def _is_test_working(prev_results, src_root, testing=False):
 
 def get_test_success(baseline_root, src_root, test, testing=False):
     """
-    Returns (was prev run success, commit when test last transitioned from fail to pass, commit when test last transitioned from pass to fail)
+    Returns (was prev run success, commit when test last passed, commit when test last transitioned from pass to fail)
 
-    Unknown transition history is expressed as None
+    Unknown history is expressed as None
     """
     if baseline_root is not None:
         try:
@@ -528,12 +528,12 @@ def save_test_success(baseline_root, src_root, test, succeeded, force_commit_tes
                 prev_succeeded = _is_test_working(prev_results, src_root, testing=(force_commit_test is not None))
 
                 # if no transition occurred then no update is needed
-                if succeeded != prev_succeeded or (prev_results[0] is None and succeeded) or (prev_results[1] is None and not succeeded):
+                if succeeded or succeeded != prev_succeeded or (prev_results[0] is None and succeeded) or (prev_results[1] is None and not succeeded):
 
                     new_results = list(prev_results)
                     my_commit = force_commit_test if force_commit_test else get_current_commit(repo=src_root)
                     if succeeded:
-                        new_results[0] = my_commit # we transitioned to a passing state
+                        new_results[0] = my_commit # we passed
                     else:
                         new_results[1] = my_commit # we transitioned to a failing state
 

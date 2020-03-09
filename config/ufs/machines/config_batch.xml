@@ -217,7 +217,6 @@
       <queue walltimemax="24:00:00" nodemin="861" nodemax="4166" default="true">batch</queue>
     </queues>
   </batch_system>
-
   <batch_system MACH="hera" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <submit_args>
@@ -229,13 +228,12 @@
       <directive>--partition=hera</directive>
     </directives>
     <queues>
-      <queue walltimemax="08:00:00" nodemin="1" nodemax="210">batch</queue>
-      <queue default="true" walltimemax="00:30:00" nodemin="1" nodemax="210">debug</queue>
+      <queue default="true" walltimemax="08:00:00" nodemin="1" nodemax="210">batch</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="210">debug</queue>
     </queues>
   </batch_system>
-
   <batch_system type="pbs" MACH="izumi" >
-    <batch_submit>ssh izumi cd $CASEROOT ; qsub</batch_submit>
+    <batch_submit> qsub</batch_submit>
     <jobid_pattern>(\d+.izumi.unified.ucar.edu)$</jobid_pattern>
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>

@@ -22,7 +22,7 @@ def _download_checksum_file(rundir):
     chksum_found = False
     # download and merge all available chksum files.
     while protocol is not None:
-        protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
+        protocol, address, user, passwd, chksum_file,_ = inputdata.get_next_server()
         if protocol not in vars(CIME.Servers):
             logger.warning("Client protocol {} not enabled".format(protocol))
             continue
@@ -106,7 +106,7 @@ def _merge_chksum_files(new_file, old_file):
 
 
 
-def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
+def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False, ic_filepath=None):
     """
     Return True if successfully downloaded
     server is an object handle of type CIME.Servers
@@ -117,8 +117,9 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     """
     if not (rel_path or server.fileexists(rel_path)):
         return False
-
     full_path = os.path.join(input_data_root, rel_path)
+    if ic_filepath:
+        full_path = full_path.replace(ic_filepath, "")
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
@@ -183,12 +184,12 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
         input_data_root = case.get_value('DIN_LOC_ROOT')
 
     while not success and protocol is not None:
-        protocol, address, user, passwd, _ = inputdata.get_next_server()
+        protocol, address, user, passwd, _, ic_filepath = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
         success = case.check_input_data(protocol=protocol, address=address, download=True,
                                         input_data_root=input_data_root,
                                         data_list_dir=data_list_dir,
-                                        user=user, passwd=passwd)
+                                        user=user, passwd=passwd, ic_filepath=ic_filepath)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
@@ -263,7 +264,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
     return True
 
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
-                     download=False, user=None, passwd=None, chksum=False):
+                     download=False, user=None, passwd=None, chksum=False, ic_filepath=None):
     """
     For a given case check for the relevant input data as specified in data_list_dir/*.input_data_list
     in the directory input_data_root, if not found optionally download it using the servers specified
@@ -317,11 +318,16 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                 if(full_path):
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
-                    if input_data_root in full_path:
+                    if input_ic_root and input_ic_root in full_path \
+                       and ic_filepath:
+                        rel_path = full_path.replace(input_ic_root, ic_filepath)
+                        use_ic_path = True
+                    elif input_data_root in full_path:
                         rel_path  = full_path.replace(input_data_root, "")
                     elif input_ic_root and \
                          (input_ic_root not in input_data_root and input_ic_root in full_path):
-                        rel_path  = full_path.replace(input_ic_root, "prod")
+                        if ic_filepath:
+                            rel_path  = full_path.replace(input_ic_root, ic_filepath)
                         use_ic_path = True
 
                     model = os.path.basename(data_list_file).split('.')[0]
@@ -352,12 +358,12 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             if (download):
                                 if use_ic_path:
                                     no_files_missing = _download_if_in_repo(server,
-                                                                            input_ic_root[:-4], rel_path.strip(os.sep),
-                                                                            isdirectory=isdirectory)
+                                                                            input_ic_root, rel_path.strip(os.sep),
+                                                                            isdirectory=isdirectory, ic_filepath=ic_filepath)
                                 else:
                                     no_files_missing = _download_if_in_repo(server,
                                                                             input_data_root, rel_path.strip(os.sep),
-                                                                            isdirectory=isdirectory)
+                                                                            isdirectory=isdirectory, ic_filepath=ic_filepath)
                                 if no_files_missing and chksum:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:

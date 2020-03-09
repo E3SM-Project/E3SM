@@ -480,6 +480,9 @@ using a fortran linker.
   <CPPDEFS>
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
+  <LDFLAGS>
+    <append> -Wl,-rpath $ENV{NETCDF}/lib</append>
+  </LDFLAGS>
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">
@@ -557,7 +560,7 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="homebrew" COMPILER="gnu">
+<compiler MACH="macos" COMPILER="gnu">
   <LDFLAGS>
     <!-- These LDFLAGS provide lapack and blas support on a Mac. This
          may require installation of the Apple Developer Tools. -->

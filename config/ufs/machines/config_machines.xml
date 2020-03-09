@@ -175,62 +175,14 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">cmake</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/19.0.2</command>
-	<command name="load">esmf_libs</command>
+	<command name="load">intel/18.0.5</command>
 	<command name="load">mkl</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
-      </modules>
-
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
-      </modules>
-
-      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
-        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
-      </modules>
-
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/9.1.0</command>
+        <command name="load">gnu/8.3.0</command>
         <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
@@ -240,7 +192,7 @@ This allows using a different mpirun command to launch unit tests
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
 	<!-- known failure in parallel netcdf with mpt, use serial -->
-	<command name="load">netcdf/4.7.1</command>
+	<command name="load">netcdf/4.7.3</command>
 	<command name="load">pnetcdf/1.11.1</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
@@ -259,13 +211,13 @@ This allows using a different mpirun command to launch unit tests
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
-      <modules mpilib="mpt" compiler="gnu" comp_interface="nuopc">
-	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/gnu/9.1.0/</command>
-	<command name="load">NCEPLIBS/1.0.0</command>
+      <modules mpilib="mpt" compiler="gnu">
+	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/gnu-8.3.0/mpt-2.19</command>
+	<command name="load">NCEPlibs/1.0.0alpha01</command>
       </modules>
-      <modules mpilib="mpt" compiler="intel" comp_interface="nuopc">
-	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/intel/19.0.2/</command>
-	<command name="load">NCEPLIBS/1.0.0</command>
+      <modules mpilib="mpt" compiler="intel">
+	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-18.0.5/mpt-2.19</command>
+	<command name="load">NCEPlibs/1.0.0alpha01</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
@@ -299,43 +251,85 @@ This allows using a different mpirun command to launch unit tests
     </resource_limits>
   </machine>
 
-  <machine MACH="homebrew">
-    <DESC>
+  <machine MACH="hera">
+    <DESC>NOAA hera system</DESC>
+    <NODENAME_REGEX>hfe</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>nems</PROJECT>
+    <SAVE_TIMING_DIR/>
+    <CIME_OUTPUT_ROOT>/scratch1/NCEPDEV/nems/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/scratch1/NCEPDEV/stmp2/CIME_UFSINPUT</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/scratch1/NCEPDEV/stmp2/CIME_UFSINPUT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/scratch1/NCEPDEV/stmp2/CIME_UFSBASELINES</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/Rocky.Dunlap/bin/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>NCEP</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>80</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks">-n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/apps/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <modules compiler="intel">
+        <command name="purge"/>
+        <command name="load">intel/18.0.5.274</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">netcdf/4.7.0</command>
+        <command name="load">impi/2018.0.4</command>
+	<command name="use">/scratch1/BMC/gmtb/software/modulefiles/intel-18.0.5.274/impi-2018.0.4</command>
+	<command name="load">NCEPlibs/1.0.0alpha01</command>
+      </modules>
+      <modules>
+        <command name="use">/scratch1/BMC/gmtb/software/modulefiles/generic</command>
+        <command name="load">cmake/3.16.3</command>
+      </modules>
+    </module_system>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+    </environment_variables>
+  </machine>
 
+  <machine MACH="macos">
+    <DESC>
       Customize these fields as appropriate for your system,
       particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
-      number of cores on your machine.  You may also want to change
-      instances of '$ENV{HOME}/projects' to your desired directory
-      organization.  You can use this in either of two ways: (1)
-      Without making any changes, by adding `--machine homebrew` to
-      create_newcase or create_test (2) Copying this into a
-      config_machines.xml file in your personal .cime directory and
-      then changing the machine name (MACH="homebrew") to
-      your machine name and the NODENAME_REGEX to something matching
-      your machine's hostname.  With (2), you should not need the
-      `--machine` argument, because the machine should be determined
-      automatically.  However, with (2), you will also need to copy the
-      homebrew-specific settings in config_compilers.xml into a
-      config_compilers.xml file in your personal .cime directory, again
-      changing the machine name (MACH="homebrew") to your machine name.
-
+      number of cores on your machine.
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
+    <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -344,9 +338,11 @@ This allows using a different mpirun command to launch unit tests
       </arguments>
     </mpirun>
     <module_system type="none"/>
-    <environment_variables>
-      <env name="NETCDF_PATH">/usr/local</env>
+<!--
+     <environment_variables>
+       <env name="PATH">$ENV{PATH}:$ENV{NCEPLIBS_DIR}/bin</env>
     </environment_variables>
+-->
   </machine>
 
   <machine MACH="stampede2-skx">
@@ -422,7 +418,7 @@ This allows using a different mpirun command to launch unit tests
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="NETCDF">$ENV{TACC_NETCDF_DIR}</env>
-      <env name="NCEP_LIBS">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
+      <env name="NCEPLIBS_DIR">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
       <env name="NEMSIO_INC">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/include</env>
       <env name="NEMSIO_LIB">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libnemsio_v2.2.3.a</env>
       <env name="BACIO_LIB4">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libbacio_v2.1.0_4.a</env>

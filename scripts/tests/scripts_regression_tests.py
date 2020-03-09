@@ -1157,9 +1157,9 @@ class TestCreateTestCommon(unittest.TestCase):
             self._wait_for_tests(test_id, expect_works=(not pre_run_errors and not run_errors))
 
     ###########################################################################
-    def _wait_for_tests(self, test_id, expect_works=True):
+    def _wait_for_tests(self, test_id, expect_works=True, always_wait=False):
     ###########################################################################
-        if self._hasbatch:
+        if self._hasbatch or always_wait:
             timeout_arg = "--timeout={}".format(GLOBAL_TIMEOUT) if GLOBAL_TIMEOUT is not None else ""
             expected_stat = 0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE
             run_cmd_assert_result(self, "{}/wait_for_tests {} *{}/TestStatus".format(TOOLS_DIR, timeout_arg, test_id),
@@ -2408,6 +2408,21 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         self.assertEqual(case_env_contents, man_env_contents)
 
+    ###########################################################################
+    def test_self_build_cprnc(self):
+    ###########################################################################
+        self._create_test(["ERS.f19_g16_rx1.A", "--no-build"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "{}.{}".format(CIME.utils.get_full_test_name("ERS.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        run_cmd_assert_result(self, "./xmlchange CCSM_CPRNC=this_is_a_broken_cprnc",
+                              from_dir=casedir)
+        run_cmd_assert_result(self, "./case.build", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+
+        self._wait_for_tests(self._baseline_name, always_wait=True)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
@@ -2472,6 +2487,17 @@ class L_TestSaveTimings(TestCreateTestCommon):
         self.simple_test(manual_timing=True)
 
     ###########################################################################
+    def _record_success(self, test_name, test_success, commit, exp_last_pass, exp_trans_fail, baseline_dir):
+    ###########################################################################
+        save_test_success(baseline_dir, None, test_name, test_success, force_commit_test=commit)
+        was_success, last_pass, trans_fail = get_test_success(baseline_dir, None, test_name, testing=True)
+        self.assertEqual(test_success, was_success, msg="Broken was_success {} {}".format(test_name, commit))
+        self.assertEqual(last_pass, exp_last_pass, msg="Broken last_pass {} {}".format(test_name, commit))
+        self.assertEqual(trans_fail, exp_trans_fail, msg="Broken trans_fail {} {}".format(test_name, commit))
+        if test_success:
+            self.assertEqual(exp_last_pass, commit, msg="Should never")
+
+    ###########################################################################
     def test_success_recording(self):
     ###########################################################################
         if CIME.utils.get_model() != "e3sm":
@@ -2482,75 +2508,40 @@ class L_TestSaveTimings(TestCreateTestCommon):
         baseline_dir = os.path.join(self._baseline_area, self._baseline_name)
 
         # Test initial state
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
-        self.assertFalse(was_success, msg="Broken was_success 1.0")
-        self.assertEqual(trans_pass, None, msg="Broken trans_pass 1.0")
-        self.assertEqual(trans_fail, None, msg="Broken trans_fail 1.0")
+        was_success, last_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
+        self.assertFalse(was_success, msg="Broken initial was_success")
+        self.assertEqual(last_pass, None, msg="Broken initial last_pass")
+        self.assertEqual(trans_fail, None, msg="Broken initial trans_fail")
 
-        # Test first result
-        save_test_success(baseline_dir, None, fake_test1, False, force_commit_test="AAA")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
-        self.assertFalse(was_success, msg="Broken was_success 1.1")
-        self.assertEqual(trans_pass, None, msg="Broken trans_pass 1.1")
-        self.assertEqual(trans_fail, "AAA", msg="Broken trans_fail 1.1")
+        # Test first result (test1 fails, test2 passes)
+        #                    test_name , success, commit , expP , expTF, baseline)
+        self._record_success(fake_test1, False  , "AAA"  , None , "AAA", baseline_dir)
+        self._record_success(fake_test2, True   , "AAA"  , "AAA", None , baseline_dir)
 
-        save_test_success(baseline_dir, None, fake_test2, True, force_commit_test="AAA")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test2, testing=True)
-        self.assertTrue(was_success, msg="Broken was_success 2.1")
-        self.assertEqual(trans_pass, "AAA", msg="Broken trans_pass 2.1")
-        self.assertEqual(trans_fail, None, msg="Broken trans_fail 2.1")
+        # Test second result matches first (no transition) (test1 fails, test2 passes)
+        #                    test_name , success, commit , expP , expTF, baseline)
+        self._record_success(fake_test1, False  , "BBB"  , None , "AAA", baseline_dir)
+        self._record_success(fake_test2, True   , "BBB"  , "BBB", None , baseline_dir)
 
-        # Test second result matches first (no transition)
-        save_test_success(baseline_dir, None, fake_test1, False, force_commit_test="BBB")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
-        self.assertFalse(was_success, msg="Broken was_success 1.2")
-        self.assertEqual(trans_pass, None, msg="Broken trans_pass 1.2")
-        self.assertEqual(trans_fail, "AAA", msg="Broken trans_fail 1.2")
+        # Test transition to new state (first real transition) (test1 passes, test2 fails)
+        #                    test_name , success, commit , expP , expTF, baseline)
+        self._record_success(fake_test1, True   , "CCC"  , "CCC", "AAA", baseline_dir)
+        self._record_success(fake_test2, False  , "CCC"  , "BBB", "CCC", baseline_dir)
 
-        save_test_success(baseline_dir, None, fake_test2, True, force_commit_test="BBB")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test2, testing=True)
-        self.assertTrue(was_success, msg="Broken was_success 2.2")
-        self.assertEqual(trans_pass, "AAA", msg="Broken trans_pass 2.2")
-        self.assertEqual(trans_fail, None, msg="Broken trans_fail 2.2")
+        # Test transition to new state (second real transition) (test1 fails, test2 passes)
+        #                    test_name , success, commit , expP , expTF, baseline)
+        self._record_success(fake_test1, False  , "DDD"  , "CCC", "DDD", baseline_dir)
+        self._record_success(fake_test2, True   , "DDD"  , "DDD", "CCC", baseline_dir)
 
-        # Test transition to new state (first real transition)
-        save_test_success(baseline_dir, None, fake_test1, True, force_commit_test="CCC")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
-        self.assertTrue(was_success, msg="Broken was_success 1.3")
-        self.assertEqual(trans_pass, "CCC", msg="Broken trans_pass 1.3")
-        self.assertEqual(trans_fail, "AAA", msg="Broken trans_fail 1.3")
+        # Test final repeat (test1 fails, test2 passes)
+        #                    test_name , success, commit , expP , expTF, baseline)
+        self._record_success(fake_test1, False  , "EEE"  , "CCC", "DDD", baseline_dir)
+        self._record_success(fake_test2, True   , "EEE"  , "EEE", "CCC", baseline_dir)
 
-        save_test_success(baseline_dir, None, fake_test2, False, force_commit_test="CCC")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test2, testing=True)
-        self.assertFalse(was_success, msg="Broken was_success 2.3")
-        self.assertEqual(trans_pass, "AAA", msg="Broken trans_pass 2.3")
-        self.assertEqual(trans_fail, "CCC", msg="Broken trans_fail 2.3")
-
-        # Test transition to new state (second real transition)
-        save_test_success(baseline_dir, None, fake_test1, False, force_commit_test="DDD")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
-        self.assertFalse(was_success, msg="Broken was_success 1.4")
-        self.assertEqual(trans_pass, "CCC", msg="Broken trans_pass 1.4")
-        self.assertEqual(trans_fail, "DDD", msg="Broken trans_fail 1.4")
-
-        save_test_success(baseline_dir, None, fake_test2, True, force_commit_test="DDD")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test2, testing=True)
-        self.assertTrue(was_success, msg="Broken was_success 2.4")
-        self.assertEqual(trans_pass, "DDD", msg="Broken trans_pass 2.4")
-        self.assertEqual(trans_fail, "CCC", msg="Broken trans_fail 2.4")
-
-        # Test final repeat
-        save_test_success(baseline_dir, None, fake_test1, False, force_commit_test="EEE")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test1, testing=True)
-        self.assertFalse(was_success, msg="Broken was_success 1.5")
-        self.assertEqual(trans_pass, "CCC", msg="Broken trans_pass 1.5")
-        self.assertEqual(trans_fail, "DDD", msg="Broken trans_fail 1.5")
-
-        save_test_success(baseline_dir, None, fake_test2, True, force_commit_test="EEE")
-        was_success, trans_pass, trans_fail = get_test_success(baseline_dir, None, fake_test2, testing=True)
-        self.assertTrue(was_success, msg="Broken was_success 2.5")
-        self.assertEqual(trans_pass, "DDD", msg="Broken trans_pass 2.5")
-        self.assertEqual(trans_fail, "CCC", msg="Broken trans_fail 2.5")
+        # Test final transition (test1 passes, test2 fails)
+        #                    test_name , success, commit , expP , expTF, baseline)
+        self._record_success(fake_test1, True   , "FFF"  , "FFF", "DDD", baseline_dir)
+        self._record_success(fake_test2, False  , "FFF"  , "EEE", "FFF", baseline_dir)
 
 # Machinery for Macros generation tests.
 
