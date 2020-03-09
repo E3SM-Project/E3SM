@@ -71,7 +71,7 @@ class any {
     typename std::enable_if<!check_overloads::StreamExists<T>::value>::type
     print_impl (std::ostream& os) const {
 
-      os << "Error! Trying to print object of type '" << demangle(type().name()) << "',"
+      os << "Error! Trying to print object of type '" << type().name() << "',"
          << "       which does not overload operator<< .\n";
     }
 
