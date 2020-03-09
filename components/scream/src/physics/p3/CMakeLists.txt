@@ -41,7 +41,9 @@ if (NOT CUDA_BUILD)
     p3_functions_rain_imm_freezing.cpp
     p3_functions_droplet_self_coll.cpp
     p3_functions_update_prognostics.cpp
-    p3_functions_impose_max_total_Ni.cpp)
+    p3_functions_impose_max_total_Ni.cpp
+    p3_functions_ice_relaxation_timescale.cpp
+    p3_functions_ice_nucleation.cpp)
 endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})

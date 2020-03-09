@@ -791,6 +791,40 @@ void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
 
 }
 
+struct IceRelaxationData
+{
+  // Inputs
+  Real rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld;
+
+  // Outputs
+  Real epsi, epsi_tot;
+};
+void ice_relaxation_timescale(IceRelaxationData& d);
+
+extern "C" {
+ void ice_relaxation_timescale_f(Real rho, Real temp, Real rhofaci, Real f1pr05, Real f1pr14,
+                                 Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
+                                 Real* epsi, Real* epsi_tot);
+}
+
+struct IceNucleationData
+{
+  // Inputs
+  Real temp, inv_rho, nitot, naai, supi, odt;
+  
+  bool log_predictNc;
+
+  // Outputs
+  Real qinuc, ninuc;
+};
+void ice_nucleation(IceNucleationData& d);
+
+extern "C" {
+void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
+                      Real supi, Real odt, bool log_predictNc,
+                      Real* qinuc, Real* ninuc);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////
