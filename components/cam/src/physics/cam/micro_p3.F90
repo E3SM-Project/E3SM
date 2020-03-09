@@ -3037,7 +3037,7 @@ subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
 
 
    dumqvi = qv_sat(t,pres,1)
-   qdep_satadj = (qv-dumqvi)/(1._rtype+xxls**2*dumqvi/(cp*rv*t**2))*odt
+   qdep_satadj = (qv-dumqvi)/(1._rtype+bfb_square(xxls)*dumqvi/(cp*rv*bfb_square(t)))*odt
    qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
    qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub, 1.e-20_rtype))
 
