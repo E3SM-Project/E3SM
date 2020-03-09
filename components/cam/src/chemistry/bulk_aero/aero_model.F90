@@ -535,7 +535,8 @@ contains
        pbuf,                                                                    & !Pointer
        ptend                                                                    ) !Intent-out
 
-    use wetdep,        only : wetdepa_v1, wetdep_inputs_set, wetdep_inputs_t
+    use wetdep,        only : wetdepa_v1, wetdep_inputs_set, &
+                              wetdep_inputs_unset, wetdep_inputs_t
     use dust_model,    only : dust_names
     use seasalt_model, only : sslt_names=>seasalt_names
 
@@ -969,6 +970,8 @@ contains
 
        enddo col_loop
     enddo ver_loop
+
+    call wetdep_inputs_unset(dep_inputs)
 
   end subroutine aero_model_surfarea
 
