@@ -44,6 +44,9 @@ void back_to_cell_average_c(Real lcldm_, Real rcldm_, Real icldm_,
                             Real* nisub_, Real* qinuc_, Real* ninuc_,
                             Real* qiberg_);
 
+void prevent_ice_overdepletion_c(Real pres, Real t, Real qv, Real xxls,
+                                 Real odt, Real* qidep, Real* qisub);
+
 void cloud_water_conservation_c(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
   Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
 
@@ -267,6 +270,13 @@ void back_to_cell_average(BackToCellAverageData& d)
     &d.qimlt, &d.qccol, &d.qrheti, &d.nimlt, &d.nccol, &d.ncshdc, &d.ncheti,
     &d.nrcol, &d.nislf, &d.qidep, &d.nrheti, &d.nisub, &d.qinuc, &d.ninuc,
     &d.qiberg);
+}
+
+void prevent_ice_overdepletion(PreventIceOverdepletionData& d)
+{
+  p3_init(true);
+  prevent_ice_overdepletion_c(d.pres, d.t, d.qv, d.xxls, d.odt, &d.qidep,
+                              &d.qisub);
 }
 
 void calc_rime_density(CalcRimeDensityData& d)
@@ -1589,6 +1599,32 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
   *qinuc_ = t_h(28);
   *ninuc_ = t_h(29);
   *qiberg_ = t_h(30);
+}
+
+void prevent_ice_overdepletion_f(
+  Real pres_, Real t_, Real qv_, Real xxls_, Real odt_, Real* qidep_,
+  Real* qisub_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qidep = *qidep_;
+  Real local_qisub = *qisub_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack pres(pres_), t(t_), qv(qv_), xxls(xxls_), odt(odt_),
+                          qidep(local_qidep), qisub(local_qisub);
+      P3F::prevent_ice_overdepletion(pres, t, qv, xxls, odt, qidep, qisub);
+
+      t_d(0) = qidep[0];
+      t_d(1) = qisub[0];
+
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qidep_ = t_h(0);
+  *qisub_ = t_h(1);
 }
 
 void calc_rime_density_f(

@@ -64,6 +64,15 @@ interface
                                         qiberg
   end subroutine back_to_cell_average_f
 
+  subroutine prevent_ice_overdepletion_f(pres,t,qv,xxls,odt,    &
+     qidep,qisub) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: pres, t, qv, xxls, odt
+    real(kind=c_real), intent(inout) :: qidep, qisub
+
+  end subroutine prevent_ice_overdepletion_f
+
   subroutine cloud_water_conservation_f(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
     use iso_c_binding

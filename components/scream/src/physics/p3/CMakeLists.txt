@@ -35,6 +35,7 @@ if (NOT CUDA_BUILD)
     p3_functions_autoconversion.cpp
     p3_functions_conservation.cpp
     p3_functions_back_to_cell_average.cpp
+    p3_functions_prevent_ice_overdepletion.cpp
     p3_functions_cloud_rain_acc.cpp
     p3_functions_calc_rime_density.cpp
     p3_functions_cldliq_imm_freezing.cpp
