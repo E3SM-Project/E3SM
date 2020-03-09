@@ -272,6 +272,9 @@ def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
     fcMask = gf.read('ocean', 'region', features)
     make_region_masks(mesh_name, suffix='antarcticRegions', fcMask=fcMask)
 
+    fcMask = gf.read('ocean', 'region', tags=['Arctic'])
+    make_region_masks(mesh_name, suffix='arcticRegions', fcMask=fcMask)
+
     fcMask = make_ocean_basins_masks(gf)
     make_region_masks(mesh_name, suffix='oceanBasins', fcMask=fcMask)
 
