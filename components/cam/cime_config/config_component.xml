@@ -123,6 +123,10 @@
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
       <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+
+      <!-- Radiative-Convective Equilibrium (RCE) -->
+      <value compset="_CAM5%RCE"    >-phys cam5  -rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem none </value>
+
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -254,6 +258,8 @@
       <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr_av1c-04p2</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
+      <!-- Radiative-Convective Equilibrium (RCE) -->
+      <value compset="_CAM5%RCE"      >RCEMIP_EAMv1</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -369,6 +375,7 @@
     <values match="last">
     <value compset="DOCN%AQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
+    <value compset="CAM5%RCE">$SRCROOT/components/cam/cime_config/usermods_dirs/rcemip</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>

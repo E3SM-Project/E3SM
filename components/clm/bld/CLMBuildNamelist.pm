@@ -1877,7 +1877,7 @@ sub process_namelist_commandline_use_case {
     my $uc_defaults = Build::NamelistDefaults->new("$opts->{'use_case_dir'}/$opts->{'use_case'}.xml", $cfg);
 
     my %settings;
-    $settings{'res'}            = $nl_flags->{'res'};
+    $settings{'hgrid'}          = $nl_flags->{'res'};
     $settings{'rcp'}            = $nl_flags->{'rcp'};
     $settings{'mask'}           = $nl_flags->{'mask'};
     $settings{'sim_year'}       = $nl_flags->{'sim_year'};
