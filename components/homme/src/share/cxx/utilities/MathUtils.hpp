@@ -157,6 +157,30 @@ void binary_search (ViewType<T[N],Properties...> array,
   k = lo;
 }
 
+// For nextpow2 and prevpow2, see, e.g.,
+//   https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+inline unsigned short nextpow2 (unsigned short n) {
+  if (n == 0) return 0;
+  --n;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  ++n;
+  return n;
+}
+// Previous (inclusive) power of 2. E.g., prevpow2(4) -> 4, prevpow2(5) -> 4.
+inline unsigned short prevpow2 (unsigned short n) {
+  if (n == 0) return 0;
+  n >>= 1;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  ++n;
+  return n;
+}
+
 } // namespace Homme
 
 #endif // HOMMEXX_MATH_UTILS_HPP

@@ -106,6 +106,8 @@ class EulerStepFunctorImpl {
 
   bool                m_kernel_will_run_limiters;
 
+  ThreadPreferences m_tpref;
+
   std::shared_ptr<BoundaryExchange> m_mm_be, m_mmqb_be;
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, 3*Q_NUM_TIME_LEVELS> m_bes;
 
@@ -127,7 +129,7 @@ public:
    , m_prev_num_elems(0)
    , m_prev_qsize    (0)
   {
-    // Nothing to be done here
+    m_tpref.prefer_larger_team = true;
   }
 
   void reset (const SimulationParams& params) {
@@ -153,7 +155,7 @@ public:
       const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
 
       auto tp_ne       = Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems());
-      auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(num_parallel_iterations);
+      auto tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(num_parallel_iterations, m_tpref);
 
       ThreadPreferences tp;
       tp.max_threads_usable = NUM_LEV;
@@ -275,11 +277,11 @@ public:
 
     if(m_data.nu_p > 0){
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPreNup>(
-                             m_geometry.num_elems() * m_data.qsize),
+                           m_geometry.num_elems() * m_data.qsize, m_tpref),
                          *this);
     }else{
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPreNoNup>(
-                             m_geometry.num_elems() * m_data.qsize),
+                           m_geometry.num_elems() * m_data.qsize, m_tpref),
                          *this);
 
     }
@@ -294,11 +296,11 @@ public:
 
     if(m_data.consthv){
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPostConstHV>(
-                             m_geometry.num_elems() * m_data.qsize),
+                           m_geometry.num_elems() * m_data.qsize, m_tpref),
                          *this);
     }else{
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace, BIHPostTensorHV>(
-                             m_geometry.num_elems() * m_data.qsize),
+                           m_geometry.num_elems() * m_data.qsize, m_tpref),
                          *this);
     }
     ExecSpace::impl_static_fence();
@@ -392,13 +394,13 @@ public:
     profiling_resume();
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace, AALSetupPhase>(
-        m_geometry.num_elems()),
+        m_geometry.num_elems(), m_tpref),
       *this);
     ExecSpace::impl_static_fence();
     m_kernel_will_run_limiters = true;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace, AALTracerPhase>(
-        m_geometry.num_elems() * m_data.qsize),
+        m_geometry.num_elems() * m_data.qsize, m_tpref),
       *this);
     ExecSpace::impl_static_fence();
     m_kernel_will_run_limiters = false;
@@ -425,7 +427,7 @@ public:
 
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, PrecomputeDivDp>(
-            m_geometry.num_elems()),
+            m_geometry.num_elems(), m_tpref),
         *this);
 
     ExecSpace::impl_static_fence();
@@ -456,7 +458,8 @@ public:
     const Real rkstage = 3.0;
     const auto tu_ne_qsize = m_tu_ne_qsize;
     Kokkos::parallel_for(
-      Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize),
+      Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize,
+                                                m_tpref),
       KOKKOS_LAMBDA(const TeamMember& team) {
         KernelVariables kv(team, qsize, tu_ne_qsize);
         const auto qdp_n0 = Homme::subview(qdp, kv.ie, n0_qdp, kv.iq);
@@ -486,7 +489,7 @@ public:
     const auto buf = m_buffers.dp;
     const auto tu_ne = m_tu_ne;
     Kokkos::parallel_for(
-      Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()),
+      Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems(), m_tpref),
       KOKKOS_LAMBDA (const TeamMember& team) {
         KernelVariables kv(team, tu_ne);
         Kokkos::parallel_for (
