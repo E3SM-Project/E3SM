@@ -170,6 +170,8 @@ if (${SCREAM_DOUBLE_PRECISION})
   endif()
 endif()
 
+include(YamlCpp)
+
 print_var(KOKKOS_GMAKE_DEVICES)
 print_var(CUDA_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)

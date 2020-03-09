@@ -47,7 +47,7 @@
 #  define bfb_log10(val) cxx_log10(val)
 #  define bfb_exp(val) cxx_exp(val)
 #else
-#  define bfb_pow(base, exp) (base)**exp
+#  define bfb_pow(base, exp) (base)**(exp)
 #  define bfb_cbrt(base) (base)**thrd
 #  define bfb_gamma(val) gamma(val)
 #  define bfb_log(val) log(val)
@@ -624,7 +624,7 @@ contains
     !-----------------------------------------------------------------------------------!
     i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)
 
-       if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
+!      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 
 
        log_hydrometeorsPresent = .false.
@@ -718,11 +718,10 @@ contains
 
        enddo k_loop_1
 
-       if (debug_ON) then
-          tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-          call check_values(qv,tmparr1,i,it,debug_ABORT,200,col_location)
-
-       endif
+!      if (debug_ON) then
+!         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+!         call check_values(qv,tmparr1,i,it,debug_ABORT,200,col_location)
+!      endif
 
        !jump to end of i-loop if log_nucleationPossible=.false.  (i.e. skip everything)
        if (.not. (log_nucleationPossible .or. log_hydrometeorsPresent)) goto 333
@@ -1136,10 +1135,10 @@ contains
        !      (This is not done above simply for efficiency purposes.)
 
 
-       if (debug_ON) then
-          tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-          call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
-       endif
+!      if (debug_ON) then
+!         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+!         call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
+!      endif
 
        if (.not. log_hydrometeorsPresent) goto 333
 
@@ -1504,7 +1503,7 @@ contains
        ! ICE
 
        !       Flatau formulation:
-       dt       = max(-80._rtype,t-273.16_rtype)
+       dt       = max(-80._rtype,t-273.15_rtype)
        polysvp1 = a0i + dt*(a1i+dt*(a2i+dt*(a3i+dt*(a4i+dt*(a5i+dt*(a6i+dt*(a7i+       &
             a8i*dt)))))))
        polysvp1 = polysvp1*100._rtype
@@ -1519,7 +1518,7 @@ contains
        ! LIQUID
 
        !       Flatau formulation:
-       dt       = max(-80._rtype,t-273.16_rtype)
+       dt       = max(-80._rtype,t-273.15_rtype)
        polysvp1 = a0 + dt*(a1+dt*(a2+dt*(a3+dt*(a4+dt*(a5+dt*(a6+dt*(a7+a8*dt)))))))
        polysvp1 = polysvp1*100._rtype
 
@@ -2018,8 +2017,8 @@ contains
     logical(btype),                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
-    real(rtype), parameter :: T_low  = 173._rtype
-    real(rtype), parameter :: T_high = 323._rtype
+    real(rtype), parameter :: T_low  = 160._rtype !173._rtype
+    real(rtype), parameter :: T_high = 355._rtype !323._rtype
     real(rtype), parameter :: Q_high = 40.e-3_rtype
     real(rtype), parameter :: N_high = 1.e+20_rtype
     real(rtype), parameter :: B_high = Q_high*1.e-3_rtype
@@ -2309,6 +2308,10 @@ f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,    &
 qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
            log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cxx_cbrt, cxx_sqrt
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2342,7 +2345,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
    if (qitot_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t.lt.zerodegc) then
       qsat0  = 0.622_rtype*e0/(pres-e0)
 
-      qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*       &
+      qwgrth = ((f1pr05 + f1pr14*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*       &
       2._rtype*pi*(rho*xxlv*dv*(qsat0-qv)-(t-zerodegc)*           &
       kap)/(xlf+cpw*(t-zerodegc)))*nitot_incld
 
@@ -2375,7 +2378,9 @@ epsi,epsi_tot)
    !-----------------------------
    ! calcualte total inverse ice relaxation timescale combined for all ice categories
    ! note 'f1pr' values are normalized, so we need to multiply by N
-
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_relaxation_timescale_f, cxx_cbrt, cxx_sqrt
+#endif
    implicit none
 
 
@@ -2393,10 +2398,17 @@ epsi,epsi_tot)
    real(rtype), intent(out) :: epsi
    real(rtype), intent(inout) :: epsi_tot
 
-
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+      call ice_relaxation_timescale_f(rho,t,rhofaci,     &
+                                      f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld, &
+                                      epsi,epsi_tot)
+       return
+    endif
+#endif
 
    if (qitot_incld.ge.qsmall .and. t.lt.zerodegc) then
-      epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*2._rtype*pi* &
+      epsi = ((f1pr05+f1pr14*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*2._rtype*pi* &
       rho*dv)*nitot_incld
       epsi_tot   = epsi_tot + epsi
    else
@@ -2467,7 +2479,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_gamma, cxx_pow
+   use micro_p3_iso_f, only: calc_rime_density_f, cxx_gamma, cxx_pow
 #endif
    !.........................
    ! calculate rime density
@@ -2503,6 +2515,12 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    real(rtype) :: V_impact = 0.0_rtype
    real(rtype) :: Ri = 0.0_rtype
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call calc_rime_density_f(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol,vtrmi1,rhorime_c)
+      return
+   endif
+#endif
    ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
    !  NOTE:  condition applicable for cloud only; modify when rain is added back
    if (qccol.ge.qsmall .and. t.lt.zerodegc) then
@@ -2637,6 +2655,9 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
    ! deposition/condensation-freezing nucleation
    ! allow ice nucleation if < -15 C and > 5% ice supersaturation
    ! use CELL-AVERAGE values, freezing of vapor
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_nucleation_f, cxx_exp
+#endif
 
    implicit none
 
@@ -2653,10 +2674,19 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
 
 
    real(rtype) :: dum, N_nuc, Q_nuc
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call ice_nucleation_f(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
+                             qinuc,ninuc)
+       return
+    endif
+#endif
+
    if ( t .lt.icenuct .and. supi.ge.0.05_rtype) then
       if(.not. log_predictNc) then
 !         ! dum = exp(-0.639+0.1296*100.*supi(i,k))*1000.*inv_rho(i,k)  !Meyers et al. (1992)
-         dum = 0.005_rtype*exp(0.304_rtype*(zerodegc-t))*1000._rtype*inv_rho   !Cooper (1986)
+         dum = 0.005_rtype*bfb_exp(0.304_rtype*(zerodegc-t))*1000._rtype*inv_rho   !Cooper (1986)
          dum = min(dum,100.e3_rtype*inv_rho)
          N_nuc = max(0._rtype,(dum-nitot)*odt)
          if (N_nuc.ge.1.e-20_rtype) then
@@ -2862,6 +2892,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       ! note there should be a factor of 6^(1/3), but we
       ! want to keep breakup threshold consistent so 'dum'
       ! is expressed in terms of lambda rather than mass-mean D
+      
       dum2 = bfb_cbrt(qr_incld/(pi*rhow*nr_incld))
       if (dum2.lt.dum1) then
          dum = 1._rtype
@@ -2929,6 +2960,10 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,    &
    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
    qidep,nrheti,nisub,qinuc,ninuc,qiberg)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: back_to_cell_average_f
+#endif
+
    ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
    ! cell-average quantities.
 
@@ -2945,6 +2980,16 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,    &
    real(rtype), intent(inout) :: nrheti, nisub, qinuc, ninuc, qiberg
 
    real(rtype) :: ir_cldm, il_cldm, lr_cldm
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call back_to_cell_average_f(lcldm,rcldm,icldm,qcacc,qrevp,qcaut,&
+        ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,&
+        qcheti,qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,&
+        nrcol,nislf,qidep,nrheti,nisub,qinuc,ninuc,qiberg)
+      return
+   endif
+#endif
 
    ir_cldm = min(icldm,rcldm)  ! Intersection of ICE and RAIN cloud
    il_cldm = min(icldm,lcldm)  ! Intersection of ICE and LIQUID cloud
@@ -3018,7 +3063,7 @@ subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
 
 
    dumqvi = qv_sat(t,pres,1)
-   qdep_satadj = (qv-dumqvi)/(1._rtype+xxls**2*dumqvi/(cp*rv*t**2))*odt
+   qdep_satadj = (qv-dumqvi)/(1._rtype+bfb_square(xxls)*dumqvi/(cp*rv*bfb_square(t)))*odt
    qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
    qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub, 1.e-20_rtype))
 

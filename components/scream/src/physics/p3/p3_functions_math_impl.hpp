@@ -29,7 +29,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
     0.264847430e-3,  0.302950461e-5,  0.206739458e-7,
     0.640689451e-10,-0.952447341e-13,-0.976195544e-15};
 
-  Spack dt = pack::max(t - 273.16, -80.0);
+  Spack dt = pack::max(t - 273.15, -80.0);
   Spack result;
   const auto tmelt = C::Tmelt;
   Smask ice_mask = (t < tmelt) && ice;
