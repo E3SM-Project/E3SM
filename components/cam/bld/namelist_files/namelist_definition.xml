@@ -494,6 +494,28 @@ Default: FALSE
 
 <!-- Coupler between Physics and Dynamics -->
 
+<entry id="phys_chunk_fdim" type="integer"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+The basic data structure for fields in the physics is the chunk. The
+horizontal (column) dimension is factored between the first chunk dimension
+and the number of chunks, with the size of the first dimension influencing
+serial performance (e.g. vectorization or fit into cache) and the
+number of chunks limiting the available MPI and OpenMP parallelism. 
+The number of chunks is always chosen to provide an equal number of chunks
+per computational thread (subject to the constraint that each chunk is
+assigned at least one column). However, the declared size of the first
+dimension is a free parameter, indicating the maximum number of columns
+that can be assigned to a chunk (thus also impacting the total number of
+chunks). This was originally specified at compile-time, based on 
+experiments in the early 2000s indicating that the compilers at the time
+generated more efficient code when the first dimension was known
+at compile time, perhaps for improved alignment in memory layout or improved
+vectorization. This is now exposed as a runtime parameter, and the
+previous compile-time maximum (PCOLS) is simply used to define the default
+value of the runtime variable. Must be greater than or equal to 1.
+Default: PCOLS
+</entry>
+
 <entry id="phys_alltoall" type="integer"  category="perf_dp_coup"
        group="cam_inparm" valid_values="0,1,2,11,12,13">
 Dynamics/physics transpose method for nonlocal load-balance.  0: use

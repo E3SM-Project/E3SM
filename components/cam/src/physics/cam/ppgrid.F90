@@ -18,6 +18,7 @@ module ppgrid
   public begchunk
   public endchunk
   public pcols
+  public ppcols
   public psubcols
   public pver
   public pverp
@@ -25,12 +26,12 @@ module ppgrid
 
 ! Grid point resolution parameters
 
-   integer pcols      ! number of columns (max)
+   integer ppcols     ! number of columns (default for runtime-set max pcols)
    integer psubcols   ! number of sub-columns (max)
    integer pver       ! number of vertical levels
    integer pverp      ! pver + 1
 
-   parameter (pcols     = PCOLS)
+   parameter (ppcols    = PCOLS)
    parameter (psubcols  = PSUBCOLS)
    parameter (pver      = PLEV)
    parameter (pverp     = pver + 1  )
@@ -40,5 +41,9 @@ module ppgrid
 !
    integer :: begchunk = 0            ! 
    integer :: endchunk = -1           ! 
+
+!
+! pcols set in physgrid_init
+   integer :: pcols = PCOLS    ! number of columns (runtime-set max)
 
 end module ppgrid
