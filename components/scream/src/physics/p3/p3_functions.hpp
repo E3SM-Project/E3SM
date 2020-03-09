@@ -139,6 +139,21 @@ struct Functions
   static void lookup(const Smask& qr_gt_small, const Spack& mu_r, const Spack& lamr,
                      Table3& t);
 
+  // Converts quantities to cell averages
+  KOKKOS_FUNCTION
+  static void back_to_cell_average(const Spack& lcldm, const Spack& rcldm,
+                                   const Spack& icldm, Spack& qcacc, Spack& qrevp,
+                                   Spack& qcaut, Spack& ncacc, Spack& ncslf,
+                                   Spack& ncautc, Spack& nrslf, Spack& nrevp,
+                                   Spack& ncautr, Spack& qcnuc, Spack& ncnuc,
+                                   Spack& qisub, Spack& nrshdr, Spack& qcheti,
+                                   Spack& qrcol, Spack& qcshd, Spack& qimlt,
+                                   Spack& qccol, Spack& qrheti, Spack& nimlt,
+                                   Spack& nccol, Spack& ncshdc, Spack& ncheti,
+                                   Spack& nrcol, Spack& nislf, Spack& qidep,
+                                   Spack& nrheti, Spack& nisub, Spack& qinuc,
+                                   Spack& ninuc, Spack& qiberg);
+
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
   // ------------------------------------------------------------------------------------------!
@@ -516,6 +531,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_math_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_table_ice_impl.hpp"
+# include "p3_functions_back_to_cell_average_impl.hpp"
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"

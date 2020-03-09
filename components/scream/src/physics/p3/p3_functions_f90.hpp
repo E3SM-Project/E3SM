@@ -162,6 +162,42 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct BackToCellAverageData
+{
+  // inputs
+  Real lcldm, rcldm, icldm;
+
+  // in/out
+  Real qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc,
+       ncnuc, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt,
+       nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
+       qiberg;
+
+  // This populates all fields with test data within [0,1].
+  void randomize(); 
+};
+
+void back_to_cell_average(BackToCellAverageData& d);
+
+extern "C"{
+  void back_to_cell_average_f(Real lcldm, Real rcldm, Real icldm,
+                              Real* qcacc, Real* qrevp, Real* qcaut,
+                              Real* ncacc, Real* ncslf, Real* ncautc,
+                              Real* nrslf, Real* nrevp, Real* ncautr,
+                              Real* qcnuc, Real* ncnuc, Real* qisub,
+                              Real* nrshdr, Real* qcheti, Real* qrcol,
+                              Real* qcshd, Real* qimlt, Real* qccol,
+                              Real* qrheti, Real* nimlt, Real* nccol,
+                              Real* ncshdc, Real* ncheti, Real* nrcol,
+                              Real* nislf, Real* qidep, Real* nrheti,
+                              Real* nisub, Real* qinuc, Real* ninuc,
+                              Real* qiberg);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
 struct CloudWaterConservationData
 {
   // inputs
