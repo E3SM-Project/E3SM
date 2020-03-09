@@ -4,7 +4,7 @@
 #include "share/scream_types.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/mpi/scream_comm.hpp"
-#include "share/parameter_list.hpp"
+#include "share/scream_parameter_list.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/time_stamp.hpp"
 

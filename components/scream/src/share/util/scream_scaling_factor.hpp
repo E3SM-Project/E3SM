@@ -2,7 +2,7 @@
 #define SCREAM_SCALING_FACTOR_HPP
 
 #include <iostream>
-#include "share/util/rational_constant.hpp"
+#include "share/util/scream_rational_constant.hpp"
 
 #include <array>
 

@@ -10,7 +10,7 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/field/field.hpp"
-#include "share/util/factory.hpp"
+#include "share/util/scream_factory.hpp"
 #include "share/util/string_utils.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_std_enable_shared_from_this.hpp"
