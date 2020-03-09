@@ -58,6 +58,7 @@ void initialize_hommexx_session ()
     std::cout << "HOMMEXX vector tag: " << Scalar::label() << "\n";
     std::cout << "HOMMEXX active AVX set:" << active_avx_string() << "\n";
     std::cout << "HOMMEXX MPI_ON_DEVICE: " << HOMMEXX_MPI_ON_DEVICE << "\n";
+    std::cout << "HOMMEXX CUDA_SHARE_BUFFER: " << HOMMEXX_CUDA_SHARE_BUFFER << "\n";
     std::cout << "HOMMEXX CUDA_(MIN/MAX)_WARP_PER_TEAM: " << HOMMEXX_CUDA_MIN_WARP_PER_TEAM
               << " / " << HOMMEXX_CUDA_MAX_WARP_PER_TEAM << "\n";
 #ifndef HOMMEXX_NO_VECTOR_PRAGMAS

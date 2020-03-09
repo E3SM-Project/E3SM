@@ -91,6 +91,17 @@ public:
     }
   }
 
+  void allocate_buffers (const TeamUtils<ExecSpace>& tu)
+  {
+    const int alloc_dim = tu.get_num_ws_slots();
+
+    if (vector_buf_ml.extent_int(0)<alloc_dim) {
+      vector_buf_sl = decltype(vector_buf_sl)("",alloc_dim);
+      scalar_buf_ml = decltype(scalar_buf_ml)("",alloc_dim);
+      vector_buf_ml = decltype(vector_buf_ml)("",alloc_dim);
+    }
+  }
+
   // This one is used in the unit tests
   void set_views (const ExecViewManaged<const Real         [NP][NP]>  dvv_in,
                   const ExecViewManaged<const Real * [2][2][NP][NP]>  d,

@@ -63,10 +63,11 @@ void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {
   // and add the sum to the first entry of eta_dot_dpdn.
   auto eta_dot_dpdn = m_eta_dot_dpdn;
   auto policy = Homme::get_default_team_policy<ExecSpace>(m_num_elems);
-  const int nteams = Homme::get_num_concurrent_teams(policy);
-  ExecViewManaged<Scalar *[NP][NP][NUM_LEV]> delta_eta("",nteams);
+  TeamUtils<ExecSpace> tu(policy);
+  const int nslots = tu.get_num_ws_slots();
+  ExecViewManaged<Scalar *[NP][NP][NUM_LEV]> delta_eta("",nslots);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const TeamMember& team) {
-    KernelVariables kv(team);
+    KernelVariables kv(team, tu);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;

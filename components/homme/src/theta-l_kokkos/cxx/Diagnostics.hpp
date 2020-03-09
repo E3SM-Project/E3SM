@@ -35,7 +35,11 @@ private:
 
 public:
 
-  Diagnostics (const int num_elems) : m_num_elems(num_elems) {}
+  Diagnostics (const int num_elems) :
+    m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
+    m_tu(m_policy),
+    m_num_elems(num_elems)
+  {}
 
   void init (const ElementsState& state, const ElementsGeometry& geometry,
              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
@@ -66,7 +70,7 @@ public:
     assert (m_buffers.pnh.size()>0);
     assert (m_buffers.dpnh_dp_i.size()>0);
 
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
 
     // Subview inputs/outputs
     auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp, kv.ie,t1);
@@ -187,6 +191,9 @@ private:
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   Buffers           m_buffers;
+
+  Kokkos::TeamPolicy<ExecSpace, EnergyHalfTimesTag> m_policy;
+  TeamUtils<ExecSpace> m_tu;
 
   int t1,t1_qdp;
 

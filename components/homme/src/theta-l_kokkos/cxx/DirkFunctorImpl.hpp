@@ -86,7 +86,8 @@ struct DirkFunctorImpl {
   Work m_work;
   LinearSystem m_ls;
   TeamPolicy m_policy, m_ig_policy;
-  int nteam;
+  TeamUtils<ExecSpace> m_tu, m_tu_ig;
+  int nslot;
 
   KOKKOS_INLINE_FUNCTION
   size_t shmem_size (const int team_size) const {
@@ -94,7 +95,7 @@ struct DirkFunctorImpl {
   }
 
   DirkFunctorImpl (const int nelem)
-    : m_policy(1,1,1), m_ig_policy(1,1,1) // throwaway settings
+    : m_policy(1,1,1), m_ig_policy(1,1,1), m_tu(m_policy), m_tu_ig(m_ig_policy) // throwaway settings
   {
     init(nelem);
   }
@@ -122,20 +123,22 @@ struct DirkFunctorImpl {
         ::team_num_threads_vectors(nelem, tp);
       m_policy = TeamPolicy(nelem, p.first, 1);
     }
-    nteam = std::min(nelem, get_num_concurrent_teams(m_policy));
+    m_tu = TeamUtils<ExecSpace>(m_policy);
+    nslot = std::min(nelem, m_tu.get_num_ws_slots());
     m_ig_policy = Homme::get_default_team_policy<ExecSpace>(nelem);
+    m_tu_ig = TeamUtils<ExecSpace>(m_ig_policy);
   }
 
   int requested_buffer_size () const {
     // FunctorsBuffersManager wants the size in terms of sizeof(Real).
-    return (Work::shmem_size(nteam) + LinearSystem::shmem_size(nteam))/sizeof(Real);
+    return (Work::shmem_size(nslot) + LinearSystem::shmem_size(nslot))/sizeof(Real);
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-    m_work = Work(mem, nteam);
-    mem += Work::shmem_size(nteam)/sizeof(Scalar);
-    m_ls = LinearSystem(mem, nteam);
+    m_work = Work(mem, nslot);
+    mem += Work::shmem_size(nslot)/sizeof(Scalar);
+    m_ls = LinearSystem(mem, nslot);
   }
 
   void run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
@@ -167,9 +170,10 @@ struct DirkFunctorImpl {
     elem_ops.init(hvcoord);
 
     const auto work = m_work;
+    const auto tu   = m_tu_ig;
 
     const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team);
+      KernelVariables kv(team, tu);
       const auto ie = kv.ie;
 
       const ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV_P]>
@@ -226,9 +230,10 @@ struct DirkFunctorImpl {
     const auto e_gradphis = e.m_geometry.m_gradphis;
     const auto e_initial_guess = e.m_derived.m_divdp_proj;
     const auto hybi = hvcoord.hybrid_bi;
+    const auto tu   = m_tu;
 
     const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team);
+      KernelVariables kv(team, tu);
       const auto ie = kv.ie;
       const int nlev = num_phys_lev;
 

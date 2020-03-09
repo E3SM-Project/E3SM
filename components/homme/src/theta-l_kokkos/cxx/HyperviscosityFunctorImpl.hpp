@@ -102,7 +102,7 @@ public:
   void operator() (const TagFirstLaplaceHV&, const TeamMember& team) const {
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     // Subtract the reference states from the states
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -173,7 +173,7 @@ public:
   //second iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagSecondLaplaceConstHV&, const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     // Laplacian of layers thickness
     m_sphere_ops.laplace_simple(kv,
                    Homme::subview(m_buffers.dptens,kv.ie),
@@ -202,7 +202,7 @@ public:
   //second iter of laplace, tensor hv
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagSecondLaplaceTensorHV&, const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     // Laplacian of layers thickness
     m_sphere_ops.laplace_tensor(kv,
                    Homme::subview(m_geometry.m_tensorvisc,kv.ie),
@@ -237,7 +237,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagUpdateStates&, const TeamMember& team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
 
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
@@ -295,7 +295,7 @@ public:
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int &point_idx) {
       const int igp = point_idx / NP;
@@ -444,6 +444,8 @@ protected:
   Kokkos::TeamPolicy<ExecSpace,TagUpdateStates>     m_policy_update_states;
   Kokkos::TeamPolicy<ExecSpace,TagFirstLaplaceHV>   m_policy_first_laplace;
   Kokkos::TeamPolicy<ExecSpace,TagHyperPreExchange> m_policy_pre_exchange;
+
+  TeamUtils<ExecSpace> m_tu; // If the policies only differ by tag, just need one tu
 
   std::shared_ptr<BoundaryExchange> m_be;
 

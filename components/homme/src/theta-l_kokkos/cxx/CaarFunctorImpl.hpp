@@ -18,6 +18,7 @@
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
+#include "kokkos_utils.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
@@ -105,6 +106,8 @@ struct CaarFunctorImpl {
   Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
   Kokkos::TeamPolicy<ExecSpace, TagDp3dLimiter>   m_policy_dp3d_lim;
 
+  TeamUtils<ExecSpace> m_tu;
+
   Kokkos::TeamPolicy<ExecSpace, TagPreExchange>
   get_policy_pre_exchange () const {
     return m_policy_pre;
@@ -137,17 +140,18 @@ struct CaarFunctorImpl {
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(elements.num_elems()))
       , m_policy_post (0,elements.num_elems()*NP*NP)
       , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(elements.num_elems()))
+      , m_tu(m_policy_pre)
   {
     // Initialize equation of state
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
 
     // Make sure the buffers in sph op are large enough for this functor's needs
-    m_sphere_ops.allocate_buffers(m_policy_pre);
+    m_sphere_ops.allocate_buffers(m_tu);
   }
 
   int requested_buffer_size () const {
     // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
-    const int nteams = get_num_concurrent_teams(m_policy_pre);
+    const int nslots = m_tu.get_num_ws_slots();
 
     int num_scalar_mid_buf = Buffers::num_3d_scalar_mid_buf;
     int num_scalar_int_buf = Buffers::num_3d_scalar_int_buf;
@@ -173,88 +177,88 @@ struct CaarFunctorImpl {
       }
     }
 
-    return num_scalar_mid_buf  *NP*NP*NUM_LEV  *VECTOR_SIZE*nteams
-         + num_scalar_int_buf  *NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams
-         + num_vector_mid_buf*2*NP*NP*NUM_LEV  *VECTOR_SIZE*nteams
-         + num_vector_int_buf*2*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams;
+    return num_scalar_mid_buf  *NP*NP*NUM_LEV  *VECTOR_SIZE*nslots
+         + num_scalar_int_buf  *NP*NP*NUM_LEV_P*VECTOR_SIZE*nslots
+         + num_vector_mid_buf*2*NP*NP*NUM_LEV  *VECTOR_SIZE*nslots
+         + num_vector_int_buf*2*NP*NP*NUM_LEV_P*VECTOR_SIZE*nslots;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
     Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-    const int nteams = get_num_concurrent_teams(m_policy_pre);
+    const int nslots = m_tu.get_num_ws_slots();
 
     // Midpoints scalars
-    m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nteams);
+    m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nslots);
     mem += m_buffers.pnh.size();
     if (m_theta_hydrostatic_mode) {
       // pi = pnh
       m_buffers.pi = m_buffers.pnh;
     } else {
-      m_buffers.pi       = decltype(m_buffers.pi        )(mem,nteams);
+      m_buffers.pi       = decltype(m_buffers.pi        )(mem,nslots);
       mem += m_buffers.pi.size();
     }
 
-    m_buffers.temp       = decltype(m_buffers.temp      )(mem,nteams);
+    m_buffers.temp       = decltype(m_buffers.temp      )(mem,nslots);
     mem += m_buffers.temp.size();
-    m_buffers.exner      = decltype(m_buffers.exner     )(mem,nteams);
+    m_buffers.exner      = decltype(m_buffers.exner     )(mem,nslots);
     mem += m_buffers.exner.size();
-    m_buffers.phi        = decltype(m_buffers.phi       )(mem,nteams);
+    m_buffers.phi        = decltype(m_buffers.phi       )(mem,nslots);
     mem += m_buffers.phi.size();
-    m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nteams);
+    m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nslots);
     mem += m_buffers.div_vdp.size();
-    m_buffers.omega_p    = decltype(m_buffers.omega_p   )(mem,nteams);
+    m_buffers.omega_p    = decltype(m_buffers.omega_p   )(mem,nslots);
     mem += m_buffers.omega_p.size();
-    m_buffers.vort       = decltype(m_buffers.vort)(mem,nteams);
+    m_buffers.vort       = decltype(m_buffers.vort)(mem,nslots);
     mem += m_buffers.vort.size();
-    m_buffers.theta_tens = decltype(m_buffers.theta_tens)(mem,nteams);
+    m_buffers.theta_tens = decltype(m_buffers.theta_tens)(mem,nslots);
     mem += m_buffers.theta_tens.size();
-    m_buffers.dp_tens    = decltype(m_buffers.dp_tens   )(mem,nteams);
+    m_buffers.dp_tens    = decltype(m_buffers.dp_tens   )(mem,nslots);
     mem += m_buffers.dp_tens.size();
 
     // Midpoints vectors
-    m_buffers.grad_tmp = decltype(m_buffers.grad_tmp)(mem,nteams);
+    m_buffers.grad_tmp = decltype(m_buffers.grad_tmp)(mem,nslots);
     mem += m_buffers.grad_tmp.size();
 
-    m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nteams);
+    m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nslots);
     mem += m_buffers.vdp.size();
-    m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nteams);
+    m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nslots);
     mem += m_buffers.v_tens.size();
 
     // Interface scalars
     if (!m_theta_hydrostatic_mode || m_rsplit==0) {
-      m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nteams);
+      m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nslots);
       mem += m_buffers.dp_i.size();
     }
 
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nteams);
+      m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nslots);
       mem += m_buffers.dpnh_dp_i.size();
     }
 
     if (m_rsplit==0) {
-      m_buffers.eta_dot_dpdn = decltype(m_buffers.eta_dot_dpdn)(mem,nteams);
+      m_buffers.eta_dot_dpdn = decltype(m_buffers.eta_dot_dpdn)(mem,nslots);
       mem += m_buffers.eta_dot_dpdn.size();
-      m_buffers.vtheta_i     = decltype(m_buffers.vtheta_i    )(mem,nteams);
+      m_buffers.vtheta_i     = decltype(m_buffers.vtheta_i    )(mem,nslots);
       mem += m_buffers.vtheta_i.size();
     }
 
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nteams);
+      m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nslots);
       mem += m_buffers.phi_tens.size();
-      m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nteams);
+      m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
       mem += m_buffers.w_tens.size();
     }
 
     // Interface vectors
     if (!m_theta_hydrostatic_mode) {
-      m_buffers.v_i          = decltype(m_buffers.v_i         )(mem,nteams);
+      m_buffers.v_i          = decltype(m_buffers.v_i         )(mem,nslots);
       mem += m_buffers.v_i.size();
-      m_buffers.grad_w_i     = decltype(m_buffers.grad_w_i    )(mem,nteams);
+      m_buffers.grad_w_i     = decltype(m_buffers.grad_w_i    )(mem,nslots);
       mem += m_buffers.grad_w_i.size();
     }
-    m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nteams);
+    m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nslots);
     mem += m_buffers.grad_phinh_i.size();
 
     int used_mem = (reinterpret_cast<Real*>(mem) - fbm.get_memory());
@@ -324,7 +328,7 @@ struct CaarFunctorImpl {
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
     ExecSpace::impl_static_fence();
     GPTLstop("caar dp3d");
-    
+
     profiling_pause();
   }
 
@@ -333,7 +337,7 @@ struct CaarFunctorImpl {
     // In this body, we use '====' to separate sync epochs (delimited by barriers)
     // Note: make sure the same temp is not used within each epoch!
 
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
 
     // =========== EPOCH 1 =========== //
     compute_div_vdp(kv);
@@ -450,7 +454,7 @@ struct CaarFunctorImpl {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
-    KernelVariables kv(team);
+    KernelVariables kv(team, m_tu);
 
     // TODO: make this less hard-coded maybe?
     constexpr Real dp3d_thresh = 0.125;
@@ -458,7 +462,7 @@ struct CaarFunctorImpl {
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
+      const int igp = idx / NP;
       const int jgp = idx % NP;
 
       const auto& spheremp = m_geometry.m_spheremp(kv.ie,igp,jgp);
@@ -545,8 +549,8 @@ struct CaarFunctorImpl {
     // Compute vdp
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
-      const int jgp = idx % NP; 
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
 
       auto u = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
       auto v = Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp);
@@ -557,8 +561,8 @@ struct CaarFunctorImpl {
                            [&] (const int& ilev) {
         udp(ilev) = u(ilev)*dp3d(ilev);
         vdp(ilev) = v(ilev)*dp3d(ilev);
-      }); 
-    }); 
+      });
+    });
     kv.team_barrier();
 
     // Compute div(vdp)
@@ -572,7 +576,7 @@ struct CaarFunctorImpl {
     kv.team_barrier();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
+      const int igp = idx / NP;
       const int jgp = idx % NP;
 
       // At interfaces, pi_i(k+1) = pi_i(k)+dp(k), with pi_i(0)=hyai(0)*ps0;
@@ -622,7 +626,7 @@ struct CaarFunctorImpl {
     // Update omega with v*grad(p)
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
+      const int igp = idx / NP;
       const int jgp = idx % NP;
 
       auto omega = Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp);
@@ -664,8 +668,8 @@ struct CaarFunctorImpl {
   void compute_interface_quantities(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
-      const int jgp = idx % NP; 
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
 
       auto dp   = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
       auto dp_i = Homme::subview(m_buffers.dp_i,kv.team_idx,igp,jgp);
@@ -731,7 +735,7 @@ struct CaarFunctorImpl {
     //  - w_vadv_i
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
+      const int igp = idx / NP;
       const int jgp = idx % NP;
 
       compute_eta_dot_dpn (kv,igp,jgp);
@@ -797,7 +801,7 @@ struct CaarFunctorImpl {
       u_vadv(k) = facp*(u(k+1)-u(k)) + facm*(u(k)-u(k-1));
       v_vadv(k) = facp*(v(k+1)-v(k)) + facm*(v(k)-v(k-1));
     });
-    
+
     constexpr int last = NUM_PHYSICAL_LEV-1;
     facm = 0.5*(eta_dot_dpdn(last)/dp(last));
     u_vadv(last) = facm*(u(last)-u(last-1));
@@ -833,7 +837,7 @@ struct CaarFunctorImpl {
 
     ColumnOps::compute_midpoint_delta(kv,w_i,temp);
     ColumnOps::compute_midpoint_values<CombineMode::Multiply>(kv,eta_dot_dpdn,temp);
-    
+
     ColumnOps::compute_interface_values(kv,temp,w_vadv);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),
                          [&](const int ilev) {
@@ -866,7 +870,7 @@ struct CaarFunctorImpl {
     // Accumulate: vn0 += eta_ave_w*v*dp
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
-      const int igp = idx / NP; 
+      const int igp = idx / NP;
       const int jgp = idx % NP;
 
       // If rsplit>0, m_buffers.eta_dot_dpdn is identically 0, so skip this step
@@ -942,7 +946,7 @@ struct CaarFunctorImpl {
         v_grad = v_i(0,igp,jgp,ilev)*grad_phinh_i(0,igp,jgp,ilev)
                + v_i(1,igp,jgp,ilev)*grad_phinh_i(1,igp,jgp,ilev);
         if (m_rsplit==0) {
-          phi_tens(ilev) += v_grad; 
+          phi_tens(ilev) += v_grad;
         } else {
           phi_tens(ilev) =  v_grad;
         }
@@ -951,8 +955,8 @@ struct CaarFunctorImpl {
                           (ilev==NUM_LEV_P ? m_scale2g_last_int_pack : m_data.scale2*g);
 
         if (m_data.scale1!=m_data.scale2) {
-           // add imex phi_h splitting 
-           // use approximate phi_h = hybi*phis 
+           // add imex phi_h splitting
+           // use approximate phi_h = hybi*phis
            // could also use true hydrostatic pressure, but this requires extra DSS in dirk()
            phi_tens(ilev) +=  (m_data.scale1-m_data.scale2) *
                 (v_i(0,igp,jgp,ilev)*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
@@ -1140,7 +1144,7 @@ struct CaarFunctorImpl {
     //  - Compute gradKE = grad(v*v/2)
     //  - Compute gradExner = grad(exner)
     //  - Compute mgrad = average[dpnh_dp_i*gradphinh_i]
-    //  - Compute v_tens = 
+    //  - Compute v_tens =
     //           scale1*(-v_vadv + v2*(fcor+vort)-gradKE -mgrad  -cp*vtheta*gradExner - wvor)
     //           scale1*(-v_vadv - v1*(fcor+vort)-gradKE -mgrad  -cp*vtheta*gradExner - wvor)
 
