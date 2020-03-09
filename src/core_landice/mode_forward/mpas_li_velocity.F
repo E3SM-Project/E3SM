@@ -674,7 +674,8 @@ contains
       ! calculate velocity-related thermal source term fields
       ! (do it here to make restarts easier - this way only the fields need to be restart
       !  variables, rather than the fields that are input to the calculations.)
-      if (solveVelo) then
+      if (solveVelo .and. (trim(config_velocity_solver) /= 'none')) then
+
          ! (on a restart value, do not try to calculate these - instead use the fields in the restart file)
          call li_basal_friction(domain, err_tmp)
          err = ior(err, err_tmp)
