@@ -72,8 +72,9 @@
 <sim_year>2000</sim_year>
 
 <!-- Settings related to the SCREAM NH dycore -->
-<theta_advect_form>		1</theta_advect_form>
-<theta_hydrostatic_mode>	.false.</theta_hydrostatic_mode>
+<theta_advect_form>1</theta_advect_form>
+<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
+<tstep_type>10</tstep_type>
 
 <!-- Do radiation every timestep -->
 <iradsw>  1</iradsw>
