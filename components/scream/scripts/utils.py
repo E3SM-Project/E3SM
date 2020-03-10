@@ -358,7 +358,7 @@ def update_submodules(repo=None):
     """
     Updates submodules
     """
-    run_cmd("git submodule update --init --recursive",from_dir=repo)
+    run_cmd_no_fail("git submodule update --init --recursive",from_dir=repo)
 
 ###############################################################################
 def merge_git_ref(git_ref, repo=None):
@@ -366,7 +366,7 @@ def merge_git_ref(git_ref, repo=None):
     """
     Merge given git ref into the current branch, and updates submodules
     """
-    run_cmd("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
+    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
     update_submodules(repo)
     expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
 
@@ -387,11 +387,14 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
     """
     Checks out 'branch_ref', and updates submodules
     """
-    run_cmd_no_fail("git checkout {}".format(git_ref),from_dir=repo)
-    update_submodules(repo)
-    git_commit = get_current_commit()
-    expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
-    if verbose:
-        print("  Switched to '{}' ({})".format(git_ref,git_commit))
-        print_last_commit(git_ref=git_ref)
+    if get_current_commit() != get_current_commit(commit=git_ref):
+        expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+
+        run_cmd_no_fail("git checkout {}".format(git_ref),from_dir=repo)
+        update_submodules(repo)
+        git_commit = get_current_commit()
+        expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
+        if verbose:
+            print("  Switched to '{}' ({})".format(git_ref,git_commit))
+            print_last_commit(git_ref=git_ref)
 

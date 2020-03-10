@@ -69,8 +69,7 @@ class TestAllScream(object):
                     self._baseline_ref = "HEAD"
                 elif self._integration_test:
                     self._baseline_ref = "origin/master"
-                    if get_current_commit() != get_current_commit(commit="origin/master"):
-                        merge_git_ref(git_ref="origin/master")
+                    merge_git_ref(git_ref="origin/master")
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
@@ -224,14 +223,9 @@ class TestAllScream(object):
         git_head_ref        = get_current_head()
         git_baseline_commit = get_current_commit(commit=self._baseline_ref)
 
-        need_checkout = git_baseline_commit != git_head_commit
-
         print("Generating baselines for ref {}".format(self._baseline_ref))
 
-        if need_checkout:
-            expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
-
-            checkout_git_ref(git_ref=self._baseline_ref,verbose=True)
+        checkout_git_ref(git_ref=self._baseline_ref,verbose=True)
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -249,8 +243,7 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        if need_checkout:
-            checkout_git_ref(git_ref=git_head_ref,verbose=True)
+        checkout_git_ref(git_ref=git_head_ref,verbose=True)
 
         return success
 
