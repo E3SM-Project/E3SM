@@ -54,6 +54,7 @@ _TESTS = {
         "tests" : (
             "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
             "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
+            "ERP_Ln9.ne4_ne4.F-EAMv1-RCEMIP",
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",

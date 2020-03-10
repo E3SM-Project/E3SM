@@ -199,6 +199,7 @@ contains
     ! pflotran:end-----------------------------------------------
 
     ! Determine isgrid2d flag for domain
+    ldomain%set = .false.
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
 
     ! Determine type of file - old style grid file or new style domain file
@@ -622,6 +623,7 @@ contains
 
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
     surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
+    surfdata_domain%set = .false.
     call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, clmlevel=grlnd)
 
     call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
