@@ -79,6 +79,12 @@ class TestAllScream(object):
 
                 print("Using baseline commit {}".format(self._baseline_ref))
         else:
+            if self._integration_test:
+                if get_current_commit() != get_current_commit(commit="origin/master"):
+                    run_cmd_no_fail("git merge origin/master -m 'Autotester master merge commit'", arg_stdout=None, arg_stderr=None, verbose=True)
+                    # Re-update submodules, just in case master had some new stuff
+                    run_cmd_no_fail("git submodule update --init --recursive")
+
             print("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, "
                   "but there will be errors if the baselines are not found.".format(self._baseline_dir))
 
