@@ -599,7 +599,7 @@ if (isglobal == False):
             alignyear = int(row[8])
             if (options.diags):
                 timezone = int(row[9])
-            if (options.humhol):
+            if (options.humhol or options.marsh):
                 numxpts=2
             else:
                 numxpts=1
@@ -1497,7 +1497,7 @@ if (options.ensemble_file != '' or int(options.mc_ensemble) != -1):
     num=0
     #Launch ensemble if requested 
     mysubmit_type = 'qsub'
-    if ('compy' in options.machine or 'cori' in options.machine or options.machine == 'edison'):
+    if ('cades' in options.machine or 'compy' in options.machine or 'cori' in options.machine or options.machine == 'edison'):
         mysubmit_type = 'sbatch'
     if (options.ensemble_file != ''):
         os.system('mkdir -p '+PTCLMdir+'/scripts/'+myscriptsdir)
@@ -1515,7 +1515,7 @@ if (options.ensemble_file != '' or int(options.mc_ensemble) != -1):
             if (options.machine == 'cades'):
                 output_run.write('#PBS -l nodes='+str(int(math.ceil(np_total/(ppn*1.0))))+ \
                                     ':ppn='+str(ppn)+'\n')
-                output_run.write('#PBS -W group_list=cades-ccsi\n')
+                output_run.write('#PBS -W group_list=ccsi\n')
             else:
                 output_run.write('#PBS -l nodes='+str(int(math.ceil(np_total/(ppn*1.0))))+ \
                                      '\n')
@@ -1535,7 +1535,10 @@ if (options.ensemble_file != '' or int(options.mc_ensemble) != -1):
                 output_run.write('#SBATCH --constraint=haswell\n')
               if ('knl' in options.machine):
                 output_run.write('#SBATCH --constraint=knl\n')
-
+	      if ('cades' in options.machine):
+		output_run.write('#SBATCH -A ccsi\n')
+		output_run.write('#SBATCH -p burst\n')
+		output_run.write('#SBATCH --mem=8G\n')
         output_run.write("\n")
         if (options.machine == 'eos'):
             output_run.write('source $MODULESHOME/init/csh\n')

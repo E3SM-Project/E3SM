@@ -2066,7 +2066,7 @@
     <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
@@ -2127,12 +2127,15 @@
       <!-- AND, setting 'CLM_USE_PETSC' value to 'TRUE' in 'env_build.xml' to append PETSc includes and Libraries,
                 otherwise,explicitly appending  ' -I$ENV{PETSC_DIR}/include $ENV{MKLROOT_INC}' in 'PFLOTRAN_INC' and
                  ' -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis $ENV{MKLROOT_LIB} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential' in 'PFLOTTRAN_LIB' -->
-        <env name="PETSC_PATH">$ENV{PETSC_DIR}</env>
+        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
         <env name="PETSC_ARCH"></env> <!-- this is needed for cmake list of CLM_USE_PETSC, default by 'null' if installed PETSc rather than Built only -->
         <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} </env>
         <!-- env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran </env>
              note that still needs PETSc libs explicitly on CADES probably due to older GCC -->
         <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis </env>
+    </environment_variables>
+    <environment_variables >
+        <env name="PERL5LIB">/home/omearata/perl5/lib/perl5:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/perl/5.30.1/centos7.2_gnu5.3.0/lib/perl5</env>
     </environment_variables>
   </machine>
 

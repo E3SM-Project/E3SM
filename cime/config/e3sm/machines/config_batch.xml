@@ -467,13 +467,12 @@
          </queues>
    </batch_system>
 
-   <batch_system MACH="cades" type="pbs" >
+   <batch_system MACH="cades" type="slurm" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-                 <directive>-W group_list=cades-ccsi</directive>
          </directives>
          <queues>
-           <queue default="true">batch</queue>
+           <queue default="true">burst</queue>
          </queues>
    </batch_system>
 
