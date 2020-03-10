@@ -64,6 +64,7 @@ module VegetationPropertiesType
      real(r8), pointer :: fr_flig       (:) => null()  ! fine root litter lignin fraction
      real(r8), pointer :: leaf_long     (:) => null()  ! leaf longevity (yrs)
      real(r8), pointer :: froot_long    (:) => null()  ! fine root longevity (yrs)
+     real(r8), pointer :: rhizome_long  (:) => null()  ! nonwoody rhizome longevity (yrs)
      real(r8), pointer :: evergreen     (:) => null()  ! binary flag for evergreen leaf habit (0 or 1)
      real(r8), pointer :: stress_decid  (:) => null()  ! binary flag for stress-deciduous leaf habit (0 or 1)
      real(r8), pointer :: season_decid  (:) => null()  ! binary flag for seasonal-deciduous leaf habit (0 or 1)
@@ -180,6 +181,7 @@ contains
     use pftvarcon , only : lflitcn, frootcn, livewdcn, deadwdcn, froot_leaf, stem_leaf, croot_stem
     use pftvarcon , only : flivewd, fcur, lf_flab, lf_fcel, lf_flig, fr_flab, fr_fcel, fr_flig
     use pftvarcon , only : leaf_long, froot_long, evergreen, stress_decid, season_decid
+    use pftvarcon , only : rhizome_long
     use pftvarcon , only : manunitro, graincn, fleafcn, ffrootcn, fstemcn, dwood
     use pftvarcon , only : presharv, convfact, fyield
     use pftvarcon , only : leafcp,lflitcp, frootcp, livewdcp, deadwdcp,graincp
@@ -249,6 +251,7 @@ contains
     allocate(this%fr_flig       (0:numpft))        ; this%fr_flig      (:)   =spval
     allocate(this%leaf_long     (0:numpft))        ; this%leaf_long    (:)   =spval
     allocate(this%froot_long    (0:numpft))        ; this%froot_long   (:)   =spval
+    allocate(this%rhizome_long  (0:numpft))        ; this%rhizome_long (:)   =spval
     allocate(this%evergreen     (0:numpft))        ; this%evergreen    (:)   =spval
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =spval
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =spval
@@ -388,6 +391,7 @@ contains
        this%fr_flig(m)      = fr_flig(m)
        this%leaf_long(m)    = leaf_long(m)
        this%froot_long(m)   = froot_long(m)
+       this%rhizome_long(m) = rhizome_long(m)
        this%evergreen(m)    = evergreen(m)
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)

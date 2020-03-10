@@ -133,6 +133,12 @@ contains
          transfer_froot_gr(p)      = frootc_xfer_to_frootc(p) * grperc(ivt(p)) * &
               (1._r8 - grpnow(ivt(p)))
 
+         ! B. Sulman: Moved out of woody to allow graminoid rhizomes
+         cpool_livecroot_gr(p)         = cpool_to_livecrootc(p) * grperc(ivt(p))
+         cpool_livecroot_storage_gr(p) = cpool_to_livecrootc_storage(p) * &
+             grperc(ivt(p)) * grpnow(ivt(p))
+         transfer_livecroot_gr(p)      = livecrootc_xfer_to_livecrootc(p) * &
+             grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
          if (woody(ivt(p)) >= 1.0_r8) then
             cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
             cpool_livestem_storage_gr(p)  = cpool_to_livestemc_storage(p) * &
@@ -143,11 +149,6 @@ contains
             cpool_deadstem_storage_gr(p)  = cpool_to_deadstemc_storage(p) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
             transfer_deadstem_gr(p)       = deadstemc_xfer_to_deadstemc(p) * &
-                 grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
-            cpool_livecroot_gr(p)         = cpool_to_livecrootc(p) * grperc(ivt(p))
-            cpool_livecroot_storage_gr(p) = cpool_to_livecrootc_storage(p) * &
-                 grperc(ivt(p)) * grpnow(ivt(p))
-            transfer_livecroot_gr(p)      = livecrootc_xfer_to_livecrootc(p) * &
                  grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
             cpool_deadcroot_gr(p)         = cpool_to_deadcrootc(p) * grperc(ivt(p))
             cpool_deadcroot_storage_gr(p) = cpool_to_deadcrootc_storage(p) * &
