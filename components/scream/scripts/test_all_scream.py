@@ -1,5 +1,7 @@
 from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, \
-    get_current_commit, expect, is_repo_clean, get_common_ancestor
+                  get_current_commit, expect, is_repo_clean, get_common_ancestor,           \
+                  merge_git_ref, checkout_git_ref, print_last_commit
+
 check_minimum_python_version(3, 4)
 
 import os, shutil
@@ -55,9 +57,7 @@ class TestAllScream(object):
         if self._submit:
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
-        last_commit = run_cmd_no_fail("git log -1 --oneline")
-        print("   Last commit on tested branch:")
-        print("     {}".format(last_commit))
+        print_last_commit()
 
         # Compute baseline info
         expect(not (self._baseline_ref and self._baseline_dir),
@@ -70,7 +70,7 @@ class TestAllScream(object):
                 elif self._integration_test:
                     self._baseline_ref = "origin/master"
                     if get_current_commit() != get_current_commit(commit="origin/master"):
-                        run_cmd_no_fail("git merge origin/master -m 'Autotester master merge commit'", arg_stdout=None, arg_stderr=None, verbose=True)
+                        merge_git_ref(git_ref="origin/master")
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
@@ -81,9 +81,7 @@ class TestAllScream(object):
         else:
             if self._integration_test:
                 if get_current_commit() != get_current_commit(commit="origin/master"):
-                    run_cmd_no_fail("git merge origin/master -m 'Autotester master merge commit'", arg_stdout=None, arg_stderr=None, verbose=True)
-                    # Re-update submodules, just in case master had some new stuff
-                    run_cmd_no_fail("git submodule update --init --recursive")
+                    merge_git_ref(git_ref="origin/master")
 
             print("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, "
                   "but there will be errors if the baselines are not found.".format(self._baseline_dir))
@@ -232,13 +230,8 @@ class TestAllScream(object):
 
         if need_checkout:
             expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
-            run_cmd_no_fail("git checkout {}".format(self._baseline_ref))
-            print("  Switched to {} ({})".format(self._baseline_ref, git_baseline_commit))
-            last_commit = run_cmd_no_fail("git log -1 --oneline")
-            print("   Last commit on baseline ref:")
-            print("     {}".format(last_commit))
-            # Re-update submodules, just in case baselines and branch have different submodules
-            run_cmd_no_fail("git submodule update --init --recursive")
+
+            checkout_git_ref(git_ref=self._baseline_ref,verbose=True)
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -257,13 +250,7 @@ class TestAllScream(object):
                     return False
 
         if need_checkout:
-            run_cmd_no_fail("git checkout {}".format(git_head_ref))
-            print("  Switched back to {} ({})".format(git_head_ref, git_head_commit))
-            last_commit = run_cmd_no_fail("git log -1 --oneline")
-            print("   Last commit on tested branch:")
-            print("     {}".format(last_commit))
-            # Re-update submodules, just in case baselines and branch have different submodules
-            run_cmd_no_fail("git submodule update --init --recursive")
+            checkout_git_ref(git_ref=git_head_ref,verbose=True)
 
         return success
 
