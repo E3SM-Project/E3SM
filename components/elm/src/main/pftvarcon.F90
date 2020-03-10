@@ -188,6 +188,7 @@ module pftvarcon
   real(r8), allocatable :: fr_flig(:)      !fine root litter lignin fraction
   real(r8), allocatable :: leaf_long(:)    !leaf longevity (yrs)
   real(r8), allocatable :: froot_long(:)   !fine root longevity(yrs)
+  real(r8), allocatable :: rhizome_long(:) !nonwoody rhizome longevity(yrs)
   real(r8), allocatable :: evergreen(:)    !binary flag for evergreen leaf habit (0 or 1)
   real(r8), allocatable :: stress_decid(:) !binary flag for stress-deciduous leaf habit (0 or 1)
   real(r8), allocatable :: season_decid(:) !binary flag for seasonal-deciduous leaf habit (0 or 1)
@@ -555,6 +556,7 @@ contains
     allocate( pprod10       (0:mxpft) )
     allocate( pprod100      (0:mxpft) )
     allocate( pprodharv10   (0:mxpft) )
+    allocate( rhizome_long  (0:mxpft) )
     allocate( cc_leaf       (0:mxpft) )
     allocate( cc_lstem      (0:mxpft) )
     allocate( cc_dstem      (0:mxpft) )
@@ -785,6 +787,8 @@ contains
     call ncd_io('froot_long',froot_long, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv) froot_long = leaf_long
     !if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('rhizome_long',rhizome_long, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if (.not. readv) rhizome_long = froot_long
     call ncd_io('evergreen',evergreen, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('stress_decid',stress_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
