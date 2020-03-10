@@ -131,6 +131,11 @@ contains
            isoveg_cf%livecrootc_to_deadcrootc      , veg_cf%livecrootc_to_deadcrootc, &
            isoveg_cs%livecrootc                   , veg_cs%livecrootc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
+      
+      call CarbonIsoFluxCalc(&
+           isoveg_cf%livecrootc_to_litter      , veg_cf%livecrootc_to_litter, &
+           isoveg_cs%livecrootc                   , veg_cs%livecrootc, &
+           num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CarbonIsoFluxCalc(&
            isoveg_cf%leaf_curmr                    , veg_cf%leaf_curmr, &
@@ -937,9 +942,11 @@ contains
 
          leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
          froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
+         croot_prof                =>    cnstate_vars%croot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                     
 
          leafc_to_litter           =>    veg_cf%leafc_to_litter         , & ! Input:  [real(r8) (:)   ]
          frootc_to_litter          =>    veg_cf%frootc_to_litter        , & ! Input:  [real(r8) (:)   ]
+         livecrootc_to_litter          =>    veg_cf%livecrootc_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
          phenology_c_to_litr_met_c =>    col_cf%phenology_c_to_litr_met_c , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
          phenology_c_to_litr_cel_c =>    col_cf%phenology_c_to_litr_cel_c , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
          phenology_c_to_litr_lig_c =>    col_cf%phenology_c_to_litr_lig_c   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
@@ -968,6 +975,14 @@ contains
                           + frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
                      phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
                           + frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                     
+                     ! nonwoody rhizome litter carbon fluxes
+                     phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
+                          + livecrootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * croot_prof(p,j)
+                     phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
+                          + livecrootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * croot_prof(p,j)
+                     phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
+                          + livecrootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * croot_prof(p,j)
                   end if
                end if
 
