@@ -237,6 +237,8 @@ contains
          else if (iscft(ivt(p)) .and. livestemn(p) .gt. 0._r8) then
             livestem_mr(p) = livestemn(p)*br_mr*tc
             grain_mr(p) = grainn(p)*br_mr*tc
+         else ! Graminoid rhizomes
+            livecroot_mr(p) = livecrootn(p)*br_mr*tc
          end if
          if (br_xr(ivt(p)) .gt. 1e-9_r8) then
             xr(p) = cpool(p) * br_xr(ivt(p)) * tc
