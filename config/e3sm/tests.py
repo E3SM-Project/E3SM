@@ -189,6 +189,16 @@ _TESTS = {
         "tests"   : "SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6"
         },
 
+    #e3sm tests to mimic BGC production runs
+    "e3sm_bgcprod" : {
+        "tests"   :  (
+               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.allactive-v1bgc_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRD_CNPRDCTC_20TR.allactive-v1bgc",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
+               )
+        },
+
     "fates" : {
         "tests" : (
             "ERS_Ld9.1x1_brazil.ICLM45ED",
