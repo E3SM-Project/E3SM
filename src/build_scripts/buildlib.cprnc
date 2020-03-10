@@ -51,15 +51,15 @@ def buildlib(bldroot, installpath, case):
     run_bld_cmd_ensure_logging("{}/tools/configure --mpilib=mpi-serial --macros-format=CMake --machine={} --compiler={}".format(cimeroot, case.get_value("MACH"), compiler), logger, from_dir=bldroot)
 
     cmake_args = get_standard_cmake_args(case, shared_lib=True)
-
-    cmake_cmd = "CIMEROOT={cimeroot} . ./.env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) CIMEROOT={cimeroot} cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
+    os.environ["CIMEROOOT"] = cimeroot
+    cmake_cmd = ". ./.env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
         format(cimeroot=cimeroot, dest_path=installpath, cmake_args=cmake_args, bldroot=bldroot)
     run_bld_cmd_ensure_logging(cmake_cmd, logger, from_dir=bldroot)
 
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 
-    run_bld_cmd_ensure_logging("{} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging(". ./.env_mach_specific.sh {} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
