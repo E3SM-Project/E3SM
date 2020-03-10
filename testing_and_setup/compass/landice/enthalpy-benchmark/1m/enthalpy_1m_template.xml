@@ -10,7 +10,7 @@
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_AM_globalStats_enable">.false.</option>
                 <option name="config_year_digits">6</option>
-
+                <option name="config_num_halos">1</option>
         </namelist>
 
         <streams>
@@ -43,7 +43,7 @@
                         <attribute name="type">input;output</attribute>
                         <attribute name="filename_template">restart.$Y.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
-                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">25000-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
                         <attribute name="input_interval">initial_only</attribute>

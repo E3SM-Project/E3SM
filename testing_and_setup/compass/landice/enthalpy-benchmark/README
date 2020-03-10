@@ -35,3 +35,19 @@ iceMeltingPointPressureDependence = 0.0_RKIND
 
 
 and recompile the code before testing Benchmark B
+
+Also, for Benchmark B, you can run with more vertical layers to match the lower row of Kleiner Figure 4.
+To do so, make a change like this:
+diff --git a/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml b/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml
+index 9ea496e7..743aa938 100644
+--- a/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml
++++ b/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml
+@@ -25,7 +25,7 @@
+                 <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                         <argument flag="-i">mpas_grid.nc</argument>
+                         <argument flag="-o">landice_grid.nc</argument>
+-                        <argument flag="-l">50</argument>
++                        <argument flag="-l">400</argument>
+                         <argument flag="--thermal"></argument>
+                 </step>
+
