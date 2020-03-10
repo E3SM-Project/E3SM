@@ -555,31 +555,32 @@ contains
             ! B. Sulman: Allow evergreen plants to transfer C/N/P from storage pools to growth, at a constant rate (for now)
             leafc_storage_to_xfer(p)  = bgtr(p) * leafc_storage(p)
             frootc_storage_to_xfer(p)  = bgtr(p) * frootc_storage(p)
+            gresp_storage_to_xfer(p)      = bgtr(p) * gresp_storage(p)
+            livecrootc_storage_to_xfer(p) = bgtr(p) * livecrootc_storage(p) ! For graminoid rhizomes
+            
             if (woody(ivt(p)) == 1.0_r8) then
                 livestemc_storage_to_xfer(p)  = bgtr(p) * livestemc_storage(p)
                 deadstemc_storage_to_xfer(p)  = bgtr(p) * deadstemc_storage(p)
-                livecrootc_storage_to_xfer(p) = bgtr(p) * livecrootc_storage(p)
                 deadcrootc_storage_to_xfer(p) = bgtr(p) * deadcrootc_storage(p)
-                gresp_storage_to_xfer(p)      = bgtr(p) * gresp_storage(p)
             end if
 
             ! set nitrogen fluxes for shifting storage pools to transfer pools
             leafn_storage_to_xfer(p)  = bgtr(p) * leafn_storage(p)
             frootn_storage_to_xfer(p) = bgtr(p) * frootn_storage(p)
+            livecrootn_storage_to_xfer(p) = bgtr(p) * livecrootn_storage(p)
             if (woody(ivt(p)) == 1.0_r8) then
                  livestemn_storage_to_xfer(p)  = bgtr(p) * livestemn_storage(p)
                  deadstemn_storage_to_xfer(p)  = bgtr(p) * deadstemn_storage(p)
-                 livecrootn_storage_to_xfer(p) = bgtr(p) * livecrootn_storage(p)
                  deadcrootn_storage_to_xfer(p) = bgtr(p) * deadcrootn_storage(p)
             end if
 
             ! set phosphorus fluxes for shifting storage pools to transfer pools
             leafp_storage_to_xfer(p)  = bgtr(p) * leafp_storage(p)
             frootp_storage_to_xfer(p) = bgtr(p) * frootp_storage(p)
+            livecrootp_storage_to_xfer(p) = bgtr(p) * livecrootp_storage(p)
             if (woody(ivt(p)) == 1.0_r8) then
                 livestemp_storage_to_xfer(p)  = bgtr(p) * livestemp_storage(p)
                 deadstemp_storage_to_xfer(p)  = bgtr(p) * deadstemp_storage(p)
-                livecrootp_storage_to_xfer(p) = bgtr(p) * livecrootp_storage(p)
                 deadcrootp_storage_to_xfer(p) = bgtr(p) * deadcrootp_storage(p)
             end if
          end if
@@ -800,18 +801,18 @@ contains
                   frootn_xfer_to_frootn(p) = 0.0_r8
                   leafp_xfer_to_leafp(p)   = 0.0_r8
                   frootp_xfer_to_frootp(p) = 0.0_r8
+                  livecrootc_xfer_to_livecrootc(p) = 0.0_r8 ! Graminoid rhizomes
+                  livecrootn_xfer_to_livecrootn(p) = 0.0_r8
+                  livecrootp_xfer_to_livecrootp(p) = 0.0_r8
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemc_xfer_to_livestemc(p)   = 0.0_r8
                      deadstemc_xfer_to_deadstemc(p)   = 0.0_r8
-                     livecrootc_xfer_to_livecrootc(p) = 0.0_r8
                      deadcrootc_xfer_to_deadcrootc(p) = 0.0_r8
                      livestemn_xfer_to_livestemn(p)   = 0.0_r8
                      deadstemn_xfer_to_deadstemn(p)   = 0.0_r8
-                     livecrootn_xfer_to_livecrootn(p) = 0.0_r8
                      deadcrootn_xfer_to_deadcrootn(p) = 0.0_r8
                      livestemp_xfer_to_livestemp(p)   = 0.0_r8
                      deadstemp_xfer_to_deadstemp(p)   = 0.0_r8
-                     livecrootp_xfer_to_livecrootp(p) = 0.0_r8
                      deadcrootp_xfer_to_deadcrootp(p) = 0.0_r8
                   end if
                   ! set transfer pools to 0.0
@@ -821,6 +822,9 @@ contains
                   frootc_xfer(p) = 0.0_r8
                   frootn_xfer(p) = 0.0_r8
                   frootp_xfer(p) = 0.0_r8
+                  livecrootc_xfer(p) = 0.0_r8
+                  livecrootn_xfer(p) = 0.0_r8
+                  livecrootp_xfer(p) = 0.0_r8
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemc_xfer(p) = 0.0_r8
                      livestemn_xfer(p) = 0.0_r8
@@ -828,9 +832,6 @@ contains
                      deadstemc_xfer(p) = 0.0_r8
                      deadstemn_xfer(p) = 0.0_r8
                      deadstemp_xfer(p) = 0.0_r8
-                     livecrootc_xfer(p) = 0.0_r8
-                     livecrootn_xfer(p) = 0.0_r8
-                     livecrootp_xfer(p) = 0.0_r8
                      deadcrootc_xfer(p) = 0.0_r8
                      deadcrootn_xfer(p) = 0.0_r8
                      deadcrootp_xfer(p) = 0.0_r8
@@ -890,10 +891,10 @@ contains
                   ! set carbon fluxes for shifting storage pools to transfer pools
                   leafc_storage_to_xfer(p)  = fstor2tran * leafc_storage(p)/dt
                   frootc_storage_to_xfer(p) = fstor2tran * frootc_storage(p)/dt
+                  livecrootc_storage_to_xfer(p) = fstor2tran * livecrootc_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemc_storage_to_xfer(p)  = fstor2tran * livestemc_storage(p)/dt
                      deadstemc_storage_to_xfer(p)  = fstor2tran * deadstemc_storage(p)/dt
-                     livecrootc_storage_to_xfer(p) = fstor2tran * livecrootc_storage(p)/dt
                      deadcrootc_storage_to_xfer(p) = fstor2tran * deadcrootc_storage(p)/dt
                      gresp_storage_to_xfer(p)      = fstor2tran * gresp_storage(p)/dt
                   end if
@@ -901,20 +902,20 @@ contains
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
                   leafn_storage_to_xfer(p)  = fstor2tran * leafn_storage(p)/dt
                   frootn_storage_to_xfer(p) = fstor2tran * frootn_storage(p)/dt
+                  livecrootn_storage_to_xfer(p) = fstor2tran * livecrootn_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemn_storage_to_xfer(p)  = fstor2tran * livestemn_storage(p)/dt
                      deadstemn_storage_to_xfer(p)  = fstor2tran * deadstemn_storage(p)/dt
-                     livecrootn_storage_to_xfer(p) = fstor2tran * livecrootn_storage(p)/dt
                      deadcrootn_storage_to_xfer(p) = fstor2tran * deadcrootn_storage(p)/dt
                   end if
 
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
                   leafp_storage_to_xfer(p)  = fstor2tran * leafp_storage(p)/dt
                   frootp_storage_to_xfer(p) = fstor2tran * frootp_storage(p)/dt
+                  livecrootp_storage_to_xfer(p) = fstor2tran * livecrootp_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemp_storage_to_xfer(p)  = fstor2tran * livestemp_storage(p)/dt
                      deadstemp_storage_to_xfer(p)  = fstor2tran * deadstemp_storage(p)/dt
-                     livecrootp_storage_to_xfer(p) = fstor2tran * livecrootp_storage(p)/dt
                      deadcrootp_storage_to_xfer(p) = fstor2tran * deadcrootp_storage(p)/dt
                   end if
                end if
@@ -1158,18 +1159,18 @@ contains
                   frootn_xfer_to_frootn(p) = 0._r8
                   leafp_xfer_to_leafp(p)   = 0._r8
                   frootp_xfer_to_frootp(p) = 0._r8
+                  livecrootc_xfer_to_livecrootc(p) = 0._r8
+                  livecrootn_xfer_to_livecrootn(p) = 0._r8
+                  livecrootp_xfer_to_livecrootp(p) = 0._r8
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemc_xfer_to_livestemc(p)   = 0._r8
                      deadstemc_xfer_to_deadstemc(p)   = 0._r8
-                     livecrootc_xfer_to_livecrootc(p) = 0._r8
                      deadcrootc_xfer_to_deadcrootc(p) = 0._r8
                      livestemn_xfer_to_livestemn(p)   = 0._r8
                      deadstemn_xfer_to_deadstemn(p)   = 0._r8
-                     livecrootn_xfer_to_livecrootn(p) = 0._r8
                      deadcrootn_xfer_to_deadcrootn(p) = 0._r8
                      livestemp_xfer_to_livestemp(p)   = 0._r8
                      deadstemp_xfer_to_deadstemp(p)   = 0._r8
-                     livecrootp_xfer_to_livecrootp(p) = 0._r8
                      deadcrootp_xfer_to_deadcrootp(p) = 0._r8
                   end if
                   ! set transfer pools to 0.0
@@ -1179,6 +1180,9 @@ contains
                   frootc_xfer(p) = 0._r8
                   frootn_xfer(p) = 0._r8
                   frootp_xfer(p) = 0._r8
+                  livecrootc_xfer(p) = 0._r8
+                  livecrootn_xfer(p) = 0._r8
+                  livecrootp_xfer(p) = 0._r8
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemc_xfer(p) = 0._r8
                      livestemn_xfer(p) = 0._r8
@@ -1186,9 +1190,6 @@ contains
                      deadstemc_xfer(p) = 0._r8
                      deadstemn_xfer(p) = 0._r8
                      deadstemp_xfer(p) = 0._r8
-                     livecrootc_xfer(p) = 0._r8
-                     livecrootn_xfer(p) = 0._r8
-                     livecrootp_xfer(p) = 0._r8
                      deadcrootc_xfer(p) = 0._r8
                      deadcrootn_xfer(p) = 0._r8
                      deadcrootp_xfer(p) = 0._r8
@@ -1275,10 +1276,10 @@ contains
                   ! set carbon fluxes for shifting storage pools to transfer pools
                   leafc_storage_to_xfer(p)  = fstor2tran * leafc_storage(p)/dt
                   frootc_storage_to_xfer(p) = fstor2tran * frootc_storage(p)/dt
+                  livecrootc_storage_to_xfer(p) = fstor2tran * livecrootc_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemc_storage_to_xfer(p)  = fstor2tran * livestemc_storage(p)/dt
                      deadstemc_storage_to_xfer(p)  = fstor2tran * deadstemc_storage(p)/dt
-                     livecrootc_storage_to_xfer(p) = fstor2tran * livecrootc_storage(p)/dt
                      deadcrootc_storage_to_xfer(p) = fstor2tran * deadcrootc_storage(p)/dt
                      gresp_storage_to_xfer(p)      = fstor2tran * gresp_storage(p)/dt
                   end if
@@ -1286,20 +1287,20 @@ contains
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
                   leafn_storage_to_xfer(p)  = fstor2tran * leafn_storage(p)/dt
                   frootn_storage_to_xfer(p) = fstor2tran * frootn_storage(p)/dt
+                  livecrootn_storage_to_xfer(p) = fstor2tran * livecrootn_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemn_storage_to_xfer(p)  = fstor2tran * livestemn_storage(p)/dt
                      deadstemn_storage_to_xfer(p)  = fstor2tran * deadstemn_storage(p)/dt
-                     livecrootn_storage_to_xfer(p) = fstor2tran * livecrootn_storage(p)/dt
                      deadcrootn_storage_to_xfer(p) = fstor2tran * deadcrootn_storage(p)/dt
                   end if
 
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
                   leafp_storage_to_xfer(p)  = fstor2tran * leafp_storage(p)/dt
                   frootp_storage_to_xfer(p) = fstor2tran * frootp_storage(p)/dt
+                  livecrootp_storage_to_xfer(p) = fstor2tran * livecrootp_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
                      livestemp_storage_to_xfer(p)  = fstor2tran * livestemp_storage(p)/dt
                      deadstemp_storage_to_xfer(p)  = fstor2tran * deadstemp_storage(p)/dt
-                     livecrootp_storage_to_xfer(p) = fstor2tran * livecrootp_storage(p)/dt
                      deadcrootp_storage_to_xfer(p) = fstor2tran * deadcrootp_storage(p)/dt
                   end if
 
@@ -1398,10 +1399,10 @@ contains
 
                leafc_storage_to_xfer(p)  = leafc_storage(p) * bgtr(p)
                frootc_storage_to_xfer(p) = frootc_storage(p) * bgtr(p)
+               livecrootc_storage_to_xfer(p) = livecrootc_storage(p) * bgtr(p)
                if (woody(ivt(p)) == 1.0_r8) then
                   livestemc_storage_to_xfer(p)  = livestemc_storage(p) * bgtr(p)
                   deadstemc_storage_to_xfer(p)  = deadstemc_storage(p) * bgtr(p)
-                  livecrootc_storage_to_xfer(p) = livecrootc_storage(p) * bgtr(p)
                   deadcrootc_storage_to_xfer(p) = deadcrootc_storage(p) * bgtr(p)
                   gresp_storage_to_xfer(p)      = gresp_storage(p) * bgtr(p)
                end if
@@ -1409,10 +1410,10 @@ contains
                ! set nitrogen fluxes for shifting storage pools to transfer pools
                leafn_storage_to_xfer(p)  = leafn_storage(p) * bgtr(p)
                frootn_storage_to_xfer(p) = frootn_storage(p) * bgtr(p)
+               livecrootn_storage_to_xfer(p) = livecrootn_storage(p) * bgtr(p)
                if (woody(ivt(p)) == 1.0_r8) then
                   livestemn_storage_to_xfer(p)  = livestemn_storage(p) * bgtr(p)
                   deadstemn_storage_to_xfer(p)  = deadstemn_storage(p) * bgtr(p)
-                  livecrootn_storage_to_xfer(p) = livecrootn_storage(p) * bgtr(p)
                   deadcrootn_storage_to_xfer(p) = deadcrootn_storage(p) * bgtr(p)
                end if
 
@@ -1420,10 +1421,10 @@ contains
                ! set phosphorus fluxes for shifting storage pools to transfer pools
                leafp_storage_to_xfer(p)  = leafp_storage(p) * bgtr(p)
                frootp_storage_to_xfer(p) = frootp_storage(p) * bgtr(p)
+               livecrootp_storage_to_xfer(p) = livecrootp_storage(p) * bgtr(p)
                if (woody(ivt(p)) == 1.0_r8) then
                   livestemp_storage_to_xfer(p)  = livestemp_storage(p) * bgtr(p)
                   deadstemp_storage_to_xfer(p)  = deadstemp_storage(p) * bgtr(p)
-                  livecrootp_storage_to_xfer(p) = livecrootp_storage(p) * bgtr(p)
                   deadcrootp_storage_to_xfer(p) = deadcrootp_storage(p) * bgtr(p)
                end if
             end if
@@ -2484,19 +2485,19 @@ contains
             frootn_xfer_to_frootn(p) = t1 * frootn_xfer(p)
             leafp_xfer_to_leafp(p)   = t1 * leafp_xfer(p)
             frootp_xfer_to_frootp(p) = t1 * frootp_xfer(p)
+            livecrootc_xfer_to_livecrootc(p) = t1 * livecrootc_xfer(p)
+            livecrootn_xfer_to_livecrootn(p) = t1 * livecrootn_xfer(p)
+            livecrootp_xfer_to_livecrootp(p) = t1 * livecrootp_xfer(p)
             if (woody(ivt(p)) == 1.0_r8) then
                livestemc_xfer_to_livestemc(p)   = t1 * livestemc_xfer(p)
                deadstemc_xfer_to_deadstemc(p)   = t1 * deadstemc_xfer(p)
-               livecrootc_xfer_to_livecrootc(p) = t1 * livecrootc_xfer(p)
                deadcrootc_xfer_to_deadcrootc(p) = t1 * deadcrootc_xfer(p)
                livestemn_xfer_to_livestemn(p)   = t1 * livestemn_xfer(p)
                deadstemn_xfer_to_deadstemn(p)   = t1 * deadstemn_xfer(p)
-               livecrootn_xfer_to_livecrootn(p) = t1 * livecrootn_xfer(p)
                deadcrootn_xfer_to_deadcrootn(p) = t1 * deadcrootn_xfer(p)
 
                livestemp_xfer_to_livestemp(p)   = t1 * livestemp_xfer(p)
                deadstemp_xfer_to_deadstemp(p)   = t1 * deadstemp_xfer(p)
-               livecrootp_xfer_to_livecrootp(p) = t1 * livecrootp_xfer(p)
                deadcrootp_xfer_to_deadcrootp(p) = t1 * deadcrootp_xfer(p)
             end if
 
@@ -2513,18 +2514,18 @@ contains
             frootn_xfer_to_frootn(p) = frootn_xfer(p) / dt
             leafp_xfer_to_leafp(p)   = leafp_xfer(p) / dt
             frootp_xfer_to_frootp(p) = frootp_xfer(p) / dt
+            livecrootc_xfer_to_livecrootc(p) = livecrootc_xfer(p) / dt
+            livecrootn_xfer_to_livecrootn(p) = livecrootn_xfer(p) / dt
+            livecrootp_xfer_to_livecrootp(p) = livecrootp_xfer(p) / dt
             if (woody(ivt(p)) == 1.0_r8) then
                livestemc_xfer_to_livestemc(p)   = livestemc_xfer(p) / dt
                deadstemc_xfer_to_deadstemc(p)   = deadstemc_xfer(p) / dt
-               livecrootc_xfer_to_livecrootc(p) = livecrootc_xfer(p) / dt
                deadcrootc_xfer_to_deadcrootc(p) = deadcrootc_xfer(p) / dt
                livestemn_xfer_to_livestemn(p)   = livestemn_xfer(p) / dt
                deadstemn_xfer_to_deadstemn(p)   = deadstemn_xfer(p) / dt
-               livecrootn_xfer_to_livecrootn(p) = livecrootn_xfer(p) / dt
                deadcrootn_xfer_to_deadcrootn(p) = deadcrootn_xfer(p) / dt
                livestemp_xfer_to_livestemp(p)   = livestemp_xfer(p) / dt
                deadstemp_xfer_to_deadstemp(p)   = deadstemp_xfer(p) / dt
-               livecrootp_xfer_to_livecrootp(p) = livecrootp_xfer(p) / dt
                deadcrootp_xfer_to_deadcrootp(p) = deadcrootp_xfer(p) / dt
             end if
          end if ! end if bgtr
