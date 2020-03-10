@@ -4877,7 +4877,7 @@ contains
       
    endif
    
-   ! total litter phosphorus (TOTLITN)
+   ! total litter phosphorus (TOTLITP)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%totlitp(c)    = 0._r8
