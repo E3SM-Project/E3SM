@@ -32,7 +32,7 @@ void Functions<S,D>
     }
     const auto dum2_ge_dum1 = dum2 >= dum1;  
     if (dum2_ge_dum1.any()){
-      const auto dum = 2-pack::exp(2300*(dum2-dum1));
+      const auto dum = sp(2.0)-pack::exp(sp(2300.0)*(dum2-dum1));
       nrslf.set(qr_incld_not_small && dum2_ge_dum1, dum*dum3);
     }
   }
