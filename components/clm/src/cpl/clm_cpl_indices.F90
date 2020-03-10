@@ -238,6 +238,7 @@ contains
     index_x2l_Flrr_volr     = mct_avect_indexra(x2l,'Flrr_volr')
     index_x2l_Flrr_volrmch  = mct_avect_indexra(x2l,'Flrr_volrmch')
     index_x2l_Flrr_supply   = mct_avect_indexra(x2l,'Flrr_supply')
+    index_x2l_Flrr_deficit  = mct_avect_indexra(x2l,'Flrr_deficit')
 	
     index_x2l_Faxa_lwdn     = mct_avect_indexra(x2l,'Faxa_lwdn')
     index_x2l_Faxa_rainc    = mct_avect_indexra(x2l,'Faxa_rainc')
