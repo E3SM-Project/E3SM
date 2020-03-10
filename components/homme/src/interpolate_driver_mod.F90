@@ -888,14 +888,14 @@ contains
 
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t, syncmp
+    use kinds, only : real_kind
+    use dimensions_mod, only : nelemd, nlev, np, npsq
+    use common_io_mod, only : varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dof_mod, only : putuniquepoints
-    use kinds, only : real_kind
     use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
     use edgetype_mod, only : edgebuffer_t
-    use dimensions_mod, only : nelemd, nlev, np, npsq
     use bndry_mod, only : bndry_exchangeV
-    use common_io_mod, only : varname_len
 #endif
 
     character(len=*), intent(in) :: filename
@@ -967,15 +967,15 @@ contains
 
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t, syncmp
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-    use dof_mod, only : UniquePoints, putUniquePoints
     use kinds, only : real_kind
-    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
-    use edgetype_mod, only : edgebuffer_t
     use dimensions_mod, only : nelemd, nlev, np, npsq, nelem
-    use bndry_mod, only : bndry_exchangeV
     use common_io_mod, only : varname_len, output_frequency, output_start_time, &
          output_end_time, output_dir, output_prefix
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use dof_mod, only : UniquePoints, putUniquePoints
+    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edgetype_mod, only : edgebuffer_t
+    use bndry_mod, only : bndry_exchangeV
     use pio_io_mod, only : nf_output_init_begin, nf_output_init_complete, &
          nf_output_register_dims, nf_output_register_variables, nf_init_decomp, &
          nf_put_var_pio
