@@ -6,14 +6,9 @@
         <!-- <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/-->
         <add_executable source="model" dest="landice_model"/>
         <!-- link in scripts that a user might want -->
-        <add_link source_path="script_configuration_dir" source="setup_initial_conditions.py" dest="setup_initial_conditions.py"/>
         <add_link source_path="script_configuration_dir" source="change_Ts.py" dest="change_Ts.py"/>
         <add_link source_path="script_configuration_dir" source="plot_enthalpy_benchmark_A.py" dest="plot_enthalpy_benchmark_A.py"/>
         <add_link source_path="script_configuration_dir" source="enthA_analy_result.mat" dest="enthA_analy_result.mat"/>
-        <!-- add_link source_path="script_configuration_dir" source="visualize_dome.py" dest="."/-->
-        <!-- add_link source_path="script_configuration_dir" source="check_halfar_solution.py" dest="."/-->
-        <!--add_link source_path="script_test_dir" source="namelist.landice" dest="namelist.landice"/-->
-        <!--add_link source_path="script_test_dir" source="streams.landice" dest="streams.landice"/-->
 
         <namelist name="namelist.landice1" mode="forward">
                 <template file="enthalpy_1m_template.xml" path_base="script_resolution_dir"/>
@@ -63,7 +58,7 @@
                 </step>
 
                 <!-- Run the model, phase 1-->
-                <model_run procs="2" threads="1" namelist="namelist.landice1" streams="streams.landice1"/>
+                <model_run procs="1" threads="1" namelist="namelist.landice1" streams="streams.landice1"/>
 
                 <step executable="./change_Ts.py" pre_message="\n\n### change surface temperature \n\n" post_message="\n\n### surface temperature changed.\n\n">
                         <argument flag="-f">restart.100000.nc</argument>
@@ -72,7 +67,7 @@
 
 
                 <!-- Run the model, phase 2 -->
-                <model_run procs="2" threads="1" namelist="namelist.landice2" streams="streams.landice2"/>
+                <model_run procs="1" threads="1" namelist="namelist.landice2" streams="streams.landice2"/>
 
                 <step executable="./change_Ts.py" pre_message="\n\n### change surface temperature \n\n" post_message="\n\n### surface temperature changed.\n\n">
                         <argument flag="-f">restart.150000.nc</argument>
@@ -80,7 +75,7 @@
                 </step>
 
                 <!-- Run the model, phase 3 -->
-                <model_run procs="2" threads="1" namelist="namelist.landice3" streams="streams.landice3"/>
+                <model_run procs="1" threads="1" namelist="namelist.landice3" streams="streams.landice3"/>
 
 
                 <!-- Check solution -->
