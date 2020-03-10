@@ -55,6 +55,10 @@ class TestAllScream(object):
         if self._submit:
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
+        last_commit = run_cmd_no_fail("git log -1 --oneline")
+        print("   Last commit on tested branch:")
+        print("     {}".format(last_commit))
+
         # Compute baseline info
         expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
@@ -224,6 +228,11 @@ class TestAllScream(object):
             expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
             run_cmd_no_fail("git checkout {}".format(self._baseline_ref))
             print("  Switched to {} ({})".format(self._baseline_ref, git_baseline_commit))
+            last_commit = run_cmd_no_fail("git log -1 --oneline")
+            print("   Last commit on baseline ref:")
+            print("     {}".format(last_commit))
+            # Re-update submodules, just in case baselines and branch have different submodules
+            run_cmd_no_fail("git submodule update --init --recursive")
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -244,6 +253,11 @@ class TestAllScream(object):
         if need_checkout:
             run_cmd_no_fail("git checkout {}".format(git_head_ref))
             print("  Switched back to {} ({})".format(git_head_ref, git_head_commit))
+            last_commit = run_cmd_no_fail("git log -1 --oneline")
+            print("   Last commit on tested branch:")
+            print("     {}".format(last_commit))
+            # Re-update submodules, just in case baselines and branch have different submodules
+            run_cmd_no_fail("git submodule update --init --recursive")
 
         return success
 
