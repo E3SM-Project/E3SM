@@ -15,7 +15,9 @@
 		<option name="config_global_ocean_topography_has_ocean_frac">.false.</option>
 		<option name="config_global_ocean_topography_ocean_frac_varname">'ocean_mask'</option>
 		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
-		<option name="config_global_ocean_smooth_topography">.true.</option>
+		<option name="config_global_ocean_fill_bathymetry_holes">.true.</option>
+		<option name="config_global_ocean_topography_smooth_iterations">0</option>
+		<option name="config_global_ocean_topography_smooth_weight">0.9</option>
 		<option name="config_global_ocean_depress_by_land_ice">.true.</option>
 		<option name="config_global_ocean_land_ice_topo_file">'topography.nc'</option>
 		<option name="config_global_ocean_land_ice_topo_nlat_dimname">'y'</option>

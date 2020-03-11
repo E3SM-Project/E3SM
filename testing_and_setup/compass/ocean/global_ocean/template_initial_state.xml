@@ -55,7 +55,7 @@
 		<option name="config_global_ocean_topography_lon_varname">'x'</option>
 		<option name="config_global_ocean_topography_varname">'z'</option>
 		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
-		<option name="config_global_ocean_smooth_topography">.true.</option>
+		<option name="config_global_ocean_fill_bathymetry_holes">.true.</option>
 		<option name="config_global_ocean_cull_inland_seas">.false.</option>
 		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
 		<option name="config_global_ocean_windstress_nlat_dimname">'u_lat'</option>
