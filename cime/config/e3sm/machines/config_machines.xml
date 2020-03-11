@@ -3014,7 +3014,7 @@
         <command name="load">pgi/19.4</command>
       </modules>
       <modules compiler="ibm">
-        <command name="load">xl/16.1.1-3</command>
+        <command name="load">xl/16.1.1-4</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
@@ -3030,7 +3030,7 @@
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
+	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
 	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
@@ -3040,8 +3040,7 @@
       </modules>
 
       <modules>
-         <command name="load">parallel-netcdf/1.8.1</command>
-         <command name="load">hdf5/1.10.3</command>
+        <command name="load">hdf5/1.10.4</command>
        </modules>
 
     </module_system>
@@ -3076,7 +3075,7 @@
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
-      <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">/gpfs/alpine/cli115/world-shared/3rdparty/pnetcdf/1.11.2/xl-16.1.1</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial" compiler="pgiacc">
       <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env>
