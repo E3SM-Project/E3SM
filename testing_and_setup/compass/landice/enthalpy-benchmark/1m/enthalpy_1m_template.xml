@@ -27,6 +27,7 @@
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
                                 <member name="xtime" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
                                 <member name="thickness" type="var"/>
                                 <member name="temperature" type="var"/>
                                 <member name="surfaceTemperature" type="var"/>

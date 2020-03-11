@@ -20,6 +20,10 @@ data1 = Dataset('./output1.nc','r')
 data2 = Dataset('./output2.nc','r')
 data3 = Dataset('./output3.nc','r')
 
+yr1 = data1.variables['daysSinceStart'][:]/365.0
+yr2 = data2.variables['daysSinceStart'][:]/365.0
+yr3 = data3.variables['daysSinceStart'][:]/365.0
+
 basalT1 = data1.variables['basalTemperature'][:,:]
 basalT2 = data2.variables['basalTemperature'][:,:]
 basalT3 = data3.variables['basalTemperature'][:,:]
@@ -66,14 +70,13 @@ for i in range(len(basalbmb2)):
 for i in range(len(basalbmb3)):
     Hw3[i] = sum(basalbmb3[0:i])*10
 
-
+year = np.concatenate([yr1[1::], yr2, yr3])/1000.0
 basalMeanT = np.concatenate([basalMeanT1[1::],basalMeanT2,basalMeanT3])
 basalMeanBmb = np.concatenate([basalMeanBmb1[1::],basalMeanBmb2,basalMeanBmb3])
 basalMeanWaterThickness = np.concatenate([basalMeanWaterThickness1[1::],basalMeanWaterThickness2,basalMeanWaterThickness3])
 #basalbmb = np.concatenate([basalbmb1[1::],basalbmb2,basalbmb3])
 #Hw = np.concatenate([Hw1[1::],Hw2,Hw3])
 
-year = np.arange(3000)/10.0
 
 plt.figure (1)
 plt.subplot(311)
