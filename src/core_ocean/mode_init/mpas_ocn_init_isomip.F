@@ -348,6 +348,7 @@ contains
             landIceMask(iCell) = 1
           else
             landIceFraction(iCell) = 0.0_RKIND
+            landIceMask(iCell) = 0
           end if
 
           if(ssh(iCell) < 0.0_RKIND) then

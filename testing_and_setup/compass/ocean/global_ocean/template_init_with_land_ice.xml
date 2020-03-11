@@ -33,4 +33,14 @@
 		<option name="config_global_ocean_use_constant_land_ice_cavity_temperature">.true.</option>
 		<option name="config_global_ocean_constant_land_ice_cavity_temperature">-1.8</option>
 	</namelist>
+	<streams>
+		<stream name="land_ice_mask_init">
+			<attribute name="filename_template">land_ice_mask.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<add_contents>
+				<member name="landIceMask" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
 </template>

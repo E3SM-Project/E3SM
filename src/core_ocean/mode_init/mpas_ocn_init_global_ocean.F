@@ -1284,14 +1284,12 @@ contains
 
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
-          landIceMask(:) = 0
           modifySSHMask(:) = 0
           landIcePressure(:) = 0.0_RKIND
           do iCell = 1, nCells
 
-             if(landIceFracObserved(iCell) > 0.5_RKIND) then
+             if(landIceMask(iCell) == 1) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
-                landIceMask(iCell) = 1
              end if
 
              ! nothing to do here if the cell is land
