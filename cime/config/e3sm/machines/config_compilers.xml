@@ -2316,6 +2316,15 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SFC MPILIB="mpi-serial">gfortran</SFC>-->
 </compiler>
 
+<compiler MACH="tulip" COMPILER="cray">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <SLIBS>
+    <append>-L$ENV{NETCDF}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -lsci -llapack -lblas </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="userdefined">
   <CONFIG_ARGS>
     <base/>

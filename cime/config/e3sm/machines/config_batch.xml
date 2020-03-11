@@ -576,6 +576,12 @@
     </queues>
    </batch_system>
 
+  <batch_system MACH="tulip" type="slurm" >
+  <queues>
+	<queue walltimemax="1:00:00" default="true">allnodes</queue>
+   </queues>
+   </batch_system>
+
   <!-- modex is PBS -->
   <batch_system MACH="modex" type="pbs">
     <directives>
