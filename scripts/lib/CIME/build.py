@@ -255,13 +255,12 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     # Check if we need to build our own cprnc
     if case.get_value("TEST"):
         cprnc_loc = case.get_value("CCSM_CPRNC")
+        full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
         if not cprnc_loc or not os.path.exists(cprnc_loc):
-            full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
             case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
             if not os.path.isdir(full_lib_path):
                 os.makedirs(full_lib_path)
                 libs.append("cprnc")
-
 
     logs = []
 
@@ -278,8 +277,9 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
+
         # pio build creates its own directory
-        if (lib != "pio" and not os.path.exists(full_lib_path)):
+        if (lib != "pio" and not os.path.isdir(full_lib_path)):
             os.makedirs(full_lib_path)
 
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(lib, lid))
