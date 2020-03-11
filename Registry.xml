@@ -3678,6 +3678,12 @@
 			type="integer" dimensions="nCells" units="unitless"
 			description="reference maxLevelCell for vertical interpolation of tracers"
 		/>
+		<!-- FIELDS FOR HORIZONTAL SMOOTHING DURING INITIALIZATION -->
+		<var name="smoothedField"
+			persistence="scratch"
+			type="real" dimensions="nCells" units="various"
+			description="the smoothed version of a field on cells during iterative smoothing"
+		/>
 		<!-- FIELDS FOR RX1 INITIALIZATION -->
 		<var name="zInterfaceScratch"
 			persistence="scratch"
