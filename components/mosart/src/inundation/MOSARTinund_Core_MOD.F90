@@ -18,13 +18,13 @@ MODULE MOSARTinund_Core_MOD
       SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm
   use MOSARTinund_PreProcs_MOD, only: con1Em3
   use RtmVar, only: barrier_timers, iulog, inundflag
-  use RtmSpmd, only: mpicom_rof
+  use RtmSpmd, only: mpicom_rof, masterproc
   use mct_mod
   
   implicit none
   private
   
-  public MOSARTinund_simulate, ManningEq
+  public MOSARTinund_simulate, ManningEq, ChnlFPexchg
                    
   contains
   
@@ -400,7 +400,7 @@ MODULE MOSARTinund_Core_MOD
           endif      ! if ( wr + wf > wr_bf )
         
           ! Channel--floodplain exchange amount (Positive: flow from channel to floodplain; vice versa) (m^3) :
-          TRunoff%se_rf(iu) = wr_rcd - TRunoff%wr_exchg(iu)
+          TRunoff%netchange(iu) = wr_rcd - TRunoff%wr_exchg(iu)
         
         ! ---------------------------------  
         ! No channel--floodplain exchange for two situations: 
@@ -412,7 +412,7 @@ MODULE MOSARTinund_Core_MOD
           TRunoff%yr_exchg( iu ) = TRunoff%yr( iu, 1 )
           TRunoff%wf_exchg( iu ) = TRunoff%wf_ini( iu )
           TRunoff%hf_exchg( iu ) = TRunoff%hf_ini( iu )          
-          TRunoff%se_rf( iu ) = 0._r8
+          TRunoff%netchange( iu ) = 0._r8
         end if    ! if ( the channel water level is higher than the floodplain water level, or on the contrary )
       end if      ! if ( TUnit%mask( iu ) .gt. 0 )
     end do

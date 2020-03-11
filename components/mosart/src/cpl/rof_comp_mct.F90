@@ -46,7 +46,7 @@ module rof_comp_mct
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
-                                index_r2x_Flrr_supply
+                                index_r2x_Flrr_supply, index_r2x_Flrr_deficit
 
   use mct_mod
   use ESMF
@@ -711,9 +711,11 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
-       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8 
+       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8
+       r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = 0._r8
        if (wrmflag) then
-          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s (Tian)
+          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
+          r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
        endif
     end do
 
