@@ -307,15 +307,15 @@ contains
                areaSum(k) = areaSum(k) + areaEdge
                areaSum(k+1) = areaSum(k+1) + areaEdge
 
-               kappaGMCent(k) = kappaGMCent(k) + kappaRediVert(k, iEdge) * areaEdge
+!               kappaGMCent(k) = kappaGMCent(k) + kappaRediVert(k, iEdge) * areaEdge
                do iTr = 1, nTracers
                   ! Gradient of tracer at edge.
                   ! dvEdge on following line is equal to areaEdge/dcEdge
                   dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) * dvEdge(iEdge)
                   fluxRediZTop(iTr,k) = fluxRediZTop(iTr,k) + &
-                     slopeTriadUp(k,iCellSelf,iEdge) * dTracerDx
+                     slopeTriadUp(k,iCellSelf,iEdge) * kappaRediVert(k, iEdge) * dTracerDx
                   fluxRediZTop(iTr,k+1) = fluxRediZTop(iTr,k+1) + &
-                     slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx
+                     slopeTriadDown(k,iCellSelf,iEdge) * kappaRediVert(k, iEdge) * dTracerDx
                end do
             end do
          end do
@@ -328,7 +328,7 @@ contains
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
-               flux_term3 = RediKappa(iCell) * 2.0_RKIND * kappaGMCent(k) / areaSum(k) * &
+               flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
                    (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
 
                redi_term3(iTr,k,iCell) = redi_term3(iTr,k,iCell) + flux_term3
