@@ -2,7 +2,15 @@ This test case implements the enthalpy benchmarks described here:
 Kleiner, T., Rückamp, M., Bondzio, J. H., and Humbert, A.: Enthalpy benchmark experiments for numerical ice sheet models, The Cryosphere, 9, 217–228, https://doi.org/10.5194/tc-9-217-2015, 2015. 
 
 
-For Benchmark A, we don't have to change the code, but for Benchmark B, we need to do the following revisions:
+For Benchmark A, we don't have to change the code.
+By default the Benchmark A visualization script saves the plot as .png file.
+However, it is possible to have it plot to an interactive python plot by adjusting a flag at the end of the script.
+The output frequency for A has been reduced so that the test will run quickly enough to include
+in regression testing.  If you want more detailed output, you can adjust the output interval in the streams files.
+
+
+
+For Benchmark B, we need to make the following code changes:
 
 1) in mpas_li_thermal.F, in the subroutine enthalpy_matrix_elements,
 

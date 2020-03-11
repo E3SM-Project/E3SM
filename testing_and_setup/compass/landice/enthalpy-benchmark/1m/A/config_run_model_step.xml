@@ -12,12 +12,14 @@
 
         <namelist name="namelist.landice1" mode="forward">
                 <template file="enthalpy_1m_template.xml" path_base="script_resolution_dir"/>
+                <option name="config_dt">'25-00-00_00:00:00'</option>
         </namelist>
 
         <streams name="streams.landice1" keep="immutable" mode="forward">
                 <template file="enthalpy_1m_template.xml" path_base="script_resolution_dir"/>
                 <stream name="output">
                     <attribute name="filename_template">output1.nc</attribute>
+                    <attribute name="output_interval">5000-00-00_00:00:00</attribute>
                 </stream>
         </streams>
 
@@ -27,12 +29,14 @@
                 <option name="config_do_restart">.true.</option>
                 <option name="config_start_time">'100000-01-01_00:00:00'</option>
                 <option name="config_run_duration">'050000-00-00_00:00:00'</option>
+                <option name="config_dt">'25-00-00_00:00:00'</option>
         </namelist>
 
         <streams name="streams.landice2" keep="immutable" mode="forward">
                 <template file="enthalpy_1m_template.xml" path_base="script_resolution_dir"/>
                 <stream name="output">
                     <attribute name="filename_template">output2.nc</attribute>
+                    <attribute name="output_interval">5000-00-00_00:00:00</attribute>
                 </stream>
         </streams>
 
@@ -41,12 +45,14 @@
                 <option name="config_do_restart">.true.</option>
                 <option name="config_start_time">'150000-01-01_00:00:00'</option>
                 <option name="config_run_duration">'150000-00-00_00:00:00'</option>
+                <option name="config_dt">'25-00-00_00:00:00'</option>
         </namelist>
 
         <streams name="streams.landice3" keep="immutable" mode="forward">
                 <template file="enthalpy_1m_template.xml" path_base="script_resolution_dir"/>
                 <stream name="output">
                     <attribute name="filename_template">output3.nc</attribute>
+                    <attribute name="output_interval">1000-00-00_00:00:00</attribute>
                 </stream>
         </streams>
 

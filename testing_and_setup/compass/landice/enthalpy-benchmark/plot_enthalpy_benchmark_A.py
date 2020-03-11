@@ -98,4 +98,13 @@ plt.ylabel('$H_{\\rm w}$ (m)')
 plt.xlabel('Year (ka)')
 plt.text(10, 8, '(c)', fontsize=20)
 plt.grid(True)
-plt.show()
+
+
+# Create image plot
+plotname = 'enthalpy_A_results.png'
+plt.savefig(plotname, dpi=150)
+print('Saved plot as ' + plotname)
+
+displayImage = False
+if displayImage:
+     plt.show()

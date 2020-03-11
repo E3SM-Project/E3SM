@@ -18,6 +18,10 @@
                 <script name="setup_and_run_dome_testcase.py"/>
         </test>
 
+        <test name="Kleiner enthalpy benchmark A" core="landice" configuration="enthalpy-benchmark" resolution="1m" test="A">
+                <script name="setup_and_run_enthalpy_benchmark_A.py"/>
+        </test>
+
         <test name="EISMINT2-F decomposition test" core="landice" configuration="EISMINT2" resolution="25000m" test="decomposition_test">
                 <script name="setup_and_run_EISMINT2_decomp_testcase.py"/>
         </test>
