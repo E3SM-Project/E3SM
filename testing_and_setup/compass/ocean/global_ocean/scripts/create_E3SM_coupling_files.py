@@ -136,7 +136,7 @@ def initial_condition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
     make_link(
         '../../../../../initial_condition_ocean/' +
         mesh_name + '_no_xtime.nc',
-        uesh_name + '_no_xtime.nc')
+        mesh_name + '_no_xtime.nc')
 # }}}
 
 def graph_partition_ocean(config, mesh_name, date_string, ice_shelf_cavities):

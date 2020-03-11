@@ -234,7 +234,6 @@ model = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/o
 mpas_model = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz
 mesh_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/mesh_database
 initial_condition_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database
-geometric_data = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/geometric_data_v0.1.1
 bathymetry_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/bathymetry_database
 ```
 In theory, you can point to default namelists, streams files and executables for other branches than

@@ -15,10 +15,7 @@ includes:
 10. create masks from transects on the final culled mesh*
 * skipped if flag --with_critical_passages not present
 
-Optionally, the -p flag provides the path to the geometric_data
-directory from the geometric_features repository, which is assumed
-to be the current directory by default. Also, the optional
---with_cavities flag indicates that ice-shelf cavities are present
+The optional --with_cavities flag indicates that ice-shelf cavities are present
 and the grounded-ice mask from Bedmap2 should be used. The optional
 --with_critical_passages flag indicates that critical passages are
 to be opened. Otherwise, steps 2, 5 and 9 are skipped
@@ -44,10 +41,6 @@ parser = OptionParser()
 parser.add_option("--with_cavities", action="store_true", dest="with_cavities")
 parser.add_option("--with_critical_passages", action="store_true",
                   dest="with_critical_passages")
-parser.add_option("-p", "--geom_data_path", type="string", dest="path",
-                  default="geometric_data",
-                  help="Path to the geometric_data from the geometric_features"
-                       " repository.")
 parser.add_option("--preserve_floodplain", action="store_true",
                   dest="preserve_floodplain", default=False)
 options, args = parser.parse_args()
@@ -55,7 +48,7 @@ options, args = parser.parse_args()
 # required for compatibility with MPAS
 netcdfFormat = 'NETCDF3_64BIT'
 
-gf = GeometricFeatures(cacheLocation='{}'.format(options.path))
+gf = GeometricFeatures()
 
 # start with the land coverage from Natural Earth
 fcLandCoverage = gf.read(componentName='natural_earth', objectType='region',
