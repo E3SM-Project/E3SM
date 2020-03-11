@@ -1839,8 +1839,47 @@ module ocn_time_integration_split
 
             endif ! split_explicit_step
 
+            call mpas_pool_get_subpool(block % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+            call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+        ! Call ocean diagnostic solve in preparation for vertical mixing.  Note
+        ! it is called again after vertical mixing, because u and tracers change.
+        ! For Richardson vertical mixing, only density, layerThicknessEdge, and kineticEnergyCell need to
+        ! be computed.  For kpp, more variables may be needed.  Either way, this
+        ! could be made more efficient by only computing what is needed for the
+        ! implicit vmix routine that follows.
+            call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+
+            if (config_use_GM.or.config_use_Redi) then
+               call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+                  meshPool, scratchPool, timeLevelIn=2)
+            end if
+            call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
+
+
             block => block % next
          end do
+      call mpas_timer_start('se vmix halos')
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+
+      call mpas_timer_start('se vmix halos normalVelFld')
+      call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
+      call mpas_timer_stop('se vmix halos normalVelFld')
+
+      call mpas_pool_begin_iteration(tracersPool)
+      do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+         if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+            call mpas_dmpar_field_halo_exch(domain, groupItr % memberName, timeLevel=2)
+         end if
+      end do
+      call mpas_timer_stop('se vmix halos')
+
 
          call mpas_timer_stop('se loop fini')
          call mpas_timer_stop('se loop')
@@ -1852,14 +1891,14 @@ module ocn_time_integration_split
 
       call mpas_timer_start("se implicit vert mix")
 
-      block => domain % blocklist
-      do while(associated(block))
-        call mpas_pool_get_subpool(block % structs, 'state', statePool)
-        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+!      block => domain % blocklist
+!      do while(associated(block))
+!        call mpas_pool_get_subpool(block % structs, 'state', statePool)
+!        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+!        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+!        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+!        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+!        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
         ! Call ocean diagnostic solve in preparation for vertical mixing.  Note
         ! it is called again after vertical mixing, because u and tracers change.
@@ -1867,31 +1906,31 @@ module ocn_time_integration_split
         ! be computed.  For kpp, more variables may be needed.  Either way, this
         ! could be made more efficient by only computing what is needed for the
         ! implicit vmix routine that follows.
-        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+!        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+!
+!        block => block % next
+!      end do
+!      call mpas_threading_barrier()
 
-        block => block % next
-      end do
-      call mpas_threading_barrier()
+!      call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
 
-      call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
+!      block => domain % blocklist
+!      do while(associated(block))
+!        call mpas_pool_get_subpool(block % structs, 'state', statePool)
+!        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+!        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+!        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+!        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+!        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+!        ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
+!        if (config_use_GM.or.config_use_Redi) then
+!           call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+!              meshPool, scratchPool, timeLevelIn=2)
+!        end if
+!        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
 
-      block => domain % blocklist
-      do while(associated(block))
-        call mpas_pool_get_subpool(block % structs, 'state', statePool)
-        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-        ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
-        if (config_use_GM.or.config_use_Redi) then
-           call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
-              meshPool, scratchPool, timeLevelIn=2)
-        end if
-        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
-
-        block => block % next
-      end do
+!        block => block % next
+!      end do
 
       ! Update halo on u and tracers, which were just updated for implicit vertical mixing.  If not done,
       ! this leads to lack of volume conservation.  It is required because halo updates in stage 3 are only

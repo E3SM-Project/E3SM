@@ -422,14 +422,14 @@ contains
                             BruntVaisalaFreqTop(k-1,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, config_Redi_diabatic_limit)
 
-               kappaGMVert(k,iEdge) = max(config_GM_min_stratification_ratio, &
+               kappaGMVert(k-1,iEdge) = max(config_GM_min_stratification_ratio, &
                                           BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
                diabaticTaper = 1.0_RKIND
                if (BruntVaisalaFreqTopEdge <= config_Redi_diabatic_limit) then
                   diabaticTaper = 0.0_RKIND
                endif
 
-               kappaRediVert(k,iEdge) = diabaticTaper*kappaGMVert(k,iEdge)
+               kappaRediVert(k-1,iEdge) = diabaticTaper*kappaGMVert(k-1,iEdge)
            enddo
          enddo
          !$omp end do
@@ -532,12 +532,12 @@ contains
                if(k>1) then
                   k33(k  ,iCell) = k33(k  ,iCell) + kappaRediVert(k,iEdge) * slopeTaperUp * sfcTaperUp * &
                               areaEdge*dzTop(k)*slopeTriadUp(k,iCellSelf,iEdge)**2
-                  k33Norm(k  ) = k33Norm(k  ) + kappaRediVert(k,iEdge) * slopeTaperUp * sfcTaperUp * areaEdge*dzTop(k  )
+                  k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
                endif
 
                k33(k+1,iCell) = k33(k+1,iCell) + kappaRediVert(k+1,iEdge) * slopeTaperDown * sfcTaperDown * &
                           areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
-               k33Norm(k+1) = k33Norm(k+1) + kappaRediVert(k+1,iEdge) * slopeTaperUp * sfcTaperUp *areaEdge*dzTop(k+1)
+               k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
 
                ! Slope can be unbounded in regions of neutral stability.
                ! Reset slope to maximum slope limit.
