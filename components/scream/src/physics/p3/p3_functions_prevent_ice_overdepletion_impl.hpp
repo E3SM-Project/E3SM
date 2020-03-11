@@ -23,7 +23,7 @@ void Functions<S,D>
 
   const auto dumqvi = qv_sat(t,pres,true);
   const auto qdep_satadj = (qv-dumqvi) /
-    (sp(1.) + square(xxls) * dumqvi / (cp * rv * square(t))) * odt;
+    (1 + square(xxls) * dumqvi / (cp * rv * square(t))) * odt;
   qidep *= min(1, max(0,  qdep_satadj) / max(qidep, sp(1.e-20)));
   qisub *= min(1, max(0, -qdep_satadj) / max(qisub, sp(1.e-20)));
 }
