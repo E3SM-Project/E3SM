@@ -29,7 +29,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
     0.264847430e-3,  0.302950461e-5,  0.206739458e-7,
     0.640689451e-10,-0.952447341e-13,-0.976195544e-15};
 
-  Spack dt = pack::max(t - 273.15, -80.0);
+  Spack dt = pack::max(t - sp(273.15), sp(-80.0));
   Spack result;
   const auto tmelt = C::Tmelt;
   Smask ice_mask = (t < tmelt) && ice;
@@ -40,11 +40,11 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
   // Flatau formulation:
   if (ice_mask.any()) {
     Spack ice_result = (ai[0] + dt*(ai[1]+dt*(ai[2]+dt*(ai[3]+dt*(ai[4]+dt*(ai[5]+dt*(ai[6]+dt*(ai[7]+
-                                                                                                ai[8]*dt))))))))*100.0;
+                                                                                                ai[8]*dt))))))))*100;
     result.set(ice_mask, ice_result);
   }
   if (liq_mask.any()) {
-    Spack liq_result = (a[0] + dt*(a[1]+dt*(a[2]+dt*(a[3]+dt*(a[4]+dt*(a[5]+dt*(a[6]+dt*(a[7]+a[8]*dt))))))))*100.0;
+    Spack liq_result = (a[0] + dt*(a[1]+dt*(a[2]+dt*(a[3]+dt*(a[4]+dt*(a[5]+dt*(a[6]+dt*(a[7]+a[8]*dt))))))))*100;
     result.set(liq_mask, liq_result);
   }
 
@@ -60,7 +60,7 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice)
 
   e_pres = polysvp1(t_atm, ice);
   const auto ep_2 = C::ep_2;
-  return ep_2 * e_pres / pack::max(p_atm-e_pres, 1.e-3);
+  return ep_2 * e_pres / pack::max(p_atm-e_pres, sp(1.e-3));
 }
 
 

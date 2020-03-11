@@ -3040,6 +3040,10 @@ subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
    !   amongst categories.
    !PMC - might need to rethink above statement since only one category now.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: prevent_ice_overdepletion_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: pres
@@ -3053,6 +3057,13 @@ subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
 
    real(rtype) :: dumqvi, qdep_satadj
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call prevent_ice_overdepletion_f(pres,t,qv,xxls,odt, &
+         qidep,qisub)
+      return
+   endif
+#endif
 
    dumqvi = qv_sat(t,pres,1)
    qdep_satadj = (qv-dumqvi)/(1._rtype+bfb_square(xxls)*dumqvi/(cp*rv*bfb_square(t)))*odt
