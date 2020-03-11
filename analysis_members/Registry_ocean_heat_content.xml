@@ -24,17 +24,17 @@
 		<package name="oceanHeatContentAMPKG" description="This package includes variables required for the temPlate analysis member."/>
 	</packages>
 	<var_struct name="layeredOceanHeatContent" time_levs="1" packages="oceanHeatContentAMPKG">
-		<var name="oceanHeatContentSFCtoBot" type="real" dimensions="nCells Time" units="J"
-			description="Integrated heat content from sfc to bottom"
+		<var name="oceanHeatContentSfcToBot" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from surface to bottom"
 		/>
-		<var name="oceanHeatContentSfcto700m" type="real" dimensions="nCells Time" units="J"
-			description="Integrated heat content from the sfc to 700m"
+		<var name="oceanHeatContentSfcTo700m" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from the surface to 700m"
 		/>
-    <var name="oceanHeatContent700mto2000m" type="real" dimensions="nCells Time" units="J"
+		<var name="oceanHeatContent700mto2000m" type="real" dimensions="nCells Time" units="J"
 			description="Integrated heat content from the 700m to 2000m"
 		/>
-	<var name="oceanHeatContent2000mtoBot" type="real" dimensions="nCells Time" units="J"
-			description="Integrated heat content from the 2000m to Bot"
+		<var name="oceanHeatContent2000mtoBot" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from the 2000m to bottom"
 		/>
 </var_struct>
 	<streams>
@@ -48,9 +48,9 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/>
-			<var name="oceanHeatContentSFCtoBot"/>
-      <var name="oceanHeatContentSfcto700m"/>
-      <var name="oceanHeatContent700mto2000m"/>
-      <var name="oceanHeatContent2000mtoBot"/>
+			<var name="oceanHeatContentSfcToBot"/>
+			<var name="oceanHeatContentSfcTo700m"/>
+			<var name="oceanHeatContent700mto2000m"/>
+			<var name="oceanHeatContent2000mtoBot"/>
 		</stream>
 	</streams>
