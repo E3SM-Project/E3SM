@@ -262,8 +262,8 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
                 os.makedirs(full_lib_path)
                 libs.append("cprnc")
 
-
     logs = []
+
     for lib in libs:
         if buildlist is not None and lib not in buildlist:
             continue
