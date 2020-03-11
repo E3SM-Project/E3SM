@@ -63,12 +63,11 @@ class EnvBatch(EnvBase):
         node = self.get_optional_child(item, attribute)
         if node is None:
             # this will take the last instance of item listed in all batch_system elements
-            if self._batchtype and self._batchtype != 'none':
-                bs_nodes = self.get_children("batch_system")
-                for bsnode in bs_nodes:
-                    cnode = self.get_optional_child(item, attribute, root=bsnode)
-                    if cnode is not None:
-                        node = cnode
+            bs_nodes = self.get_children("batch_system")
+            for bsnode in bs_nodes:
+                cnode = self.get_optional_child(item, attribute, root=bsnode)
+                if cnode is not None:
+                    node = cnode
         if node is None or item in ("BATCH_SYSTEM", "PROJECT_REQUIRED"):
             value = super(EnvBatch, self).get_value(item,attribute,resolved)
         else:
