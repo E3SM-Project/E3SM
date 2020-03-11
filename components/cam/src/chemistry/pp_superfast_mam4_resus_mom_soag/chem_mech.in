@@ -106,7 +106,7 @@ End Comments
 [isop_o3]     ISOP + O3 -> 0.87*CH2O +1.86*CH3O2 +0.06*HO2 +0.05*CO     ;   5.590E-15, -1814
 
 * PJC: DMS+NO3 wasn't in original super-fast.  Added for consistency with MAM4 chemistry mechanism.
-*      Note that NO3 is calculated by super-fast, so retaining NO3 as a fixed specie.
+*      Note that NO3 is not calculated by super-fast, so retaining NO3 as a fixed specie.
               DMS + NO3 -> SO2 + HNO3                                          ; 1.9e-13,  520.
       End Reactions
 
