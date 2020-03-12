@@ -677,6 +677,22 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                                        epsi, epsi_tot)
   end subroutine ice_relaxation_timescale_c
 
+  subroutine calc_liq_relaxation_timescale_c(rho, f1r, f2r, dv, mu, sc, mu_r, &
+                                             lamr, cdistr, cdist, qr_incld,   &
+                                             qc_incld, epsr, epsc) bind(C)
+    use micro_p3, only: calc_liq_relaxation_timescale
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho,f1r,f2r,dv,mu,sc,mu_r,lamr, &
+                                            cdistr,cdist,qr_incld,qc_incld
+    real(kind=c_real), intent(out) :: epsr
+    real(kind=c_real), intent(out) :: epsc
+
+    call calc_liq_relaxation_timescale(rho,f1r,f2r,dv,mu,sc,mu_r,lamr,      &
+                                       cdistr,cdist,qr_incld,qc_incld,epsr, &
+                                       epsc)
+  end subroutine calc_liq_relaxation_timescale_c
+
   subroutine ice_nucleation_c(temp, inv_rho, nitot, naai, supi, odt, &
                               log_predictNc, qinuc, ninuc) bind(C)
     use micro_p3, only: ice_nucleation

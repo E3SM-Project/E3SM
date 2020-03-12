@@ -825,6 +825,23 @@ extern "C" {
                                  Real* epsi, Real* epsi_tot);
 }
 
+struct CalcLiqRelaxationData
+{
+  // Inputs
+  Real rho, f1r, f2r, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
+
+  // Outputs
+  Real epsr, epsc;
+};
+void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d);
+
+extern "C" {
+  void calc_liq_relaxation_timescale_f(Real rho, Real f1r, Real f2r, Real dv,
+                                       Real mu, Real sc, Real mu_r, Real lamr,
+                                       Real cdistr, Real cdist, Real qr_incld,
+                                       Real qc_incld, Real* epsr, Real* epsc);
+}
+
 struct IceNucleationData
 {
   // Inputs
