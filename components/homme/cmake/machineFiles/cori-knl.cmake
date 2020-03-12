@@ -26,7 +26,7 @@ SET (USE_MPIEXEC "srun" CACHE STRING "")
 # temporary fix:
 SET (USE_MPI_OPTIONS "-c 4 --cpu_bind=cores" CACHE STRING "")
 
-SET (CPRNC_DIR /project/projectdirs/acme/tools/cprnc.cori CACHE FILEPATH "")
+SET (CPRNC_DIR /global/cfs/cdirs/acme/tools/cprnc.cori CACHE FILEPATH "")
 
 # by default, cori env loads haswell mod, do
 # module unload craype-haswell ; module load craype-mic-knl
