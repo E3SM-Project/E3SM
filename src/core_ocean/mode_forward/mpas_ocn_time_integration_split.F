@@ -1854,11 +1854,11 @@ module ocn_time_integration_split
         ! implicit vmix routine that follows.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
-            if (config_use_GM.or.config_use_Redi) then
-               call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
-                  meshPool, scratchPool, timeLevelIn=2)
-            end if
             call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
+!            if (config_use_GM.or.config_use_Redi) then
+!               call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+!                  meshPool, scratchPool, timeLevelIn=2)
+!            end if
 
 
             block => block % next
@@ -1879,6 +1879,23 @@ module ocn_time_integration_split
          end if
       end do
       call mpas_timer_stop('se vmix halos')
+
+      block => domain % blocklist
+      do while(associated(block))
+        call mpas_pool_get_subpool(block % structs, 'state', statePool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+        if (config_use_GM.or.config_use_Redi) then
+               call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+                  meshPool, scratchPool, timeLevelIn=2)
+            end if
+
+        block => block % next
+end do
 
 
          call mpas_timer_stop('se loop fini')
