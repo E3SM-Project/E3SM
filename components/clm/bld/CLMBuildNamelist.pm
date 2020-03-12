@@ -90,7 +90,7 @@ REQUIRED OPTIONS
                               "-sim_year list" to list valid simulation years
                               (default 2000)
 OPTIONS
-     -bgc "value"             Build CLM with BGC package [ sp | cn | bgc | ed ]
+     -bgc "value"             Build CLM with BGC package [ sp | cn | bgc | fates ]
                               (default is sp).
                                 CLM Biogeochemistry mode
                                 sp    = Satellite Phenology (SP)
@@ -101,16 +101,16 @@ OPTIONS
                                         (or CLM45BGC if phys=clm4_5/clm5_0, use_cn=true, use_vertsoilc=true,
                                          use_century_decomp=true, use_nitrif_denitrif=true, and use_lch4=true,
                                          use_dynroot)
-                                        This toggles on the namelist variables:
+                                         This toggles on the namelist variables:
                                          use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp,
-                                         use_dynroot
-                                ed     = functionaly assembled terrestrial ecosystem simulator
-                                          with native below ground bgc
-                                          This toggles on the namelist variables:
-                                          use_fates, use_vertsoilc, use_century_decomp
+				         use_dynroot
+                                fates     = functionaly assembled terrestrial ecosystem simulator
+                                            with native below ground bgc
+                                            This toggles on the namelist variables:
+                                            use_fates, use_vertsoilc, use_century_decomp
 
      -bgc_spinup "on|off"     CLM 4.5 Only. For CLM 4.0, spinup is controlled from configure.
-                              Turn on given spinup mode for BGC setting of CN
+                              Turn on given spinup mode for BGC setting of CN or FATES
                                   on : Turn on Accelerated Decomposition   (spinup_state = 1)
                                   off : run in normal mode                 (spinup_state = 0)
 
@@ -675,11 +675,12 @@ sub process_namelist_commandline_options {
   setup_cmdl_glc_nec($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_irrigation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_rcp($opts, $nl_flags, $definition, $defaults, $nl);
-  setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  
   setup_cmdl_simulation_year($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_run_type($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_dynamic_vegetation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_fates_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
 }
@@ -755,23 +756,22 @@ sub setup_cmdl_fates_mode {
   # call this at least after crop check is called
   #
   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-
   my $val;
   my $var = "bgc_mode";
 
   if ( $physv->as_long() == $physv->as_long("clm4_0") || $nl_flags->{'crop'} eq "on" ) {
-    if ( $nl_flags->{$var} eq "ed" ) {
-       # ED is not a clm4_0 option and should not be used with crop and not with clm4_0
-       fatal_error("** Cannot turn ed mode on with crop or with clm4_0 physics.\n" );
+    if ( $nl_flags->{$var} eq "fates" ) {
+       # FATES is not a clm4_0 option and should not be used with crop and not with clm4_0
+       fatal_error("** Cannot turn fates mode on with crop or with clm4_0 physics.\n" );
     }
-  } elsif ($nl_flags->{"bgc_mode"} eq "ed" && $nl_flags->{"use_fates"} ne ".true.") {
-    fatal_error("DEV_ERROR: internal logic error: bgc_mode = ed and use_fates = false.\n");
+  } elsif ($nl_flags->{"bgc_mode"} eq "fates" && $nl_flags->{"use_fates"} ne ".true.") {
+    fatal_error("DEV_ERROR: internal logic error: bgc_mode = fates and use_fates = false.\n");
 
   } else {
 
     $var = "use_fates";
     if ( $nl_flags->{$var} eq ".true." ) {
-      # This section is a place-holder to test for modules that are not allowed with ED
+      # This section is a place-holder to test for modules that are not allowed with FATES
       # the defaults which are set in the logic section of the namelist builder will
       # automatically set these correctly (well that is the assumption), but here we
       # want to set a catch to fail and warn users if they explicitly set incompatible user namelist
@@ -781,7 +781,7 @@ sub setup_cmdl_fates_mode {
 #      $val = $nl_flags->{$var};
 #      if ( defined($nl->get_value($var))  ) {
 #	  if ( $nl->get_value($var) == ".true." ) {
-#	      fatal_error("$var was set to .true., which is incompatible when -bgc ed option is used.\n");
+#	      fatal_error("$var was set to .true., which is incompatible when -bgc fates option is used.\n");
 #	  }
 #      }
 
@@ -809,38 +809,40 @@ sub setup_cmdl_fates_mode {
 
 
     } else {
-	# we only dis-allow ed_spitfire with non-ed runs
+      
+       my $bgc_mode= $nl_flags->{'bgc_mode'};
+
        $var = "use_fates_spitfire";
        if ( defined($nl->get_value($var)) ) {
-           fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_logging";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_parteh_mode";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_planthydro";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_ed_st3";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_ed_prescribed_phys";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_inventory_init";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_inventory_ctrl_filename";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
 
     }
@@ -979,7 +981,7 @@ sub setup_cmdl_bgc {
       $nl_flags->{'use_cn'} = ".true.";
       $nl_flags->{'use_fates'} = ".false.";
       $setting = ".true.";
-    } elsif ($nl_flags->{$var} eq "ed" ) {
+    } elsif ($nl_flags->{$var} eq "fates" ) {
       $nl_flags->{'use_cn'} = ".false.";
       $nl_flags->{'use_fates'} = ".true.";
     } else {
@@ -1069,7 +1071,7 @@ sub setup_cmdl_nitrif_denitrif {
 
       $var = "bgc_mode";
       if ($nl_flags->{$var} eq "sp") {
-        fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5 with -bgc cn|bgc");
+        fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5 with -bgc cn|bgc|fates");
       } else {
 
         $var = "use_nitrif_denitrif";
@@ -1111,7 +1113,7 @@ sub setup_cmdl_methane {
 
       $var = "bgc_mode";
       if ($nl_flags->{$var} eq "sq") {
-        fatal_error("-methane option can ONLY be used for clm4_5 with -bgc cn|bgc");
+        fatal_error("-methane option can ONLY be used for clm4_5 with -bgc cn|bgc|fates");
       } else {
 
         $val = $nl_flags->{'use_nitrif_denitrif'};
@@ -1273,7 +1275,7 @@ sub setup_cmdl_nutrient_comp {
     if ($val ne "default"){
 
       if ($nl_flags->{"bgc_mode"} eq "sp"){
-        fatal_error("-nutrient_comp_pathway option can ONLY be used with clm4_5 with -bgc cn|bgc");
+        fatal_error("-nutrient_comp_pathway option can ONLY be used with clm4_5 with -bgc cn|bgc|fates");
       } else {
 
         if ($val eq "rd"){
@@ -1335,7 +1337,7 @@ sub setup_cmdl_soil_decomp {
     if ($val ne "default"){
 
       if ($nl_flags->{"bgc_mode"} eq "sp"){
-        fatal_error("-soil_decomp option can ONLY be used with clm4_5 with -bgc cn|bgc");
+        fatal_error("-soil_decomp option can ONLY be used with clm4_5 with -bgc cn|bgc|fates");
       } else {
 
         if ($val eq "ctc"){
@@ -1591,7 +1593,7 @@ sub setup_cmdl_bgc_spinup {
       my @valid_values   = $definition->get_valid_values( $var );
       fatal_error("$var has an invalid value ($val). Valid values are: @valid_values\n");
     }
-    if ( $nl_flags->{'bgc_spinup'} eq "on" && ($nl_flags->{'use_cn'} ne ".true." && $nl_flags->{'bgc_mode'} ne "ed" )) {
+    if ( $nl_flags->{'bgc_spinup'} eq "on" && ($nl_flags->{'use_cn'} ne ".true." && $nl_flags->{'bgc_mode'} ne "fates" )) {
       fatal_error("$var can not be '$nl_flags->{'bgc_spinup'} $nl_flags->{'bgc_mode'} if CN is turned off (use_cn=$nl_flags->{'use_cn'} use_fates=$nl_flags->{'use_fates'}).");
     }
     if ( $nl->get_value("spinup_state") eq 0 && $nl_flags->{'bgc_spinup'} eq "on" ) {
@@ -2748,7 +2750,7 @@ sub setup_logic_do_transient_crops {
          # In principle, use_fates should be compatible with
          # do_transient_crops. However, this hasn't been tested, so to be safe,
          # we are not allowing this combination for now.
-         $cannot_be_true = "$var has not been tested with ED, so for now these two options cannot be combined";
+         $cannot_be_true = "$var has not been tested with FATES, so for now these two options cannot be combined";
       }
 
       if ($cannot_be_true) {
@@ -2806,7 +2808,7 @@ sub setup_logic_do_harvest {
          $cannot_be_true = "$var can only be set to true when running with CN (use_cn = true)";
       }
       elsif (value_is_true($nl->get_value('use_fates'))) {
-         $cannot_be_true = "$var currently doesn't work with ED";
+         $cannot_be_true = "$var currently doesn't work with FATES";
       }
 
       if ($cannot_be_true) {
@@ -2866,7 +2868,7 @@ sub setup_logic_supplemental_nitrogen {
   my $suplnitro = $nl->get_value('suplnitro');
   if ( defined($suplnitro) ) {
     if ( $nl_flags->{'bgc_mode'} eq "sp" ) {
-      fatal_error("supplemental Nitrogen (suplnitro) is set, but neither CN nor CNDV is active!\n");
+      fatal_error("supplemental Nitrogen (suplnitro) is set, but SP mode is active?!\n");
     }
     if ( $nl_flags->{'use_crop'} ne ".true." && $suplnitro =~ /PROG_CROP_ONLY/i ) {
       fatal_error("supplemental Nitrogen is set to run over prognostic crops, but prognostic crop is NOT active!\n");
@@ -3051,7 +3053,7 @@ sub setup_logic_nitrogen_deposition {
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
                 'hgrid'=>"1.9x2.5" );
 
-  } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc|ed/ ) {
+  } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc|fates/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
@@ -3112,7 +3114,7 @@ sub setup_logic_phosphorus_deposition {
  #               'hgrid'=>"1.9x2.5" );
 
  # } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} ne "sp" ) {
-    if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc|ed/ ) {
+    if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc|fates/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},
@@ -3241,8 +3243,8 @@ sub setup_logic_megan {
 
   if ($opts->{'megan'} ) {
     if ( value_is_true( $nl_flags->{'use_fates'} ) ) {
-       fatal_error("MEGAN can NOT be on when ED is also on.\n" . 
-                   "   Use the '-no-megan' option when '-bgc ed' is activated");
+       fatal_error("MEGAN can NOT be on when FATES is also on.\n" . 
+                   "   Use the '-no-megan' option when '-bgc fates' is activated");
     }
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'megan_specifier');
     check_megan_spec( $nl, $definition );
