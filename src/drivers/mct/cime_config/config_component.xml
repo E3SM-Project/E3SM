@@ -2507,17 +2507,16 @@
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
     <values>
-      <value>$PIO_VERSION</value>
-      <value compclass="ATM"></value>
-      <value compclass="CPL"></value>
-      <value compclass="OCN"></value>
-      <value compclass="WAV"></value>
-      <value compclass="GLC"></value>
-      <value compclass="ICE"></value>
-      <value compclass="ROF"></value>
-      <value compclass="LND"></value>
-      <value compclass="ESP"></value>
-      <value compclass="IAC"></value>
+      <value compclass="ATM">$PIO_VERSION</value>
+      <value compclass="CPL">$PIO_VERSION</value>
+      <value compclass="OCN">$PIO_VERSION</value>
+      <value compclass="WAV">$PIO_VERSION</value>
+      <value compclass="GLC">$PIO_VERSION</value>
+      <value compclass="ICE">$PIO_VERSION</value>
+      <value compclass="ROF">$PIO_VERSION</value>
+      <value compclass="LND">$PIO_VERSION</value>
+      <value compclass="ESP">$PIO_VERSION</value>
+      <value compclass="IAC">$PIO_VERSION</value>
     </values>
   </entry>
 
