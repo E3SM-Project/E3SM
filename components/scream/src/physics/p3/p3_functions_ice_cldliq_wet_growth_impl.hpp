@@ -33,9 +33,9 @@ void Functions<S,D>
 
    const Spack zerodeg{tmelt};
    const Spack e0 = polysvp1(zerodeg, zero);
-   Spack qsat0{0.0};
-   Spack dum{0.0};
-   Spack dum1{0.0};
+   Spack qsat0{0.};
+   Spack dum{0.};
+   Spack dum1{0.};
 
    if (any_if.any()) {
       qsat0 = sp(0.622)*e0/(pres-e0);

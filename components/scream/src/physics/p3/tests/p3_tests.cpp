@@ -24,21 +24,25 @@ TEST_CASE("FortranDataIterator", "p3") {
 }
 
 TEST_CASE("p3_init_f", "p3") {
+  std::cout << "test init f" << std::endl;
   int nerr = scream::p3::test_p3_init(true);
   REQUIRE(nerr == 0);
 }
 
 TEST_CASE("p3_ic_f", "p3") {
+  std::cout << "test ic f" << std::endl;
   int nerr = scream::p3::test_p3_ic(true);
   REQUIRE(nerr == 0);
 }
 
 TEST_CASE("p3_init_c", "p3") {
+  std::cout << "p3_init_c" << std::endl;
   int nerr = scream::p3::test_p3_init(false);
   REQUIRE(nerr == 0);
 }
 
 TEST_CASE("p3_ic_c", "p3") {
+  std::cout << "p3_ic_c" << std::endl;
   int nerr = scream::p3::test_p3_ic(false);
   REQUIRE(nerr == 0);
 }

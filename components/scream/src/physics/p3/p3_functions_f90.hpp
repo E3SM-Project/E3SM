@@ -852,7 +852,6 @@ struct IceWetGrowthData
   // In/Outs
   bool log_wetgrowth;
   
-  // In/Outs
   Real qrcol, qccol, qwgrth, nrshdr, qcshd;
 };
 void ice_cldliq_wet_growth(IceWetGrowthData& d);

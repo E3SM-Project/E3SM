@@ -59,24 +59,23 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     std::copy(&self[0], &self[0] + Spack::n, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
-
     // Get data from fortran
     for (Int i = 0; i < Spack::n; ++i) {
+      std::cout << "Fortran " << self[i].rho << std::endl;
       ice_cldliq_wet_growth(self[i]);
      }
-
    
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-     // Init pack inputs
-     Spack rho,temp, pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc, 
-           qv,qc_incld,qitot_incld,nitot_incld,qr_incld;
+    // Init pack inputs
+    Spack rho,temp, pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc, 
+          qv,qc_incld,qitot_incld,nitot_incld,qr_incld;
 
-     Smask log_wetgrowth;
+    Smask log_wetgrowth;
 
-     Spack qrcol,qccol,qwgrth,nrshdr,qcshd;
+    Spack qrcol,qccol,qwgrth,nrshdr,qcshd;
 
-      for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < Spack::n; ++s) {
         rho[s]         = self_device(s).rho;
         temp[s]        = self_device(s).temp;
         pres[s]        = self_device(s).pres;
@@ -100,21 +99,21 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
         nrshdr[s]      = self_device(s).nrshdr;
         qcshd[s]       = self_device(s).qcshd;
         log_wetgrowth.set(s, self_device(s).log_wetgrowth);
-      }
+    }
 
-      Functions::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, 
-                                       qv, qc_incld, qitot_incld, nitot_incld, qr_incld,
-                                       log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd);
+    Functions::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, 
+                                     qv, qc_incld, qitot_incld, nitot_incld, qr_incld,
+                                     log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd);
 
    
-      for (Int s = 0; s < Spack::n; ++s) {
-        self_device(s).log_wetgrowth = log_wetgrowth[s];
-        self_device(s).qrcol         = qrcol[s];
-        self_device(s).qccol         = qccol[s];
-        self_device(s).qwgrth        = qwgrth[s];
-        self_device(s).nrshdr        = nrshdr[s];
-        self_device(s).qcshd         = qcshd[s];
-      }
+    for (Int s = 0; s < Spack::n; ++s) {
+      self_device(s).log_wetgrowth = log_wetgrowth[s];
+      self_device(s).qrcol         = qrcol[s];
+      self_device(s).qccol         = qccol[s];
+      self_device(s).qwgrth        = qwgrth[s];
+      self_device(s).nrshdr        = nrshdr[s];
+      self_device(s).qcshd         = qcshd[s];
+    }
     });
 
     Kokkos::deep_copy(self_host, self_device);
@@ -128,7 +127,6 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
       REQUIRE(self[s].qcshd         == self_host(s).qcshd);
     }
   }
-
 
   static void run_ice_cldliq_wet_growth_phys()
   {
