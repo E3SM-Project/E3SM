@@ -230,7 +230,6 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                     if (PIOc_write_darray_multi(ncid, &varid_big, ioid, 1, arraylen, test_data, &frame,
                                                 fillvalue, flushtodisk) != PIO_ENOTVAR)
                         ERR(ERR_WRONG);
-//		    pio_setloglevel(3);
                     if (PIOc_write_darray_multi(ncid, &wrong_varid, ioid, 1, arraylen, test_data, &frame,
                                                 fillvalue, flushtodisk) != PIO_ENOTVAR)
                         ERR(ERR_WRONG);
