@@ -14,7 +14,8 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::calc_liq_relaxation_timescale(const Spack& rho, const Spack& f1r, const Spack& f2r,
+::calc_liq_relaxation_timescale(const view_2d_table& revap_table,
+                                const Spack& rho, const Spack& f1r, const Spack& f2r,
                                 const Spack& dv, const Spack& mu, const Spack& sc,
                                 const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
                                 const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,

@@ -37,6 +37,7 @@ struct P3GlobalForFortran
   static const view_1d_table& mu_r_table()   { return get().m_mu_r_table; }
   static const view_2d_table& vn_table()     { return get().m_vn_table; }
   static const view_2d_table& vm_table()     { return get().m_vm_table; }
+  static const view_2d_table& revap_table()  { return get().m_revap_table; }
   static const view_itab_table& itab()       { return get().m_itab; }
   static const view_itabcol_table& itabcol() { return get().m_itabcol; }
   static const view_dnu_table& dnu()         { return get().m_dnu; }

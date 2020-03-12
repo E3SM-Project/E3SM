@@ -30,6 +30,12 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
 
   static void run_bfb()
   {
+    // Read in tables
+    view_2d_table vn_table, vm_table, revap_table;
+    view_1d_table mu_r_table;
+    view_dnu_table dnu;
+    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
+
     using KTH = KokkosTypes<HostDevice>;
 
     static constexpr Int max_pack_size = 16;
@@ -81,8 +87,8 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
       }
 
       Spack epsr{0.0}, epsc{0.0};
-      Functions::calc_liq_relaxation_timescale(rho, f1r, f2r, dv, mu, sc, mu_r,
-        lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+      Functions::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv,
+        mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
       for (Int s = 0; s < Spack::n; ++s) {
         self_device(s).epsr = epsr[s];

@@ -2142,8 +2142,9 @@ void calc_liq_relaxation_timescale_f(Real rho_, Real f1r_, Real f2r_, Real dv_,
 
     Spack epsr{0.0}, epsc{0.0};
 
-    P3F::calc_liq_relaxation_timescale(rho, f1r, f2r, dv, mu, sc, mu_r,
-      lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+    auto revap_table = P3GlobalForFortran::revap_table();
+    P3F::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv, mu, sc,
+      mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
     t_d(0) = epsr[0];
     t_d(1) = epsc[0];
