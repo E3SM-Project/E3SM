@@ -23,22 +23,18 @@ void Functions<S,D>
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar pi = C::Pi;
 
-  const auto qr_small = (qr_incld < qsmall);
-  if (qr_small.any()) {
-    epsr.set(qr_small, 0);
+  const auto qr_not_small = (qr_incld >= qsmall);
+  if (qr_not_small.any()) {
   }
-  else
-  {
-  }
+  const auto qr_small = not qr_not_small;
+  epsr.set(qr_small, 0);
 
-  const auto qc_small = (qc_incld < qsmall);
-  if (qc_small.any()) {
-    epsc.set(qc_small, 0);
+  const auto qc_not_small = (qc_incld >= qsmall);
+  if (qc_not_small.any()) {
+    epsc.set(qc_not_small, sp(2.0) * pi * rho * dv * cdist);
   }
-  else
-  {
-    epsc.set(not qc_small, sp(2.0) * pi * rho * dv * cdist);
-  }
+  const auto qc_small = not qc_not_small;
+  epsc.set(qc_small, 0);
 }
 
 } // namespace p3

@@ -35,9 +35,17 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
+    // Set up input data.
+    constexpr Scalar qsmall = C::QSMALL;
+    constexpr Scalar qr_small = 0.9 * qsmall;
+    constexpr Scalar qr_not_small = 2.0 * qsmall;
+    constexpr Scalar qc_small = 0.9 * qsmall;
+    constexpr Scalar qc_not_small = 2.0 * qsmall;
     CalcLiqRelaxationData self[max_pack_size];
     for (Int i = 0; i < Spack::n; ++i) {
       self[i].randomize();
+      self[i].qr_incld = (i % 2) ? qr_small : qr_not_small;
+      self[i].qc_incld = ((i/2) % 2) ? qc_small : qc_not_small;
     }
 
     // Get data from fortran
