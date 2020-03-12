@@ -50,7 +50,7 @@ real(r8), parameter :: w2tune=1.0_r8
 ! third moment of vertical velocity
 real(r8), parameter :: w3clip=1.2_r8 
 ! mixing length scaling parameter
-real(r8), parameter :: length_fac=1.0_r8
+real(r8), parameter :: length_fac=0.5_r8
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -324,6 +324,19 @@ subroutine shoc_main ( &
          shcol,nlev,host_dse,pdel,&             ! Input
 	 qw,shoc_ql,u_wind,v_wind,&             ! Input
 	 se_b,ke_b,wv_b,wl_b)                   ! Input/Output
+	 
+  call shoc_diag_obklen(&
+         shcol,uw_sfc,vw_sfc,&                          ! Input
+	 wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
+	 shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+	 ustar,kbfs,obklen)                             ! Output
+	 
+  call pblintd(&
+         shcol,nlev,nlevi,&                   ! Input
+	 zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
+	 qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+	 ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
+	 pblh)                                ! Output	 
 
   do t=1,nadv
 
@@ -345,7 +358,7 @@ subroutine shoc_main ( &
            shcol,nlev,nlevi, tke,&              ! Input
            host_dx, host_dy, shoc_ql,&          ! Input
            zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
-	   thetal,wthv_sec,thv,&                ! Input
+	   thetal,wthv_sec,thv,pblh,&           ! Input
 	   brunt,shoc_mix)  		        ! Output
 
     ! Advance the SGS TKE equation	 
@@ -1828,7 +1841,7 @@ subroutine shoc_length(&
              shcol,nlev,nlevi,tke,&        ! Input
              host_dx,host_dy,cldin,&       ! Input
              zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
-	     thetal,wthv_sec,thv,&         ! Input
+	     thetal,wthv_sec,thv,pblh,&    ! Input
 	     brunt,shoc_mix)               ! Output
 
   ! Purpose of this subroutine is to compute the SHOC 
@@ -1867,6 +1880,8 @@ subroutine shoc_length(&
   real(r8), intent(in) :: thetal(shcol,nlev) 
   ! virtual potential temperature [K]
   real(r8), intent(in) :: thv(shcol,nlev)
+  ! PBL height [m]
+  real(r8), intent(in) :: pblh(shcol)  
 
 ! OUTPUT VARIABLES
   ! brunt vailsailla frequency [/s]
@@ -1880,26 +1895,20 @@ subroutine shoc_length(&
   real(r8) :: deep_thresh, deep_thick, cloud_thick, lstarn, thresh
   real(r8) :: cldmix, thedel, depth
   real(r8) :: omn, betdz, bbb, term, qsatt, dqsat, bet
-  real(r8) :: thv_up, thv_dn, thedz, tscale, thefac, thecoef, thegam, norm
-  real(r8) :: stabterm, conv_var, tkes, mmax, cldthresh
+  real(r8) :: thv_up, thv_dn, thedz, thefac, thecoef, thegam, norm
+  real(r8) :: stabterm, conv_var, tkes, mmax, cldthresh, gridfac
   logical lf, indexr
-  logical doclouddef
-  real(r8) :: conv_vel(shcol,nlev)
+  real(r8) :: conv_vel(shcol), tscale(shcol)
   real(r8) :: thv_zi(shcol,nlevi)
   
   real(r8) :: numer(shcol)
   real(r8) :: denom(shcol) 
   real(r8) :: l_inf(shcol)
   real(r8) :: brunt2(shcol,nlev)
-  logical  :: cldcol(shcol)
  
-  doclouddef = .true.
- 
-  tscale=400._r8 ! time scale set based on similarity results
   brunt2(:,:) = 0._r8
   numer(:) = 0._r8
   denom(:) = 0._r8
-  cldcol(:) = .false.
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._r8)
@@ -1911,17 +1920,13 @@ subroutine shoc_length(&
     enddo
   enddo 
  
-  ! Find length scale outside of clouds
+  ! Find L_inf
   do k=1,nlev
     do i=1,shcol
     
-      if (cldin(i,k) .eq. 0 .or. .not. doclouddef) then
         tkes=sqrt(tke(i,k))
 	numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
 	denom(i)=denom(i)+tkes*dz_zt(i,k)
-      else
-        cldcol(i)=.true.
-      endif
     
     enddo
   enddo
@@ -1933,91 +1938,47 @@ subroutine shoc_length(&
       l_inf(i)=100._r8
     endif
   enddo
- 
-  do k=1,nlev
-    do i=1,shcol
-    
-      tkes=sqrt(tke(i,k))
-      
-      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
-
-      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vk*zt_grid(i,k))) &
-        +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/length_fac)     
-      
-    enddo  ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
-  
-  ! Now find length scale in clouds
-  cldthresh=0._r8
   
   ! determine the convective velocity scale at
   !   the top of the cloud
   
-  conv_vel(:,nlev)=0._r8
+  conv_vel(:)=0._r8
   do k=nlev-1,1,-1
     do i=1,shcol
-      conv_vel(i,k) = conv_vel(i,k+1)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
+      if (zt_grid(i,k) .lt. pblh(i)) then
+        conv_vel(i) = conv_vel(i)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
+      endif
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
   
   ! computed quantity above is wstar3
   ! clip, to avoid negative values and take the cubed 
   !   root to get the convective velocity scale
-  do k=1,nlev
-    do i=1,shcol
-      conv_vel(i,k) = max(0._r8,conv_vel(i,k))**(1._r8/3._r8) 
-    enddo
+  do i=1,shcol
+    conv_vel(i) = max(0._r8,conv_vel(i))**(1._r8/3._r8) 
+    
+    if (conv_vel(i) .gt. 0._r8) then 
+      tscale(i)=pblh(i)/conv_vel(i)
+    else
+      tscale(i)=100._r8
+    endif
   enddo
  
-  if (doclouddef) then
- 
-  do i=1,shcol
-  
-    if (cldcol(i)) then
+  do k=1,nlev
+    do i=1,shcol
+    
+      tkes=sqrt(tke(i,k))
+      gridfac=min(pblh(i),zt_grid(i,k))
+      gridfac=zt_grid(i,k)
       
-      kl=0
-      ku=0
-      
-      do k=nlev-2,2,-1
-        
-	! Look for cloud base in this column
-	if (cldin(i,k) .gt. cldthresh .and. kl .eq. 0) then
-          kl=k
-        endif
-      
-        ! Look for cloud top in this column
-	if (cldin(i,k) .gt. cldthresh .and. cldin(i,k-1) .le. cldthresh) then 
-	  ku=k
-	  conv_var=conv_vel(i,k)
-	endif
-	
-	! Compute the mixing length for the layer just determined
-	if (kl .gt. 0 .and. ku .gt. 0 .and. kl-ku .gt. 1) then
-	
-	  if (conv_var .gt. 0) then
-	    
-	    depth=(zt_grid(i,ku) - zt_grid(i,kl)) + dz_zt(i,kl)
-	    mmax=maxlen
-	    if (zt_grid(i,ku) .gt. maxlen) mmax=maxlen
-	    
-            shoc_mix(i,ku:kl)=min(mmax,sqrt(1._r8/(((conv_var)/ &
-              (depth*sqrt(tke(i,ku:kl))))**2+0.01_r8* &
-              (brunt2(i,ku:kl)/tke(i,ku:kl))))/length_fac)	
-	      
-	  endif
-	    
-	  kl=0
-	  ku=0
-	
-	endif 
-	
-      enddo ! end k loop
-	
-    endif ! end cldcol conditional  
-	
-  enddo ! end i loop
+      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
-  endif 
+      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale(i)*tkes*vk*gridfac)) &
+        +(1._r8/(tscale(i)*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/length_fac)     
+      
+    enddo  ! end i loop (column loop)
+  enddo ! end k loop (vertical loop)
+  
   
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
