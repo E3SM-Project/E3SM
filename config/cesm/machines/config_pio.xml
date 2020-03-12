@@ -55,15 +55,13 @@
       <value mpilib="mpi-serial">netcdf</value>
     </values>
   </entry>
-
+<!--
   <entry id="PIO_REARRANGER">
     <values>
-      <!-- Note: problem not using box rearranger with nuopc caps -->
-      <!-- <value>$PIO_VERSION</value> -->
       <value>1</value>
     </values>
   </entry>
-
+-->
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_DEBUG_LEVEL">
     <values>
