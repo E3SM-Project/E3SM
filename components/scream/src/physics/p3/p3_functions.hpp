@@ -520,6 +520,14 @@ struct Functions
                              const Smask& log_predictNc,
                              Spack& qinuc, Spack& ninuc);
 
+  KOKKOS_FUNCTION
+  static void ice_cldliq_wet_growth(const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
+                                    const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
+                                    const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
+                                    const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
+                                    Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
+
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -560,7 +568,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_ice_collection_impl.hpp"
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
-
+# include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
 #endif
 
 #endif

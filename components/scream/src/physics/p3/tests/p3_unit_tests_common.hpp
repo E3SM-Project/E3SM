@@ -83,6 +83,7 @@ struct UnitWrap {
     struct TestP3FunctionsImposeMaxTotalNi;
     struct TestIceRelaxationTimescale;
     struct TestIceNucleation;
+    struct TestIceCldliqWetGrowth;
   };
 
 };

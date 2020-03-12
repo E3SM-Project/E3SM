@@ -843,6 +843,29 @@ void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real* qinuc, Real* ninuc);
 }
 
+struct IceWetGrowthData
+{
+  // Inputs
+  Real rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld;
+  Real qitot_incld, nitot_incld, qr_incld;
+
+  // In/Outs
+  bool log_wetgrowth;
+  
+  // In/Outs
+  Real qrcol, qccol, qwgrth, nrshdr, qcshd;
+};
+void ice_cldliq_wet_growth(IceWetGrowthData& d);
+
+extern "C" {
+ void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
+                              Real f1pr14, Real xxlv, Real xlf, Real dv,
+                              Real kap, Real mu, Real sc, Real qv, Real qc_incld,
+                              Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
+                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////

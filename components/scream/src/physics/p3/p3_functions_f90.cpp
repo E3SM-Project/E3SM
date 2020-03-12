@@ -149,6 +149,12 @@ void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real supi, Real odt, bool log_predictNc,
                       Real* qinuc, Real* ninuc);
 
+void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
+                             Real f1pr14, Real xxlv, Real xlf, Real dv,
+                             Real kap, Real mu, Real sc, Real qv, Real qc_incld,
+                             Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
+                             Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
+
 }
 
 namespace scream {
@@ -397,6 +403,17 @@ void ice_nucleation(IceNucleationData& d)
                    d.supi, d.odt, d.log_predictNc,&d.qinuc, &d.ninuc);
 }
 
+
+void ice_cldliq_wet_growth(IceWetGrowthData& d)
+{
+  p3_init(true);
+
+  ice_cldliq_wet_growth_c(d.rho, d.temp, d.pres, d.rhofaci, d.f1pr05,
+                          d.f1pr14, d.xxlv, d.xlf, d.dv,
+                          d.kap, d.mu, d.sc, d.qv, d.qc_incld,
+                          d.qitot_incld, d.nitot_incld, d.qr_incld, &d.log_wetgrowth,
+                          &d.qrcol, &d.qccol, &d.qwgrth, &d.nrshdr, &d.qcshd);
+}
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
     p3_init(true);
@@ -2119,6 +2136,58 @@ void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
 
   *qinuc_         = t_h(0);
   *ninuc_         = t_h(1);
+}
+
+
+void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, Real f1pr05_,
+                             Real f1pr14_, Real xxlv_, Real xlf_, Real dv_,
+                             Real kap_, Real mu_, Real sc_, Real qv_, Real qc_incld_,
+                             Real qitot_incld_, Real nitot_incld_, Real qr_incld_, bool* log_wetgrowth_,
+                             Real* qrcol_, Real* qccol_, Real* qwgrth_, Real* nrshdr_, Real* qcshd_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack        = typename P3F::Spack;
+  using Smask        = typename P3F::Smask;
+  using view_1d      = typename P3F::view_1d<Real>;
+  using bool_view_1d = typename P3F::view_1d<bool>;
+
+  bool_view_1d b_d("b_d", 1);
+  view_1d t_d("t_d", 5);
+  const auto b_h = Kokkos::create_mirror_view(b_d);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, temp{temp_}, pres{pres_}, rhofaci{rhofaci_}, f1pr05{f1pr05_}, f1pr14{f1pr14_}, xxlv{xxlv_},
+          xlf{xlf_}, dv{dv_}, kap{kap_}, mu{mu_}, sc{sc_}, qv{qv_}, qc_incld{qc_incld_}, qitot_incld{qitot_incld_},
+          nitot_incld{nitot_incld_}, qr_incld{qr_incld_};
+
+    Smask log_wetgrowth{*log_wetgrowth_};
+
+    Spack qrcol{*qrcol_}, qccol{*qccol_}, qwgrth{*qwgrth_}, nrshdr{*nrshdr_}, qcshd{*qcshd_};
+
+    P3F::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,
+                              qitot_incld, nitot_incld, qr_incld, log_wetgrowth,
+                              qrcol, qccol, qwgrth, nrshdr, qcshd);
+
+    b_d(0) = log_wetgrowth[0];
+    t_d(0) = qrcol[0];
+    t_d(1) = qccol[0];
+    t_d(2) = qwgrth[0];
+    t_d(3) = nrshdr[0];
+    t_d(4) = qcshd[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+  Kokkos::deep_copy(b_h, b_d);
+
+  *log_wetgrowth_ = b_h(0);
+  *qrcol_         = t_h(0);
+  *qccol_         = t_h(1);
+  *qwgrth_        = t_h(2);
+  *nrshdr_        = t_h(3);
+  *qcshd_         = t_h(4);
 }
 
 
