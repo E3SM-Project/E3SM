@@ -23,10 +23,10 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
-  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, mu_table_c) bind(C)
+  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, revap_table_c, mu_table_c) bind(C)
     use micro_p3, only: p3_get_tables
 
-    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c
+    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c, revap_table_c
     real(kind=c_real), intent(inout), dimension(150)    :: mu_table_c
 
     real(kind=c_real), dimension(150), target :: mu_table_f
@@ -35,6 +35,7 @@ contains
     call p3_get_tables(mu_table_f, revap_table_f, vn_table_f, vm_table_f)
     vn_table_c(:,:) = vn_table_f(:,:)
     vm_table_c(:,:) = vm_table_f(:,:)
+    revap_table_c(:,:) = revap_table_f(:,:)
     mu_table_c(:)   = mu_table_f(:)
 
   end subroutine init_tables_from_f90_c

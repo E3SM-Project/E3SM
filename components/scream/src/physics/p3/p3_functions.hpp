@@ -129,7 +129,8 @@ struct Functions
 
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
-    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table, view_dnu_table& dnu);
+    view_2d_table& vn_table, view_2d_table& vm_table, view_2d_table& revap_table,
+    view_1d_table& mu_r_table, view_dnu_table& dnu);
 
   static void init_kokkos_ice_lookup_tables(
     view_itab_table& itab, view_itabcol_table& itabcol);
@@ -535,7 +536,8 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 extern "C" {
 // decl of fortran function for loading tables from fortran p3. This will
 // continue to be a bit awkward until we have fully ported all of p3.
-void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_table_data);
+void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
+                            Real* revap_table_data, Real* mu_table_data);
 }
 
 } // namespace p3

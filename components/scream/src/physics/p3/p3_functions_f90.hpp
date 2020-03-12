@@ -49,7 +49,7 @@ struct P3GlobalForFortran
  private:
   struct Views {
     view_1d_table m_mu_r_table;
-    view_2d_table m_vn_table, m_vm_table;
+    view_2d_table m_vn_table, m_vm_table, m_revap_table;
     view_itab_table m_itab;
     view_itabcol_table m_itabcol;
     view_dnu_table m_dnu;

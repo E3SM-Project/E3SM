@@ -738,7 +738,8 @@ const P3GlobalForFortran::Views& P3GlobalForFortran::get()
   if (!P3GlobalForFortran::s_views) {
     P3GlobalForFortran::s_views = std::make_shared<Views>();
     P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
-    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table, s_views->m_mu_r_table, s_views->m_dnu);
+    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table,
+      s_views->m_revap_table, s_views->m_mu_r_table, s_views->m_dnu);
   }
   return *P3GlobalForFortran::s_views;
 }
