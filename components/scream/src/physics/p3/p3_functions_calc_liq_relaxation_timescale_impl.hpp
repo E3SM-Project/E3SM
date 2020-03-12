@@ -27,15 +27,15 @@ void Functions<S,D>
   const auto qr_not_small = (qr_incld >= qsmall);
   Table3 table;
   lookup(qr_not_small, mu_r, lamr, table);
-  epsr.set(qr_not_small, sp(2.0) * pi * cdistr * rho * dv *
-           (f1r * tgamma(mu_r + sp(2.0))/lamr +
+  epsr.set(qr_not_small, 2 * pi * cdistr * rho * dv *
+           (f1r * tgamma(mu_r + 2)/lamr +
             f2r * sqrt(rho/mu) * cbrt(sc) *
             apply_table(qr_not_small, revap_table, table)));
   const auto qr_small = not qr_not_small;
   epsr.set(qr_small, 0);
 
   const auto qc_not_small = (qc_incld >= qsmall);
-  epsc.set(qc_not_small, sp(2.0) * pi * rho * dv * cdist);
+  epsc.set(qc_not_small, 2 * pi * rho * dv * cdist);
   const auto qc_small = not qc_not_small;
   epsc.set(qc_small, 0);
 }
