@@ -2424,6 +2424,9 @@ subroutine calc_liq_relaxation_timescale(rho,f1r,f2r,     &
 dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
 epsr,epsc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cxx_gamma, cxx_sqrt, cxx_cbrt
+#endif
    implicit none
 
    real(rtype), intent(in)  :: rho
@@ -2457,8 +2460,9 @@ epsr,epsc)
       !final interpolation
       dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
 
-      epsr = 2._rtype*pi*cdistr*rho*dv*(f1r*gamma(mu_r+2._rtype)/(lamr)+f2r*   &
-           (rho/mu)**0.5_rtype*sc**thrd*dum)
+      epsr = 2._rtype*pi*cdistr*rho*dv*                                                &
+             (f1r*bfb_gamma(mu_r+2._rtype)/lamr +                                    &
+              f2r*bfb_sqrt(rho/mu)*bfb_cbrt(sc)*dum)
    else
       epsr = 0._rtype
    endif
