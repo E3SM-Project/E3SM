@@ -148,7 +148,7 @@ void ice_relaxation_timescale_c(Real rho, Real temp, Real rhofaci, Real f1pr05, 
 void calc_liq_relaxation_timescale_c(Real rho, Real f1r, Real f2r, Real dv,
                                      Real mu, Real sc, Real mu_r, Real lamr,
                                      Real cdistr, Real cdist, Real qr_incld,
-                                     Real qc_incld, Real epsr, Real epsc);
+                                     Real qc_incld, Real* epsr, Real* epsc);
 
 void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real supi, Real odt, bool log_predictNc,
@@ -418,7 +418,7 @@ void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d)
 {
   p3_init(true);
   calc_liq_relaxation_timescale_c(d.rho, d.f1r, d.f2r, d.dv, d.mu, d.sc, d.mu_r,
-    d.lamr, d.cdistr, d.cdist, d.qr_incld, d.qc_incld, d.epsr, d.epsc);
+    d.lamr, d.cdistr, d.cdist, d.qr_incld, d.qc_incld, &d.epsr, &d.epsc);
 }
 
 void ice_nucleation(IceNucleationData& d)
