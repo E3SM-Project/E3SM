@@ -117,10 +117,10 @@ contains
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown
       real(kind=RKIND) :: verticalDisplacement, rValue, zEdge, diabaticTaper
-      real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
+      real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm, dTdzSmooth, dSdzSmooth
 
       ! Dimensions
-      integer :: nCells, nEdges
+      integer :: nsmooth, nCells, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -254,7 +254,7 @@ contains
       !
       !--------------------------------------------------------------------
 
-      nCells = nCellsArray( 3 )
+      !nCells = nCellsArray( 3 )
       ! Compute vertical derivative of density (dDensityDzTopOfCell) at cell center and layer interface
       ! Note that displacedDensity is used from the upper cell, so that the EOS reference level for
       ! pressure is the same for both displacedDensity(k-1,iCell) and density(k,iCell).
@@ -378,6 +378,8 @@ contains
       allocate(dzTop(nVertLevels+1))
       allocate(dTdzTop(nVertLevels+1))
       allocate(dSdzTop(nVertLevels+1))
+      allocate(dTdzSmooth(nVertLevels+1))
+      allocate(dSdzSmooth(nVertLevels+1))
       allocate(k33Norm(nVertLevels+1))
 
       !$omp do schedule(runtime)
@@ -446,6 +448,18 @@ contains
          dzTop(maxLevelCell(iCell)+1) = -1e-15_RKIND
          dTdzTop(maxLevelCell(iCell)+1) = -1e-15_RKIND
          dSdzTop(maxLevelCell(iCell)+1) = -1e-15_RKIND
+
+         dTdzSmooth(1:maxLevelCell(iCell)+1) = dTdzTop(maxLevelCell(iCell)+1)
+         dSdzSmooth(1:maxLevelCell(iCell)+1) = dSdzTop(maxLevelCell(iCell)+1)
+
+         do nsmooth=1,2
+           do k=2,maxLevelCell(iCell)
+             dTdzSmooth(k) = (dTdzTop(k-1) + 2.0_RKIND*dTdzTop(k) + dTdzTop(k+1)) / 4.0_RKIND
+             dSdzSmooth(k) = (dSdzTop(k-1) + 2.0_RKIND*dSdzTop(k) + dSdzTop(k+1)) / 4.0_RKIND
+           enddo
+           dTdzTop(1:maxLevelCell(iCell)) = dTdzSmooth(1:maxLevelCell(iCell))
+           dSdzTop(1:maxLevelCell(iCell)) = dSdzSmooth(1:maxLevelCell(iCell))
+         enddo
 
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -547,6 +561,8 @@ contains
       deallocate(dzTop)
       deallocate(dTdzTop)
       deallocate(dSdzTop)
+      deallocate(dTdzSmooth)
+      deallocate(dSdzSmooth)
       deallocate(k33Norm)
 
       ! allow disabling of K33 for testing

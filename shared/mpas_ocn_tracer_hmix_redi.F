@@ -276,7 +276,6 @@ contains
 
       allocate(fluxRediZTop(nTracers,nVertLevels+1))
       allocate(areaSum(nVertLevels+1))
-      allocate(kappaGMCent(nVertLevels+1))
 
       !mrp performance note: can try to reduce halo width later
       !nCells = nCellsArray(1)
@@ -287,7 +286,6 @@ contains
       do iCell = 1, nCells
          areaSum(:) = 1.0e-34_RKIND
          fluxRediZTop(:,:) = 0.0_RKIND
-         kappaGMCent(:) = 0.0_RKIND
 
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -338,7 +336,6 @@ contains
       !$omp end do
       deallocate(fluxRediZTop)
       deallocate(areaSum)
-      deallocate(kappaGMCent) 
 
       call mpas_timer_stop("tracer redi")
 
