@@ -101,25 +101,24 @@ contains
 
       real(kind=RKIND), dimension(:,:), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, &
          layerThicknessEdge, gradDensityEdge, gradDensityTopOfEdge, gradDensityConstZTopOfEdge, gradZMidEdge, &
-         gradZMidTopOfEdge, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
-         gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, &
-         layerThickness, &
-         areaCellSum, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, kappaGMVert, kappaRediVert
+         gradZMidTopOfEdge, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell,       &
+         dDensityDzTopOfEdge, dDensityDzTopOfCell, layerThickness, areaCellSum, inSituThermalExpansionCoeff, &
+         inSituSalineContractionCoeff, kappaGMVert, kappaRediVert
 
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
       real(kind=RKIND), dimension(:), pointer :: rediRossbyRadius
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf
-      real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
+      real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: sumN2, countN2, maxN, kappaSum, ltSum
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown
-      real(kind=RKIND) :: verticalDisplacement, rValue, zEdge, diabaticTaper, BVFedge1, BVFedge2
+      real(kind=RKIND) :: verticalDisplacement, rValue, zEdge, diabaticTaper
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
-      
+
       ! Dimensions
       integer :: nCells, nEdges
       integer, pointer :: nVertLevels
@@ -132,7 +131,6 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer, pointer :: indexTemperature, indexSalinity
       integer :: timeLevel
-      integer :: iBLD, sVal
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -177,7 +175,6 @@ contains
       call mpas_pool_get_array(meshPool, 'dvEdge',  dvEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell',  nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell',  edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -276,8 +273,6 @@ contains
       end do
       !$omp end do
 
-      nEdges = nEdgesArray( 3 )
-
       ! Interpolate dDensityDzTopOfCell to edge and layer interface
       !$omp do schedule(runtime) private(k, cell1, cell2)
       do iEdge = 1, nEdges
@@ -295,8 +290,6 @@ contains
       ! This is required for Redi and Bolus parts.
       !
       !--------------------------------------------------------------------
-
-      nEdges = nEdgesArray( 3 )
 
       ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
       ! along the constant coordinate surface.
@@ -316,8 +309,6 @@ contains
          end do
       end do
       !$omp end do
-
-      nEdges = nEdgesArray( 3 )
 
       ! Interpolate gradDensityEdge and gradZMidEdge to layer interface
       !$omp do schedule(runtime) private(k, h1, h2)
@@ -348,8 +339,6 @@ contains
       ! Compute horizontal gradient required for Bolus part (along constant z)
       !
       !--------------------------------------------------------------------
-
-      nEdges = nEdgesArray( 3 )
 
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
@@ -465,17 +454,15 @@ contains
             ! mrp Performance Note: Replace with a logical array on init later
             if (cell1==iCell) then
                 iCellSelf = 1
-                sVal = cell1
             elseif (cell2==iCell) then
                 iCellSelf = 2
-                sVal = cell2
             else
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
             endif
             dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
             areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
 
-            do k = 1, maxLevelEdgeTop(iEdge) - 1
+            do k = 1, maxLevelEdgeTop(iEdge)
                drhoDT = -inSituThermalExpansionCoeff(k,iCell)
                drhoDS = inSituSalineContractionCoeff(k,iCell)
                dTdx = (  activeTracers(indexTemperature,k,cell2) &
@@ -498,11 +485,12 @@ contains
                   (  drhoDT * dTdzTop(k+1) &
                    + drhoDS * dSdzTop(k+1) )
 
-               ! Slope needs to be limited -1 to 1 for option of not limiting vertical
-!               slopeTriadUp(k,iCellSelf,iEdge) = max(-1.0_RKIND,min(1.0_RKIND,        &
-!                                                 slopeTriadUp(k,iCellSelf,iEdge)))
-!               slopeTriadDown(k,iCellSelf,iEdge) = max(-1.0_RKIND,min(1.0_RKIND,      &
-!                                                 slopeTriadDown(k,iCellSelf,iEdge)))
+               !Contrain slopes to +/- 0.01
+               slopeTriadUp(k,iCellSelf,iEdge) = min(0.01_RKIND,slopeTriadUp(k,iCellSelf,iEdge))
+               slopeTriadUp(k,iCellSelf,iEdge) = max(-0.01_RKIND,slopeTriadUp(k,iCellSelf,iEdge))
+
+               slopeTriadDown(k,iCellSelf,iEdge) = min(0.01_RKIND,slopeTriadDown(k,iCellSelf,iEdge))
+               slopeTriadDown(k,iCellSelf,iEdge) = max(-0.01_RKIND,slopeTriadDown(k,iCellSelf,iEdge))
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
                slopeTaperUp = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
@@ -535,7 +523,7 @@ contains
                   k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
                endif
 
-               k33(k+1,iCell) = k33(k+1,iCell) + kappaRediVert(k+1,iEdge) * slopeTaperDown * sfcTaperDown * &
+               k33(k+1,iCell) = k33(k+1,iCell) + kappaRediVert(k,iEdge) * slopeTaperDown * sfcTaperDown * &
                           areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
                k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
 
@@ -585,12 +573,12 @@ contains
             sumN2 = 0.0
             ltSum = 0.0
             countN2 = 0
-            
+
             do k=2,maxLevelEdgeTop(iEdge)
 
                BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-                
+
                sumN2 = sumN2 + BruntVaisalaFreqTopEdge*layerThicknessEdge(k,iEdge)
                ltSum = ltSum + layerThicknessEdge(k,iEdge)
                countN2 = countN2 +1
@@ -609,8 +597,6 @@ contains
          enddo
          !$omp end do
       endif
-
-      nEdges = nEdgesArray( 3 )
 
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges

@@ -133,7 +133,7 @@ contains
       real (kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, flux_terms12, sign_term1, dTracerDx, coef
       real (kind=RKIND) :: r_tmp, tracer_turb_flux
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real (kind=RKIND), dimension(:), allocatable :: areaSum, kappaGMCent
+      real (kind=RKIND), dimension(:), allocatable :: areaSum
       real (kind=RKIND), dimension(:,:), allocatable :: fluxRediZTop
 
       err = 0
@@ -303,11 +303,10 @@ contains
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
             endif
 
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = 1, maxLevelEdgeTop(iEdge) - 1
                areaSum(k) = areaSum(k) + areaEdge
                areaSum(k+1) = areaSum(k+1) + areaEdge
 
-!               kappaGMCent(k) = kappaGMCent(k) + kappaRediVert(k, iEdge) * areaEdge
                do iTr = 1, nTracers
                   ! Gradient of tracer at edge.
                   ! dvEdge on following line is equal to areaEdge/dcEdge
