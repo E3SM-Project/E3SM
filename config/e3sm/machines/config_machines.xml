@@ -3040,8 +3040,9 @@
       </modules>
 
       <modules>
+        <command name="load">parallel-netcdf/1.8.1</command>
         <command name="load">hdf5/1.10.4</command>
-       </modules>
+      </modules>
 
     </module_system>
     <!-- <RUNDIR>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/$CASE/run</RUNDIR> -->
@@ -3075,7 +3076,7 @@
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
-      <env name="PNETCDF_PATH">/gpfs/alpine/cli115/world-shared/3rdparty/pnetcdf/1.11.2/xl-16.1.1</env>
+      <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial" compiler="pgiacc">
       <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env>
