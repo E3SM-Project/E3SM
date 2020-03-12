@@ -395,6 +395,25 @@ void ice_relaxation_timescale(IceRelaxationData& d)
                              &d.epsi, &d.epsi_tot);
 }
 
+void CalcLiqRelaxationData::randomize()
+{
+  // Populate the struct's input fields with numbers between 0 and 1.
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  rho = data_dist(generator);
+  f1r = data_dist(generator);
+  f2r = data_dist(generator);
+  dv = data_dist(generator);
+  mu = data_dist(generator);
+  sc = data_dist(generator);
+  mu_r = data_dist(generator);
+  lamr = data_dist(generator);
+  cdistr = data_dist(generator);
+  cdist = data_dist(generator);
+  qr_incld = data_dist(generator);
+  qc_incld = data_dist(generator);
+}
+
 void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d)
 {
   p3_init(true);

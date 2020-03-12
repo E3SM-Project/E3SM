@@ -832,6 +832,9 @@ struct CalcLiqRelaxationData
 
   // Outputs
   Real epsr, epsc;
+
+  // This populates all input fields with test data within [0,1].
+  void randomize();
 };
 void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d);
 
