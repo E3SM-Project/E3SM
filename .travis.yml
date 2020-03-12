@@ -1,0 +1,54 @@
+# Based on https://github.com/NOAA-ORR-ERD/gridded/blob/master/.travis.yml
+language: minimal
+
+sudo: false
+
+notifications:
+  email: false
+
+# safelist
+branches:
+  only:
+  - master
+  - develop
+  - ocean/develop
+  - ocean/coastal
+  - landice/devleop
+
+jobs:
+  include:
+    - name: "docs"
+    - name: "compass"
+    # Add new jobs, along with the corresponding travis_ci/install_<name>.bash
+    # and travis_ci/test_<name>.bash
+    #- name: "atmosphere"
+    #- name: "landice"
+    #- name: "ocean"
+    #- name: "seaice"
+# The following is not needed now but could be added as the "safelist" and
+# job list evolves
+#  exclude:
+#    -
+#      name: "compass"
+#      if: branch == seaice/develop OR branch == e3sm/develop
+
+env:
+  global:
+    secure: "Ckovv5psUv9pdBVaNjsgrk0hXGJbNTi5dzLSWsNQA3Ub4hUXvzgBvX1TgS+CZvq3fkJnxV6SYZIlOkrCqqxdlUzFewDiuzzYxEZObFZ8FceWiYs4K3LMS30MPLzIYaV9ORqXJ0/P/ii62KhGIraX7ryzZ5+IG5uDOd7gumD6GiCPURFQIGpWS7MasKmEQRnokrGO3B2JjGEB0vMTdMZGbj8XY+X4Q0zcdQnjrLtG7PiuED95CrfEI7HfJ/ifPRgI4EMey6YI89DUF6hdQ1N1QxyAnxlKBDkqCvy6uowej7xPwMMZsyykr6EoAcwk9kYluVRogKe1iBMq1P4WCOOUj3c3Q9Dp885TiXlsW1aDKT2RSkx/SV5cE73vrpUhmm2Nf/wWAZktOYJSGlmRqSnjkQhDJqQSOaIQbwBfUtuGMt0Go0Q/3/qlMc7I9AjG5yBuYcY8WN98qKABP3IKjSsIFUPyo1kXCHt++oV7z1p9oBdGS54e+9rEYWixvAwvw0GvrNrbQdiq2sq8BheI4ppzeSGoneHguNDn5QyVeMu4WZ0gsCwuVW0lXiuUSlYHG5ZctX1cQySCyL3IOcpYa1a1/DKINpkwr/Z7T8oOM+UHnXDK96UJfbaG5n5+JZOfWJ6N/Em7weKuwnRiobGQfDqlyEtc1hgcLfvMnkpikENKhss="
+
+before_install:
+  - |
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    bash miniconda.sh -b -p $HOME/miniconda
+    source $HOME/miniconda/etc/profile.d/conda.sh
+    conda activate base
+    conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
+    conda update conda
+    conda config --add channels conda-forge --force
+    conda config --set channel_priority strict
+
+install:
+  - ./travis_ci/install_${TRAVIS_JOB_NAME}.bash
+
+script:
+  - ./travis_ci/test_${TRAVIS_JOB_NAME}.bash
