@@ -7825,7 +7825,7 @@
   <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30">
     <mach name="compy">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 11 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 11 nodes pure-MPI, ~2.8 sypd </comment>
         <ntasks>
           <ntasks_atm>320</ntasks_atm>
           <ntasks_lnd>80</ntasks_lnd>
