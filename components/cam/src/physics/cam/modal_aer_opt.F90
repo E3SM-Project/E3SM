@@ -1,6 +1,6 @@
 
 module modal_aer_opt
-
+use module_perturb
 ! parameterizes aerosol coefficients using chebychev polynomial
 ! parameterize aerosol radiative properties in terms of
 ! surface mode wet radius and wet refractive index
@@ -508,7 +508,8 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
 
    character(len=32) :: outname
-
+   integer :: dgnum_idx
+   integer :: errcode
    ! debug output
    integer, parameter :: nerrmax_dopaer=1000
    integer  :: nerr_dopaer = 0
@@ -588,7 +589,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       if (istat > 0) then
          call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
       end if
-      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
+      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m,.true.)  !BALLI
+      !dgnum_idx = pbuf_get_index('DGNUM',errcode)
+      !call pbuf_get_field(pbuf,dgnum_idx,dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
    endif
@@ -1050,7 +1053,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    end do ! nmodes
 
    if (list_idx > 0) then
-      deallocate(dgnumdry_m)
+      !deallocate(dgnumdry_m)
       deallocate(dgnumwet_m)
       deallocate(qaerwat_m)
       deallocate(wetdens_m)
@@ -1237,7 +1240,8 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    integer, parameter :: nerrmax_dopaer=1000
    integer  :: nerr_dopaer = 0
    real(r8) :: volf             ! volume fraction of insoluble aerosol
-
+   integer :: dgnum_idx
+   integer :: errcode
    character(len=*), parameter :: subname = 'modal_aero_lw'
    !----------------------------------------------------------------------------
 
@@ -1265,7 +1269,9 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
       if (istat > 0) then
          call endrun('modal_aero_lw: allocation FAILURE: arrays for diagnostic calcs')
       end if
-      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
+      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m,.false.)  
+      !dgnum_idx = pbuf_get_index('DGNUM',errcode)
+      !call pbuf_get_field(pbuf,dgnum_idx,dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
    endif
@@ -1409,7 +1415,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    end do ! m = 1, nmodes
 
    if (list_idx > 0) then
-      deallocate(dgnumdry_m)
+      !deallocate(dgnumdry_m)
       deallocate(dgnumwet_m)
       deallocate(qaerwat_m)
       deallocate(wetdens_m)

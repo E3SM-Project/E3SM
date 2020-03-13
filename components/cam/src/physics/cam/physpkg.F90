@@ -12,6 +12,7 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
+use module_perturb
 
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use spmd_utils,       only: masterproc
@@ -1483,7 +1484,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-    
+    if(icolprnt(lchnk)>0)write(102,*)'ac:',nstep
+    if(icolprnt(lchnk)>0)write(103,*)'ac:',nstep
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,l_tracer_aero_out      = l_tracer_aero      &
@@ -2103,6 +2105,8 @@ subroutine tphysbc (ztodt,               &
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
+    if(icolprnt(lchnk)>0)write(102,*)'bc:',nstep
+    if(icolprnt(lchnk)>0)write(103,*)'bc:',nstep
 
     if (pergro_test_active) then 
        !call outfld calls
@@ -2697,7 +2701,7 @@ if (l_tracer_aero) then
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
        
-       call physics_update(state, ptend, ztodt, tend)
+       !call physics_update(state, ptend, ztodt, tend) !BALLI
 
 
        if (carma_do_wetdep) then
@@ -2717,7 +2721,7 @@ if (l_tracer_aero) then
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
 
-       call physics_update(state, ptend, ztodt, tend)
+       !call physics_update(state, ptend, ztodt, tend)!BALLI
 
        ! check tracer integrals
        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)

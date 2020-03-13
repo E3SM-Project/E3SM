@@ -95,14 +95,18 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'wet dgnum, interstitial, mode '//trnum(2:3))
       call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
          'aerosol water, interstitial, mode '//trnum(2:3))
+
+      call addfld('dgnd_1a'//trnum(2:3), (/ 'lev' /), 'A', 'm', & !BALLI
+         'dry dgnum, interstitial, mode '//trnum(2:3))
       
-      if (history_aerosol) then  
-         if (history_verbose) then
+      !if (history_aerosol) then  
+      !   if (history_verbose) then
             call add_default('dgnd_a'//trnum(2:3), 1, ' ')
+            call add_default('dgnd_1a'//trnum(2:3), 1, ' ')!BALLI
             call add_default('dgnw_a'//trnum(2:3), 1, ' ')
             call add_default('wat_a'//trnum(3:3),  1, ' ')
-         endif
-      endif
+       !  endif
+      !endif
 
    end do
 
@@ -287,8 +291,8 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
          do k = top_lev, pver
             do i = 1, ncol
-               duma          = raer(i,k)
-               maer(i,k,m)   = maer(i,k,m) + duma
+               duma          = raer(i,k) 
+               maer(i,k,m)   = maer(i,k,m) + duma !BALLI- why we are not zeroing it out in these loops....why accumulate for all species in all modes
                dumb          = duma/specdens
                dryvolmr(i,k) = dryvolmr(i,k) + dumb
                hygro(i,k,m)  = hygro(i,k,m) + dumb*spechygro
@@ -353,7 +357,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          rh(i,k) = min(rh(i,k), 0.98_r8)
          if(pergro_mods) then
             cldn_thresh = 0.9998_r8
-         else			
+         else
             cldn_thresh = 1.0_r8 !original code
          endif
          if (cldn(i,k) .lt. cldn_thresh) then !BSINGH 
@@ -395,6 +399,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          write( trnum, '(i3.3)' ) m
          call outfld( 'wat_a'//trnum(3:3),  qaerwat(:,:,m),     pcols, lchnk)
          call outfld( 'dgnd_a'//trnum(2:3), dgncur_a(:,:,m),    pcols, lchnk)
+         !call outfld( 'dgnd_a'//trnum(2:3), hygro(:,:,m),    pcols, lchnk)
          call outfld( 'dgnw_a'//trnum(2:3), dgncur_awet(:,:,m), pcols, lchnk)
          if (history_aerosol .and. .not. history_verbose) &
          aerosol_water(:ncol,:) = aerosol_water(:ncol,:) + qaerwat(:ncol,:,m)
@@ -402,7 +407,13 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
       if (history_aerosol .and. .not. history_verbose) &
          call outfld( 'aero_water',  aerosol_water(:ncol,:),    ncol, lchnk)
-
+   else
+       do m = 1, nmodes
+         ! output to history
+         write( trnum, '(i3.3)' ) m
+         call outfld( 'dgnd_1a'//trnum(2:3), dgncur_a(:,:,m),    pcols, lchnk) !BALLI
+         !call outfld( 'dgnd_1a'//trnum(2:3), hygro(:,:,m),    pcols, lchnk) !BALLI
+      end do
    end if
 
    deallocate( &
