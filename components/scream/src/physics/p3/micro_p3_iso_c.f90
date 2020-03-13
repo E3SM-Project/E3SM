@@ -239,6 +239,36 @@ contains
     call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
   end subroutine access_lookup_table_coll_c
 
+  subroutine back_to_cell_average_c(lcldm,rcldm,icldm, qcacc,qrevp,qcaut,&
+    ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,&
+    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
+    qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
+
+    use micro_p3, only: back_to_cell_average
+    real(kind=c_real), value, intent(in) :: lcldm, rcldm, icldm
+
+    real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
+                                        nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,  &
+                                        nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, &
+                                        qrheti, nimlt, nccol, ncshdc, ncheti, nrcol,&
+                                        nislf, qidep, nrheti, nisub, qinuc, ninuc,  &
+                                        qiberg
+
+    call back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,&
+      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,&
+      qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,&
+      qidep, nrheti, nisub, qinuc, ninuc, qiberg)
+  end subroutine back_to_cell_average_c
+
+subroutine prevent_ice_overdepletion_c(pres,t,qv,xxls,odt,    &
+   qidep,qisub) bind(C)
+    use micro_p3, only: prevent_ice_overdepletion
+
+    real(kind=c_real), value, intent(in) :: pres, t, qv, xxls, odt
+    real(kind=c_real), intent(inout) :: qidep, qisub
+
+    call prevent_ice_overdepletion(pres, t, qv, xxls, odt, qidep, qisub)
+end subroutine prevent_ice_overdepletion_c
 
   subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
@@ -292,6 +322,25 @@ contains
 
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
+
+  subroutine calc_rime_density_c(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol, &
+                                 vtrmi1,rhorime_c) bind(C)
+
+      use micro_p3, only: calc_rime_density
+      real(kind=c_real), value, intent(in) :: t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol
+      real(kind=c_real), intent(out) :: vtrmi1, rhorime_c
+
+      call calc_rime_density(t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol, vtrmi1, rhorime_c)
+  end subroutine calc_rime_density_c
+
+  subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
+
+      use micro_p3, only: cldliq_immersion_freezing
+      real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld
+      real(kind=c_real), intent(out) :: qcheti, ncheti
+
+      call cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
+  end subroutine cldliq_immersion_freezing_c
 
   subroutine rain_immersion_freezing_c(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
 
@@ -623,5 +672,35 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     call ice_deposition_sublimation(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
            qidep, qisub, nisub, qiberg)
   end subroutine ice_deposition_sublimation_c
+
+  subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, f1pr05, f1pr14,   &
+                                        dv, mu, sc, qitot_incld, nitot_incld, &
+                                        epsi, epsi_tot) bind(C)
+    use micro_p3, only: calc_ice_relaxation_timescale
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr05, f1pr14, &
+                                            dv, mu, sc, qitot_incld, nitot_incld
+    real(kind=c_real), intent(out)   :: epsi
+    real(kind=c_real), intent(inout) :: epsi_tot
+
+    call calc_ice_relaxation_timescale(rho, temp, rhofaci, f1pr05, f1pr14,   &
+                                       dv, mu, sc, qitot_incld, nitot_incld, &
+                                       epsi, epsi_tot)
+  end subroutine ice_relaxation_timescale_c
+
+  subroutine ice_nucleation_c(temp, inv_rho, nitot, naai, supi, odt, &
+                              log_predictNc, qinuc, ninuc) bind(C)
+    use micro_p3, only: ice_nucleation
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: temp, inv_rho, nitot, naai, supi, odt
+    logical(c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), intent(inout) :: qinuc, ninuc
+
+    call ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, &
+                        log_predictNc, qinuc, ninuc)
+ end subroutine ice_nucleation_c
 
 end module micro_p3_iso_c

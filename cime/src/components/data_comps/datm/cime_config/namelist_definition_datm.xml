@@ -36,7 +36,7 @@
     CLMCRUNCEP		= Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
     CLMCRUNCEPv7 	= Run with the CLM CRU NCEP V7 forcing valid from 1900 to 2010 (force CLM)
     CLMGSWP3v1		= Run with the CLM GSWP3 V1 forcing (force CLM)
-    CLMNLDAS        	= Run with the CLM NLDAS data (force CLM)
+    CLMMOSARTTEST   	= Run with the CLM NLDAS data (force CLM) for testing MOSART
     CLMNLDAS2		= Run with the CLM NLDAS2 regional forcing valid from 1980 to 2018 (force CLM)
     CLM1PT		= Run with supplied single point data (force CLM)
     CORE2_NYF		= CORE2 normal year forcing (for forcing POP and CICE)
@@ -98,7 +98,7 @@
     CLMGSWP3v1.Precip
     CLMGSWP3v1.TPQW
 
-    CLMNLDAS
+    CLMMOSARTTEST
 
     CLMNLDAS2.Solar
     CLMNLDAS2.Precip
@@ -195,7 +195,7 @@
       <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEPv7">CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW</value>
       <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>
-      <value datm_mode="CLMNLDAS">CLMNLDAS</value>
+      <value datm_mode="CLMMOSARTTEST">CLMMOSARTTEST</value>
       <value datm_mode="CLMNLDAS2">CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
@@ -222,7 +222,7 @@
       <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
       <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
-      <value stream="CLMNLDAS">$DIN_LOC_ROOT/share/domains/domain.clm</value>
+      <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMNLDAS2">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
@@ -290,7 +290,7 @@
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3v1">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
       <value stream="CLMGSWP3">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
-      <value stream="CLMNLDAS">domain.lnd.nldas2_0224x0464_c110415.nc</value>
+      <value stream="CLMMOSARTTEST">domain.lnd.nldas2_0224x0464_c110415.nc</value>
       <value stream="CLMNLDAS2">domain.lnd.0.125nldas2_0.125nldas2.190410.nc</value>
       <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
       <value stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</value>
@@ -459,7 +459,7 @@
       <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar3Hrly</value>
       <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip3Hrly</value>
       <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL3Hrly</value>
-      <value stream="CLMNLDAS">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
+      <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
       <value stream="CLMNLDAS2.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Solar</value>
       <value stream="CLMNLDAS2.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Precip</value>
       <value stream="CLMNLDAS2.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/TPQWL</value>
@@ -537,7 +537,7 @@
       <value  stream="CLMGSWP3v1.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</value>
       <value  stream="CLMGSWP3v1.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</value>
-      <value  stream="CLMNLDAS">clmforc.nldas.%ym.nc</value>
+      <value  stream="CLMMOSARTTEST">clmforc.nldas.%ym.nc</value>
       <value  stream="CLMNLDAS2.Solar">ctsmforc.NLDAS2.0.125d.v1.Solr.%ym.nc</value>
       <value  stream="CLMNLDAS2.Precip">ctsmforc.NLDAS2.0.125d.v1.Prec.%ym.nc</value>
       <value  stream="CLMNLDAS2.TPQW">ctsmforc.NLDAS2.0.125d.v1.TPQWL.%ym.nc</value>
@@ -1890,7 +1890,7 @@
         PSRF     pbot
         FLDS     lwdn
       </value>
-      <value  stream="CLMNLDAS">
+      <value  stream="CLMMOSARTTEST">
         TBOT     tbot
         WIND     wind
         QBOT     shum
@@ -2110,7 +2110,7 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMNLDAS">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
@@ -2152,7 +2152,7 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMNLDAS">$DATM_CLMNCEP_YR_START</value>
+      <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">2010</value>
@@ -2220,7 +2220,7 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMNLDAS">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">2011</value>

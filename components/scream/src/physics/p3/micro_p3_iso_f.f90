@@ -49,6 +49,30 @@ interface
     real(kind=c_real),   intent(out) :: proc
   end subroutine access_lookup_table_coll_f
 
+  subroutine back_to_cell_average_f(lcldm,rcldm,icldm, qcacc,qrevp,qcaut,&
+    ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,&
+    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
+    qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: lcldm, rcldm, icldm
+    real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
+                                        nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,  &
+                                        nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, &
+                                        qrheti, nimlt, nccol, ncshdc, ncheti, nrcol,&
+                                        nislf, qidep, nrheti, nisub, qinuc, ninuc,  &
+                                        qiberg
+  end subroutine back_to_cell_average_f
+
+  subroutine prevent_ice_overdepletion_f(pres,t,qv,xxls,odt,    &
+     qidep,qisub) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: pres, t, qv, xxls, odt
+    real(kind=c_real), intent(inout) :: qidep, qisub
+
+  end subroutine prevent_ice_overdepletion_f
+
   subroutine cloud_water_conservation_f(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
     use iso_c_binding
@@ -91,6 +115,22 @@ interface
     real(kind=c_real), intent(inout)     :: nr
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
+
+  subroutine calc_rime_density_f(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol,vtrmi1,rhorime_c) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol
+    real(kind=c_real), intent(out) :: vtrmi1, rhorime_c
+  end subroutine calc_rime_density_f
+
+  subroutine cldliq_immersion_freezing_f(t,lamc,mu_c,cdist1,qc_incld,qcheti,ncheti) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld
+    real(kind=c_real), intent(out) :: qcheti, ncheti
+  end subroutine cldliq_immersion_freezing_f
 
   subroutine rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
     use iso_c_binding
@@ -353,6 +393,28 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine ice_deposition_sublimation_f
 
+  subroutine ice_relaxation_timescale_f(rho, temp, rhofaci, f1pr05, f1pr14,   &
+                                        dv, mu, sc, qitot_incld, nitot_incld, &
+                                        epsi, epsi_tot) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr05, f1pr14, &
+                                            dv, mu, sc, qitot_incld, nitot_incld
+    real(kind=c_real), intent(out) :: epsi
+    real(kind=c_real), intent(inout) :: epsi_tot
+  end subroutine ice_relaxation_timescale_f
+
+  subroutine ice_nucleation_f(temp, inv_rho, nitot, naai, supi, odt, &
+                              log_predictNc, qinuc, ninuc) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: temp, inv_rho, nitot, naai, supi, odt
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+    real(kind=c_real), intent(inout) :: qinuc, ninuc
+ end subroutine ice_nucleation_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use
@@ -369,6 +431,16 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     ! return
     real(kind=c_real)               :: cxx_pow
   end function cxx_pow
+
+  function cxx_sqrt(base) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+
+    ! return
+    real(kind=c_real)               :: cxx_sqrt
+  end function cxx_sqrt
 
   function cxx_cbrt(base) bind(C)
     use iso_c_binding

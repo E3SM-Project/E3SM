@@ -322,7 +322,7 @@ class GenericXML(object):
         """
         Write an xml file from data in self
         """
-        self.check_timestamp()
+        #self.check_timestamp()
 
         if not (self.needsrewrite or force_write):
             return
