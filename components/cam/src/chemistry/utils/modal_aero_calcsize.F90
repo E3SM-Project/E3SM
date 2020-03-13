@@ -596,11 +596,16 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
       do_adjust = do_adjust_default
    end if
 
+   !hardwire do_adjust for testing!BSINGH
+   do_adjust = .false. !BSINGH
+
    if (present(do_aitacc_transfer_in)) then
       do_aitacc_transfer = do_aitacc_transfer_in
    else
       do_aitacc_transfer = do_aitacc_transfer_default
    end if
+   !hardwire do_aitacc_transfer for testing !BSINGH
+   do_aitacc_transfer = .false. !BSINGH
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -755,16 +760,14 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
       v2nyyrl = v2nyy*frelaxadj
       dgnxx = dgnumhi_amode(n)
       dgnyy = dgnumlo_amode(n)
-      !if ( do_aitacc_transfer ) then !BALLI
-      if ( .false. ) then !BALLI
+      if ( do_aitacc_transfer ) then
          if (n == nait) v2nxx = v2nxx/1.0e6_r8
          if (n == nacc) v2nyy = v2nyy*1.0e6_r8
          v2nxxrl = v2nxx/frelaxadj   ! NEW
          v2nyyrl = v2nyy*frelaxadj   ! NEW
       end if
 
-      !if (do_adjust) then!BALLI
-      if (.false.) then !BALLI
+      if (do_adjust) then
          dotend(lna) = .true.
          dotendqqcw(lnc) = .true.
       end if
@@ -779,8 +782,7 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
             num_c0 = fldcw(i,k)
             num_c = max( 0.0_r8, num_c0 )
 
-            !if ( do_adjust) then!BALLI
-            if (.false.) then !BALLI
+            if ( do_adjust) then
 
                !
                ! do number adjustment for interstitial and activated particles
@@ -958,9 +960,7 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
    !
    ixfer_ait2acc_sv(:,:) = 0
    ixfer_acc2ait_sv(:,:) = 0
-   !if ( do_aitacc_transfer ) then !BALLI
-      ipair = 1!BALLI
-      if(.false.) then!BALLI
+   if ( do_aitacc_transfer ) then
 
       if (npair_csizxf .le. 0) then
          write( iulog, '(//a//)' )   &
@@ -1477,8 +1477,8 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
       ! get mode number mixing ratio
       call rad_cnst_get_mode_num(list_idx, n, 'a', state, pbuf, mode_num)
-      dgncur_a(1:ncol,:) = 0.0_r8
-      dgncur_a(1:ncol,:) = dgnum
+
+      dgncur_a(:,:) = dgnum
       dryvol_a(:,:) = 0.0_r8
 
       ! compute dry volume mixrats = 

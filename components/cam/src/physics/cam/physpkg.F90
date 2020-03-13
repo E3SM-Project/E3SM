@@ -12,7 +12,6 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
-use module_perturb
 
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use spmd_utils,       only: masterproc
@@ -2698,7 +2697,7 @@ if (l_tracer_aero) then
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
        
-       !call physics_update(state, ptend, ztodt, tend) !BALLI
+       !call physics_update(state, ptend, ztodt, tend) !BSINGH
 
 
        if (carma_do_wetdep) then
@@ -2718,7 +2717,7 @@ if (l_tracer_aero) then
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
 
-       !call physics_update(state, ptend, ztodt, tend)!BALLI
+       !call physics_update(state, ptend, ztodt, tend)!BSINGH
 
        ! check tracer integrals
        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
