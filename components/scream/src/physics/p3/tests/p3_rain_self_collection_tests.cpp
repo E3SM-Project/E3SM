@@ -32,7 +32,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
-    
+
     RainSelfCollectionData dc[max_pack_size] = {
       //  rho, qr_incld, nr_incld, nrslf
       {1.060E+00, 1.354E-03, 1.401E+04, 0.000E+00},
@@ -64,12 +64,12 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     Kokkos::deep_copy(dc_device, dc_host);
 
     //Get data from fortran
-  	for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       rain_self_collection(dc[i]);
-  	}
+    }
 
     //Run function from a kernal and copy results back to the host
-  	Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
       // Init pack inputs
       Spack rho_local, qr_incld_local, nr_incld_local, nrslf_local;
       for (Int s = 0; s < Spack::n; ++s) {
@@ -77,7 +77,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
         qr_incld_local[s] = dc_device(s).qr_incld;
         nr_incld_local[s] = dc_device(s).nr_incld;
         nrslf_local[s] = dc_device(s).nrslf;
-       }
+      }
 
       Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nrslf_local);
       // Copy results back into views
@@ -107,13 +107,14 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
 }; //TestRainselfCollection
 
-
 } // namespace unit_test
 } // p3
 } // scream
 
-namespace{
-  TEST_CASE("p3_rain_self_collection_test", "[p3_rain_self_collection_test"){
-    scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection::run_bfb();
-  }
+namespace {
+
+TEST_CASE("p3_rain_self_collection_test", "[p3_rain_self_collection_test"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection::run_bfb();
+}
+
 } // namespace

@@ -20,21 +20,18 @@ void Functions<S,D>
   constexpr Scalar rhow   = C::RhoH2O;
   constexpr Scalar pi     = C::Pi;
 
-  const auto qr_incld_not_small = qr_incld >= qsmall; 
-  
-  if (qr_incld_not_small.any()){
-    const Real dum1 = sp(280.e-6); 
-    const auto dum2 = pack::cbrt((qr_incld)/(pi*rhow*nr_incld)); 
+  const auto qr_incld_not_small = qr_incld >= qsmall;
+
+  if (qr_incld_not_small.any()) {
+    const Real dum1 = 280.e-6;
+    const auto dum2 = pack::cbrt((qr_incld)/(pi*rhow*nr_incld));
+
+    Spack dum;
     const auto dum2_lt_dum1 = dum2 < dum1;
-    const auto dum3 =sp(5.78)*nr_incld*qr_incld*rho; 
-    if (dum2_lt_dum1.any()){
-      nrslf.set(qr_incld_not_small && dum2_lt_dum1, dum3);//sp(5.78)*nr_incld*qr_incld*rho);
-    }
-    const auto dum2_ge_dum1 = dum2 >= dum1;  
-    if (dum2_ge_dum1.any()){
-      const auto dum = sp(2.0)-pack::exp(sp(2300.0)*(dum2-dum1));
-      nrslf.set(qr_incld_not_small && dum2_ge_dum1, dum*dum3);
-    }
+    dum.set(qr_incld_not_small && dum2_lt_dum1, 1);
+    dum.set(qr_incld_not_small && !dum2_lt_dum1, 2 - pack::exp(2300 * (dum2-dum1)));
+
+    nrslf.set(qr_incld_not_small, dum*sp(5.78)*nr_incld*qr_incld*rho);
   }
 }
 
