@@ -1231,7 +1231,7 @@ contains
     if (associated(displace)) then
        call dealloc_check(displace)
     endif
-    print *,__FILE__,__LINE__,compdof
+
 #ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
