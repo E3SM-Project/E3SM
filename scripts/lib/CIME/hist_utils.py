@@ -62,7 +62,7 @@ def copy_histfiles(case, suffix):
         num_copied += len(test_hists)
         for test_hist in test_hists:
             test_hist = os.path.join(rundir,test_hist)
-            if not test_hist.endswith('.nc'):
+            if not test_hist.endswith('.nc') or 'once' in os.path.basename(test_hist):
                 logger.info("Will not compare non-netcdf file {}".format(test_hist))
                 continue
             new_file = "{}.{}".format(test_hist, suffix)
