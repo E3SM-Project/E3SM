@@ -90,7 +90,7 @@ def create_namelists(self, component=None):
             run_sub_or_cmd(cmd, (caseroot), "buildnml",
                            (self, caseroot, compname), case=self)
 
-        logger.info("Finished creating component namelists, component {} models = {}".format(component, models))
+        logger.debug("Finished creating component namelists, component {} models = {}".format(component, models))
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
