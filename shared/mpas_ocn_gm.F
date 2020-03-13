@@ -452,7 +452,7 @@ contains
          dTdzSmooth(1:maxLevelCell(iCell)+1) = dTdzTop(maxLevelCell(iCell)+1)
          dSdzSmooth(1:maxLevelCell(iCell)+1) = dSdzTop(maxLevelCell(iCell)+1)
 
-         do nsmooth=1,2
+         do nsmooth=1,config_Redi_num_smooth_loops
            do k=2,maxLevelCell(iCell)
              dTdzSmooth(k) = (dTdzTop(k-1) + 2.0_RKIND*dTdzTop(k) + dTdzTop(k+1)) / 4.0_RKIND
              dSdzSmooth(k) = (dSdzTop(k-1) + 2.0_RKIND*dSdzTop(k) + dSdzTop(k+1)) / 4.0_RKIND
