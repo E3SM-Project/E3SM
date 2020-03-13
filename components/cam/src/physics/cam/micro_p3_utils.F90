@@ -198,7 +198,8 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
     cons4 = 1._rtype/(dbrk**3*pi*rhow)
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm
-    cons7 = 4._rtype*piov3*rhow*(1.e-6_rtype)**3
+    cons7 = 4._rtype*piov3*rhow*1.e-18_rtype
+!    cons7 = 4._rtype*piov3*rhow*(1.e-6_rtype)**3
 
     ! droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
     ! warm rain autoconversion/accretion option only (iparam = 1)
