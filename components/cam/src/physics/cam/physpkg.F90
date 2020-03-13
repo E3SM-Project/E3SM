@@ -1484,8 +1484,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-    if(icolprnt(lchnk)>0)write(102,*)'ac:',nstep
-    if(icolprnt(lchnk)>0)write(103,*)'ac:',nstep
+    
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,l_tracer_aero_out      = l_tracer_aero      &
@@ -2105,8 +2104,6 @@ subroutine tphysbc (ztodt,               &
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
-    if(icolprnt(lchnk)>0)write(102,*)'bc:',nstep
-    if(icolprnt(lchnk)>0)write(103,*)'bc:',nstep
 
     if (pergro_test_active) then 
        !call outfld calls

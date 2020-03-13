@@ -1,5 +1,5 @@
 module modal_aero_calcsize
-use module_perturb
+
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
@@ -463,10 +463,7 @@ do_aitacc_transfer_if_block2: &
          end do
       end if
    if ( masterproc ) write(iulog,'(a)') 'modal_aero_calcsize_init ALL DONE'
-   call addfld ('dryvol_a_sub', (/ 'lev' /), 'A', 'prg_test_units', 'pergro_longname',flag_xyfill=.true.)
-   call addfld ('dryvol_a_diag', (/ 'lev' /), 'A', 'prg_test_units', 'pergro_longname',flag_xyfill=.true.)
-   call add_default('dryvol_a_sub', 1, ' ')
-   call add_default('dryvol_a_diag', 1, ' ')
+
 #endif
 
 end subroutine modal_aero_calcsize_init
@@ -653,7 +650,6 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
             !    sgcur_a(i,k,n) = sigmag_amode(n)
             !    sgcur_c(i,k,n) = sigmag_amode(n)
             dgncur_a(i,k,n) = dgnum_amode(n)
-            if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_9:',dgncur_a(i,k,n),dgnum_amode(n)
             dgncur_c(i,k,n) = dgnum_amode(n)
             v2ncur_a(i,k,n) = voltonumb_amode(n)
             v2ncur_c(i,k,n) = voltonumb_amode(n)
@@ -886,15 +882,12 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
             if (drv_a > 0.0_r8) then
                if (num_a <= drv_a*v2nxx) then
                   dgncur_a(i,k,n) = dgnxx
-                  if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_8:',dgncur_a(i,k,n),dgncur_a(i,k,n),dgnxx
                   v2ncur_a(i,k,n) = v2nxx
                else if (num_a >= drv_a*v2nyy) then
                   dgncur_a(i,k,n) = dgnyy
-                  if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_7:',dgncur_a(i,k,n),dgncur_a(i,k,n),dgnyy
                   v2ncur_a(i,k,n) = v2nyy
                else
                   dgncur_a(i,k,n) = (drv_a/(dumfac*num_a))**third
-                  if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_6:',dgncur_a(i,k,n),drv_a,num_a,drv_a,v2nyy,dumfac
                   v2ncur_a(i,k,n) = num_a/drv_a
                end if
             end if
@@ -947,7 +940,6 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
       ! option 3 -- number and surface prognosed (variable dgnum and sigmag)
       !             this is not implemented
       !
-      if(n==1)call outfld('dryvol_a_sub', q(:,:,numptr_amode(n)), pcols, lchnk )
    end do  ! do n = 1, ntot_amode
 
 
@@ -1163,23 +1155,18 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
                   end if
 
                   if (drv_a > 0.0_r8) then
-                  !if (.false.) then !BALLI
                      if (num_a <= drv_a*voltonumbhi_amode(n)) then
                         dgncur_a(i,k,n) = dgnumhi_amode(n)
-                        if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_5:',dgncur_a(i,k,n),dgnumhi_amode(n)
                         v2ncur_a(i,k,n) = voltonumbhi_amode(n)
                      else if (num_a >= drv_a*voltonumblo_amode(n)) then
                         dgncur_a(i,k,n) = dgnumlo_amode(n)
-                        if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_4:',dgncur_a(i,k,n),dgnumlo_amode(n),num_a,drv_a,voltonumblo_amode(n),n
                         v2ncur_a(i,k,n) = voltonumblo_amode(n)
                      else
                         dgncur_a(i,k,n) = (drv_a/(dumfac*num_a))**third
-                        if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_3:',dgncur_a(i,k,n),drv_a,dumfac,num_a
                         v2ncur_a(i,k,n) = num_a/drv_a
                      end if
-                  else !BALLI
+                  else
                      dgncur_a(i,k,n) = dgnum_amode(n)
-                     if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1)write(102,*)'modal_aero_calcsize_diag_2:',dgncur_a(i,k,n),dgnum_amode(n)
                      v2ncur_a(i,k,n) = voltonumb_amode(n)
                   end if
                   
@@ -1404,17 +1391,13 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
 
 #endif
 
-if(icolprnt(lchnk)>0)write(102,*)'modal_aero_calcsize_diag_1:',dgncur_a(icolprnt(lchnk),kprnt,1),voltonumbhi_amode(1),voltonumblo_amode(1)
-!dgncur_a(:,:,:) = 1.e-5_r8 !BALLI
-
-
 end subroutine modal_aero_calcsize_sub
  
 
 !----------------------------------------------------------------------
 
 
-subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m,sw)
+subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    !-----------------------------------------------------------------------
    !
@@ -1426,7 +1409,6 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m,sw)
    !-----------------------------------------------------------------------
 
    ! arguments
-  logical,optional::sw
    type(physics_state), intent(in), target :: state   ! Physics state variables
    type(physics_buffer_desc), pointer :: pbuf(:)      ! physics buffer
 
@@ -1461,7 +1443,6 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m,sw)
    real(r8) :: v2nyy, v2nxx           ! voltonumblo/hi of current mode
    real(r8) :: sigmag, alnsg
    !-----------------------------------------------------------------------
-
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -1498,7 +1479,6 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m,sw)
       call rad_cnst_get_mode_num(list_idx, n, 'a', state, pbuf, mode_num)
       dgncur_a(1:ncol,:) = 0.0_r8
       dgncur_a(1:ncol,:) = dgnum
-      if(icolprnt(lchnk)>0 .and. n==1 .and. sw )write(103,*)'modal_aero_calcsize_diag_5:',dgncur_a(icolprnt(lchnk),kprnt),dgnum
       dryvol_a(:,:) = 0.0_r8
 
       ! compute dry volume mixrats = 
@@ -1539,26 +1519,17 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m,sw)
             if (drv_a > 0.0_r8) then
                if (num_a <= drv_a*v2nxx) then
                   dgncur_a(i,k) = dgnxx
-                  if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1 .and. sw )write(103,*)'modal_aero_calcsize_diag_4:',dgncur_a(i,k),dgnxx
                else if (num_a >= drv_a*v2nyy) then
                   dgncur_a(i,k) = dgnyy
-                  if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1  .and. sw)write(103,*)'modal_aero_calcsize_diag_3:',dgncur_a(i,k),num_a,drv_a,v2nyy
                else
                   dgncur_a(i,k) = (drv_a/(dumfac*num_a))**third
-                  if(icolprnt(lchnk)==i .and. k==kprnt .and. n==1  .and. sw)write(103,*)'modal_aero_calcsize_diag_2:',dgncur_a(i,k),drv_a,dumfac,num_a
                end if
-            else
-               call endrun('BALLI- else fro')
             end if
 
          end do
       end do
-      if(n==1)call outfld('dryvol_a_diag', mode_num, pcols, lchnk )
-      if(icolprnt(lchnk)>0.and. n==1.and.sw)write(103,*)'modal_aero_calcsize_diag_1:',dgncur_a(icolprnt(lchnk),kprnt),voltonumbhi,voltonumblo,dumfac
 
-!   dgncur_a(:,:) = 1.e-5_r8 !BALLI
    end do ! nmodes
-
 
 end subroutine modal_aero_calcsize_diag
 
