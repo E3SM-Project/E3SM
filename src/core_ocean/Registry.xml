@@ -373,6 +373,10 @@
       description="If true, the N2 limiting is applied to the horizontal diffusion term"
       possible_values=".true. or .false."
     />
+    <nml_option name="config_Redi_num_smooth_loops" type="integer" default_value="0" units="unitless"
+      description="Number of smoothing passes for vertical gradient in Triads"
+      possiblve_values="small integers, likely 0, 1, or 2"
+    />
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
