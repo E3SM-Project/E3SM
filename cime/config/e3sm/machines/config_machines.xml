@@ -3011,10 +3011,10 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
-        <command name="load">pgi/19.4</command>
+        <command name="load">pgi/19.9</command>
       </modules>
       <modules compiler="ibm">
-        <command name="load">xl/16.1.1-3</command>
+        <command name="load">xl/16.1.1-5</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
@@ -3030,19 +3030,19 @@
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
+	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
+	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
+	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
 
       <modules>
-         <command name="load">parallel-netcdf/1.8.1</command>
-         <command name="load">hdf5/1.10.3</command>
-       </modules>
+        <command name="load">parallel-netcdf/1.8.1</command>
+        <command name="load">hdf5/1.10.4</command>
+      </modules>
 
     </module_system>
     <!-- <RUNDIR>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/$CASE/run</RUNDIR> -->
