@@ -30,18 +30,16 @@ Tools_user:
 	rm -f $(SOURCEDIR)/$@/temp_files/*
 	./tools_autodoc.py
 
+# It's too easy to forget to run 'make api' before running 'make html',
+# so add a rule that ensures that the api documentation is regenerated
+# whenever regenerating the html.
+html: api
+
 clean: clean_api
 
-# The api documentation is built in the source tree. This leads to a
-# high potential for accidentally building the documentation using a
-# different version of the api documentation, if you have a build
-# already sitting around from a different branch and you forget to run
-# 'make api' before running 'make html'. We mitigate this risk by
-# ensuring that 'clean_api' is run whenever 'make clean' is run, and
-# having 'clean_api' remove any pre-existing generated api
-# documentation. (Note that all of the files removed here are built
-# using 'make api'; these are not - or at least, should not be - files
-# that exist in the repository.)
+# Note that all of the files removed here are built using 'make api';
+# these are not - or at least, should not be - files that exist in the
+# repository.
 clean_api:
 	rm -f $(SOURCEDIR)/CIME_api/*.rst
 	rm -f $(SOURCEDIR)/Tools_api/*.rst
