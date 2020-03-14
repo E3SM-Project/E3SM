@@ -50,7 +50,7 @@ contains
 
   end subroutine shoc_init_c
 
-  subroutine shoc_main_c(shcol,nlev,nlevi,dtime,nadv,host_dx, host_dy,thv,   &
+  subroutine shoc_main_c(shcol,nlev,nlevi,dtime,nadv,host_dx, host_dy, thv,  &
      zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
      wtracer_sfc, num_qtracers, w_field, exner,phis, host_dse, tke, thetal,  &
      qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, &
@@ -59,6 +59,7 @@ contains
     use shoc, only : shoc_main
 
     integer(kind=c_int), value, intent(in) :: shcol, nlev, nlevi, num_qtracers, nadv
+    real(kind=c_real), value, intent(in) :: dtime
     real(kind=c_real), intent(in), dimension(shcol) :: host_dx, host_dy
     real(kind=c_real), intent(in), dimension(shcol, nlev) :: zt_grid
     real(kind=c_real), intent(in), dimension(shcol, nlevi) :: zi_grid

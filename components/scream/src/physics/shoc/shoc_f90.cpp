@@ -9,77 +9,83 @@
 using scream::Real;
 using scream::Int;
 extern "C" {
-  void shoc_init_c(const char** lookup_file_dir, int* info);
+  void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
+                   Real zvir, Real latvap, Real latice, Real karman,
+                   Real* pref_mid, int nbot_shoc, int ntop_shoc);
   void shoc_use_cxx_c(bool use_cxx);
-  void shoc_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
-                 Real* qv, Real dt, Real* qitot, Real* qirim,
-                 Real* nitot, Real* birim, Real* pres,
-                 Real* dzq, Real* npccn, Real* naai, Int it, Real* prt_liq, Real* prt_sol, Int its,
-                 Int ite, Int kts, Int kte, Real* diag_ze,
-                 Real* diag_effc, Real* diag_effi, Real* diag_vmi,
-                 Real* diag_di, Real* diag_rhoi,
-                 bool log_predictNc,
-                 Real* pdel, Real* exner, Real* cmeiout, Real* prain,
-                 Real* nevapr, Real* prer_evap,
-                 Real* rflx, Real* sflx, // 1 extra column size
-                 Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot, 
-                 Real* p3_tend_out, Real* mu_c, Real* lamc, Real* liq_ice_exchange,
-                 Real* vap_liq_exchange, Real* vap_ice_exchange, Real* vap_cld_exchange);
+  void shoc_main_c(int shcol, int nlev, int nlevi, Real dtime, int nadv,
+                   Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
+                   Real* zi_grid, Real* pres, Real* presi, Real* pdel,
+                   Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc,
+                   Real* wtracer_sfc, int num_qtracers, Real* w_field,
+                   Real* exner, Real* phis, Real* host_dse, Real* tke,
+                   Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
+                   Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk,
+                   Real* shoc_ql, Real* shoc_cldfrac, Real* pblh,
+                   Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec,
+                   Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec,
+                   Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3,
+                   Real* wqls_sec, Real* brunt);
 }
 
 namespace scream {
 namespace shoc {
 
-FortranData::FortranData (Int ncol_, Int nlev_)
-  : ncol(ncol_), nlev(nlev_)
+FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_,
+                         Int num_qtracers_, Int nadv_)
+  : shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_qtracers(num_qtracers_),
+    nadv(nadv_)
 {
-  log_predictNc = true;
-  dt = -1; // model time step, s; set to invalid -1
-  it = 1;  // seems essentially unused
-  // In/out
-  qc = Array2("cloud liquid water mixing ratio, kg/kg", ncol, nlev);
-  nc = Array2("cloud liquid drop number, #/kg", ncol, nlev);
-  qr = Array2("rain water mixing ratio, kg/kg", ncol, nlev);
-  nr = Array2("rain drop number, #/kg", ncol, nlev);
-  qitot = Array2("total ice mass mixing ratio, kg/kg", ncol, nlev);
-  nitot = Array2("total ice number, #/kg", ncol, nlev);
-  qirim = Array2("rime ice mass mixing ratio, kg/kg", ncol, nlev);
-  birim = Array2("rime ice volume mixing ratio, m3/kg", ncol, nlev);
-  qv = Array2("water vapor mixing ratio, kg/kg", ncol, nlev);
-  th = Array2("potential temperature, K", ncol, nlev);
-  pres = Array2("pressure, Pa", ncol, nlev);
-  dzq = Array2("vertical grid spacing, m", ncol, nlev);
-  npccn = Array2("ccn activated number tendency, kg-1 s-1", ncol, nlev);
-  naai = Array2("activated nuclei concentration, kg-1", ncol, nlev);
-  pdel = Array2("pressure thickness, Pa", ncol, nlev);
-  exner = Array2("Exner expression", ncol, nlev);
-  // Out
-  prt_liq = Array1("precipitation rate, liquid  m/s", ncol);
-  prt_sol = Array1("precipitation rate, solid   m/s", ncol);
-  diag_ze = Array2("equivalent reflectivity, dBZ", ncol, nlev);
-  diag_effc = Array2("effective radius, cloud, m", ncol, nlev);
-  diag_effi = Array2("effective radius, ice, m", ncol, nlev);
-  diag_vmi = Array2("mass-weighted fall speed of ice, m/s", ncol, nlev);
-  diag_di = Array2("mean diameter of ice, m", ncol, nlev);
-  diag_rhoi = Array2("bulk density of ice, kg/m", ncol, nlev);
-  cmeiout = Array2("qitend due to deposition/sublimation ", ncol, nlev);
-  prain = Array2("Total precipitation (rain + snow)", ncol, nlev);
-  nevapr = Array2("evaporation of total precipitation (rain + snow)", ncol, nlev);
-  prer_evap = Array2("evaporation of rain", ncol, nlev);
-  rflx = Array2("grid-box average rain flux (kg m^-2 s^-1), pverp", ncol, nlev+1);
-  sflx = Array2("grid-box average ice/snow flux (kg m^-2 s^-1), pverp", ncol, nlev+1);
-  rcldm = Array2("Rain cloud fraction", ncol, nlev);
-  lcldm = Array2("Liquid cloud fraction", ncol, nlev);
-  icldm = Array2("Ice cloud fraction", ncol, nlev);
-  pratot = Array2("Cloud drop accretion by rain", ncol, nlev);
-  prctot = Array2("Cloud drop autoconversion to rain", ncol, nlev);
-  p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 49);
-  mu_c = Array2("Size distribution shape paramter", ncol, nlev);
-  lamc = Array2("Size distribution slope paramter", ncol, nlev);
-  liq_ice_exchange = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
-  vap_liq_exchange = Array2("sum of vap-liq phase change tendenices", ncol, nlev);
-  vap_ice_exchange = Array2("sum of vap-ice phase change tendenices", ncol, nlev);
-  vap_cld_exchange = Array2("sum of vap-cld phase change tendenices", ncol, nlev);
+  dtime = -1; // model time step [s]; set to invalid -1
+
+  // In variables
+  host_dx = Array1("grid spacing of host model in x direction [m]", shcol);
+  host_dy = Array1("grid spacing of host model in y direction [m]", shcol);
+  zt_grid = Array2("heights for thermo grid [m]", shcol, nlev);
+  zi_grid = Array2("heights for interface grid [m]", shcol, nlevi);
+  pres = Array2("Pressure levels on thermo grid [Pa]", shcol, nlev);
+  presi = Array2("Pressure levels on interface grid [Pa]", shcol, nlevi);
+  pdel = Array2("Differences in pressure levels [Pa]", shcol, nlev);
+  thv = Array2("Virtual potential temperature [K]", shcol, nlev);
+  w_field = Array2("Large-scale vertical velocity [m/s]", shcol, nlev);
+  wthl_sfc = Array1("Surface sensible heat flux [K m/s]", shcol);
+  wqw_sfc = Array1("Surface latent heat flux [kg/kg m/s]", shcol);
+  uw_sfc = Array1("Surface momentum flux (u direction) [m2/s2]", shcol);
+  vw_sfc = Array1("Surface momentum flux (v direction) [m2/s2]", shcol);
+  wtracer_sfc = Array2("Surface tracer flux [various]", shcol, num_qtracers);
+  exner = Array2("Exner function [-]", shcol, nlev);
+  phis = Array1("Host model surface geopotential height [m?]", shcol);
+
+  // In/out variables
+  host_dse = Array2("Dry static energy [J/kg]", shcol, nlev);
+  tke = Array2("Turbulent kinetic energy [m2/s2]", shcol, nlev);
+  thetal = Array2("Liquid water potential temperature [K]", shcol, nlev);
+  qw = Array2("Total water mixing ratio [kg/kg]", shcol, nlev);
+  u_wind = Array2("U wind component [m/s]", shcol, nlev);
+  v_wind = Array2("V wind component [m/s]", shcol, nlev);
+  wthv_sec = Array2("Buoyancy flux [K m/s]", shcol, nlev);
+  qtracers = Array3("Tracers [varies]", shcol, nlev, num_qtracers);
+  tk = Array2("Eddy coefficient for momentum [m2/s]", shcol, nlev);
+  tkh = Array2("Eddy coefficent for heat [m2/s]", shcol, nlev);
+
+  // Out variables (including diagnostics)
+  shoc_cldfrac = Array2("Cloud fraction [-]", shcol, nlev);
+  shoc_ql = Array2("Cloud liquid mixing ratio [kg/kg]", shcol, nlev);
+  pblh = Array1("Planetary boundary layer depth [m]", shcol);
+  shoc_mix = Array2("Turbulent length scale [m]", shcol, nlev);
+  w_sec = Array2("Vertical velocity variance [m2/s2]", shcol, nlev);
+  thl_sec = Array2("Temperature variance [K^2]", shcol, nlevi);
+  qw_sec = Array2("Moisture variance [kg2/kg2]", shcol, nlevi);
+  qwthl_sec = Array2("Temp moisture covariance [K kg/kg]", shcol, nlevi);
+  wthl_sec = Array2("Vertical heat flux [K m/s]", shcol, nlevi);
+  wqw_sec = Array2("Vertical moisture flux [K m/s]", shcol, nlevi);
+  wtke_sec = Array2("Vertical tke flux [m3/s3]", shcol, nlevi);
+  uw_sec = Array2("Vertical zonal momentum flux [m2/s2]", shcol, nlevi);
+  vw_sec = Array2("Vertical meridional momentum flux [m2/s2]", shcol, nlevi);
+  w3 = Array2("Third moment vertical velocity [m3/s3]", shcol, nlevi);
+  wqls_sec = Array2("Liquid water flux [kg/kg m/s]", shcol, nlev);
+  brunt = Array2("Brunt vaisala frequency [s-1]", shcol, nlev);
+  isotropy = Array2("Return to isotropic timescale [s]", shcol, nlev);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -94,19 +100,20 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
         {d_->name.extent_int(0), d_->name.extent_int(1), d_->name.extent_int(2)}, \
         d_->name.data(),                                                \
         d_->name.size()})
-  fdipb(qv); fdipb(th); fdipb(pres);
-  fdipb(dzq); fdipb(npccn); fdipb(naai); fdipb(qc); fdipb(nc); fdipb(qr); fdipb(nr);
-  fdipb(qitot); fdipb(nitot);
-  fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
-  fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
-  fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
-  fdipb(pdel); fdipb(exner); fdipb(cmeiout); fdipb(prain);
-  fdipb(nevapr); fdipb(prer_evap);
-  fdipb(rflx); fdipb(sflx);
-  fdipb(rcldm); fdipb(lcldm); fdipb(icldm); 
-  fdipb(pratot); fdipb(prctot); fdipb(p3_tend_out);
-  fdipb(mu_c); fdipb(lamc); fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
-  fdipb(vap_ice_exchange); fdipb(vap_cld_exchange);
+  fdipb(host_dx); fdipb(host_dy);
+  fdipb(zt_grid); fdipb(zi_grid); fdipb(pres); fdipb(presi); fdipb(pdel);
+  fdipb(thv); fdipb(w_field);
+  fdipb(wthl_sfc); fdipb(wqw_sfc); fdipb(uw_sfc); fdipb(vw_sfc);
+  fdipb(wtracer_sfc); fdipb(exner);
+  fdipb(phis);
+  fdipb(tk); fdipb(tkh);
+
+  fdipb(shoc_cldfrac); fdipb(shoc_ql);
+  fdipb(pblh);
+  fdipb(shoc_mix); fdipb(w_sec); fdipb(thl_sec); fdipb(qw_sec);
+  fdipb(qwthl_sec); fdipb(wthl_sec); fdipb(wqw_sec); fdipb(wtke_sec);
+  fdipb(uw_sec); fdipb(vw_sec); fdipb(w3); fdipb(wqls_sec); fdipb(isotropy);
+  fdipb(brunt);
 #undef fdipb
 }
 
@@ -116,51 +123,56 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void shoc_init (bool use_fortran) {
+void shoc_init(Int nlev, bool use_fortran) {
   static bool is_init = false;
   if (!is_init) {
-    static const char* dir = "./data";
-    Int info;
-    p3_init_c(&dir, &info);
-    scream_require_msg(info == 0, "p3_init_c returned info " << info);
+    using KT     = KokkosTypes<HostDevice>;
+    using Scalar = Real;
+    using Array1 = typename KT::template lview<Scalar*>;
+    using C = Constants<Scalar>;
+
+    auto pref_mid = Array1("reference pressures (unused)", nlev);
+    shoc_init_c((int)nlev, C::GGr, C::RAir, C::RH2O, C::CpAir, C::ZVir, C::LatVap,
+                C::LatIce, C::Karman, pref_mid.data(), (int)nlev, 1);
     is_init = true;
   }
   shoc_use_cxx_c(!use_fortran);
 }
 
-void shoc_main(const FortranData& d) {
-  shoc_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
-            d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
-            d.qirim.data(), d.nitot.data(), d.birim.data(),
-            d.pres.data(), d.dzq.data(), d.npccn.data(), d.naai.data(), d.it, d.prt_liq.data(),
-            d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
-            d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
-            d.diag_di.data(), d.diag_rhoi.data(),
-            d.log_predictNc,
-            d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
-            d.nevapr.data(), d.prer_evap.data(),
-            d.rflx.data(), d.sflx.data(),
-            d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-            d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
-            d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.vap_cld_exchange.data());
+void shoc_main(FortranData& d) {
+  shoc_main_c((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
+              d.host_dx.data(), d.host_dy.data(), d.thv.data(),
+              d.zt_grid.data(), d.zi_grid.data(), d.pres.data(), d.presi.data(),
+              d.pdel.data(), d.wthl_sfc.data(), d.wqw_sfc.data(), d.uw_sfc.data(),
+              d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers,
+              d.w_field.data(), d.exner.data(), d.phis.data(), d.host_dse.data(),
+              d.tke.data(), d.thetal.data(), d.qw.data(), d.u_wind.data(),
+              d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(), d.tkh.data(),
+              d.tk.data(), d.shoc_ql.data(), d.shoc_cldfrac.data(), d.pblh.data(),
+              d.shoc_mix.data(), d.isotropy.data(), d.w_sec.data(),
+              d.thl_sec.data(), d.qw_sec.data(), d.qwthl_sec.data(),
+              d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(),
+              d.uw_sec.data(), d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(),
+              d.brunt.data());
 }
 
 int test_FortranData () {
-  FortranData d(11, 72);
+  Int shcol = 1;
+  Int nlev = 128, num_tracers = 1;
+  Int nadv = 1;
+  FortranData d(shcol, nlev, nlev+1, num_tracers, nadv);
   return 0;
 }
 
 int test_shoc_init (bool use_fortran) {
   shoc_init(use_fortran);
-  SHOCGlobalForFortran::deinit();
   return 0;
 }
 
 int test_shoc_ic (bool use_fortran) {
-  const auto d = ic::Factory::create(ic::Factory::mixed);
-  shoc_init(use_fortran);
-  shoc_main(*d);
-  SHOCGlobalForFortran::deinit();
+//  const auto d = ic::Factory::create(ic::Factory::mixed);
+//  shoc_init(use_fortran);
+//  shoc_main(*d);
   return 0;
 }
 

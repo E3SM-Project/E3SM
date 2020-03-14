@@ -67,6 +67,7 @@ struct Functions
   //
   // --------- Functions ---------
   //
+}; // struct Functions
 
 } // namespace shoc
 } // namespace scream

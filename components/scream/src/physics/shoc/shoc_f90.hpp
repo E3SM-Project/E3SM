@@ -21,22 +21,29 @@ struct FortranData {
   using Array2 = typename KT::template lview<Scalar**>;
   using Array3 = typename KT::template lview<Scalar***>;
 
-  bool log_predictNc;
-  const Int ncol, nlev;
+  Int shcol, nlev, nlevi, num_qtracers, nadv;
 
   // In
-  Real dt;
-  Int it;
-  Array2 qv, th, pres, dzq, npccn, naai, qc, nc, qr, nr,  qitot, nitot, qirim, birim, pdel, exner;
-  // Out
-  Array1 prt_liq, prt_sol;
-  Array2 diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, cmeiout, prain, nevapr, prer_evap, rflx, sflx, rcldm, lcldm, icldm;
-  Array2 pratot, prctot;
-  Array3 p3_tend_out;
-  Array2 mu_c, lamc;
-  Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange,vap_cld_exchange;
+  Real dtime;
+  Array1 host_dx, host_dy;
+  Array2 zt_grid, zi_grid, pres, presi, pdel, thv, w_field;
+  Array1 wthl_sfc, wqw_sfc, uw_sfc, vw_sfc;
+  Array2 wtracer_sfc, exner;
+  Array1 phis;
 
-  FortranData(Int ncol, Int nlev);
+  // In-out
+  Array2 host_dse, tke, thetal, qw, u_wind, v_wind, wthv_sec;
+  Array3 qtracers;
+  Array2 tk, tkh;
+
+  // Out
+  Array2 shoc_cldfrac, shoc_ql;
+  Array1 pblh;
+  Array2 shoc_mix, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec,
+         wtke_sec, uw_sec, vw_sec, w3, wqls_sec, isotropy, brunt;
+
+  FortranData() = delete;
+  FortranData(Int shcol, Int nlev, Int nlevi, Int num_qtracers, Int nadv);
 };
 
 // Iterate over a FortranData's arrays. For examples, see Baseline::write, read.
@@ -61,11 +68,14 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void shoc_init(bool use_fortran=false);
-void shoc_main(const FortranData& d);
+// Initialize SHOC with the given number of levels.
+void shoc_init(Int nlev, bool use_fortran=false);
+
+// Run SHOC subroutines, populating inout and out fields of d.
+void shoc_main(FortranData& d);
 
 // We will likely want to remove these checks in the future, as we're not tied
-// to the exact implementation or arithmetic in P3. For now, these checks are
+// to the exact implementation or arithmetic in SHOC. For now, these checks are
 // here to establish that the initial regression-testing code gives results that
 // match the python f2py tester, without needing a data file.
 Int check_against_python(const FortranData& d);
