@@ -555,16 +555,15 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_wi
 ##############################################################
 
 
-def signed_distance_from_geojson(geojson_data, lon_grd, lat_grd,
-                                 max_length=None):  # {{{
+def signed_distance_from_geojson(fc, lon_grd, lat_grd, max_length=None):  # {{{
     """
     Get the distance for each point on a lon/lat grid from the closest point
     on the boundary of the geojson regions.
 
     Parameters
     ----------
-    geojson_data : geojson dict
-        The shapes to be rasterized
+    fc : geometrics_features.FeatureCollection
+        The regions to be rasterized
     lon_grd : numpy.ndarray
         A 1D array of evenly spaced longitude values
     lat_grd : numpy.ndarray
@@ -579,24 +578,24 @@ def signed_distance_from_geojson(geojson_data, lon_grd, lat_grd,
        A 2D field of distances (negative inside the region, positive outside)
        to the shape boundary
     """
-    distance = distance_from_geojson(geojson_data, lon_grd, lat_grd,
+    distance = distance_from_geojson(fc, lon_grd, lat_grd,
                                      nn_search='flann', max_length=max_length)
 
-    mask = mask_from_geojson(geojson_data, lon_grd, lat_grd)
+    mask = mask_from_geojson(fc, lon_grd, lat_grd)
 
     signed_distance = (-2.0 * mask + 1.0) * distance
     return signed_distance
 
 
-def mask_from_geojson(geojson_data, lon_grd, lat_grd):  # {{{
+def mask_from_geojson(fc, lon_grd, lat_grd):  # {{{
     """
     Make a rasterized mask on a lon/lat grid from shapes (geojson multipolygon
     data).
 
     Parameters
     ----------
-    geojson_data : geojson dict
-        The shapes to be rasterized
+    fc : geometrics_features.FeatureCollection
+        The regions to be rasterized
     lon_grd : numpy.ndarray
         A 1D array of evenly spaced longitude values
     lat_grd : numpy.ndarray
@@ -621,7 +620,7 @@ def mask_from_geojson(geojson_data, lon_grd, lat_grd):  # {{{
                        0.0, dlat, lat_grd[0])
 
     shapes = []
-    for feature in geojson_data['features']:
+    for feature in fc.features:
         # a list of feature geometries and mask values (always 1.0)
         shapes.append((feature['geometry'], 1.0))
 
@@ -629,16 +628,16 @@ def mask_from_geojson(geojson_data, lon_grd, lat_grd):  # {{{
     return mask  # }}}
 
 
-def distance_from_geojson(geojson_data, lon_grd, lat_grd, nn_search,
-                          max_length=None):  # {{{
+def distance_from_geojson(fc, lon_grd, lat_grd, nn_search, max_length=None):
+    # {{{
     """
     Get the distance for each point on a lon/lat grid from the closest point
     on the boundary of the geojson regions.
 
     Parameters
     ----------
-    geojson_data : geojson dict
-        The shapes to be rasterized
+    fc : geometrics_features.FeatureCollection
+        The regions to be rasterized
     lon_grd : numpy.ndarray
         A 1D array of evenly spaced longitude values
     lat_grd : numpy.ndarray
@@ -660,7 +659,7 @@ def distance_from_geojson(geojson_data, lon_grd, lat_grd, nn_search,
     print("   Finding region boundaries")
     boundary_lon = []
     boundary_lat = []
-    for feature in geojson_data['features']:
+    for feature in fc.features:
         # get the boundary of each shape
         shape = shapely.geometry.shape(feature['geometry']).boundary
         if max_length is not None:
