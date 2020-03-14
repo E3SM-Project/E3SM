@@ -1,7 +1,7 @@
-#include "p3_f90.hpp"
-#include "p3_functions_f90.hpp"
-#include "p3_constants.hpp"
-#include "p3_ic_cases.hpp"
+#include "shoc_f90.hpp"
+#include "shoc_functions_f90.hpp"
+#include "shoc_constants.hpp"
+//#include "shoc_ic_cases.hpp"
 
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
@@ -9,12 +9,9 @@
 using scream::Real;
 using scream::Int;
 extern "C" {
-  void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RhoH2O, 
-                 Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce, 
-                 Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
-  void p3_init_c(const char** lookup_file_dir, int* info);
-  void p3_use_cxx_c(bool use_cxx);
-  void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
+  void shoc_init_c(const char** lookup_file_dir, int* info);
+  void shoc_use_cxx_c(bool use_cxx);
+  void shoc_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
                  Real* dzq, Real* npccn, Real* naai, Int it, Real* prt_liq, Real* prt_sol, Int its,
@@ -31,7 +28,7 @@ extern "C" {
 }
 
 namespace scream {
-namespace p3 {
+namespace shoc {
 
 FortranData::FortranData (Int ncol_, Int nlev_)
   : ncol(ncol_), nlev(nlev_)
@@ -119,28 +116,20 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void micro_p3_utils_init () {
-  using c = Constants<Real>;
-  micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RhoH2O, 
-                 c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce, 
-                 c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
-}
-
-void p3_init (bool use_fortran) {
+void shoc_init (bool use_fortran) {
   static bool is_init = false;
   if (!is_init) {
-    micro_p3_utils_init();
     static const char* dir = "./data";
     Int info;
     p3_init_c(&dir, &info);
     scream_require_msg(info == 0, "p3_init_c returned info " << info);
     is_init = true;
   }
-  p3_use_cxx_c(!use_fortran);
+  shoc_use_cxx_c(!use_fortran);
 }
 
-void p3_main (const FortranData& d) {
-  p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
+void shoc_main(const FortranData& d) {
+  shoc_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
             d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(),
             d.pres.data(), d.dzq.data(), d.npccn.data(), d.naai.data(), d.it, d.prt_liq.data(),
@@ -161,19 +150,19 @@ int test_FortranData () {
   return 0;
 }
 
-int test_p3_init (bool use_fortran) {
-  p3_init(use_fortran);
-  P3GlobalForFortran::deinit();
+int test_shoc_init (bool use_fortran) {
+  shoc_init(use_fortran);
+  SHOCGlobalForFortran::deinit();
   return 0;
 }
 
-int test_p3_ic (bool use_fortran) {
+int test_shoc_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
-  p3_init(use_fortran);
-  p3_main(*d);
-  P3GlobalForFortran::deinit();
+  shoc_init(use_fortran);
+  shoc_main(*d);
+  SHOCGlobalForFortran::deinit();
   return 0;
 }
 
-} // namespace p3
+} // namespace shoc
 } // namespace scream

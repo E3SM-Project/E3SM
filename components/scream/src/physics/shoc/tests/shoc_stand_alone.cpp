@@ -75,13 +75,13 @@ TEST_CASE("shoc-stand-alone", "") {
   }
 
   // TODO: get the field repo from the driver, and go get (one of)
-  //       the output(s) of P3, to check its numerical value (if possible)
+  //       the output(s) of SHOC, to check its numerical value (if possible)
 
-  // Finalize 
+  // Finalize
   ad.finalize();
   upgm.clean_up();
 
-  // If we got here, we were able to run p3
+  // If we got here, we were able to run SHOC
   REQUIRE(true);
 }
 } // empty namespace

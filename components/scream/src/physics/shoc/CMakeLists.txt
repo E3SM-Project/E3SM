@@ -18,7 +18,7 @@ set(SHOC_HEADERS
 
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
-  list(APPEND P3_SRCS
+  list(APPEND SHOC_SRCS
       )
 endif()
 

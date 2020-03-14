@@ -1,5 +1,5 @@
-#ifndef SCREAM_P3_F90_HPP
-#define SCREAM_P3_F90_HPP
+#ifndef SCREAM_SHOC_F90_HPP
+#define SCREAM_SHOC_F90_HPP
 
 #include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace scream {
-namespace p3 {
+namespace shoc {
 
 // Data format we can use to communicate with Fortran version.
 struct FortranData {
@@ -61,8 +61,8 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init(bool use_fortran=false);
-void p3_main(const FortranData& d);
+void shoc_init(bool use_fortran=false);
+void shoc_main(const FortranData& d);
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in P3. For now, these checks are
@@ -71,10 +71,10 @@ void p3_main(const FortranData& d);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_p3_init(bool use_fortran);
-int test_p3_ic(bool use_fortran);
+int test_shoc_init(bool use_fortran);
+int test_shoc_ic(bool use_fortran);
 
-}  // namespace p3
+}  // namespace shoc
 }  // namespace scream
 
 #endif

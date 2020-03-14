@@ -4,7 +4,7 @@
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
 #include "share/scream_workspace.hpp"
-#include "p3_constants.hpp"
+#include "shoc_constants.hpp"
 
 namespace scream {
 namespace shoc {

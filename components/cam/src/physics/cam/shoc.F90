@@ -1,5 +1,3 @@
-module shoc
-
 !--------------------------------------------------------------
 ! SHOC parameterization
 !   SHOC = Simplified Higher Order Closure
@@ -9,7 +7,28 @@ module shoc
 ! email: bogenschutz1@llnl.gov
 !--------------------------------------------------------------
 
+#define bfb_square(val) ((val)*(val))
+#define bfb_cube(val) ((val)*(val)*(val))
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+#  define bfb_pow(base, exp) cxx_pow(base, exp)
+#  define bfb_sqrt(base) cxx_sqrt(base)
+#  define bfb_cbrt(base) cxx_cbrt(base)
+#  define bfb_log(val) cxx_log(val)
+#  define bfb_exp(val) cxx_exp(val)
+#else
+#  define bfb_pow(base, exp) (base)**(exp)
+#  define bfb_sqrt(val) sqrt(val)
+#  define bfb_cbrt(base) (base)**(1._rtype/3._rtype)
+#  define bfb_log(val) log(val)
+#  define bfb_exp(val) exp(val)
+#endif
+
+module shoc
+
 implicit none
+
+logical :: use_cxx = .true.
 
 ! define r8 for double precision
 integer, parameter, public :: r8 = selected_real_kind(12)
@@ -1139,22 +1158,22 @@ subroutine diag_third_shoc_moments(&
       bet2=ggr/thetal_zi(i,k)
 
       f0=thedz2 * bet2**3 * iso**4 * wthl_sec(i,k) * &
-        (thl_sec(i,kc)-thl_sec(i,kb))
+         (thl_sec(i,kc)-thl_sec(i,kb))
 
       f1=thedz2 * bet2**2 * iso**3 * (wthl_sec(i,k) * &
-        (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_r8 * &
-    w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))) ! bug here
+         (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_r8 * &
+         w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))) ! bug here
 
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
-        (w_sec(i,kc)-w_sec(i,k))+ 2._r8 * thedz2 * bet2 * &
-    isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb))
+         (w_sec(i,kc)-w_sec(i,k))+ 2._r8 * thedz2 * bet2 * &
+         isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb))
 
       f3=thedz2 * bet2 * isosqrt * w_sec_zi(i,k) * &
-        (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
-    bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,kc) - tke(i,k)))
+         (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
+         bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,kc) - tke(i,k)))
 
       f4=thedz * iso * w_sec_zi(i,k) * ((w_sec(i,kc) - w_sec(i,k) + &
-        (tke(i,kc) - tke(i,k))))
+         (tke(i,kc) - tke(i,k))))
 
       f5=thedz * iso * w_sec_zi(i,k) * (w_sec(i,kc) - w_sec(i,k))
 
@@ -1406,20 +1425,20 @@ subroutine shoc_assumed_pdf(&
         if (dothetal_skew) then
           tsign=abs(thl1_2-thl1_1)
 
-      if (tsign .gt. 0.4_r8) then
-        Skew_thl=1.2_r8*Skew_w
-      else if (tsign .le. 0.2_r8) then
-        Skew_thl=0.0_r8
-      else
-        Skew_thl=((1.2_r8*Skew_w)/0.2_r8)*(tsign-0.2_r8)
-      endif
+          if (tsign .gt. 0.4_r8) then
+            Skew_thl=1.2_r8*Skew_w
+          else if (tsign .le. 0.2_r8) then
+            Skew_thl=0.0_r8
+          else
+            Skew_thl=((1.2_r8*Skew_w)/0.2_r8)*(tsign-0.2_r8)
+          endif
         else
           Skew_thl = 0.0_r8
         endif
 
         thl2_1=min(100._r8,max(0._r8,(3._r8*thl1_2*(1._r8-a*thl1_1**2-(1._r8-a)*thl1_2**2) &
-        -(Skew_thl-a*thl1_1**3-(1._r8-a)*thl1_2**3))/ &
-        (3._r8*a*(thl1_2-thl1_1))))*thlsec
+               -(Skew_thl-a*thl1_1**3-(1._r8-a)*thl1_2**3))/ &
+               (3._r8*a*(thl1_2-thl1_1))))*thlsec
 
         thl2_2=min(100._r8,max(0._r8,(-3._r8*thl1_1*(1._r8-a*thl1_1**2-(1._r8-a)*thl1_2**2) &
           +(Skew_thl-a*thl1_1**3-(1._r8-a)*thl1_2**3))/ &
@@ -1491,8 +1510,8 @@ subroutine shoc_assumed_pdf(&
         r_qwthl_1=0._r8
       else
         r_qwthl_1=max(-1.0_r8,min(1.0_r8,(qwthlsec-a*(qw1_1-qw_first) &
-      *(thl1_1-thl_first)-(1._r8-a)*(qw1_2-qw_first) &
-      *(thl1_2-thl_first))/testvar))
+          *(thl1_1-thl_first)-(1._r8-a)*(qw1_2-qw_first) &
+          *(thl1_2-thl_first))/testvar))
       endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1603,7 +1622,7 @@ subroutine shoc_assumed_pdf(&
         +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)
 
     enddo  ! end i loop here
-  enddo      ! end k loop here
+  enddo ! end k loop here
 
   return
 
@@ -1982,8 +2001,8 @@ subroutine shoc_length(&
 
     ! Look for cloud base in this column
     if (cldin(i,k) .gt. cldthresh .and. kl .eq. 0) then
-          kl=k
-        endif
+       kl=k
+    endif
 
         ! Look for cloud top in this column
     if (cldin(i,k) .gt. cldthresh .and. cldin(i,k-1) .le. cldthresh) then
@@ -1999,17 +2018,14 @@ subroutine shoc_length(&
         depth=(zt_grid(i,ku) - zt_grid(i,kl)) + dz_zt(i,kl)
         mmax=maxlen
         if (zt_grid(i,ku) .gt. maxlen) mmax=maxlen
-
             shoc_mix(i,ku:kl)=min(mmax,sqrt(1._r8/(((conv_var)/ &
               (depth*sqrt(tke(i,ku:kl))))**2+0.01_r8* &
               (brunt2(i,ku:kl)/tke(i,ku:kl))))/length_fac)
+        endif
 
+        kl=0
+        ku=0
       endif
-
-      kl=0
-      ku=0
-
-    endif
 
       enddo ! end k loop
 

@@ -23,62 +23,30 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
-  subroutine shoc_init_c(lookup_file_dir_c, info) bind(c)
-    use array_io_mod
-    use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables
+  subroutine shoc_init_c(nlev, gravit, rair, rh2o, cpair, &
+                         zvir, latvap, latice, karman, &
+                         pref_mid, nbot_shoc, ntop_shoc) bind(c)
+    use shoc, only: shoc_init
 
-    type(c_ptr), intent(in) :: lookup_file_dir_c
-    integer(kind=c_int), intent(out) :: info
+    integer(kind=c_int), value, intent(in) :: nlev ! number of levels
 
-    real(kind=c_real), dimension(150), target :: mu_r_table
-    real(kind=c_real), dimension(300,10), target :: vn_table, vm_table, revap_table
+    real(kind=c_real), value, intent(in)  :: gravit ! gravity
+    real(kind=c_real), value, intent(in)  :: rair   ! dry air gas constant
+    real(kind=c_real), value, intent(in)  :: rh2o   ! water vapor gas constant
+    real(kind=c_real), value, intent(in)  :: cpair  ! specific heat of dry air
+    real(kind=c_real), value, intent(in)  :: zvir   ! rh2o/rair - 1
+    real(kind=c_real), value, intent(in)  :: latvap ! latent heat of vaporization
+    real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
+    real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
 
-    character(len=256), pointer :: lookup_file_dir
-    character(kind=c_char, len=128) :: mu_r_filename, revap_filename, vn_filename, vm_filename
-    integer :: len
-    logical :: ok
-    character(len=16) :: p3_version="4"  ! TODO: Change to be dependent on table version and path specified in p3_functions.hpp
+    real(kind=c_real), intent(in), dimension(nlev) :: pref_mid ! reference pressures at midpoints
 
-    call c_f_pointer(lookup_file_dir_c, lookup_file_dir)
-    len = index(lookup_file_dir, C_NULL_CHAR) - 1
-    call p3_init_a(lookup_file_dir(1:len),p3_version)
+    integer(kind=c_int), value, intent(in) :: nbot_shoc ! Bottom level to which SHOC is applied
+    integer(kind=c_int), value, intent(in) :: ntop_shoc ! Top level to which SHOC is applied
 
-    info = 0
-    ok = .false.
-
-    call append_precision(mu_r_filename, c_char_"mu_r_table.dat")
-    call append_precision(revap_filename, c_char_"revap_table.dat")
-    call append_precision(vn_filename, c_char_"vn_table.dat")
-    call append_precision(vm_filename, c_char_"vm_table.dat")
-    ok = array_io_file_exists(mu_r_filename) .and. &
-         array_io_file_exists(revap_filename) .and. &
-         array_io_file_exists(vn_filename) .and. &
-         array_io_file_exists(vm_filename)
-    if (ok) then
-       ok = array_io_read(mu_r_filename, c_loc(mu_r_table), size(mu_r_table)) .and. &
-            array_io_read(revap_filename, c_loc(revap_table), size(revap_table)) .and. &
-            array_io_read(vn_filename, c_loc(vn_table), size(vn_table)) .and. &
-            array_io_read(vm_filename, c_loc(vm_table), size(vm_table))
-       if (.not. ok) then
-          print *, 'shoc_iso_c::shoc_init: One or more table files exists but gave a read error.'
-          info = -1
-       end if
-    end if
-
-    if (ok) then
-       call p3_set_tables(mu_r_table, revap_table, vn_table, vm_table)
-    else
-       call p3_init_b()
-       call p3_get_tables(mu_r_table, revap_table, vn_table, vm_table)
-       ok = array_io_write(mu_r_filename, c_loc(mu_r_table), size(mu_r_table)) .and. &
-            array_io_write(revap_filename, c_loc(revap_table), size(revap_table)) .and. &
-            array_io_write(vn_filename, c_loc(vn_table), size(vn_table)) .and. &
-            array_io_write(vm_filename, c_loc(vm_table), size(vm_table))
-       if (.not. ok) then
-          print *, 'shoc_iso_c::shoc_init: Error when writing table files.'
-          info = -1
-       end if
-    end if
+    call shoc_init(nlev, gravit, rair, rh2o, cpair, &
+              	   zvir, latvap, latice, karman, &
+              	   pref_mid, nbot_shoc, ntop_shoc)
 
   end subroutine shoc_init_c
 
