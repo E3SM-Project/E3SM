@@ -1,5 +1,384 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: 3-15-2020
+Tag: cime5.8.17
+Answer Changes: None
+Tests: scripts_regression_tests, aux_clm
+Dependencies: none
+
+Brief Summary:
+    - Separate mct and nuopc data, xcpl and stub components
+    - Update pio2
+    - Documentation: provide a version dropdown menu and change theme
+    - Add ne5pg2_ne5pg2_mg37 grid
+    - Fix some issues
+
+User interface changes: None
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+4f1880756 Merge pull request #3439 from billsacks/versioned_docs3
+38c2b9f3c Merge pull request #3441 from jedwards4b/thunder_port
+5d9ff806a Merge pull request #3451 from jedwards4b/check_inputdata_fix
+3444503c2 Merge pull request #3449 from ESMCI/jgfouca/improve_case_setup_clean
+02a8eebaa fix default for PIO_REARRANGER
+49e82c611 Merge pull request #3447 from jedwards4b/pio2_update
+ada1f0901 Merge pull request #3445 from ESMCI/fischer/ne5pg2
+bbba1afdb Merge pull request #3444 from alperaltuntas/datm_mesh_tol
+acc2d239c Merge commit 'e5265f03a6a8e1806e1b463b00c006b365e149d4'
+fadc3ee16 resolve conflicts
+614b3117c Merge pull request #3440 from ESMCI/fischer/aq_scam
+328e3872a Merge pull request #3392 from ESMCI/mvertens/new_component_directories3
+a93ced5eb need to explicitly state compiler used
+bf09ad8e8 minor change to get FFLAGS
+20856d803 Merge pull request #3431 from jedwards4b/complete_cprnc_fix
+7fd3daebc Merge pull request #3430 from ESMCI/jgfouca/sharedlib_bld_serialization
+e75142fae Merge pull request #3424 from ESMCI/cprnc_build_machine
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/e3sm/config_files.xml
+M	config/ufs/config_files.xml
+M	config/ufs/config_inputdata.xml
+M	config/ufs/machines/config_batch.xml
+M	config/ufs/machines/config_compilers.xml
+M	config/ufs/machines/config_machines.xml
+M	config/ufs/machines/config_workflow.xml
+M	config/ufs/machines/template.chgres.run
+M	config/ufs/machines/template.gfs_post.run
+M	doc/README
+D	doc/source/_static
+A	doc/source/_static/pop_ver.js
+A	doc/source/_templates/footer.html
+A	doc/source/_templates/layout.html
+M	doc/source/conf.py
+M	scripts/lib/CIME/SystemTests/pre.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/tests/CMakeLists.txt
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.cprnc
+D	src/components/data_comps/datm/doc/bookinfo.xml
+D	src/components/data_comps/datm/doc/datacomps.xml
+D	src/components/data_comps/datm/doc/intro.xml
+D	src/components/data_comps/datm/doc/rundocbook.csh
+D	src/components/data_comps/datm/doc/streams.xml
+D	src/components/data_comps/datm/doc/ug.xml
+D	src/components/data_comps/docn/tools/pop_som_frc/SOM.pdf
+D	src/components/data_comps/dwav/bld/README
+R100	src/components/data_comps/datm/cime_config/buildlib	src/components/data_comps_mct/datm/cime_config/buildlib
+R100	src/components/data_comps/datm/cime_config/buildnml	src/components/data_comps_mct/datm/cime_config/buildnml
+R100	src/components/data_comps/datm/cime_config/config_archive.xml	src/components/data_comps_mct/datm/cime_config/config_archive.xml
+R100	src/components/data_comps/datm/cime_config/config_component.xml	src/components/data_comps_mct/datm/cime_config/config_component.xml
+R100	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml	src/components/data_comps_mct/datm/cime_config/namelist_definition_datm.xml
+R100	src/components/data_comps/datm/cime_config/user_nl_datm	src/components/data_comps_mct/datm/cime_config/user_nl_datm
+R100	src/components/data_comps/datm/mct/atm_comp_mct.F90	src/components/data_comps_mct/datm/src/atm_comp_mct.F90
+R100	src/components/data_comps/datm/mct/datm_comp_mod.F90	src/components/data_comps_mct/datm/src/datm_comp_mod.F90
+R100	src/components/data_comps/datm/mct/datm_shr_mod.F90	src/components/data_comps_mct/datm/src/datm_shr_mod.F90
+R100	src/components/data_comps/desp/cime_config/buildlib	src/components/data_comps_mct/desp/cime_config/buildlib
+R099	src/components/data_comps/desp/cime_config/buildnml	src/components/data_comps_mct/desp/cime_config/buildnml
+R100	src/components/data_comps/desp/cime_config/config_component.xml	src/components/data_comps_mct/desp/cime_config/config_component.xml
+R100	src/components/data_comps/desp/cime_config/namelist_definition_desp.xml	src/components/data_comps_mct/desp/cime_config/namelist_definition_desp.xml
+R100	src/components/data_comps/desp/cime_config/user_nl_desp	src/components/data_comps_mct/desp/cime_config/user_nl_desp
+R100	src/components/data_comps/desp/desp_comp_mod.F90	src/components/data_comps_mct/desp/desp_comp_mod.F90
+R100	src/components/data_comps/desp/esp_utils.F90	src/components/data_comps_mct/desp/esp_utils.F90
+R100	src/components/data_comps/desp/mct/esp_comp_mct.F90	src/components/data_comps_mct/desp/src/esp_comp_mct.F90
+R100	src/components/data_comps/dice/cime_config/buildlib	src/components/data_comps_mct/dice/cime_config/buildlib
+R100	src/components/data_comps/dice/cime_config/buildnml	src/components/data_comps_mct/dice/cime_config/buildnml
+R100	src/components/data_comps/dice/cime_config/config_archive.xml	src/components/data_comps_mct/dice/cime_config/config_archive.xml
+R100	src/components/data_comps/dice/cime_config/config_component.xml	src/components/data_comps_mct/dice/cime_config/config_component.xml
+R100	src/components/data_comps/dice/cime_config/namelist_definition_dice.xml	src/components/data_comps_mct/dice/cime_config/namelist_definition_dice.xml
+R100	src/components/data_comps/dice/cime_config/user_nl_dice	src/components/data_comps_mct/dice/cime_config/user_nl_dice
+R100	src/components/data_comps/dice/mct/dice_comp_mod.F90	src/components/data_comps_mct/dice/src/dice_comp_mod.F90
+R100	src/components/data_comps/dice/mct/dice_flux_atmice_mod.F90	src/components/data_comps_mct/dice/src/dice_flux_atmice_mod.F90
+R100	src/components/data_comps/dice/mct/dice_shr_mod.F90	src/components/data_comps_mct/dice/src/dice_shr_mod.F90
+R100	src/components/data_comps/dice/mct/ice_comp_mct.F90	src/components/data_comps_mct/dice/src/ice_comp_mct.F90
+R100	src/components/data_comps/dlnd/cime_config/buildlib	src/components/data_comps_mct/dlnd/cime_config/buildlib
+R100	src/components/data_comps/dlnd/cime_config/buildnml	src/components/data_comps_mct/dlnd/cime_config/buildnml
+R100	src/components/data_comps/dlnd/cime_config/config_archive.xml	src/components/data_comps_mct/dlnd/cime_config/config_archive.xml
+R100	src/components/data_comps/dlnd/cime_config/config_component.xml	src/components/data_comps_mct/dlnd/cime_config/config_component.xml
+R100	src/components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml	src/components/data_comps_mct/dlnd/cime_config/namelist_definition_dlnd.xml
+R100	src/components/data_comps/dlnd/cime_config/user_nl_dlnd	src/components/data_comps_mct/dlnd/cime_config/user_nl_dlnd
+R100	src/components/data_comps/dlnd/mct/dlnd_comp_mod.F90	src/components/data_comps_mct/dlnd/src/dlnd_comp_mod.F90
+R100	src/components/data_comps/dlnd/mct/dlnd_shr_mod.F90	src/components/data_comps_mct/dlnd/src/dlnd_shr_mod.F90
+R100	src/components/data_comps/dlnd/mct/lnd_comp_mct.F90	src/components/data_comps_mct/dlnd/src/lnd_comp_mct.F90
+R100	src/components/data_comps/docn/cime_config/buildlib	src/components/data_comps_mct/docn/cime_config/buildlib
+R100	src/components/data_comps/docn/cime_config/buildnml	src/components/data_comps_mct/docn/cime_config/buildnml
+R100	src/components/data_comps/docn/cime_config/config_archive.xml	src/components/data_comps_mct/docn/cime_config/config_archive.xml
+R100	src/components/data_comps/docn/cime_config/config_component.xml	src/components/data_comps_mct/docn/cime_config/config_component.xml
+R100	src/components/data_comps/docn/cime_config/namelist_definition_docn.xml	src/components/data_comps_mct/docn/cime_config/namelist_definition_docn.xml
+R100	src/components/data_comps/docn/cime_config/user_nl_docn	src/components/data_comps_mct/docn/cime_config/user_nl_docn
+R099	src/components/data_comps/docn/mct/docn_comp_mod.F90	src/components/data_comps_mct/docn/src/docn_comp_mod.F90
+R100	src/components/data_comps/docn/mct/docn_shr_mod.F90	src/components/data_comps_mct/docn/src/docn_shr_mod.F90
+R100	src/components/data_comps/docn/mct/ocn_comp_mct.F90	src/components/data_comps_mct/docn/src/ocn_comp_mct.F90
+R100	src/components/data_comps/docn/tools/pop_som_frc/README	src/components/data_comps_mct/docn/tools/pop_som_frc/README
+R100	src/components/data_comps/docn/tools/pop_som_frc/SOM.doc	src/components/data_comps_mct/docn/tools/pop_som_frc/SOM.doc
+R100	src/components/data_comps/datm/doc/SOM.pdf	src/components/data_comps_mct/docn/tools/pop_som_frc/SOM.pdf
+R100	src/components/data_comps/docn/tools/pop_som_frc/pop_frc.csh	src/components/data_comps_mct/docn/tools/pop_som_frc/pop_frc.csh
+R100	src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlann.ncl	src/components/data_comps_mct/docn/tools/pop_som_frc/pop_frc_mlann.ncl
+R100	src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlt.ncl	src/components/data_comps_mct/docn/tools/pop_som_frc/pop_frc_mlt.ncl
+R100	src/components/data_comps/docn/tools/pop_som_frc/pop_interp.ncl	src/components/data_comps_mct/docn/tools/pop_som_frc/pop_interp.ncl
+R100	src/components/data_comps/docn/tools/pop_som_frc/read_from_mss.csh	src/components/data_comps_mct/docn/tools/pop_som_frc/read_from_mss.csh
+R100	src/components/data_comps/docn/tools/pop_som_frc/read_from_mss_month.csh	src/components/data_comps_mct/docn/tools/pop_som_frc/read_from_mss_month.csh
+R100	src/components/data_comps/drof/cime_config/buildlib	src/components/data_comps_mct/drof/cime_config/buildlib
+R100	src/components/data_comps/drof/cime_config/buildnml	src/components/data_comps_mct/drof/cime_config/buildnml
+R100	src/components/data_comps/drof/cime_config/config_archive.xml	src/components/data_comps_mct/drof/cime_config/config_archive.xml
+R100	src/components/data_comps/drof/cime_config/config_component.xml	src/components/data_comps_mct/drof/cime_config/config_component.xml
+R100	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml	src/components/data_comps_mct/drof/cime_config/namelist_definition_drof.xml
+R100	src/components/data_comps/drof/cime_config/user_nl_drof	src/components/data_comps_mct/drof/cime_config/user_nl_drof
+R100	src/components/data_comps/drof/mct/drof_comp_mod.F90	src/components/data_comps_mct/drof/src/drof_comp_mod.F90
+R100	src/components/data_comps/drof/mct/drof_shr_mod.F90	src/components/data_comps_mct/drof/src/drof_shr_mod.F90
+R100	src/components/data_comps/drof/mct/rof_comp_mct.F90	src/components/data_comps_mct/drof/src/rof_comp_mct.F90
+R100	src/components/data_comps/dwav/README	src/components/data_comps_mct/dwav/README
+R100	src/components/data_comps/dwav/cime_config/buildlib	src/components/data_comps_mct/dwav/cime_config/buildlib
+R100	src/components/data_comps/dwav/cime_config/buildnml	src/components/data_comps_mct/dwav/cime_config/buildnml
+R100	src/components/data_comps/dwav/cime_config/config_archive.xml	src/components/data_comps_mct/dwav/cime_config/config_archive.xml
+R100	src/components/data_comps/dwav/cime_config/config_component.xml	src/components/data_comps_mct/dwav/cime_config/config_component.xml
+R100	src/components/data_comps/dwav/cime_config/namelist_definition_dwav.xml	src/components/data_comps_mct/dwav/cime_config/namelist_definition_dwav.xml
+R100	src/components/data_comps/dwav/cime_config/user_nl_dwav	src/components/data_comps_mct/dwav/cime_config/user_nl_dwav
+R100	src/components/data_comps/dwav/mct/dwav_comp_mod.F90	src/components/data_comps_mct/dwav/src/dwav_comp_mod.F90
+R100	src/components/data_comps/dwav/mct/dwav_shr_mod.F90	src/components/data_comps_mct/dwav/src/dwav_shr_mod.F90
+R100	src/components/data_comps/dwav/mct/wav_comp_mct.F90	src/components/data_comps_mct/dwav/src/wav_comp_mct.F90
+R100	src/components/stub_comps/satm/cime_config/buildlib	src/components/data_comps_nuopc/datm/cime_config/buildlib
+A	src/components/data_comps_nuopc/datm/cime_config/buildnml
+A	src/components/data_comps_nuopc/datm/cime_config/config_archive.xml
+A	src/components/data_comps_nuopc/datm/cime_config/config_component.xml
+A	src/components/data_comps_nuopc/datm/cime_config/namelist_definition_datm.xml
+A	src/components/data_comps_nuopc/datm/cime_config/user_nl_datm
+R099	src/components/data_comps/datm/nuopc/atm_comp_nuopc.F90	src/components/data_comps_nuopc/datm/src/atm_comp_nuopc.F90
+R099	src/components/data_comps/datm/nuopc/datm_comp_mod.F90	src/components/data_comps_nuopc/datm/src/datm_comp_mod.F90
+R100	src/components/stub_comps/sesp/cime_config/buildlib	src/components/data_comps_nuopc/dice/cime_config/buildlib
+A	src/components/data_comps_nuopc/dice/cime_config/buildnml
+A	src/components/data_comps_nuopc/dice/cime_config/config_archive.xml
+A	src/components/data_comps_nuopc/dice/cime_config/config_component.xml
+A	src/components/data_comps_nuopc/dice/cime_config/namelist_definition_dice.xml
+A	src/components/data_comps_nuopc/dice/cime_config/user_nl_dice
+R097	src/components/data_comps/dice/nuopc/dice_comp_mod.F90	src/components/data_comps_nuopc/dice/src/dice_comp_mod.F90
+R100	src/components/data_comps/dice/nuopc/dice_flux_atmice_mod.F90	src/components/data_comps_nuopc/dice/src/dice_flux_atmice_mod.F90
+R099	src/components/data_comps/dice/nuopc/ice_comp_nuopc.F90	src/components/data_comps_nuopc/dice/src/ice_comp_nuopc.F90
+R100	src/components/stub_comps/sglc/cime_config/buildlib	src/components/data_comps_nuopc/dlnd/cime_config/buildlib
+A	src/components/data_comps_nuopc/dlnd/cime_config/buildnml
+A	src/components/data_comps_nuopc/dlnd/cime_config/config_archive.xml
+A	src/components/data_comps_nuopc/dlnd/cime_config/config_component.xml
+A	src/components/data_comps_nuopc/dlnd/cime_config/namelist_definition_dlnd.xml
+A	src/components/data_comps_nuopc/dlnd/cime_config/user_nl_dlnd
+R100	src/components/data_comps/dlnd/nuopc/dlnd_comp_mod.F90	src/components/data_comps_nuopc/dlnd/src/dlnd_comp_mod.F90
+R100	src/components/data_comps/dlnd/nuopc/lnd_comp_nuopc.F90	src/components/data_comps_nuopc/dlnd/src/lnd_comp_nuopc.F90
+R100	src/components/stub_comps/siac/cime_config/buildlib	src/components/data_comps_nuopc/docn/cime_config/buildlib
+A	src/components/data_comps_nuopc/docn/cime_config/buildnml
+A	src/components/data_comps_nuopc/docn/cime_config/config_archive.xml
+A	src/components/data_comps_nuopc/docn/cime_config/config_component.xml
+A	src/components/data_comps_nuopc/docn/cime_config/namelist_definition_docn.xml
+A	src/components/data_comps_nuopc/docn/cime_config/user_nl_docn
+R100	src/components/data_comps/docn/nuopc/docn_comp_mod.F90	src/components/data_comps_nuopc/docn/src/docn_comp_mod.F90
+R098	src/components/data_comps/docn/nuopc/ocn_comp_nuopc.F90	src/components/data_comps_nuopc/docn/src/ocn_comp_nuopc.F90
+R100	src/components/stub_comps/sice/cime_config/buildlib	src/components/data_comps_nuopc/drof/cime_config/buildlib
+A	src/components/data_comps_nuopc/drof/cime_config/buildnml
+A	src/components/data_comps_nuopc/drof/cime_config/config_archive.xml
+A	src/components/data_comps_nuopc/drof/cime_config/config_component.xml
+A	src/components/data_comps_nuopc/drof/cime_config/namelist_definition_drof.xml
+A	src/components/data_comps_nuopc/drof/cime_config/user_nl_drof
+R100	src/components/data_comps/drof/nuopc/drof_comp_mod.F90	src/components/data_comps_nuopc/drof/src/drof_comp_mod.F90
+R100	src/components/data_comps/drof/nuopc/rof_comp_nuopc.F90	src/components/data_comps_nuopc/drof/src/rof_comp_nuopc.F90
+R100	src/components/data_comps/dshr_nuopc/dshr_dfield_mod.F90	src/components/data_comps_nuopc/dshr_nuopc/dshr_dfield_mod.F90
+R100	src/components/data_comps/dshr_nuopc/dshr_fldlist_mod.F90	src/components/data_comps_nuopc/dshr_nuopc/dshr_fldlist_mod.F90
+R100	src/components/data_comps/dshr_nuopc/dshr_methods_mod.F90	src/components/data_comps_nuopc/dshr_nuopc/dshr_methods_mod.F90
+R100	src/components/data_comps/dshr_nuopc/dshr_nuopc_mod.F90	src/components/data_comps_nuopc/dshr_nuopc/dshr_nuopc_mod.F90
+R100	src/components/stub_comps/slnd/cime_config/buildlib	src/components/data_comps_nuopc/dwav/cime_config/buildlib
+A	src/components/data_comps_nuopc/dwav/cime_config/buildnml
+A	src/components/data_comps_nuopc/dwav/cime_config/config_archive.xml
+A	src/components/data_comps_nuopc/dwav/cime_config/config_component.xml
+A	src/components/data_comps_nuopc/dwav/cime_config/namelist_definition_dwav.xml
+A	src/components/data_comps_nuopc/dwav/cime_config/user_nl_dwav
+R100	src/components/data_comps/dwav/nuopc/dwav_comp_mod.F90	src/components/data_comps_nuopc/dwav/src/dwav_comp_mod.F90
+R100	src/components/data_comps/dwav/nuopc/wav_comp_nuopc.F90	src/components/data_comps_nuopc/dwav/src/wav_comp_nuopc.F90
+R100	src/components/stub_comps/socn/cime_config/buildlib	src/components/stub_comps_mct/satm/cime_config/buildlib
+R100	src/components/stub_comps/satm/cime_config/buildnml	src/components/stub_comps_mct/satm/cime_config/buildnml
+R100	src/components/stub_comps/satm/cime_config/config_component.xml	src/components/stub_comps_mct/satm/cime_config/config_component.xml
+R100	src/components/stub_comps/satm/mct/atm_comp_mct.F90	src/components/stub_comps_mct/satm/src/atm_comp_mct.F90
+R100	src/components/stub_comps/srof/cime_config/buildlib	src/components/stub_comps_mct/sesp/cime_config/buildlib
+R100	src/components/stub_comps/sesp/cime_config/buildnml	src/components/stub_comps_mct/sesp/cime_config/buildnml
+R100	src/components/stub_comps/sesp/cime_config/config_component.xml	src/components/stub_comps_mct/sesp/cime_config/config_component.xml
+R100	src/components/stub_comps/sesp/mct/esp_comp_mct.F90	src/components/stub_comps_mct/sesp/src/esp_comp_mct.F90
+R100	src/components/stub_comps/swav/cime_config/buildlib	src/components/stub_comps_mct/sglc/cime_config/buildlib
+R100	src/components/stub_comps/sglc/cime_config/buildnml	src/components/stub_comps_mct/sglc/cime_config/buildnml
+R100	src/components/stub_comps/sglc/cime_config/config_component.xml	src/components/stub_comps_mct/sglc/cime_config/config_component.xml
+R100	src/components/stub_comps/sglc/mct/glc_comp_mct.F90	src/components/stub_comps_mct/sglc/src/glc_comp_mct.F90
+R100	src/components/xcpl_comps/xatm/cime_config/buildlib	src/components/stub_comps_mct/siac/cime_config/buildlib
+R100	src/components/stub_comps/siac/cime_config/buildnml	src/components/stub_comps_mct/siac/cime_config/buildnml
+R100	src/components/stub_comps/siac/cime_config/config_component.xml	src/components/stub_comps_mct/siac/cime_config/config_component.xml
+R100	src/components/stub_comps/siac/mct/iac_comp_mct.F90	src/components/stub_comps_mct/siac/src/iac_comp_mct.F90
+R100	src/components/xcpl_comps/xglc/cime_config/buildlib	src/components/stub_comps_mct/sice/cime_config/buildlib
+R100	src/components/stub_comps/sice/cime_config/buildnml	src/components/stub_comps_mct/sice/cime_config/buildnml
+R100	src/components/stub_comps/sice/cime_config/config_component.xml	src/components/stub_comps_mct/sice/cime_config/config_component.xml
+R100	src/components/stub_comps/sice/mct/ice_comp_mct.F90	src/components/stub_comps_mct/sice/src/ice_comp_mct.F90
+R100	src/components/xcpl_comps/xice/cime_config/buildlib	src/components/stub_comps_mct/slnd/cime_config/buildlib
+R100	src/components/stub_comps/slnd/cime_config/buildnml	src/components/stub_comps_mct/slnd/cime_config/buildnml
+R100	src/components/stub_comps/slnd/cime_config/config_component.xml	src/components/stub_comps_mct/slnd/cime_config/config_component.xml
+R100	src/components/stub_comps/slnd/mct/lnd_comp_mct.F90	src/components/stub_comps_mct/slnd/src/lnd_comp_mct.F90
+R100	src/components/xcpl_comps/xlnd/cime_config/buildlib	src/components/stub_comps_mct/socn/cime_config/buildlib
+R100	src/components/stub_comps/socn/cime_config/buildnml	src/components/stub_comps_mct/socn/cime_config/buildnml
+R100	src/components/stub_comps/socn/cime_config/config_component.xml	src/components/stub_comps_mct/socn/cime_config/config_component.xml
+R100	src/components/stub_comps/socn/mct/ocn_comp_mct.F90	src/components/stub_comps_mct/socn/src/ocn_comp_mct.F90
+R100	src/components/xcpl_comps/xocn/cime_config/buildlib	src/components/stub_comps_mct/srof/cime_config/buildlib
+R100	src/components/stub_comps/srof/cime_config/buildnml	src/components/stub_comps_mct/srof/cime_config/buildnml
+R100	src/components/stub_comps/srof/cime_config/config_component.xml	src/components/stub_comps_mct/srof/cime_config/config_component.xml
+R100	src/components/stub_comps/srof/mct/rof_comp_mct.F90	src/components/stub_comps_mct/srof/src/rof_comp_mct.F90
+R100	src/components/xcpl_comps/xrof/cime_config/buildlib	src/components/stub_comps_mct/swav/cime_config/buildlib
+R100	src/components/stub_comps/swav/cime_config/buildnml	src/components/stub_comps_mct/swav/cime_config/buildnml
+R100	src/components/stub_comps/swav/cime_config/config_component.xml	src/components/stub_comps_mct/swav/cime_config/config_component.xml
+R100	src/components/stub_comps/swav/mct/wav_comp_mct.F90	src/components/stub_comps_mct/swav/src/wav_comp_mct.F90
+R100	src/components/xcpl_comps/xwav/cime_config/buildlib	src/components/stub_comps_nuopc/satm/cime_config/buildlib
+A	src/components/stub_comps_nuopc/satm/cime_config/buildnml
+A	src/components/stub_comps_nuopc/satm/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/sesp/cime_config/buildlib
+A	src/components/stub_comps_nuopc/sesp/cime_config/buildnml
+A	src/components/stub_comps_nuopc/sesp/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/sglc/cime_config/buildlib
+A	src/components/stub_comps_nuopc/sglc/cime_config/buildnml
+A	src/components/stub_comps_nuopc/sglc/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/siac/cime_config/buildlib
+A	src/components/stub_comps_nuopc/siac/cime_config/buildnml
+A	src/components/stub_comps_nuopc/siac/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/sice/cime_config/buildlib
+A	src/components/stub_comps_nuopc/sice/cime_config/buildnml
+A	src/components/stub_comps_nuopc/sice/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/slnd/cime_config/buildlib
+A	src/components/stub_comps_nuopc/slnd/cime_config/buildnml
+A	src/components/stub_comps_nuopc/slnd/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/socn/cime_config/buildlib
+A	src/components/stub_comps_nuopc/socn/cime_config/buildnml
+A	src/components/stub_comps_nuopc/socn/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/srof/cime_config/buildlib
+A	src/components/stub_comps_nuopc/srof/cime_config/buildnml
+A	src/components/stub_comps_nuopc/srof/cime_config/config_component.xml
+A	src/components/stub_comps_nuopc/swav/cime_config/buildlib
+A	src/components/stub_comps_nuopc/swav/cime_config/buildnml
+A	src/components/stub_comps_nuopc/swav/cime_config/config_component.xml
+A	src/components/xcpl_comps_mct/xatm/cime_config/buildlib
+R100	src/components/xcpl_comps/xatm/cime_config/buildnml	src/components/xcpl_comps_mct/xatm/cime_config/buildnml
+R100	src/components/xcpl_comps/xatm/cime_config/config_component.xml	src/components/xcpl_comps_mct/xatm/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xatm/mct/atm_comp_mct.F90	src/components/xcpl_comps_mct/xatm/src/atm_comp_mct.F90
+A	src/components/xcpl_comps_mct/xglc/cime_config/buildlib
+R100	src/components/xcpl_comps/xglc/cime_config/buildnml	src/components/xcpl_comps_mct/xglc/cime_config/buildnml
+R100	src/components/xcpl_comps/xglc/cime_config/config_component.xml	src/components/xcpl_comps_mct/xglc/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xglc/mct/glc_comp_mct.F90	src/components/xcpl_comps_mct/xglc/src/glc_comp_mct.F90
+A	src/components/xcpl_comps_mct/xice/cime_config/buildlib
+R100	src/components/xcpl_comps/xice/cime_config/buildnml	src/components/xcpl_comps_mct/xice/cime_config/buildnml
+R100	src/components/xcpl_comps/xice/cime_config/config_component.xml	src/components/xcpl_comps_mct/xice/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xice/mct/ice_comp_mct.F90	src/components/xcpl_comps_mct/xice/src/ice_comp_mct.F90
+A	src/components/xcpl_comps_mct/xlnd/cime_config/buildlib
+R100	src/components/xcpl_comps/xlnd/cime_config/buildnml	src/components/xcpl_comps_mct/xlnd/cime_config/buildnml
+R100	src/components/xcpl_comps/xlnd/cime_config/config_component.xml	src/components/xcpl_comps_mct/xlnd/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xlnd/mct/lnd_comp_mct.F90	src/components/xcpl_comps_mct/xlnd/src/lnd_comp_mct.F90
+A	src/components/xcpl_comps_mct/xocn/cime_config/buildlib
+R100	src/components/xcpl_comps/xocn/cime_config/buildnml	src/components/xcpl_comps_mct/xocn/cime_config/buildnml
+R100	src/components/xcpl_comps/xocn/cime_config/config_component.xml	src/components/xcpl_comps_mct/xocn/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xocn/mct/ocn_comp_mct.F90	src/components/xcpl_comps_mct/xocn/src/ocn_comp_mct.F90
+A	src/components/xcpl_comps_mct/xrof/cime_config/buildlib
+R100	src/components/xcpl_comps/xrof/cime_config/buildnml	src/components/xcpl_comps_mct/xrof/cime_config/buildnml
+R100	src/components/xcpl_comps/xrof/cime_config/config_component.xml	src/components/xcpl_comps_mct/xrof/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xrof/mct/rof_comp_mct.F90	src/components/xcpl_comps_mct/xrof/src/rof_comp_mct.F90
+R100	src/components/xcpl_comps/xshare/mct/dead_data_mod.F90	src/components/xcpl_comps_mct/xshare/dead_data_mod.F90
+R100	src/components/xcpl_comps/xshare/mct/dead_mct_mod.F90	src/components/xcpl_comps_mct/xshare/dead_mct_mod.F90
+R100	src/components/xcpl_comps/xshare/mct/dead_mod.F90	src/components/xcpl_comps_mct/xshare/dead_mod.F90
+A	src/components/xcpl_comps_mct/xwav/cime_config/buildlib
+R100	src/components/xcpl_comps/xwav/cime_config/buildnml	src/components/xcpl_comps_mct/xwav/cime_config/buildnml
+R100	src/components/xcpl_comps/xwav/cime_config/config_component.xml	src/components/xcpl_comps_mct/xwav/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xwav/mct/wav_comp_mct.F90	src/components/xcpl_comps_mct/xwav/src/wav_comp_mct.F90
+A	src/components/xcpl_comps_nuopc/xatm/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xatm/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xatm/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xatm/nuopc/atm_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xatm/src/atm_comp_nuopc.F90
+A	src/components/xcpl_comps_nuopc/xglc/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xglc/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xglc/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xglc/nuopc/glc_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xglc/src/glc_comp_nuopc.F90
+A	src/components/xcpl_comps_nuopc/xice/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xice/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xice/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xice/nuopc/ice_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xice/src/ice_comp_nuopc.F90
+A	src/components/xcpl_comps_nuopc/xlnd/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xlnd/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xlnd/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xlnd/nuopc/lnd_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xlnd/src/lnd_comp_nuopc.F90
+A	src/components/xcpl_comps_nuopc/xocn/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xocn/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xocn/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xocn/nuopc/ocn_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xocn/src/ocn_comp_nuopc.F90
+A	src/components/xcpl_comps_nuopc/xrof/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xrof/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xrof/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xrof/nuopc/rof_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xrof/src/rof_comp_nuopc.F90
+R100	src/components/xcpl_comps/xshare/nuopc/dead_methods_mod.F90	src/components/xcpl_comps_nuopc/xshare/dead_methods_mod.F90
+R100	src/components/xcpl_comps/xshare/nuopc/dead_nuopc_mod.F90	src/components/xcpl_comps_nuopc/xshare/dead_nuopc_mod.F90
+A	src/components/xcpl_comps_nuopc/xwav/cime_config/buildlib
+A	src/components/xcpl_comps_nuopc/xwav/cime_config/buildnml
+A	src/components/xcpl_comps_nuopc/xwav/cime_config/config_component.xml
+R100	src/components/xcpl_comps/xwav/nuopc/wav_comp_nuopc.F90	src/components/xcpl_comps_nuopc/xwav/src/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/Makefile.am
+A	src/externals/pio2/cmake/Makefile.am
+M	src/externals/pio2/configure.ac
+M	src/externals/pio2/doc/source/base.txt
+M	src/externals/pio2/doc/source/netcdf_integration.txt
+M	src/externals/pio2/examples/Makefile.am
+M	src/externals/pio2/examples/c/CMakeLists.txt
+M	src/externals/pio2/examples/c/Makefile.am
+M	src/externals/pio2/examples/c/darray_async.c
+M	src/externals/pio2/src/clib/CMakeLists.txt
+M	src/externals/pio2/src/clib/Makefile.am
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/flib/Makefile.am
+M	src/externals/pio2/src/gptl/Makefile.am
+M	src/externals/pio2/src/ncint/ncint_pio.c
+M	src/externals/pio2/src/ncint/ncintdispatch.c
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+M	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/run_tests.sh
+A	src/externals/pio2/tests/cunit/test_async_1d.c
+M	src/externals/pio2/tests/cunit/test_darray.c
+M	src/externals/pio2/tests/cunit/test_spmd.c
+M	src/externals/pio2/tests/fncint/Makefile.am
+M	src/externals/pio2/tests/ncint/Makefile.am
+A	src/externals/pio2/tests/ncint/pio_err_macros.h
+A	src/externals/pio2/tests/ncint/run_perf.sh
+M	src/externals/pio2/tests/ncint/run_tests.sh
+A	src/externals/pio2/tests/ncint/tst_async_multi.c
+A	src/externals/pio2/tests/ncint/tst_ncint_async_perf.c
+A	src/externals/pio2/tests/ncint/tst_ncint_perf.c
+A	src/externals/pio2/tests/ncint/tst_pio_async.c
+M	src/externals/pio2/tests/ncint/tst_pio_udf.c
+M	src/externals/pio2/tests/unit/Makefile.am
+M	src/share/util/shr_infnan_mod.F90.in
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 2-27-2020
 Tag: cime5.8.16
