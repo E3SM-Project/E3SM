@@ -53,30 +53,30 @@ module docn_comp_mod
   real(R8), public, pointer :: somtp(:)     ! SOM ocean temperature needed for restart
 
   ! export fields
-  integer , pointer :: imask(:)     ! integer ocean mask
-  real(r8), pointer :: So_omask(:)
-  real(r8), pointer :: So_t(:)
-  real(r8), pointer :: So_s(:)
-  real(r8), pointer :: So_u(:)
-  real(r8), pointer :: So_v(:)
-  real(r8), pointer :: So_dhdx(:)
-  real(r8), pointer :: So_dhdy(:)
-  real(r8), pointer :: So_fswpen(:)
-  real(r8), pointer :: Fioo_q(:)
+  integer , pointer :: imask(:)     => null()    ! integer ocean mask
+  real(r8), pointer :: So_omask(:)  => null()
+  real(r8), pointer :: So_t(:)      => null()
+  real(r8), pointer :: So_s(:)      => null()
+  real(r8), pointer :: So_u(:)      => null()
+  real(r8), pointer :: So_v(:)      => null()
+  real(r8), pointer :: So_dhdx(:)   => null()
+  real(r8), pointer :: So_dhdy(:)   => null()
+  real(r8), pointer :: So_fswpen(:) => null()
+  real(r8), pointer :: Fioo_q(:)    => null()
 
   ! import  fields
-  real(r8), pointer :: Foxx_swnet(:)
-  real(r8), pointer :: Foxx_lwup(:)
-  real(r8), pointer :: Foxx_sen(:)
-  real(r8), pointer :: Foxx_lat(:)
-  real(r8), pointer :: Faxa_lwdn(:)
-  real(r8), pointer :: Faxa_snow(:)
-  real(r8), pointer :: Fioi_melth(:)
-  real(r8), pointer :: Foxx_rofi(:)
+  real(r8), pointer :: Foxx_swnet(:) => null()
+  real(r8), pointer :: Foxx_lwup(:)  => null()
+  real(r8), pointer :: Foxx_sen(:)   => null()
+  real(r8), pointer :: Foxx_lat(:)   => null()
+  real(r8), pointer :: Faxa_lwdn(:)  => null()
+  real(r8), pointer :: Faxa_snow(:)  => null()
+  real(r8), pointer :: Fioi_melth(:) => null()
+  real(r8), pointer :: Foxx_rofi(:)  => null()
 
   ! internal stream type
-  real(r8), pointer :: strm_h(:)
-  real(r8), pointer :: strm_qbot(:)
+  real(r8), pointer :: strm_h(:)    => null()
+  real(r8), pointer :: strm_qbot(:) => null()
 
   character(*) , parameter :: u_FILE_u = &
        __FILE__
@@ -226,7 +226,8 @@ contains
     call dshr_dfield_add(dfields, sdat,  strm_fld='qbot', strm_ptr=strm_qbot)
     call dshr_dfield_add(dfields, sdat,  strm_fld='h'   , strm_ptr=strm_h)
 
-    ! TODO: add this field to the esmFlds.F90 in CMEPS
+    ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and 
+    ! currently this is not implemented in cmeps
     call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
@@ -348,7 +349,9 @@ contains
 
     case('SST_AQUAPANAL')
        So_s(:)      = 0.0_r8
-       So_fswpen(:) = 0.0_r8
+       if (associated(So_fswpen)) then
+          So_fswpen(:) = 0.0_r8
+       end if
        if (first_time) then
           call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -366,12 +369,16 @@ contains
 
     case('SST_AQUAPFILE')
        So_s(:)      = 0.0_r8
-       So_fswpen(:) = 0.0_r8
+       if (associated(So_fswpen)) then
+          So_fswpen(:) = 0.0_r8
+       end if
        So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAP_CONSTANT')
        So_s(:)      = 0.0_r8
-       So_fswpen(:) = 0.0_r8
+       if (associated(So_fswpen)) then
+          So_fswpen(:) = 0.0_r8
+       end if
        So_t(:) = sst_constant_value
 
     case('IAF')
