@@ -4838,17 +4838,4 @@
     </values>
   </entry>
 
-  <entry id="seq_flux_atmocn_minwind">
-    <type>real</type>
-    <category>seq_flux_mct</category>
-    <group>seq_flux_mct_inparm</group>
-    <desc>
-       minimum wind speed for atmOcn flux calculations
-    </desc>
-    <values>
-      <value>0.5</value>
-      <value aqua_planet_sst_type="sst_aquap_constant">1.0</value>
-    </values>
-  </entry>
-
 </entry_id>
