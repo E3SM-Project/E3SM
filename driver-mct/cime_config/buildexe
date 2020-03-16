@@ -34,15 +34,16 @@ def _main_func():
         ocn_model = case.get_value("COMP_OCN")
         atm_model = case.get_value("COMP_ATM")
         gmake_opts = get_standard_makefile_args(case)
-
-    if ocn_model == 'mom' or atm_model == "fv3gfs":
+        blddir = os.path.join(case.get_value("EXEROOT"),"cpl","obj")
+        
+    if ocn_model == 'mom' or atm_model == "ufsatm":
         gmake_opts += "USE_FMS=TRUE"
 
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
 
 
-    with open('Filepath', 'w') as out:
+    with open(os.path.join(blddir,'Filepath'), 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
         out.write(os.path.join(cimeroot, "src", "drivers", "mct", "main") + "\n")
 
@@ -54,7 +55,7 @@ def _main_func():
     cmd = "{gmake} exec_se -j {gmake_j} EXEC_SE={exename} MODEL=driver {gmake_opts} -f {makefile} ".format(gmake=gmake, gmake_j=gmake_j, exename=exename,
                                                                                                            gmake_opts=gmake_opts, makefile=makefile)
 
-    rc, out, _ = run_cmd(cmd, combine_output=True)
+    rc, out, _ = run_cmd(cmd, combine_output=True, from_dir=blddir)
     expect(rc==0,"Command %s failed rc=%d\nout=%s"%(cmd,rc,out))
     logger.info(out)
 
