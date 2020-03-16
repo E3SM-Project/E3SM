@@ -230,7 +230,7 @@ contains
 
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
-         do k = 1, nVertLevels + 1
+         do k = 1, nVertLevels 
             gradDensityTopOfEdge(k, iEdge) = 0.0_RKIND
  !           dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
  !           gradZMidTopOfEdge(k, iEdge) = huge(0D0)
@@ -374,7 +374,6 @@ contains
       ! mrp note, we may want to take slope calculation out of this Bolus
       ! routine.
       ! mrp performance note: check which halo is needed here.
-      nCells = nCellsArray( 2 )
 
       allocate(dzTop(nVertLevels+1))
       allocate(dTdzTop(nVertLevels+1))
@@ -404,7 +403,7 @@ contains
             maxN = -1.0_RKIND
             kappaGMCell(1,iCell) = 0.0_RKIND
             kappaRediCell(1,iCell) = 0.0_RKIND
-            do k=2,maxLevelCell(iEdge)
+            do k=2,maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
 
                maxN = max(maxN,BruntVaisalaFreqTopEdge)
@@ -428,6 +427,7 @@ contains
       endif
 
 
+      nCells = nCellsArray( 3 )
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
@@ -598,6 +598,8 @@ contains
       !--------------------------------------------------------------------
 
       if (config_use_GM) then
+
+         nEdges = nEdgesArray( 3 )
 
       if (local_config_GM_lat_variable_c2) then
          !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
