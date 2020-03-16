@@ -1,0 +1,56 @@
+<template>
+        <namelist>
+                <option name="config_velocity_solver">'none'</option>
+                <option name="config_thickness_advection">'none'</option>
+                <option name="config_thermal_solver">'enthalpy'</option>
+                <option name="config_max_water_fraction">0.05</option>
+                <option name="config_surface_air_temperature_value">243.15</option>
+                <option name="config_dt">'0010-00-00_00:00:00'</option>
+                <option name="config_run_duration">'100000-00-00_00:00:00'</option>
+                <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+                <option name="config_AM_globalStats_enable">.false.</option>
+                <option name="config_year_digits">6</option>
+                <option name="config_num_halos">1</option>
+        </namelist>
+
+        <streams>
+
+                <stream name="input">
+                        <attribute name="filename_template">landice_grid.nc</attribute>
+                </stream>
+
+                <stream name="output">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">output.nc</attribute>
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <add_contents>
+                                <member name="basicmesh" type="stream"/>
+                                <member name="xtime" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
+                                <member name="thickness" type="var"/>
+                                <member name="temperature" type="var"/>
+                                <member name="surfaceTemperature" type="var"/>
+                                <member name="basalTemperature" type="var"/>
+                                <member name="waterFrac" type="var"/>
+                                <member name="basalMassBal" type="var"/>
+                                <member name="enthalpy" type="var"/>
+                                <member name="groundedBasalMassBal" type="var"/>
+                                <member name="basalWaterThickness" type="var"/>
+                        </add_contents>
+                </stream>
+
+                <stream name="restart">
+                        <attribute name="type">input;output</attribute>
+                        <attribute name="filename_template">restart.$Y.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">25000-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="precision">double</attribute>
+                        <attribute name="input_interval">initial_only</attribute>
+                </stream>
+
+        </streams>
+
+</template>
+

@@ -1,0 +1,61 @@
+This test case implements the enthalpy benchmarks described here:
+Kleiner, T., Rückamp, M., Bondzio, J. H., and Humbert, A.: Enthalpy benchmark experiments for numerical ice sheet models, The Cryosphere, 9, 217–228, https://doi.org/10.5194/tc-9-217-2015, 2015. 
+
+
+For Benchmark A, we don't have to change the code.
+By default the Benchmark A visualization script saves the plot as .png file.
+However, it is possible to have it plot to an interactive python plot by adjusting a flag at the end of the script.
+The output frequency for A has been reduced so that the test will run quickly enough to include
+in regression testing.  If you want more detailed output, you can adjust the output interval in the streams files.
+
+
+
+For Benchmark B, we need to make the following code changes:
+
+1) in mpas_li_thermal.F, in the subroutine enthalpy_matrix_elements,
+
+change
+
+subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1)
+
+to
+
+subd(2:nVertLevels+1) = -factor * (diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1)+0.2/scyr*sqrt(dsigmaTerm(1:nVertLevels,1))*thickness)
+
+
+and change
+
+rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
+
+to
+
+rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + 0*heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice + 2.0_RKIND*5.3e-24_RKIND*((910.0_RKIND*9.81_RKIND*sin(4.0_RKIND*pii/180.0_RKIND))**4)*((thickness*layerCenterSigma(1:nVertLevels))**4)*deltat
+
+2) in mpas_li_constants.F
+
+change
+
+iceMeltingPointPressureDependence = 9.7456e-8_RKIND
+
+to 
+
+iceMeltingPointPressureDependence = 0.0_RKIND
+
+
+and recompile the code before testing Benchmark B
+
+Also, for Benchmark B, you can run with more vertical layers to match the lower row of Kleiner Figure 4.
+To do so, make a change like this:
+diff --git a/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml b/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml
+index 9ea496e7..743aa938 100644
+--- a/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml
++++ b/testing_and_setup/compass/landice/enthalpy-benchmark/1m/B/config_setup_mesh_step.xml
+@@ -25,7 +25,7 @@
+                 <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                         <argument flag="-i">mpas_grid.nc</argument>
+                         <argument flag="-o">landice_grid.nc</argument>
+-                        <argument flag="-l">50</argument>
++                        <argument flag="-l">400</argument>
+                         <argument flag="--thermal"></argument>
+                 </step>
+
