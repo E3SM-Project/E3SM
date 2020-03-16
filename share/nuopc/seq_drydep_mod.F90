@@ -49,6 +49,7 @@ module seq_drydep_mod
 
   logical, public  :: lnd_drydep                           ! If dry-dep fields passed
   integer, public  :: n_drydep = 0                         ! Number in drypdep list
+  logical          :: drydep_init = .false.                ! has seq_drydep_init been called?
   character(len=CS), public, dimension(maxspc) :: drydep_list = ''   ! List of dry-dep species
 
   real(r8), public, allocatable, dimension(:) :: foxd      ! reactivity factor for oxidation (dimensioness)
@@ -508,7 +509,6 @@ CONTAINS
     !========================================================================
 
     use ESMF        , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
-    use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
     use shr_log_mod , only : s_logunit => shr_log_Unit
     use shr_mpi_mod , only : shr_mpi_bcast
     use shr_nl_mod  , only : shr_nl_find_group_name
@@ -548,8 +548,7 @@ CONTAINS
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
-          unitn = shr_file_getUnit()
-          open( unitn, file=trim(NLFilename), status='old' )
+          open(newunit=unitn, file=trim(NLFilename), status='old' )
           if ( s_loglev > 0 ) write(s_logunit,F00) &
                'Read in drydep_inparm namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'drydep_inparm', ierr)
@@ -565,13 +564,11 @@ CONTAINS
              write(s_logunit,*) 'seq_drydep_read:  no drydep_inparm namelist found in ',NLFilename
           endif
           close( unitn )
-          call shr_file_freeUnit( unitn )
           do i=1,maxspc
              if(len_trim(drydep_list(i)) > 0) then
                 drydep_nflds=drydep_nflds+1
              endif
           enddo
-
        end if
     end if
 
@@ -582,6 +579,9 @@ CONTAINS
        call ESMF_VMBroadcast(vm, drydep_list, CS*drydep_nflds, 0, rc=rc)
        call ESMF_VMBroadcast(vm, drydep_method, 16, 0, rc=rc)
     endif
+
+    ! set module variable
+    n_drydep = drydep_nflds
 
     !--- Make sure method is valid and determine if land is passing drydep fields ---
     lnd_drydep = (drydep_nflds>0 .and. drydep_method == DD_XLND)
@@ -635,6 +635,14 @@ CONTAINS
     !----- formats -----
     character(*),parameter :: subName = '(seq_drydep_init) '
     character(*),parameter :: F00   = "('(seq_drydep_init) ',8a)"
+
+    !-----------------------------------------------------------------------------
+    ! Return if this routine has already been called (e.g. cam and clm both call this)
+    !-----------------------------------------------------------------------------
+
+    if (drydep_init) then
+       RETURN
+    end if
 
     !-----------------------------------------------------------------------------
     ! Allocate and fill foxd, drat and mapping as well as species indices
@@ -788,6 +796,8 @@ CONTAINS
     where( rac < small_value)
        rac = small_value
     endwhere
+
+    drydep_init = .true.
 
   end subroutine seq_drydep_init
 
