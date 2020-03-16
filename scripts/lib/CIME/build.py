@@ -225,7 +225,7 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
     return [bldlog]
 
 ###############################################################################
-def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
+def _build_checks(case, build_threaded, comp_interface,
                   debug, compiler, mpilib, complist, ninst_build, smp_value,
                   model_only, buildlist):
 ###############################################################################
@@ -445,6 +445,8 @@ def _create_build_metadata_for_component(config_dir, libroot, bldroot, case):
     Ensure that crucial Filepath and CCSM_CPPDEFS files exist for this component.
     In many cases, the bld/configure script will have already created these.
     """
+    bc_path = os.path.join(config_dir, "buildlib_cmake")
+    expect(os.path.exists(bc_path), "Missing: {}".format(bc_path))
     buildlib = imp.load_source("buildlib_cmake", os.path.join(config_dir, "buildlib_cmake"))
     buildlib.buildlib(bldroot, libroot, case)
 
