@@ -1,43 +1,31 @@
+# Generate this with: $cimeroot/tools/configure --mpilib=mpi-serial --macros-format=CMake
+#   You'll also need to source the .env_mach_specific.sh file before trying to build cprnc
+
+include("${BLDROOT}/Macros.cmake")
+set(CMAKE_C_COMPILER "${SCC}")
+set(CMAKE_Fortran_COMPILER "${SFC}")
+
 PROJECT(CPRNC C Fortran)
-
- 	
-execute_process(COMMAND ../configure --macros-format=CMake WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/src/CMake")
-
-INCLUDE(Macros.cmake)
-
 ENABLE_LANGUAGE(Fortran)
+set(CMAKE_Fortran_FLAGS "${FFLAGS}")
+
+message("HERE fortran flags are ${CMAKE_Fortran_FLAGS} FFLAGS are ${FFLAGS}")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+# Find netcdf
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIMEROOT}/src/externals/pio2/cmake)
-
-# Defining NETCDF_LIBRARIES and NETCDF_INCLUDE_DIR enables bypassing
-#   the search for Netcdf
-IF (NOT DEFINED NETCDF_LIBRARIES OR NOT DEFINED NETCDF_INCLUDE_DIR)
-  SET(NETCDF_INCLUDE_DIR ${NETCDF_PATH}/include)
-  SET(NETCDF_LIBRARIES ${NETCDF_PATH}/lib/libnetcdff.a)
-ENDIF ()
+find_package (NetCDF COMPONENTS Fortran REQUIRED)
 
 ADD_CUSTOM_COMMAND(
   OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
   COMMAND perl ${PROJECT_SOURCE_DIR}/../../src/externals/genf90/genf90.pl
     ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in > ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
+  DEPENDS ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in ${PROJECT_SOURCE_DIR}/../../src/externals/genf90/genf90.pl
 )
 
-ADD_CUSTOM_TARGET(COMPARE_VARS DEPENDS ${PROJECT_BINARY_DIR}/compare_vars_mod.F90)
-
-# Support extended line lengths
-IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
-ELSEIF (CMAKE_COMPILER_ID STREQUAL PGI)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend")
-ELSEIF (CMAKE_COMPILER_ID STREQUAL PathScale)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
-ENDIF ()
-
 INCLUDE_DIRECTORIES(
-  ${NETCDF_INCLUDE_DIR}
+  ${NetCDF_Fortran_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR}
 )
@@ -53,9 +41,4 @@ SET (CPRNC_SRCS
 ADD_EXECUTABLE(cprnc ${CPRNC_SRCS})
 ADD_DEPENDENCIES(cprnc COMPARE_VARS)
 
-TARGET_LINK_LIBRARIES(cprnc ${NETCDF_LIBRARIES})
-
-INSTALL(TARGETS cprnc
-        RUNTIME DESTINATION bin)
-
-execute_process(COMMAND ../configure --clean WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+TARGET_LINK_LIBRARIES(cprnc ${NetCDF_Fortran_LIBRARIES})

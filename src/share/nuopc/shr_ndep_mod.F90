@@ -11,7 +11,6 @@ module shr_ndep_mod
   use shr_sys_mod,   only : shr_sys_abort
   use shr_log_mod  , only : s_logunit => shr_log_Unit
   use shr_kind_mod,  only : r8 => shr_kind_r8
-  use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
   use shr_nl_mod   , only : shr_nl_find_group_name
 
   implicit none
@@ -76,8 +75,7 @@ CONTAINS
     if (localpet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
-          unitn = shr_file_getUnit()
-          open( unitn, file=trim(NLFilename), status='old' )
+          open(newunit=unitn, file=trim(NLFilename), status='old' )
           write(s_logunit,F00) 'Read in ndep_inparm namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'ndep_inparm', ierr)
           if (ierr == 0) then
@@ -92,7 +90,6 @@ CONTAINS
              write(s_logunit,*) 'shr_ndep_readnl:  no ndep_inparm namelist found in ',NLFilename
           endif
           close( unitn )
-          call shr_file_freeUnit( unitn )
           do i=1,maxspc
              if (len_trim(ndep_list(i)) > 0) then
                 ndep_nflds = ndep_nflds+1

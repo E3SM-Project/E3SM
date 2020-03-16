@@ -57,15 +57,14 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
             if (comp_interface == 'nuopc'):
-                out.write(os.path.join(cimeroot, "src", "components", "data_comps", "dshr_nuopc") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, comp_interface) + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
+                out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, "dshr_nuopc") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, compname, "src") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, compname) + "\n")
         elif compname.startswith('x'):
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare", comp_interface) + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", compname, comp_interface) + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_"+comp_interface, "xshare") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_"+comp_interface, compname, "src") + "\n")
         elif compname.startswith('s'):
-            out.write(os.path.join(cimeroot, "src", "components", "stub_comps", compname, comp_interface) + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "stub_comps_"+comp_interface, compname, "src") + "\n")
 
     with open(os.path.join(confdir, "CCSM_cppdefs"), "w") as out:
         out.write("")

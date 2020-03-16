@@ -8,7 +8,7 @@ information will be listed for each.
 
 from Tools.standard_script_setup import *
 import re
-from CIME.utils         import expect
+from CIME.utils         import expect, get_model
 from CIME.XML.files     import Files
 from CIME.XML.component import Component
 from CIME.XML.compsets  import Compsets
@@ -99,6 +99,9 @@ def print_compset(name, files, all_components=False, xml=False):
         expect(os.path.isfile(config_file),
             "Cannot find config_file {} on disk".format(config_file))
     elif config_file is None or not os.path.isfile(config_file):
+        return
+
+    if get_model() == 'ufs' and name == 'drv':
         return
 
     print("\nActive component: {}".format(name))

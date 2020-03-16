@@ -172,10 +172,10 @@
   <batch_system MACH="aleph" type="pbs" >
     <directives>
       <directive>-l nodes={{ num_nodes }}</directive>
-      <directive>-q {{ queue }}</directive>
+      <directive>-q iccp</directive>
     </directives>
     <queues>
-      <queue default="true" >iccp</queue>
+      <queue walltimemax="24:00:00" default="true" >iccp</queue>
     </queues>
   </batch_system>
 
@@ -412,7 +412,7 @@
   </batch_system>
 
   <batch_system type="pbs" MACH="izumi" >
-    <batch_submit>ssh izumi cd $CASEROOT ; qsub</batch_submit>
+    <batch_submit>qsub</batch_submit>
     <jobid_pattern>(\d+.izumi.unified.ucar.edu)$</jobid_pattern>
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -602,4 +602,19 @@
       <queue walltimemax="00:60:00" nodemin="1" nodemax="50" default="true">default</queue>
     </queues>
   </batch_system>
+  <batch_system MACH="thunder" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+    </submit_args>
+    <directives>
+      <directive>--ntasks-per-node=64</directive>
+      <directive>--hint=nomultithread</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="4" default="true">regular</queue>
+    </queues>
+  </batch_system>      
+
 </config_batch>

@@ -34,7 +34,7 @@ class PRE(SystemTestsCompareTwo):
                                        run_two_description='pause/resume')
         self._stopopt  = ''
         self._stopn    = 0
-
+        self._cprnc_exe = None
     ###########################################################################
     def _case_one_setup(self):
     ###########################################################################
@@ -76,6 +76,7 @@ class PRE(SystemTestsCompareTwo):
         logger = logging.getLogger(__name__)
         self._activate_case1()
         rundir1 = self._case.get_value("RUNDIR")
+        self._cprnc_exe = self._case.get_value("CCSM_CPRNC")
         self._activate_case2()
         rundir2 = self._case.get_value("RUNDIR")
         compare_ok = True
@@ -113,7 +114,7 @@ class PRE(SystemTestsCompareTwo):
                 expect((len(restart_files_2) == 1),
                        "Missing case2 restart file, {}", glob_str)
                 rfile2 = restart_files_2[0]
-                ok = cprnc(comp, rfile1, rfile2, self._case, rundir2)[0]
+                ok = cprnc(comp, rfile1, rfile2, self._case, rundir2, cprnc_exe=self._cprnc_exe)[0]
                 logger.warning("CPRNC result for {}: {}".format(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
                 compare_ok = compare_ok and (should_match == ok)
 

@@ -54,11 +54,11 @@
     <job name="timeseries">
       <template>$ENV{POSTPROCESS_PATH}/timeseries/template.timeseries</template>
       <dependency>case.st_archive</dependency>
-      <prereq>$TIMESERIES</prereq>
+      <prereq>1</prereq>
       <runtime_parameters MACH="aleph">
-	<task_count>72</task_count>
-	<tasks_per_node>9</tasks_per_node>
-	<walltime>0:20:00</walltime>
+	<task_count>200</task_count>
+	<tasks_per_node>10</tasks_per_node>
+	<walltime>12:00:00</walltime>
       </runtime_parameters>
       <runtime_parameters MACH="cheyenne">
 	<task_count>72</task_count>

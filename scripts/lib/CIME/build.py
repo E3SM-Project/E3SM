@@ -14,7 +14,7 @@ _CMD_ARGS_FOR_BUILD = \
      "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
      "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
      "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
-     "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
+     "CAM_CONFIG_OPTS", "COMP_LND", "COMPARE_TO_NUOPC", "HOMME_TARGET",
      "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
 
 def get_standard_makefile_args(case, shared_lib=False):
@@ -131,9 +131,13 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
 
         config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
-        bldroot = os.path.join(exeroot, "cpl", "obj")
-        if not os.path.isdir(bldroot):
-            os.makedirs(bldroot)
+        if not os.path.isdir(config_dir):
+            config_dir = os.path.join(cimeroot,"..","src","model","NEMS","cime","cime_config")
+        expect(os.path.exists(config_dir), "Config directory not found {}".format(config_dir))
+        if "cpl" in complist:
+            bldroot = os.path.join(exeroot, "cpl", "obj")
+            if not os.path.isdir(bldroot):
+                os.makedirs(bldroot)
         logger.info("Building {} with output to {} ".format(cime_model, file_build))
 
         with open(file_build, "w") as fd:
@@ -293,18 +297,6 @@ ERROR env_build HAS CHANGED
     ./case.build --clean-all
 """)
 
-
-    expect(mpilib != "mpi-serial" or not use_esmf_lib,
-           """
-ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
-  MPILIB can only be used with an ESMF library built with mpiuni on
-  Set USE_ESMF_LIB to FALSE with
-    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE
-  ---- OR ----
-  Make sure the ESMF_LIBDIR used was built with mipuni (or change it to one that was)
-  And comment out this if block in Tools/models_buildexe
-""")
-
     case.set_value("BUILD_COMPLETE", False)
 
     # User may have rm -rf their build directory
@@ -328,15 +320,30 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             os.makedirs(shared_item)
 
     mpilib = case.get_value("MPILIB")
-    libs = ["gptl", "mct", "pio", "csm_share"]
+    if 'CPL' in case.get_values("COMP_CLASSES"):
+        libs = ["gptl", "mct", "pio", "csm_share"]
+    else:
+        libs = []
+
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
     if uses_kokkos(case):
         libs.append("kokkos")
 
-    logs = []
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
+    # Check if we need to build our own cprnc
+    if case.get_value("TEST"):
+        cprnc_loc = case.get_value("CCSM_CPRNC")
+        full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
+        if not cprnc_loc or not os.path.exists(cprnc_loc):
+            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
+            if not os.path.isdir(full_lib_path):
+                os.makedirs(full_lib_path)
+                libs.insert(0,"cprnc")
+
+    logs = []
+
     for lib in libs:
         if buildlist is not None and lib not in buildlist:
             continue
@@ -346,10 +353,13 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             full_lib_path = os.path.join(sharedlibroot, sharedpath)
         elif lib == "mpi-serial":
             full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
+        elif lib == "cprnc":
+            full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
+
         # pio build creates its own directory
-        if (lib != "pio" and not os.path.exists(full_lib_path)):
+        if (lib != "pio" and not os.path.isdir(full_lib_path)):
             os.makedirs(full_lib_path)
 
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(lib, lid))
@@ -408,9 +418,12 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
+    compile_cmd = "MODEL={} COMP_CLASS={} COMP_NAME={} {} {} {} {} ".format(compclass, compclass, compname, cmd, caseroot, libroot, bldroot)
+    if get_model() != "ufs":
+        compile_cmd = "SMP={} {}".format(stringify_bool(smp), compile_cmd)
+
     with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} COMP_CLASS={} COMP_NAME={} SMP={} {} {} {} {} "
-                       .format(compclass, compclass, compname, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+        stat = run_cmd(compile_cmd,
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
 
@@ -552,7 +565,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     compiler            = case.get_value("COMPILER")
     mpilib              = case.get_value("MPILIB")
-    use_esmf_lib        = case.get_value("USE_ESMF_LIB")
     debug               = case.get_value("DEBUG")
     ninst_build         = case.get_value("NINST_BUILD")
     smp_value           = case.get_value("SMP_VALUE")
@@ -563,8 +575,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     # Load some params into env
     os.environ["BUILD_THREADED"]       = stringify_bool(build_threaded)
+    cime_model = get_model()
 
-    if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
+    if cime_model == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
 
     # This is a timestamp for the build , not the same as the testid,
@@ -604,8 +617,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     case.load_env()
 
     sharedpath = _build_checks(case, build_threaded, comp_interface,
-                               use_esmf_lib, debug, compiler, mpilib,
-                               complist, ninst_build, smp_value, model_only, buildlist)
+                               debug, compiler, mpilib, complist, ninst_build, smp_value,
+                               model_only, buildlist)
 
     t2 = time.time()
     logs = []
@@ -666,7 +679,12 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                        save_build_provenance, use_old, ninja, dry_run)
-    return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
+    cb = "case.build"
+    if (sharedlib_only == True):
+        cb = cb + " (SHAREDLIB_BUILD)"
+    if (model_only == True):
+        cb = cb + " (MODEL_BUILD)"
+    return run_and_log_case_status(functor, cb, caseroot=caseroot)
 
 ###############################################################################
 def clean(case, cleanlist=None, clean_all=False, clean_depends=None):
