@@ -48,10 +48,15 @@ def cellWidthVsLatLon():
     signed_distance = signed_distance_from_geojson(fc, lon, lat,
                                                    max_length=0.25)
 
-    trans_width = 3000e3
-    # compensate for the offset in compute_cell_width so the transition is at
-    # signed distance of zero
-    trans_start = -0.5 * trans_width
+    # multiply by 5 because transition_width gets multiplied by 0.2 in
+    # compute_cell_width
+    # Equivalent to 10 degrees latitude
+    trans_width = 5*1100e3
+    # the last term compensates for the offset in compute_cell_width
+    # The middle of the transition is ~2.5 degrees (300 km) south of the
+    # region boundary to best match previous transition at 48 S. (The mean lat
+    # of the boundary is 45.5 S.)
+    trans_start = 300e3 - 0.5 * trans_width
     dx_min = 10.
 
     cellWidth = compute_cell_width(signed_distance, cellWidth, lon,
