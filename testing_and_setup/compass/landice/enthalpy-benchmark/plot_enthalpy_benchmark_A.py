@@ -2,6 +2,8 @@
 
 from netCDF4 import Dataset
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 
@@ -107,4 +109,5 @@ print('Saved plot as ' + plotname)
 
 displayImage = False
 if displayImage:
-     plt.show()
+   # Note: To get interactive plot, need to comment line at beginning of script "matplotlib.use('Agg')"
+   plt.show()
