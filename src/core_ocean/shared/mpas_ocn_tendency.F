@@ -490,7 +490,7 @@ contains
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
         fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaRediVert
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaRediCell
 
       !
       ! three dimensional pointers
@@ -579,7 +579,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediVert', kappaRediVert)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
@@ -886,7 +886,7 @@ contains
                !
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracerGroup, &
                                          redi_term1, redi_term2, redi_term3, RediKappa, slopeTriadUp, slopeTriadDown, &
-                                         kappaRediVert, tracerGroupTend, err)
+                                         kappaRediCell, tracerGroupTend, err)
 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number
