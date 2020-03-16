@@ -45,8 +45,8 @@ module NitrogenStateUpdate1Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       nitrogenflux_vars, nitrogenstate_vars)
+  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive, &
+       filter_soilc_with_inactive)
     !
     ! !DESCRIPTION:
     ! Update nitrogen states based on fluxes from dyn_cnbal_patch
@@ -55,8 +55,6 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                  , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     !
     ! !LOCAL VARIABLES:
     integer                                  :: c                             ! column index
@@ -67,11 +65,6 @@ contains
 
     character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
     !-----------------------------------------------------------------------
-
-    associate( &
-         nf => nitrogenflux_vars  , &
-         ns => nitrogenstate_vars   &
-         )
 
       dt = real( get_step_size(), r8 )
 
@@ -84,9 +77,14 @@ contains
                  - grc_nf%dwt_seedn_to_npool(g)    * dt
          end do
 
-         do j = 1,nlevdecomp
-            do fc = 1, num_soilc_with_inactive
-               c = filter_soilc_with_inactive(fc)
+         do fc = 1, num_soilc_with_inactive
+            
+            c = filter_soilc_with_inactive(fc)
+            col_ns%prod10n(c) = col_ns%prod10n(c) + col_nf%dwt_prod10n_gain(c)*dt
+            col_ns%prod100n(c) = col_ns%prod100n(c) + col_nf%dwt_prod100n_gain(c)*dt
+            col_ns%prod1n(c) = col_ns%prod1n(c) + col_nf%dwt_crop_productn_gain(c)*dt
+
+            do j = 1,nlevdecomp
 
                col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) + &
                     col_nf%dwt_frootn_to_litr_met_n(c,j) * dt
@@ -100,8 +98,6 @@ contains
             end do
          end do
       end if
-
-    end associate
 
   end subroutine NitrogenStateUpdateDynPatch
 
