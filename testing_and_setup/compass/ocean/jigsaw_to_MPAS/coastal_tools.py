@@ -673,13 +673,16 @@ def distance_from_geojson(fc, lon_grd, lat_grd, nn_search, max_length=None):
     boundary_lon = np.array(boundary_lon)
     boundary_lat = np.array(boundary_lat)
 
-    # remove point at +/- 180 lon and +/- 90 lat because these are "fake"
+    # Remove point at +/- 180 lon and +/- 90 lat because these are "fake".
+    # Need a little buffer (0.01 degrees) to avoid misses due to rounding.
     mask = np.logical_not(np.logical_or(
-        np.logical_or(boundary_lon == -180., boundary_lon == 180.),
-        np.logical_or(boundary_lat == -90., boundary_lat == 90.)))
+        np.logical_or(boundary_lon <= -179.99, boundary_lon >= 179.99),
+        np.logical_or(boundary_lat <= -89.99, boundary_lat >= 89.99)))
 
     boundary_lon = boundary_lon[mask]
     boundary_lat = boundary_lat[mask]
+
+    print("    Mean boundary latitude: {}".format(np.mean(boundary_lat)))
 
     # Convert coastline points to x,y,z and create kd-tree
     npoints = len(boundary_lon)
