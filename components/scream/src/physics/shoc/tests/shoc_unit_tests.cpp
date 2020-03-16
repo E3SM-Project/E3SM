@@ -24,4 +24,3 @@ namespace unit_test {
 }//namespace shoc
 }//namespace scream
 
-} // namespace
