@@ -625,6 +625,9 @@ def mask_from_geojson(fc, lon_grd, lat_grd):  # {{{
         shapes.append((feature['geometry'], 1.0))
 
     mask = rasterize(shapes, out_shape=(nlat, nlon), transform=transform)
+    if lon_grd[0] == -180. and lon_grd[-1] == 180.:
+        # the extra column at the periodic boundary needs to be copied
+        mask[:, -1] = mask[:, 0]
     return mask  # }}}
 
 
