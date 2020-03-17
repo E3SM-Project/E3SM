@@ -367,7 +367,7 @@ def merge_git_ref(git_ref, repo=None):
     Merge given git ref into the current branch, and updates submodules
     """
     expect(is_repo_clean(), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
-    stat = run_cmd("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
+    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
     update_submodules(repo)
     expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
 
@@ -405,8 +405,7 @@ def get_git_toplevel_dir(repo=None):
     """
     Get repo toplevel directory
     """
-    stat, dirname = run_cmd_no_fail("git rev-parse --show-toplevel")
-    return dirname
+    return run_cmd_no_fail("git rev-parse --show-toplevel")
 
 ###############################################################################
 def cleanup_repo(orig_branch, orig_commit, repo=None):

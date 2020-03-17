@@ -327,14 +327,16 @@ class TestAllScream(object):
                 if not success:
                     print ("Error(s) occurred during test phase")
 
+        except:
+            # Re-throw whatever the exception was
+            # Note: why do we catch it then, you may ask? Because we need to run
+            #       the finally block before the exception is pushed up the stack.
+            raise
+
+        finally:
             if not self._keep_tree:
                 # Cleanup the repo if needed
-                cleanup_repo(self._original_head, self._original_commit)
+                cleanup_repo(self._original_branch, self._original_commit)
 
-        except:
-            if not self._keep_tree:
-                # Cleanup the repo if needed, then re-throw whatever the exception was
-                cleanup_repo(self._original_head, self._original_commit)
-            raise
 
         return success
