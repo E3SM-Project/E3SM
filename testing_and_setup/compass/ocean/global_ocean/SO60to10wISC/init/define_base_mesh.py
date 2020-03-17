@@ -25,8 +25,12 @@ def cellWidthVsLatLon():
             longitude, vector of length n, with entries between -180 and 180,
             degrees
     """
-    lat = np.arange(-90, 90.01, 0.1)
-    lon = np.arange(-180, 180.01, 0.1)
+    dlon = 0.1
+    dlat = dlon
+    nlon = int(360./dlon) + 1
+    nlat = int(180./dlat) + 1
+    lon = np.linspace(-180., 180., nlon)
+    lat = np.linspace(-90., 90., nlat)
 
     cellWidthSouth = 30. * np.ones((len(lat)))
 
