@@ -28,8 +28,6 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
   static void run_rain_self_collection_bfb_tests(){
 
-    using KTH = KokkosTypes<HostDevice>;
-
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
@@ -57,7 +55,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     };
 
     //Sync to device
-    KTH::view_1d<RainSelfCollectionData> dc_device("dc", Spack::n);
+    view_1d<RainSelfCollectionData> dc_device("dc", Spack::n);
     auto dc_host = Kokkos::create_mirror_view(dc_device);
 
     std::copy(&dc[0], &dc[0] + Spack::n, dc_host.data());
