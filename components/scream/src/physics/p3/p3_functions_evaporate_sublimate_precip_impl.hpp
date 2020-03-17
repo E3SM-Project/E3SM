@@ -38,7 +38,9 @@ void Functions<S,D>
 
   //calculate q for out-of-cloud region
   Spack qclr;
-  qclr.set(rcldm_gt_cld,(qv-cld*qvs)/(sp(1)-cld));
+  if(rcldm_gt_cld.any()){
+    qclr.set(rcldm_gt_cld,(qv-cld*qvs)/(sp(1)-cld));
+  }
 
   //rain evaporation
   qrevp.set(rcldm_gt_cld && qr_incld_ge_qsmall, epsr * (qclr-qvs)/ab);
