@@ -366,7 +366,8 @@ def merge_git_ref(git_ref, repo=None):
     """
     Merge given git ref into the current branch, and updates submodules
     """
-    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
+    expect(is_repo_clean(), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
+    stat = run_cmd("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
     update_submodules(repo)
     expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
 
@@ -398,3 +399,33 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
             print("  Switched to '{}' ({})".format(git_ref,git_commit))
             print_last_commit(git_ref=git_ref)
 
+###############################################################################
+def get_git_toplevel_dir(repo=None):
+###############################################################################
+    """
+    Get repo toplevel directory
+    """
+    stat, dirname = run_cmd_no_fail("git rev-parse --show-toplevel")
+    return dirname
+
+###############################################################################
+def cleanup_repo(orig_branch, orig_commit, repo=None):
+###############################################################################
+    """
+    Discards all unstaged changes, as well as untracked files
+    """
+    curr_commit = get_current_commit()
+
+    # Is this a pointless check? Maybe.
+    if not is_repo_clean():
+        # Discard any modifications to the repo (either tracked or untracked),
+        # but keep the ctest-build directory
+        run_cmd_no_fail("git clean -df --exclude=ctest-build")
+        toplevel_dir = get_git_toplevel_dir()
+        run_cmd_no_fail("git checkout -- {}".format(toplevel_dir))
+
+    checkout_git_ref(orig_branch)
+
+    # Is this also a pointless check?
+    if curr_commit != orig_commit:
+        run_cmd_no_fail("git reset --hard {}".format(orig_commit))

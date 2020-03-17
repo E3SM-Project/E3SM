@@ -1,6 +1,6 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, \
-                  get_current_commit, expect, is_repo_clean, get_common_ancestor,           \
-                  merge_git_ref, checkout_git_ref, print_last_commit
+from utils import run_cmd, check_minimum_python_version, run_cmd_no_fail, get_current_head,     \
+                  get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
+                  get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 check_minimum_python_version(3, 4)
 
@@ -31,6 +31,8 @@ class TestAllScream(object):
         self._tests             = tests
         self._src_dir           = os.getcwd()
         self._integration_test  = integration_test
+        self._original_branch   = get_current_branch()
+        self._original_commit   = get_current_commit()
 
         self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
@@ -298,31 +300,41 @@ class TestAllScream(object):
     def test_all_scream(self):
     ###############################################################################
         success = True
-        # First, create build directories (one per test)
-        for test in self._tests:
-            # Get this test's build dir name and cmake args
-            full_name = self._test_full_names[test]
-            test_dir = "./ctest-build/{}".format(full_name)
+        try:
+            # First, create build directories (one per test)
+            for test in self._tests:
+                # Get this test's build dir name and cmake args
+                full_name = self._test_full_names[test]
+                test_dir = "./ctest-build/{}".format(full_name)
 
-            # Create this test's build dir
-            if os.path.exists(test_dir):
-                shutil.rmtree(test_dir)
+                # Create this test's build dir
+                if os.path.exists(test_dir):
+                    shutil.rmtree(test_dir)
 
-            os.makedirs(test_dir)
+                os.makedirs(test_dir)
 
-        if self._baseline_dir is None:
-            # Second, generate baselines
-            expect(self._baseline_ref is not None, "Missing baseline ref")
+            if self._baseline_dir is None:
+                # Second, generate baselines
+                expect(self._baseline_ref is not None, "Missing baseline ref")
 
-            success = self.generate_all_baselines()
-            if not success:
-                print ("Error(s) occurred during baselines generation phase")
-                return success
+                success = self.generate_all_baselines()
+                if not success:
+                    print ("Error(s) occurred during baselines generation phase")
 
-        if self._perform_tests:
-            # Finally, run the tests
-            success &= self.run_all_tests()
-            if not success:
-                print ("Error(s) occurred during test phase")
+            if self._perform_tests:
+                # Finally, run the tests
+                success &= self.run_all_tests()
+                if not success:
+                    print ("Error(s) occurred during test phase")
+
+            if not self._keep_tree:
+                # Cleanup the repo if needed
+                cleanup_repo(self._original_head, self._original_commit)
+
+        except:
+            if not self._keep_tree:
+                # Cleanup the repo if needed, then re-throw whatever the exception was
+                cleanup_repo(self._original_head, self._original_commit)
+            raise
 
         return success
