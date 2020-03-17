@@ -10,15 +10,17 @@ module shr_megan_mod
   ! - CLM needs to know what specific VOC fluxes need to be passed to the coupler 
   !   and how to assemble the fluxes.
   ! - CAM needs to know what specific VOC fluxes to expect from CLM.
-  !
-  ! Francis Vitt -- 26 Oct 2011
   !================================================================================
 
-  use shr_kind_mod,only : r8 => shr_kind_r8
-  use shr_kind_mod,only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
-  use shr_sys_mod, only : shr_sys_abort
-  use shr_log_mod, only : logunit => shr_log_Unit
-
+  use ESMF                , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet
+  use ESMF                , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS
+  use shr_kind_mod        , only : r8 => shr_kind_r8, cl=>shr_kind_cl, cx=>shr_kind_cx, cs=>shr_kind_cs
+  use shr_sys_mod         , only : shr_sys_abort
+  use shr_log_mod         , only : logunit => shr_log_Unit
+  use shr_mpi_mod         , only : shr_mpi_bcast
+  use shr_nl_mod          , only : shr_nl_find_group_name
+  use shr_expr_parser_mod , only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
+  
   implicit none
   private
 
@@ -108,9 +110,6 @@ contains
     ! /
     !-------------------------------------------------------------------------
     
-    use ESMF         , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadcast, ESMF_VMGet
-    use shr_nl_mod   , only : shr_nl_find_group_name
-
     ! input/output variables
     character(len=*), intent(in)  :: NLFileName
     integer,          intent(out) :: megan_nflds
@@ -118,6 +117,7 @@ contains
     ! local variables
     type(ESMF_VM)       :: vm
     integer             :: localPet
+    integer             :: mpicom
     integer             :: unitn            ! namelist unit number
     integer             :: ierr             ! error code
     logical             :: exists           ! if file exists or not
@@ -127,22 +127,25 @@ contains
     character(len=CL)   :: megan_factors_file = ' '
     integer             :: rc
     integer             :: i, tmp(1)
-    character(*),parameter :: F00   = "('(shr_megan_readnl) ',2a)"
+    character(*), parameter :: F00   = "('(shr_megan_readnl) ',2a)"
+    character(len=*), parameter :: subname='(shr_megan_readnl)'
     !--------------------------------------------------------------
 
     namelist /megan_emis_nl/ megan_specifier, megan_factors_file, megan_mapped_emisfctrs
 
-    ! If other processes have already initialized megan - then just return
-    ! the megan_fields that have already been set
-    if (megan_initialized) then
-       megan_nflds = shr_megan_mechcomps_n
-       return
+    !--- Open and read namelist ---
+    if ( len_trim(NLFilename) == 0 ) then
+       call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
 
     call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, localpet=localpet, rc=rc)
-    megan_nflds = 0
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
 
+    call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
+    ! Note the following still needs to be called on all processors since the mpi_bcast is a collective 
+    ! call on all the pes of mpicom
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
@@ -157,31 +160,20 @@ contains
              endif
           endif
           close( unitn )
-          do i=1,maxspc
-             if (len_trim(megan_specifier(i)) > 0) then
-                megan_nflds=megan_nflds+1
-             endif
-          enddo
        end if
     end if
-
-    tmp = megan_nflds
-    call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
-    megan_nflds = tmp(1)
-    if(megan_nflds > 0) then
-       call ESMF_VMBroadcast(vm, megan_specifier, 2*CX*megan_nflds, 0, rc=rc)
-       call ESMF_VMBroadcast(vm, megan_factors_file, CL, 0, rc=rc)
-       tmp = 0
-       if (megan_mapped_emisfctrs) tmp=1
-       call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
-       if (tmp(1)==1) megan_mapped_emisfctrs=.true.
-    endif
+    call shr_mpi_bcast( megan_specifier        , mpicom )
+    call shr_mpi_bcast( megan_factors_file     , mpicom )
+    call shr_mpi_bcast( megan_mapped_emisfctrs , mpicom )
 
     shr_megan_factors_file = megan_factors_file
     shr_megan_mapped_emisfctrs = megan_mapped_emisfctrs
 
-    ! parse the namelist info and initialize the module data
-    call shr_megan_init( megan_specifier )
+    ! parse the namelist info and initialize the module data - only if it has not been initialized
+    if (.not. megan_initialized) then
+       call shr_megan_init( megan_specifier )
+    end if
+    megan_nflds = shr_megan_mechcomps_n
 
   end subroutine shr_megan_readnl
 
@@ -194,8 +186,6 @@ contains
     !-----------------------------------------
     ! Initialize module data
     !-----------------------------------------
-
-    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
     ! input/output variables
     character(len=*), intent(in) :: specifier(:)
