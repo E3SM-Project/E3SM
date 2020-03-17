@@ -4,41 +4,35 @@ module seq_drydep_mod
   ! Module for handling dry depostion of tracers.
   ! This module is shared by land and atmosphere models for the computations of
   ! dry deposition of tracers
-  !
-  ! !REVISION HISTORY:
-  !     2008-Nov-12 - F. Vitt - creation.
-  !     2009-Feb-19 - E. Kluzek - merge shr_drydep_tables module in.
-  !     2009-Feb-20 - E. Kluzek - use shr_ coding standards, and check for namelist file.
-  !     2009-Feb-20 - E. Kluzek - Put _r8 on all constants, remove namelist read out.
-  !     2009-Mar-23 - F. Vitt - Some corrections/cleanup and addition of drydep_method.
-  !     2009-Mar-27 - E. Kluzek - Get description and units from J.F. Lamarque.
   !========================================================================
 
-  ! !USES:
-
-  use shr_sys_mod,   only : shr_sys_abort
-  use shr_log_mod,   only : s_loglev  => shr_log_Level
-  use shr_kind_mod,  only : r8 => shr_kind_r8, CS => SHR_KIND_CS, CX => SHR_KIND_CX
-  use shr_const_mod, only : SHR_CONST_G, SHR_CONST_RDAIR, SHR_CONST_CPDAIR, SHR_CONST_MWWV
+  use ESMF           , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet
+  use ESMF           , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS
+  use shr_sys_mod    , only : shr_sys_abort
+  use shr_kind_mod   , only : r8 => shr_kind_r8, CS => SHR_KIND_CS, CX => SHR_KIND_CX
+  use shr_const_mod  , only : SHR_CONST_G, SHR_CONST_RDAIR, SHR_CONST_CPDAIR, SHR_CONST_MWWV
+  use shr_mpi_mod    , only : shr_mpi_bcast
+  use shr_nl_mod     , only : shr_nl_find_group_name
+  use shr_log_mod    , only : s_logunit => shr_log_Unit
+  use shr_infnan_mod , only : shr_infnan_posinf, assignment(=)
 
   implicit none
   private
 
-  ! !PUBLIC MEMBER FUNCTIONS
-
+  ! public member functions
   public :: seq_drydep_readnl       ! Read namelist
   public :: seq_drydep_init         ! Initialization of drydep data
   public :: seq_drydep_setHCoeff    ! Calculate Henry's law coefficients
 
-  ! !PRIVATE ARRAY SIZES
-
+  ! private array sizes
   integer, public,  parameter :: n_species_table = 77      ! Number of species to work with
   integer, private, parameter :: maxspc = 100              ! Maximum number of species
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
-  ! !PUBLIC DATA MEMBERS:
+  logical, private :: drydep_initialized = .false. 
 
+  ! public data members:
   ! method specification
   character(16),public,parameter :: DD_XATM = 'xactive_atm' ! dry-dep atmosphere
   character(16),public,parameter :: DD_XLND = 'xactive_lnd' ! dry-dep land
@@ -499,19 +493,12 @@ module seq_drydep_mod
 CONTAINS
 !===============================================================================
 
-!====================================================================================
-
   subroutine seq_drydep_readnl(NLFilename, drydep_nflds)
 
     !========================================================================
     ! reads drydep_inparm namelist and determines the number of drydep velocity
     ! fields that are sent from the land component
     !========================================================================
-
-    use ESMF        , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
-    use shr_log_mod , only : s_logunit => shr_log_Unit
-    use shr_mpi_mod , only : shr_mpi_bcast
-    use shr_nl_mod  , only : shr_nl_find_group_name
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
     integer, intent(out)          :: drydep_nflds
@@ -523,90 +510,84 @@ CONTAINS
     logical       :: exists           ! if file exists or not
     type(ESMF_VM) :: vm
     integer       :: localPet
-    integer       :: tmp(1)
+    integer       :: mpicom
     integer       :: rc
-    character(*),parameter :: subName = '(seq_drydep_read) '
     character(*),parameter :: F00   = "('(seq_drydep_read) ',8a)"
     character(*),parameter :: FI1   = "('(seq_drydep_init) ',a,I2)"
+    character(*),parameter :: subName = '(seq_drydep_read) '
+    !-----------------------------------------------------------------------------
 
     namelist /drydep_inparm/ drydep_list, drydep_method
-    !-----------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------------
     ! Read namelist and figure out the drydep field list to pass
     ! First check if file exists and if not, n_drydep will be zero
     !-----------------------------------------------------------------------------
 
+    rc = ESMF_SUCCESS
+
     !--- Open and read namelist ---
     if ( len_trim(NLFilename) == 0  )then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
 
-    drydep_nflds=0
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
+    call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
           open(newunit=unitn, file=trim(NLFilename), status='old' )
-          if ( s_loglev > 0 ) write(s_logunit,F00) &
-               'Read in drydep_inparm namelist from: ', trim(NLFilename)
+          write(s_logunit,F00) 'Read in drydep_inparm namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'drydep_inparm', ierr)
           if (ierr == 0) then
-             ierr = 1
-             do while ( ierr /= 0 )
-                read(unitn, drydep_inparm, iostat=ierr)
-                if (ierr < 0) then
-                   call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
-                endif
-             end do
-          else
-             write(s_logunit,*) 'seq_drydep_read:  no drydep_inparm namelist found in ',NLFilename
+             ! Note that ierr /= 0, no namelist is present.
+             read(unitn, drydep_inparm, iostat=ierr)
+             if (ierr > 0) then
+                call shr_sys_abort( 'problem on read of drydep_inparm namelist in seq_drydep_readnl')
+             end if
           endif
           close( unitn )
-          do i=1,maxspc
-             if(len_trim(drydep_list(i)) > 0) then
-                drydep_nflds=drydep_nflds+1
-             endif
-          enddo
        end if
     end if
+    call shr_mpi_bcast( drydep_list, mpicom )
+    call shr_mpi_bcast( drydep_method, mpicom )
 
-    tmp = drydep_nflds
-    call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
-    drydep_nflds = tmp(1)
-    if (drydep_nflds > 0) then
-       call ESMF_VMBroadcast(vm, drydep_list, CS*drydep_nflds, 0, rc=rc)
-       call ESMF_VMBroadcast(vm, drydep_method, 16, 0, rc=rc)
-    endif
+    do i=1,maxspc
+       if(len_trim(drydep_list(i)) > 0) then
+          drydep_nflds=drydep_nflds+1
+       endif
+    enddo
 
     ! set module variable
     n_drydep = drydep_nflds
 
-    !--- Make sure method is valid and determine if land is passing drydep fields ---
+    ! Make sure method is valid and determine if land is passing drydep fields
     lnd_drydep = (drydep_nflds>0 .and. drydep_method == DD_XLND)
-
     if (localpet==0) then
-       if ( s_loglev > 0 ) then
-          write(s_logunit,*) 'seq_drydep_read: drydep_method: ', trim(drydep_method)
-          if ( drydep_nflds == 0 )then
-             write(s_logunit,F00) 'No dry deposition fields will be transfered'
-          else
-             write(s_logunit,FI1) 'Number of dry deposition fields transfered is ', drydep_nflds
-          end if
+       write(s_logunit,*) 'seq_drydep_read: drydep_method: ', trim(drydep_method)
+       if ( drydep_nflds == 0 )then
+          write(s_logunit,F00) 'No dry deposition fields will be transfered'
+       else
+          write(s_logunit,FI1) 'Number of dry deposition fields transfered is ', drydep_nflds
        end if
     end if
 
     if ( trim(drydep_method)/=trim(DD_XATM) .and. &
          trim(drydep_method)/=trim(DD_XLND) .and. &
          trim(drydep_method)/=trim(DD_TABL) ) then
-       if ( s_loglev > 0 ) then
-          write(s_logunit,*) 'seq_drydep_read: drydep_method : ', trim(drydep_method)
-          write(s_logunit,*) 'seq_drydep_read: drydep_method must be set to : ', &
-               DD_XATM,', ', DD_XLND,', or ', DD_TABL
-       end if
+       write(s_logunit,*) 'seq_drydep_read: drydep_method : ', trim(drydep_method)
+       write(s_logunit,*) 'seq_drydep_read: drydep_method must be set to : ', &
+            DD_XATM,', ', DD_XLND,', or ', DD_TABL
        call shr_sys_abort('seq_drydep_read: incorrect dry deposition method specification')
     endif
+
+    if (.not. drydep_initialized) then
+       call seq_drydep_init()
+    end if
 
   end subroutine seq_drydep_readnl
 
@@ -618,20 +599,12 @@ CONTAINS
     ! Initialization of dry deposition fields
     ! reads drydep_inparm namelist and sets up CCSM driver list of fields for
     ! land-atmosphere communications.
-    ! !REVISION HISTORY:
-    !  2008-Nov-12 - F. Vitt - first version
-    !  2009-Feb-20 - E. Kluzek - Check for existance of file if not return, set n_drydep=0
-    !  2009-Feb-20 - E. Kluzek - Move namelist read to separate subroutine
     !========================================================================
-
-    use shr_log_mod, only : s_logunit => shr_log_Unit
-    use shr_infnan_mod, only: shr_infnan_posinf, assignment(=)
-
-    implicit none
 
     !----- local -----
     integer :: i, l                      ! Indices
     character(len=32) :: test_name       ! field test name
+
     !----- formats -----
     character(*),parameter :: subName = '(seq_drydep_init) '
     character(*),parameter :: F00   = "('(seq_drydep_init) ',8a)"
@@ -639,10 +612,6 @@ CONTAINS
     !-----------------------------------------------------------------------------
     ! Return if this routine has already been called (e.g. cam and clm both call this)
     !-----------------------------------------------------------------------------
-
-    if (drydep_init) then
-       RETURN
-    end if
 
     !-----------------------------------------------------------------------------
     ! Allocate and fill foxd, drat and mapping as well as species indices
@@ -764,8 +733,7 @@ CONTAINS
                 end if
              end do
           else
-             if ( s_loglev > 0 ) write(s_logunit,F00) trim(drydep_list(i)), &
-                                 ' not in tables; will have dep vel = 0'
+             write(s_logunit,F00) trim(drydep_list(i)),' not in tables; will have dep vel = 0'
              call shr_sys_abort( subName//': '//trim(drydep_list(i))//' is not in tables' )
           end if
        end if
@@ -797,7 +765,7 @@ CONTAINS
        rac = small_value
     endwhere
 
-    drydep_init = .true.
+    drydep_initialized = .true.
 
   end subroutine seq_drydep_init
 
@@ -834,13 +802,7 @@ CONTAINS
     !========================================================================
     ! Interface to seq_drydep_setHCoeff when input is vector
     ! sets dry depositions coefficients -- used by both land and atmosphere models
-    ! !REVISION HISTORY:
-    !  2008-Nov-12 - F. Vitt - first version
     !========================================================================
-
-    use shr_log_mod, only : s_logunit => shr_log_Unit
-
-    implicit none
 
     integer, intent(in)      :: ncol                  ! Input size of surface-temp vector
     real(r8), intent(in)     :: sfc_temp(ncol)        ! Surface temperature
