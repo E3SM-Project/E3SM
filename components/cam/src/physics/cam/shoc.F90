@@ -245,12 +245,12 @@ subroutine shoc_main ( &
   real(r8), intent(inout) :: tk(shcol,nlev) 
   ! eddy coefficent for heat [m2/s]
   real(r8), intent(inout) :: tkh(shcol,nlev)
+  ! cloud liquid mixing ratio [kg/kg] 
+  real(r8), intent(inout) :: shoc_ql(shcol,nlev)   
 
 ! OUTPUT VARIABLES
   ! Cloud fraction [-]
   real(r8), intent(out) :: shoc_cldfrac(shcol,nlev)
-  ! cloud liquid mixing ratio [kg/kg] 
-  real(r8), intent(out) :: shoc_ql(shcol,nlev) 
   ! planetary boundary layer depth [m]
   real(r8), intent(out) :: pblh(shcol)
   
@@ -355,10 +355,10 @@ subroutine shoc_main ( &
 
     ! Update the turbulent length scale	 
     call shoc_length(&
-           shcol,nlev,nlevi, tke,&              ! Input
-           host_dx, host_dy, shoc_ql,&          ! Input
+           shcol,nlev,nlevi,tke,&               ! Input
+           host_dx,host_dy,pblh,&               ! Input
            zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
-	   thetal,wthv_sec,thv,pblh,&           ! Input
+	   thetal,wthv_sec,thv,&                ! Input
 	   brunt,shoc_mix)  		        ! Output
 
     ! Advance the SGS TKE equation	 
@@ -1839,9 +1839,9 @@ end subroutine check_tke
 
 subroutine shoc_length(&
              shcol,nlev,nlevi,tke,&        ! Input
-             host_dx,host_dy,cldin,&       ! Input
+             host_dx,host_dy,pblh,&        ! Input
              zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
-	     thetal,wthv_sec,thv,pblh,&    ! Input
+	     thetal,wthv_sec,thv,&         ! Input
 	     brunt,shoc_mix)               ! Output
 
   ! Purpose of this subroutine is to compute the SHOC 
@@ -1862,10 +1862,10 @@ subroutine shoc_length(&
   real(r8), intent(in) :: host_dx(shcol)
   ! host model grid size [m] 
   real(r8), intent(in) :: host_dy(shcol) 
+  ! Planetary boundary layer (PBL) height [m]
+  real(r8), intent(in) :: pblh(shcol)
   ! turbulent kinetic energy [m^2/s^2]
-  real(r8), intent(in) :: tke(shcol,nlev) 
-  ! cloud liquid water mixing ratio [kg/kg]
-  real(r8), intent(in) :: cldin(shcol,nlev) 
+  real(r8), intent(in) :: tke(shcol,nlev)  
   ! heights on midpoint grid [m]
   real(r8), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m] 
@@ -1879,9 +1879,7 @@ subroutine shoc_length(&
   ! liquid water potential temperature [K] 
   real(r8), intent(in) :: thetal(shcol,nlev) 
   ! virtual potential temperature [K]
-  real(r8), intent(in) :: thv(shcol,nlev)
-  ! PBL height [m]
-  real(r8), intent(in) :: pblh(shcol)  
+  real(r8), intent(in) :: thv(shcol,nlev)  
 
 ! OUTPUT VARIABLES
   ! brunt vailsailla frequency [/s]
@@ -1896,7 +1894,7 @@ subroutine shoc_length(&
   real(r8) :: cldmix, thedel, depth
   real(r8) :: omn, betdz, bbb, term, qsatt, dqsat, bet
   real(r8) :: thv_up, thv_dn, thedz, thefac, thecoef, thegam, norm
-  real(r8) :: stabterm, conv_var, tkes, mmax, cldthresh, gridfac
+  real(r8) :: stabterm, conv_var, tkes, mmax
   logical lf, indexr
   real(r8) :: conv_vel(shcol), tscale(shcol)
   real(r8) :: thv_zi(shcol,nlevi)
@@ -1935,13 +1933,12 @@ subroutine shoc_length(&
     if (denom(i) .gt. 0._r8) then
       l_inf(i)=0.1_r8*(numer(i)/denom(i))
     else
-      l_inf(i)=100._r8
+      l_inf(i)=100._r8 ! Minimum threshold
     endif
   enddo
   
-  ! determine the convective velocity scale at
-  !   the top of the cloud
-  
+  ! determine the convective velocity scale of
+  !   the planetary boundary layer 
   conv_vel(:)=0._r8
   do k=nlev-1,1,-1
     do i=1,shcol
@@ -1957,10 +1954,13 @@ subroutine shoc_length(&
   do i=1,shcol
     conv_vel(i) = max(0._r8,conv_vel(i))**(1._r8/3._r8) 
     
+    ! Compute eddy turnover timescale.  If
+    !  convective velocity scale is zero then
+    !  set to a minimum threshold 
     if (conv_vel(i) .gt. 0._r8) then 
       tscale(i)=pblh(i)/conv_vel(i)
     else
-      tscale(i)=100._r8
+      tscale(i)=100._r8 ! Minimum threshold
     endif
   enddo
  
@@ -1968,12 +1968,10 @@ subroutine shoc_length(&
     do i=1,shcol
     
       tkes=sqrt(tke(i,k))
-      gridfac=min(pblh(i),zt_grid(i,k))
-      gridfac=zt_grid(i,k)
       
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
-      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale(i)*tkes*vk*gridfac)) &
+      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale(i)*tkes*vk*zt_grid(i,k))) &
         +(1._r8/(tscale(i)*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/length_fac)     
       
     enddo  ! end i loop (column loop)
