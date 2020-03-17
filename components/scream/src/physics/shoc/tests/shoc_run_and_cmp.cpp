@@ -6,6 +6,7 @@
 
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
+#include "physics/shoc/shoc_ic_cases.hpp"
 
 #include <vector>
 
@@ -34,9 +35,10 @@ static Int compare (const std::string& label, const Scalar* a,
       worst = std::max(worst, num);
     }
   }
-  if (nerr)
+  if (nerr) {
     std::cout << label << " nerr " << nerr << " worst " << (worst/den)
               << " with denominator " << den << "\n";
+  }
   return nerr;
 }
 
@@ -57,9 +59,7 @@ Int compare (const std::string& label, const double& tol,
 
 struct Baseline {
   Baseline () {
-    for (const bool log_predictNc : {true, false})
-      for (const int it : {1, 6})
-        params_.push_back({ic::Factory::mixed, 300, it, log_predictNc});
+    params_.push_back({1, 128, 300});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -67,14 +67,13 @@ struct Baseline {
     scream_require_msg( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     for (auto ps : params_) {
-      // Run reference p3 on this set of parameters.
-      const auto d = ic::Factory::create(ps.ic, ic_ncol);
+      // Run reference shoc on this set of parameters.
+      const auto d = ic::Factory::create(ps.shcol, ps.nlev);
       set_params(ps, *d);
-      p3_init(use_fortran);
-      for (int it=0; it<ps.it; it++) {
-        p3_main(*d);
-        write(fid, d);
-      }
+      shoc_init(ps.nlev, use_fortran);
+      shoc_main(*d);
+      write(fid, d);
+
       // Save the fields to the baseline file.
     }
     return nerr;
@@ -88,41 +87,35 @@ struct Baseline {
     for (auto ps : params_) {
       case_num++;
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic, ic_ncol);
+      const auto d_ref = ic::Factory::create(ps.shcol, ps.nlev);
       set_params(ps, *d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic, ic_ncol);
+        const auto d = ic::Factory::create(ps.shcol, ps.nlev);
         set_params(ps, *d);
-        p3_init(use_fortran);
-        for (int it=0; it<ps.it; it++) {
-          std::cout << "--- checking case # " << case_num << ", it = " << it+1 << "/" << ps.it << " ---\n" << std::flush;
-          read(fid, d_ref);
-          p3_main(*d);
-          ne = compare("ref", tol, d_ref, d);
-          if (ne) std::cout << "Ref impl failed.\n";
-          nerr += ne;
-        }
+        shoc_init(ps.nlev, use_fortran);
+        std::cout << "--- checking case # " << case_num << " ---\n" << std::flush;
+        read(fid, d_ref);
+        shoc_main(*d);
+        ne = compare("ref", tol, d_ref, d);
+        if (ne) std::cout << "Ref impl failed.\n";
+        nerr += ne;
       }
     }
     return nerr;
   }
 
 private:
-  static Int ic_ncol;
 
   struct ParamSet {
-    ic::Factory::IC ic;
-    Real dt;
-    Int it;
-    bool log_predictNc;
+    Int shcol, nlev;
+    Real dtime;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
-    d.dt = ps.dt;
-    d.it = ps.it;
-    d.log_predictNc = ps.log_predictNc;
+    // shcol and nlev are already set by the Factory.
+    d.dtime = ps.dtime;
   }
 
   std::vector<ParamSet> params_;
@@ -156,8 +149,6 @@ private:
     }
   }
 };
-
-Int Baseline::ic_ncol = 3;
 
 void expect_another_arg (int i, int argc) {
   scream_require_msg(i != argc-1, "Expected another cmd-line arg.");
@@ -203,7 +194,6 @@ int main (int argc, char** argv) {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol, use_fortran);
     }
-    ShocGlobalForFortran::deinit();
   } scream::finalize_scream_session();
 
   return nerr != 0 ? 1 : 0;
