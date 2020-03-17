@@ -84,8 +84,10 @@ real(r8), parameter :: pblmaxp = 4.e4_r8
 
 ! Return to isotropic timescale [s]
 real(r8), parameter :: maxiso = 20000.0_r8
-! Mixing length [m]
+! Maximum Mixing length [m]
 real(r8), parameter :: maxlen = 20000.0_r8
+! Minimum Mixing length [m]
+real(r8), parameter :: minlen = 20.0_r8
 ! Maximum TKE [m2/s2]
 real(r8), parameter :: maxtke = 50.0_r8
 ! Minimum TKE [m2/s2]
@@ -939,7 +941,7 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
-  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,0._r8)
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
  
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
@@ -1122,7 +1124,7 @@ subroutine diag_third_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,shcol,(2._r8/3._r8)*mintke)
   call linear_interp(zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,wthv_sec,wthv_sec_zi,nlev,nlevi,shcol,largeneg)
-  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,10._r8)
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
  
   c=7.0_r8
   a0=(0.52_r8*c**(-2))/(c-2._r8)
@@ -1984,7 +1986,7 @@ subroutine shoc_length(&
     do i=1,shcol
      
       shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
-      shoc_mix(i,k)=max(20._r8,shoc_mix(i,k))
+      shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
       shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
 
     enddo
