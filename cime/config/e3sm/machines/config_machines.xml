@@ -1127,11 +1127,11 @@
 
   <machine MACH="anvil">
     <DESC>ANL/LCRC Linux Cluster</DESC>
-    <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
+    <NODENAME_REGEX>blueslogin.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu,pgi</COMPILERS>
-    <MPILIBS>mvapich,openmpi</MPILIBS>
-    <PROJECT>ACME</PROJECT>
+    <COMPILERS>intel,intel18,gnu</COMPILERS>
+    <MPILIBS>mvapich</MPILIBS>
+    <PROJECT>condo</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/anvil</CIME_OUTPUT_ROOT>
@@ -1142,106 +1142,87 @@
     <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="openmpi">
-      <executable>mpiexec</executable>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
       <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} </arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
-        <!--arg name="label" DEBUG="TRUE">-tag-output</arg>
-        <arg name="bindings" DEBUG="TRUE">-report-bindings</arg-->
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="mvapich">
-      <executable>mpiexec</executable>
-      <arguments>
-        <arg name="label"> -l</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} </arg>
+        <arg name="num_tasks"> -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
+        <arg name="binding">--cpu_bind=cores</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="placement">-m plane=$SHELL{echo 36/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable/>
     </mpirun>
-    <module_system type="soft">
-      <init_path lang="csh">/etc/profile.d/a_softenv.csh</init_path>
-      <init_path lang="sh">/etc/profile.d/a_softenv.sh</init_path>
-      <cmd_path lang="csh">soft</cmd_path>
-      <cmd_path lang="sh">soft</cmd_path>
+    <module_system type="module">
+      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=$MODULEPATH:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
+      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh;setenv MODULEPATH $MODULEPATH\:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
+      <init_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">export MODULEPATH=$MODULEPATH:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core;/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="add">+cmake-2.8.12</command>
-        <command name="add">+python-2.7</command>
+        <command name="purge"/>
+        <command name="load">cmake/3.14.2-gvwazz3</command>
       </modules>
       <modules compiler="intel">
-        <command name="add">+intel-17.0.0</command>
-        <command name="add">+netcdf-c-4.4.1-f77-4.4.4-intel-17.0.0-serial</command>
+        <command name="load">intel/17.0.0-pwabdn2</command>
+        <command name="load">intel-mkl/2017.1.132-6qy7y5f</command>
+        <command name="load">netcdf/4.4.1-tckdgwl</command>
+        <command name="load">netcdf-cxx/4.2-3qkutvv</command>
+        <command name="load">netcdf-fortran/4.4.4-urmb6ss</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="add">+mvapich2-2.2-intel-17.0.0-acme</command>
-        <command name="add">+pnetcdf-1.7.0-intel-17.0.0-mvapich2-2.2-acme</command>
+        <command name="load">mvapich2/2.2-verbs-qwuab3b</command>
+        <command name="load">parallel-netcdf/1.7.0-lbykqph</command>
       </modules>
-      <modules compiler="intel" mpilib="openmpi">
-        <command name="add">+openmpi-2.0.1-intel-17.0.0-acme</command>
-        <command name="add">+pnetcdf-1.7.0-intel-17.0.0-openmpi-2.0.1-acme</command>
+      <modules compiler="intel18">
+        <command name="load">intel/18.0.4-62uvgmb</command>
+        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
+        <command name="load">netcdf/4.4.1-fijcsqi</command>
+        <command name="load">netcdf-cxx/4.2-cixenix</command>
+        <command name="load">netcdf-fortran/4.4.4-mmtrep3</command>
+      </modules>
+      <modules compiler="intel18" mpilib="mvapich">
+        <command name="load">mvapich2/2.2-verbs-m57bia7</command>
+        <command name="load">parallel-netcdf/1.11.0-ny4vo3o</command>
       </modules>
       <modules compiler="gnu">
-        <command name="add">+gcc-5.3.0</command>
-        <command name="add">+netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial</command>
+        <command name="load">gcc/8.2.0-xhxgy33</command>
+        <command name="load">intel-mkl/2018.4.274-2amycpi</command>
+        <command name="load">netcdf/4.4.1-ve2zfkw</command>
+        <command name="load">netcdf-cxx/4.2-2rkopdl</command>
+        <command name="load">netcdf-fortran/4.4.4-thtylny</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
-        <command name="add">+mvapich2-2.2b-gcc-5.3.0-acme</command>
-        <command name="add">+pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b-acme</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="add">+openmpi-1.10.2-gcc-5.3.0-acme</command>
-        <command name="add">+pnetcdf-1.6.1-gcc-5.3.0-openmpi-1.10.2-acme</command>
-      </modules>
-      <modules compiler="pgi">
-        <command name="add">+pgi-16.3</command>
-        <command name="add">+netcdf-c-4.4.0-f77-4.4.3-pgi-16.3-serial</command>
-      </modules>
-      <modules compiler="pgi" mpilib="mvapich">
-        <command name="add">+mvapich2-2.2b-pgi-16.3-acme</command>
-        <command name="add">+pnetcdf-1.6.1-pgi-16.3-mvapich2-2.2b-acme</command>
-      </modules>
-      <modules compiler="pgi" mpilib="openmpi">
-        <command name="add">+openmpi-1.10.2-pgi-16.3-acme</command>
-        <command name="add">+pnetcdf-1.6.1-pgi-16.3-openmpi-1.10.2-acme</command>
+        <command name="load">mvapich2/2.2-verbs-ppznoge</command>
+        <command name="load">parallel-netcdf/1.11.0-c22b2bn</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <env name="OMP_STACKSIZE">64M</env>
-      <env name="KMP_HOT_TEAMS_MODE">1</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" DEBUG="FALSE">
-      <env name="KMP_AFFINITY">scatter</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" DEBUG="TRUE">
-      <env name="KMP_AFFINITY">verbose,scatter</env>
-      <env name="OMP_DISPLAY_ENV">verbose</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
     <environment_variables mpilib="mvapich">
-      <env name="MV2_ENABLE_AFFINITY">1</env>
-      <env name="MV2_USE_SHARED_MEM">1</env>
-      <env name="MV2_SMP_USE_CMA">1</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" mpilib="mvapich">
-      <!--e.g. 6 threads: MV2_CPU_MAPPING=0-5:6-11:12-17:18-23:24-29:30-35: -->
-      <env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env>
-    </environment_variables>
-    <environment_variables DEBUG="TRUE" mpilib="mvapich">
+      <env name="MV2_ENABLE_AFFINITY">0</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
+    </environment_variables>
+    <environment_variables mpilib="mvapich" DEBUG="TRUE">
+      <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
+      <env name="MV2_SHOW_ENV_INFO">2</env>
     </environment_variables>
   </machine>
 
