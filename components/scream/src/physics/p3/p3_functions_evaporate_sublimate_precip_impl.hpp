@@ -43,15 +43,20 @@ void Functions<S,D>
   }
 
   //rain evaporation
-  qrevp.set(rcldm_gt_cld && qr_incld_ge_qsmall, epsr * (qclr-qvs)/ab);
+  if(rcldm_gt_cld.any() && qr_incld_ge_qsmall.any()){
+    qrevp.set(rcldm_gt_cld && qr_incld_ge_qsmall, epsr * (qclr-qvs)/ab);
+  }
 
   //only evap in out-of-cloud region
-  qrevp.set(rcldm_gt_cld,-min(qrevp*(rcldm-cld),0));
-  qrevp.set(rcldm_gt_cld,qrevp/rcldm);
+  if(rcldm_gt_cld.any()){
+    qrevp.set(rcldm_gt_cld,-min(qrevp*(rcldm-cld),0));
+    qrevp.set(rcldm_gt_cld,qrevp/rcldm);
+  }
 
   const auto qr_incld_gt_qsmall = qr_incld > QSMALL;
-
-  nrevp.set(qr_incld_gt_qsmall, qrevp*(nr_incld/qr_incld));
+  if(qr_incld_gt_qsmall.any()){
+    nrevp.set(qr_incld_gt_qsmall, qrevp*(nr_incld/qr_incld));
+  }
 }
 
 
