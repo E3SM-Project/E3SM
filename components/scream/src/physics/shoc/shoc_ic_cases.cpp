@@ -10,25 +10,27 @@ namespace ic {
 namespace {
 
 // Reference elevations for data interpolation.
-const Real z_ref[] = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
-const Real qw_ref[] = {17.0, 16.3, 10.7, 4.2, 3.0};
-const Real ql_ref[] = {0.0, 5.0, 7.0, 6.0, 0.0};
-const Real theta_ref[] = {299.7, 298.7, 302.4, 308.2, 312.85};
+const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
+const std::array<Real, 5> qw_ref = {17.0, 16.3, 10.7, 4.2, 3.0};
+const std::array<Real, 5> ql_ref = {0.0, 5.0, 7.0, 6.0, 0.0};
+const std::array<Real, 5> theta_ref = {299.7, 298.7, 302.4, 308.2, 312.85};
 
 // Wind speed interpolation data.
-const Real wind_z_ref[] = {0.0, 700.0, 3000.0};
-const Real u_ref[] = {-7.75, -8.75, -4.61};
-const Real v_ref[] = {0.0, 0.1, 0.0};
-const Real w_ref[] = {0.1, 0.1, 0.0};
+const std::array<Real, 3> wind_z_ref = {0.0, 700.0, 3000.0};
+const std::array<Real, 3> u_ref = {-7.75, -8.75, -4.61};
+const std::array<Real, 3> v_ref = {0.0, 0.1, 0.0};
+const std::array<Real, 3> w_ref = {0.1, 0.1, 0.0};
 
 // Linearly interpolates data at a specific elevation using elevation and
 // data arrays.
-Real interpolate_data(const Real* ref_elevations, const Real* ref_data,
-                      Int n, Real z)
+template <size_t N>
+Real interpolate_data(const std::array<Real, N>& ref_elevations,
+                      const std::array<Real, N>& ref_data,
+                      Real z)
 {
-  auto pos = std::lower_bound(ref_elevations, ref_elevations + n, z);
-  Int index = pos - ref_elevations;
-  if (index < n) {
+  auto pos = std::lower_bound(ref_elevations.begin(), ref_elevations.end(), z);
+  Int index = pos - ref_elevations.begin();
+  if (index < N) {
     const Real f1 = ref_data[index];
     const Real f2 = ref_data[index+1];
     const Real z1 = ref_elevations[index];
@@ -39,7 +41,7 @@ Real interpolate_data(const Real* ref_elevations, const Real* ref_data,
   }
   else {
     // Don't extrapolate off the end of the table.
-    return ref_data[n-1];
+    return ref_data[N-1];
   }
 }
 
@@ -62,7 +64,7 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
   // Compute the cell and interface pressures at the bottom of the column.
   {
     Real dz = z(i, 1);
-    Real theta1 = interpolate_data(&z_ref[0], &theta_ref[0], 5, dz);
+    Real theta1 = interpolate_data(z_ref, theta_ref, dz);
     if (std::abs(theta_s - theta1) < 1e-14 * theta_s) {
       pres(i, 0) = pow(pow(p_s, k) + k*c*dz/theta_s, 1.0/k);
     }
@@ -77,8 +79,8 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
   for (Int k = 1; k < nlev; ++k) {
     Real z0 = z(i, k-1);
     Real z1 = z(i, k);
-    Real th0 = interpolate_data(&z_ref[0], &theta_ref[0], 5, z0);
-    Real th1 = interpolate_data(&z_ref[0], &theta_ref[0], 5, z1);
+    Real th0 = interpolate_data(z_ref, theta_ref, z0);
+    Real th1 = interpolate_data(z_ref, theta_ref, z1);
     Real p0 = pres(i, k-1);
     if (std::abs(th0 - th1) < 1e-14 * th0) {
       pres(i, k) = pow(pow(p0, k) + k*c*(z1 - z0)/th0, 1.0/k);
@@ -107,9 +109,9 @@ void interpolate_column_data(Real ztop, Int col, FortranData& d) {
     d.zt_grid(i, k) = zt;
 
     // Interpolate the potential temperature.
-    const Real theta_zt = interpolate_data(&z_ref[0], &theta_ref[0], 5, zt);
-    const Real qw = interpolate_data(&z_ref[0], &qw_ref[0], 5, zt);
-    const Real ql = interpolate_data(&z_ref[0], &ql_ref[0], 5, zt);
+    const Real theta_zt = interpolate_data(z_ref, theta_ref, zt);
+    const Real qw = interpolate_data(z_ref, qw_ref, zt);
+    const Real ql = interpolate_data(z_ref, ql_ref, zt);
     d.qw(i, k) = qw;
     d.shoc_ql(i, k) = ql;
     Real zvir = (consts::RH2O / consts::RAir) - 1.0;
@@ -117,9 +119,9 @@ void interpolate_column_data(Real ztop, Int col, FortranData& d) {
     d.thetal(i, k) = theta_zt;
 
     // Set cell-centered wind speeds.
-    d.u_wind(i, k) = interpolate_data(&wind_z_ref[0], &u_ref[0], 3, zt);
-    d.v_wind(i, k) = interpolate_data(&wind_z_ref[0], &v_ref[0], 3, zt);
-    d.w_field(i, k) = interpolate_data(&wind_z_ref[0], &w_ref[0], 3, zt);
+    d.u_wind(i, k) = interpolate_data(wind_z_ref, u_ref, zt);
+    d.v_wind(i, k) = interpolate_data(wind_z_ref, v_ref, zt);
+    d.w_field(i, k) = interpolate_data(wind_z_ref, w_ref, zt);
 
     // Set turbulent kinetic energy.
     // TODO: Not done yet!
