@@ -348,6 +348,14 @@
   </compset> 
 
   <!-- *********************************** -->
+  <!-- Radiative-Convective Equilibrium (RCE) -->
+  <!-- *********************************** -->
+  <compset>
+    <alias>F-EAMv1-RCEMIP</alias>
+    <lname>2000_CAM5%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
   

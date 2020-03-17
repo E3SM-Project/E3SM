@@ -351,3 +351,50 @@ def get_common_ancestor(other_head, head="HEAD", repo=None):
     """
     rc, output, _ = run_cmd("git merge-base {} {}".format(other_head, head), from_dir=repo)
     return output if rc == 0 else None
+
+###############################################################################
+def update_submodules(repo=None):
+###############################################################################
+    """
+    Updates submodules
+    """
+    run_cmd_no_fail("git submodule update --init --recursive",from_dir=repo)
+
+###############################################################################
+def merge_git_ref(git_ref, repo=None):
+###############################################################################
+    """
+    Merge given git ref into the current branch, and updates submodules
+    """
+    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
+    update_submodules(repo)
+    expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
+
+###############################################################################
+def print_last_commit(git_ref=None, repo=None):
+###############################################################################
+    """
+    Prints a one-liner of the last commit
+    """
+    git_ref = get_current_head(repo) if git_ref is None else git_ref
+    last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref))
+    print("   Last commit on ref '{}':".format(git_ref))
+    print("     {}".format(last_commit))
+
+###############################################################################
+def checkout_git_ref(git_ref, verbose=False, repo=None):
+###############################################################################
+    """
+    Checks out 'branch_ref', and updates submodules
+    """
+    if get_current_commit() != get_current_commit(commit=git_ref):
+        expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+
+        run_cmd_no_fail("git checkout {}".format(git_ref),from_dir=repo)
+        update_submodules(repo)
+        git_commit = get_current_commit()
+        expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
+        if verbose:
+            print("  Switched to '{}' ({})".format(git_ref,git_commit))
+            print_last_commit(git_ref=git_ref)
+

@@ -197,7 +197,25 @@ extern "C"{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-//
+
+struct PreventIceOverdepletionData
+{
+  // inputs
+  Real pres, t, qv, xxls, odt;
+
+  //output
+  Real qidep, qisub;
+};
+
+void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
+
+extern "C"{
+  void prevent_ice_overdepletion_f(Real pres, Real t, Real qv, Real xxls,
+    Real odt, Real* qidep, Real* qisub);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudWaterConservationData
 {
   // inputs

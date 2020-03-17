@@ -4,7 +4,8 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, get_cime_config, get_batch_script_for_job, get_logging_options
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, convert_to_babylonian_time, \
+    get_cime_config, get_batch_script_for_job, get_logging_options, format_time
 from CIME.locked_files import lock_file, unlock_file
 from collections import OrderedDict
 import stat, re, math
@@ -276,6 +277,13 @@ class EnvBatch(EnvBase):
                     walltime = specs[3]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
+
+            walltime_format = self.get_value("walltime_format")
+            if walltime_format:
+                seconds = convert_to_seconds(walltime)
+                full_bab_time = convert_to_babylonian_time(seconds)
+                walltime = format_time(walltime_format, "%H:%M:%S", full_bab_time)
+
             env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
             env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))

@@ -25,7 +25,6 @@ public:
   using extra_data_type = std::map<std::string,util::any>;
 
   // Constructor(s)
-  FieldHeader () = default;
   FieldHeader (const FieldHeader&) = default;
   explicit FieldHeader (const identifier_type& id);
 

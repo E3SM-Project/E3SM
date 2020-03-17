@@ -154,6 +154,15 @@ struct Functions
                                    Spack& nrheti, Spack& nisub, Spack& qinuc,
                                    Spack& ninuc, Spack& qiberg);
 
+  // Limits ice process rates to prevent overdepletion of sources such that
+  // the subsequent adjustments are done with maximum possible rates for the
+  // time step.
+  KOKKOS_FUNCTION
+  static void prevent_ice_overdepletion(const Spack& pres, const Spack& t,
+                                        const Spack& qv, const Spack& xxls,
+                                        const Spack& odt, Spack& qidep,
+                                        Spack& qisub);
+
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
   // ------------------------------------------------------------------------------------------!
@@ -536,6 +545,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_table_ice_impl.hpp"
 # include "p3_functions_back_to_cell_average_impl.hpp"
+# include "p3_functions_prevent_ice_overdepletion_impl.hpp"
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"

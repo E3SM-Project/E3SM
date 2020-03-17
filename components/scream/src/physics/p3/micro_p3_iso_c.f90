@@ -260,6 +260,15 @@ contains
       qidep, nrheti, nisub, qinuc, ninuc, qiberg)
   end subroutine back_to_cell_average_c
 
+subroutine prevent_ice_overdepletion_c(pres,t,qv,xxls,odt,    &
+   qidep,qisub) bind(C)
+    use micro_p3, only: prevent_ice_overdepletion
+
+    real(kind=c_real), value, intent(in) :: pres, t, qv, xxls, odt
+    real(kind=c_real), intent(inout) :: qidep, qisub
+
+    call prevent_ice_overdepletion(pres, t, qv, xxls, odt, qidep, qisub)
+end subroutine prevent_ice_overdepletion_c
 
   subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
