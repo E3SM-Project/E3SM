@@ -44,7 +44,6 @@
 <use_rad_dt_cosz>.true.</use_rad_dt_cosz>
 
 <!-- Tunable parameters for 72 layer model -->
-
 <ice_sed_ai>         500.0  </ice_sed_ai>
 <cldfrc_dp1>         0.045D0</cldfrc_dp1>
 <effgw_oro>          0.25    </effgw_oro>
@@ -72,13 +71,12 @@
 <sim_year>2000</sim_year>
 
 <!-- Settings related to the SCREAM NH dycore -->
-<theta_advect_form>1</theta_advect_form>
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
 <tstep_type>10</tstep_type>
 
-<!-- Do radiation every timestep -->
-<iradsw>  1</iradsw>
-<iradlw>  1</iradlw>
+<!-- Do radiation every timestep by default -->
+<iradsw> 1 </iradsw>
+<iradlw> 1 </iradlw>
 
 <!-- Turn off Gravity Waves -->
 <use_gw_front>.false.</use_gw_front>
@@ -92,14 +90,23 @@
 <use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
 <aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>
 <aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
-<aerodep_flx_file>mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
+<aerodep_flx_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</aerodep_flx_file>
+<aerodep_flx_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
 <aerodep_flx_cycle_yr>01</aerodep_flx_cycle_yr>
 <prescribed_aero_type>'CYCLICAL'</prescribed_aero_type>
 <prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
-<prescribed_aero_file>mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
+<prescribed_aero_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
 <prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
-<!-- Initial condition file -->
-<ncdata    >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
+<!-- Initial condition files for hindcasts -->
+<ncdata hgrid="ne1024np4" nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
+<ncdata hgrid="ne1024np4" nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc           </ncdata>
+<ncdata hgrid="ne512np4"  nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L128_c20200115.nc </ncdata>
+<ncdata hgrid="ne512np4"  nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc            </ncdata>
+<ncdata hgrid="ne30np4"   nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L128_c20200313.nc  </ncdata>
+<ncdata hgrid="ne30np4"   nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L72_c20200313.nc   </ncdata>
+<ncdata hgrid="ne4np4"    nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
+<ncdata hgrid="ne4np4"    nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L72_c20200313.nc    </ncdata>
 
 </namelist_defaults>
