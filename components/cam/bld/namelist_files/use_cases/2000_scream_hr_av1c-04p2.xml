@@ -86,6 +86,9 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>
 
+<!-- Turn on temperature clipping for RRTMGP -->
+<rrtmgp_clip_temperatures> .true. </rrtmgp_clip_temperatures>
+
 <!-- Settings related to the SCREAM NH dycore -->
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
 <tstep_type>10</tstep_type>

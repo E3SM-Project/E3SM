@@ -92,6 +92,9 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>
 
+<!-- Turn on temperature clipping for RRTMGP -->
+<rrtmgp_clip_temperatures> .true. </rrtmgp_clip_temperatures>
+
 <se_ftype                >2</se_ftype>
 
 </namelist_defaults>
