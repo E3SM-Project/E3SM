@@ -46,6 +46,12 @@ void run_tests () {
   double one = 1.0;
   double zero = 0.0;
   double inf, nan, ovfl;
+
+  // Run the tests.
+  // Note: sometimes a FPE is not thrown when the bad number
+  //       is generated, but rather the next time is used.
+  //       Therefore, sometimes we multiply the result
+  //       by 1.0 before testing that the FPE was thrown.
   
   // Test 1/0
   setjmp(JumpBuffer);
@@ -61,9 +67,18 @@ void run_tests () {
   gSignalStatus = 0;
   fesetenv(&fenv);
 
+  // Test invalid arg
+  setjmp(JumpBuffer);
+  nan = std::sqrt(-1.0);
+  nan *= 1.0;
+  REQUIRE (gSignalStatus==(has_fe_invalid(mask) ? 1 : 0));
+  gSignalStatus = 0;
+  fesetenv(&fenv);
+
   // Test overflow
   setjmp(JumpBuffer);
   ovfl = exp(710.0);
+  ovfl *= 1.0;
   REQUIRE (gSignalStatus==(has_fe_overflow(mask) ? 1 : 0));
   gSignalStatus = 0;
 
