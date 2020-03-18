@@ -7,7 +7,6 @@ include(genf90_utils)
 include(Sourcelist_utils)
 
 set(SHOC_SRCS
-  shoc.cpp
   shoc_f90.cpp
   shoc_functions_f90.cpp
   shoc_ic_cases.cpp
