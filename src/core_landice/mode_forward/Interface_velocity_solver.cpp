@@ -76,6 +76,7 @@ std::vector<double> smbUncertaintyData;
 std::vector<double> bmbData, bmbUncertaintyData;
 std::vector<double> observedVeloXData, observedVeloYData, observedVeloUncertaintyData;
 std::vector<double> observedDHDtData, observedDHDtUncertaintyData;
+std::vector<double> surfaceAirTemperatureData, basalHeatFluxData;
 std::vector<int> indexToCellIDData;
 
 int numBoundaryEdges;
@@ -1233,6 +1234,10 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
             double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
             double const * observedSurfaceVelocityUncertainty_F,
             double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F,
+            // these last 2 thermal fields are not necessarily observations but
+            // they are not needed except for exporting to ascii format, so including
+            // them in this function.
+            double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
             int const * indexToCellID_F) {
 
   thicknessUncertaintyData.assign(nVertices, 1e10);
@@ -1244,6 +1249,8 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
   observedVeloUncertaintyData.assign(nVertices, 1e10);
   observedDHDtData.assign(nVertices, 1e10);
   observedDHDtUncertaintyData.assign(nVertices, 1e10);
+  surfaceAirTemperatureData.assign(nVertices, 1e10);
+  basalHeatFluxData.assign(nVertices, 1e10);
   indexToCellIDData.assign(nVertices, -1);
 
 
@@ -1262,6 +1269,9 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
 
     observedDHDtData[index] = observedThicknessTendency_F[iCell] / unit_length * secondsInAYear;
     observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] / unit_length * secondsInAYear;
+
+    surfaceAirTemperatureData[index] = surfaceAirTemperature_F[iCell];
+    basalHeatFluxData[index] = basalHeatFlux_F[iCell];
 
     indexToCellIDData[index] = indexToCellID_F[iCell];
   }
@@ -1283,6 +1293,9 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
 
     observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
     observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
+
+    surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
+    basalHeatFluxData[iv] = basalHeatFlux_F[ic];
 
   }
 }
@@ -1570,6 +1583,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
   void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
+    double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
     double const* stiffnessFactor_F,
     double const* effecPress_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
@@ -1657,6 +1671,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
                     bmb_F, bmbUncertainty_F,
                     observedSurfaceVelocityX_F, observedSurfaceVelocityY_F, observedSurfaceVelocityUncertainty_F,
                     observedThicknessTendency_F, observedThicknessTendencyUncertainty_F,
+                    surfaceAirTemperature_F, basalHeatFlux_F,
                     indexToCellID_F);
 
 
@@ -1667,6 +1682,9 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     write_ascii_mesh_field(elevationData, "surface_height");
     write_ascii_mesh_field(bedTopographyData, "bed_topography");
+
+    write_ascii_mesh_field(surfaceAirTemperatureData, "surface_air_temperature");
+    write_ascii_mesh_field(basalHeatFluxData, "basal_heat_flux");
 
     write_ascii_mesh_field(betaData, "basal_friction");
 
