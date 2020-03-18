@@ -47,11 +47,11 @@ contains
   !====================================================================!
   subroutine shoc_init_f90 (q) bind(c)
 
-    use shoc,                   only: shoc_init,r8
+    use shoc,                   only: shoc_init, rtype
  
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
     
-    real(kind=r8) :: pref_mid(pcols,pver) ! pressure at midlevel hPa; r8 for now b/c shoc supports only r8 currently
+    real(kind=rtype) :: pref_mid(pcols,pver) ! pressure at midlevel hPa; rtype for now b/c shoc supports only rtype currently
     integer(kind=c_int) :: kts, kte, k
 
     kts     = 1
@@ -63,14 +63,14 @@ contains
 
     call shoc_init(& 
          pver,&
-         real(gravit,kind=r8),&
-         real(rair,kind=r8),  &
-         real(rh2o,kind=r8),  &
-         real(cpair,kind=r8), &
-         real(zvir,kind=r8),  &
-         real(latvap,kind=r8),&
-         real(latice,kind=r8),&
-         real(karman,kind=r8),&
+         real(gravit,kind=rtype),&
+         real(rair,kind=rtype),  &
+         real(rh2o,kind=rtype),  &
+         real(cpair,kind=rtype), &
+         real(zvir,kind=rtype),  &
+         real(latvap,kind=rtype),&
+         real(latice,kind=rtype),&
+         real(karman,kind=rtype),&
          pref_mid,            &
          kte,&
          kts)   
