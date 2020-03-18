@@ -31,4 +31,21 @@ void runtime_abort(const std::string& message, int code) {
 }
 
 } // namespace scream
+
+void enable_fpes (const int mask) {
+  feenableexcept(mask);
+}
+
+void disable_fpes (const int mask) {
+  fedisableexcept(mask);
+}
+
+int get_enabled_fpes () {
+  return fegetexcept();
+}
+
+void disable_all_fpes () {
+  disable_fpes(FE_ALL_EXCEPT);
+}
+
 } // namespace error
