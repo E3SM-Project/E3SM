@@ -2138,8 +2138,8 @@
     <domain name="ne1024np4">
       <nx>56623106</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024np4_oRRS15to5.190514.nc</file>
-      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.190514.nc</file>
+      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024np4_oRRS15to5.200228.nc</file>
+      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.200228.nc</file>
       <desc>ne1024np4 is Spectral Elem 3km grid:</desc>
     </domain>
 
