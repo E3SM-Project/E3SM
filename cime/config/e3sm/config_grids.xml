@@ -2357,6 +2357,7 @@
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
       <file grid="atm" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
       <file grid="lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
+      <file grid="atm" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
