@@ -48,20 +48,20 @@ contains
   subroutine shoc_init_f90 (q) bind(c)
 
     use shoc,                   only: shoc_init, rtype
- 
+
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
-    
+
     real(kind=rtype) :: pref_mid(pcols,pver) ! pressure at midlevel hPa; rtype for now b/c shoc supports only rtype currently
     integer(kind=c_int) :: kts, kte, k
 
     kts     = 1
     kte     = pver
 
-    do k = kte,kts,-1 
+    do k = kte,kts,-1
        pref_mid(:,k)    = 1e3_rtype - (1e3_rtype-0.1)/real(pver)!state%pmid(:,:)
     end do
 
-    call shoc_init(& 
+    call shoc_init(&
          pver,&
          real(gravit,kind=rtype),&
          real(rair,kind=rtype),  &
@@ -73,7 +73,7 @@ contains
          real(karman,kind=rtype),&
          pref_mid,            &
          kte,&
-         kts)   
+         kts)
 
     q(:,:,:) = 0.0_rtype
     q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
@@ -85,7 +85,7 @@ contains
     q(:,:,7) = 1.0e5_rtype!state%q(:,:,ixnumrain)
     q(:,:,8) = 1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
     q(:,:,9) = 1.0e4_rtype!state%q(:,:,ixrimvol)
-     
+
 
     test = 0.0
     print '(a15,f16.8,e16.8,i8,i8)', 'SHOC init = ', test, sum(q(1,:,1)), pcols, pver
@@ -97,7 +97,7 @@ contains
     use shoc,           only: shoc_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
-    real(kind=c_real), intent(in)    :: dtime ! Timestep 
+    real(kind=c_real), intent(in)    :: dtime ! Timestep
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
     real(kind=c_real), intent(inout) :: FQ(pcols,4,pver) ! Tracer mass concentrations from SCREAM kg/kg
     real(kind=c_real), intent(in)    :: qdp(pcols,2,4,pver) ! Tracer mass concentrations from SCREAM kg/kg
@@ -113,7 +113,7 @@ contains
     real(kind=c_real) :: rimvol(pcols,pver)     !rime volume mixing ratio               m3/kg
     real(kind=c_real) :: pres(pcols,pver)       !pressure at midlevel                   hPa
 
-    real(kind=c_real) :: inv_cp 
+    real(kind=c_real) :: inv_cp
 
     integer(kind=c_int) :: k, ncol
     integer :: i
@@ -145,25 +145,25 @@ contains
         qirim(i,k)   = q(i,k,8) !1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
         rimvol(i,k)  = q(i,k,9) !1.0e4_rtype!state%q(:,:,ixrimvol)
       end do
-    end do 
+    end do
 
-    do k = kte,kts,-1 
+    do k = kte,kts,-1
       pres(:,k)    = 1e3_rtype - (1e3_rtype-0.1)/real(pver)!state%pmid(:,:)
     end do
 
     do i = its,ite
       do k = kts,kte
-        q(i,k,1) = qv(i,k)*1.01 
-        q(i,k,2) = cldliq(i,k)  
-        q(i,k,3) = ice(i,k)     
-        q(i,k,4) = numliq(i,k)  
-        q(i,k,5) = numice(i,k)  
-        q(i,k,6) = rain(i,k)    
-        q(i,k,7) = numrain(i,k) 
-        q(i,k,8) = qirim(i,k)   
+        q(i,k,1) = qv(i,k)*1.01
+        q(i,k,2) = cldliq(i,k)
+        q(i,k,3) = ice(i,k)
+        q(i,k,4) = numliq(i,k)
+        q(i,k,5) = numice(i,k)
+        q(i,k,6) = rain(i,k)
+        q(i,k,7) = numrain(i,k)
+        q(i,k,8) = qirim(i,k)
         q(i,k,9) = rimvol(i,k)
       end do
-    end do  
+    end do
 
     test = test + dtime
     FQ(1,1,1) = 9e9
