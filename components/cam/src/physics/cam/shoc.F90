@@ -1158,7 +1158,7 @@ subroutine diag_third_shoc_moments(&
 	
       f1=thedz2 * bet2**2 * iso**3 * (wthl_sec(i,k) * &
         (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_r8 * &
-	w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))) ! bug here
+	w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb)))
 	
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
         (w_sec(i,kc)-w_sec(i,k))+ 2._r8 * thedz2 * bet2 * &   
@@ -1188,7 +1188,7 @@ subroutine diag_third_shoc_moments(&
       Y0 = (2._r8 * a2 * buoy_sgs2 * X0) / (1._r8 - a3 * buoy_sgs2)
       X1 = (a0 * f0 + a1 * f1 + a2 * (1._r8 - a3 * buoy_sgs2) * f2) / &
         (1._r8 - (a1 + a3) * buoy_sgs2)
-      Y1 = (2._r8 * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1)) / &   ! bug here!
+      Y1 = (2._r8 * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1)) / & 
         (1._r8 - a3* buoy_sgs2)     
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	
@@ -1342,9 +1342,9 @@ subroutine shoc_assumed_pdf(&
   ! Interpolate many variables from interface grid to themo grid
   call linear_interp(zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,shcol,largeneg)  
   call linear_interp(zi_grid,zt_grid,thl_sec,thl_sec_zt,nlevi,nlev,shcol,0._r8)
-  call linear_interp(zi_grid,zt_grid,wthl_sec,wthl_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
+  call linear_interp(zi_grid,zt_grid,wthl_sec,wthl_sec_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
-  call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
+  call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) 
   call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,0._r8)  
   
   do k=1,nlev
