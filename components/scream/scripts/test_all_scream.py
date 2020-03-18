@@ -333,18 +333,13 @@ class TestAllScream(object):
                 success = self.generate_all_baselines()
                 if not success:
                     print ("Error(s) occurred during baselines generation phase")
+                    return False
 
             if self._perform_tests:
                 # Finally, run the tests
                 success &= self.run_all_tests()
                 if not success:
                     print ("Error(s) occurred during test phase")
-
-        except:
-            # Re-throw whatever the exception was
-            # Note: why do we catch it then, you may ask? Because we need to run
-            #       the finally block before the exception is pushed up the stack.
-            raise
 
         finally:
             if not self._keep_tree:
