@@ -66,7 +66,6 @@
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
-<se_ftype                >2</se_ftype>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
 <nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
 <cld_sed                 >1.0D0</cld_sed>
@@ -93,14 +92,6 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>
 
-<!-- Initial conditions for hindcasts -->
-<ncdata hgrid="ne1024np4" nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
-<ncdata hgrid="ne1024np4" nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc           </ncdata>
-<ncdata hgrid="ne512np4"  nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L128_c20200115.nc </ncdata>
-<ncdata hgrid="ne512np4"  nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc            </ncdata>
-<ncdata hgrid="ne30np4"   nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L128_c20200313.nc  </ncdata>
-<ncdata hgrid="ne30np4"   nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L72_c20200313.nc   </ncdata>
-<ncdata hgrid="ne4np4"    nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
-<ncdata hgrid="ne4np4"    nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L72_c20200313.nc    </ncdata>
+<se_ftype                >2</se_ftype>
 
 </namelist_defaults>

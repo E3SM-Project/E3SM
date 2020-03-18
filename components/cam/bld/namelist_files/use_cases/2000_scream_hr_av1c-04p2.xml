@@ -67,22 +67,6 @@
 <!-- Macrophysics/microphysics coupling -->
 <cld_macmic_num_steps    > 6</cld_macmic_num_steps>
 
-<!-- sim_year used for CLM datasets and SSTs forcings -->
-<sim_year>2000</sim_year>
-
-<!-- Settings related to the SCREAM NH dycore -->
-<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
-<tstep_type>10</tstep_type>
-
-<!-- Do radiation every timestep by default -->
-<iradsw> 1 </iradsw>
-<iradlw> 1 </iradlw>
-
-<!-- Turn off Gravity Waves -->
-<use_gw_front>.false.</use_gw_front>
-<use_gw_oro>.false.</use_gw_oro>
-<use_gw_convect>.false.</use_gw_convect>
-
 <!-- SHOC timestep -->
 <shoc_timestep>20</shoc_timestep>
 
@@ -99,14 +83,23 @@
 <prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
 <prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
-<!-- Initial condition files for hindcasts -->
-<ncdata hgrid="ne1024np4" nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
-<ncdata hgrid="ne1024np4" nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc           </ncdata>
-<ncdata hgrid="ne512np4"  nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L128_c20200115.nc </ncdata>
-<ncdata hgrid="ne512np4"  nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc            </ncdata>
-<ncdata hgrid="ne30np4"   nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L128_c20200313.nc  </ncdata>
-<ncdata hgrid="ne30np4"   nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L72_c20200313.nc   </ncdata>
-<ncdata hgrid="ne4np4"    nlev="128">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
-<ncdata hgrid="ne4np4"    nlev="72" >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L72_c20200313.nc    </ncdata>
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>2000</sim_year>
+
+<!-- Settings related to the SCREAM NH dycore -->
+<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
+<tstep_type>10</tstep_type>
+
+<!-- For high-res, we use se_ftype = 1 to improve dynamics/physics coupling -->
+<se_ftype>1</se_ftype>
+
+<!-- Do radiation every timestep by default -->
+<iradsw> 1 </iradsw>
+<iradlw> 1 </iradlw>
+
+<!-- Turn off Gravity Waves -->
+<use_gw_front>.false.</use_gw_front>
+<use_gw_oro>.false.</use_gw_oro>
+<use_gw_convect>.false.</use_gw_convect>
 
 </namelist_defaults>
