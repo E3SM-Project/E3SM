@@ -27,15 +27,15 @@
   </entry>
 
   <entry id="CAM_TARGET">
-         <type>char</type>
-         <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
-         <default_value>preqx</default_value>
-	 <values>
+    <type>char</type>
+    <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
+    <default_value>preqx</default_value>
+	<values>
 	   <value compset="_CAM5%SCREAM-HR">theta-l</value>
-	 </values>
-         <group>build_component_cam</group>
-         <file>env_build.xml</file>
-         <desc>CAM-SE cmake target (only used with CAM_DYCORE == 'se')</desc>
+	</values>
+    <group>build_component_cam</group>
+    <file>env_build.xml</file>
+    <desc>CAM-SE cmake target (only used with CAM_DYCORE == 'se')</desc>
   </entry>
 
   <entry id="CAM_CONFIG_OPTS">
