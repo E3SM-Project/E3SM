@@ -5,9 +5,6 @@
 	<case name="culled_mesh">
 		<step executable="./run.py" quiet="true" pre_message=" * Culling land cells from 2D global mesh, including ice shelf cavities..." post_message="     complete!  Created file:  culled_mesh/culled_mesh.nc"/>
 	</case>
-	<case name="no_ISC_culled_mesh">
-		<step executable="./run.py" quiet="true" pre_message=" * Culling land cells from 2D global mesh, but no ice shelf cavities..." post_message="     complete!  Created file:  no_ISC_culled_mesh/culled_mesh.nc"/>
-	</case>
 	<case name="initial_state">
 		<step executable="./run.py" quiet="true" pre_message=" * Initializing ocean state with bathymetry and tracers..." post_message="     complete!  Created file:  initial_state/initial_state.nc"/>
 	</case>

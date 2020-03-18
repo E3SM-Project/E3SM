@@ -6,7 +6,8 @@ UTILS = mpas_ocn_init_spherical_utils.o \
         mpas_ocn_init_vertical_grids.o \
         mpas_ocn_init_cell_markers.o \
         mpas_ocn_init_interpolation.o \
-	mpas_ocn_init_ssh_and_landIcePressure.o
+        mpas_ocn_init_ssh_and_landIcePressure.o \
+        mpas_ocn_init_smoothing.o
 
 TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_lock_exchange.o \
@@ -39,6 +40,8 @@ mpas_ocn_init_cell_markers.o:
 mpas_ocn_init_interpolation.o:
 
 mpas_ocn_init_ssh_and_landIcePressure.o: mpas_ocn_init_interpolation.o mpas_ocn_init_vertical_grids.o
+
+mpas_ocn_init_smoothing.o:
 
 mpas_ocn_init_spherical_utils.o:
 

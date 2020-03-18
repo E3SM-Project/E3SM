@@ -527,6 +527,7 @@ contains
                                          forcingPool, diagnosticsPool, &
                                          statePool
 
+       integer, dimension(:), pointer :: landIceMask
        real (kind=RKIND), dimension(:), pointer :: yCell, xCell, bottomDepth, refBottomDepth, &
                                                    ssh, landIceFraction, oceanFracObserved, &
                                                    bottomDepthObserved
@@ -574,6 +575,7 @@ contains
 
           call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
+          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
 
@@ -627,6 +629,9 @@ contains
 
               if(landIceFraction(iCell) < 0.5_RKIND) then
                  landIceFraction(iCell) = 0.0_RKIND
+                 landIceMask(iCell) = 0
+              else
+                 landIceMask(iCell) = 1
               end if
 
               maxLevelCell(iCell) = -1
@@ -654,6 +659,7 @@ contains
               maxLevelCell(iCell) = -1
               ssh(iCell) = 0.0_RKIND
               landIceFraction(iCell) = 0.0_RKIND
+              landIceMask(iCell) = 0
               modifySSHMask(iCell) = 0
             end if
           end do !iCell
