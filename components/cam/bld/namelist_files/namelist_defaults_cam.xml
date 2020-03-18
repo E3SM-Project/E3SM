@@ -1599,8 +1599,10 @@
 <!-- enabed by setting se_tstep, dt_tracer_factor, dt_remap_factor   -->
 <!-- se_nsplit, rsplit, qsplit set to -1 -->
 <dt_tracer_factor > 6 </dt_tracer_factor>
+<dt_tracer_factor hgrid="ne1024np4"> 8 </dt_tracer_factor>
 <dt_remap_factor dyn_target="theta-l">  2  </dt_remap_factor>
 <hypervis_subcycle_q dyn_target="theta-l"> 6 </hypervis_subcycle_q>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 8 </hypervis_subcycle_q>
 <hypervis_subcycle_tom dyn_target="theta-l"> 1 </hypervis_subcycle_tom>
 <qsplit > -1 </qsplit>
 <rsplit > -1 </rsplit>
@@ -1615,7 +1617,7 @@
 <se_tstep dyn_target="theta-l" hgrid="ne240np4">  40 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne256np4">  40 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne512np4">  20 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne1024np4"> 10 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne1024np4"> 9.375 </se_tstep>
 
 
 <!-- old interface, used by preqx.  timesteps controlled by se_nsplit, rsplit, qsplit -->
