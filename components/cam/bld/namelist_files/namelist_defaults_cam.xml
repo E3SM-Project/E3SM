@@ -164,8 +164,6 @@
 
 <!-- Spun-up F-case initial conditions do not exist for these grids -->
 <ncdata dyn="se" hgrid="ne256np4"  >DUMMY-IC</ncdata>
-<ncdata dyn="se" hgrid="ne512np4"  >DUMMY-IC</ncdata>
-<ncdata dyn="se" hgrid="ne1024np4" >DUMMY-IC</ncdata>
 
 <!-- Initial conditions for DYAMOND1 (2016-08-01) hindcast campaign -->
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
