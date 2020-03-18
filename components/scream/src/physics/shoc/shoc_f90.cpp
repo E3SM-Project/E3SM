@@ -1,7 +1,7 @@
 #include "shoc_f90.hpp"
 #include "shoc_functions_f90.hpp"
 #include "shoc_constants.hpp"
-//#include "shoc_ic_cases.hpp"
+#include "shoc_ic_cases.hpp"
 
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
@@ -106,6 +106,10 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(wthl_sfc); fdipb(wqw_sfc); fdipb(uw_sfc); fdipb(vw_sfc);
   fdipb(wtracer_sfc); fdipb(exner);
   fdipb(phis);
+
+  fdipb(host_dse); fdipb(tke); fdipb(thetal); fdipb(qw);
+  fdipb(u_wind); fdipb(v_wind); fdipb(wthv_sec);
+  fdipb(qtracers);
   fdipb(tk); fdipb(tkh);
 
   fdipb(shoc_cldfrac); fdipb(shoc_ql);
@@ -170,9 +174,9 @@ int test_shoc_init (bool use_fortran) {
 }
 
 int test_shoc_ic (bool use_fortran) {
-//  const auto d = ic::Factory::create(ic::Factory::mixed);
-//  shoc_init(use_fortran);
-//  shoc_main(*d);
+  const auto d = ic::Factory::create();
+  shoc_init(use_fortran);
+  shoc_main(*d);
   return 0;
 }
 

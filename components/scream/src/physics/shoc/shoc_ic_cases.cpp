@@ -30,7 +30,7 @@ Real interpolate_data(const std::array<Real, N>& ref_elevations,
 {
   auto pos = std::lower_bound(ref_elevations.begin(), ref_elevations.end(), z);
   Int index = pos - ref_elevations.begin();
-  if (index < N) {
+  if (index < (Int)N) {
     const Real f1 = ref_data[index];
     const Real f2 = ref_data[index+1];
     const Real z1 = ref_elevations[index];
@@ -92,7 +92,7 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
   }
 }
 
-void interpolate_column_data(Real ztop, Int col, FortranData& d) {
+void initialize_column_data(Real ztop, Int col, FortranData& d) {
   using consts = Constants<Real>;
   const Int i = col;
   const Int nlev = d.nlev;
@@ -166,7 +166,7 @@ FortranData::Ptr Factory::create (Int shcol, Int nlev) {
   d.dtime = 12;
   const Real ztop = 2400.0;
   for (Int col = 0; col < shcol; ++col) {
-    interpolate_column_data(ztop, col, d);
+    initialize_column_data(ztop, col, d);
   }
 
   return dp;
