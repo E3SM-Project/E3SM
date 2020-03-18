@@ -157,7 +157,7 @@ class TestAllSets(unittest.TestCase):
             region='global'
         )
 
-    def test_enso_diags(self):
+    def test_enso_diags_map(self):
         case_id = 'TREFHT-response'
         case_id_lower = case_id.lower()
         nino_region_lower = 'NINO34'.lower()
@@ -169,7 +169,22 @@ class TestAllSets(unittest.TestCase):
                 set_name, case_id, variable_lower, nino_region_lower)
             full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
             self.assertTrue(os.path.exists(full_png_path))
-            html_path = '{}viewer/{}/variable/{}/plot.html'.format(
+            html_path = '{}viewer/{}/map/{}/plot.html'.format(
+                TestAllSets.results_dir, set_name, case_id_lower)
+            self.check_html_image(html_path, png_path)
+
+    def test_enso_diags_scatter(self):
+        case_id = 'TREFHT'
+        case_id_lower = case_id.lower()
+        set_name = 'enso_diags'
+        variables = ['TREFHT']
+        for variable in variables:
+            region = 'NINO3'
+            png_path = '{}/{}/feedback-{}-{}-TS-NINO3.png'.format(
+                set_name, case_id, variable, region)
+            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+            self.assertTrue(os.path.exists(full_png_path))
+            html_path = '{}viewer/{}/scatter/{}/plot.html'.format(
                 TestAllSets.results_dir, set_name, case_id_lower)
             self.check_html_image(html_path, png_path)
 

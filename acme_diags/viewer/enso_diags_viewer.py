@@ -20,47 +20,54 @@ def create_viewer(root_dir, parameters):
     # Appears in the second and third columns of the bolded rows.
     cols = ['Description', 'Plot']
     viewer.add_page(display_name, short_name=set_name, columns=cols)
-    # Appears in the first column of the bolded rows.                          
-    viewer.add_group('Variable')
-    
+    param_dict = {}
     for param in parameters:
-        for var in param.variables:
-            for season in param.seasons:
+        key = param.plot_type
+        if key not in param_dict.keys():
+            param_dict[key] = []
+        param_dict[key].append(param)
+    for plot_type in param_dict.keys():
+        # Appears in the first column of the bolded rows.
+        viewer.add_group(plot_type.capitalize())
+        # Only iterate through parameters with this plot type.
+        valid_parameters = param_dict[plot_type]
+        for param in valid_parameters:
+            # We need to make sure we have relative paths, and not absolute ones.
+            # This is why we don't use get_output_dir() as in the plotting script
+            # to get the file name.
+            ext = param.output_format[0]
+            # param.output_file is defined in acme_diags/driver/enso_diags_driver.py
+            # This must be use param.case_id and param.output_file
+            # to match the file_path determined in
+            # acme_diags/plot/cartopy/enso_diags_plot.py.
+            # Otherwise, the plot will not be properly linked from the viewer.
+            relative_path = os.path.join(
+                '..', set_name, param.case_id,
+                param.output_file)
+            image_relative_path = '{}.{}'.format(relative_path, ext)
+            if param.print_statements:
+                print('image_relative_path: {}'.format(image_relative_path))
+            formatted_files = []
+            if param.save_netcdf:
+                nc_files = [
+                    relative_path + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
+                formatted_files = [
+                    {'url': f, 'title': f} for f in nc_files]
+            # TODO: will param.variables ever be longer than one variable?
+            #  If so, we'll need to create unique image_relative_paths
+            for var in param.variables:
                 # Appears in the first column of the non-bolded rows.
                 # This should use param.case_id to match the output_dir determined by
                 # get_output_dir in acme_diags/plot/cartopy/enso_diags_plot.py.
                 # Otherwise, the plot image and the plot HTML file will have URLs
                 # differing in the final directory name.
                 viewer.add_row(param.case_id)
-                
                 # Adding the description for this var to the current row.
                 # This was obtained and stored in the driver for this plotset.
                 # Appears in the second column of the non-bolded rows.
                 viewer.add_col(param.viewer_descr[var])
-
-                # We need to make sure we have relative paths, and not absolute ones.
-                # This is why we don't use get_output_dir() as in the plotting script
-                # to get the file name.
-                ext = param.output_format[0]
-                # param.output_file is defined in acme_diags/driver/enso_diags_driver.py
-                # This must be use param.case_id and param.output_file
-                # to match the file_path determined in
-                # acme_diags/plot/cartopy/enso_diags_plot.py.
-                # Otherwise, the plot will not be properly linked from the viewer.
-                relative_path = os.path.join(
-                    '..', set_name, param.case_id,
-                    param.output_file)
-                image_relative_path = '{}.{}'.format(relative_path, ext)
-                if param.print_statements:
-                    print('image_relative_path: {}'.format(image_relative_path))
-                formatted_files = []
-                if param.save_netcdf:
-                    nc_files = [
-                        relative_path + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
-                    formatted_files = [
-                        {'url': f, 'title': f} for f in nc_files]
                 # Link to an html version of the plot png file.
-                # Appears in the third column of the non-bolded rows.  
+                # Appears in the third column of the non-bolded rows.
                 viewer.add_col(image_relative_path, is_file=True, title='Plot',
                                other_files=formatted_files,
                                meta=create_metadata(param))
