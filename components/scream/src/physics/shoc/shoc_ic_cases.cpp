@@ -98,13 +98,15 @@ void interpolate_column_data(Real ztop, Int col, FortranData& d) {
   const Int nlev = d.nlev;
   const Real dz = ztop/nlev;
 
+  // Set the horizontal grid spacing.
+  d.host_dx(i) = 5300.0;
+  d.host_dy(i) = 5300.0;
+
   for (Int k = 0; k < nlev; ++k) {
 
-    // Set up the grid.
+    // Set up the vertical grid.
     Real zi = k * dz;
     Real zt = (k+0.5) * dz;
-    d.host_dx(i, k) = 5300.0;
-    d.host_dy(i, k) = 5300.0;
     d.zi_grid(i, k) = zi;
     d.zt_grid(i, k) = zt;
 

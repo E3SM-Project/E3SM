@@ -45,8 +45,8 @@ contains
     integer(kind=c_int), value, intent(in) :: ntop_shoc ! Top level to which SHOC is applied
 
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
-              	   zvir, latvap, latice, karman, &
-              	   pref_mid, nbot_shoc, ntop_shoc)
+                   zvir, latvap, latice, karman, &
+                   pref_mid, nbot_shoc, ntop_shoc)
 
   end subroutine shoc_init_c
 
