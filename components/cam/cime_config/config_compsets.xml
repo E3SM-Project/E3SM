@@ -347,6 +347,16 @@
     <lname>2000_CAM5%SCREAM-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset> 
 
+  <compset>
+    <alias>FSCREAM-LR-DYAMOND1</alias>
+    <lname>2000_CAM5%SCREAM-LR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCREAM-HR-DYAMOND1</alias>
+    <lname>2000_CAM5%SCREAM-HR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
   <!-- *********************************** -->
@@ -411,8 +421,8 @@
 	<value  compset="C2R4_CAM">2004-01-01</value>
 	<value  compset="AR95_CAM">1995-07-18</value>
 	<value  compset="AR97_CAM">1997-06-19</value>
-    <value  compset="_CAM5%SCREAM-LR">2016-08-01</value>
-    <value  compset="_CAM5%SCREAM-HR">2016-08-01</value>
+    <value  compset="_CAM5%SCREAM-LR-DYAMOND1">2016-08-01</value>
+    <value  compset="_CAM5%SCREAM-HR-DYAMOND1">2016-08-01</value>
       </values>
     </entry>
 
