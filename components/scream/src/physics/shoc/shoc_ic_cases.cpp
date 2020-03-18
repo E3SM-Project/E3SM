@@ -76,18 +76,18 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
 
   // Move up the column, computing the pressures at cell centers and
   // interfaces.
-  for (Int k = 1; k < nlev; ++k) {
-    Real z0 = z(i, k-1);
-    Real z1 = z(i, k);
+  for (Int j = 1; j < nlev; ++j) {
+    Real z0 = z(i, j-1);
+    Real z1 = z(i, j);
     Real th0 = interpolate_data(z_ref, theta_ref, z0);
     Real th1 = interpolate_data(z_ref, theta_ref, z1);
-    Real p0 = pres(i, k-1);
+    Real p0 = pres(i, j-1);
     if (std::abs(th0 - th1) < 1e-14 * th0) {
-      pres(i, k) = pow(pow(p0, k) + k*c*(z1 - z0)/th0, 1.0/k);
+      pres(i, j) = pow(pow(p0, k) + k*c*(z1 - z0)/th0, 1.0/k);
     }
     else {
       Real ra = (z1 - z0)/(th1 - th0);
-      pres(i, k) = pow(pow(p0, k) + k*c*ra*log(th1/th0), 1.0/k);
+      pres(i, j) = pow(pow(p0, k) + k*c*ra*log(th1/th0), 1.0/k);
     }
   }
 }
@@ -150,6 +150,14 @@ void initialize_column_data(Real ztop, Int col, FortranData& d) {
   // Compute pressure differences.
   for (Int k = 0; k < nlev; ++k) {
     d.pdel(i, k) = d.presi(i, k+1) - d.presi(i, k);
+  }
+
+  // Initialize host_dse and exner, which are assumed to be valid inputs to
+  // shoc_main.
+  for (Int k = 0; k < nlev; ++k) {
+    d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::RAir/consts::CpAir);
+    d.host_dse(i, k) = consts::CpAir * d.exner(i, k) * d.thv(i, k) +
+                       consts::GGr * d.zt_grid(i, k);
   }
 }
 
