@@ -88,27 +88,40 @@ class TestAllScream(object):
                   "but there will be errors if the baselines are not found.".format(self._baseline_dir))
 
         # Deduce how many resources per test
-        self._proc_count = 4 # default
+        proc_count = 4
+
         proc_set = False
         if "CTEST_PARALLEL_LEVEL" in os.environ:
             try:
-                self._proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
+                proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
                 proc_set = True
             except ValueError:
                 pass
 
         if not proc_set:
             print("WARNING: env var CTEST_PARALLEL_LEVEL unset, defaulting to {} which probably underutilizes your machine".\
-                      format(self._proc_count))
+                      format(proc_count))
+
+        self._proc_count = {"dbg" : proc_count,
+                            "sp"  : proc_count,
+                            "fpe" : proc_count}
 
         if self._parallel:
             # We need to be aware that other builds may be running too.
             # (Do not oversubscribe the machine)
-            self._proc_count = self._proc_count // len(self._tests)
+            remainder = proc_count % len(self._tests)
+            proc_count = proc_count // len(self._tests)
 
             # In case we have more tests than cores (unlikely)
-            if self._proc_count == 0:
-                self._proc_count = 1
+            if proc_count == 0:
+                proc_count = 1
+
+            for test in self._tests:
+                self._proc_count[test] = proc_count
+                if self._tests.index(test)<remainder:
+                    self._proc_count[test] = proc_count + 1
+                    
+                print ("test {} has {} procs".format(test,self._proc_count[test]))
 
         if self._keep_tree:
             expect(not is_repo_clean(), "Makes no sense to use --keep-tree when repo is clean")
@@ -152,8 +165,8 @@ class TestAllScream(object):
     def get_taskset_id(self, test):
     ###############################################################################
         myid = self._tests.index(test)
-        start = myid * self._proc_count
-        end   = (myid+1) * self._proc_count - 1
+        start = myid * self._proc_count[test]
+        end   = (myid+1) * self._proc_count[test] - 1
 
         return start, end
 
@@ -165,7 +178,7 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
-        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
+        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count[test])
 
         if self._baseline_dir is not None:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}/{}/data".format(self._baseline_dir,name)
@@ -205,7 +218,7 @@ class TestAllScream(object):
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
 
-        cmd = "make -j{} && make baseline".format(self._proc_count)
+        cmd = "make -j{} && make baseline".format(self._proc_count[test])
         if self._parallel:
             start, end = self.get_taskset_id(test)
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
