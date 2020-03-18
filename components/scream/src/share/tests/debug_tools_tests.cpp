@@ -17,7 +17,7 @@ void signal_handler (int /* signum */) {
   std::longjmp(JumpBuffer,gSignalStatus);
 }
 
-void run_tests () {
+void run_fpe_tests () {
   int mask = scream::get_enabled_fpes();
 
   std::cout << "tests mask: " << mask << "\n";
@@ -99,20 +99,34 @@ TEST_CASE ("fpes","") {
   sigaction(SIGFPE, &sa, NULL);
 
   SECTION ("default_fpes") {
-    run_tests ();
+    run_fpe_tests ();
   }
 
   SECTION ("user-requested fpe") {
     disable_all_fpes();
     enable_fpes(FE_DIVBYZERO);
-    run_tests ();
+    run_fpe_tests ();
   }
 
   SECTION ("user-requested fpe") {
     enable_fpes(FE_ALL_EXCEPT);
     disable_fpes(FE_DIVBYZERO);
-    run_tests ();
+    run_fpe_tests ();
   }
+}
+
+TEST_CASE ("asserts") {
+  auto test_req_msg = [](const bool test, const std::string& msg) {
+    scream_require_msg(test,msg);
+  };
+  auto test_err_msg = [](const std::string& msg) {
+    scream_error_msg(msg);
+  };
+  REQUIRE_THROWS (test_req_msg(1>3,"Uh? I wonder what Sharkowsky would have to say about this...\n"));
+
+  REQUIRE_NOTHROW (test_req_msg(3>1,"Uh? I wonder what Sharkowsky would have to say about this...\n"));
+
+  REQUIRE_THROWS (test_err_msg("Hello world!\n"));
 }
 
 } // anonymous namespace
