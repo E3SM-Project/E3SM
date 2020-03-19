@@ -79,7 +79,10 @@ struct UnitWrap {
     struct TestRainSed;
     struct TestP3UpdatePrognosticIce;
     struct TestIceCollection;
+    struct TestEvapSublPrecip;
+    struct TestRainSelfCollection;
     struct TestP3UpdatePrognosticLiq;
+    struct TestP3IceDepSublimation;
     struct TestP3FunctionsImposeMaxTotalNi;
     struct TestIceRelaxationTimescale;
     struct TestIceNucleation;

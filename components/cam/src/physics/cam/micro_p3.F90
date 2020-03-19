@@ -2433,6 +2433,9 @@ subroutine calc_liq_relaxation_timescale(rho,f1r,f2r,     &
 dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
 epsr,epsc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cxx_gamma, cxx_sqrt, cxx_cbrt
+#endif
    implicit none
 
    real(rtype), intent(in)  :: rho
@@ -2466,8 +2469,9 @@ epsr,epsc)
       !final interpolation
       dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
 
-      epsr = 2._rtype*pi*cdistr*rho*dv*(f1r*gamma(mu_r+2._rtype)/(lamr)+f2r*   &
-           (rho/mu)**0.5_rtype*sc**thrd*dum)
+      epsr = 2._rtype*pi*cdistr*rho*dv*                                                &
+             (f1r*bfb_gamma(mu_r+2._rtype)/lamr +                                    &
+              f2r*bfb_sqrt(rho/mu)*bfb_cbrt(sc)*dum)
    else
       epsr = 0._rtype
    endif
@@ -2871,7 +2875,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    ! (breakup following modified Verlinde and Cotton scheme)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_cbrt, cxx_exp
+   use micro_p3_iso_f, only: rain_self_collection_f, cxx_cbrt, cxx_exp
 #endif
 
    implicit none
@@ -2883,6 +2887,14 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
 
    real(rtype) :: dum, dum1, dum2
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
+         nrslf)
+      return
+   endif
+#endif
+
    if (qr_incld.ge.qsmall) then
 
       ! include breakup
@@ -2893,7 +2905,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       ! note there should be a factor of 6^(1/3), but we
       ! want to keep breakup threshold consistent so 'dum'
       ! is expressed in terms of lambda rather than mass-mean D
-      
+
       dum2 = bfb_cbrt(qr_incld/(pi*rhow*nr_incld))
       if (dum2.lt.dum1) then
          dum = 1._rtype
@@ -3399,6 +3411,10 @@ subroutine ice_deposition_sublimation(qitot_incld,nitot_incld,t,    &
 qvs,qvi,epsi,abi,qv,    &
 qidep,qisub,nisub,qiberg)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: ice_deposition_sublimation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in)  :: qitot_incld
@@ -3415,6 +3431,14 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(out) :: qiberg
 
    real(rtype) :: oabi
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call ice_deposition_sublimation_f(qitot_incld,nitot_incld,t,    &
+           qvs,qvi,epsi,abi,qv,    &
+           qidep,qisub,nisub,qiberg)
+   endif
+#endif
 
    oabi = 1._rtype/abi
    if (qitot_incld>=qsmall) then
@@ -3452,6 +3476,10 @@ subroutine evaporate_sublimate_precip(qr_incld,qc_incld,nr_incld,qitot_incld,   
 lcldm,rcldm,qvs,ab,epsr,qv,    &
 qrevp,nrevp)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: evaporate_sublimate_precip_f
+#endif
+
    implicit none
 
    real(rtype), intent(in)  :: qr_incld
@@ -3469,7 +3497,15 @@ qrevp,nrevp)
 
    real(rtype) :: qclr, cld
 
-   ! Is is assumed that macrophysics handles condensation/evaporation of qc and
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call evaporate_sublimate_precip_f(qr_incld,qc_incld,nr_incld,qitot_incld,    &
+           lcldm,rcldm,qvs,ab,epsr,qv,    &
+           qrevp,nrevp)
+   endif
+#endif
+
+   ! It is assumed that macrophysics handles condensation/evaporation of qc and
    ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
    ! been removed from the original P3-WRF.
 
