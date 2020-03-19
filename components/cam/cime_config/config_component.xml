@@ -363,10 +363,10 @@
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
-    <desc compset="_CAM5.*SCREAM-LR"   >Low Resolution Fortran version of SCREAM with SHOC, P3, and RRTMGP.  All other aspects of this run are identical to E3SMv1</desc>
-    <desc compset="_CAM5.*SCREAM-HR"   >Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.</desc>
-    <desc compset="_CAM5.*SCREAM-LR-DYAMOND1">Low Resolution Fortran version of SCREAM with SHOC, P3, and RRTMGP, initialized for 2016-08-01 DYAMOND campaign.  All other aspects of this run are identical to E3SMv1</desc>
-    <desc compset="_CAM5.*SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, initialized for 2016-08-01 DYAMOND campaign, and no deep convection scheme called.</desc>
+    <desc compset="_CAM5.*SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, and RRTMGP. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_CAM5.*SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_CAM5.*SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, and RRTMGP.  All other aspects of this run are identical to E3SMv1</desc>
+    <desc compset="_CAM5.*SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.</desc>
   </description>
 
   <!-- Aqua planet uses this for setting orbital parameters -->
