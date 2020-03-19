@@ -1498,6 +1498,8 @@
 
 <cubed_sphere_map> 2 </cubed_sphere_map>
 <cubed_sphere_map npg="0"> 0 </cubed_sphere_map>
+<cubed_sphere_map hgrid="ne512np4" > 2 </cubed_sphere_map>
+<cubed_sphere_map hgrid="ne1024np4"> 2 </cubed_sphere_map>
 
 
 <!-- RRM grids  -->
