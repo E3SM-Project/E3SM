@@ -12,11 +12,7 @@
 
 module shoc
 
-#ifdef SCREAM_CONFIG_IS_CMAKE
-  use iso_c_binding, only: c_double, c_float, c_bool
-#else
-  use shr_kind_mod,   only: rtype=>shr_kind_rtype, itype=>shr_kind_i8
-#endif
+  use physics_utils, only: rtype, rtype8, itype, btype
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -26,26 +22,6 @@ module shoc
 
 implicit none
 save ! for module variables
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#include "scream_config.f"
-
-  integer,parameter,public :: rtype8 = c_double ! 8 byte real, compatible with c type double
-  integer,parameter,public :: btype  = c_bool ! boolean type, compatible with c
-
-#  ifdef SCREAM_DOUBLE_PRECISION
-  integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
-#  else
-  integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
-#  endif
-
-  integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
-
-#else
-  integer,parameter,public :: btype = kind(.true.) ! native logical
-  public :: rtype
-  integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
-#endif
 
 public  :: shoc_init, shoc_main
 
