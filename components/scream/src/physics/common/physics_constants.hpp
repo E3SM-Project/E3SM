@@ -1,12 +1,12 @@
-#ifndef P3_CONSTANTS_HPP
-#define P3_CONSTANTS_HPP
+#ifndef PHYSICS_CONSTANTS_HPP
+#define PHYSICS_CONSTANTS_HPP
 
 #include "share/scream_types.hpp"
 
 #include <vector>
 
 namespace scream {
-namespace p3 {
+namespace physics {
 
 /*
  * Mathematical constants used by p3.
@@ -73,6 +73,13 @@ struct Constants
   static constexpr Scalar eri         = 1.0;
   static constexpr Scalar dropmass    = 5.2e-7;
   static constexpr Scalar NCCNST      = 200.0e+6;
+  static constexpr Scalar Karman      = 0.4;
+  static constexpr Scalar Avogad      = 6.02214e26;
+  static constexpr Scalar Boltz       = 1.37065e-23;
+  static constexpr Scalar Rgas        = Avogad * Boltz;
+  static constexpr Scalar MWWV        = 18.016;
+  static constexpr Scalar RWV         = Rgas / MWWV;
+  static constexpr Scalar ZVIR        = (RWV / Rair) - 1.0;
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
@@ -105,7 +112,7 @@ constexpr Scalar Constants<Scalar>::Tmelt;
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tol;
 
-} // namespace p3
+} // namespace physics
 } // namespace scream
 
 #endif

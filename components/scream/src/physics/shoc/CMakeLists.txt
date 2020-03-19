@@ -31,6 +31,7 @@ endif()
 
 add_library(shoc ${SHOC_SRCS})
 target_include_directories(shoc PUBLIC ${SCREAM_INCLUDE_DIRS})
+target_include_directories(shoc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../common)
 target_include_directories(shoc SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
 set_target_properties(shoc PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})

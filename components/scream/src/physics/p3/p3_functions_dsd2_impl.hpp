@@ -74,8 +74,8 @@ get_rain_dsd2 (
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm)
 {
-  constexpr auto nsmall = Constants<Scalar>::NSMALL;
-  constexpr auto cons1 = Constants<Scalar>::CONS1;
+  constexpr auto nsmall = scream::physics::Constants<Scalar>::NSMALL;
+  constexpr auto cons1 = scream::physics::Constants<Scalar>::CONS1;
 
   lamr = 0;
   cdistr = 0;

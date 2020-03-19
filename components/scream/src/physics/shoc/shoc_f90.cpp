@@ -1,6 +1,6 @@
 #include "shoc_f90.hpp"
 #include "shoc_functions_f90.hpp"
-#include "shoc_constants.hpp"
+#include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 
 #include "share/scream_assert.hpp"
@@ -133,11 +133,11 @@ void shoc_init(Int nlev, bool use_fortran) {
     using KT     = KokkosTypes<HostDevice>;
     using Scalar = Real;
     using Array1 = typename KT::template lview<Scalar*>;
-    using C = Constants<Scalar>;
+    using C = scream::physics::Constants<Scalar>;
 
     auto pref_mid = Array1("reference pressures (unused)", nlev);
-    shoc_init_c((int)nlev, C::GGr, C::RAir, C::RH2O, C::CpAir, C::ZVir, C::LatVap,
-                C::LatIce, C::Karman, pref_mid.data(), (int)nlev, 1);
+    shoc_init_c((int)nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR,
+                C::LatVap, C::LatIce, C::Karman, pref_mid.data(), (int)nlev, 1);
     is_init = true;
   }
   shoc_use_cxx_c(!use_fortran);

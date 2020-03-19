@@ -1,5 +1,5 @@
 #include "shoc_ic_cases.hpp"
-#include "shoc_constants.hpp"
+#include "physics_constants.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_assert.hpp"
 
@@ -54,10 +54,10 @@ using Array2 = typename KT::template lview<Scalar**>;
 // data.
 void compute_column_pressure(Int col, Int nlev, const Array2& z,
                              Array2& pres) {
-  using consts = Constants<Real>;
+  using consts = scream::physics::Constants<Real>;
   const Int i = col;
-  const Real k = consts::RAir / consts::CpAir;
-  const Real c = -consts::GGr * pow(consts::P0, k) / consts::RAir;
+  const Real k = consts::Rair / consts::Cpair;
+  const Real c = -consts::gravit * pow(consts::P0, k) / consts::Rair;
   const Real p_s = 1015e2; // surface pressure
   const Real theta_s = theta_ref[0]; // surface temperature
 
@@ -93,7 +93,7 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
 }
 
 FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
-  using consts = Constants<Real>;
+  using consts = scream::physics::Constants<Real>;
 
   const auto dp = std::make_shared<FortranData>(shcol, nlev, nlev+1,
                                                 num_qtracers);
@@ -124,7 +124,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       const Real ql = interpolate_data(z_ref, ql_ref, zt);
       d.qw(i, k) = qw;
       d.shoc_ql(i, k) = ql;
-      Real zvir = (consts::RH2O / consts::RAir) - 1.0;
+      Real zvir = (consts::RH2O / consts::Rair) - 1.0;
       d.thv(i, k) = theta_zt * (1.0 + zvir * qw);
       d.thetal(i, k) = theta_zt;
 
@@ -163,9 +163,9 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     // Initialize host_dse and exner, which are assumed to be valid inputs to
     // shoc_main.
     for (Int k = 0; k < nlev; ++k) {
-      d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::RAir/consts::CpAir);
-      d.host_dse(i, k) = consts::CpAir * d.exner(i, k) * d.thv(i, k) +
-        consts::GGr * d.zt_grid(i, k);
+      d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
+      d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thv(i, k) +
+        consts::gravit * d.zt_grid(i, k);
     }
   }
 
