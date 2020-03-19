@@ -770,6 +770,24 @@ Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
 Real* qc, Real* nc, Real* qr, Real* nr);
 }
 
+  ///////////////////////////////////////////////////////////////////////////////
+
+struct IceDepSublimationData
+{
+  //Inputs
+  Real qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv;
+
+  //Outs
+  Real qidep, qisub, nisub, qiberg;
+};
+
+void ice_deposition_sublimation(IceDepSublimationData& d);
+
+extern "C"{
+void ice_deposition_sublimation_f( Real qitot_incld, Real nitot_incld, Real t, Real qvs, Real qvi,
+Real epsi, Real abi, Real qv, Real* qidep, Real* qisub, Real* nisub, Real* qiberg);
+}
+
 struct IceCldliqCollectionData
 {
   // Inputs

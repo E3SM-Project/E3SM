@@ -510,6 +510,13 @@ struct Functions
     const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
     const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
 
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_deposition_sublimation(const Spack& qitot_incld,
+    const Spack& nitot_incld, const Spack& t, const Spack& qvs, const Spack& qvi,
+    const Spack& epsi, const Spack& abi, const Spack& qv, Spack& qidep,
+    Spack& qisub, Spack& nisub, Spack& qiberg);
+
   KOKKOS_FUNCTION
   static void ice_relaxation_timescale(const Spack& rho, const Spack& temp, const Spack& rhofaci, const Spack& f1pr05,
                                        const Spack& f1pr14, const Spack& dv, const Spack& mu, const Spack& sc,
@@ -563,9 +570,9 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_rain_imm_freezing_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"
+# include "p3_functions_ice_deposition_sublimation_impl.hpp"
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
-
 #endif
 
 #endif

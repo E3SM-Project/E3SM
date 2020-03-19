@@ -33,6 +33,7 @@ if (NOT CUDA_BUILD)
     p3_functions_math.cpp
     p3_functions_update_prognostics.cpp
     p3_functions_autoconversion.cpp
+    p3_functions_ice_deposition_sublimation.cpp
     p3_functions_conservation.cpp
     p3_functions_rain_self_collection.cpp
     p3_functions_back_to_cell_average.cpp

@@ -669,6 +669,18 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine update_prognostic_liquid_c
 
+  subroutine ice_deposition_sublimation_c(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
+           qidep, qisub, nisub, qiberg)  bind(C)
+    use micro_p3, only: ice_deposition_sublimation
+
+    !arguments
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv
+
+    real(kind=c_real), intent(out) :: qidep, qisub, nisub, qiberg
+
+    call ice_deposition_sublimation(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
+           qidep, qisub, nisub, qiberg)
+  end subroutine ice_deposition_sublimation_c
 
   subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, f1pr05, f1pr14,   &
                                         dv, mu, sc, qitot_incld, nitot_incld, &
