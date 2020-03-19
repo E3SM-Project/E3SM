@@ -89,16 +89,16 @@
 <!-- Turn on temperature clipping for RRTMGP -->
 <rrtmgp_clip_temperatures> .true. </rrtmgp_clip_temperatures>
 
+<!-- Do radiation every five minutes for ne1024 -->
+<iradsw hgrid="ne1024np4"> 4 </iradsw>
+<iradlw hgrid="ne1024np4"> 4 </iradlw>
+
 <!-- Settings related to the SCREAM NH dycore -->
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
 <tstep_type>10</tstep_type>
 
 <!-- For high-res, we use se_ftype = 1 to improve dynamics/physics coupling -->
-<se_ftype>1</se_ftype>
-
-<!-- Do radiation every timestep by default -->
-<iradsw> 1 </iradsw>
-<iradlw> 1 </iradlw>
+<se_ftype grid="ne1024np4">1</se_ftype>
 
 <!-- Turn off Gravity Waves -->
 <use_gw_front>.false.</use_gw_front>

@@ -95,6 +95,11 @@
 <!-- Turn on temperature clipping for RRTMGP -->
 <rrtmgp_clip_temperatures> .true. </rrtmgp_clip_temperatures>
 
-<se_ftype                >2</se_ftype>
+<!-- Do radiation every five minutes for ne1024 -->
+<iradsw hgrid="ne1024np4"> 4 </iradsw>
+<iradlw hgrid="ne1024np4"> 4 </iradlw>
+
+<!-- For high-res, we use se_ftype = 1 to improve dynamics/physics coupling -->
+<se_ftype grid="ne1024np4">1</se_ftype>
 
 </namelist_defaults>
