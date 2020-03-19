@@ -801,7 +801,7 @@ contains
     ! --------------------------------------------------------------------
 
     if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_fates .and. .not. use_crop) )  then 
-       allocate(soilorder_rdin(max_topounits, bounds%begg:bounds%endg))
+       allocate(soilorder_rdin(bounds%begg:bounds%endg,max_topounits))
        call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
@@ -812,7 +812,7 @@ contains
           topi = grc_pp%topi(g)
           ti = t - topi + 1
 
-          this%isoilorder(c) = soilorder_rdin(ti,g)
+          this%isoilorder(c) = soilorder_rdin(g,ti)
 
        end do
        deallocate(soilorder_rdin)

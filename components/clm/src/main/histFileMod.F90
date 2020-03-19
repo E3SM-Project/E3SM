@@ -2101,7 +2101,7 @@ contains
                      long_name=long_name, units=units, missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=trim(varnames(ifld)), xtype=tape(t)%ncprec, &
-                        dim1name=grlnd, dim2name=namet, dim3name='levgrnd', &  !TKT
+                        dim1name=grlnd, dim2name='levgrnd', &  !TKT
                      long_name=long_name, units=units, missing_value=spval, fill_value=spval)
              end if
           else
@@ -2180,12 +2180,7 @@ contains
              if (ldomain%isgrid2d) then
                 call ncd_io(varname=trim(varnames(ifld)), dim1name=grlnd, &
                      data=histo, ncid=nfid(t), flag='write')
-             else
-			    if (masterproc) then
-                   write(iulog,*)' ******* TKT *******'
-                   write(iulog,*) trim(varnames(ifld)),' : Field name = ',trim(varnames(ifld)) ! TKT debuging
-                   write(iulog,*) trim(varnames(ifld)),' : Size of histo = ',shape(histo) ! TKT debuging                   
-				end if                   
+             else			                       
                 call ncd_io(varname=trim(varnames(ifld)), dim1name=grlnd, &
                      data=histo, ncid=nfid(t), flag='write')
              end if

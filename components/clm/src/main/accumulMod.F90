@@ -216,9 +216,11 @@ contains
        write(iulog,*) 'Accumulated fields'
        write(iulog,1002)
        write(iulog,'(72a1)') ("_",i=1,71)
-       do nf = 1, naccflds
+       do nf = 1, naccflds          
           if (accum(nf)%period /= huge(1)) then
-             !write(iulog,1003) 'TKT check fields: ', nf, ' ', accum(nf)%name
+             !write(iulog,*) nf,accum(nf)%name, 'TKT', accum(nf)%units,&
+             !     accum(nf)%acctype, accum(nf)%period, accum(nf)%initval, &
+             !     accum(nf)%desc
              write(iulog,1003) nf,accum(nf)%name,accum(nf)%units,&
                   accum(nf)%acctype, accum(nf)%period, accum(nf)%initval, &
                   accum(nf)%desc
@@ -235,7 +237,7 @@ contains
     endif
 
 1002 format(' No',' Name    ',' Units   ',' Type    ','Period',' Inival',' Description')
-1003 format((1x,i2),(1x,a8),(1x,a8),(1x,a8), (1x,i5),(1x,f4.0),(1x,a40))
+1003 format((1x,i2),(1x,a8),(1x,a8),(1x,a8), (1x,i6),(1x,f4.0),(1x,a40))
 1004 format((1x,i2),(1x,a8),(1x,a8),(1x,a8),'  N.A.',(1x,f4.0),(1x,a40))
 
   end subroutine print_accum_fields

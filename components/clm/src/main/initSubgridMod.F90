@@ -137,7 +137,7 @@ contains
           grc_pp%topi(curg) = t
        endif
        grc_pp%topf(curg) = t
-       !grc_pp%ntopounits(curg) = grc_pp%topf(curg) - grc_pp%topi(curg) + 1
+       grc_pp%ntopounits(curg) = grc_pp%topf(curg) - grc_pp%topi(curg) + 1
     enddo
 
     ! Determine landunit_indices: indices into landunit-level arrays for each grid cell.
@@ -195,13 +195,14 @@ contains
     ! !USES
     use clm_varcon, only : ispval
     use landunit_varcon, only : max_lunit
+    use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS
     implicit none
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: g,t,l,c,p     ! loop counters
+    integer :: g,t,l,c,p, tt     ! loop counters
     integer :: l_prev        ! l value of previous point
     integer :: ltype         ! landunit type
     logical :: error         ! error flag
@@ -225,19 +226,27 @@ contains
 
     !--- check index ranges ---
     error = .false.
-    do g = begg, endg
+    do t = begt, endt
        do ltype = 1, max_lunit
-          l = grc_pp%landunit_indices(ltype, g)
+          l = top_pp%landunit_indices(ltype, t)
           if (l /= ispval) then
              if (l < begl .or. l > endl) error = .true.
           end if
        end do
     end do
     if (error) then
-       write(iulog,*) '   clm_ptrs_check: g index ranges - ERROR'
+       write(iulog,*) '   clm_ptrs_check: t index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    if (masterproc) write(iulog,*) '   clm_ptrs_check: g index ranges - OK'
+    if (masterproc) write(iulog,*) '   clm_ptrs_check: t index ranges - OK'
+
+    error = .false.
+    if (minval(top_pp%gridcell(begt:endt)) < begg .or. maxval(top_pp%gridcell(begt:endt)) > endg) error=.true.
+    if (error) then
+       write(iulog,*) '   clm_ptrs_check: t index ranges - ERROR'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+    if (masterproc) write(iulog,*) '   clm_ptrs_check: t index ranges - OK'
 
     error = .false.
     if (minval(lun_pp%gridcell(begl:endl)) < begg .or. maxval(lun_pp%gridcell(begl:endl)) > endg) error=.true.
@@ -334,36 +343,41 @@ contains
     !--- check that the tree is internally consistent ---
     error = .false.
     do g = begg, endg
-       do ltype = 1, max_lunit
-          l = grc_pp%landunit_indices(ltype, g)
+       do t = grc_pp%topi(g), grc_pp%topf(g)
+          do ltype = 1, max_lunit
+             l = top_pp%landunit_indices(ltype, t)
 
-          ! skip l == ispval, which implies that this landunit type doesn't exist on this grid cell
-          if (l /= ispval) then
-             if (lun_pp%itype(l) /= ltype) error = .true.
-             if (lun_pp%gridcell(l) /= g) error = .true.
-             if (error) then
-                write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
-                call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
-             endif
-             do c = lun_pp%coli(l),lun_pp%colf(l)
-                if (col_pp%gridcell(c) /= g) error = .true.
-                if (col_pp%landunit(c) /= l) error = .true.
+             ! skip l == ispval, which implies that this landunit type doesn't exist on this grid cell
+             if (l /= ispval) then
+                if (lun_pp%itype(l) /= ltype) error = .true.
+                if (lun_pp%topounit(l) /= t) error = .true.
+                if (lun_pp%gridcell(l) /= g) error = .true.
                 if (error) then
                    write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
-                   call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+                   call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
                 endif
-                do p = col_pp%pfti(c),col_pp%pftf(c)
-                   if (veg_pp%gridcell(p) /= g) error = .true.
-                   if (veg_pp%landunit(p) /= l) error = .true.
-                   if (veg_pp%column(p)   /= c) error = .true.
+                do c = lun_pp%coli(l),lun_pp%colf(l)
+                   if (col_pp%gridcell(c) /= g) error = .true.
+                   if (col_pp%topounit(c) /= t) error = .true.
+                   if (col_pp%landunit(c) /= l) error = .true.
                    if (error) then
                       write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
-                      call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
+                      call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
                    endif
-                enddo  ! p
-             enddo  ! c
-          end if  ! l /= ispval
-       enddo  ! ltype
+                   do p = col_pp%pfti(c),col_pp%pftf(c)
+                      if (veg_pp%gridcell(p) /= g) error = .true.
+                      if (veg_pp%topounit(p) /= t) error = .true.
+                      if (veg_pp%landunit(p) /= l) error = .true.
+                      if (veg_pp%column(p)   /= c) error = .true.
+                      if (error) then
+                         write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
+                         call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
+                      endif
+                   enddo  ! p
+                enddo  ! c
+             end if  ! l /= ispval
+          enddo  ! ltype
+       enddo  ! t
     enddo  ! g
     if (masterproc) write(iulog,*) '   clm_ptrs_check: tree consistent - OK'
     if (masterproc) write(iulog,*) ' '

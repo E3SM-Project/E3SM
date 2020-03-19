@@ -753,7 +753,7 @@ module UrbanParamsType
        if (.not. has_topounit) then
           tm = max_topounits          
        else
-          tm = ntpu(ti)
+          tm = ntpu(ti) ! Get number of valid topounits per grid
        end if
 	   do t = 1, tm 
        do n = 1, numurbl

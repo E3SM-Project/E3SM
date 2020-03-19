@@ -838,30 +838,15 @@ contains
     found = .false.
     do nl = begg,endg
        ti = (nl - begg) + 1
-       !write(iulog,*)'begg and endg are ',begg, ', ', endg !TKT
-       !write(iulog,*)'ntpu = ',ntpu(ti) !TKT
-       !write(iulog,*)'len(ntpu) = ',shape(ntpu) !TKT
        if (.not. has_topounit) then
           tm = max_topounits          
        else
           tm = ntpu(ti)
        end if
-       do t = 1, tm
-         !write(iulog,*)'pctlak = ',pctlak(nl,t) !TKT
-         !write(iulog,*)'pctgla = ',pctgla(nl,t) !TKT
-         !write(iulog,*)'pctwet = ',pctwet(nl,t) !TKT
-         !write(iulog,*)'pcturb_tot = ',pcturb_tot(nl,t) !TKT
-         !write(iulog,*)'PFT = ',pctspec(nl,t) !TKT
-         !write(iulog,*)'Grid = ',nl, 'and Topounit = ',t !TKT
-            
+       do t = 1, tm            
          if (pctspec(nl,t) > 100._r8+1.e-04_r8) then
             found = .true.
             nindx = nl
-            write(iulog,*)'surfrd error: pctlak cover>100 pctlak =',pctlak(nl,t) !TKT
-            write(iulog,*)'surfrd error: pctgla cover>100 pctgla =',pctgla(nl,t) !TKT
-            write(iulog,*)'surfrd error: pctwet cover>100 pctwet =',pctwet(nl,t) !TKT
-            write(iulog,*)'surfrd error: pcturb_tot cover>100 pcturb_tot =',pcturb_tot(nl,t) !TKT
-            write(iulog,*)'surfrd error: PFT cover>100 PFT =',pctspec(nl,t) !TKT
             exit
          end if
          if (found) exit
@@ -1405,7 +1390,7 @@ contains
     endif
     if (readvar) then
         do n = begg,endg
-           grc_pp%ntopounits(n) = numTopoPerGrid(n) 
+           grc_pp%ntopounits2(n) = numTopoPerGrid(n) 
            grc_pp%MaxElevation(n) = maxTopoElv(n) 	
            
            do t = 1, max_topounits

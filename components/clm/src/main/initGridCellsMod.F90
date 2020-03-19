@@ -131,7 +131,7 @@ contains
        do gdc = bounds_clump%begg, bounds_clump%endg
           !ntopos = grc_pp%ntopounits(gdc) ! This is the actual or valid # of topounits per grid for future use
           ntopos = max_topounits                     ! For now we use the maximum number to topounits per grid assuming the same # of topounits in each gridcell
-	      num_topo_tmp = grc_pp%ntopounits(gdc)      ! Actual number of topounits per grid
+	      num_topo_tmp = grc_pp%ntopounits2(gdc)      ! Actual number of topounits per grid
           do topounit = 1, ntopos                    ! use actual/valid # of topounits per grid intead of max_topounits
              if (max_topounits == 1) then
                  wttopounit2gridcell = 1.0           ! The weight of topounit is 1 if only 1 topounit per grid
