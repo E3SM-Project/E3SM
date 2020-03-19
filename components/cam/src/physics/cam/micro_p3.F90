@@ -1310,7 +1310,7 @@ contains
 
        if (debug_ON) then
           tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-          call check_values(qv,tmparr1,i,it,debug_ABORT,900,col_location)
+          call check_values(qv(i,:),tmparr1(i,:),kts,kte,it,debug_ABORT,900,col_location(i,:))
        endif
 
        !.....................................................
@@ -1991,7 +1991,7 @@ contains
 
   !===========================================================================================
 
-  subroutine check_values(Qv,T,i,timestepcount,force_abort,source_ind,col_loc)
+  subroutine check_values(Qv,T,kts,kte,timestepcount,force_abort,source_ind,col_loc)
 
     !------------------------------------------------------------------------------------
     ! Checks current values of prognotic variables for reasonable values and
@@ -2012,8 +2012,9 @@ contains
     implicit none
 
     !Calling parameters:
-    real(rtype), dimension(:,:),   intent(in) :: Qv,T,col_loc
-    integer,                intent(in) :: source_ind,i,timestepcount
+    real(rtype), dimension(kts:kte), intent(in) :: Qv, T
+    real(rtype), dimension(3), intent(in) :: col_loc
+    integer,                intent(in) :: source_ind,timestepcount,kts,kte
     logical(btype),                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
@@ -2024,24 +2025,23 @@ contains
     real(rtype), parameter :: B_high = Q_high*1.e-3_rtype
     real(rtype), parameter :: x_high = 1.e+30_rtype
     real(rtype), parameter :: x_low  = 0._rtype
-    integer         :: k,nk
+    integer         :: k
     logical(btype)         :: trap,badvalue_found
 
-    nk   = size(Qv,dim=2)
 
     trap = .false.
 
-    k_loop: do k = 1,nk
+    k_loop: do k = kts, kte
 
        ! check unrealistic values or NANs for T and Qv
-       if (.not.(T(i,k)>T_low .and. T(i,k)<T_high)) then
+       if (.not.(T(k)>T_low .and. T(k)<T_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
-             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ',int(col_loc(i,1)),', ',col_loc(i,2),', ',col_loc(i,3),', ',k,', ',timestepcount,', ',T(i,k)
+             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ',int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',T(k)
           trap = .true.
        endif
-       if (.not.(Qv(i,k)>=0. .and. Qv(i,k)<Q_high)) then
+       if (.not.(Qv(k)>=0. .and. Qv(k)<Q_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
-             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv:',source_ind,', ',int(col_loc(i,1)),', ',col_loc(i,2),', ',col_loc(i,3),', ',k,', ',timestepcount,', ',Qv(i,k)
+             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv:',source_ind,', ',int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',Qv(k)
           !trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp
        endif
 
