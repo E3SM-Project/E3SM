@@ -254,8 +254,8 @@
       <value compset="AR97_CAM[45]"     >scam_arm97</value>
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
-      <value compset="2000_CAM5.*SCREAM-LR" >2000_scream_lr_av1c-04p2</value>
-      <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr_av1c-04p2</value>
+      <value compset="2000_CAM5.*SCREAM-LR" >2000_scream_lr</value>
+      <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
