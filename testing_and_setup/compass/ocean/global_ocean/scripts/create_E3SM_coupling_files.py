@@ -21,9 +21,10 @@ from geometric_features import GeometricFeatures, FeatureCollection
 from mpas_tools.ocean.moc import make_moc_basins_and_transects
 from mpas_tools.io import write_netcdf
 import mpas_tools.conversion
+import pyproj
 from pyremap import MpasMeshDescriptor, ProjectionGridDescriptor, Remapper, \
     get_lat_lon_descriptor, get_polar_descriptor
-import pyproj
+from mpas_tools.scrip.from_mpas import scrip_from_mpas
 # }}}
 
 
@@ -248,25 +249,19 @@ def scrip(config):  # {{{
         nomaskStr = ''
 
     # create links
-    make_link('../mesh.nc', '{}.nc'.format(mesh_name))
+    mesh_file = '{}.nc'.format(mesh_name)
+    make_link('../mesh.nc', mesh_file)
 
     # command line execution
     scrip_file = 'ocean.{}{}.scrip.{}.nc'.format(mesh_name, nomaskStr,
                                                  date_string)
 
-    args = ['create_SCRIP_file_from_MPAS_mesh.py',
-            '-m', '{}.nc'.format(mesh_name),
-            '-s', scrip_file]
-    run_command(args)
+    scrip_from_mpas(mesh_file, scrip_file)
 
     if ice_shelf_cavities:
         scrip_file_mask = 'ocean.{}.mask.scrip.{}.nc'.format(mesh_name,
                                                              date_string)
-        args = ['create_SCRIP_file_from_MPAS_mesh.py',
-                '-m', mesh_name + '.nc',
-                '-s', scrip_file_mask,
-                '--landice']
-        run_command(args)
+        scrip_from_mpas(mesh_file, scrip_file, useLandIceMask=True)
 
     # make links to output directories
     os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
@@ -1001,7 +996,8 @@ def make_analysis_lat_lon_map(config, mesh_name):
     remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
 
     mpiTasks = config.getint('main', 'nprocs')
-    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks,
+                                tempdir='.')
     # }}}
 
 
@@ -1033,7 +1029,8 @@ def make_analysis_polar_map(config, mesh_name, projection):
     remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
 
     mpiTasks = config.getint('main', 'nprocs')
-    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks,
+                                tempdir='.')
     # }}}
 
 

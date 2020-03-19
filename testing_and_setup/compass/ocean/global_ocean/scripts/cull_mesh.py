@@ -25,7 +25,6 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 import os
-import subprocess
 from optparse import OptionParser
 import xarray
 
@@ -34,6 +33,7 @@ from mpas_tools import conversion
 from mpas_tools.io import write_netcdf
 from mpas_tools.ocean.coastline_alteration import widen_transect_edge_masks, \
     add_critical_land_blockages, add_land_locked_cells_to_mask
+from mpas_tools.viz.paraview_extractor import extract_vtk
 
 
 parser = OptionParser()
@@ -158,20 +158,13 @@ if options.with_cavities:
     write_netcdf(dsLandIceCulledMesh, 'no_ISC_culled_mesh.nc',
                  format=netcdfFormat)
 
-args = ['paraview_vtk_field_extractor.py',
-        '--ignore_time',
-        '-d', 'maxEdges=',
-        '-v', 'allOnCells',
-        '-f', 'culled_mesh.nc',
-        '-o', 'culled_mesh_vtk']
-print("running", ' '.join(args))
-subprocess.check_call(args, env=os.environ.copy())
+extract_vtk(ignore_time=True, dimension_list=['maxEdges='],
+            variable_list=['allOnCells'], filename_pattern='culled_mesh.nc',
+            out_dir='culled_mesh_vtk')
 
-args = ['paraview_vtk_field_extractor.py',
-        '--ignore_time',
-        '-d', 'maxEdges=',
-        '-v', 'allOnCells',
-        '-f', 'no_ISC_culled_mesh.nc',
-        '-o', 'no_ISC_culled_mesh_vtk']
-print("running", ' '.join(args))
-subprocess.check_call(args, env=os.environ.copy())
+if options.with_cavities:
+    extract_vtk(ignore_time=True, dimension_list=['maxEdges='],
+                variable_list=['allOnCells'],
+                filename_pattern='no_ISC_culled_mesh.nc',
+                out_dir='no_ISC_culled_mesh_vtk')
+
