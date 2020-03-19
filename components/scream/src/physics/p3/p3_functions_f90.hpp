@@ -884,7 +884,7 @@ struct IceNucleationData
 {
   // Inputs
   Real temp, inv_rho, nitot, naai, supi, odt;
-  
+
   bool log_predictNc;
 
   // Outputs
@@ -906,7 +906,7 @@ struct IceWetGrowthData
 
   // In/Outs
   bool log_wetgrowth;
-  
+
   Real qrcol, qccol, qwgrth, nrshdr, qcshd;
 };
 void ice_cldliq_wet_growth(IceWetGrowthData& d);
