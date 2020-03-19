@@ -43,6 +43,7 @@ list(APPEND RAW_SOURCES
   core_ocean/mode_init/mpas_ocn_init_hurricane.F
   core_ocean/mode_init/mpas_ocn_init_isomip_plus.F
   core_ocean/mode_init/mpas_ocn_init_tidal_boundary.F
+  core_ocean/mode_init/mpas_ocn_init_smoothing.F
 
   core_ocean/shared/mpas_ocn_init_routines.F
   core_ocean/shared/mpas_ocn_gm.F
