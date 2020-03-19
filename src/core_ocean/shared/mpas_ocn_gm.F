@@ -565,6 +565,9 @@ contains
                         layerThicknessEdge(k,iEdge)*gradDensityEdge(k,iEdge)) / (layerThicknessEdge(k-1,iEdge) + &
                         layerThicknessEdge(k,iEdge))
             enddo
+
+            slopeTriadUp(maxLevelEdgeTop(iEdge)+1,:,iEdge) = 0.0_RKIND
+            slopeTriadDown(maxLevelEdgeTop(iEdge)+1,:,iEdge) = 0.0_RKIND
         end do
 
          ! Normalize k33
