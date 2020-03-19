@@ -32,7 +32,7 @@ int has_fe_invalid (int mask) {
 int run_fpe_tests () {
   int mask = scream::get_enabled_fpes();
 
-  std::cout << "tests mask: " << mask << "\n";
+  std::cout << " tests mask: " << mask << "\n";
 
   // Get the current fenv.
   // Note: for some reason, each time SIGFPE is thrown or getenv
@@ -42,9 +42,9 @@ int run_fpe_tests () {
   feholdexcept(&fenv);
   fesetenv(&fenv);
 
-  std::cout << " has FE_DIVBYZERO: " << has_fe_divbyzero(mask) << "\n";
-  std::cout << " has FE_INVALID:   " << has_fe_invalid(mask)   << "\n";
-  std::cout << " has FE_OVERFLOW:  " << has_fe_overflow(mask)  << "\n";
+  std::cout << "   has FE_DIVBYZERO: " << has_fe_divbyzero(mask) << "\n";
+  std::cout << "   has FE_INVALID:   " << has_fe_invalid(mask)   << "\n";
+  std::cout << "   has FE_OVERFLOW:  " << has_fe_overflow(mask)  << "\n";
 
   double one = 1.0;
   double zero = 0.0;
@@ -60,16 +60,19 @@ int run_fpe_tests () {
   // Test 1/0
   if (setjmp(JumpBuffer)) {
     REQUIRE (gSignalStatus==has_fe_divbyzero(mask));
+    printf ("  - 1/0 threw.\n");
     ++ntests;
     gSignalStatus = 0;
     fesetenv(&fenv);
   } else {
     inf = one/zero;
+    inf *= 1.0;
   }
 
   // Test 0/0
   if (setjmp(JumpBuffer)) {
     REQUIRE (gSignalStatus==1);
+    printf ("  - 0/0 threw.\n");
     ++ntests;
     gSignalStatus = 0;
     fesetenv(&fenv);
@@ -80,21 +83,25 @@ int run_fpe_tests () {
   // Test invalid arg
   if (setjmp(JumpBuffer)) {
     REQUIRE (gSignalStatus==1);
+    printf ("  - Invalid arg threw.\n");
     ++ntests;
     gSignalStatus = 0;
     fesetenv(&fenv);
   } else {
     nan = std::sqrt(-1.0);
+    nan *= 1.0;
   }
 
   // Test overflow
   if (setjmp(JumpBuffer)) {
     REQUIRE (gSignalStatus==1);
+    printf ("  - Overflow threw.\n");
     ++ntests;
     gSignalStatus = 0;
     fesetenv(&fenv);
   } else {
     ovfl = exp(710.0);
+    ovfl *= 1.0;
   }
 
   (void) inf;
@@ -116,7 +123,7 @@ TEST_CASE ("fpes","") {
   sigaction(SIGFPE, &sa, NULL);
 
   SECTION ("default-fpes") {
-    printf ("testing default fpes...\n");
+    printf ("*) testing default fpes...\n");
     int mask = scream::get_enabled_fpes();
     int num_expected_fpes = has_fe_divbyzero(mask) +
                             has_fe_invalid(mask)*2 +
@@ -131,7 +138,7 @@ TEST_CASE ("fpes","") {
   }
 
   SECTION ("user-requested-fpes") {
-    printf ("testing user-enabled fpes...\n");
+    printf ("*) testing user-enabled fpes...\n");
     disable_all_fpes();
     enable_fpes(FE_DIVBYZERO);
     int mask = scream::get_enabled_fpes();
@@ -148,7 +155,7 @@ TEST_CASE ("fpes","") {
   }
 
   SECTION ("user-requested-fpes") {
-    printf ("testing user-disabled fpes...\n");
+    printf ("*) testing user-disabled fpes...\n");
     enable_fpes(FE_ALL_EXCEPT);
     disable_fpes(FE_DIVBYZERO);
     int mask = scream::get_enabled_fpes();
@@ -166,7 +173,7 @@ TEST_CASE ("fpes","") {
 }
 
 TEST_CASE ("assert-macros") {
-  printf ("testing assert macros...\n");
+  printf ("*) testing assert macros...\n");
   auto test_req_msg = [](const bool test, const std::string& msg) {
     scream_require_msg(test,msg);
   };
