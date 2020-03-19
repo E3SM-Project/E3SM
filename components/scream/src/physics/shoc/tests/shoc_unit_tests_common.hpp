@@ -49,12 +49,6 @@ struct UnitWrap {
     using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
     using Spack              = typename Functions::Spack;
-    using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
-    using Smask              = typename Functions::Smask;
-    using TableIce           = typename Functions::TableIce;
-    using TableRain          = typename Functions::TableRain;
-    using Table3             = typename Functions::Table3;
     using C                  = typename Functions::C;
 
     // Put struct decls here
