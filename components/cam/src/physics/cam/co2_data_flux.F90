@@ -6,7 +6,29 @@ module co2_data_flux
 ! for data reading and interpolation                                           
 !------------------------------------------------------------------------------------------------
 
-  use shr_kind_mod,     only : r8 => shr_kind_r8,cx => shr_kind_cx, cl => shr_kind_cl
+!---------------------------------------------------------------------------------!
+! Extra note from Bryce Harrop                                                    !
+! There is currently an issue in the infld calls (as of 12 Feb 2020)              !
+! The issue does not allow time-varying 2D fields to be read in correctly         !
+! The temporary workaround employed in this module is to read the data in as 3D   !
+! fields, because this is working correctly.  After the infld issue is remedied,  !
+! the code can be reverted to reading the data in as 2D fields.                   !
+! In the meantime, an additional offline step is needed to add an extra singleton !
+! dimension to the data (lev).                                                    !
+! The code portions for handling 3D vs 2D fields will be signaled throughout the  !
+! code using the following structure                                              !
+! vvv 2D vvv                                                                      !
+!  2D code (commented out for now)                                                !
+! ^^^ 2D ^^^   ///   vvv 3D vvv                                                   !
+!  3D code                                                                        !
+! ^^^ 3D ^^^                                                                      !
+!---------------------------------------------------------------------------------!
+
+! vvv 2D vvv
+!  use shr_kind_mod,     only : r8 => shr_kind_r8, cx => shr_kind_cx, cl => shr_kind_cl
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+  use shr_kind_mod,     only : r8 => shr_kind_r8, cx => shr_kind_cx, cl => shr_kind_cl, cxx => shr_kind_cxx
+! ^^^ 3D ^^^
   use ppgrid,           only : begchunk, endchunk, pcols
   use cam_abortutils,   only : endrun
   use dycore,           only: dycore_is
@@ -39,11 +61,20 @@ type :: co2_data_flux_type
    
    !To store two time samples from a file to do time interpolation in the next step
    !(pcols,begchunk:endchunk,2)
-   real(r8), pointer, dimension(:,:,:) :: co2bdy
+! vvv 2D vvv
+!   real(r8), pointer, dimension(:,:,:) :: co2bdy
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+   real(r8), pointer, dimension(:,:,:,:) :: co2bdy
+   integer                               :: lev_frc
+! ^^^ 3D ^^^
 
    !To store data after time interpolation from two time samples
    !(pcols,begchunk:endchunk)
-   real(r8), pointer, dimension(:,:)   :: co2flx
+! vvv 2D vvv
+!   real(r8), pointer, dimension(:,:)   :: co2flx
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+   real(r8), pointer, dimension(:,:,:)   :: co2flx
+! ^^^ 3D ^^^
 
    !Forcing file name
    character(len=cl) :: filename   
@@ -93,8 +124,11 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
    character(len = cx) :: msg
    integer  :: grid_id, ierr, dim1len, dim2len, dim1id, dim2id ! netcdf file ids and sizes
    integer  :: hdim1_d, hdim2_d    ! model grid size
-   real(r8) :: dtime
    type(file_desc_t) :: fh_co2_data_flux
+! vvv 3D vvv
+   integer            :: dimlevid
+   character(len=cxx) :: err_str
+! ^^^ 3D ^^^
    !----------------------------------------------------------------------------
 
    if (.not. dimnames_set) then
@@ -161,6 +195,21 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
 
    !Sanity checks end
 
+! vvv 3D vvv
+          !Find the value of vertical levels in the forcing file
+          if( pio_inq_dimid(fh_co2_data_flux, 'lev', dimlevid) ==  pio_noerr ) then
+             if ( pio_inquire_dimension(fh_co2_data_flux, dimlevid, len =  xin%lev_frc) /=  pio_noerr ) then
+                write(err_str,*)'failed to obtain value of "lev" dimension from file:',&
+                     trim(adjustl(xin%filename)),',',errmsg(__FILE__, __LINE__)
+                call endrun(err_str)
+             endif
+          else
+             write(err_str,*)'Dimension "lev" is not found in:',&
+                  trim(adjustl(xin%filename)),',',errmsg(__FILE__, __LINE__)
+             call endrun(err_str)
+          endif
+! ^^^ 3D ^^^
+
    !close file
    call pio_closefile(fh_co2_data_flux)
 
@@ -169,15 +218,19 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
    xin%spec_name = spec_name
    xin%initialized = .false.
 
-   !BALLI: Not sure why dtime is defined this way...try a run without sending this optional arg to see if the results are different
-   !initialze time coord, this is used....BALLI??
-   dtime = 1.0_r8 - 200.0_r8 / 86400.0_r8
-   call xin%time_coord%initialize(input_file, delta_days=dtime)
+   ! No dtime offset necessary.  I have stripped out all of its mentions.
+   ! If future files need it, follow aircraft_emit.F90   --BEH
+   call xin%time_coord%initialize(input_file, force_time_interp=.true.)
 
    !xin%co2bdy will store values of co2 for two time levels 
    !xin%co2flx is the co2 interpolated in time based on model time
-   allocate( xin%co2bdy(pcols,begchunk:endchunk,2), &
-             xin%co2flx(pcols,begchunk:endchunk)    )
+! vvv 2D vvv
+!   allocate( xin%co2bdy(pcols,begchunk:endchunk,2), &
+!             xin%co2flx(pcols,begchunk:endchunk)    )
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+   allocate( xin%co2bdy(pcols, xin%lev_frc, begchunk:endchunk, 2), &
+             xin%co2flx(pcols, xin%lev_frc, begchunk:endchunk)    )
+! ^^^ 3D ^^^
 
    !Read the file and populate xin%co2flx once
    call co2_data_flux_advance(xin)
@@ -221,12 +274,22 @@ subroutine co2_data_flux_advance (xin)
       ! read time-level 1
       ! skip the read if the needed vals are present in time-level 2
       if (xin%initialized .and. xin%time_coord%indxs(1) == indx2_pre_adv) then
-         xin%co2bdy(:,:,1) = xin%co2bdy(:,:,2)
+! vvv 2D vvv
+!         xin%co2bdy(:,:,1) = xin%co2bdy(:,:,2)
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+         xin%co2bdy(:,:,:,1) = xin%co2bdy(:,:,:,2)
+! ^^^ 3D ^^^
       else
          !NOTE: infld call doesn't do any interpolation in space, it just reads in the data
-         call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
-              1, pcols, begchunk, endchunk, xin%co2bdy(:,:,1), found, &
+! vvv 2D vvv
+!         call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
+!              1, pcols, begchunk, endchunk, xin%co2bdy(:,:,1), found, &
+!              gridname='physgrid', timelevel=xin%time_coord%indxs(1))
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+         call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, 'lev', dim2name, &
+              1, pcols, 1, xin%lev_frc, begchunk, endchunk, xin%co2bdy(:,:,:,1), found, &
               gridname='physgrid', timelevel=xin%time_coord%indxs(1))
+! ^^^ 3D ^^^
 
          if (.not. found) then
             call endrun('ERROR: ' // trim(xin%spec_name) // ' not found'//errmsg(__FILE__,__LINE__))
@@ -234,9 +297,15 @@ subroutine co2_data_flux_advance (xin)
       endif
 
       ! read time-level 2
-      call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
-           1, pcols, begchunk, endchunk, xin%co2bdy(:,:,2), found, &
+! vvv 2D vvv
+!      call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
+!           1, pcols, begchunk, endchunk, xin%co2bdy(:,:,2), found, &
+!           gridname='physgrid', timelevel=xin%time_coord%indxs(2))
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+      call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, 'lev', dim2name, &
+           1, pcols, 1, xin%lev_frc, begchunk, endchunk, xin%co2bdy(:,:,:,2), found, &
            gridname='physgrid', timelevel=xin%time_coord%indxs(2))
+! ^^^ 3D ^^^
 
       if (.not. found) then
          call endrun('ERROR: ' // trim(xin%spec_name) // ' not found'//errmsg(__FILE__,__LINE__))
@@ -251,12 +320,21 @@ subroutine co2_data_flux_advance (xin)
    ! generating fluxes that are piecewise constant in time.
 
    if (xin%time_coord%wghts(2) == 0.0_r8) then
-      xin%co2flx(:,:) = xin%co2bdy(:,:,1)
+! vvv 2D vvv
+!      xin%co2flx(:,:) = xin%co2bdy(:,:,1)
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+      xin%co2flx(:,:,:) = xin%co2bdy(:,:,:,1)
+! ^^^ 3D ^^^
    else
-      xin%co2flx(:,:) = xin%co2bdy(:,:,1) + &
-           xin%time_coord%wghts(2) * (xin%co2bdy(:,:,2) - xin%co2bdy(:,:,1))
+! vvv 2D vvv
+!      xin%co2flx(:,:) = xin%co2bdy(:,:,1) + &
+!           xin%time_coord%wghts(2) * (xin%co2bdy(:,:,2) - xin%co2bdy(:,:,1))
+! ^^^ 2D ^^^   ///   vvv 3D vvv
+      xin%co2flx(:,:,:) = xin%co2bdy(:,:,:,1) + &
+           xin%time_coord%wghts(2) * (xin%co2bdy(:,:,:,2) - xin%co2bdy(:,:,:,1))
+! ^^^ 3D ^^^
    endif
-   !BRYCE-unit conversion?????
+
    ! atm_import_export.F90 wants surface fluxes in kgCO2/m2/s so no conversion necessary
 
 end subroutine co2_data_flux_advance

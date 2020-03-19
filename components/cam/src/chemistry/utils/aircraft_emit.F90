@@ -254,6 +254,7 @@ contains
     integer :: dimlevid, var_id, errcode, dim1id, dim2id, dim1len, dim2len
     integer :: dimbndid, nbnd
     integer :: hdim1_d, hdim2_d    ! model grid size
+    real(r8) :: dtime
     
     !------------------------------------------------------------------
     ! Return if aircraft_cnt is zero (no aircraft data to process)
@@ -318,7 +319,10 @@ contains
           native_grid_frc_air(m)%input_file     = trim(air_datapath)//'/'//trim(spc_fname(m))
 
           native_grid_frc_air(m)%initialized    = .false.
-          call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)))
+          !dtime = 1.0_r8 - 200.0_r8 / 86400.0_r8
+          dtime = -1.0_r8
+          call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)), &
+               force_time_interp=.true., delta_days=dtime)
 
           !-----------------------------------------------------------------------
           !       Open file
@@ -772,6 +776,9 @@ contains
     use ppgrid,         only: begchunk, endchunk
     use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
     use ppgrid,         only: pver, pcols
+    use cam_history,    only: outfld
+    use constituents,   only: cnst_name
+    use co2_cycle,      only: c_i
 
 
     !args
@@ -791,6 +798,8 @@ contains
     real(r8) :: ovrl, ovrr, ovrf                             ! overlap bounds
     real(r8) :: ovrmat(pver, native_grid_strct%lev_frc) ! overlap fractions matrix
     integer  :: kinp, kmdl                              ! vertical indexes
+    integer  :: lchnk, k
+    real(r8) :: ftem(pcols, begchunk:endchunk)
 
     ! Vertical interpolation follows Joeckel (2006) ACP method for conservation
     do ic = begchunk,endchunk
@@ -811,8 +820,18 @@ contains
           end do
           vrt_interp_field(icol,:,ic)  = MATMUL( ovrmat, native_grid_strct%native_grid_flds(icol,:,ic) )
        end do
+
+       lchnk = state(ic)%lchnk
+       call outfld('AF'//trim(cnst_name(c_i(4))), vrt_interp_field(:ncol,:,ic), ncol, lchnk)
+       ! AF is given in kg/m2/s already, so no pdel*rga scaling necessary to column integrate
+       ftem(:ncol, ic) = vrt_interp_field(:ncol, 1, ic)
+       do k = 2, pver
+          ftem(:ncol, ic) = ftem(:ncol, ic) + vrt_interp_field(:ncol, k, ic)
+       end do
+       call outfld('TAF'//trim(cnst_name(c_i(4))), ftem(:ncol, ic), ncol, lchnk)
+
     enddo
-    
+  
     !future work: these two (above abd below) do loops should be combined into one.
     
     !add field to pbuf
