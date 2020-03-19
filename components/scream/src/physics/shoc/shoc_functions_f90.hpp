@@ -20,20 +20,6 @@ namespace shoc {
 
 // Converted subroutine helpers go here.
 
-///////////////////////////////////////////////////////////////////////////////
-// BFB math stuff
-///////////////////////////////////////////////////////////////////////////////
-
-extern "C" {
-
-Real cxx_pow(Real base, Real exp);
-Real cxx_sqrt(Real base);
-Real cxx_cbrt(Real base);
-Real cxx_log(Real input);
-Real cxx_exp(Real input);
-
-}
-
 }  // namespace shoc
 }  // namespace scream
 

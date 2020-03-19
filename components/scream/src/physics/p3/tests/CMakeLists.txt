@@ -1,6 +1,6 @@
 include(ScreamUtils)
 
-set(NEED_LIBS p3 scream_share)
+set(NEED_LIBS p3 physics_common scream_share)
 set(P3_TESTS_SRCS
   p3_tests.cpp
   p3_unit_tests.cpp

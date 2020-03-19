@@ -7,22 +7,8 @@
 ! email: bogenschutz1@llnl.gov
 !--------------------------------------------------------------
 
-#define bfb_square(val) ((val)*(val))
-#define bfb_cube(val) ((val)*(val)*(val))
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#  define bfb_pow(base, exp) cxx_pow(base, exp)
-#  define bfb_sqrt(base) cxx_sqrt(base)
-#  define bfb_cbrt(base) cxx_cbrt(base)
-#  define bfb_log(val) cxx_log(val)
-#  define bfb_exp(val) cxx_exp(val)
-#else
-#  define bfb_pow(base, exp) (base)**(exp)
-#  define bfb_sqrt(val) sqrt(val)
-#  define bfb_cbrt(base) (base)**(1._rtype/3._rtype)
-#  define bfb_log(val) log(val)
-#  define bfb_exp(val) exp(val)
-#endif
+! Include bit-for-bit math macros.
+#include "bfb_math.inc"
 
 module shoc
 
@@ -30,6 +16,12 @@ module shoc
   use iso_c_binding, only: c_double, c_float, c_bool
 #else
   use shr_kind_mod,   only: rtype=>shr_kind_rtype, itype=>shr_kind_i8
+#endif
+
+! Bit-for-bit math functions.
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use physics_common_iso_f, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
+                                  cxx_log10, cxx_exp
 #endif
 
 implicit none

@@ -34,7 +34,7 @@ target_include_directories(shoc PUBLIC ${SCREAM_INCLUDE_DIRS})
 target_include_directories(shoc SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
 set_target_properties(shoc PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(shoc scream_share ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(shoc physics_common scream_share ${SCREAM_TPL_LIBRARIES})
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
