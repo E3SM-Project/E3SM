@@ -59,7 +59,8 @@ Int compare (const std::string& label, const double& tol,
 
 struct Baseline {
   Baseline () {
-    params_.push_back({1, 128, 300});
+    for (const int nadv : {1, 6})
+      params_.push_back({ic::Factory::standard, 1, 72, 1, nadv, 300});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -68,7 +69,7 @@ struct Baseline {
     Int nerr = 0;
     for (auto ps : params_) {
       // Run reference shoc on this set of parameters.
-      const auto d = ic::Factory::create(ps.shcol, ps.nlev);
+      const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
       set_params(ps, *d);
       shoc_init(ps.nlev, use_fortran);
       shoc_main(*d);
@@ -87,12 +88,12 @@ struct Baseline {
     for (auto ps : params_) {
       case_num++;
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.shcol, ps.nlev);
+      const auto d_ref = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
       set_params(ps, *d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.shcol, ps.nlev);
+        const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         shoc_init(ps.nlev, use_fortran);
         std::cout << "--- checking case # " << case_num << " ---\n" << std::flush;
@@ -109,12 +110,14 @@ struct Baseline {
 private:
 
   struct ParamSet {
-    Int shcol, nlev;
+    ic::Factory::IC ic;
+    Int shcol, nlev, num_qtracers, nadv;
     Real dtime;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
-    // shcol and nlev are already set by the Factory.
+    // shcol, nlev, num_qtracers are already set by the Factory.
+    d.nadv = ps.nadv;
     d.dtime = ps.dtime;
   }
 

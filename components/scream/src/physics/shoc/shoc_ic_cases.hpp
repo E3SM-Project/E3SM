@@ -8,7 +8,9 @@ namespace shoc {
 namespace ic {
 
 struct Factory {
-  static FortranData::Ptr create(Int shcol = 1, Int nlev = 72);
+  enum IC { standard };
+  static FortranData::Ptr create(IC ic, Int shcol = 1, Int nlev = 72,
+                                 Int num_qtracers = 1);
 };
 
 } // namespace ic

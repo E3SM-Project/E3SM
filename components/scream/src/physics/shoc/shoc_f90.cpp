@@ -32,11 +32,11 @@ namespace scream {
 namespace shoc {
 
 FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_,
-                         Int num_qtracers_, Int nadv_)
-  : shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_qtracers(num_qtracers_),
-    nadv(nadv_)
+                         Int num_qtracers_)
+  : shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_qtracers(num_qtracers_)
 {
   dtime = -1; // model time step [s]; set to invalid -1
+  nadv = -1;  // depends on timestep, so also invalid
 
   // In variables
   host_dx = Array1("grid spacing of host model in x direction [m]", shcol);
@@ -163,8 +163,7 @@ void shoc_main(FortranData& d) {
 int test_FortranData () {
   Int shcol = 1;
   Int nlev = 128, num_tracers = 1;
-  Int nadv = 1;
-  FortranData d(shcol, nlev, nlev+1, num_tracers, nadv);
+  FortranData d(shcol, nlev, nlev+1, num_tracers);
   return 0;
 }
 
@@ -174,7 +173,7 @@ int test_shoc_init (bool use_fortran) {
 }
 
 int test_shoc_ic (bool use_fortran) {
-  const auto d = ic::Factory::create();
+  const auto d = ic::Factory::create(ic::Factory::standard);
   shoc_init(use_fortran);
   shoc_main(*d);
   return 0;

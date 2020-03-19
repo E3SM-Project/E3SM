@@ -43,7 +43,7 @@ struct FortranData {
          wtke_sec, uw_sec, vw_sec, w3, wqls_sec, isotropy, brunt;
 
   FortranData() = delete;
-  FortranData(Int shcol, Int nlev, Int nlevi, Int num_qtracers, Int nadv);
+  FortranData(Int shcol, Int nlev, Int nlevi, Int num_qtracers);
 };
 
 // Iterate over a FortranData's arrays. For examples, see Baseline::write, read.

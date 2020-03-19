@@ -11,7 +11,7 @@ TEST_CASE("FortranData", "shoc") {
 
 TEST_CASE("FortranDataIterator", "shoc") {
   using scream::shoc::ic::Factory;
-  const auto d = Factory::create();
+  const auto d = Factory::create(Factory::standard);
   scream::shoc::FortranDataIterator fdi(d);
   REQUIRE(fdi.nfield() == 43);
   const auto& f = fdi.getfield(0);
