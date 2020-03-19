@@ -202,7 +202,7 @@ contains
       !$omp end do
 
       !mrp performance note: can try to reduce halo width later
-      nCells = nCellsArray( size(nCellsArray) )
+      nCells = nCellsArray( 1 )
       nCellsP1 = nCellsArray( size(nCellsArray) ) + 1
       redi_term2(:,:,:) = 0.0_RKIND
       ! Term 2: div( h S dphi/dz)
@@ -286,8 +286,8 @@ contains
       allocate(areaSum(nVertLevels+1))
 
       !mrp performance note: can try to reduce halo width later
-      !nCells = nCellsArray(1)
-      nCells = nCellsArray( size(nCellsArray) )
+      nCells = nCellsArray(1)
+      !nCells = nCellsArray( size(nCellsArray) )
 
       redi_term3(:,:,:) = 0.0_RKIND
       !$omp do schedule(runtime)
@@ -309,7 +309,7 @@ contains
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
             endif
 
-            do k = 1, maxLevelEdgeTop(iEdge) - 1
+            do k = 1, maxLevelEdgeTop(iEdge) 
                areaSum(k) = areaSum(k) + areaEdge
                areaSum(k+1) = areaSum(k+1) + areaEdge
 
