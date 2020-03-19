@@ -1246,7 +1246,11 @@ contains
       deallocate(process_ncols)
 
       write(iulog,*) 'PHYS_GRID_INIT:  Using'
+#ifdef PPCOLS
+      write(iulog,*) '  PCOLS (compile-time parameter)=',pcols
+#else
       write(iulog,*) '  phys_chunk_fdim (pcols)=',pcols
+#endif
       write(iulog,*) '  phys_loadbalance=       ',lbal_opt
       write(iulog,*) '  phys_twin_algorithm=    ',twin_alg
       write(iulog,*) '  phys_alltoall=          ',phys_alltoall
@@ -1534,6 +1538,22 @@ logical function phys_grid_initialized ()
      logical, intent(in), optional :: phys_chnk_cost_write_in
 !-----------------------------------------------------------------------
      if ( present(phys_chunk_fdim_in) ) then
+#ifdef PPCOLS
+        if (phys_chunk_fdim_in /= pcols) then
+           if (masterproc) then
+              write(iulog,*)                                     &
+                 'PHYS_GRID_SETOPTS:  ERROR:  phys_chunk_fdim=', &
+                 phys_chunk_fdim_in,                             &
+                 '  differs from compile-time PCOLS parameter=', &
+                 pcols,                                          &
+                 '  .'
+              write(iulog,*)                                     &
+                 '  Must compile without -DPPCOLS to enable runtime'
+              write(iulog,*)                                     &
+                 '  option. Ignoring and using PCOLS parameter.'
+           endif
+        endif
+#else
         pcols = phys_chunk_fdim_in
         if (pcols < min_pcols) then
            if (masterproc) then
@@ -1545,6 +1565,7 @@ logical function phys_grid_initialized ()
            endif
            call endrun
         endif
+#endif
      endif
 !
      if ( present(phys_loadbalance_in) ) then
