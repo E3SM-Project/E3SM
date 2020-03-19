@@ -376,6 +376,24 @@ extern "C"{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
+struct RainSelfCollectionData
+{
+  //inputs 
+  Real rho, qr_incld, nr_incld; 
+
+  //output
+  Real nrslf;
+};
+
+void rain_self_collection(RainSelfCollectionData& d);
+extern "C"{
+
+  void rain_self_collection_f(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ImposeMaxTotalNiData{
   // inout
   Real nitot_local;
@@ -384,8 +402,8 @@ struct ImposeMaxTotalNiData{
   Real max_total_Ni, inv_rho_local;
 };
 void impose_max_total_Ni(ImposeMaxTotalNiData& d);
-
 extern "C"{
+
   void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
 }
 

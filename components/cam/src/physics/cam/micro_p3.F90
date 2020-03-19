@@ -2866,7 +2866,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    ! (breakup following modified Verlinde and Cotton scheme)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_cbrt, cxx_exp
+   use micro_p3_iso_f, only: rain_self_collection_f, cxx_cbrt, cxx_exp
 #endif
 
    implicit none
@@ -2878,6 +2878,14 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
 
    real(rtype) :: dum, dum1, dum2
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  rain_self_collection_f(rho,qr_incld,nr_incld,    &
+         nrslf)
+      return
+   endif
+#endif
+
    if (qr_incld.ge.qsmall) then
 
       ! include breakup
@@ -2888,7 +2896,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       ! note there should be a factor of 6^(1/3), but we
       ! want to keep breakup threshold consistent so 'dum'
       ! is expressed in terms of lambda rather than mass-mean D
-      
+
       dum2 = bfb_cbrt(qr_incld/(pi*rhow*nr_incld))
       if (dum2.lt.dum1) then
          dum = 1._rtype

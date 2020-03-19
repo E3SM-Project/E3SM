@@ -79,6 +79,8 @@ void cloud_rain_accretion_c(Real rho, Real inv_rho, Real qc_incld, Real nc_incld
 
 void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
 
+void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
+
 void impose_max_total_ni_c(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
 
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
@@ -331,9 +333,14 @@ void ice_water_conservation(IceWaterConservationData& d){
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
 }
 
-void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
+void cloud_water_autoconversion(CloudWaterAutoconversionData& d){
   p3_init(true);
   cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, &d.qcaut, &d.ncautc, &d.ncautr);
+}
+
+void rain_self_collection(RainSelfCollectionData& d){
+  p3_init(true);
+  rain_self_collection_c(d.rho, d.qr_incld, d.nr_incld, &d.nrslf);
 }
 
 void impose_max_total_Ni(ImposeMaxTotalNiData& d){
@@ -1787,6 +1794,25 @@ void cloud_water_autoconversion_f(
   *qcaut_ = t_h(0);
   *ncautc_ = t_h(1);
   *ncautr_ = t_h(2);
+}
+
+void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrslf_){
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_nrslf = *nrslf_;
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), qr_incld(qr_incld_), nr_incld(nr_incld_),  nrslf(local_nrslf);
+      P3F::rain_self_collection(rho, qr_incld, nr_incld, nrslf);
+
+      t_d(0) = nrslf[0];
+
+    });
+
+  Kokkos::deep_copy(t_h, t_d);
+  *nrslf_ = t_h(0);
 }
 
 void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_local_)
