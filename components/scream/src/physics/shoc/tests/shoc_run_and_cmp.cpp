@@ -96,12 +96,14 @@ struct Baseline {
         const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         shoc_init(ps.nlev, use_fortran);
-        std::cout << "--- checking case # " << case_num << " ---\n" << std::flush;
-        read(fid, d_ref);
-        shoc_main(*d);
-        ne = compare("ref", tol, d_ref, d);
-        if (ne) std::cout << "Ref impl failed.\n";
-        nerr += ne;
+        for (int it=0; it<ps.nadv; it++) {
+          std::cout << "--- checking case # " << case_num << ", it = " << it+1 << "/" << ps.nadv << " ---\n" << std::flush;
+          read(fid, d_ref);
+          shoc_main(*d);
+          ne = compare("ref", tol, d_ref, d);
+          if (ne) std::cout << "Ref impl failed.\n";
+          nerr += ne;
+        }
       }
     }
     return nerr;
