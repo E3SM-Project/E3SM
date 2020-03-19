@@ -502,6 +502,13 @@ struct Functions
                                   const Spack& qirim_incld, const Spack& qitot_incld,
                                   const Spack& nitot_incld, Spack& nislf);
 
+  // TODO (comments)
+  static void evaporate_sublimate_precip(const Spack& qr_incld, const Spack& qc_incld,
+					 const Spack& nr_incld, const Spack& qitot_incld,
+					 const Spack& lcldm, const Spack& rcldm,
+					 const Spack& qvs, const Spack& ab, const Spack& epsr,
+					 const Spack& qv, Spack& qrevp, Spack& nrevp);
+
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
@@ -568,6 +575,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
 # include "p3_functions_rain_imm_freezing_impl.hpp"
+# include "p3_functions_evaporate_sublimate_precip_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"
 # include "p3_functions_ice_deposition_sublimation_impl.hpp"

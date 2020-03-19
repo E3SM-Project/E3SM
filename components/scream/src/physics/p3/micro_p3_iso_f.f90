@@ -375,6 +375,17 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(out) :: nislf
   end subroutine ice_self_collection_f
 
+  subroutine evaporate_sublimate_precip_f(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab, &
+       epsr, qv, qrevp, nrevp) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab, &
+         epsr, qv
+    real(kind=c_real), intent(out) :: qrevp, nrevp
+
+  end subroutine evaporate_sublimate_precip_f
+
   subroutine update_prognostic_liquid_f(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
        qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
     use iso_c_binding
