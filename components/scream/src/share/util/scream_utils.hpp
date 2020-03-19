@@ -131,37 +131,34 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
 
 namespace check_overloads
 {
-// Note: the trick used here is taken from Alexandrescu's 'Modern C++ Design' book.
-//       We do not need implementations for the dummy functions below, since
-//       sizeof is guaranteed to not actually evaluate any expression.
-
-// We are *guaranteed* that the sizes of Yes and No are different
-using Yes = char;
-struct No
-{
-  char b[2];
-};
-
-bool Check (bool);
-bool Check (std::ostream&);
-No& Check (...);
+// Note: the trick used here is taken from https://stackoverflow.com/a/50631844/1093346
 
 // Equality operator
-template<typename T, typename Arg>
-Yes operator== (const T&, const Arg&);
-
-template <typename T, typename Arg = T>
+template <typename LHS, typename RHS>
 struct EqualExists {
-  enum : int { value = (sizeof(Check(*(T*)(0) == *(Arg*)(0))) == sizeof(Yes)) };
+  template<typename T, typename U>
+  static auto test(T &&t, U &&u) -> decltype(t == u, void(), std::true_type{});
+  static auto test(...) -> std::false_type;
+  using type = decltype(test(std::declval<LHS>(),std::declval<RHS>()));
+
+  static constexpr bool value = type::value;
 };
 
 // Streaming operator
 template<typename T>
-Yes operator<< (const std::ostream&, const T&);
-
-template<typename T>
 struct StreamExists {
-  enum : int { value = (sizeof(std::declval<std::ostream>() << std::declval<T>()) == sizeof(Yes)) };
+  template<typename U>
+  static auto test(U*)
+    -> decltype(
+        std::declval<std::ostream&>() << std::declval<U>(),
+        std::true_type());
+
+  template<typename>
+  static std::false_type test(...);
+
+  using type = decltype(test<T>(0));
+
+  static constexpr bool value = type::value;
 };
 
 } // namespace check_overloads

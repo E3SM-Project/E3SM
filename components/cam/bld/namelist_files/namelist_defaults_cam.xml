@@ -163,12 +163,18 @@
 <ncdata dyn="se" hgrid="ne512np4" nlev="72"        ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc</ncdata>
 <ncdata dyn="se" hgrid="ne1024np4" nlev="72"       ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc</ncdata>
 <ncdata dyn="se" hgrid="ne1024np4" nlev="128"      ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
+<ncdata dyn="se" hgrid="ne256np4"           >DUMMY-IC</ncdata>
+<ncdata dyn="se" hgrid="ne512np4"           >DUMMY-IC</ncdata>
+<ncdata dyn="se" hgrid="ne1024np4"          >DUMMY-IC</ncdata>
 
 <!-- E3SM Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
 
+<!-- E3SM RCE -->
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne30np4_L72_c190919.nc</ncdata>
 
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="72"              >atm/cam/inic/homme/cami_mam4_Linoz_0001-01-ne240np4_L72_c170910.nc</ncdata>
@@ -232,6 +238,9 @@
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
+<bnd_topo hgrid="ne256np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</bnd_topo>
+<bnd_topo hgrid="ne512np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</bnd_topo>
+<bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
@@ -477,8 +486,8 @@
 <liqopticsfile rad="rrtmgp">atm/cam/physprops/F_nwvl200_mu20_lam50_res64_t298_c080428.nc</liqopticsfile>
 
 <!-- Gas absorption coefficients for RRTMGP -->
-<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_c181004.nc</rrtmgp_coefficients_file_lw>
-<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_c181004.nc</rrtmgp_coefficients_file_sw>
+<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_20181204.nc</rrtmgp_coefficients_file_lw>
+<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_20181204.nc</rrtmgp_coefficients_file_sw>
 
 <!-- flag for clipping temperatures -->
 <rrtmgp_clip_temperatures rad="rrtmgp">.false.</rrtmgp_clip_temperatures>
@@ -815,12 +824,17 @@
 <drydep_srf_file hgrid="ne4np4"  >atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
-<drydep_srf_file hgrid="ne30np4" >atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne30np4" npg="0">atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne30np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne30pg2_200129.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne512np4">atm/cam/chem/trop_mam/atmsrf_ne512np4_interp_20190409.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne1024np4">atm/cam/chem/trop_mam/atmsrf_ne1024np4_20190621.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne256np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne256pg2_200212.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne512np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne512pg2_200212.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne1024np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne1024pg2_200212.nc</drydep_srf_file>
+
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon">atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_northamericax4v1">atm/cam/chem/trop_mam/atmsrf_northamericax4v1np4_20191023.nc</drydep_srf_file>
@@ -1435,6 +1449,9 @@
 <use_rad_dt_cosz>             .false.  </use_rad_dt_cosz>
 <raytau0>                     0.0    </raytau0>
 
+<!-- Only for use with RRTMGP -->
+<do_aerosol_rad>              .true.   </do_aerosol_rad>
+<fixed_total_solar_irradiance>-1       </fixed_total_solar_irradiance>
 
 
 <!-- ================================================================== -->

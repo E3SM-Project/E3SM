@@ -4,8 +4,8 @@
 #include "share/grid/abstract_grid.hpp"
 #include "share/remap/abstract_remapper.hpp"
 #include "share/remap/identity_remapper.hpp"
-#include "share/util/factory.hpp"
-#include "share/parameter_list.hpp"
+#include "share/util/scream_factory.hpp"
+#include "share/scream_parameter_list.hpp"
 #include "share/util/string_utils.hpp"
 #include "share/scream_assert.hpp"
 

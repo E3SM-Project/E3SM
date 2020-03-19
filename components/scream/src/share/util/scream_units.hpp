@@ -1,8 +1,8 @@
 #ifndef SCREAM_UNITS_HPP
 #define SCREAM_UNITS_HPP
 
-#include "share/util/rational_constant.hpp"
-#include "share/util/scaling_factor.hpp"
+#include "share/util/scream_rational_constant.hpp"
+#include "share/util/scream_scaling_factor.hpp"
 
 namespace scream
 {
@@ -51,7 +51,9 @@ public:
   // Construct a non-dimensional quantity
   Units (const ScalingFactor& scaling)
    : m_scaling {scaling}
-   , m_units{0,0,0,0,0,0,0}
+   , m_units{RationalConstant(0), RationalConstant(0), RationalConstant(0),
+             RationalConstant(0), RationalConstant(0), RationalConstant(0),
+             RationalConstant(0)}
    , m_exp_format (Format::Rat)
   {
     m_string = to_string(*this);
@@ -74,7 +76,6 @@ public:
   }
 
   Units (const Units&) = default;
-  Units& operator= (const Units&) = default;
 
   static Units nondimensional () {
     return Units(RationalConstant::one());

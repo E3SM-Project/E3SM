@@ -2,7 +2,7 @@
 #define SCREAM_SCALING_FACTOR_HPP
 
 #include <iostream>
-#include "share/util/rational_constant.hpp"
+#include "share/util/scream_rational_constant.hpp"
 
 #include <array>
 
@@ -31,7 +31,6 @@ struct ScalingFactor {
   }
 
   constexpr ScalingFactor (const ScalingFactor&) = default;
-  ScalingFactor& operator= (const ScalingFactor&) = default;
 
   static constexpr ScalingFactor one () { return ScalingFactor(1); }
   static constexpr ScalingFactor zero () { return ScalingFactor(0); }

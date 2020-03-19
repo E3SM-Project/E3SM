@@ -53,7 +53,7 @@ def parse_command_line(args, cimeroot, description):
                         help="Specify that --ninst should modify the number of driver/coupler instances. "
                         "\nThe default is to have one driver/coupler supporting multiple component instances.")
 
-    parser.add_argument("--ninst",default=1,
+    parser.add_argument("--ninst", default=1, type=int,
                         help="Specify number of model ensemble instances. "
                         "\nThe default is multiple components and one driver/coupler. "
                         "\nUse --multi-driver to run multiple driver/couplers in the ensemble.")

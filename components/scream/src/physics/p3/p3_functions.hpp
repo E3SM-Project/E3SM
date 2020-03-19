@@ -139,6 +139,30 @@ struct Functions
   static void lookup(const Smask& qr_gt_small, const Spack& mu_r, const Spack& lamr,
                      Table3& t);
 
+  // Converts quantities to cell averages
+  KOKKOS_FUNCTION
+  static void back_to_cell_average(const Spack& lcldm, const Spack& rcldm,
+                                   const Spack& icldm, Spack& qcacc, Spack& qrevp,
+                                   Spack& qcaut, Spack& ncacc, Spack& ncslf,
+                                   Spack& ncautc, Spack& nrslf, Spack& nrevp,
+                                   Spack& ncautr, Spack& qcnuc, Spack& ncnuc,
+                                   Spack& qisub, Spack& nrshdr, Spack& qcheti,
+                                   Spack& qrcol, Spack& qcshd, Spack& qimlt,
+                                   Spack& qccol, Spack& qrheti, Spack& nimlt,
+                                   Spack& nccol, Spack& ncshdc, Spack& ncheti,
+                                   Spack& nrcol, Spack& nislf, Spack& qidep,
+                                   Spack& nrheti, Spack& nisub, Spack& qinuc,
+                                   Spack& ninuc, Spack& qiberg);
+
+  // Limits ice process rates to prevent overdepletion of sources such that
+  // the subsequent adjustments are done with maximum possible rates for the
+  // time step.
+  KOKKOS_FUNCTION
+  static void prevent_ice_overdepletion(const Spack& pres, const Spack& t,
+                                        const Spack& qv, const Spack& xxls,
+                                        const Spack& odt, Spack& qidep,
+                                        Spack& qisub);
+
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
   // ------------------------------------------------------------------------------------------!
@@ -379,6 +403,19 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  // Calculates rime density
+  KOKKOS_FUNCTION
+  static void calc_rime_density(const Spack& t, const Spack& rhofaci,
+    const Spack& f1pr02, const Spack& acn, const Spack& lamc,
+    const Spack& mu_c, const Spack& qc_incld, const Spack& qccol,
+    Spack& vtrmi1, Spack& rhorime_c);
+
+  // Computes contact and immersion freezing droplets
+  KOKKOS_FUNCTION
+  static void cldliq_immersion_freezing(const Spack& t, const Spack& lamc,
+    const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld,
+    Spack& qcheti, Spack& ncheti);
+
   // Computes the immersion freezing of rain
   KOKKOS_FUNCTION
   static void rain_immersion_freezing(const Spack& t, const Spack& lamr,
@@ -401,6 +438,10 @@ struct Functions
   KOKKOS_FUNCTION
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
     Spack& qcaut, Spack& ncautc, Spack& ncautr);
+
+  // Computes rain self collection process rate
+  KOKKOS_FUNCTION
+  static void rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nrslf);
 
   // Impose maximum ice number
   KOKKOS_FUNCTION
@@ -476,6 +517,26 @@ struct Functions
     const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
     const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
 
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_deposition_sublimation(const Spack& qitot_incld,
+    const Spack& nitot_incld, const Spack& t, const Spack& qvs, const Spack& qvi,
+    const Spack& epsi, const Spack& abi, const Spack& qv, Spack& qidep,
+    Spack& qisub, Spack& nisub, Spack& qiberg);
+
+  KOKKOS_FUNCTION
+  static void ice_relaxation_timescale(const Spack& rho, const Spack& temp, const Spack& rhofaci, const Spack& f1pr05,
+                                       const Spack& f1pr14, const Spack& dv, const Spack& mu, const Spack& sc,
+                                       const Spack& qitot_incld, const Spack& nitot_incld,
+                                       Spack& epsi, Spack& epsi_tot);
+
+  // ice nucleation
+  KOKKOS_FUNCTION
+  static void ice_nucleation(const Spack& temp, const Spack& inv_rho,
+                             const Spack& nitot, const Spack& naai,
+                             const Spack& supi, const Spack& odt,
+                             const Smask& log_predictNc,
+                             Spack& qinuc, Spack& ninuc);
 
 };
 
@@ -497,12 +558,17 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_math_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_table_ice_impl.hpp"
+# include "p3_functions_back_to_cell_average_impl.hpp"
+# include "p3_functions_prevent_ice_overdepletion_impl.hpp"
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
 # include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
+# include "p3_functions_rain_self_collection_impl.hpp"
 # include "p3_functions_impose_max_total_Ni_impl.hpp"
+# include "p3_functions_calc_rime_density_impl.hpp"
+# include "p3_functions_cldliq_imm_freezing_impl.hpp"
 # include "p3_functions_droplet_self_coll_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_cloud_rain_acc_impl.hpp"
@@ -512,6 +578,9 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_evaporate_sublimate_precip_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"
+# include "p3_functions_ice_deposition_sublimation_impl.hpp"
+# include "p3_functions_ice_relaxation_timescale_impl.hpp"
+# include "p3_functions_ice_nucleation_impl.hpp"
 #endif
 
 #endif

@@ -162,6 +162,60 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct BackToCellAverageData
+{
+  // inputs
+  Real lcldm, rcldm, icldm;
+
+  // in/out
+  Real qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc,
+       ncnuc, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt,
+       nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
+       qiberg;
+
+  // This populates all fields with test data within [0,1].
+  void randomize(); 
+};
+
+void back_to_cell_average(BackToCellAverageData& d);
+
+extern "C"{
+  void back_to_cell_average_f(Real lcldm, Real rcldm, Real icldm,
+                              Real* qcacc, Real* qrevp, Real* qcaut,
+                              Real* ncacc, Real* ncslf, Real* ncautc,
+                              Real* nrslf, Real* nrevp, Real* ncautr,
+                              Real* qcnuc, Real* ncnuc, Real* qisub,
+                              Real* nrshdr, Real* qcheti, Real* qrcol,
+                              Real* qcshd, Real* qimlt, Real* qccol,
+                              Real* qrheti, Real* nimlt, Real* nccol,
+                              Real* ncshdc, Real* ncheti, Real* nrcol,
+                              Real* nislf, Real* qidep, Real* nrheti,
+                              Real* nisub, Real* qinuc, Real* ninuc,
+                              Real* qiberg);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct PreventIceOverdepletionData
+{
+  // inputs
+  Real pres, t, qv, xxls, odt;
+
+  //output
+  Real qidep, qisub;
+};
+
+void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
+
+extern "C"{
+  void prevent_ice_overdepletion_f(Real pres, Real t, Real qv, Real xxls,
+    Real odt, Real* qidep, Real* qisub);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CloudWaterConservationData
 {
   // inputs
@@ -209,6 +263,41 @@ extern "C"{
   void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
   Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
 }
+///////////////////////////////////////////////////////////////////////////////
+
+struct CalcRimeDensityData
+{
+  // inputs
+  Real t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol;
+
+  // output
+  Real vtrmi1, rhorime_c;
+};
+
+void calc_rime_density(CalcRimeDensityData& d);
+extern "C"{
+  void calc_rime_density_f(Real t, Real rhofaci, Real f1pr02, Real acn,
+    Real lamc, Real mu_c, Real qc_incld, Real qccol, Real* vtrmi1,
+    Real* rhorime_c);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CldliqImmersionFreezingData
+{
+  // inputs
+  Real t, lamc, mu_c, cdist1, qc_incld;
+
+  // output
+  Real qcheti, ncheti;
+};
+
+void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
+extern "C"{
+  void cldliq_immersion_freezing_f(Real t, Real lamc, Real mu_c,
+    Real cdist1, Real qc_incld, Real* qcheti, Real* ncheti);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RainImmersionFreezingData
@@ -287,6 +376,24 @@ extern "C"{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
+struct RainSelfCollectionData
+{
+  //inputs 
+  Real rho, qr_incld, nr_incld; 
+
+  //output
+  Real nrslf;
+};
+
+void rain_self_collection(RainSelfCollectionData& d);
+extern "C"{
+
+  void rain_self_collection_f(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ImposeMaxTotalNiData{
   // inout
   Real nitot_local;
@@ -295,8 +402,8 @@ struct ImposeMaxTotalNiData{
   Real max_total_Ni, inv_rho_local;
 };
 void impose_max_total_Ni(ImposeMaxTotalNiData& d);
-
 extern "C"{
+
   void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
 }
 
@@ -682,6 +789,24 @@ Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
 Real* qc, Real* nc, Real* qr, Real* nr);
 }
 
+  ///////////////////////////////////////////////////////////////////////////////
+
+struct IceDepSublimationData
+{
+  //Inputs
+  Real qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv;
+
+  //Outs
+  Real qidep, qisub, nisub, qiberg;
+};
+
+void ice_deposition_sublimation(IceDepSublimationData& d);
+
+extern "C"{
+void ice_deposition_sublimation_f( Real qitot_incld, Real nitot_incld, Real t, Real qvs, Real qvi,
+Real epsi, Real abi, Real qv, Real* qidep, Real* qisub, Real* nisub, Real* qiberg);
+}
+
 struct IceCldliqCollectionData
 {
   // Inputs
@@ -739,6 +864,40 @@ void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
 
 }
 
+struct IceRelaxationData
+{
+  // Inputs
+  Real rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld;
+
+  // Outputs
+  Real epsi, epsi_tot;
+};
+void ice_relaxation_timescale(IceRelaxationData& d);
+
+extern "C" {
+ void ice_relaxation_timescale_f(Real rho, Real temp, Real rhofaci, Real f1pr05, Real f1pr14,
+                                 Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
+                                 Real* epsi, Real* epsi_tot);
+}
+
+struct IceNucleationData
+{
+  // Inputs
+  Real temp, inv_rho, nitot, naai, supi, odt;
+  
+  bool log_predictNc;
+
+  // Outputs
+  Real qinuc, ninuc;
+};
+void ice_nucleation(IceNucleationData& d);
+
+extern "C" {
+void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
+                      Real supi, Real odt, bool log_predictNc,
+                      Real* qinuc, Real* ninuc);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////
@@ -746,6 +905,7 @@ void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
 extern "C" {
 
 Real cxx_pow(Real base, Real exp);
+Real cxx_sqrt(Real base);
 Real cxx_cbrt(Real base);
 Real cxx_gamma(Real input);
 Real cxx_log(Real input);

@@ -967,8 +967,9 @@ contains
     deallocate(cstart, ccount)
     deallocate(pstart, pcount)
     if ( use_fates ) then
-       deallocate(coStart,coCount)
+       deallocate(coStart)
     endif
+    deallocate(coCount)
     deallocate(ioff)
 
     ! Diagnostic output
