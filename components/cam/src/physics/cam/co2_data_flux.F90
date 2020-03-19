@@ -219,7 +219,7 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
    xin%initialized = .false.
 
    ! No dtime offset necessary.  I have stripped out all of its mentions.
-   ! If future files need it, follow aircraft_emit.F90   --BEH
+   ! If future files need it, follow aircraft_emit.F90   -BEH
    call xin%time_coord%initialize(input_file, force_time_interp=.true.)
 
    !xin%co2bdy will store values of co2 for two time levels 

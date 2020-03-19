@@ -1547,13 +1547,6 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     integer :: ncol         ! longitude dimension
     real(r8) tem2(pcols)    ! temporary workspace
     real(r8) ftem(pcols)    ! temporary workspace
-!++BEH
-    integer :: ifld
-    real(r8), pointer :: ac_CO2(:,:)
-    type(physics_buffer_desc), pointer :: pbuf(:)
-    character(len=7), dimension(4), parameter :: & ! consituent names
-         c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
-!--BEH
 !
 !-----------------------------------------------------------------------
 !
@@ -1623,23 +1616,6 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
        do m = 1,4
           call outfld(sflxnam(c_i(m)), cam_in%cflx(:,c_i(m)), pcols, lchnk)
        end do
-!++BEH
-!       ifld = pbuf_get_index('ac_CO2')
-!       call pbuf_get_field(pbuf, ifld, ac_CO2)
-!       do i = 1, ncol
-!          ftem(i) = 0.0_r8
-!       end do
-!       do k = 1, pver
-!          do i = 1, ncol
-!             ftem(i) = ftem(i) + ac_CO2(i,k)
-!          end do
-!       end do
-!       do m = 1,4
-!          if ((trim(c_names(m)))=='CO2') then
-!       call outfld('AF'//trim(cnst_name(c_i(4))), ac_CO2, pcols, lchnk)
-!          endif
-!       end do
-!--BEH
     end if
 
 end subroutine diag_surf
