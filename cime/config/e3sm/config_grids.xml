@@ -2874,7 +2874,7 @@
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
     </gridmap>
 
 
