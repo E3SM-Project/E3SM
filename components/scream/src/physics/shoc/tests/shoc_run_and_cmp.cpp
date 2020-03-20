@@ -58,9 +58,13 @@ Int compare (const std::string& label, const double& tol,
 }
 
 struct Baseline {
+
+  // Number of iterations (nadv steps of size dtime per iteration).
+  const int num_iters = 10;
+
   Baseline () {
-    for (const int nadv : {1, 6})
-      params_.push_back({ic::Factory::standard, 1, 72, 1, nadv, 300});
+    //                 ic, shcol, nlev, num_qtracers, nadv, dtime
+    params_.push_back({ic::Factory::standard, 8, 72, 3, 15, 150});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -72,8 +76,10 @@ struct Baseline {
       const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
       set_params(ps, *d);
       shoc_init(ps.nlev, use_fortran);
-      shoc_main(*d);
-      write(fid, d);
+      for (int it = 0; it < num_iters; ++it) {
+        shoc_main(*d);
+        write(fid, d);
+      }
 
       // Save the fields to the baseline file.
     }
@@ -96,8 +102,9 @@ struct Baseline {
         const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         shoc_init(ps.nlev, use_fortran);
-        for (int it=0; it<ps.nadv; it++) {
-          std::cout << "--- checking case # " << case_num << ", it = " << it+1 << "/" << ps.nadv << " ---\n" << std::flush;
+        for (int it = 0; it < num_iters; it++) {
+          std::cout << "--- checking case # " << case_num << ", it = " << it+1
+                    << "/" << num_iters << " ---\n" << std::flush;
           read(fid, d_ref);
           shoc_main(*d);
           ne = compare("ref", tol, d_ref, d);
