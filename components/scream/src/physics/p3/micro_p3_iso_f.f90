@@ -425,6 +425,19 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(inout) :: epsi_tot
   end subroutine ice_relaxation_timescale_f
 
+  subroutine calc_liq_relaxation_timescale_f(rho, f1r, f2r, dv, mu, sc, mu_r, &
+                                             lamr, cdistr, cdist, qr_incld,   &
+                                             qc_incld, epsr, epsc) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho,f1r,f2r,dv,mu,sc,mu_r,lamr, &
+                                            cdistr,cdist,qr_incld,qc_incld
+    real(kind=c_real), intent(out) :: epsr
+    real(kind=c_real), intent(out) :: epsc
+
+  end subroutine calc_liq_relaxation_timescale_f
+
   subroutine ice_nucleation_f(temp, inv_rho, nitot, naai, supi, odt, &
                               log_predictNc, qinuc, ninuc) bind(C)
     use iso_c_binding
@@ -444,6 +457,18 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
     real(kind=c_real), intent(inout) :: qcnuc, ncnuc
  end subroutine droplet_activation_f
+
+ subroutine ice_cldliq_wet_growth_f(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, &
+                                    mu, sc, qv, qc_incld,qitot_incld, nitot_incld, qr_incld,     &
+                                    log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd) bind(C)
+   use iso_c_binding
+
+   ! argmens
+   real(kind=c_real), value, intent(in) :: rho, temp ,pres, rhofaci, f1pr05,f1pr14, xxlv, xlf, dv, &
+                                           kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld,qr_incld
+   logical(kind=c_bool), intent(inout) :: log_wetgrowth
+   real(kind=c_real), intent(inout) :: qrcol, qccol, qwgrth, nrshdr, qcshd
+ end subroutine ice_cldliq_wet_growth_f
 
   !
   ! These are some routine math operations that are not BFB between

@@ -23,10 +23,10 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
-  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, mu_table_c) bind(C)
+  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, revap_table_c, mu_table_c) bind(C)
     use micro_p3, only: p3_get_tables
 
-    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c
+    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c, revap_table_c
     real(kind=c_real), intent(inout), dimension(150)    :: mu_table_c
 
     real(kind=c_real), dimension(150), target :: mu_table_f
@@ -35,6 +35,7 @@ contains
     call p3_get_tables(mu_table_f, revap_table_f, vn_table_f, vm_table_f)
     vn_table_c(:,:) = vn_table_f(:,:)
     vm_table_c(:,:) = vm_table_f(:,:)
+    revap_table_c(:,:) = revap_table_f(:,:)
     mu_table_c(:)   = mu_table_f(:)
 
   end subroutine init_tables_from_f90_c
@@ -711,6 +712,22 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                                        epsi, epsi_tot)
   end subroutine ice_relaxation_timescale_c
 
+  subroutine calc_liq_relaxation_timescale_c(rho, f1r, f2r, dv, mu, sc, mu_r, &
+                                             lamr, cdistr, cdist, qr_incld,   &
+                                             qc_incld, epsr, epsc) bind(C)
+    use micro_p3, only: calc_liq_relaxation_timescale
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho,f1r,f2r,dv,mu,sc,mu_r,lamr, &
+                                            cdistr,cdist,qr_incld,qc_incld
+    real(kind=c_real), intent(out) :: epsr
+    real(kind=c_real), intent(out) :: epsc
+
+    call calc_liq_relaxation_timescale(rho,f1r,f2r,dv,mu,sc,mu_r,lamr,      &
+                                       cdistr,cdist,qr_incld,qc_incld,epsr, &
+                                       epsc)
+  end subroutine calc_liq_relaxation_timescale_c
+
   subroutine ice_nucleation_c(temp, inv_rho, nitot, naai, supi, odt, &
                               log_predictNc, qinuc, ninuc) bind(C)
     use micro_p3, only: ice_nucleation
@@ -737,5 +754,23 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    call droplet_activation(temp,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt, &
                            qcnuc,ncnuc)
  end subroutine droplet_activation_c
+
+ subroutine ice_cldliq_wet_growth_c(rho, temp, pres, rhofaci, f1pr05, &
+                                    f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,  &
+                                    qitot_incld, nitot_incld, qr_incld, &
+                                    log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd) bind(C)
+   use micro_p3, only: ice_cldliq_wet_growth
+
+   ! argmens
+   real(kind=c_real), value, intent(in) :: rho, temp ,pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, &
+                                           kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld,qr_incld
+   logical(kind=c_bool), intent(inout) :: log_wetgrowth
+   real(kind=c_real), intent(inout) :: qrcol, qccol, qwgrth, nrshdr, qcshd
+
+   call ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, &
+                              f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld, &
+                              qitot_incld, nitot_incld, qr_incld, &
+                              log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
+ end subroutine ice_cldliq_wet_growth_c
 
 end module micro_p3_iso_c

@@ -37,6 +37,7 @@ struct P3GlobalForFortran
   static const view_1d_table& mu_r_table()   { return get().m_mu_r_table; }
   static const view_2d_table& vn_table()     { return get().m_vn_table; }
   static const view_2d_table& vm_table()     { return get().m_vm_table; }
+  static const view_2d_table& revap_table()  { return get().m_revap_table; }
   static const view_itab_table& itab()       { return get().m_itab; }
   static const view_itabcol_table& itabcol() { return get().m_itabcol; }
   static const view_dnu_table& dnu()         { return get().m_dnu; }
@@ -49,7 +50,7 @@ struct P3GlobalForFortran
  private:
   struct Views {
     view_1d_table m_mu_r_table;
-    view_2d_table m_vn_table, m_vm_table;
+    view_2d_table m_vn_table, m_vm_table, m_revap_table;
     view_itab_table m_itab;
     view_itabcol_table m_itabcol;
     view_dnu_table m_dnu;
@@ -880,11 +881,31 @@ extern "C" {
                                  Real* epsi, Real* epsi_tot);
 }
 
+struct CalcLiqRelaxationData
+{
+  // Inputs
+  Real rho, f1r, f2r, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
+
+  // Outputs
+  Real epsr, epsc;
+
+  // This populates all input fields with test data within [0,1].
+  void randomize();
+};
+void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d);
+
+extern "C" {
+void calc_liq_relaxation_timescale_f(Real rho, Real f1r, Real f2r, Real dv,
+                                     Real mu, Real sc, Real mu_r, Real lamr,
+                                     Real cdistr, Real cdist, Real qr_incld,
+                                     Real qc_incld, Real* epsr, Real* epsc);
+}
+
 struct IceNucleationData
 {
   // Inputs
   Real temp, inv_rho, nitot, naai, supi, odt;
-  
+
   bool log_predictNc;
 
   // Outputs
@@ -915,6 +936,27 @@ void droplet_activation_f(Real temp, Real pres, Real qv, Real qc,
                           Real inv_rho, Real sup, Real xxlv, Real npccn,
                           bool log_predictNc, Real odt,
                           Real* qcnuc, Real* ncnuc);
+}
+
+struct IceWetGrowthData
+{
+  // Inputs
+  Real rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld;
+  Real qitot_incld, nitot_incld, qr_incld;
+
+  // In/Outs
+  bool log_wetgrowth;
+
+  Real qrcol, qccol, qwgrth, nrshdr, qcshd;
+};
+void ice_cldliq_wet_growth(IceWetGrowthData& d);
+
+extern "C" {
+void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
+                             Real f1pr14, Real xxlv, Real xlf, Real dv,
+                             Real kap, Real mu, Real sc, Real qv, Real qc_incld,
+                             Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
+                             Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

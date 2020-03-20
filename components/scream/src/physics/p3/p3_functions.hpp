@@ -129,7 +129,8 @@ struct Functions
 
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
-    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table, view_dnu_table& dnu);
+    view_2d_table& vn_table, view_2d_table& vm_table, view_2d_table& revap_table,
+    view_1d_table& mu_r_table, view_dnu_table& dnu);
 
   static void init_kokkos_ice_lookup_tables(
     view_itab_table& itab, view_itabcol_table& itabcol);
@@ -530,6 +531,14 @@ struct Functions
                                        const Spack& qitot_incld, const Spack& nitot_incld,
                                        Spack& epsi, Spack& epsi_tot);
 
+  KOKKOS_FUNCTION
+  static void calc_liq_relaxation_timescale(const view_2d_table& revap_table,
+                                            const Spack& rho, const Spack& f1r, const Spack& f2r,
+                                            const Spack& dv, const Spack& mu, const Spack& sc,
+                                            const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
+                                            const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
+                                            Spack& epsr, Spack& epsc);
+
   // ice nucleation
   KOKKOS_FUNCTION
   static void ice_nucleation(const Spack& temp, const Spack& inv_rho,
@@ -544,6 +553,12 @@ struct Functions
                                  const Smask& log_predictNc, const Spack& odt,
                                  Spack& qcnuc, Spack& ncnuc);
 
+  KOKKOS_FUNCTION
+  static void ice_cldliq_wet_growth(const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
+                                    const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
+                                    const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
+                                    const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
+                                    Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -552,7 +567,8 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 extern "C" {
 // decl of fortran function for loading tables from fortran p3. This will
 // continue to be a bit awkward until we have fully ported all of p3.
-void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_table_data);
+void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
+                            Real* revap_table_data, Real* mu_table_data);
 }
 
 } // namespace p3
@@ -588,6 +604,8 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
 # include "p3_functions_droplet_activation_impl.hpp"
+# include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
+# include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
 #endif
 
 #endif

@@ -154,6 +154,11 @@ void ice_relaxation_timescale_c(Real rho, Real temp, Real rhofaci, Real f1pr05, 
                                 Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
                                 Real* epsi, Real* epsi_tot);
 
+void calc_liq_relaxation_timescale_c(Real rho, Real f1r, Real f2r, Real dv,
+                                     Real mu, Real sc, Real mu_r, Real lamr,
+                                     Real cdistr, Real cdist, Real qr_incld,
+                                     Real qc_incld, Real* epsr, Real* epsc);
+
 void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real supi, Real odt, bool log_predictNc,
                       Real* qinuc, Real* ninuc);
@@ -162,6 +167,13 @@ void droplet_activation_c(Real temp, Real pres, Real qv, Real qc,
                           Real inv_rho, Real sup, Real xxlv, Real npccn,
                           bool log_predictNc, Real odt,
                           Real* qcnuc, Real* ncnuc);
+
+void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
+                             Real f1pr14, Real xxlv, Real xlf, Real dv,
+                             Real kap, Real mu, Real sc, Real qv, Real qc_incld,
+                             Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
+                             Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
+
 }
 
 namespace scream {
@@ -408,6 +420,32 @@ void ice_relaxation_timescale(IceRelaxationData& d)
                              &d.epsi, &d.epsi_tot);
 }
 
+void CalcLiqRelaxationData::randomize()
+{
+  // Populate the struct's input fields with numbers between 0 and 1.
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  rho = data_dist(generator);
+  f1r = data_dist(generator);
+  f2r = data_dist(generator);
+  dv = data_dist(generator);
+  mu = data_dist(generator);
+  sc = data_dist(generator);
+  mu_r = data_dist(generator);
+  lamr = data_dist(generator);
+  cdistr = data_dist(generator);
+  cdist = data_dist(generator);
+  qr_incld = data_dist(generator);
+  qc_incld = data_dist(generator);
+}
+
+void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d)
+{
+  p3_init(true);
+  calc_liq_relaxation_timescale_c(d.rho, d.f1r, d.f2r, d.dv, d.mu, d.sc, d.mu_r,
+    d.lamr, d.cdistr, d.cdist, d.qr_incld, d.qc_incld, &d.epsr, &d.epsc);
+}
+
 void ice_nucleation(IceNucleationData& d)
 {
   p3_init(true);
@@ -424,6 +462,17 @@ void droplet_activation(DropletActivationData& d)
                        d.log_predictNc, d.odt,
                        &d.qcnuc, &d.ncnuc);
 
+}
+
+void ice_cldliq_wet_growth(IceWetGrowthData& d)
+{
+  p3_init(true);
+
+  ice_cldliq_wet_growth_c(d.rho, d.temp, d.pres, d.rhofaci, d.f1pr05,
+                          d.f1pr14, d.xxlv, d.xlf, d.dv,
+                          d.kap, d.mu, d.sc, d.qv, d.qc_incld,
+                          d.qitot_incld, d.nitot_incld, d.qr_incld, &d.log_wetgrowth,
+                          &d.qrcol, &d.qccol, &d.qwgrth, &d.nrshdr, &d.qcshd);
 }
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
@@ -749,7 +798,8 @@ const P3GlobalForFortran::Views& P3GlobalForFortran::get()
   if (!P3GlobalForFortran::s_views) {
     P3GlobalForFortran::s_views = std::make_shared<Views>();
     P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
-    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table, s_views->m_mu_r_table, s_views->m_dnu);
+    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table,
+      s_views->m_revap_table, s_views->m_mu_r_table, s_views->m_dnu);
   }
   return *P3GlobalForFortran::s_views;
 }
@@ -2117,10 +2167,7 @@ void ice_cldliq_collection_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr04_,
   *nccol_     = t_h(1);
   *qcshd_     = t_h(2);
   *ncshdc_    = t_h(3);
-
 }
-
-
 
 void ice_rain_collection_f(Real rho_, Real temp_, Real rhofaci_, Real logn0r_, Real f1pr07_, Real f1pr08_,
                            Real qitot_incld_, Real nitot_incld_, Real qr_incld_, Real* qrcol_, Real* nrcol_)
@@ -2216,6 +2263,41 @@ void ice_relaxation_timescale_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr0
   *epsi_tot_  = t_h(1);
 }
 
+void calc_liq_relaxation_timescale_f(Real rho_, Real f1r_, Real f2r_, Real dv_,
+                                     Real mu_, Real sc_, Real mu_r_, Real lamr_,
+                                     Real cdistr_, Real cdist_, Real qr_incld_,
+                                     Real qc_incld_, Real* epsr_, Real* epsc_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+  auto revap_table = P3GlobalForFortran::revap_table();
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, f1r{f1r_}, f2r{f2r_}, dv{dv_},
+          mu{mu_}, sc{sc_}, mu_r{mu_r_}, lamr{lamr_}, cdistr{cdistr_},
+          cdist{cdist_}, qr_incld{qr_incld_}, qc_incld{qc_incld_};
+
+    Spack epsr{0.0}, epsc{0.0};
+
+    P3F::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv, mu, sc,
+      mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+
+    t_d(0) = epsr[0];
+    t_d(1) = epsc[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *epsr_ = t_h(0);
+  *epsc_ = t_h(1);
+}
+
 void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
                       Real supi_, Real odt_, bool log_predictNc_,
                       Real* qinuc_, Real* ninuc_)
@@ -2284,6 +2366,61 @@ void droplet_activation_f(Real temp_, Real pres_, Real qv_, Real qc_,
 
   *qcnuc_  = t_h(0);
   *ncnuc_  = t_h(1);
+}
+
+
+void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, Real f1pr05_,
+                             Real f1pr14_, Real xxlv_, Real xlf_, Real dv_,
+                             Real kap_, Real mu_, Real sc_, Real qv_, Real qc_incld_,
+                             Real qitot_incld_, Real nitot_incld_, Real qr_incld_, bool* log_wetgrowth_,
+                             Real* qrcol_, Real* qccol_, Real* qwgrth_, Real* nrshdr_, Real* qcshd_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack        = typename P3F::Spack;
+  using Smask        = typename P3F::Smask;
+  using view_1d      = typename P3F::view_1d<Real>;
+  using bool_view_1d = typename P3F::view_1d<bool>;
+
+  bool_view_1d b_d("b_d", 1);
+  view_1d t_d("t_d", 5);
+  const auto b_h = Kokkos::create_mirror_view(b_d);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  const bool log_wetgrowth_local = *log_wetgrowth_;
+  Real local_qrcol = *qrcol_, local_qccol = *qccol_, local_qwgrth = *qwgrth_, local_nrshdr = *nrshdr_, local_qcshd = *qcshd_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, temp{temp_}, pres{pres_}, rhofaci{rhofaci_}, f1pr05{f1pr05_}, f1pr14{f1pr14_}, xxlv{xxlv_},
+          xlf{xlf_}, dv{dv_}, kap{kap_}, mu{mu_}, sc{sc_}, qv{qv_}, qc_incld{qc_incld_}, qitot_incld{qitot_incld_},
+          nitot_incld{nitot_incld_}, qr_incld{qr_incld_};
+
+    Smask log_wetgrowth{log_wetgrowth_local};
+
+    Spack qrcol{local_qrcol}, qccol{local_qccol}, qwgrth{local_qwgrth}, nrshdr{local_nrshdr}, qcshd{local_qcshd};
+
+    P3F::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,
+                              qitot_incld, nitot_incld, qr_incld, log_wetgrowth,
+                              qrcol, qccol, qwgrth, nrshdr, qcshd);
+
+    b_d(0) = log_wetgrowth[0];
+    t_d(0) = qrcol[0];
+    t_d(1) = qccol[0];
+    t_d(2) = qwgrth[0];
+    t_d(3) = nrshdr[0];
+    t_d(4) = qcshd[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+  Kokkos::deep_copy(b_h, b_d);
+
+  *log_wetgrowth_ = b_h(0);
+  *qrcol_         = t_h(0);
+  *qccol_         = t_h(1);
+  *qwgrth_        = t_h(2);
+  *nrshdr_        = t_h(3);
+  *qcshd_         = t_h(4);
 }
 
 
