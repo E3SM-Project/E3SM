@@ -1335,12 +1335,14 @@ contains
     integer ,pointer :: TopounitElv(:,:)         ! Topounit elevation
     real(r8),pointer :: TopounitSlope(:,:)       ! Topounit slope 
     real(r8),pointer :: TopounitAspect(:,:)      ! Topounit aspect
+    real(r8),pointer :: GridElevation(:)      ! Topounit aspect
 !    integer ,pointer :: TopounitIndices(:,:)     ! Topounit indices in each grid
 	
     character(len=32) :: subname = 'surfrd_topounit_data'  ! subroutine name
 !-----------------------------------------------------------------------  
 
     allocate(maxTopoElv(begg:endg))
+    allocate(GridElevation(begg:endg))
     allocate(numTopoPerGrid(begg:endg))
     allocate(TopounitFracArea(begg:endg,max_topounits))
     allocate(TopounitElv(begg:endg,max_topounits))
@@ -1388,11 +1390,17 @@ contains
        call ncd_io(ncid=ncid, varname='TopounitAspect', flag='read', data=TopounitAspect, &
          dim1name=grlnd, readvar=readvar)
     endif
+    
+    call check_var(ncid=ncid, varname='TOPO2', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='TOPO2', flag='read', data=GridElevation, &
+         dim1name=grlnd, readvar=readvar)
+    endif
     if (readvar) then
         do n = begg,endg
            grc_pp%ntopounits2(n) = numTopoPerGrid(n) 
            grc_pp%MaxElevation(n) = maxTopoElv(n) 	
-           
+           grc_pp%elevation(n) = GridElevation(n) 
            do t = 1, max_topounits
               grc_pp%tfrc_area(n,t) = TopounitFracArea(n,t) 
               grc_pp%televation(n,t) = TopounitElv(n,t) 
@@ -1402,7 +1410,7 @@ contains
            end do
         end do		
      endif	
-    deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect)
+    deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect,GridElevation)
     
     call ncd_pio_closefile(ncid)
     

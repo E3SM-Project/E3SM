@@ -121,10 +121,10 @@ contains
     esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6))))))
     !-----------------------------------------------------------------------
     ! Get the number of topounits per grid
-    numt_pg     = grc_pp%ntopounits(g)	
+    numt_pg     = grc_pp%ntopounits2(g)	
     mxElv       = grc_pp%MaxElevation(g)         ! Maximum src elevation per grid
     uovern_t    = x2l(index_x2l_Sa_uovern,i)    ! Froude Number
-    grdElv      = grc_pp%MaxElevation(g)       ! Grid level sfc elevation
+    grdElv      = grc_pp%elevation(g)       ! Grid level sfc elevation
     snow_g      = x2l(index_x2l_Faxa_snowc,i) + x2l(index_x2l_Faxa_snowl,i)
     rain_g      = x2l(index_x2l_Faxa_rainc,i) + x2l(index_x2l_Faxa_rainl,i)
 	
@@ -133,7 +133,8 @@ contains
     sum_lwrad_g = 0.
     sum_wtslw_g = 0.
 	
-    do t = grc_pp%topi(g), grc_pp%topf(g)
+    !do t = grc_pp%topi(g), grc_pp%topf(g)
+    do t = 1, numt_pg                                 !loop through the valid topounits only
        if (numt_pg > 1) then                          !downscaling is done only if a grid has more than 1 topounits    
           topoElv  = top_pp%elevation(g)             ! Topounit sfc elevation
 		  
@@ -145,7 +146,7 @@ contains
           if (uaflag == 1) then
              sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
              sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
-	  end if
+	      end if
 
           top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
           top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
