@@ -2,7 +2,7 @@
 
 
 OCEAN_SHARED_INCLUDES = -I$(PWD)/../framework -I$(PWD)/../external/esmf_time_f90 -I$(PWD)/../operators
-OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix -I$(PWD)/mode_forward -I$(PWD)/mode_analysis -I$(PWD)/mode_init
+OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix/src/shared -I$(PWD)/mode_forward -I$(PWD)/mode_analysis -I$(PWD)/mode_init
 
 all: shared libcvmix analysis_members libBGC
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
@@ -45,26 +45,18 @@ post_build:
 	( cp $(ROOT_DIR)/default_inputs/streams.ocean.analysis $(ROOT_DIR)/streams.ocean.analysis )
 	( cp $(ROOT_DIR)/default_inputs/streams.ocean.init $(ROOT_DIR)/streams.ocean.init )
 
-cvmix_source: get_cvmix.sh
-	(/bin/bash ./get_cvmix.sh)
-	(cd cvmix)
-
-BGC_source: get_BGC.sh
-	(/bin/bash ./get_BGC.sh)
-	(cd BGC)
-
-libcvmix: cvmix_source
-	if [ -d cvmix ]; then \
-		(cd cvmix; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+libcvmix:
+	if [ -e cvmix/.git ]; then \
+		(cd cvmix/src/shared; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
-		(exit 1) \
+		(pwd ; echo "Missing core_ocean/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
-libBGC: BGC_source
-	if [ -d BGC ]; then \
+libBGC:
+	if [ -e BGC/.git ]; then \
 		(cd BGC; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
-		(exit 1) \
+		(echo "Missing core_ocean/BGC/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 shared: libcvmix libBGC
@@ -74,13 +66,13 @@ analysis_members: libcvmix shared
 	( cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 
 clean:
-	if [ -d cvmix ]; then \
-		(cd cvmix; make clean) \
+	if [ -e cvmix/.git ]; then \
+		(cd cvmix/src/shared; make clean) \
 	fi
 	if [ -d inc ]; then \
 		($(RM) -r inc) \
 	fi
-	if [ -d BGC ]; then \
+	if [ -e BGC/.git ]; then \
 		(cd BGC; make clean) \
 	fi
 	(cd mode_forward; $(MAKE) clean)
