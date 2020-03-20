@@ -21,6 +21,9 @@ module mo_chm_diags
   integer :: id_ccl4,id_cfc11,id_cfc113,id_ch3ccl3,id_cfc12,id_ch3cl,id_hcfc22,id_cf2clbr
   integer :: id_br,id_bro,id_hbr,id_hobr,id_ch4,id_h2o,id_h2
   integer :: id_o,id_o2,id_h
+  integer :: id_bc_a1, id_dst_a1, id_dst_a3, id_ncl_a1, id_ncl_a2
+  integer :: id_num_a1, id_num_a2, id_num_a3, id_pom_a1, id_so4_a1
+  integer :: id_so4_a3, id_soa_a1, id_soa_a2, id_ncl_a3, id_so4_a2
 
   integer, parameter :: NJEUV = neuv
   integer :: rid_jeuv(NJEUV), rid_jno_i, rid_jno
@@ -33,6 +36,7 @@ module mo_chm_diags
   integer :: toth_species(3)
   integer :: sox_species(3)
   integer :: nhx_species(3)
+  integer :: presc_aer_species(15)
   integer :: aer_species(gas_pcnst)
 
   character(len=fieldname_len) :: dtchem_name(gas_pcnst)
@@ -165,6 +169,22 @@ contains
     id_soat = get_spc_ndx( 'SOAT' )
     id_soab = get_spc_ndx( 'SOAB' )
     id_soax = get_spc_ndx( 'SOAX' )
+    
+    id_bc_a1 = get_spc_ndx( 'bc_a1' )
+    id_dst_a1 = get_spc_ndx( 'dst_a1' )
+    id_dst_a3 = get_spc_ndx( 'dst_a3' )
+    id_ncl_a1 = get_spc_ndx( 'ncl_a1' )
+    id_ncl_a2 = get_spc_ndx( 'ncl_a2' )
+    id_ncl_a3 = get_spc_ndx( 'ncl_a3' )
+    id_num_a1 = get_spc_ndx( 'num_a1' )
+    id_num_a2 = get_spc_ndx( 'num_a2' )
+    id_num_a3 = get_spc_ndx( 'num_a3' )
+    id_pom_a1 = get_spc_ndx( 'pom_a1' )
+    id_so4_a1 = get_spc_ndx( 'so4_a1' )
+    id_so4_a2 = get_spc_ndx( 'so4_a2' )
+    id_so4_a3 = get_spc_ndx( 'so4_a3' )
+    id_soa_a1 = get_spc_ndx( 'soa_a1' )
+    id_soa_a2 = get_spc_ndx( 'soa_a2' )
 
     nox_species = (/ id_n, id_no, id_no2 /)
     noy_species = (/ id_n, id_no, id_no2, id_no3, id_n2o5, id_hno3, id_ho2no2, id_clono2, &
@@ -179,6 +199,9 @@ contains
 
     sox_species = (/ id_so2, id_so4, id_h2so4 /)
     nhx_species = (/ id_nh3, id_nh4, id_nh4no3 /)
+    presc_aer_species = (/ id_bc_a1, id_dst_a1, id_dst_a3, id_ncl_a1, id_ncl_a2, &
+                           id_num_a1, id_num_a2, id_num_a3, id_pom_a1, id_so4_a1, &
+			   id_so4_a3, id_soa_a1, id_soa_a2, id_ncl_a3, id_so4_a2 /)
     bulkaero_species(:) = -1
     bulkaero_species(1:20) = (/ id_dst01, id_dst02, id_dst03, id_dst04, &
                                 id_sslt01, id_sslt02, id_sslt03, id_sslt04, &
@@ -278,7 +301,7 @@ contains
        if ( any( aer_species == m ) ) then
           call addfld( spc_name,   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' concentration')
 	  
-	  if (presc_aero_data) then
+	  if (presc_aero_data .and. any( presc_aer_species == m)) then
 	    call addfld( trim(spc_name)//'_logm',   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' log concentration')
 	    call addfld( trim(spc_name)//'_logv',   (/ 'lev' /), 'A', unit_basename//'/kg ', trim(attr)//' log^2 concentration')
 	  endif
@@ -288,7 +311,7 @@ contains
           call addfld( spc_name, (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' concentration')
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', 'mol/mol', trim(attr)//" in bottom layer")
 	  
-	  if (presc_aero_data) then
+	  if (presc_aero_data .and. any( presc_aer_species == m)) then
 	    call addfld( trim(spc_name)//'_logm',   (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' log concentration')
 	    call addfld( trim(spc_name)//'_logv',   (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' log^2 concentration')
 	  endif	  
@@ -303,8 +326,10 @@ contains
           endif 
 	  if (presc_aero_data) then
 	    call add_default( spc_name, 1, ' ' )
-	    call add_default( trim(spc_name)//'_logm', 1, ' ' )
-	    call add_default( trim(spc_name)//'_logv', 1, ' ' )
+	    if ( any( presc_aer_species == m)) then
+	      call add_default( trim(spc_name)//'_logm', 1, ' ' )
+	      call add_default( trim(spc_name)//'_logv', 1, ' ' )
+	    endif
 	  endif
           if (history_amwg) then
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
@@ -521,11 +546,6 @@ contains
        
        if ( any( aer_species == m ) ) then
           call outfld( solsym(m), mmr(:ncol,:,m), ncol ,lchnk )
-	  
-!	  call outfld( trim(solsym(m))//'_logm', log(mmr(:ncol,:,m)), ncol, lchnk)
-!	  call outfld( trim(solsym(m))//'_logv', log(mmr(:ncol,:,m))*log(mmr(:ncol,:,m)),&
-!	     ncol, lchnk)
-	  
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
 #ifdef MODAL_AERO
           if (history_aerosol .and. .not. history_verbose) then
@@ -572,16 +592,15 @@ contains
        end do
        call outfld( dtchem_name(m), net_chem(:ncol,:), ncol, lchnk )
 
-       if (presc_aero_data) then
-       
+       if (presc_aero_data .and.  any( presc_aer_species == m)) then
+         
+	 mmr_log(:ncol,:pver) = 0._r8
+	 mmr_log2(:ncol,:pver) = 0._r8
          do k=1,pver
            do i=1,ncol
              if (mmr(i,k,m) .gt. 0._r8) then 
                mmr_log(i,k) = log(mmr(i,k,m))
                mmr_log2(i,k) = log(mmr(i,k,m))*log(mmr(i,k,m))
-             else
-               mmr_log(i,k) = 0._r8
-               mmr_log2(i,k) = 0._r8
              endif
            end do
          end do
