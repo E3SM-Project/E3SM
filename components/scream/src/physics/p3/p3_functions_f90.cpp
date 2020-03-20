@@ -2133,6 +2133,7 @@ void calc_liq_relaxation_timescale_f(Real rho_, Real f1r_, Real f2r_, Real dv_,
 
   view_1d t_d("t_d", 2);
   const auto t_h = Kokkos::create_mirror_view(t_d);
+  auto revap_table = P3GlobalForFortran::revap_table();
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
@@ -2142,7 +2143,6 @@ void calc_liq_relaxation_timescale_f(Real rho_, Real f1r_, Real f2r_, Real dv_,
 
     Spack epsr{0.0}, epsc{0.0};
 
-    auto revap_table = P3GlobalForFortran::revap_table();
     P3F::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv, mu, sc,
       mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 

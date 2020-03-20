@@ -570,7 +570,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_ice_collection_impl.hpp"
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
-
+# include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 #endif
 
 #endif

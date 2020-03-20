@@ -840,17 +840,17 @@ struct CalcLiqRelaxationData
 void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d);
 
 extern "C" {
-  void calc_liq_relaxation_timescale_f(Real rho, Real f1r, Real f2r, Real dv,
-                                       Real mu, Real sc, Real mu_r, Real lamr,
-                                       Real cdistr, Real cdist, Real qr_incld,
-                                       Real qc_incld, Real* epsr, Real* epsc);
+void calc_liq_relaxation_timescale_f(Real rho, Real f1r, Real f2r, Real dv,
+                                     Real mu, Real sc, Real mu_r, Real lamr,
+                                     Real cdistr, Real cdist, Real qr_incld,
+                                     Real qc_incld, Real* epsr, Real* epsc);
 }
 
 struct IceNucleationData
 {
   // Inputs
   Real temp, inv_rho, nitot, naai, supi, odt;
-  
+
   bool log_predictNc;
 
   // Outputs
