@@ -544,13 +544,13 @@ struct Functions
   static void ice_nucleation(const Spack& temp, const Spack& inv_rho,
                              const Spack& nitot, const Spack& naai,
                              const Spack& supi, const Spack& odt,
-                             const Smask& log_predictNc,
+                             const bool& log_predictNc,
                              Spack& qinuc, Spack& ninuc);
 
   KOKKOS_FUNCTION
   static void droplet_activation(const Spack& temp, const Spack& pres, const Spack& qv, const Spack& qc,
                                  const Spack& inv_rho,const Spack& sup, const Spack& xxlv, const Spack& npccn,
-                                 const Smask& log_predictNc, const Spack& odt,
+                                 const bool& log_predictNc, const Spack& odt,
                                  Spack& qcnuc, Spack& ncnuc);
 
   KOKKOS_FUNCTION

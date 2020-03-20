@@ -2314,10 +2314,9 @@ void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
     Spack temp{temp_}, inv_rho{inv_rho_}, nitot{nitot_}, naai{naai_}, supi{supi_}, odt{odt_};
-    Smask log_predictNc{log_predictNc_};
     Spack qinuc{0.0}, ninuc{0.0};
 
-    P3F::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, log_predictNc,
+    P3F::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, log_predictNc_,
                         qinuc, ninuc);
 
     t_d(0) = qinuc[0];
@@ -2352,11 +2351,9 @@ void droplet_activation_f(Real temp_, Real pres_, Real qv_, Real qc_,
     Spack temp{temp_}, pres{pres_}, qv{qv_}, qc{qc_}, inv_rho{inv_rho_}, sup{sup_}, xxlv{xxlv_},
           npccn{npccn_}, odt{odt_};
 
-    Smask log_predictNc{log_predictNc_};
-
     Spack qcnuc{qcnuc_loc}, ncnuc{ncnuc_loc};
 
-    P3F::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc, odt, qcnuc, ncnuc);
+    P3F::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc_, odt, qcnuc, ncnuc);
 
     t_d(0) = qcnuc[0];
     t_d(1) = ncnuc[0];
