@@ -16,10 +16,16 @@ endif()
 
 # Add the ./cmake folder to cmake path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include (${CMAKE_CURRENT_SOURCE_DIR}/cmake/ScreamMpiUtils.cmake)
+
+# We should avoid cxx bindings in mpi; they are already deprecated,
+# and can cause headaches at link time, cause they require -lmpi_cxx
+# (for openpmi; -lmpicxx for mpich) flag.
+DisableMpiCxxBindings()
+
 
 if (KOKKOS_ENABLE_CUDA)
-  include (SetMpiCxxBackendCompilerVarName)
-  SET_MPI_CXX_BACKEND_COMPILER_VAR_NAME()
+  SetMpiCxxBackendCompilerVarName()
   # Before starting the project, wrap mpicxx in the scream_mpicxx script, which
   # takes care of setting OMPI_CXX to point to nvcc_wrapper
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/scream_mpicxx.in ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx @ONLY)

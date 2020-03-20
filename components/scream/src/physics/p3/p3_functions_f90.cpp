@@ -79,6 +79,8 @@ void cloud_rain_accretion_c(Real rho, Real inv_rho, Real qc_incld, Real nc_incld
 
 void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
 
+void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
+
 void impose_max_total_ni_c(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
 
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
@@ -121,11 +123,18 @@ void  update_prognostic_ice_c(
   Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
   Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
+void evaporate_sublimate_precip_c(Real qr_incld, Real qc_incld, Real nr_incld, Real qitot_incld, Real lcldm,
+  Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real* nrevp);
+
 void update_prognostic_liquid_c(
   Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
   Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
   Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
+
+void ice_deposition_sublimation_c(
+  Real qitot_incld, Real nitot_incld, Real t, Real qvs, Real qvi, Real epsi,
+  Real abi, Real qv, Real* qidep, Real* qisub, Real* nisub, Real* qiberg);
 
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
@@ -153,6 +162,12 @@ void calc_liq_relaxation_timescale_c(Real rho, Real f1r, Real f2r, Real dv,
 void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real supi, Real odt, bool log_predictNc,
                       Real* qinuc, Real* ninuc);
+
+void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
+                             Real f1pr14, Real xxlv, Real xlf, Real dv,
+                             Real kap, Real mu, Real sc, Real qv, Real qc_incld,
+                             Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
+                             Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 
 }
 
@@ -336,9 +351,14 @@ void ice_water_conservation(IceWaterConservationData& d){
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
 }
 
-void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
+void cloud_water_autoconversion(CloudWaterAutoconversionData& d){
   p3_init(true);
   cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, &d.qcaut, &d.ncautc, &d.ncautr);
+}
+
+void rain_self_collection(RainSelfCollectionData& d){
+  p3_init(true);
+  rain_self_collection_c(d.rho, d.qr_incld, d.nr_incld, &d.nrslf);
 }
 
 void impose_max_total_Ni(ImposeMaxTotalNiData& d){
@@ -429,6 +449,17 @@ void ice_nucleation(IceNucleationData& d)
 }
 
 
+void ice_cldliq_wet_growth(IceWetGrowthData& d)
+{
+  p3_init(true);
+
+  ice_cldliq_wet_growth_c(d.rho, d.temp, d.pres, d.rhofaci, d.f1pr05,
+                          d.f1pr14, d.xxlv, d.xlf, d.dv,
+                          d.kap, d.mu, d.sc, d.qv, d.qc_incld,
+                          d.qitot_incld, d.nitot_incld, d.qr_incld, &d.log_wetgrowth,
+                          &d.qrcol, &d.qccol, &d.qwgrth, &d.nrshdr, &d.qcshd);
+}
+
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
     p3_init(true);
     update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
@@ -440,12 +471,26 @@ void ice_nucleation(IceNucleationData& d)
 			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
   }
 
+void evaporate_sublimate_precip(EvapSublimatePrecipData& d)
+{
+  p3_init(true);
+  evaporate_sublimate_precip_c(d.qr_incld, d.qc_incld, d.nr_incld, d.qitot_incld,
+			       d.lcldm, d.rcldm, d.qvs, d.ab, d.epsr, d.qv,
+			       &d.qrevp, &d.nrevp);
+}
+
 void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
   p3_init(true);
   update_prognostic_liquid_c(d.qcacc, d.ncacc, d.qcaut, d.ncautc, d.qcnuc, d.ncautr,
 			      d.ncslf, d. qrevp, d.nrevp, d.nrslf , d.log_predictNc,
 			      d.inv_rho, d.exner, d.xxlv, d.dt, &d.th, &d.qv,
 			      &d.qc, &d.nc, &d.qr, &d.nr);
+  }
+
+void ice_deposition_sublimation(IceDepSublimationData& d){
+  p3_init(true);
+  ice_deposition_sublimation_c(d.qitot_incld, d.nitot_incld, d.t, d.qvs, d.qvi, d.epsi, d.abi,
+			       d.qv, &d.qidep, &d.qisub, &d.nisub, &d.qiberg);
   }
 
 CalcUpwindData::CalcUpwindData(
@@ -996,6 +1041,36 @@ void update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncco
   *nr_    = t_h(9);
 }
 
+void evaporate_sublimate_precip_f(Real qr_incld_, Real qc_incld_, Real nr_incld_, Real qitot_incld_, Real lcldm_,
+				  Real rcldm_, Real qvs_, Real ab_, Real epsr_, Real qv_,
+				  Real* qrevp_, Real* nrevp_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qrevp = *qrevp_;
+  Real local_nrevp = *nrevp_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qr_incld(qr_incld_), qc_incld(qc_incld_), nr_incld(nr_incld_), qitot_incld(qitot_incld_),
+	lcldm(lcldm_), rcldm(rcldm_), qvs(qvs_), ab(ab_), epsr(epsr_), qv(qv_);
+
+      typename P3F::Spack qrevp(local_qrevp), nrevp(local_nrevp);
+
+      P3F::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
+      epsr, qv, qrevp, nrevp);
+
+      t_d(0) = qrevp[0];
+      t_d(1) = nrevp[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qrevp_ = t_h(0);
+  *nrevp_ = t_h(1);
+}
+
 void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncautc_, Real qcnuc_, Real ncautr_,
 				Real ncslf_, Real  qrevp_, Real nrevp_, Real nrslf_, bool log_predictNc_,
 				Real inv_rho_, Real exner_, Real xxlv_, Real dt_, Real* th_, Real* qv_,
@@ -1045,6 +1120,42 @@ void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncau
   *nc_    = t_h(3);
   *qr_    = t_h(4);
   *nr_    = t_h(5);
+}
+
+void ice_deposition_sublimation_f(Real qitot_incld_, Real nitot_incld_, Real t_, Real qvs_,
+				  Real qvi_, Real epsi_, Real abi_, Real qv_,
+				  Real* qidep_, Real* qisub_, Real* nisub_, Real* qiberg_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 4);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qidep  = *qidep_;
+  Real local_qisub  = *qisub_;
+  Real local_nisub  = *nisub_;
+  Real local_qiberg = *qiberg_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qitot_incld(qitot_incld_), nitot_incld(nitot_incld_), t(t_), qvs(qvs_), qvi(qvi_),
+	epsi(epsi_), abi(abi_), qv(qv_);
+
+      typename P3F::Spack qidep(local_qidep), qisub(local_qisub), nisub(local_nisub), qiberg(local_qiberg);
+
+      P3F::ice_deposition_sublimation(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv,
+				      qidep, qisub, nisub, qiberg);
+
+      t_d(0) = qidep[0];
+      t_d(1) = qisub[0];
+      t_d(2) = nisub[0];
+      t_d(3) = qiberg[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qidep_  = t_h(0);
+  *qisub_  = t_h(1);
+  *nisub_  = t_h(2);
+  *qiberg_ = t_h(3);
 }
 
 template <int N, typename T>
@@ -1821,6 +1932,25 @@ void cloud_water_autoconversion_f(
   *ncautr_ = t_h(2);
 }
 
+void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrslf_){
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_nrslf = *nrslf_;
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), qr_incld(qr_incld_), nr_incld(nr_incld_),  nrslf(local_nrslf);
+      P3F::rain_self_collection(rho, qr_incld, nr_incld, nrslf);
+
+      t_d(0) = nrslf[0];
+
+    });
+
+  Kokkos::deep_copy(t_h, t_d);
+  *nrslf_ = t_h(0);
+}
+
 void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_local_)
 {
   using P3F = Functions<Real, DefaultDevice>; 
@@ -2022,10 +2152,7 @@ void ice_cldliq_collection_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr04_,
   *nccol_     = t_h(1);
   *qcshd_     = t_h(2);
   *ncshdc_    = t_h(3);
-
 }
-
-
 
 void ice_rain_collection_f(Real rho_, Real temp_, Real rhofaci_, Real logn0r_, Real f1pr07_, Real f1pr08_,
                            Real qitot_incld_, Real nitot_incld_, Real qr_incld_, Real* qrcol_, Real* nrcol_)
@@ -2186,6 +2313,61 @@ void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
 
   *qinuc_         = t_h(0);
   *ninuc_         = t_h(1);
+}
+
+
+void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, Real f1pr05_,
+                             Real f1pr14_, Real xxlv_, Real xlf_, Real dv_,
+                             Real kap_, Real mu_, Real sc_, Real qv_, Real qc_incld_,
+                             Real qitot_incld_, Real nitot_incld_, Real qr_incld_, bool* log_wetgrowth_,
+                             Real* qrcol_, Real* qccol_, Real* qwgrth_, Real* nrshdr_, Real* qcshd_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack        = typename P3F::Spack;
+  using Smask        = typename P3F::Smask;
+  using view_1d      = typename P3F::view_1d<Real>;
+  using bool_view_1d = typename P3F::view_1d<bool>;
+
+  bool_view_1d b_d("b_d", 1);
+  view_1d t_d("t_d", 5);
+  const auto b_h = Kokkos::create_mirror_view(b_d);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  const bool log_wetgrowth_local = *log_wetgrowth_;
+  Real local_qrcol = *qrcol_, local_qccol = *qccol_, local_qwgrth = *qwgrth_, local_nrshdr = *nrshdr_, local_qcshd = *qcshd_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, temp{temp_}, pres{pres_}, rhofaci{rhofaci_}, f1pr05{f1pr05_}, f1pr14{f1pr14_}, xxlv{xxlv_},
+          xlf{xlf_}, dv{dv_}, kap{kap_}, mu{mu_}, sc{sc_}, qv{qv_}, qc_incld{qc_incld_}, qitot_incld{qitot_incld_},
+          nitot_incld{nitot_incld_}, qr_incld{qr_incld_};
+
+    Smask log_wetgrowth{log_wetgrowth_local};
+
+    Spack qrcol{local_qrcol}, qccol{local_qccol}, qwgrth{local_qwgrth}, nrshdr{local_nrshdr}, qcshd{local_qcshd};
+
+    P3F::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,
+                              qitot_incld, nitot_incld, qr_incld, log_wetgrowth,
+                              qrcol, qccol, qwgrth, nrshdr, qcshd);
+
+    b_d(0) = log_wetgrowth[0];
+    t_d(0) = qrcol[0];
+    t_d(1) = qccol[0];
+    t_d(2) = qwgrth[0];
+    t_d(3) = nrshdr[0];
+    t_d(4) = qcshd[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+  Kokkos::deep_copy(b_h, b_d);
+
+  *log_wetgrowth_ = b_h(0);
+  *qrcol_         = t_h(0);
+  *qccol_         = t_h(1);
+  *qwgrth_        = t_h(2);
+  *nrshdr_        = t_h(3);
+  *qcshd_         = t_h(4);
 }
 
 

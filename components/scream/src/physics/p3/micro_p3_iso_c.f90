@@ -291,6 +291,15 @@ end subroutine prevent_ice_overdepletion_c
     call rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrheti)
   end subroutine rain_water_conservation_c
 
+  subroutine rain_self_collection_c(rho, qr_incld, nr_incld, nrslf) bind(C)
+    use micro_p3, only: rain_self_collection
+
+    real(kind=c_real), value, intent(in) :: rho, qr_incld, nr_incld
+    real(kind=c_real), intent(out) :: nrslf
+
+    call rain_self_collection(rho, qr_incld, nr_incld, nrslf)
+  end subroutine rain_self_collection_c
+
   subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
     qisub,qimlt) bind(C)
     use micro_p3, only: ice_water_conservation
@@ -642,6 +651,19 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                              qitot_incld, nitot_incld, nislf)
   end subroutine ice_self_collection_c
 
+  subroutine evaporate_sublimate_precip_c(qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
+       rcldm, qvs, ab, epsr, qv, qrevp, nrevp) bind(C)
+    use micro_p3, only: evaporate_sublimate_precip
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
+        rcldm, qvs, ab, epsr, qv
+    real(kind=c_real), intent(out) :: qrevp, nrevp
+
+    call evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
+       rcldm, qvs, ab, epsr, qv, qrevp, nrevp)
+  end subroutine evaporate_sublimate_precip_c
+
   subroutine  update_prognostic_liquid_c(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
        qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
     use micro_p3, only: update_prognostic_liquid
@@ -661,6 +683,18 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine update_prognostic_liquid_c
 
+  subroutine ice_deposition_sublimation_c(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
+           qidep, qisub, nisub, qiberg)  bind(C)
+    use micro_p3, only: ice_deposition_sublimation
+
+    !arguments
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv
+
+    real(kind=c_real), intent(out) :: qidep, qisub, nisub, qiberg
+
+    call ice_deposition_sublimation(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
+           qidep, qisub, nisub, qiberg)
+  end subroutine ice_deposition_sublimation_c
 
   subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, f1pr05, f1pr14,   &
                                         dv, mu, sc, qitot_incld, nitot_incld, &
@@ -707,5 +741,23 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     call ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, &
                         log_predictNc, qinuc, ninuc)
  end subroutine ice_nucleation_c
+
+ subroutine ice_cldliq_wet_growth_c(rho, temp, pres, rhofaci, f1pr05, &
+                                    f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,  &
+                                    qitot_incld, nitot_incld, qr_incld, &
+                                    log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd) bind(C)
+   use micro_p3, only: ice_cldliq_wet_growth
+
+   ! argmens
+   real(kind=c_real), value, intent(in) :: rho, temp ,pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, &
+                                           kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld,qr_incld
+   logical(kind=c_bool), intent(inout) :: log_wetgrowth
+   real(kind=c_real), intent(inout) :: qrcol, qccol, qwgrth, nrshdr, qcshd
+
+   call ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, &
+                              f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld, &
+                              qitot_incld, nitot_incld, qr_incld, &
+                              log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
+ end subroutine ice_cldliq_wet_growth_c
 
 end module micro_p3_iso_c

@@ -17,20 +17,24 @@
 #endif
 
 namespace scream {
+
+/*
+ * Utility function for handling floating point literals,
+ * so that they match the scream precision. This is
+ * especially useful for bfb tests agaisnt fortran,
+ * to ensure that literals are not a source of round-off differences.
+ */
+template<typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value,Real>::type
+sp (const T val) {
+  return Real(val);
+}
+
 namespace util {
 
 template <typename Real> struct is_single_precision {};
 template <> struct is_single_precision<float> { enum : bool { value = true }; };
 template <> struct is_single_precision<double> { enum : bool { value = false }; };
-
-// macro for floating point literals that match the scream precision. This can be
-// especially useful for bfb tests agaisnt fortran to ensure that literals are not
-// a source of round-off differences.
-#ifdef SCREAM_DOUBLE_PRECISION
-#define sp(val) val
-#else
-#define sp(val) val##F
-#endif
 
 bool eq(const std::string& a, const char* const b1, const char* const b2 = 0);
 

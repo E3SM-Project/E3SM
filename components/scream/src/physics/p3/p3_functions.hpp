@@ -440,6 +440,10 @@ struct Functions
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
     Spack& qcaut, Spack& ncautc, Spack& ncautr);
 
+  // Computes rain self collection process rate
+  KOKKOS_FUNCTION
+  static void rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nrslf);
+
   // Impose maximum ice number
   KOKKOS_FUNCTION
   static void impose_max_total_Ni(Spack& nitot_local, const Spack& max_total_Ni, const Spack& inv_rho_local);
@@ -499,6 +503,13 @@ struct Functions
                                   const Spack& qirim_incld, const Spack& qitot_incld,
                                   const Spack& nitot_incld, Spack& nislf);
 
+  // TODO (comments)
+  static void evaporate_sublimate_precip(const Spack& qr_incld, const Spack& qc_incld,
+					 const Spack& nr_incld, const Spack& qitot_incld,
+					 const Spack& lcldm, const Spack& rcldm,
+					 const Spack& qvs, const Spack& ab, const Spack& epsr,
+					 const Spack& qv, Spack& qrevp, Spack& nrevp);
+
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
@@ -506,6 +517,13 @@ struct Functions
     const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
     const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
     const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
+
+  // TODO (comments)
+  KOKKOS_FUNCTION
+  static void ice_deposition_sublimation(const Spack& qitot_incld,
+    const Spack& nitot_incld, const Spack& t, const Spack& qvs, const Spack& qvi,
+    const Spack& epsi, const Spack& abi, const Spack& qv, Spack& qidep,
+    Spack& qisub, Spack& nisub, Spack& qiberg);
 
   KOKKOS_FUNCTION
   static void ice_relaxation_timescale(const Spack& rho, const Spack& temp, const Spack& rhofaci, const Spack& f1pr05,
@@ -528,6 +546,14 @@ struct Functions
                              const Spack& supi, const Spack& odt,
                              const Smask& log_predictNc,
                              Spack& qinuc, Spack& ninuc);
+
+  KOKKOS_FUNCTION
+  static void ice_cldliq_wet_growth(const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
+                                    const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
+                                    const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
+                                    const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
+                                    Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
+
 
 };
 
@@ -557,6 +583,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_find_impl.hpp"
 # include "p3_functions_conservation_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
+# include "p3_functions_rain_self_collection_impl.hpp"
 # include "p3_functions_impose_max_total_Ni_impl.hpp"
 # include "p3_functions_calc_rime_density_impl.hpp"
 # include "p3_functions_cldliq_imm_freezing_impl.hpp"
@@ -566,11 +593,14 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
 # include "p3_functions_rain_imm_freezing_impl.hpp"
+# include "p3_functions_evaporate_sublimate_precip_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"
+# include "p3_functions_ice_deposition_sublimation_impl.hpp"
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
+# include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
 #endif
 
 #endif
