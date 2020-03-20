@@ -61,16 +61,17 @@ class EnvBatch(EnvBase):
 
         value = None
         node = self.get_optional_child(item, attribute)
-        if node is None:
+        if item in ("BATCH_SYSTEM", "PROJECT_REQUIRED"):
+            return super(EnvBatch, self).get_value(item,attribute,resolved)
+
+        if not node:
             # this will take the last instance of item listed in all batch_system elements
             bs_nodes = self.get_children("batch_system")
             for bsnode in bs_nodes:
                 cnode = self.get_optional_child(item, attribute, root=bsnode)
-                if cnode is not None:
+                if cnode:
                     node = cnode
-        if node is None or item in ("BATCH_SYSTEM", "PROJECT_REQUIRED"):
-            value = super(EnvBatch, self).get_value(item,attribute,resolved)
-        else:
+        if node:
             value = self.text(node)
             if resolved:
                 value = self.get_resolved_value(value)
@@ -169,7 +170,7 @@ class EnvBatch(EnvBase):
 
     def get_job_overrides(self, job, case):
         env_workflow = case.get_env('workflow')
-        total_tasks, num_nodes, tasks_per_node, thread_count = env_workflow.get_job_specs(job)
+        total_tasks, num_nodes, tasks_per_node, thread_count = env_workflow.get_job_specs(case, job)
         overrides = {}
 
         if total_tasks:
@@ -224,7 +225,8 @@ class EnvBatch(EnvBase):
 
             walltime    = case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) if case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) else None
             force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
-            logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
+            walltime_format = case.get_value("walltime_format", subgroup=job) if case.get_value("walltime_format", subgroup=job) else None
+            logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {} WALLTIME_FORMAT {}".format(job, walltime, force_queue, walltime_format))
             task_count = int(jsect["task_count"]) if "task_count" in jsect else case.total_tasks
             walltime = jsect["walltime"] if ("walltime" in jsect and walltime is None) else walltime
             if "task_count" in jsect:
@@ -263,6 +265,18 @@ class EnvBatch(EnvBase):
                     walltime = specs[3]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
+
+            else:
+                # Set the walltime to the correct walltime_format, if set.
+                # Assuming correct format is #H:#M or %H:%M:%S.
+                if walltime_format is not None:
+                    components=walltime.split(":")
+                    if len(components) > len(walltime_format.split(":")):
+                        walltime = ':'.join(components[:len(walltime_format.split(":"))])
+                        logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
+                    if len(components) < len(walltime_format.split(":")):
+                        walltime = walltime + ':' + ':'.join(["00"]*(len(walltime_format.split(":")) - len(components)))
+                        logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
 
             env_workflow.set_value("JOB_QUEUE", self.text(queue), subgroup=job, ignore_type=specs is None)
             env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
@@ -690,9 +704,13 @@ class EnvBatch(EnvBase):
             sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)
 
         submitcmd = " ".join(s.strip() for s in sequence if s is not None)
+        if submitcmd.startswith("ssh"):
+            # add ` before cd $CASEROOT and at end of command
+            submitcmd = submitcmd.replace("cd $CASEROOT","\'cd $CASEROOT") + "\'"
         if dry_run:
             return submitcmd
         else:
+            submitcmd = case.get_resolved_value(submitcmd)
             logger.info("Submitting job script {}".format(submitcmd))
             output = run_cmd_no_fail(submitcmd, combine_output=True)
             jobid = self.get_job_id(output)

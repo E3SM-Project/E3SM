@@ -82,11 +82,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Remove batch scripts
     if reset or clean:
-        # clean batch script
+        # clean setup-generated files
         batch_script = get_batch_script_for_job(case.get_primary_job())
-        if os.path.exists(batch_script):
-            os.remove(batch_script)
-            logger.info("Successfully cleaned batch script {}".format(batch_script))
+        files_to_clean = [batch_script, "env_mach_specific.xml", "Macros.make", "Macros.cmake"]
+        for file_to_clean in files_to_clean:
+            if os.path.exists(file_to_clean):
+                os.remove(file_to_clean)
+                logger.info("Successfully cleaned {}".format(file_to_clean))
 
         if not test_mode:
             # rebuild the models (even on restart)

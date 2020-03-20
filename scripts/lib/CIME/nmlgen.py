@@ -494,7 +494,7 @@ class NamelistGenerator(object):
                     continue
                 filepath, filename = os.path.split(filename)
                 if not filepath:
-                    filepath = os.path.join(domain_filepath, os.path.dirname(filename.strip()))
+                    filepath = os.path.join(domain_filepath, filename.strip())
                 string = "domain{:d} = {}\n".format(i+1, filepath)
                 hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
                 if hashValue not in lines_hash:

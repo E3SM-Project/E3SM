@@ -573,6 +573,14 @@ ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   endif
 endif
 
+CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
+
+ifeq ($(CAM_DYCORE),fv3)
+FV3CORE_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/atmos_cubed_sphere)
+INCLDIR+=-I$(FV3CORE_LIBDIR) -I$(FV3CORE_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE) -I$(abspath $(EXEROOT)/FMS) -I$(CIMEROOT)/../libraries/FMS/src/include
+endif
+
+
 ifeq ($(MODEL),cam)
   # These RRTMG files take an extraordinarily long time to compile with optimization.
   # Until mods are made to read the data from files, just remove optimization from
@@ -594,15 +602,21 @@ $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
 endif
 
+ifdef FV3CORE_LIBDIR
+$(FV3CORE_LIBDIR)/libfv3core.a: $(EXEROOT)/FMS/libfms.a
+	$(MAKE) -C $(FV3CORE_LIBDIR) complib COMPLIB='$(FV3CORE_LIBDIR)/libfv3core.a' F90='$(FC)' CC='$(CC)' FFLAGS='$(FFLAGS) $(FC_AUTO_R8)'  CFLAGS='$(CFLAGS)' INCLDIR='$(INCLDIR)' FC_TYPE='$(COMPILER)'
+
+dyn_grid.o: $(FV3CORE_LIBDIR)/libfv3core.a
+endif
 endif
 
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
-ifndef SLIBS
+ifeq (,$(findstring netcdf,$(SLIBS)))
   ifeq ($(NETCDF_SEPARATE), FALSE)
-    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+    SLIBS += -L$(LIB_NETCDF) -lnetcdff -lnetcdf
   else ifeq ($(NETCDF_SEPARATE), TRUE)
-    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+    SLIBS += -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
   endif
 endif
 
@@ -896,6 +910,10 @@ ifdef COSP_LIBDIR
   endif
 endif
 
+ifdef FV3CORE_LIBDIR
+  ULIBDEP += $(FV3CORE_LIBDIR)/libfv3core.a
+  ULIBDEP += $(EXEROOT)/FMS/libfms.a
+endif
 
 ifndef CLIBS
    ifdef ULIBDEP
