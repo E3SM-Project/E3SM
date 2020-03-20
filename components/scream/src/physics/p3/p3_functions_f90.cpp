@@ -2120,10 +2120,7 @@ void ice_cldliq_collection_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr04_,
   *nccol_     = t_h(1);
   *qcshd_     = t_h(2);
   *ncshdc_    = t_h(3);
-
 }
-
-
 
 void ice_rain_collection_f(Real rho_, Real temp_, Real rhofaci_, Real logn0r_, Real f1pr07_, Real f1pr08_,
                            Real qitot_incld_, Real nitot_incld_, Real qr_incld_, Real* qrcol_, Real* nrcol_)
@@ -2270,15 +2267,18 @@ void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, R
   const auto b_h = Kokkos::create_mirror_view(b_d);
   const auto t_h = Kokkos::create_mirror_view(t_d);
 
+  const bool log_wetgrowth_local = *log_wetgrowth_;
+  Real local_qrcol = *qrcol_, local_qccol = *qccol_, local_qwgrth = *qwgrth_, local_nrshdr = *nrshdr_, local_qcshd = *qcshd_;
+
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
     Spack rho{rho_}, temp{temp_}, pres{pres_}, rhofaci{rhofaci_}, f1pr05{f1pr05_}, f1pr14{f1pr14_}, xxlv{xxlv_},
           xlf{xlf_}, dv{dv_}, kap{kap_}, mu{mu_}, sc{sc_}, qv{qv_}, qc_incld{qc_incld_}, qitot_incld{qitot_incld_},
           nitot_incld{nitot_incld_}, qr_incld{qr_incld_};
 
-    Smask log_wetgrowth{*log_wetgrowth_};
+    Smask log_wetgrowth{log_wetgrowth_local};
 
-    Spack qrcol{*qrcol_}, qccol{*qccol_}, qwgrth{*qwgrth_}, nrshdr{*nrshdr_}, qcshd{*qcshd_};
+    Spack qrcol{local_qrcol}, qccol{local_qccol}, qwgrth{local_qwgrth}, nrshdr{local_nrshdr}, qcshd{local_qcshd};
 
     P3F::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,
                               qitot_incld, nitot_incld, qr_incld, log_wetgrowth,
