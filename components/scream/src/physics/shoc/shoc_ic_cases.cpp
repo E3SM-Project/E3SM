@@ -118,8 +118,11 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       d.zi_grid(i, k) = zi;
       d.zt_grid(i, k) = zt;
 
-      // Interpolate the potential temperature.
-      const Real theta_zt = interpolate_data(z_ref, theta_ref, zt);
+      // Interpolate the potential temperature, introducing small variations
+      // between columns.
+      Real theta_zt = interpolate_data(z_ref, theta_ref, zt);
+      if (i > 0)
+        theta_zt += ((i % 3) - 0.5)/double(nlev)*k;
       const Real qw = interpolate_data(z_ref, qw_ref, zt);
       const Real ql = interpolate_data(z_ref, ql_ref, zt);
       d.qw(i, k) = qw;
