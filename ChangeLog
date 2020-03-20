@@ -1,5 +1,32 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 3-20-2020
+Tag: cime5.8.18
+Answer Changes: None
+Tests:  scripts_regression_tests, SMS.ne5pg4_ne5pg4_mg37.A
+Dependencies:
+
+Brief Summary:
+    - Add ne5np4.pg4 grid.
+    - Ensure that api documentation is rebuilt whenever rebuilding 
+      documentation.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+f990945a7 Merge pull request #3460 from ESMCI/fischer/ne5np4
+f25ecc408 Merge pull request #3454 from billsacks/doc_clean_api
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       doc/Makefile
+
+======================================================================
+
+======================================================================
+
 Originator: Bill Sacks
 Date: 3-15-2020
 Tag: cime5.8.17
