@@ -309,7 +309,7 @@ contains
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
             endif
 
-            do k = 1, maxLevelEdgeTop(iEdge) 
+            do k = 1, maxLevelEdgeTop(iEdge) - 1
                areaSum(k) = areaSum(k) + areaEdge
                areaSum(k+1) = areaSum(k+1) + areaEdge
 

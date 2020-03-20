@@ -114,7 +114,7 @@ contains
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: kappaGMEdge, sumN2, countN2, maxN, kappaSum, ltSum
-      real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
+      real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown
       real(kind=RKIND) :: verticalDisplacement, rValue, zEdge, diabaticTaper
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm, dTdzSmooth, dSdzSmooth
@@ -416,9 +416,9 @@ contains
                kappaGMCell(k,iCell) = max(config_GM_min_stratification_ratio, &
                                           BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
                diabaticTaper = 1.0_RKIND
-               if (BruntVaisalaFreqTopEdge <= config_Redi_diabatic_limit) then
-                  diabaticTaper = 0.0_RKIND
-               endif
+!               if (BruntVaisalaFreqTopEdge <= config_Redi_diabatic_limit) then
+!                  diabaticTaper = 0.0_RKIND
+!               endif
 
                kappaRediCell(k,iCell) = diabaticTaper*kappaGMCell(k,iCell)
            enddo
@@ -515,8 +515,22 @@ contains
                slopeTaperDown = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
                   config_Redi_half_slope)/config_Redi_half_width))
 
-               slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
-               slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
+               if (k < maxLevelCell(iCell)) THEN
+                 if (BruntVaisalaFreqTop(k,iCell) < config_Redi_diabatic_limit .or. &
+                       BruntVaisalaFreqTop(k+1,iCell) < config_Redi_diabatic_limit) THEN
+                   diabaticTaper = 0.0_RKIND
+                 else
+                   diabaticTaper = 1.0_RKIND
+                 endif
+               else
+                 if (BruntVaisalaFreqTop(k,iCell) < config_Redi_diabatic_limit) THEN
+                   diabaticTaper = 0.0_RKIND
+                 else
+                   diabaticTaper = 1.0_RKIND
+                 endif
+               endif
+               slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(diabaticTaper*slopeTaperUp - 1.0_RKIND)
+               slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(diabaticTaper*slopeTaperDown - 1.0_RKIND)
 
                zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
@@ -566,8 +580,6 @@ contains
                         layerThicknessEdge(k,iEdge))
             enddo
 
-            slopeTriadUp(maxLevelEdgeTop(iEdge)+1,:,iEdge) = 0.0_RKIND
-            slopeTriadDown(maxLevelEdgeTop(iEdge)+1,:,iEdge) = 0.0_RKIND
         end do
 
          ! Normalize k33
@@ -637,6 +649,7 @@ contains
          !$omp end do
       endif
 
+      nEdges = nEdgesArray( 2 )
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
@@ -695,7 +708,7 @@ contains
       end do
       !$omp end do
 
-      nEdges = nEdgesArray( 3 )
+      nEdges = nEdgesArray( 2 )
       ! Compute normalGMBolusVelocity from the stream function
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
