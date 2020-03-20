@@ -1,0 +1,6 @@
+[submodule "src/core_ocean/cvmix"]
+	path = src/core_ocean/cvmix
+	url = git@github.com:CVMix/CVMix-src.git
+[submodule "src/core_ocean/BGC"]
+	path = src/core_ocean/BGC
+	url = git@github.com:E3SM-Project/Ocean-BGC.git
