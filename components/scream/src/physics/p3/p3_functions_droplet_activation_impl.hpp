@@ -26,17 +26,15 @@ void Functions<S,D>
    const auto sup_if_log   = sup_gt_small && log_predictNc;
    const auto sup_if_not_log = sup_gt_small && !log_predictNc;
 
-   Spack dum{0.}, dumqvs{0.}, dqsdt{0.}, ab{0.};
+   Spack dum{0}, dumqvs{0}, dqsdt{0}, ab{0};
 
   //.................................................................
   // droplet activation
 
   if (sup_if_log.any()) {
-     ncnuc.set(sup_if_log,
-               npccn);
+     ncnuc.set(sup_if_log, npccn);
 
-     qcnuc.set(sup_if_log,
-               ncnuc*cons7);
+     qcnuc.set(sup_if_log, ncnuc*cons7);
   }
 
   // for specified Nc, make sure droplets are present if conditions are supersaturated
@@ -44,18 +42,17 @@ void Functions<S,D>
 
   if (sup_if_not_log.any()) {
       dum   = nccnst*inv_rho*cons7-qc;
-      dum   = max(sp(0.),dum);
+      dum   = max(0, dum);
 
-      dumqvs = qv_sat(temp,pres,false);
+      dumqvs = qv_sat(temp, pres, false);
 
       dqsdt = xxlv*dumqvs/(rv*temp*temp);
 
-      ab    = sp(1.) + dqsdt*xxlv*inv_cp;
+      ab    = 1 + dqsdt*xxlv*inv_cp;
 
       dum   = min(dum,(qv-dumqvs)/ab);  // limit overdepletion of supersaturation
 
-      qcnuc.set(sup_if_not_log,
-                dum*odt);
+      qcnuc.set(sup_if_not_log, dum*odt);
   }
 }
 

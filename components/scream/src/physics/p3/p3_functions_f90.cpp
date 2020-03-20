@@ -2345,9 +2345,9 @@ void droplet_activation_f(Real temp_, Real pres_, Real qv_, Real qc_,
   view_1d t_d("t_d", 2);
   const auto t_h = Kokkos::create_mirror_view(t_d);
 
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+  const Real qcnuc_loc{*qcnuc_}, ncnuc_loc{*ncnuc_};
 
-    Real qcnuc_loc{*qcnuc_}, ncnuc_loc{*ncnuc_};
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
     Spack temp{temp_}, pres{pres_}, qv{qv_}, qc{qc_}, inv_rho{inv_rho_}, sup{sup_}, xxlv{xxlv_},
           npccn{npccn_}, odt{odt_};
