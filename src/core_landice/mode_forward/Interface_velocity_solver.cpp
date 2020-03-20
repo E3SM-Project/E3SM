@@ -1115,11 +1115,11 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
-      smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
+      smbData[index] = smb_F[iCell] * secondsInAYear/rho_ice;
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[index] = stiffnessFactor_F[iCell];
     if (effecPress_F != 0)
-      effecPressData[index] = effecPress_F[iCell] / unit_length;  
+      effecPressData[index] = effecPress_F[iCell];  
   }
 
   int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
@@ -1218,11 +1218,11 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
     if (smb_F != 0)
-      smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
+      smbData[iv] = smb_F[ic] * secondsInAYear/rho_ice;
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[iv] = stiffnessFactor_F[ic];
     if (effecPress_F != 0)
-      effecPressData[iv] = effecPress_F[ic] / unit_length;
+      effecPressData[iv] = effecPress_F[ic];
   }
 
 }
@@ -1259,16 +1259,16 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
     int iCell = vertexToFCell[index];
 
     thicknessUncertaintyData[index] = thicknessUncertainty_F[iCell] / unit_length;
-    smbUncertaintyData[index] = smbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
-    bmbData[index] = bmb_F[iCell] / unit_length * secondsInAYear / rho_ice;
-    bmbUncertaintyData[index] = bmbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
+    smbUncertaintyData[index] = smbUncertainty_F[iCell] * secondsInAYear / rho_ice;
+    bmbData[index] = bmb_F[iCell] * secondsInAYear / rho_ice;
+    bmbUncertaintyData[index] = bmbUncertainty_F[iCell] * secondsInAYear / rho_ice;
 
     observedVeloXData[index] = observedSurfaceVelocityX_F[iCell] * secondsInAYear;
     observedVeloYData[index] = observedSurfaceVelocityY_F[iCell] * secondsInAYear;
     observedVeloUncertaintyData[index] = observedSurfaceVelocityUncertainty_F[iCell] * secondsInAYear;
 
-    observedDHDtData[index] = observedThicknessTendency_F[iCell] / unit_length * secondsInAYear;
-    observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] / unit_length * secondsInAYear;
+    observedDHDtData[index] = observedThicknessTendency_F[iCell] * secondsInAYear;
+    observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] * secondsInAYear;
 
     surfaceAirTemperatureData[index] = surfaceAirTemperature_F[iCell];
     basalHeatFluxData[index] = basalHeatFlux_F[iCell];
@@ -1283,16 +1283,16 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
     int ic = it->second;
 
     thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
-    smbUncertaintyData[iv] = smbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
-    bmbData[iv] = bmb_F[ic] / unit_length * secondsInAYear / rho_ice;
-    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+    smbUncertaintyData[iv] = smbUncertainty_F[ic] * secondsInAYear / rho_ice;
+    bmbData[iv] = bmb_F[ic] * secondsInAYear / rho_ice;
+    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] * secondsInAYear / rho_ice;
 
     observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
     observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
     observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
 
-    observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
-    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
+    observedDHDtData[iv] = observedThicknessTendency_F[ic] * secondsInAYear;
+    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] * secondsInAYear;
 
     surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
     basalHeatFluxData[iv] = basalHeatFlux_F[ic];
