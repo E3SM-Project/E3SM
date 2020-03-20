@@ -23,6 +23,7 @@ set(P3_TESTS_SRCS
   p3_rain_self_collection_tests.cpp
   p3_autoconversion_unit_tests.cpp
   p3_ice_relaxation_timescale_unit_tests.cpp
+  p3_calc_liq_relaxation_timescale_unit_tests.cpp
   p3_ice_nucleation_unit_tests.cpp
   p3_ice_cldliq_wet_growth_unit_tests.cpp
 )

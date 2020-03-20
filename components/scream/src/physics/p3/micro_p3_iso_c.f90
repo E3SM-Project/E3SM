@@ -23,10 +23,10 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
-  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, mu_table_c) bind(C)
+  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, revap_table_c, mu_table_c) bind(C)
     use micro_p3, only: p3_get_tables
 
-    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c
+    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c, revap_table_c
     real(kind=c_real), intent(inout), dimension(150)    :: mu_table_c
 
     real(kind=c_real), dimension(150), target :: mu_table_f
@@ -35,6 +35,7 @@ contains
     call p3_get_tables(mu_table_f, revap_table_f, vn_table_f, vm_table_f)
     vn_table_c(:,:) = vn_table_f(:,:)
     vm_table_c(:,:) = vm_table_f(:,:)
+    revap_table_c(:,:) = revap_table_f(:,:)
     mu_table_c(:)   = mu_table_f(:)
 
   end subroutine init_tables_from_f90_c
@@ -710,6 +711,22 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                                        dv, mu, sc, qitot_incld, nitot_incld, &
                                        epsi, epsi_tot)
   end subroutine ice_relaxation_timescale_c
+
+  subroutine calc_liq_relaxation_timescale_c(rho, f1r, f2r, dv, mu, sc, mu_r, &
+                                             lamr, cdistr, cdist, qr_incld,   &
+                                             qc_incld, epsr, epsc) bind(C)
+    use micro_p3, only: calc_liq_relaxation_timescale
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho,f1r,f2r,dv,mu,sc,mu_r,lamr, &
+                                            cdistr,cdist,qr_incld,qc_incld
+    real(kind=c_real), intent(out) :: epsr
+    real(kind=c_real), intent(out) :: epsc
+
+    call calc_liq_relaxation_timescale(rho,f1r,f2r,dv,mu,sc,mu_r,lamr,      &
+                                       cdistr,cdist,qr_incld,qc_incld,epsr, &
+                                       epsc)
+  end subroutine calc_liq_relaxation_timescale_c
 
   subroutine ice_nucleation_c(temp, inv_rho, nitot, naai, supi, odt, &
                               log_predictNc, qinuc, ninuc) bind(C)

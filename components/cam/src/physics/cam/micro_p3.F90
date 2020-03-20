@@ -2434,7 +2434,7 @@ dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
 epsr,epsc)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cxx_gamma, cxx_sqrt, cxx_cbrt
+   use micro_p3_iso_f, only: calc_liq_relaxation_timescale_f, cxx_gamma, cxx_sqrt, cxx_cbrt
 #endif
    implicit none
 
@@ -2456,6 +2456,15 @@ epsr,epsc)
    integer     :: dumii, dumjj
    real(rtype) :: rdumii, rdumjj
    real(rtype) :: dum, dum1, dum2, inv_dum3
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call calc_liq_relaxation_timescale_f(rho,f1r,f2r,dv,mu,sc,mu_r,lamr, &
+                                           cdistr,cdist,qr_incld,qc_incld,epsr,  &
+                                           epsc)
+      return
+   endif
+#endif
 
    if (qr_incld.ge.qsmall) then
       call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)

@@ -154,6 +154,11 @@ void ice_relaxation_timescale_c(Real rho, Real temp, Real rhofaci, Real f1pr05, 
                                 Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
                                 Real* epsi, Real* epsi_tot);
 
+void calc_liq_relaxation_timescale_c(Real rho, Real f1r, Real f2r, Real dv,
+                                     Real mu, Real sc, Real mu_r, Real lamr,
+                                     Real cdistr, Real cdist, Real qr_incld,
+                                     Real qc_incld, Real* epsr, Real* epsc);
+
 void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real supi, Real odt, bool log_predictNc,
                       Real* qinuc, Real* ninuc);
@@ -408,6 +413,32 @@ void ice_relaxation_timescale(IceRelaxationData& d)
   ice_relaxation_timescale_c(d.rho, d.temp, d.rhofaci, d.f1pr05, d.f1pr14,
                              d.dv, d.mu, d.sc, d.qitot_incld, d.nitot_incld,
                              &d.epsi, &d.epsi_tot);
+}
+
+void CalcLiqRelaxationData::randomize()
+{
+  // Populate the struct's input fields with numbers between 0 and 1.
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  rho = data_dist(generator);
+  f1r = data_dist(generator);
+  f2r = data_dist(generator);
+  dv = data_dist(generator);
+  mu = data_dist(generator);
+  sc = data_dist(generator);
+  mu_r = data_dist(generator);
+  lamr = data_dist(generator);
+  cdistr = data_dist(generator);
+  cdist = data_dist(generator);
+  qr_incld = data_dist(generator);
+  qc_incld = data_dist(generator);
+}
+
+void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d)
+{
+  p3_init(true);
+  calc_liq_relaxation_timescale_c(d.rho, d.f1r, d.f2r, d.dv, d.mu, d.sc, d.mu_r,
+    d.lamr, d.cdistr, d.cdist, d.qr_incld, d.qc_incld, &d.epsr, &d.epsc);
 }
 
 void ice_nucleation(IceNucleationData& d)
@@ -752,7 +783,8 @@ const P3GlobalForFortran::Views& P3GlobalForFortran::get()
   if (!P3GlobalForFortran::s_views) {
     P3GlobalForFortran::s_views = std::make_shared<Views>();
     P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
-    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table, s_views->m_mu_r_table, s_views->m_dnu);
+    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table,
+      s_views->m_revap_table, s_views->m_mu_r_table, s_views->m_dnu);
   }
   return *P3GlobalForFortran::s_views;
 }
@@ -2214,6 +2246,41 @@ void ice_relaxation_timescale_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr0
 
   *epsi_      = t_h(0);
   *epsi_tot_  = t_h(1);
+}
+
+void calc_liq_relaxation_timescale_f(Real rho_, Real f1r_, Real f2r_, Real dv_,
+                                     Real mu_, Real sc_, Real mu_r_, Real lamr_,
+                                     Real cdistr_, Real cdist_, Real qr_incld_,
+                                     Real qc_incld_, Real* epsr_, Real* epsc_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+  auto revap_table = P3GlobalForFortran::revap_table();
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack rho{rho_}, f1r{f1r_}, f2r{f2r_}, dv{dv_},
+          mu{mu_}, sc{sc_}, mu_r{mu_r_}, lamr{lamr_}, cdistr{cdistr_},
+          cdist{cdist_}, qr_incld{qr_incld_}, qc_incld{qc_incld_};
+
+    Spack epsr{0.0}, epsc{0.0};
+
+    P3F::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv, mu, sc,
+      mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+
+    t_d(0) = epsr[0];
+    t_d(1) = epsc[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *epsr_ = t_h(0);
+  *epsc_ = t_h(1);
 }
 
 void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
