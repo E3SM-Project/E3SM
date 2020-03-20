@@ -50,7 +50,7 @@ struct UnitWrap::UnitTest<D>::TestDropletActivation {
       {1.990E+02, 1.623E+02, 1.334E-01, 4.231E-01, 1.069E+00, 0.674E-06, 5.221E+01, 6.952E-01, 6.596E-05, true,  6.832E+00, 1.532E+03},
       {2.952E+02, 1.670E+02, 1.445E-01, 5.782E-01, 1.069E+00, 0.574E-06, 4.221E+01, 3.952E-01, 6.596E-05, true,  5.346E+00, 1.753E+03},
       {2.852E+02, 1.980E+02, 1.650E-01, 6.743E-01, 1.069E+00, 0.423E-06, 3.221E+01, 1.952E-01, 6.596E-05, true,  4.312E+00, 1.982E+03},
-      {2.702E+02, 2.091E+02, 1.982E-01, 9.621E-01, 1.069E+00, 0.323E-06, 2.221E+01, 9.952E-01, 6.596E-05, true,  3.245E+00, 2.130E+03}     
+      {2.702E+02, 2.091E+02, 1.982E-01, 9.621E-01, 1.069E+00, 0.323E-06, 2.221E+01, 9.952E-01, 6.596E-05, true,  3.245E+00, 2.130E+03}
     };
 
     // Sync to device
@@ -63,12 +63,12 @@ struct UnitWrap::UnitTest<D>::TestDropletActivation {
     for (Int i = 0; i < Spack::n; ++i) {
       droplet_activation(self[i]);
      }
-   
+
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
      // Init pack inputs
       Spack temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt;
-      Smask log_predictNc; 
+      Smask log_predictNc;
       for (Int s = 0; s < Spack::n; ++s) {
         temp[s]          = self_device(s).temp;
         pres[s]          = self_device(s).pres;
@@ -86,7 +86,7 @@ struct UnitWrap::UnitTest<D>::TestDropletActivation {
       Spack ncnuc{0.};
       Functions::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc, odt,
                                     qcnuc, ncnuc);
-  
+
       for (Int s = 0; s < Spack::n; ++s) {
         self_device(s).qcnuc = qcnuc[s];
         self_device(s).ncnuc = ncnuc[s];
