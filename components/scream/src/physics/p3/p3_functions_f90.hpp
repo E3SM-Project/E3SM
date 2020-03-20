@@ -898,6 +898,25 @@ void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real* qinuc, Real* ninuc);
 }
 
+struct DropletActivationData
+{
+  // Inputs
+  Real temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt;
+
+  bool log_predictNc;
+
+  // In/Outputs
+  Real qcnuc, ncnuc;
+};
+void droplet_activation(DropletActivationData& d);
+
+extern "C" {
+void droplet_activation_f(Real temp, Real pres, Real qv, Real qc,
+                          Real inv_rho, Real sup, Real xxlv, Real npccn,
+                          bool log_predictNc, Real odt,
+                          Real* qcnuc, Real* ncnuc);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////

@@ -2711,6 +2711,9 @@ end subroutine
 subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,    &
    qcnuc,ncnuc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: droplet_activation_f
+#endif
 
 implicit none
 
@@ -2730,6 +2733,14 @@ real(rtype), intent(inout) :: qcnuc
 real(rtype), intent(inout) :: ncnuc
 
 real(rtype) :: dum, dumqvs, dqsdt, ab
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+      call droplet_activation_f(t,pres,qv,qc,inv_rho,sup,xxlv,npccn, log_predictNc,odt, &
+                                qcnuc,ncnuc)
+       return
+    endif
+#endif
 
 !.................................................................
 ! droplet activation

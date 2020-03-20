@@ -47,6 +47,7 @@ if (NOT CUDA_BUILD)
     p3_functions_evaporate_sublimate_precip.cpp
     p3_functions_impose_max_total_Ni.cpp
     p3_functions_ice_relaxation_timescale.cpp
+    p3_functions_droplet_activation.cpp
     p3_functions_ice_nucleation.cpp)
 endif()
 

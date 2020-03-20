@@ -538,6 +538,12 @@ struct Functions
                              const Smask& log_predictNc,
                              Spack& qinuc, Spack& ninuc);
 
+  KOKKOS_FUNCTION
+  static void droplet_activation(const Spack& temp, const Spack& pres, const Spack& qv, const Spack& qc,
+                                 const Spack& inv_rho,const Spack& sup, const Spack& xxlv, const Spack& npccn,
+                                 const Smask& log_predictNc, const Spack& odt,
+                                 Spack& qcnuc, Spack& ncnuc);
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -581,6 +587,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_t
 # include "p3_functions_ice_deposition_sublimation_impl.hpp"
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
+# include "p3_functions_droplet_activation_impl.hpp"
 #endif
 
 #endif
