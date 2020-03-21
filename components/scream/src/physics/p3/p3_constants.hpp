@@ -21,6 +21,7 @@ struct Constants
   static constexpr Scalar Cpair       = 1004.64;
   static constexpr Scalar Rair        = 287.042;
   static constexpr Scalar RH2O        = 461.505;
+  static constexpr Scalar RV          = RH2O;         // Water vapor gas constant ~ J/K/kg     !461.51  
   static constexpr Scalar RhoH2O      = 1000.0;
   static constexpr Scalar MWH2O       = 18.016;
   static constexpr Scalar MWdry       = 28.966;

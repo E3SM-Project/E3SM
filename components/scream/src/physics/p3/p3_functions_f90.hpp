@@ -737,9 +737,9 @@ void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-struct GetTimeSpacePhysVars
+
+struct GetTimeSpacePhysVarsData
 {
   //Inputs
   Real t, pres, rho, xxlv, xxls, qvs, qvi;
@@ -748,7 +748,7 @@ struct GetTimeSpacePhysVars
   Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
 };
 
-void get_time_space_phys_variables(GetTimeSpacePhysVars& d);
+void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
 
 extern "C"{
 

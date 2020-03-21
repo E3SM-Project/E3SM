@@ -416,7 +416,8 @@ void ice_self_collection(IceSelfCollectionData& d)
                         &d.nislf);
 }
 
-void get_time_space_phys_variables(GetTimeSpacePhysVars& d){
+void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d)
+{
   p3_init(true);
   get_time_space_phys_variables_c(d.t, d.pres, d.rho, d.xxlv, d.xxls, d.qvs, d.qvi, &d.mu, &d.dv,
 				  &d.sc, &d.dqsdt, &d.dqsidt, &d.ab, &d.abi, &d.kap, &d.eii);

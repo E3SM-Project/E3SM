@@ -612,6 +612,18 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine update_prognostic_ice_c
 
+  subroutine get_time_space_phys_variables_c(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, &
+                                             ab, abi, kap, eii) bind(C)
+    use micro_p3, only: get_time_space_phys_variables
+
+    !arguments
+    real(kind=c_real), value, intent(in) :: t, pres, rho, xxlv, xxls, qvs, qvi
+    real(kind=c_real), intent(out) :: mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii
+
+    call get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, &
+                                       ab, abi, kap, eii)
+  end subroutine get_time_space_phys_variables_c
+
   subroutine ice_cldliq_collection_c(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
                                      nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
     use micro_p3, only: ice_cldliq_collection
