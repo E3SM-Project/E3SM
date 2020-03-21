@@ -326,6 +326,9 @@ subroutine shoc_main ( &
          shcol,nlev,host_dse,pdel,&             ! Input
 	 qw,shoc_ql,u_wind,v_wind,&             ! Input
 	 se_b,ke_b,wv_b,wl_b)                   ! Input/Output
+
+  ! Compute the planetary boundary layer height, which is an
+  !   input needed for the length scale calculation.
 	 
   call shoc_diag_obklen(&
          shcol,uw_sfc,vw_sfc,&                          ! Input
@@ -466,7 +469,10 @@ subroutine shoc_main ( &
     
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
-  !  should be placed at this point onward
+  !  should be placed at this point onward.
+  
+  ! Update PBLH, as other routines outside of SHOC
+  !  may require this variable.
   call shoc_diag_obklen(&
          shcol,uw_sfc,vw_sfc,&                          ! Input
 	 wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
