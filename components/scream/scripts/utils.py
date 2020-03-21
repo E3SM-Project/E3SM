@@ -310,7 +310,7 @@ def get_current_branch(repo=None):
             return output.replace("refs/heads/", "")
 
 ###############################################################################
-def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
+def get_current_commit(short=False, repo=None, tag=False, commit=None):
 ###############################################################################
     """
     Return the sha1 of the current HEAD commit
@@ -321,10 +321,11 @@ def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
     if tag:
         rc, output, err = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
+        commit = "HEAD" if commit is None else commit
         rc, output, err = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
 
     if rc != 0:
-        print("Warning: getting current commit failed with error: {}".format(err))
+        print("Warning: getting current commit {} failed with error: {}".format(tag, commit, err))
 
     return output if rc == 0 else None
 
