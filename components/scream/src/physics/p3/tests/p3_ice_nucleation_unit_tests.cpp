@@ -30,45 +30,46 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
+    const bool log_predictNc = false;
+
     IceNucleationData self[max_pack_size] = {
-     // temp,     inv_rho,     nitot,    naai,     supi,       odt,    log_predictNc, qinuc, ninuc
-      {2.106E+02, 8.852E-01, 0.974E+04, 9.221E+03, 5.100E-01, 9.558E-04, true },
-      {2.052E+02, 8.852E-01, 0.874E+04, 8.221E+03, 4.100E-01, 9.558E-04, true },
-      {2.352E+02, 8.900E-01, 0.723E+04, 7.221E+03, 3.100E-01, 9.558E-04, true },
-      {2.212E+02, 9.900E-01, 0.623E+04, 6.221E+03, 2.100E-01, 9.558E-04, true },
+      // temp,    inv_rho,   nitot,     naai,      supi,      odt,       log_predictNc
+      {2.106E+02, 8.852E-01, 0.974E+04, 9.221E+03, 5.100E-01, 9.558E-04, log_predictNc },
+      {2.052E+02, 8.852E-01, 0.874E+04, 8.221E+03, 4.100E-01, 9.558E-04, log_predictNc },
+      {2.352E+02, 8.900E-01, 0.723E+04, 7.221E+03, 3.100E-01, 9.558E-04, log_predictNc },
+      {2.212E+02, 9.900E-01, 0.623E+04, 6.221E+03, 2.100E-01, 9.558E-04, log_predictNc },
 
-      {2.251E+02, 0.100E+01, 0.574E+04, 5.221E+03, 1.100E-01, 2.558E-05, false},
-      {2.710E+02, 0.100E+01, 0.474E+04, 4.221E+03, 8.100E-02, 2.558E-05, false},
-      {2.052E+02, 0.100E+01, 0.323E+04, 3.221E+03, 4.100E-02, 2.558E-05, false},
-      {2.502E+02, 0.100E+01, 0.223E+04, 2.221E+03, 2.100E-02, 2.558E-05, false},
+      {2.251E+02, 0.100E+01, 0.574E+04, 5.221E+03, 1.100E-01, 2.558E-05, log_predictNc},
+      {2.710E+02, 0.100E+01, 0.474E+04, 4.221E+03, 8.100E-02, 2.558E-05, log_predictNc},
+      {2.052E+02, 0.100E+01, 0.323E+04, 3.221E+03, 4.100E-02, 2.558E-05, log_predictNc},
+      {2.502E+02, 0.100E+01, 0.223E+04, 2.221E+03, 2.100E-02, 2.558E-05, log_predictNc},
 
-      {2.552E+02, 0.950E+00, 0.150E+04, 9.221E+02, 9.952E-02, 4.596E-05, false},
-      {2.452E+02, 0.950E+00, 0.974E+03, 8.221E+02, 4.952E-02, 4.596E-05, false},
-      {2.352E+02, 0.950E+00, 0.823E+03, 7.221E+02, 1.952E-02, 4.596E-05, false},
-      {2.252E+02, 0.950E+00, 0.723E+03, 6.221E+02, 9.952E-02, 4.596E-05, false},
+      {2.552E+02, 0.950E+00, 0.150E+04, 9.221E+02, 9.952E-02, 4.596E-05, log_predictNc},
+      {2.452E+02, 0.950E+00, 0.974E+03, 8.221E+02, 4.952E-02, 4.596E-05, log_predictNc},
+      {2.352E+02, 0.950E+00, 0.823E+03, 7.221E+02, 1.952E-02, 4.596E-05, log_predictNc},
+      {2.252E+02, 0.950E+00, 0.723E+03, 6.221E+02, 9.952E-02, 4.596E-05, log_predictNc},
 
-      {1.990E+02, 1.069E+00, 0.674E+03, 5.221E+01, 6.952E-01, 6.596E-05, true },
-      {2.952E+02, 1.069E+00, 0.574E+03, 4.221E+01, 3.952E-01, 6.596E-05, true },
-      {2.852E+02, 1.069E+00, 0.423E+03, 3.221E+01, 1.952E-01, 6.596E-05, true },
-      {2.702E+02, 1.069E+00, 0.323E+03, 2.221E+01, 9.952E-01, 6.596E-05, true }     
+      {1.990E+02, 1.069E+00, 0.674E+03, 5.221E+01, 6.952E-01, 6.596E-05, log_predictNc },
+      {2.952E+02, 1.069E+00, 0.574E+03, 4.221E+01, 3.952E-01, 6.596E-05, log_predictNc },
+      {2.852E+02, 1.069E+00, 0.423E+03, 3.221E+01, 1.952E-01, 6.596E-05, log_predictNc },
+      {2.702E+02, 1.069E+00, 0.323E+03, 2.221E+01, 9.952E-01, 6.596E-05, log_predictNc }
     };
 
     // Get data from fortran
     for (Int i = 0; i < Spack::n; ++i) {
       ice_nucleation(self[i]);
-     }
+    }
 
     // Sync to device
     KTH::view_1d<IceNucleationData> self_host("self_host", Spack::n);
     view_1d<IceNucleationData> self_device("self_host", Spack::n);
     std::copy(&self[0], &self[0] + Spack::n, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
-   
+
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
      // Init pack inputs
       Spack temp, inv_rho, nitot, naai, supi, odt;
-      Smask log_predictNc; 
       for (Int s = 0; s < Spack::n; ++s) {
         temp[s]          = self_device(s).temp;
         inv_rho[s]       = self_device(s).inv_rho;
@@ -76,13 +77,12 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
         naai[s]          = self_device(s).naai;
         supi[s]          = self_device(s).supi;
         odt[s]           = self_device(s).odt;
-        log_predictNc.set(s,self_device(s).log_predictNc);
       }
-     // outputs
+      // outputs
       Spack qinuc{0.0};
       Spack ninuc{0.0};
-      Functions::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, log_predictNc, qinuc, ninuc); 
-  
+      Functions::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, log_predictNc, qinuc, ninuc);
+
       for (Int s = 0; s < Spack::n; ++s) {
         self_device(s).qinuc = qinuc[s];
         self_device(s).ninuc = ninuc[s];
@@ -96,7 +96,6 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
       REQUIRE(self[s].ninuc == self_host(s).ninuc);
     }
   }
-
 
   static void run_ice_nucleation_phys()
   {

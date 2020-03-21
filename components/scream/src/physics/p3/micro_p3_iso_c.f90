@@ -742,6 +742,19 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                         log_predictNc, qinuc, ninuc)
  end subroutine ice_nucleation_c
 
+ subroutine droplet_activation_c(temp,pres,qv,qc,inv_rho,sup,xxlv,npccn, log_predictNc,odt, &
+                                 qcnuc,ncnuc) bind(C)
+   use micro_p3, only: droplet_activation
+
+   real(kind=c_real), value, intent(in) :: temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt
+   logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+   real(kind=c_real), intent(inout) :: qcnuc, ncnuc
+
+   call droplet_activation(temp,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt, &
+                           qcnuc,ncnuc)
+ end subroutine droplet_activation_c
+
  subroutine ice_cldliq_wet_growth_c(rho, temp, pres, rhofaci, f1pr05, &
                                     f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,  &
                                     qitot_incld, nitot_incld, qr_incld, &

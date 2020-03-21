@@ -81,8 +81,7 @@ class TestAllScream(object):
                 print("Using baseline commit {}".format(self._baseline_ref))
         else:
             if self._integration_test:
-                if get_current_commit() != get_current_commit(commit="origin/master"):
-                    merge_git_ref(git_ref="origin/master")
+                merge_git_ref(git_ref="origin/master")
 
             print("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, "
                   "but there will be errors if the baselines are not found.".format(self._baseline_dir))
@@ -120,7 +119,7 @@ class TestAllScream(object):
                 self._proc_count[test] = proc_count
                 if self._tests.index(test)<remainder:
                     self._proc_count[test] = proc_count + 1
-                    
+
                 print ("test {} has {} procs".format(test,self._proc_count[test]))
 
         if self._keep_tree:
@@ -240,7 +239,7 @@ class TestAllScream(object):
 
         print("Generating baselines for ref {}".format(self._baseline_ref))
 
-        checkout_git_ref(git_ref=self._baseline_ref,verbose=True)
+        checkout_git_ref(self._baseline_ref, verbose=True)
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -258,7 +257,7 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        checkout_git_ref(git_ref=git_head_ref,verbose=True)
+        checkout_git_ref(git_head_ref, verbose=True)
 
         return success
 

@@ -2729,28 +2729,39 @@ end subroutine
 subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,    &
    qcnuc,ncnuc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: droplet_activation_f
+#endif
 
-implicit none
+   implicit none
 
-real(rtype), intent(in) :: t
-real(rtype), intent(in) :: pres
-real(rtype), intent(in) :: qv
-real(rtype), intent(in) :: qc
-real(rtype), intent(in) :: inv_rho
-real(rtype), intent(in) :: sup
-real(rtype), intent(in) :: xxlv
-real(rtype), intent(in) :: npccn
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: pres
+   real(rtype), intent(in) :: qv
+   real(rtype), intent(in) :: qc
+   real(rtype), intent(in) :: inv_rho
+   real(rtype), intent(in) :: sup
+   real(rtype), intent(in) :: xxlv
+   real(rtype), intent(in) :: npccn
 
-logical(btype), intent(in) :: log_predictNc
-real(rtype), intent(in)  :: odt
+   logical(btype), intent(in) :: log_predictNc
+   real(rtype), intent(in)  :: odt
 
-real(rtype), intent(inout) :: qcnuc
-real(rtype), intent(inout) :: ncnuc
+   real(rtype), intent(inout) :: qcnuc
+   real(rtype), intent(inout) :: ncnuc
 
-real(rtype) :: dum, dumqvs, dqsdt, ab
+   real(rtype) :: dum, dumqvs, dqsdt, ab
 
-!.................................................................
-! droplet activation
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call droplet_activation_f(t,pres,qv,qc,inv_rho,sup,xxlv,npccn, log_predictNc,odt, &
+           qcnuc,ncnuc)
+      return
+   endif
+#endif
+
+   !.................................................................
+   ! droplet activation
 
    if (log_predictNc) then
       ! for predicted Nc, use activation predicted by aerosol scheme
@@ -2761,8 +2772,8 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
          qcnuc = ncnuc*cons7
       endif
    else if (sup.gt.1.e-6) then
-     ! for specified Nc, make sure droplets are present if conditions are supersaturated
-     ! this is not applied at the first time step, since saturation adjustment is applied at the first step
+      ! for specified Nc, make sure droplets are present if conditions are supersaturated
+      ! this is not applied at the first time step, since saturation adjustment is applied at the first step
       dum   = nccnst*inv_rho*cons7-qc
       dum   = max(0._rtype,dum)
       dumqvs = qv_sat(t,pres,0)

@@ -919,6 +919,25 @@ void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real* qinuc, Real* ninuc);
 }
 
+struct DropletActivationData
+{
+  // Inputs
+  Real temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt;
+
+  bool log_predictNc;
+
+  // In/Outputs
+  Real qcnuc, ncnuc;
+};
+void droplet_activation(DropletActivationData& d);
+
+extern "C" {
+void droplet_activation_f(Real temp, Real pres, Real qv, Real qc,
+                          Real inv_rho, Real sup, Real xxlv, Real npccn,
+                          bool log_predictNc, Real odt,
+                          Real* qcnuc, Real* ncnuc);
+}
+
 struct IceWetGrowthData
 {
   // Inputs
@@ -933,12 +952,11 @@ struct IceWetGrowthData
 void ice_cldliq_wet_growth(IceWetGrowthData& d);
 
 extern "C" {
- void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
-                              Real f1pr14, Real xxlv, Real xlf, Real dv,
-                              Real kap, Real mu, Real sc, Real qv, Real qc_incld,
-                              Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
-                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
-
+void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
+                             Real f1pr14, Real xxlv, Real xlf, Real dv,
+                             Real kap, Real mu, Real sc, Real qv, Real qc_incld,
+                             Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
+                             Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

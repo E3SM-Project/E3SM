@@ -448,6 +448,16 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(inout) :: qinuc, ninuc
  end subroutine ice_nucleation_f
 
+ subroutine droplet_activation_f(temp,pres,qv,qc,inv_rho,sup,xxlv,npccn, log_predictNc,odt,  &
+                                  qcnuc,ncnuc) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), intent(inout) :: qcnuc, ncnuc
+ end subroutine droplet_activation_f
+
  subroutine ice_cldliq_wet_growth_f(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, &
                                     mu, sc, qv, qc_incld,qitot_incld, nitot_incld, qr_incld,     &
                                     log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd) bind(C)
