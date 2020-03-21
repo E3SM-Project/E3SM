@@ -319,9 +319,12 @@ def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
     True
     """
     if tag:
-        rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
+        rc, output, err = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
-        rc, output, _ = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
+        rc, output, err = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
+
+    if rc != 0:
+        print("Warning: getting current commit failed with error: {}".format(err))
 
     return output if rc == 0 else None
 
@@ -390,11 +393,13 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
     """
     if get_current_commit() != get_current_commit(commit=git_ref):
         expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+        expect(git_ref is not None, "Missing git-ref")
 
-        run_cmd_no_fail("git checkout {}".format(git_ref),from_dir=repo)
+        run_cmd_no_fail("git checkout {}".format(git_ref), from_dir=repo)
         update_submodules(repo)
         git_commit = get_current_commit()
         expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
+
         if verbose:
             print("  Switched to '{}' ({})".format(git_ref,git_commit))
             print_last_commit(git_ref=git_ref)
