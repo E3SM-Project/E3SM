@@ -70,6 +70,13 @@ OR
     parser.add_argument("-i", "--integration-test", action="store_true", default="JENKINS_HOME" in os.environ,
                         help="Merge origin/master into this branch before testing.")
 
+    parser.add_argument("-r", "--root-dir",
+                        help="The root directory of the scream src you want to test. "
+                        "Default will be the scream src containing this script.")
+
+    parser.add_argument("-d", "--dry-run", action="store_true",
+                        help="Do a dry run, commands will be printed but not executed")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################

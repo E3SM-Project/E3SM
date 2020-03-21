@@ -22,7 +22,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         raise exc_type(msg)
 
 ###############################################################################
-def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
+def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
             arg_stdout=subprocess.PIPE, arg_stderr=subprocess.PIPE, env=None, combine_output=False):
 ###############################################################################
     """
@@ -32,9 +32,13 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     True
     """
     arg_stderr = subprocess.STDOUT if combine_output else arg_stderr
+    from_dir = str(from_dir) if from_dir else from_dir
 
     if verbose:
         print("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
+
+    if dry_run:
+        return 0, "", ""
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -86,7 +90,8 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
     True
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
+    stat, output, errput = run_cmd(cmd, input_str=input_str, from_dir=from_dir, verbose=verbose,
+                                   arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env, combine_output=combine_output)
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
@@ -362,7 +367,7 @@ def update_submodules(repo=None):
     """
     Updates submodules
     """
-    run_cmd_no_fail("git submodule update --init --recursive",from_dir=repo)
+    run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
 def merge_git_ref(git_ref, repo=None):
@@ -371,7 +376,7 @@ def merge_git_ref(git_ref, repo=None):
     Merge given git ref into the current branch, and updates submodules
     """
     expect(is_repo_clean(), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
-    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
+    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
     update_submodules(repo)
     expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
 
@@ -383,8 +388,7 @@ def print_last_commit(git_ref=None, repo=None):
     """
     git_ref = get_current_head(repo) if git_ref is None else git_ref
     last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref))
-    print("   Last commit on ref '{}':".format(git_ref))
-    print("     {}".format(last_commit))
+    print("Last commit on ref '{}': {}".format(git_ref, last_commit))
 
 ###############################################################################
 def checkout_git_ref(git_ref, verbose=False, repo=None):
@@ -402,7 +406,7 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
         expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
 
         if verbose:
-            print("  Switched to '{}' ({})".format(git_ref,git_commit))
+            print("Switched to '{}' ({})".format(git_ref,git_commit))
             print_last_commit(git_ref=git_ref)
 
 ###############################################################################
