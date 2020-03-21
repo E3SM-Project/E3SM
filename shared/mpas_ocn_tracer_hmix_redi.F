@@ -237,7 +237,7 @@ contains
                tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
             end do
 
-            do k = 2, maxLevelEdgeTop(iEdge)-1
+            do k = 2, maxLevelEdgeTop(iEdge)
               kappaRediEdge = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
                               kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
               do iTr = 1, nTracers
@@ -259,22 +259,22 @@ contains
                end do
             end do
 
-           k=maxLevelEdgeTop(iEdge)
-           kappaRediEdge = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
-                           kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
-           do iTr = 1, nTracers
-               ! For bottom layer, only use triads pointing up:
-               flux_term2 = coef * RediKappa(iCell) * kappaRediEdge * layerThicknessEdge(k, iEdge) * &
-                  0.25_RKIND * &
-                  (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
-                                  / (zMid(k-1,cell1) - zMid(k,cell1)) &
-                   + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
-                                  / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
-
-               redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
-               ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
-               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
-            end do
+!           k=maxLevelEdgeTop(iEdge)
+!           kappaRediEdge = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
+!                           kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
+!           do iTr = 1, nTracers
+!               ! For bottom layer, only use triads pointing up:
+!               flux_term2 = coef * RediKappa(iCell) * kappaRediEdge * layerThicknessEdge(k, iEdge) * &
+!                  0.25_RKIND * &
+!                  (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+!                                  / (zMid(k-1,cell1) - zMid(k,cell1)) &
+!                   + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+!                                  / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
+!
+!               redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
+!               ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
+!               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
+!            end do
          end do
       end do
       !$omp end do
@@ -309,7 +309,7 @@ contains
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
             endif
 
-            do k = 1, maxLevelEdgeTop(iEdge) - 1
+            do k = 1, maxLevelEdgeTop(iEdge)
                areaSum(k) = areaSum(k) + areaEdge
                areaSum(k+1) = areaSum(k+1) + areaEdge
 
