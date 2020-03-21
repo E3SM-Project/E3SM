@@ -586,6 +586,7 @@ contains
          do k = 2, maxLevelCell(iCell)
             k33(k,iCell) = k33(k,iCell) / k33Norm(k) * kappaRediCell(k,iCell)
          end do
+         k33(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
       end do ! iCell
       !$omp end do
 
