@@ -81,6 +81,7 @@ struct UnitWrap {
     struct TestIceCollection;
     struct TestEvapSublPrecip;
     struct TestRainSelfCollection;
+    struct TestP3IceMelting;
     struct TestP3UpdatePrognosticLiq;
     struct TestP3IceDepSublimation;
     struct TestP3FunctionsImposeMaxTotalNi;

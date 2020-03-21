@@ -510,6 +510,14 @@ struct Functions
 					 const Spack& qvs, const Spack& ab, const Spack& epsr,
 					 const Spack& qv, Spack& qrevp, Spack& nrevp);
 
+  //get number and mass tendencies due to melting ice
+  KOKKOS_FUNCTION
+  static void ice_melting(const Spack& rho, const Spack& t, const Spack& pres, const Spack& rhofaci,
+			  const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, 
+			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap, 
+			  const Spack& qv, const Spack& qitot_incld, const Spack& nitot_incld,
+			  Spack& qimlt, Spack& nimlt);
+  
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
@@ -603,6 +611,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_ice_deposition_sublimation_impl.hpp"
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
+# include "p3_functions_ice_melting_impl.hpp"
 # include "p3_functions_droplet_activation_impl.hpp"
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"

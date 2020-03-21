@@ -173,6 +173,14 @@ interface
 
   end subroutine rain_self_collection_f
 
+  subroutine ice_melting_f(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld
+    real(kind=c_real), intent(out) :: qimlt,nimlt
+  end subroutine ice_melting_f
+
   subroutine impose_max_total_ni_f(nitot_local, max_total_Ni, inv_rho_local) bind(C)
     use iso_c_binding
     

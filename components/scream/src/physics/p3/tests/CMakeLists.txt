@@ -25,9 +25,11 @@ set(P3_TESTS_SRCS
   p3_ice_relaxation_timescale_unit_tests.cpp
   p3_calc_liq_relaxation_timescale_unit_tests.cpp
   p3_ice_nucleation_unit_tests.cpp
+  p3_ice_melting_unit_tests.cpp
   p3_droplet_activation_unit_tests.cpp
   p3_ice_cldliq_wet_growth_unit_tests.cpp
 )
+
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)
 
 CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline" DEP p3_tests_ut_np1_omp1 OPTIONAL EXCLUDE_MAIN_CPP)

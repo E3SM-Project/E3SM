@@ -82,7 +82,9 @@ void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* 
 void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
 
 void impose_max_total_ni_c(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
-
+  
+void ice_melting_c(Real rho,Real t,Real pres,Real rhofaci,Real f1pr05,Real f1pr14,Real xxlv,Real xlf,Real dv,Real sc,Real mu,Real kap,Real qv,Real qitot_incld, Real nitot_incld,Real* qimlt,Real* nimlt);
+  
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
@@ -782,6 +784,13 @@ void homogeneous_freezing(HomogeneousFreezingData& d)
   homogeneous_freezing_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                          d.t, d.exner, d.xlf,
                          d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.th);
+}
+
+void ice_melting(IceMeltingData& d){
+  p3_init(true);
+  ice_melting_c(d.rho,d.t,d.pres,d.rhofaci,d.f1pr05,d.f1pr14,
+		d.xxlv,d.xlf,d.dv,d.sc,d.mu,d.kap,
+		d.qv,d.qitot_incld,d.nitot_incld,&d.qimlt,&d.nimlt);
 }
 
 void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
@@ -1964,6 +1973,28 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrs
 
   Kokkos::deep_copy(t_h, t_d);
   *nrslf_ = t_h(0);
+}
+
+  void ice_melting_f(Real rho_,Real t_,Real pres_,Real rhofaci_,Real f1pr05_,Real f1pr14_,Real xxlv_,Real xlf_,Real dv_,Real sc_,Real mu_,Real kap_,Real qv_,Real qitot_incld_,Real nitot_incld_,Real* qimlt_,Real* nimlt_){
+  using P3F = Functions<Real, DefaultDevice>;
+  
+  typename P3F::view_1d<Real> t_d("t_h", 2);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_qimlt = *qimlt_;
+  Real local_nimlt = *nimlt_;
+  
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), t(t_), pres(pres_), rhofaci(rhofaci_),f1pr05(f1pr05_), f1pr14(f1pr14_), xxlv(xxlv_), xlf(xlf_),dv(dv_), sc(sc_), mu(mu_), kap(kap_),qv(qv_), qitot_incld(qitot_incld_), nitot_incld(nitot_incld_), qimlt(local_qimlt), nimlt(local_nimlt);
+      P3F::ice_melting(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt);
+
+      t_d(0) = qimlt[0];
+      t_d(1) = nimlt[0];
+      
+    });
+  Kokkos::deep_copy(t_h, t_d);
+  
+  *qimlt_ = t_h(0);
+  *nimlt_ = t_h(1);
 }
 
 void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_local_)

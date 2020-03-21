@@ -25,6 +25,7 @@ if (NOT CUDA_BUILD)
     p3_functions_cloud_sed.cpp
     p3_functions_ice_sed.cpp
     p3_functions_ice_collection.cpp
+    p3_functions_ice_melting.cpp
     p3_functions_rain_sed.cpp
     p3_functions_table3.cpp
     p3_functions_table_ice.cpp
