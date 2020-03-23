@@ -12,7 +12,7 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_nucleation(const Spack& temp, const Spack& inv_rho, const Spack& nitot, const Spack& naai,
-                 const Spack& supi, const Spack& odt, const Smask& log_predictNc, 
+                 const Spack& supi, const Spack& odt, const bool& log_predictNc,
                  Spack& qinuc, Spack& ninuc)
 {
    constexpr Scalar nsmall  = C::NSMALL;
@@ -21,43 +21,36 @@ void Functions<S,D>
    constexpr Scalar zero    = C::ZERO;
    constexpr Scalar piov3   = C::PIOV3;
    constexpr Scalar mi0     = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
- 
+
    const auto t_lt_icenuct = temp < icenuct;
    const auto supi_ge_005 = supi >= 0.05;
-   
+
    const auto any_if_log     = t_lt_icenuct && supi_ge_005 && log_predictNc;
    const auto any_if_not_log = t_lt_icenuct && supi_ge_005 && (!log_predictNc);
 
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
    if (any_if_not_log.any()) {
-      dum = sp(0.005)*pack::exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
+     dum = sp(0.005)*pack::exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
 
-      dum = pack::min(dum, sp(1.0e5)*inv_rho);
-   
-      N_nuc = pack::max(zero, (dum-nitot)*odt);
+     dum = pack::min(dum, sp(1.0e5)*inv_rho);
 
-      const auto n_nuc_ge_nsmall = N_nuc >= nsmall;
+     N_nuc = pack::max(zero, (dum-nitot)*odt);
 
-      if (n_nuc_ge_nsmall.any()) {
-          Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);
-   
+     const auto n_nuc_ge_nsmall = N_nuc >= nsmall;
 
-          qinuc.set(any_if_not_log && n_nuc_ge_nsmall,
-                    Q_nuc);
+     if (n_nuc_ge_nsmall.any()) {
+       Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);
 
-          ninuc.set(any_if_not_log && n_nuc_ge_nsmall,
-                    N_nuc);
-      }
-   } else {
+       qinuc.set(any_if_not_log && n_nuc_ge_nsmall, Q_nuc);
 
-     ninuc.set(any_if_log,
-               pack::max(zero, (naai-nitot)*odt));
-
-     qinuc.set(any_if_log,
-               ninuc*mi0);
-  }
-
+       ninuc.set(any_if_not_log && n_nuc_ge_nsmall, N_nuc);
+     }
+   }
+   else {
+     ninuc.set(any_if_log, pack::max(zero, (naai-nitot)*odt));
+     qinuc.set(any_if_log, ninuc*mi0);
+   }
 }
 
 } // namespace p3

@@ -310,7 +310,7 @@ def get_current_branch(repo=None):
             return output.replace("refs/heads/", "")
 
 ###############################################################################
-def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
+def get_current_commit(short=False, repo=None, tag=False, commit=None):
 ###############################################################################
     """
     Return the sha1 of the current HEAD commit
@@ -319,9 +319,13 @@ def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
     True
     """
     if tag:
-        rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
+        rc, output, err = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
-        rc, output, _ = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
+        commit = "HEAD" if commit is None else commit
+        rc, output, err = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
+
+    if rc != 0:
+        print("Warning: getting current commit {} failed with error: {}".format(tag, commit, err))
 
     return output if rc == 0 else None
 
@@ -366,6 +370,7 @@ def merge_git_ref(git_ref, repo=None):
     """
     Merge given git ref into the current branch, and updates submodules
     """
+    expect(is_repo_clean(), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
     run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
     update_submodules(repo)
     expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
@@ -389,12 +394,43 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
     """
     if get_current_commit() != get_current_commit(commit=git_ref):
         expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+        expect(git_ref is not None, "Missing git-ref")
 
-        run_cmd_no_fail("git checkout {}".format(git_ref),from_dir=repo)
+        run_cmd_no_fail("git checkout {}".format(git_ref), from_dir=repo)
         update_submodules(repo)
         git_commit = get_current_commit()
         expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
+
         if verbose:
             print("  Switched to '{}' ({})".format(git_ref,git_commit))
             print_last_commit(git_ref=git_ref)
 
+###############################################################################
+def get_git_toplevel_dir(repo=None):
+###############################################################################
+    """
+    Get repo toplevel directory
+    """
+    return run_cmd_no_fail("git rev-parse --show-toplevel")
+
+###############################################################################
+def cleanup_repo(orig_branch, orig_commit, repo=None):
+###############################################################################
+    """
+    Discards all unstaged changes, as well as untracked files
+    """
+    curr_commit = get_current_commit()
+
+    # Is this a pointless check? Maybe.
+    if not is_repo_clean():
+        # Discard any modifications to the repo (either tracked or untracked),
+        # but keep the ctest-build directory
+        run_cmd_no_fail("git clean -df --exclude=ctest-build")
+        toplevel_dir = get_git_toplevel_dir()
+        run_cmd_no_fail("git checkout -- {}".format(toplevel_dir))
+
+    checkout_git_ref(orig_branch)
+
+    # Is this also a pointless check?
+    if curr_commit != orig_commit:
+        run_cmd_no_fail("git reset --hard {}".format(orig_commit))
