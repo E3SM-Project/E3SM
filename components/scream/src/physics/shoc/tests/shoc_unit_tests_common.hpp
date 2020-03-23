@@ -42,11 +42,6 @@ struct UnitWrap {
     using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
 
     using Functions          = scream::shoc::Functions<Real, Device>;
-    using view_itab_table    = typename Functions::view_itab_table;
-    using view_itabcol_table = typename Functions::view_itabcol_table;
-    using view_1d_table      = typename Functions::view_1d_table;
-    using view_2d_table      = typename Functions::view_2d_table;
-    using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
     using Spack              = typename Functions::Spack;
     using C                  = typename Functions::C;
