@@ -35,7 +35,6 @@ void Functions<S,D>
   constexpr Scalar Q_low  = 0.;
 
   bool trap{false};
-  bool badvalue_found{false};
 
   Int kmin, kmax;
   util::set_min_max(kts, kte, kmin, kmax, Spack::n);
@@ -68,8 +67,6 @@ void Functions<S,D>
                 ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,qv(pk)[s]);
       }
     } 
-
-    badvalue_found = false;
 
     if (trap && force_abort) {
       printf ("**********************************************************\n");
