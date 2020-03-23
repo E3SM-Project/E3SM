@@ -98,7 +98,7 @@ class GatherAllData(object):
         # a scream-docs test.
         setup = ""
         if (not self._local and self._scream_docs):
-            setup = "cd {} && git fetch && git reset --hard origin/master && git submodule update --init && "\
+            setup = "cd {} && git fetch && git reset --hard origin/master && git submodule update --init --recursive && "\
                 .format(scream_repo)
 
         extra_env = ""
@@ -106,7 +106,7 @@ class GatherAllData(object):
         if not is_cuda_machine:
             extra_env = "OMP_PROC_BIND=spread "
 
-        repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init".format(self._commit)
+        repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init --recursive".format(self._commit)
 
         cmd = "{}cd {} && {} && {} && {}{} {}".format(setup, repo, env_setup_str, repo_setup, extra_env, batch, local_cmd)
 
