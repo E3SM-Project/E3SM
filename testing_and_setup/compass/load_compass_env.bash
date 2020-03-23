@@ -1,7 +1,5 @@
 version=0.1.2
 
-default_python=3.7
-
 # The rest of the script should not need to be modified
 if [[ $HOSTNAME = "cori"* ]] || [[ $HOSTNAME = "dtn"* ]]; then
   base_path="/global/cfs/cdirs/acme/software/anaconda_envs/base"
