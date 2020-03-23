@@ -13,7 +13,7 @@ elif [[ $HOSTNAME = "cooley"* ]]; then
   base_path="/lus/theta-fs0/projects/ccsm/acme/tools/e3sm-unified/base"
 elif [[ $HOSTNAME = "compy"* ]]; then
   base_path="/share/apps/E3SM/conda_envs/base"
-elif [[ $HOSTNAME = "gr-fe"* ]] || [[ $HOSTNAME = "wf-fe"* ]]; then
+elif [[ $HOSTNAME = "gr-fe"* ]] || [[ $HOSTNAME = "ba-fe"* ]]; then
   base_path="/usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base"
 elif [[ $HOSTNAME = "burnham" ]]; then
   base_path="/home/xylar/miniconda3/"
