@@ -2527,12 +2527,6 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   
   view_1d col_loc_d(col_d[0]);
 
-  sview_1d qv_out_bounds_d("qv_bound_d", nk);
-  const auto qv_out_bounds_h = Kokkos::create_mirror_view(qv_out_bounds_d);
-
-  sview_1d t_out_bounds_d("tv_bound_d", nk);
-  const auto t_out_bounds_h = Kokkos::create_mirror_view(t_out_bounds_d);
-
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
@@ -2542,7 +2536,7 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
     view_1d col_loc_d(col_d[0]);
 
     P3F::check_values(qv_d, temp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
-                      col_loc_d, qv_out_bounds_d, t_out_bounds_d);
+                      col_loc_d);
   });
 }
 

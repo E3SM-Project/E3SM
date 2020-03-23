@@ -27,7 +27,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::check_values(const view_1d<Spack>& qv, const view_1d<Spack>& temp, const Int& kts, const Int& kte, 
                const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team, 
-               const view_1d<Spack>& col_loc, view_1d<Smask> qv_out_bounds, view_1d<Smask> t_out_bounds)
+               const view_1d<Spack>& col_loc)
 {
   constexpr Scalar T_low  = 173.;
   constexpr Scalar T_high = 323.;
@@ -51,20 +51,22 @@ void Functions<S,D>
     const auto qv_gt_low_bound  = qv(pk) > Q_low;
     const auto qv_lt_high_bound = qv(pk) < Q_high;
 
-    t_out_bounds(pk)  = !(t_gt_low_bound && t_lt_high_bound);
-    qv_out_bounds(pk) = !(qv_gt_low_bound && qv_lt_high_bound);
+    const auto t_out_bounds  = !(t_gt_low_bound && t_lt_high_bound);
+    const auto qv_out_bounds = !(qv_gt_low_bound && qv_lt_high_bound);
 
-    const int tk = team.league_rank();
-
-    if (t_out_bounds(pk)[tk]) {
-       trap = true;
-       printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
-              ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,temp(pk)[tk]);
+    if (t_out_bounds.any()) {
+      for (auto s=0; s<Spack::n; ++s) {
+         trap = true;
+         printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
+                ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,temp(pk)[s]);
+      }
     }
 
-    if (qv_out_bounds(pk)[tk]) {
-       printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
-             ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,qv(pk)[tk]);
+    if (qv_out_bounds.any()) {
+      for (auto s=0; s<Spack::n; ++s) {
+         printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
+                ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,qv(pk)[s]);
+      }
     } 
 
     badvalue_found = false;

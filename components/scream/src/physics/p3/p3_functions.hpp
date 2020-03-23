@@ -571,7 +571,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void check_values(const view_1d<Spack>& qv, const view_1d<Spack>& temp, const Int& kts, const Int& kte,
                            const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
-                           const view_1d<Spack>& col_loc, view_1d<Smask> qv_out_bounds, view_1d<Smask> t_out_bounds);
+                           const view_1d<Spack>& col_loc);
 };
 
 template <typename ScalarT, typename DeviceT>
