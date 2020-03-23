@@ -363,7 +363,7 @@ if ( `lowercase $fetch_code` == true ) then
   cd $code_root_dir/$tag_name
   git config commit.template $code_root_dir/$tag_name/.git/hooks/commit.template
   ## Bring in MPAS ocean/ice repo
-  git submodule update --init
+  git submodule update --init --recursive
 
   if ( `lowercase $e3sm_tag` == master ) then
     e3sm_newline
