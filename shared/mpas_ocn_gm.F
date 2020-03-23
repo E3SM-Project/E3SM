@@ -418,6 +418,7 @@ contains
 
                kappaRediCell(k,iCell) = diabaticTaper*kappaGMCell(k,iCell)
            enddo
+           kappaRediCell(maxLevelCell(iCell) + 1, iCell) = kappaRediCell(maxLevelCell(iCell), iCell)
          enddo
          !$omp end do
       endif
@@ -617,8 +618,10 @@ contains
             dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
 
             do k = 1, maxLevelEdgeTop(iEdge)
-               drhoDT = -inSituThermalExpansionCoeff(k,iCell)
-               drhoDS = inSituSalineContractionCoeff(k,iCell)
+               drhoDT = -0.5_RKIND * (inSituThermalExpansionCoeff(k,cell1) + &
+                            inSituThermalExpansionCoeff(k,cell2))
+               drhoDS = 0.5_RKIND * (inSituSalineContractionCoeff(k,cell1) + &
+                            inSituSalineContractionCoeff(k,cell2))
                dTdx = (  activeTracers(indexTemperature,k,cell2) &
                        - activeTracers(indexTemperature,k,cell1) ) &
                       * dcEdgeInv
