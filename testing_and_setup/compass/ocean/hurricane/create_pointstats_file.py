@@ -76,7 +76,7 @@ def create_pointstats_file(mesh_file,stations_files):
   pnt_ids = data_nc.createVariable('pointCellGlobalID',np.int32,(npts,))
   
   # Set variables
-  pnt_ids[:] = idx[:]
+  pnt_ids[:] = idx[:]+1
   data_nc.close()
 
 ######################################################################################
