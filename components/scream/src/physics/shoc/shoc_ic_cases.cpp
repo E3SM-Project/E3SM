@@ -30,11 +30,13 @@ Real interpolate_data(const std::array<Real, N>& ref_elevations,
 {
   auto pos = std::lower_bound(ref_elevations.begin(), ref_elevations.end(), z);
   Int index = pos - ref_elevations.begin();
-  if (index < (Int)N) {
-    const Real f1 = ref_data[index];
-    const Real f2 = ref_data[index+1];
-    const Real z1 = ref_elevations[index];
-    const Real z2 = ref_elevations[index+1];
+  if (index == 0)
+    return ref_data[0];
+  else if (index < (Int)N) {
+    const Real f1 = ref_data[index-1];
+    const Real f2 = ref_data[index];
+    const Real z1 = ref_elevations[index-1];
+    const Real z2 = ref_elevations[index];
     const Real dfdz = (f2 - f1) / (z2 - z1);
     const Real dz = z - z1;
     return f1 + dfdz * dz;
@@ -63,7 +65,7 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
 
   // Compute the cell and interface pressures at the bottom of the column.
   {
-    Real dz = z(i, 1);
+    Real dz = z(i, 0);
     Real theta1 = interpolate_data(z_ref, theta_ref, dz);
     if (std::abs(theta_s - theta1) < 1e-14 * theta_s) {
       pres(i, 0) = pow(pow(p_s, k) + k*c*dz/theta_s, 1.0/k);
@@ -100,9 +102,6 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
 
   auto& d = *dp;
 
-  d.dtime = 12;
-  d.nadv = 1;
-
   const Real ztop = 2400.0;
   const Real dz = ztop/nlev;
   for (Int i = 0; i < shcol; ++i) {
@@ -123,8 +122,8 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       Real theta_zt = interpolate_data(z_ref, theta_ref, zt);
       if (i > 0)
         theta_zt += ((i % 3) - 0.5)/double(nlev)*k;
-      const Real qw = interpolate_data(z_ref, qw_ref, zt);
-      const Real ql = interpolate_data(z_ref, ql_ref, zt);
+      const Real qw = 1e-3 * interpolate_data(z_ref, qw_ref, zt);
+      const Real ql = 1e-3 * interpolate_data(z_ref, ql_ref, zt);
       d.qw(i, k) = qw;
       d.shoc_ql(i, k) = ql;
       Real zvir = (consts::RH2O / consts::Rair) - 1.0;
@@ -169,6 +168,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
       d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thv(i, k) +
         consts::gravit * d.zt_grid(i, k);
+       d.thv(i, k), consts::gravit, d.zt_grid(i, k), d.host_dse(i, k));
     }
   }
 

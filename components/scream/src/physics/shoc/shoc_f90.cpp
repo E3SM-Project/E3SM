@@ -172,11 +172,39 @@ int test_shoc_init (bool use_fortran) {
   return 0;
 }
 
+Int check_against_python(const FortranData& d)
+{
+  Int nerr = 0;
+  if (not util::is_single_precision<Real>::value) {
+    const double tol = 0;
+printf("host_dse = %g\n", d.host_dse(0, d.nlev-1));
+printf("tke = %g\n", d.tke(0, d.nlev-1));
+printf("thetal = %g\n", d.thetal(0, d.nlev-1));
+printf("cldfrac = %g\n", d.shoc_cldfrac(0, d.nlev-1));
+    if (util::reldif<double>(d.host_dse(0,d.nlev-1), 359402.4728002207) > tol)
+      ++nerr;
+    if (util::reldif<double>(d.tke(0,d.nlev-1), 0.0004) > tol)
+      ++nerr;
+    if (util::reldif<double>(d.thetal(0,d.nlev-1), 310.0130659403337) > tol)
+      ++nerr;
+    if (util::reldif<double>(d.shoc_cldfrac(0,d.nlev-1), 0.0) > tol)
+      ++nerr;
+  }
+  return nerr;
+}
+
 int test_shoc_ic (bool use_fortran) {
-  const auto d = ic::Factory::create(ic::Factory::standard);
   shoc_init(use_fortran);
+  // Here we:
+  // 1. Initialize a standard case with settings identical to
+  //    scream-doc/ѕhoc_port/shocintr.py's example_run_case method
+  const auto d = ic::Factory::create(ic::Factory::standard, 1, 160, 1);
+  // 2. Run 100 steps, each of size dtime = 10 (as in that method)
+  d->nadv = 100;
+  d->dtime = 10;
   shoc_main(*d);
-  return 0;
+  // 3. Compare the results
+  return check_against_python(*d);
 }
 
 } // namespace shoc
