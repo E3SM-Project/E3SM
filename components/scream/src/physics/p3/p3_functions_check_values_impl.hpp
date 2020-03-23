@@ -59,12 +59,12 @@ void Functions<S,D>
     if (t_out_bounds(pk)[tk]) {
        trap = true;
        printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
-              ,source_ind,static_cast<int>(col_loc(kmin)[0]), col_loc(kmin+1)[0],col_loc(kmin+2)[0],pk, timestepcount, temp(pk)[tk]);
+              ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,temp(pk)[tk]);
     }
 
     if (qv_out_bounds(pk)[tk]) {
        printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
-             ,source_ind,static_cast<int>(col_loc(kmin)[0]), col_loc(kmin+1)[0],col_loc(kmin+2)[0],pk, timestepcount, qv(pk)[tk]);
+             ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,qv(pk)[tk]);
     } 
 
     badvalue_found = false;

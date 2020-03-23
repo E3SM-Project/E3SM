@@ -2513,17 +2513,19 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   kend -= 1;
   const Int nk = kend - kstart + 1;
 
-  Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS+1> cvd_d;
-  Kokkos::Array<size_t, CheckValuesData::NUM_ARRAYS+1> sizes;
-  for (size_t i = 0; i < CheckValuesData::NUM_ARRAYS; ++i) sizes[i] = nk;
-  sizes[CheckValuesData::NUM_ARRAYS+1] = 3;
+  Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS> cvd_d;
 
-  pack::host_to_device({qv, temp, col_loc},
-                       sizes, cvd_d);
+  pack::host_to_device({qv, temp},
+                       nk, cvd_d);
 
   view_1d qv_d(cvd_d[0]),
-          temp_d(cvd_d[1]),
-          col_loc_d(cvd_d[2]);
+          temp_d(cvd_d[1]);
+
+  Kokkos::Array<view_1d, 1> col_d;
+
+  pack::host_to_device({col_loc}, 3, col_d);
+  
+  view_1d col_loc_d(col_d[0]);
 
   sview_1d qv_out_bounds_d("qv_bound_d", nk);
   const auto qv_out_bounds_h = Kokkos::create_mirror_view(qv_out_bounds_d);
@@ -2535,8 +2537,9 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     view_1d qv_d(cvd_d[0]),
-            temp_d(cvd_d[1]),
-            col_loc_d(cvd_d[2]);
+            temp_d(cvd_d[1]);
+
+    view_1d col_loc_d(col_d[0]);
 
     P3F::check_values(qv_d, temp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
                       col_loc_d, qv_out_bounds_d, t_out_bounds_d);
