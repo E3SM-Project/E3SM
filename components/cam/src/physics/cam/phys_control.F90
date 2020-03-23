@@ -397,9 +397,7 @@ subroutine phys_ctl_readnl(nlfile)
      endif
      
    endif
-   
-   
-		      
+    
 end subroutine phys_ctl_readnl
 
 !===============================================================================
@@ -441,7 +439,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         microp_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
-			presc_aero_data_out,&
+                        presc_aero_data_out,&
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &

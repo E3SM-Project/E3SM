@@ -86,7 +86,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-		     presc_aero_data_out = presc_aero_data, &
+                     presc_aero_data_out = presc_aero_data, &
                      pergro_mods_out = pergro_mods)
 
    do m = 1, nmodes

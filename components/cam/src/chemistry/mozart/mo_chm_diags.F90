@@ -89,7 +89,7 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_amwg_out    = history_amwg,  &
                        history_verbose_out = history_verbose,  &
-		       presc_aero_data_out = presc_aero_data, &
+                       presc_aero_data_out = presc_aero_data, &
                        cam_chempkg_out     = chempkg   )
 
     id_bry     = get_spc_ndx( 'BRY' )
@@ -443,7 +443,7 @@ contains
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_verbose_out = history_verbose,&
-		       presc_aero_data_out = presc_aero_data )
+                       presc_aero_data_out = presc_aero_data )
     !--------------------------------------------------------------------
     !	... "diagnostic" groups
     !--------------------------------------------------------------------

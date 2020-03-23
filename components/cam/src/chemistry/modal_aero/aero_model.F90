@@ -215,7 +215,7 @@ contains
          convproc_do_aer_out = convproc_do_aer, & 
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix,       &
-	 presc_aero_data_out = presc_aero_data, &
+         presc_aero_data_out = presc_aero_data, &
          mam_amicphys_optaa_out = mam_amicphys_optaa ) ! REASTER 08/04/2015
 
 
@@ -598,7 +598,7 @@ contains
                 call add_default (trim(wetdep_list(m))//'SFSES', 1, ' ')
              endif
           endif
-       endif      
+       endif 
 
     enddo ! m = 1,nwetdep
 
