@@ -1,4 +1,4 @@
-<driver_script name="run_test.py">
+<driver_script name="run.py">
 	<case name="spin_up1">
 		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up1" post_message=" - Complete"/>
 	</case>
