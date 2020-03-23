@@ -598,7 +598,7 @@ contains
                 call add_default (trim(wetdep_list(m))//'SFSES', 1, ' ')
              endif
           endif
-       endif 
+       endif
 
     enddo ! m = 1,nwetdep
 
