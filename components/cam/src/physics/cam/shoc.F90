@@ -329,19 +329,19 @@ subroutine shoc_main ( &
 
   ! Compute the planetary boundary layer height, which is an
   !   input needed for the length scale calculation.
-	 
-  call shoc_diag_obklen(&
+
+   call shoc_diag_obklen(&
          shcol,uw_sfc,vw_sfc,&                          ! Input
-	 wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
-	 shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
-	 ustar,kbfs,obklen)                             ! Output
-	 
-  call pblintd(&
+         wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
+         shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+         ustar,kbfs,obklen)                             ! Output
+   
+   call pblintd(&
          shcol,nlev,nlevi,&                   ! Input
-	 zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
-	 qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
-	 ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
-	 pblh)                                ! Output	 
+         zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
+         qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+         ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
+         pblh)                                ! Output	 
 
   do t=1,nadv
 
@@ -364,7 +364,7 @@ subroutine shoc_main ( &
        host_dx,host_dy,pblh,&               ! Input
        zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
        thetal,wthv_sec,thv,&                ! Input
-       brunt,shoc_mix)  		    ! Output
+       brunt,shoc_mix)                      ! Output
 
     ! Advance the SGS TKE equation
     call shoc_tke(&
@@ -374,7 +374,7 @@ subroutine shoc_main ( &
        u_wind,v_wind,brunt,&                ! Input
        uw_sfc,vw_sfc,&                      ! Input
        zt_grid,zi_grid,&                    ! Input
-       tke,tk,tkh,&                        ! Input/Output
+       tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
 
     ! If implicit diffusion solver is used,
@@ -1164,7 +1164,6 @@ subroutine diag_third_shoc_moments(&
 
       f1=thedz2 * bet2**2 * iso**3 * (wthl_sec(i,k) * &
         (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_r8 * &
-
     w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb)))
 
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
@@ -1888,7 +1887,7 @@ subroutine shoc_length(&
   ! liquid water potential temperature [K]
   real(r8), intent(in) :: thetal(shcol,nlev)
   ! virtual potential temperature [K]
-  real(r8), intent(in) :: thv(shcol,nlev)  
+  real(r8), intent(in) :: thv(shcol,nlev)
 
 ! OUTPUT VARIABLES
   ! brunt vailsailla frequency [/s]
@@ -1925,15 +1924,15 @@ subroutine shoc_length(&
     do i=1,shcol
       brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k)
     enddo
-  enddo 
+  enddo
  
   ! Find L_inf
   do k=1,nlev
     do i=1,shcol
     
         tkes=sqrt(tke(i,k))
-	numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
-	denom(i)=denom(i)+tkes*dz_zt(i,k)
+        numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
+        denom(i)=denom(i)+tkes*dz_zt(i,k)
     
     enddo
   enddo
