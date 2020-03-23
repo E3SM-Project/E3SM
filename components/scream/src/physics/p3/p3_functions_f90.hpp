@@ -976,6 +976,40 @@ void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 }
 
+struct CheckValuesData
+{
+  static constexpr size_t NUM_ARRAYS = 2;
+
+  // Inputs
+   Int kts, kte;
+   Int timestepcount, source_ind;
+
+   bool force_abort;
+
+   Real *qv, *temp, *col_loc;
+
+   CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
+                   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+
+  CheckValuesData(const CheckValuesData& rhs);
+
+  Int nk() const { return m_nk; }
+
+  private:
+  // Internals
+ 
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+void check_values(CheckValuesData& d);
+
+extern "C" {
+void check_values_f(Real* Qv, Real* temp, Int kstart, Int kend,
+                    Int timestepcount, bool force_abort, Int source_ind, Real* col_loc);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////

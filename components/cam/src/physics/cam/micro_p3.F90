@@ -2008,6 +2008,9 @@ contains
     ! from where 'check_values' was called before it resulted in a trap.
     !
     !------------------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: check_values_f
+#endif
 
     implicit none
 
@@ -2027,6 +2030,13 @@ contains
     real(rtype), parameter :: x_low  = 0._rtype
     integer         :: k
     logical(btype)         :: trap,badvalue_found
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call check_values_f(Qv, T, kts, kte, timestepcount, force_abort, source_ind, col_loc)
+       return
+    endif
+#endif
 
 
     trap = .false.

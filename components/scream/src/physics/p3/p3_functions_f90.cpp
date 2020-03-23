@@ -176,6 +176,8 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 
+void check_values_c(Real* qv, Real* temp, Int kts, Int kte, Int timestepcount,
+                    Int force_abort, Int source_ind, Real* col_loc);
 }
 
 namespace scream {
@@ -475,6 +477,45 @@ void ice_cldliq_wet_growth(IceWetGrowthData& d)
                           d.kap, d.mu, d.sc, d.qv, d.qc_incld,
                           d.qitot_incld, d.nitot_incld, d.qr_incld, &d.log_wetgrowth,
                           &d.qrcol, &d.qccol, &d.qwgrth, &d.nrshdr, &d.qcshd);
+}
+
+CheckValuesData::CheckValuesData(
+  Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), timestepcount(timestepcount_), source_ind(source_ind_), force_abort(force_abort_),
+  m_nk((kte_-kts_)+1),
+  m_data(NUM_ARRAYS*m_nk+3, 1.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs = {&qv, &temp};
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  Real* data_begin = m_data.data();
+  Int offset = m_nk*NUM_ARRAYS;
+  col_loc = data_begin + offset;
+}
+
+CheckValuesData::CheckValuesData(const CheckValuesData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), timestepcount(rhs.timestepcount), source_ind(rhs.source_ind),
+  force_abort(rhs.force_abort),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[NUM_ARRAYS+1] = {&qv, &temp, &col_loc};
+
+  for (size_t i = 0; i < NUM_ARRAYS+1; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void check_values(CheckValuesData& d)
+{
+  p3_init(true);
+  check_values_c(d.qv, d.temp, d.kts, d.kte, d.timestepcount,
+                 d.force_abort, d.source_ind, d.col_loc);
 }
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
@@ -2451,6 +2492,56 @@ void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, R
   *qcshd_         = t_h(4);
 }
 
+void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
+                    Int timestepcount, bool force_abort, Int source_ind, Real* col_loc)
+{
+  using P3F        = Functions<Real, DefaultDevice>;
+  using Spack      = typename P3F::Spack;
+  using Smask      = typename P3F::Smask;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using sview_1d   = typename P3F::view_1d<Smask>;
+  using usview_1d  = typename P3F::view_1d<Smask>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+
+  scream_require_msg(kend > kstart,
+                    "ktop must be larger than kstart, kstart, kend " << kend << kstart);
+
+  kstart -= 1;
+  kend -= 1;
+  const Int nk = kend - kstart + 1;
+
+  Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS+1> cvd_d;
+  Kokkos::Array<size_t, CheckValuesData::NUM_ARRAYS+1> sizes;
+  for (size_t i = 0; i < CheckValuesData::NUM_ARRAYS; ++i) sizes[i] = nk;
+  sizes[CheckValuesData::NUM_ARRAYS+1] = 3;
+
+  pack::host_to_device({qv, temp, col_loc},
+                       sizes, cvd_d);
+
+  view_1d qv_d(cvd_d[0]),
+          temp_d(cvd_d[1]),
+          col_loc_d(cvd_d[2]);
+
+  sview_1d qv_out_bounds_d("qv_bound_d", nk);
+  const auto qv_out_bounds_h = Kokkos::create_mirror_view(qv_out_bounds_d);
+
+  sview_1d t_out_bounds_d("tv_bound_d", nk);
+  const auto t_out_bounds_h = Kokkos::create_mirror_view(t_out_bounds_d);
+
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    view_1d qv_d(cvd_d[0]),
+            temp_d(cvd_d[1]),
+            col_loc_d(cvd_d[2]);
+
+    P3F::check_values(qv_d, temp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
+                      col_loc_d, qv_out_bounds_d, t_out_bounds_d);
+  });
+}
 
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.

@@ -784,4 +784,16 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                               log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
  end subroutine ice_cldliq_wet_growth_c
 
+ subroutine  check_values_c(qv, temp, kts, kte, timestepcount, &
+                            force_abort, source_ind, col_loc) bind(C)
+   use micro_p3, only: check_values
+
+   ! argmens
+   real(kind=c_real), intent(in) :: qv(kts:kte), temp(kts:kte), col_loc(3)
+   integer(kind=c_int), value, intent(in) :: kts, kte, timestepcount, source_ind
+   logical(kind=c_bool), value, intent(in) :: force_abort
+
+   call check_values(qv,Temp,kts,kte,timestepcount,force_abort,source_ind,col_loc)
+ end subroutine check_values_c
+
 end module micro_p3_iso_c
