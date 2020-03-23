@@ -5,16 +5,26 @@ MPAS-seaice within E3SM.
 
 Load the lastest e3sm-unified conda package.
 """
-# import modules # {{{ 
+# import modules # {{{
 import os
 import shutil
 import subprocess
 import configparser
 import argparse
 import numpy as np
+import xarray as xr
 import glob
 from datetime import datetime
+import traceback
+import sys
+from geometric_features import GeometricFeatures, FeatureCollection
+from mpas_tools.ocean.moc import make_moc_basins_and_transects
+from mpas_tools.io import write_netcdf
+import mpas_tools.conversion
+from pyremap import MpasMeshDescriptor, Remapper, get_lat_lon_descriptor, \
+    get_polar_descriptor
 # }}}
+
 
 def main():
 # {{{
@@ -29,6 +39,7 @@ def main():
                      initial_condition_seaice,
                      scrip,
                      transects_and_regions,
+                     mapping_analysis,
                      mapping_CORE_Gcase,
                      mapping_JRA_Gcase,
                      mapping_ne30,
@@ -90,6 +101,9 @@ def main():
     make_dir('assembled_files_for_upload/inputdata/ice/mpas-cice/' + mesh_name)
     make_dir('assembled_files_for_upload/inputdata/cpl/cpl6')
     make_dir('assembled_files_for_upload/inputdata/share/domains')
+    make_dir('assembled_files_for_upload/diagnostics/mpas_analysis/maps')
+    make_dir('assembled_files_for_upload/diagnostics/mpas_analysis/'
+             'region_masks')
 
     success = True
     print()
@@ -97,7 +111,7 @@ def main():
         function_name = function.__name__
         print("****** " + function_name + " ******")
 
-        if (config.get(function_name, 'enable').lower() == 'false'):
+        if config.get(function_name, 'enable').lower() == 'false':
             print("Disabled in .ini file")
         else:
             make_dir(function_name)
@@ -108,6 +122,7 @@ def main():
                 print('SUCCESS')
             except BaseException:
                 print('!!! FAILURE !!!')
+                traceback.print_exc(file=sys.stdout)
                 success = False
             os.chdir(currentDir)
         print(" ")
@@ -117,6 +132,7 @@ def main():
     else:
         print("!!!!!! FAILURE: One or more steps failed. See output above !!!!!!")
 # }}}
+
 
 def initial_condition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -173,6 +189,7 @@ def graph_partition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../../graph_partition_ocean/' + file, './' + file)
 # }}}
 
+
 def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
@@ -200,6 +217,7 @@ def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities)
     make_link('../../../../../initial_condition_seaice/seaice.' +
               mesh_name + '.nc', 'seaice.' + mesh_name + '.nc')
 # }}}
+
 
 def scrip(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -235,33 +253,57 @@ def scrip(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../../scrip/' + scrip_file_mask, scrip_file_mask)
 # }}}
 
+
 def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
-# {{{
+    # {{{
+    make_moc_masks(mesh_name)
 
-    # obtain configuration settings
-    transect_region_geojson = config.get(
-        'transects_and_regions',
-        'transect_region_geojson')
+    gf = GeometricFeatures()
 
-    maskfile = 'masks_SingleRegionAtlanticWTransportTransects.' + mesh_name + '.nc'
+    features = ['Southern Ocean', 'Southern Ocean 60S',
+                    'Eastern Weddell Sea Shelf', 'Eastern Weddell Sea Deep',
+                    'Western Weddell Sea Shelf', 'Western Weddell Sea Deep',
+                    'Weddell Sea Shelf', 'Weddell Sea Deep',
+                    'Bellingshausen Sea Shelf', 'Bellingshausen Sea Deep',
+                    'Amundsen Sea Shelf', 'Amundsen Sea Deep',
+                    'Eastern Ross Sea Shelf', 'Eastern Ross Sea Deep',
+                    'Western Ross Sea Shelf', 'Western Ross Sea Deep',
+                    'East Antarctic Seas Shelf', 'East Antarctic Seas Deep']
+    fcMask = gf.read('ocean', 'region', features)
+    make_region_masks(mesh_name, suffix='antarcticRegions', fcMask=fcMask)
 
-    # make links
-    make_link('../init.nc', mesh_name + '.nc')
-    make_link(transect_region_geojson,
-              'SingleRegionAtlanticWTransportTransects.geojson')
+    fcMask = gf.read('ocean', 'region', tags=['Arctic'])
+    make_region_masks(mesh_name, suffix='arcticRegions', fcMask=fcMask)
 
-    # check: how does this call MpasMaskCreator?
-    args = ['MpasMaskCreator.x', mesh_name + '.nc', maskfile,
-            '-f', 'SingleRegionAtlanticWTransportTransects.geojson']
-    run_command(args)
+    fcMask = make_ocean_basins_masks(gf)
+    make_region_masks(mesh_name, suffix='oceanBasins', fcMask=fcMask)
+
+    fcMask = gf.read('ocean', 'transect')
+    make_region_masks(mesh_name, suffix='transportTransects', fcMask=fcMask)
+
+    if ice_shelf_cavities:
+        fcMask = make_ice_shelf_masks(gf)
+        make_region_masks(mesh_name, suffix='iceShelfMasks', fcMask=fcMask)
+    # }}}
+
+
+def mapping_analysis(config, mesh_name, date_string, ice_shelf_cavities):
+    # {{{
+    make_analysis_lat_lon_map(config, mesh_name)
+    make_analysis_polar_map(config, mesh_name, projection='antarctic')
+    make_analysis_polar_map(config, mesh_name, projection='arctic')
 
     # make links in output directory
-    os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/' + mesh_name)
-    make_link(
-        '../../../../../transects_and_regions/masks_SingleRegionAtlanticWTransportTransects.' +
-        mesh_name + '.nc',
-        'masks_SingleRegionAtlanticWTransportTransects.' + mesh_name + '.nc')
-# }}}
+    files = glob.glob('map_*')
+
+    # make links in output directory
+    output_dir = '../assembled_files_for_upload/diagnostics/mpas_analysis/maps'
+    for filename in files:
+        make_link('../../../../mapping_analysis/{}'.format(filename),
+                  '{}/{}'.format(output_dir, filename))
+
+    # }}}
+
 
 def mapping_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -275,6 +317,7 @@ def mapping_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../mapping_CORE_Gcase/' + file, './' + file)
 # }}}
 
+
 def mapping_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     atm_scrip_tag = config.get('mapping_JRA_Gcase', 'atm_scrip_tag')
@@ -287,6 +330,7 @@ def mapping_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../mapping_JRA_Gcase/' + file, './' + file)
 # }}}
 
+
 def mapping_ne30(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     atm_scrip_tag = config.get('mapping_ne30', 'atm_scrip_tag')
@@ -298,6 +342,7 @@ def mapping_ne30(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../mapping_CORE_Gcase/' + file, './' + file)
 # }}}
+
 
 def mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag):
 # {{{
@@ -377,6 +422,7 @@ def mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag):
             print('mapping_CORE_Gcase must be run on one compute node')
 # }}}
 
+
 def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     # obtain configuration settings
@@ -403,6 +449,7 @@ def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../domain/' + file, './' + file)
 # }}}
+
 
 def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -431,6 +478,7 @@ def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../domain/' + file, './' + file)
 # }}}
 
+
 def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     # obtain configuration settings
@@ -457,6 +505,7 @@ def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../domain/' + file, './' + file)
 # }}}
+
 
 def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -508,7 +557,7 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
 
     # Alter runoff mapping so runoff does not go under ice shelves
     # WARNING: this is not hooked up yet. I need to know which mapping files this applies to.
-    # Also, this is pointing to the correct -w and -n flags, but it only works if I 
+    # Also, this is pointing to the correct -w and -n flags, but it only works if I
     # switch those files.
     if ice_shelf_cavities:
         make_link('../copy_cell_indices_ISC.py', 'copy_cell_indices_ISC.py')
@@ -521,13 +570,14 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
             '-n', 'no_ISC_culled_mesh.nc.nc'
             ]
         run_command(args)
-   
+
     # make links in output directories
     files = glob.glob('map*.nc')
     os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
     for file in files:
         make_link('../../../../mapping_runoff/' + file, './' + file)
 # }}}
+
 
 def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -572,7 +622,7 @@ def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
         print('salinity_restoring must be run on compute node')
 
     # remap from 1x1 to model grid
-    args = ['ncremap', 
+    args = ['ncremap',
         '-i', 'salinity_restoring_input_file.nc',
         '-o', 'intermediate_file.nc',
         '-m', map_Levitus_file,
@@ -635,6 +685,7 @@ def write_command_history(text):
         pass
 # }}}
 
+
 def run_command(args):
 # {{{
     try:
@@ -646,6 +697,321 @@ def run_command(args):
     except OSError:
         pass
 # }}}
+
+
+def make_moc_masks(mesh_name): # {{{
+    gf = GeometricFeatures()
+
+    mesh_filename = '../init.nc'
+
+    mask_filename = '{}_moc_masks.nc'.format(mesh_name)
+    mask_and_transect_filename = '{}_moc_masks_and_transects.nc'.format(
+        mesh_name)
+
+    geojson_filename = 'moc_basins.geojson'
+
+    make_moc_basins_and_transects(gf, mesh_filename, mask_and_transect_filename,
+                                  geojson_filename=geojson_filename,
+                                  mask_filename=mask_filename)
+
+    # make links in output directories (both inputdata and diagnostics)
+    output_dir = '../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
+        mesh_name)
+    make_link(
+        '../../../../../transects_and_regions/{}'.format(
+            mask_and_transect_filename),
+        '{}/{}'.format(output_dir, mask_and_transect_filename))
+
+    output_dir = '../assembled_files_for_upload/diagnostics/mpas_analysis/' \
+                 'region_masks'
+    make_link(
+        '../../../../transects_and_regions/{}'.format(
+            mask_and_transect_filename),
+        '{}/{}'.format(output_dir, mask_and_transect_filename))
+
+    # }}}
+
+
+def make_ocean_basins_masks(gf):  # {{{
+    """
+    Builds features defining the major ocean basins
+    Parameters
+    ----------
+    gf : ``GeometricFeatures``
+        An object that knows how to download and read geometric featuers
+
+    Returns
+    -------
+    fc : ``FeatureCollection``
+        The new feature collection
+    """
+    # Authors
+    # -------
+    # Xylar Asay-Davis
+
+    fc = FeatureCollection()
+    fc.set_group_name(groupName='OceanBasinRegionsGroup')
+
+    # build ocean basins from regions with the appropriate tags
+    for oceanName in ['Atlantic', 'Pacific', 'Indian', 'Arctic',
+                      'Southern_Ocean', 'Mediterranean']:
+
+        basinName = '{}_Basin'.format(oceanName)
+        print(oceanName)
+
+        print(' * merging features')
+        fcBasin = gf.read(componentName='ocean', objectType='region',
+                          tags=[basinName])
+
+        print(' * combining features')
+        fcBasin = fcBasin.combine(featureName=basinName)
+
+        fc.merge(fcBasin)
+
+    # add the global ocean, global ocean between 65S and 65S, and
+    # equatorial region
+    fc.merge(gf.read(componentName='ocean', objectType='region',
+                     featureNames=['Global Ocean',
+                                   'Global Ocean 65N to 65S',
+                                   'Global Ocean 15S to 15N']))
+
+    return fc  # }}}
+
+
+def make_ice_shelf_masks(gf):  # {{{
+    iceShelfNames = ['Abbot',
+                     'Amery',
+                     'Atka',
+                     'Aviator',
+                     'Bach',
+                     'Baudouin',
+                     'Borchgrevink',
+                     'Brahms',
+                     'Brunt_Stancomb',
+                     'Campbell',
+                     'Cheetham',
+                     'Conger_Glenzer',
+                     'Cook',
+                     'Cosgrove',
+                     'Crosson',
+                     'Dennistoun',
+                     'Dibble',
+                     'Dotson',
+                     'Drygalski',
+                     'Edward_VIII',
+                     'Ekstrom',
+                     'Ferrigno',
+                     'Filchner',
+                     'Fimbul',
+                     'Fitzgerald',
+                     'Frost',
+                     'GeikieInlet',
+                     'George_VI',
+                     'Getz',
+                     'Gillet',
+                     'Hamilton',
+                     'Hannan',
+                     'HarbordGlacier',
+                     'Helen',
+                     'Holmes',
+                     'HolmesWest',
+                     'Hull',
+                     'Jelbart',
+                     'Land',
+                     'Larsen_B',
+                     'Larsen_C',
+                     'Larsen_D',
+                     'Larsen_E',
+                     'Larsen_F',
+                     'Larsen_G',
+                     'Lazarev',
+                     'Lillie',
+                     'Mariner',
+                     'Matusevitch',
+                     'Mendelssohn',
+                     'Mertz',
+                     'Moscow_University',
+                     'Moubray',
+                     'Mulebreen',
+                     'Myers',
+                     'Nansen',
+                     'Nickerson',
+                     'Ninnis',
+                     'Nivl',
+                     'Noll',
+                     'Nordenskjold',
+                     'Pine_Island',
+                     'PourquoiPas',
+                     'Prince_Harald',
+                     'Publications',
+                     'Quar',
+                     'Rayner_Thyer',
+                     'Rennick',
+                     'Richter',
+                     'Riiser-Larsen',
+                     'Ronne',
+                     'Ross_East',
+                     'Ross_West',
+                     'Shackleton',
+                     'Shirase',
+                     'Slava',
+                     'SmithInlet',
+                     'Stange',
+                     'Sulzberger',
+                     'Suvorov',
+                     'Swinburne',
+                     'Thwaites',
+                     'Tinker',
+                     'Totten',
+                     'Tracy_Tremenchus',
+                     'Tucker',
+                     'Underwood',
+                     'Utsikkar',
+                     'Venable',
+                     'Verdi',
+                     'Vigrid',
+                     'Vincennes',
+                     'Voyeykov',
+                     'West',
+                     'Wilkins',
+                     'Wilma_Robert_Downer',
+                     'Withrow',
+                     'Wordie',
+                     'Wylde',
+                     'Zubchatyy']
+
+    combinedIceShelves = {'Filchner-Ronne': ['Filchner', 'Ronne'],
+                          'Ross': ['Ross_East', 'Ross_West'],
+                          'Antarctica': ['AntarcticPenninsulaIMBIE',
+                                         'WestAntarcticaIMBIE',
+                                         'EastAntarcticaIMBIE'],
+                          'Peninsula': ['AntarcticPenninsulaIMBIE'],
+                          'West Antarctica': ['WestAntarcticaIMBIE'],
+                          'East Antarctica': ['EastAntarcticaIMBIE']}
+
+    nIMBIEBasins = 27
+    for basinNumber in range(1, nIMBIEBasins + 1):
+        basinName = 'Antarctica_IMBIE{}'.format(basinNumber)
+        combinedIceShelves['IMBIE{}'.format(basinNumber)] = [basinName]
+
+    # create a FeatureCollection containing all ice shelves and combined ice-shelf
+    # regions
+    fc = FeatureCollection()
+
+    # build analysis regions from combining ice shelves from regions with the
+    # appropriate tags
+    for shelfName in combinedIceShelves:
+        subNames = combinedIceShelves[shelfName]
+        print(shelfName)
+
+        print(' * merging features')
+        fcShelf = gf.read(componentName='iceshelves', objectType='region',
+                          tags=subNames, allTags=False)
+
+        print(' * combining features')
+        fcShelf = fcShelf.combine(featureName=shelfName)
+
+        # merge the feature for the basin into the collection of all basins
+        fc.merge(fcShelf)
+
+    # build ice shelves from regions with the appropriate tags
+    for shelfName in iceShelfNames:
+        print(shelfName)
+
+        print(' * merging features')
+        fcShelf = gf.read(componentName='iceshelves', objectType='region',
+                          tags=[shelfName])
+
+        print(' * combining features')
+        fcShelf = fcShelf.combine(featureName=shelfName)
+
+        # merge the feature for the basin into the collection of all basins
+        fc.merge(fcShelf)
+
+    return fc  # }}}
+
+
+def make_region_masks(mesh_name, suffix, fcMask):  # {{{
+    mesh_filename = '../init.nc'
+
+    geojson_filename = '{}.geojson'.format(suffix)
+    mask_filename = '{}_{}.nc'.format(mesh_name, suffix)
+
+    fcMask.to_geojson(geojson_filename)
+
+    dsMesh = xr.open_dataset(mesh_filename)
+
+    dsMask = mpas_tools.conversion.mask(dsMesh, fcMask=fcMask)
+
+    write_netcdf(dsMask, mask_filename)
+
+    # make links in output directory
+    output_dir = '../assembled_files_for_upload/diagnostics/mpas_analysis/' \
+                 'region_masks'
+    make_link(
+        '../../../../transects_and_regions/{}'.format(
+            mask_filename),
+        '{}/{}'.format(output_dir, mask_filename))
+
+    # }}}
+
+
+def make_analysis_lat_lon_map(config, mesh_name):
+    # {{{
+    mesh_filename = '../init.nc'
+
+    inDescriptor = MpasMeshDescriptor(mesh_filename, mesh_name)
+
+    comparisonLatResolution = config.getfloat('mapping_analysis',
+                                              'comparisonLatResolution')
+    comparisonLonResolution = config.getfloat('mapping_analysis',
+                                              'comparisonLonResolution')
+
+    # modify the resolution of the global lat-lon grid as desired
+    outDescriptor = get_lat_lon_descriptor(dLon=comparisonLatResolution,
+                                           dLat=comparisonLonResolution)
+    outGridName = outDescriptor.meshName
+
+    mappingFileName = 'map_{}_to_{}_bilinear.nc'.format(mesh_name, outGridName)
+
+    remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
+
+    mpiTasks = config.getint('main', 'nprocs')
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    # }}}
+
+
+def make_analysis_polar_map(config, mesh_name, projection):
+    # {{{
+    mesh_filename = '../init.nc'
+
+    upperProj = projection[0].upper() + projection[1:]
+
+    inDescriptor = MpasMeshDescriptor(mesh_filename, mesh_name)
+
+    comparisonStereoWidth = config.getfloat(
+        'mapping_analysis', 'comparison{}StereoWidth'.format(upperProj))
+    comparisonStereoResolution = config.getfloat(
+        'mapping_analysis', 'comparison{}StereoResolution'.format(upperProj))
+
+    outDescriptor = get_polar_descriptor(Lx=comparisonStereoWidth,
+                                         Ly=comparisonStereoWidth,
+                                         dx=comparisonStereoResolution,
+                                         dy=comparisonStereoResolution,
+                                         projection=projection)
+
+    outGridName = '{}x{}km_{}km_{}_stereo'.format(
+        comparisonStereoWidth,  comparisonStereoWidth,
+        comparisonStereoResolution, upperProj)
+
+    mappingFileName = 'map_{}_to_{}_bilinear.nc'.format(mesh_name, outGridName)
+
+    remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
+
+    mpiTasks = config.getint('main', 'nprocs')
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    # }}}
+
 
 if __name__ == '__main__':
     # If called as a primary module, run main
