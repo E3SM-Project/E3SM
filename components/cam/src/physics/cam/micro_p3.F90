@@ -3571,6 +3571,10 @@ subroutine get_time_space_phys_variables( &
 t,pres,rho,xxlv,xxls,qvs,qvi, &
 mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cxx_pow
+#endif
+
    implicit none
 
    real(rtype), intent(in)  :: t
@@ -3593,10 +3597,10 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    real(rtype) :: dum
 
    !time/space varying physical variables
-   mu     = 1.496e-6_rtype*t**1.5_rtype/(t+120._rtype)
-   dv     = 8.794e-5_rtype*t**1.81_rtype/pres
+   mu     = 1.496e-6_rtype*bfb_pow(t,1.5_rtype)/(t+120._rtype)
+   dv     = 8.794e-5_rtype*bfb_pow(t,1.81_rtype)/pres
    sc     = mu/(rho*dv)
-   dum    = 1._rtype/(rv*t**2)
+   dum    = 1._rtype/(rv*bfb_pow(t,2._rtype))
    dqsdt  = xxlv*qvs*dum
    dqsidt = xxls*qvi*dum
    ab     = 1._rtype+dqsdt*xxlv*inv_cp
