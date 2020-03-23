@@ -788,7 +788,7 @@
       use ice_colpkg_tracers, only: nt_fbri, nt_zbgc_frac, &
                                     ntrcr, nlt_bgc_Nit, tr_bgc_Fe, tr_zaero, &
                                     nlt_bgc_Fed, nlt_zaero, bio_index, tr_bgc_N, &
-                                    nlt_bgc_N
+                                    nlt_bgc_N, tr_bgc_C, nlt_bgc_DIC
       use ice_constants_colpkg, only: c0, c1, c2, p5, puny, pi, p1
       use ice_colpkg_shared, only: hi_ssl, dEdd_algae, solve_zbgc, &
                                    R_dFe2dust, dustFe_sol, algal_vel
@@ -1353,8 +1353,11 @@
 
       do m = 1,nbtrcr
          do k = 1,nblyr+1                  ! back to bulk quantity
-            bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)  
-
+            bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)
+            if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp < -puny) then  ! satisfy DIC demands from ocean
+               flux_bio(m) = flux_bio(m) - bio_tmp
+               bio_tmp = c0
+            end if
             if (m .eq. nlt_bgc_Nit) then
                initcons_mobile(k) = max(c0,(biomat_brine(k,m)-nitrification(k) + &
                   react(k,m))*iphin_N(k)*trcrn(nt_zbgc_frac+m-1))
@@ -2191,14 +2194,14 @@
         do k = 1,n_fep
               reactb(nlt_bgc_Fep(k))= Fep_s (k) - Fep_r (k) 
         enddo
-       endif 
+       endif
        if (tr_bgc_DMS) then
               reactb(nlt_bgc_DMSPd) = DMSPd_s - DMSPd_r
               reactb(nlt_bgc_DMS)   = DMS_s   - DMS_r
        endif
        if (tr_bgc_C) then
-       if (abs(dC) > maxval(reactb(:))*maxval(R_C2N(:))*1.0e-10_dbl_kind .or. &
-          abs(dN) > maxval(reactb(:))*1.0e-10_dbl_kind) then
+       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-10_dbl_kind .or. &
+          abs(dN) > maxval(abs(reactb(:)))*1.0e-10_dbl_kind) then
             conserve_N = .false.
             write(warning, *) 'Conservation error!'
             call add_warning(warning)
