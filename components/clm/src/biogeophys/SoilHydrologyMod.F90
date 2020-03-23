@@ -182,8 +182,8 @@ contains
 #endif
 
 #if (defined MARSH)
-         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO
-         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35
+         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO
+         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35
 #endif
          ! use perched water table to determine fsat (if present)
          if ( frost_table(c) > zwt(c)) then 
@@ -198,8 +198,8 @@ contains
 #endif
 
 #if (defined MARSH)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 0.1, 0.15 to 0.35
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 0.1, 0.15 to 0.35
 #endif
 
          else
@@ -212,8 +212,8 @@ contains
 #endif 
 
 #if (defined MARSH)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
 #endif 
          endif
          if (origflag == 1) then
@@ -772,10 +772,13 @@ contains
                  !turn off lateral transport if any ice is present
                  qflx_lat_aqu(:) = 0._r8
               else
-                 qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !0.0_r8 is the offset value between the 2 columns changed to 0.5
-                     0.2_r8) / 50._r8 * sqrt(hol_frac/hum_frac)
+                 qflx_lat_aqu(1) = 2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !0.0_r8 is the offset value between the 2 columns changed to 0.5
+                     0.2_r8) / 1._r8 * sqrt(hol_frac/hum_frac) !TAO changed
+                    ! lateral flow to zero
                  qflx_lat_aqu(2) = -2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !changed distance from 1._r8 to 50 in meters
-                     0.2_r8) / 50._r8 * sqrt(hum_frac/hol_frac)
+                     0.2_r8) / 1._r8 * sqrt(hum_frac/hol_frac) ! TAO changed,
+!added 1e-13 to try to mimmize flow rates and 50._r8 to 1 
+                     !lateral flow to 0
                endif
              endif
 #endif

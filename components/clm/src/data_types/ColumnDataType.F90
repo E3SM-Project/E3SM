@@ -106,6 +106,7 @@ module ColumnDataType
     real(r8), pointer :: h2osoi_ice         (:,:) => null() ! ice lens (-nlevsno+1:nlevgrnd) (kg/m2)    
     real(r8), pointer :: h2osoi_vol         (:,:) => null() ! volumetric soil water (0<=h2osoi_vol<=watsat) (1:nlevgrnd) (m3/m3)  
     real(r8), pointer :: h2osfc             (:)   => null() ! surface water (kg/m2)
+    real(r8), pointer :: salinity           (:)   => null() ! salinity from PFLOTRAN when using interface (TAO 5/19/2020)
     real(r8), pointer :: h2ocan             (:)   => null() ! canopy water integrated to column (kg/m2)
     real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (used??)
     ! Derived water and ice state variables for soil/snow column, depth varying
@@ -1272,6 +1273,7 @@ contains
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = nan
     allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan   
     allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan  
+    allocate(this%salinity           (begc:endc))                     ; this%salinity           (:)   = nan !TAO 5/19/2020
     allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan  
     allocate(this%h2osoi_liqvol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol      (:,:) = nan
     allocate(this%h2osoi_icevol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_icevol      (:,:) = nan    
@@ -1477,6 +1479,7 @@ contains
        this%total_plant_stored_h2o(c) = 0._r8
        this%h2osfc(c)                 = 0._r8
        this%h2ocan(c)                 = 0._r8
+       this%salinity(c)               = 0._r8 !TAO added 5/19/2020
        this%frac_h2osfc(c)            = 0._r8
 
        if (lun_pp%urbpoi(l)) then
@@ -5214,6 +5217,20 @@ contains
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
 		 
+
+    this%qflx_lat_aqu(begc:endc) = spval
+    call hist_addfld1d (fname='QFLX_LAT_AQU',  units='mm/s',  &
+         avgflag='A', long_name='Lateral flow between hummock and hollow', &
+         ptr_col=this%qflx_lat_aqu, c2l_scale_type='urbanf')
+
+
+#if (defined MARSH)
+    this%qflx_lat_aqu(begc:endc) = spval
+    call hist_addfld1d (fname='QFLX_LAT_AQU',  units='mm/s',  &
+         avgflag='A', long_name='Lateral flow between hummock and hollow', &
+         ptr_col=this%qflx_lat_aqu, c2l_scale_type='urbanf')
+#endif 
+
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
          avgflag='A', long_name='Surface water irrigation demand sent to MOSART/WM', &

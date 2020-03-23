@@ -873,6 +873,7 @@ contains
     use clm_time_manager , only : get_days_per_year
     use clm_varcon       , only : secspday
     use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
+    use ColumnDataType   , only : col_es, col_ws, col_cf, col_nf, col_pf  !TAO added 5/19/2020
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -911,7 +912,7 @@ contains
          
          t_soisno                            =>    col_es%t_soisno                                       , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          h2osfc                              =>    col_ws%h2osfc                                         , & ! Input:  [real(r8) (:)   ]  surface water (mm)
-         
+         salinity                            =>    col_ws%salinity                                        , & ! Input:  [real(r8) (:)   ]  salinity (TAO 5/19/2020)
          prec10                              =>    top_af%prec10d                                        , & ! Input:  [real(r8) (:)    ]  10-day running mean precipitation, mm H2O/s
          dormant_flag                        =>    cnstate_vars%dormant_flag_patch                       , & ! Output:  [real(r8) (:)   ]  dormancy flag                                     
          days_active                         =>    cnstate_vars%days_active_patch                        , & ! Output:  [real(r8) (:)   ]  number of days since last dormancy                
@@ -1227,7 +1228,7 @@ contains
                ! as stress in offset soil water index
 
 #if (defined MARSH)
-               if (psi <= soilpsi_off .or. h2osfc(c) >= 120) then ! h20sfc in mm 29/8/2018 TAO, isolated in HumHol 1/7/2019
+               if (psi <= soilpsi_off .or. h2osfc(c) >= 120) then ! h20sfc in mm 29/8/2018 TAO 
 #else
                if (psi <= soilpsi_off) then               
 #endif
@@ -1261,11 +1262,14 @@ contains
 
                   ! if freezing degree day sum is greater than critical value, initiate offset
                   if (offset_fdd(p) > crit_offset_fdd .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8
-               end if
-
-               ! force offset if daylength is < 6 hrs
-               if (dayl(g) <= crit_dayl_stress) then
-                  offset_flag(p) = 1._r8
+               endif
+               ! force offset if daylength is < 6 hrs or salinity is > 10
+#if (defined MARSH)
+               if (dayl(g) <= crit_dayl_stress) then !TAO salinity added 5/20/2020 .or. salinity >=10 
+#else
+               if (dayl(g) <= crit_dayl_stress) then 
+#endif
+                     offset_flag(p) = 1._r8
                end if
 
                ! if this is the beginning of the offset period

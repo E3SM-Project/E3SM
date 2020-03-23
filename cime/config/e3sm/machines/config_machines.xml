@@ -2075,7 +2075,6 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -2097,9 +2096,9 @@
         <command name="load">PE-gnu</command>
       </modules>
       <modules>
-        <command name="load">mkl/2018.1.163</command> <!-- this shall generate 3 env vars: MKLROOT, MKLROOT_INC, MKLROOT_LIB -->
-        <command name="load">cmake/3.11.0</command>
-        <command name="load">python/2.7.13</command>
+        <command name="load">mkl/2017</command>
+        <command name="load">cmake/3.12.0</command>
+        <command name="load">python/2.7.12</command>
         <command name="load">nco/4.6.9</command>
         <command name="load">hdf5-parallel/1.8.17</command>
         <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
@@ -2137,6 +2136,10 @@
     <environment_variables >
         <env name="PERL5LIB">/home/omearata/perl5/lib/perl5:/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/perl/5.30.1/centos7.2_gnu5.3.0/lib/perl5</env>
     </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
+    </environment_variables>
+
   </machine>
 
   <machine MACH="titan">
