@@ -416,7 +416,7 @@ contains
     soa_ndx = get_spc_ndx( 'SOA' )
     ant_ndx = get_spc_ndx( 'NH4NO3' )
     so4_ndx = get_spc_ndx( 'SO4' )
-    if (sslt_ncnst == 4) then
+    if (sslt_ncnst == 4) then !BALLI-do we need anything special for 5 modes here??
        sa1_ndx = get_spc_ndx( sslt_names(1) )
        sa2_ndx = get_spc_ndx( sslt_names(2) )
        sa3_ndx = get_spc_ndx( sslt_names(3) )

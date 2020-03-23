@@ -3,6 +3,7 @@
 #endif
 
 module vertremap_mod
+use module_perturb
   use vertremap_base, only: remap1
 
   use kinds, only                  : real_kind,int_kind
@@ -141,12 +142,14 @@ contains
      if (qsize>0 .and. np1_qdp > 0) then
 
        call t_startf('vertical_remap1_3')
-       call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+       call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp,ie)
+       if(ie==82)write(108,*)'vertremap_mod_2:',elem(ie)%state%Qdp(4,4,kprnt,2,np1_qdp),np,qsize
        call t_stopf('vertical_remap1_3')
 
        !dir$ simd
        do q=1,qsize
           elem(ie)%state%Q(:,:,:,q)=elem(ie)%state%Qdp(:,:,:,q,np1_qdp)/dp(:,:,:)
+          if(q==2 .and. ie==82)write(108,*)'vertremap_mod_1:',elem(ie)%state%Q(4,4,kprnt,q),elem(ie)%state%Qdp(4,4,49,q,np1_qdp),dp(4,4,kprnt),np1_qdp
        enddo
      endif
 

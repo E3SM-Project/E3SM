@@ -12,7 +12,7 @@
 #endif
 
 module prim_driver_base
-
+use module_perturb
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
   use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
@@ -1026,6 +1026,8 @@ contains
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in,step_factor
     logical :: compute_diagnostics, independent_time_steps
 
+    write(108,*)'pr_dr_dyn_out_beg:',elem(82)%state%Q(4,4,kprnt,2),nsubstep
+
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
     ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.
     independent_time_steps = transport_alg > 1 .and. dt_remap_factor < dt_tracer_factor
@@ -1061,6 +1063,7 @@ contains
 #endif
 
     call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    write(108,*)'pr_dr_dyn_out_1:',elem(82)%state%Q(4,4,kprnt,2)
 
     ! E(1) Energy after CAM forcing
     if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
@@ -1077,21 +1080,26 @@ contains
 
         ! Loop over rsplit vertically lagrangian timesiteps
         call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+        write(108,*)'pr_dr_dyn_out_2:',elem(82)%state%Q(4,4,kprnt,2)
 
         do r=2,rsplit
           call TimeLevel_update(tl,"leapfrog")
           call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
         enddo
+        write(108,*)'pr_dr_dyn_out_3:',elem(82)%state%Q(4,4,kprnt,2),rsplit
 
       else 
 
         ! Single Column Case
         ! Loop over rsplit vertically lagrangian timesiteps
         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+        write(108,*)'pr_dr_dyn_out_3a:',elem(82)%state%Q(4,4,kprnt,2),rsplit
         do r=2,rsplit
           call TimeLevel_update(tl,"leapfrog")
           call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+          write(108,*)'pr_dr_dyn_out_3b:',elem(82)%state%Q(4,4,kprnt,2),rsplit
         enddo
+        write(108,*)'pr_dr_dyn_out_4:',elem(82)%state%Q(4,4,kprnt,2),rsplit
 
       endif
 
@@ -1121,12 +1129,14 @@ contains
       endif
 
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
+      write(108,*)'pr_dr_dyn_out_4a:',elem(82)%state%Q(4,4,kprnt,2)
     else
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
       call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+      write(108,*)'pr_dr_dyn_out_4b:',elem(82)%state%Q(4,4,kprnt,2)
     end if ! independent_time_steps
-
+    write(108,*)'pr_dr_dyn_out_5:',elem(82)%state%Q(4,4,kprnt,2)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
     ! Q    (mixing ratio)
@@ -1154,6 +1164,7 @@ contains
     if (compute_diagnostics) then
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     end if
+    write(108,*)'pr_dr_dyn_out_end:',elem(82)%state%Q(4,4,kprnt,2)
   end subroutine prim_run_subcycle
 
 

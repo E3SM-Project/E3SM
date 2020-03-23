@@ -1,3 +1,4 @@
+
 module cam_comp
 !-----------------------------------------------------------------------
 !
@@ -7,6 +8,7 @@ module cam_comp
 !           host of surface components.
 !
 !-----------------------------------------------------------------------
+use module_perturb
    use shr_kind_mod,      only: r8 => SHR_KIND_R8, cl=>SHR_KIND_CL, cs=>SHR_KIND_CS
    use pmgrid,            only: plat, plev
    use spmd_utils,        only: masterproc
@@ -222,7 +224,12 @@ subroutine cam_run1(cam_in, cam_out)
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
 #endif
+integer :: c
 !-----------------------------------------------------------------------
+write(108,*)'camr1_beg_dyn_out1:',dyn_out%elem(82)%state%Q(4,4,kprnt,2)
+   do c=begchunk,endchunk
+      if(icolprnt(c)>0)write(107,*)'camr1_beg:',phys_state(c)%q(icolprnt(c),kprnt,2)
+   enddo
 
 #if ( defined SPMD )
    if (stepon_time_beg == -1.0_r8) stepon_time_beg = mpi_wtime()
@@ -238,6 +245,10 @@ subroutine cam_run1(cam_in, cam_out)
    call t_barrierf ('sync_stepon_run1', mpicom)
    call t_startf ('stepon_run1')
    call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
+   do c=begchunk,endchunk
+      if(icolprnt(c)>0)write(107,*)'camr1_stpon:',phys_state(c)%q(icolprnt(c),kprnt,2)
+   enddo
+
    call t_stopf  ('stepon_run1')
 
    !
@@ -250,6 +261,10 @@ subroutine cam_run1(cam_in, cam_out)
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
    call t_stopf  ('phys_run1')
 
+   do c=begchunk,endchunk
+      if(icolprnt(c)>0)write(107,*)'camr1_end:',phys_state(c)%q(icolprnt(c),kprnt,2)
+   enddo
+   write(108,*)'camr1_end_dyn_out1:',dyn_out%elem(82)%state%Q(4,4,kprnt,2)
 end subroutine cam_run1
 
 !
@@ -276,7 +291,7 @@ subroutine cam_run2( cam_out, cam_in )
 
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
    type(cam_in_t),  intent(inout) :: cam_in(begchunk:endchunk)
-
+   write(108,*)'camr2_beg_dyn_out:',dyn_out%elem(82)%state%Q(4,4,kprnt,2)
    !
    ! Second phase of physics (after surface model update)
    !
@@ -298,6 +313,7 @@ subroutine cam_run2( cam_out, cam_in )
       call t_startf ('cam_run2_memusage')
       call t_stopf  ('cam_run2_memusage')
    end if
+   write(108,*)'camr2_end_dyn_out:',dyn_out%elem(82)%state%Q(4,4,kprnt,2)
 end subroutine cam_run2
 
 !
@@ -324,6 +340,7 @@ subroutine cam_run3( cam_out )
    !
    ! Third phase of dynamics
    !
+   write(108,*)'camr3_beg_dyn_out:',dyn_out%elem(82)%state%Q(4,4,kprnt,2)
    call t_barrierf ('sync_stepon_run3', mpicom)
    call t_startf ('stepon_run3')
    call stepon_run3( dtime, cam_out, phys_state, dyn_in, dyn_out )
@@ -334,6 +351,7 @@ subroutine cam_run3( cam_out )
       call t_startf ('cam_run3_memusage')
       call t_stopf  ('cam_run3_memusage')
    end if
+   write(108,*)'camr3_end_dyn_out:',dyn_out%elem(82)%state%Q(4,4,kprnt,2)
 end subroutine cam_run3
 
 !

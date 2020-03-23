@@ -377,8 +377,10 @@ CONTAINS
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")
+           write(108,*)'pr_sub_bef_dyn_out:',dyn_state%elem(46)%state%Q(2,3,49,4),n,se_nsplit
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, single_column, TimeLevel, hvcoord, n)
+           write(108,*)'pr_sub_aft_dyn_out:',dyn_state%elem(46)%state%Q(2,3,49,4),n,tstep
            call t_stopf("prim_run_sybcycle")
          end do
        endif

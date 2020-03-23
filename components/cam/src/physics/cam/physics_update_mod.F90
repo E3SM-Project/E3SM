@@ -49,7 +49,7 @@ module physics_update_mod
 
   integer, public, parameter :: nvars_prtrb_hist = 16
   character(len=6), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'v     ', &
-       'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3','bc_a3 ','so4_a1','mom_a1','mom_a2','num_a4']
+       'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3','bc_a3 ','so4_a1','mom_a1','mom_a2','num_a4']!,'dst_a5','ncl_a5','num_a5']
   
 contains 
 

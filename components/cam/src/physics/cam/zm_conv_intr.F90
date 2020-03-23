@@ -2,8 +2,6 @@
 
 
 module zm_conv_intr
-use module_perturb
-use constituents
 !---------------------------------------------------------------------------------
 ! Purpose:
 !
@@ -761,13 +759,10 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
       call t_stopf ('convtran2')
    end if
 
-   call cnst_get_ind('bc_a3',m)!BALLI
-   if(icolprnt(lchnk)>0 .and. nstep<1)write(102,*)'zm_conv_tend_2_1:',convproc_do_aer,convproc_do_gas,clim_modal_aero,m,ptend%q(icolprnt(lchnk),kprnt,m)
    if((convproc_do_aer .or. convproc_do_gas) .and. clim_modal_aero) then
       do m = 1, pcnst
          if ( (species_class(m) == spec_class_aerosol .and. convproc_do_aer) .or. &
               (species_class(m) == spec_class_gas     .and. convproc_do_gas) ) then
-            if(icolprnt(lchnk)>0 .and. nstep<1)write(102,*)'zm_conv_tend_2_2:',m
             ptend%lq(m) = .false.
             ptend%q(:,:,m) = 0.0_r8
          end if

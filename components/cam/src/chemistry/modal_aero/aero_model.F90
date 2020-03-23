@@ -3,9 +3,6 @@
 ! JUly 2015 B.Singh Added unified convection code
 !===============================================================================
 module aero_model
-  use module_perturb
-  use time_manager,    only: is_first_step, get_nstep
-
   use shr_kind_mod,   only: r8 => shr_kind_r8
   use constituents,   only: pcnst, cnst_name, cnst_get_ind
   use ppgrid,         only: pcols, pver, pverp
@@ -1641,12 +1638,10 @@ contains
        rcscavt_cn_sv(:,:) = 0.0_r8
        rsscavt_cn_sv(:,:) = 0.0_r8
     endif
-    !if(icolprnt(lchnk)>0)write(102,*)'aero_model_1:',rtscavt_sv(icolprnt(lchnk),kprnt,32)
 
 mmode_loop_aa: &
 ! REASTER 08/11/2015 BEGIN
     do mtmp = 1, 4!BALLIntot_amode ! main loop over aerosol modes
-!if(icolprnt(lchnk)>0)write(102,*)'aero_model_2:',rtscavt_sv(icolprnt(lchnk),kprnt,32)
        m = mtmp
        if (ntot_amode == 4 .or. ntot_amode == 5) then !BALLI
           ! for mam4, do accum, aitken, pcarbon, then coarse 
@@ -1784,11 +1779,9 @@ lspec_loop_aa: &
                 jnummaswtr = jaeromass
                 if (lphase == 1) then
                    mm = lmassptr_amode(lspec,m)
-                   !if(icolprnt(lchnk)>0)write(102,*)'aero_model_mm_1:',mm,lspec,m
                    jnv = 2
                 else
                    mm = lmassptrcw_amode(lspec,m)
-                   !if(icolprnt(lchnk)>0)write(102,*)'aero_model_mm_2:',mm,lspec,m
                    mmai = lmassptr_amode(lspec,m)
                    jnv = 0
                 endif
@@ -1796,11 +1789,9 @@ lspec_loop_aa: &
                 jnummaswtr = jaeronumb
                 if (lphase == 1) then
                    mm = numptr_amode(m)
-                   !if(icolprnt(lchnk)>0)write(102,*)'aero_model_mm_3:',mm,m
                    jnv = 1
                 else
                    mm = numptrcw_amode(m)
-                   !if(icolprnt(lchnk)>0)write(102,*)'aero_model_mm_4:',mm,m
                    mmai = numptr_amode(m)
                    jnv = 0
                 endif
@@ -1931,17 +1922,14 @@ lphase_jnmw_conditional: &
                 if ( mam_prevap_resusp_optaa10 == 3 ) then
                    ! resuspension goes to coarse mode
                    ! first deduct the current resuspension from the dqdt_tmp of the current species
-                   !if(icolprnt(lchnk)>0 .and. mm==32)write(102,*)'aero_model_3:',dqdt_tmp(icolprnt(lchnk),kprnt),rcscavt(icolprnt(lchnk),kprnt)
                    dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - ( rcscavt(1:ncol,:) + rsscavt(1:ncol,:) )
                    ! then add the current resuspension to the rtscavt_sv of the appropriate coarse mode species
                    mmtoo = mmtoo_prevap_resusp(mm)
-                   !if(icolprnt(lchnk)>0 .and. mm==32)write(102,*)'aero_model_4:',rtscavt_sv(icolprnt(lchnk),kprnt,mm),mmtoo
                    if (mmtoo > 0) rtscavt_sv(1:ncol,:,mmtoo) = rtscavt_sv(1:ncol,:,mmtoo) & 
                                   + ( rcscavt(1:ncol,:) + rsscavt(1:ncol,:) )
                    ! then add the rtscavt_sv of the current species to the dqdt_tmp of the current species
                    ! note that for so4_a3 and mam3, the rtscavt_sv at this point will have resuspension contributions
                    !    from so4_a1/2/3 and so4c1/2/3
-                   !if(icolprnt(lchnk)>0 .and. mm==32)write(102,*)'aero_model_5:',dqdt_tmp(icolprnt(lchnk),kprnt),rtscavt_sv(icolprnt(lchnk),kprnt,mm)
                    dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) + rtscavt_sv(1:ncol,:,mm)
 
                 endif
@@ -1951,7 +1939,6 @@ lphase_jnmw_conditional: &
                 if ( mam_prevap_resusp_optaa10 == 2 ) then
                    ! add resuspension of cloudborne species to dqdt of interstitial species
 !                  dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) + rtscavt_sv(1:ncol,:,lspec)  ! RCE 2012/01/12
-                   !if(icolprnt(lchnk)>0 .and. mm==32)write(102,*)'aero_model_1b:',dqdt_tmp(icolprnt(lchnk),kprnt),rtscavt_sv(icolprnt(lchnk),kprnt,mm)
                    dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) + rtscavt_sv(1:ncol,:,mm)  ! REASTER 08/12/2015
                 endif
 
@@ -1965,9 +1952,8 @@ lphase_jnmw_conditional: &
                       do_hygro_sum_del = .true.
                    endif
                 endif
-                !if(icolprnt(lchnk)>0 .and. mm==32)write(102,*)'aero_model_1a:',ptend%q(icolprnt(lchnk),kprnt,mm),dqdt_tmp(icolprnt(lchnk),kprnt)
+
                 ptend%q(1:ncol,:,mm) = ptend%q(1:ncol,:,mm) + dqdt_tmp(1:ncol,:)
-                !if(icolprnt(lchnk)>0 .and. mm==32)write(102,*)'aero_model_1:',ptend%q(icolprnt(lchnk),kprnt,mm)
 
                 call outfld( trim(cnst_name(mm))//'WET', dqdt_tmp(:,:), pcols, lchnk)
                 call outfld( trim(cnst_name(mm))//'SIC', icscavt, pcols, lchnk)
@@ -2190,7 +2176,6 @@ do_lphase2_conditional: &
                    dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - ( rcscavt(1:ncol,:) + rsscavt(1:ncol,:) )
                    ! then add the current resuspension to the rtscavt_sv of the appropriate coarse mode species
                    mmtoo = mmtoo_prevap_resusp(mm)
-                   !if(icolprnt(lchnk)>0)write(102,*)'aero_model_6:',rtscavt_sv(icolprnt(lchnk),kprnt,32),mm,mmtoo
                    if (mmtoo > 0) rtscavt_sv(1:ncol,:,mmtoo) = rtscavt_sv(1:ncol,:,mmtoo) & 
                                   + ( rcscavt(1:ncol,:) + rsscavt(1:ncol,:) )
 
@@ -2206,14 +2191,12 @@ do_lphase2_conditional: &
                       !    > deduct it from the tendency (dqdt_tmp) of the cloudborne   species
                       !    > add    it to   the tendency (dqdt_tmp) of the interstitial species (which is done above)
 !                     rtscavt_sv(1:ncol,:,lspec) = rcscavt(1:ncol,:) + rsscavt(1:ncol,:)  ! RCE 2012/01/12
-                      !if(icolprnt(lchnk)>0)write(102,*)'aero_model_7:',rtscavt_sv(icolprnt(lchnk),kprnt,32)
                       if ( 0 < mmai .and. mmai <= pcnst ) then
                          rtscavt_sv(1:ncol,:,mmai) = rcscavt(1:ncol,:) + rsscavt(1:ncol,:)  ! REASTER 08/11/2015
                       else
                          write(msg,'(a,3(1x,i5))') 'aero_model_wetdep - bad mmai - m, mm, mmai =', m, mm, mmai
                          call endrun( msg )
                       endif
-                      !if(icolprnt(lchnk)>0)write(102,*)'aero_model_8:',rtscavt_sv(icolprnt(lchnk),kprnt,32)
 !                     dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - rtscavt_sv(1:ncol,:,lspec)  ! RCE 2012/01/12                     
                       dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - rtscavt_sv(1:ncol,:,mmai)  ! REASTER 08/11/2015
                    endif
@@ -2302,7 +2285,6 @@ do_lphase2_conditional: &
        call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
 
        call t_startf('ma_convproc')
-       !if(icolprnt(lchnk)>0)write(102,*)'aero_model_2:',ptend%q(icolprnt(lchnk),kprnt,32)
        call ma_convproc_intr( state, ptend, pbuf, dt,                   &
             dp_frac, icwmrdp, rprddp, evapcdp,                          &
             sh_frac, icwmrsh, rprdsh, evapcsh,                          &
@@ -2312,7 +2294,6 @@ do_lphase2_conditional: &
             species_class, mam_prevap_resusp_optaa,                     &
             history_aero_prevap_resusp                                  )
        call t_stopf('ma_convproc')       
-       !if(icolprnt(lchnk)>0)write(102,*)'aero_model_3:',ptend%q(icolprnt(lchnk),kprnt,32)
     endif
 
 
@@ -2683,17 +2664,16 @@ do_lphase2_conditional: &
 
     lchnk = state%lchnk
     ncol = state%ncol
-    if(icolprnt(lchnk)>0)write(107,*)'aero_emissions_0:',state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
     if (dust_active) then
 
        call dust_emis( ncol, lchnk, cam_in%dstflx, cam_in%cflx, soil_erod_tmp )
-       !if(icolprnt(lchnk)>0)write(110,*)'aero_emissions_1:',cam_in%cflx(icolprnt(lchnk),42)
+
        ! some dust emis diagnostics ...
        sflx(:)=0._r8
        do m=1,dust_nbin+dust_nnum
           mm = dust_indices(m)
           if (m<=dust_nbin) sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
-          if(icolprnt(lchnk)>0 .and. mm==42)write(110,*)'aero_emissions_110_1:',sflx(icolprnt(lchnk)),cam_in%cflx(icolprnt(lchnk),mm),mm,m,dust_nbin,dust_nnum
           call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
        enddo
        call outfld('DSTSFMBL',sflx(:),pcols,lchnk)
@@ -2706,16 +2686,14 @@ do_lphase2_conditional: &
        ! follows Tie and Seinfeld and Pandis, p.859 with math.
 
        u10cubed(:ncol)=u10(:ncol)*log(10._r8/z0)/log(state%zm(:ncol,pver)/z0)
-       if(icolprnt(lchnk)>0)write(107,*)'aero_emissions_1a:',u10cubed(icolprnt(lchnk)),u10(icolprnt(lchnk)),z0,state%zm(icolprnt(lchnk),pver),state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
        ! we need them to the 3.41 power, according to Gong et al., 1997:
        u10cubed(:ncol)=u10cubed(:ncol)**3.41_r8
 
        sflx(:)=0._r8
        F_eff(:)=0._r8
-       !if(icolprnt(lchnk)>0)write(110,*)'aero_emissions_2a:',cam_in%cflx(icolprnt(lchnk),41)
+
        call seasalt_emis(u10, u10cubed, lchnk, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale, F_eff)
-       !if(icolprnt(lchnk)>0)write(110,*)'aero_emissions_2:',cam_in%cflx(icolprnt(lchnk),41)
 
        ! Write out salt mass fluxes to history files
        do m=1,seasalt_nbin-nslt_om

@@ -2,8 +2,6 @@
 ! used to compute sea salt surface emissions for modal and sectional aerosol models
 !===============================================================================
 module sslt_sections
-  use module_perturb
-  use time_manager,    only: is_first_step, get_nstep
   use shr_kind_mod, only: r8 => shr_kind_r8
 
   implicit none
@@ -84,11 +82,11 @@ contains
 
   !===========================================================================
   !===========================================================================
-  function fluxes ( sst, u10cubed, ncol,lchnk ) result(fi)
+  function fluxes ( sst, u10cubed, ncol ) result(fi)
 
     real (r8),intent(in) :: sst(:)
     real (r8),intent(in) :: u10cubed(:)
-    integer  ,intent(in) :: ncol,lchnk
+    integer  ,intent(in) :: ncol
 
     real (r8) :: fi(ncol,nsections)
 
@@ -107,17 +105,13 @@ contains
     do m=1,nsections
        if (m.le.9)then
           fi(:ncol,m)=W(:ncol)*((sst(:ncol))*consta(1,m)+constb(1,m))
-          if(icolprnt(lchnk)>0)write(107,*)'sslt_sections_1:',fi(icolprnt(lchnk),m),W(icolprnt(lchnk)),sst(icolprnt(lchnk)),consta(1,m),constb(1,m),u10cubed(icolprnt(lchnk)),m
        elseif (m.ge.10.and.m.le.13)then
           fi(:ncol,m)=W(:ncol)*((sst(:ncol))*consta(2,m)+constb(2,m))
-          if(icolprnt(lchnk)>0)write(107,*)'sslt_sections_2:',fi(icolprnt(lchnk),m),W(icolprnt(lchnk)),sst(icolprnt(lchnk)),consta(2,m),constb(2,m),m
        elseif (m.ge.14.and.m.lt.22)then
           fi(:ncol,m)=W(:ncol)*((sst(:ncol))*consta(3,m)+constb(3,m))
-          if(icolprnt(lchnk)>0)write(107,*)'sslt_sections_3:',fi(icolprnt(lchnk),m),W(icolprnt(lchnk)),sst(icolprnt(lchnk)),consta(3,m),constb(3,m),m
        elseif (m.ge.22.and.m.le.40)then
           ! use Monahan
           fi(:ncol,m)=consta(4,m)*u10cubed(:ncol)
-          if(icolprnt(lchnk)>0)write(107,*)'sslt_sections_4:',fi(icolprnt(lchnk),m),consta(4,m),u10cubed(icolprnt(lchnk))
        endif
     enddo
 

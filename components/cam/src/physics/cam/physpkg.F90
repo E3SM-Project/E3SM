@@ -1,5 +1,6 @@
 module physpkg
 use module_perturb
+
   !-----------------------------------------------------------------------
   ! Purpose:
   !
@@ -977,6 +978,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 
+    do c=begchunk,endchunk
+       if(icolprnt(c)>0)write(107,*)'run1_beg:',phys_state(c)%q(icolprnt(c),kprnt,2)
+    enddo
+
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
 
@@ -1065,6 +1070,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call gmean_mass ('between DRY', phys_state)
 #endif
     end if
+
+    do c=begchunk,endchunk
+       if(icolprnt(c)>0)write(107,*)'run1_end:',phys_state(c)%q(icolprnt(c),kprnt,2)
+    enddo
 
 end subroutine phys_run1
 
@@ -1216,6 +1225,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     ! If exit condition just return
     !
 
+    do c=begchunk,endchunk
+       if(icolprnt(c)>0)write(107,*)'run2_beg:',phys_state(c)%q(icolprnt(c),kprnt,2)
+    enddo
+
     if(single_column.and.scm_crm_mode) return
 
     if ( adiabatic .or. ideal_phys ) return
@@ -1271,6 +1284,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
 
+
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
@@ -1299,6 +1313,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call pbuf_update_tim_idx()
     call diag_deallocate()
     call t_stopf ('physpkg_st2')
+
+    do c=begchunk,endchunk
+       if(icolprnt(c)>0)write(107,*)'run2_end:',phys_state(c)%q(icolprnt(c),kprnt,2)
+    enddo
 
 end subroutine phys_run2
 
@@ -1474,10 +1492,12 @@ subroutine tphysac (ztodt,   cam_in,  &
     !-----------------------------------------------------------------------
     !
     lchnk = state%lchnk
+    if(icolprnt(lchnk)>0)write(107,*)'ac_beg:',state%q(icolprnt(lchnk),kprnt,2)
     ncol  = state%ncol
 
     nstep = get_nstep()
-    
+    if(icolprnt(lchnk)>0)write(108,*)'ac:',nstep
+
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,l_tracer_aero_out      = l_tracer_aero      &
@@ -1491,7 +1511,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     if (phys_do_flux_avg()) then 
        call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
     endif
-    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0a:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
     ! Validate the physics state.
     if (state_debug_checks) &
@@ -1529,15 +1548,11 @@ subroutine tphysac (ztodt,   cam_in,  &
 if (l_tracer_aero) then
 
     ! emissions of aerosols and gas-phase chemistry constituents at surface
-   !if(icolprnt(lchnk)>0)write(110,*)'physpkg_110_1:',cam_in%cflx(icolprnt(lchnk),42),nstep
     call chem_emissions( state, cam_in )
-    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_110_2:',cam_in%cflx(icolprnt(lchnk),42),nstep
-    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0b:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
     if (carma_do_emission) then
        ! carma emissions
        call carma_emission_tend (state, ptend, cam_in, ztodt)
-       !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0c:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call physics_update(state, ptend, ztodt, tend)
     end if
 
@@ -1562,7 +1577,7 @@ end if ! l_tracer_aero
             cam_in%lhf , cam_in%cflx )
 
     end if 
-    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0d:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
@@ -1585,7 +1600,7 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
-    !if(icolprnt(lchnk)>0)write(110,*)'physpkg_0e:',cam_in%cflx(icolprnt(lchnk),42),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
     ! Chemistry calculation
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
@@ -1608,11 +1623,10 @@ end if ! l_tracer_aero
     ! If CLUBB is called, do not call vertical diffusion, but obukov length and
     !   surface friction velocity still need to be computed.  In addition, 
     !   surface fluxes need to be updated here for constituents 
-!if(icolprnt(lchnk)>0)write(108,*)'physpkg_108_1:',state%q(icolprnt(lchnk),kprnt,42),nstep
     if (do_clubb_sgs) then
 
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
-       !if(icolprnt(lchnk)>0)write(108,*)'physpkg_108_2:',ptend%q(icolprnt(lchnk),kprnt,42),nstep
+       
        ! Update surface flux constituents 
        call physics_update(state, ptend, ztodt, tend)
 
@@ -1840,6 +1854,8 @@ end if ! l_ac_energy_chk
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
+
+    if(icolprnt(lchnk)>0)write(107,*)'ac_end:',state%q(icolprnt(lchnk),kprnt,2)
 
 end subroutine tphysac
 
@@ -2102,11 +2118,14 @@ subroutine tphysbc (ztodt,               &
     zero_sc(:) = 0._r8
 
     lchnk = state%lchnk
+    if(icolprnt(lchnk)>0)write(107,*)'bc_beg:',state%q(icolprnt(lchnk),kprnt,2)
     ncol  = state%ncol
 
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
+
+    if(icolprnt(lchnk)>0)write(108,*)'bc:',nstep
 
     if (pergro_test_active) then 
        !call outfld calls
@@ -2695,16 +2714,16 @@ if (l_tracer_aero) then
        if (do_clubb_sgs) then
           sh_e_ed_ratio = 0.0_r8
        endif
-       if(icolprnt(lchnk)>0)write(108,*)'physpkg_2:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
             cam_out,                                                                 & !Intent-inout
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
-       if(icolprnt(lchnk)>0)write(108,*)'physpkg_3:',ptend%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+       
        call physics_update(state, ptend, ztodt, tend)
 
-       if(icolprnt(lchnk)>0)write(108,*)'physpkg_4:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
        if (carma_do_wetdep) then
           ! CARMA wet deposition
           !
@@ -2718,13 +2737,12 @@ if (l_tracer_aero) then
        end if
 
        call t_startf ('convect_deep_tend2')
-       if(icolprnt(lchnk)>0)write(108,*)'physpkg_5:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
        call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
-       if(icolprnt(lchnk)>0)write(108,*)'physpkg_6:',ptend%q(icolprnt(lchnk),kprnt,22),state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
        call physics_update(state, ptend, ztodt, tend)
-       if(icolprnt(lchnk)>0)write(108,*)'physpkg_7:',state%q(icolprnt(lchnk),kprnt,22),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
        ! check tracer integrals
        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
@@ -2768,15 +2786,12 @@ if (l_rad) then
     ! Radiation computations
     !===================================================
     call t_startf('radiation')
-    
-    if(icolprnt(lchnk)>0)write(108,*)'physpkg_8:',state%pmid(icolprnt(lchnk),kprnt),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
+
     call radiation_tend(state,ptend, pbuf, &
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
          fsds, net_flx,is_cmip6_volc)
-
-    if(icolprnt(lchnk)>0)write(108,*)'physpkg_9:',ptend%s(icolprnt(lchnk),kprnt),nstep,state%u(icolprnt(lchnk),pver),state%v(icolprnt(lchnk),pver)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol
@@ -2807,7 +2822,7 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
-
+    if(icolprnt(lchnk)>0)write(107,*)'bc_end:',state%q(icolprnt(lchnk),kprnt,2)
 end subroutine tphysbc
 
 subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)

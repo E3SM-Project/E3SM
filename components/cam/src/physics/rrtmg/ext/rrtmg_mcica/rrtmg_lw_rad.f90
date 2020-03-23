@@ -5,7 +5,7 @@
 !
 
        module rrtmg_lw_rad
-use module_perturb
+
 !  --------------------------------------------------------------------------
 ! |                                                                          |
 ! |  Copyright 2002-2007, Atmospheric & Environmental Research, Inc. (AER).  |
@@ -53,7 +53,7 @@ use module_perturb
 ! ****************************************************************************
 
 ! -------- Modules --------
-    use time_manager,   only: get_nstep
+
       use shr_kind_mod, only: r8 => shr_kind_r8
       use ppgrid,       only: pcols, begchunk, endchunk
 
@@ -382,8 +382,7 @@ use module_perturb
       real(kind=r8) :: totdclfl(0:nlay)         ! clear sky downward longwave flux (w/m2)
       real(kind=r8) :: fnetc(0:nlay)            ! clear sky net longwave flux (w/m2)
       real(kind=r8) :: htrc(0:nlay)             ! clear sky longwave heating rate (k/day)
-      integer :: nstep
-      nstep = get_nstep()
+
 ! Initializations
 
       oneminus = 1._r8 - 1.e-6_r8
@@ -475,11 +474,7 @@ use module_perturb
                      fracs, taug)
 
 
-         do ig = 1, nbndlw
-             do k = 1, nlay-1
-                if(icolprnt(lchnk)==iplon .and. nstep<1)write(102,*)'rrtmg_lw_rad_7:',tauaer(iplon,k,ig),k,ig
-             enddo
-         enddo
+
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
             do k = 1, nlay
@@ -490,8 +485,7 @@ use module_perturb
          elseif (iaer .eq. 10) then
             do k = 1, nlay
                do ig = 1, ngptlw 
-                  taut(k,ig) = taug(k,ig) + taua(k,ngb(ig))!BALLI -only taua is different here
-                  if(icolprnt(lchnk)==iplon .and. nstep<1)write(102,*)'rrtmg_lw_rad_6:',taut(k,ig),taug(k,ig),taua(k,ngb(ig)),k,ig,ngb(ig),nstep
+                  taut(k,ig) = taug(k,ig) + taua(k,ngb(ig))
                enddo
             enddo
          endif
@@ -502,26 +496,11 @@ use module_perturb
 ! to be used.  Clear sky calculation is done simultaneously.
 ! For McICA, RTRNMC is called for clear and cloudy calculations.
 
-         if(icolprnt(lchnk)==iplon .and. nstep<1)then
-            write(102,*)'rrtmg_lw_rad_4:',pwvcm
-            do k = 1, nlay
-               write(102,*)'rrtmg_lw_rad_2:',pz(k),k
-               do ig = 1, nbndlw
-                  write(102,*)'rrtmg_lw_rad_3:',planklay(k,ig),planklev(k,ig),plankbnd(ig),semiss(ig),k,ig
-               enddo
-               do ig = 1, ngptlw
-                  write(102,*)'rrtmg_lw_rad_5:',fracs(k,ig),taut(k,ig),cldfmc(ig,k),taucmc(ig,k),k,ig
-               enddo
-            enddo
-         endif
-
-
          call rtrnmc(nlay, istart, iend, iout, pz, semiss, ncbands, &
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
                      pwvcm, fracs, taut, &
                      totuflux, totdflux, fnet, htr, &
                      totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs )
-         if(icolprnt(lchnk)==iplon .and. nstep<1)write(102,*)'rrtmg_lw_rad_1:',htr(kprnt),nstep
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top

@@ -4,7 +4,7 @@ module aer_rad_props
 ! Converts aerosol masses to bulk optical properties for sw and lw radiation
 ! computations.  
 !------------------------------------------------------------------------------------------------
-use module_perturb
+
 use shr_kind_mod,     only: r8 => shr_kind_r8
 use ppgrid,           only: pcols, pver, pverp
 use physconst,        only: rga
@@ -419,7 +419,6 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
       call modal_aero_lw(list_idx, state, pbuf, odap_aer)
-      if(icolprnt(lchnk)>0)write(102,*)'aer_rad_props_2:',odap_aer(icolprnt(lchnk),kprnt,1)
    else
       odap_aer = 0._r8
    end if
@@ -486,7 +485,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
          enddo
       enddo
       call outfld('extinct_lw_bnd7',odap_aer(:,:,idx_lw_diag), pcols, lchnk)
-   endif !is_cmip6_volc
+   endif
    
    ! Loop over bulk aerosols in list.
    do iaerosol = 1, numaerosols
