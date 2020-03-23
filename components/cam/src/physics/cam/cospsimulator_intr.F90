@@ -3312,6 +3312,8 @@ CONTAINS
              y%tautot_S_ice(       npoints, ncolumns         ),&
              y%tautot_S_liq(       npoints, ncolumns)         ,&
              y%fracPrecipIce(npoints,   ncolumns))
+    allocate(y%rcfg_cloudsat)
+
   end subroutine construct_cospIN
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3470,6 +3472,8 @@ CONTAINS
     if (allocated(y%ss_alb))              deallocate(y%ss_alb)
     if (allocated(y%fracLiq))             deallocate(y%fracLiq)
     if (allocated(y%fracPrecipIce))       deallocate(y%fracPrecipIce)
+    if (allocated(y%rcfg_cloudsat))       deallocate(y%rcfg_cloudsat)
+
   end subroutine destroy_cospIN
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   ! SUBROUTINE destroy_cospstateIN     
