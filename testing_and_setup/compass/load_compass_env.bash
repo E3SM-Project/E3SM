@@ -15,8 +15,6 @@ elif [[ $HOSTNAME = "compy"* ]]; then
   base_path="/share/apps/E3SM/conda_envs/base"
 elif [[ $HOSTNAME = "gr-fe"* ]] || [[ $HOSTNAME = "ba-fe"* ]]; then
   base_path="/usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base"
-elif [[ $HOSTNAME = "burnham" ]]; then
-  base_path="/home/xylar/miniconda3/"
 else
   echo "Unknown host name $HOSTNAME.  Add base_path for this machine to the script."
 fi
