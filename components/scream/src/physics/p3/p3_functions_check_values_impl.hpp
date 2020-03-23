@@ -54,7 +54,7 @@ void Functions<S,D>
     t_out_bounds(pk)  = !(t_gt_low_bound && t_lt_high_bound);
     qv_out_bounds(pk) = !(qv_gt_low_bound && qv_lt_high_bound);
 
-    const int tk = team.team_rank();
+    const int tk = team.league_rank();
 
     if (t_out_bounds(pk)[tk]) {
        trap = true;
