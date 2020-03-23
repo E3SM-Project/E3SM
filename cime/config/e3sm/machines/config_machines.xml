@@ -2066,7 +2066,7 @@
     <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
@@ -2075,7 +2075,6 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -2098,7 +2097,7 @@
       </modules>
       <modules>
         <command name="load">mkl/2018.1.163</command> <!-- this shall generate 3 env vars: MKLROOT, MKLROOT_INC, MKLROOT_LIB -->
-        <command name="load">cmake/3.11.0</command>
+        <command name="load">cmake/3.12.0</command>
         <command name="load">python/2.7.13</command>
         <command name="load">nco/4.6.9</command>
         <command name="load">hdf5-parallel/1.8.17</command>
@@ -2134,6 +2133,10 @@
              note that still needs PETSc libs explicitly on CADES probably due to older GCC -->
         <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis </env>
     </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
+    </environment_variables>
+
   </machine>
 
   <machine MACH="titan">
