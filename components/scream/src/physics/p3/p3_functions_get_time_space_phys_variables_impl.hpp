@@ -16,7 +16,7 @@ void Functions<S,D>
 {
   //time/space varying physical variables
   mu = sp(1.496e-6) * pow(t,sp(1.5))/(t+sp(120));
-  dv = sp(8.794e-5);//*pow(t,sp(1.81))/pres;
+  dv = sp(8.794e-5)*pow(t,sp(1.81))/pres;
   sc = mu/(rho*dv);
 
   constexpr Scalar RV     = C::RV;
