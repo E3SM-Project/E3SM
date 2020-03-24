@@ -267,7 +267,7 @@ OPTIONS
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
 
-  Options for MMF CAM:
+  Options for MMF:
 
      -use_MMF           Build the MMF configuration (super-parameterized EAM)
      -crm_nx <n>        CRM's x-grid.
@@ -1312,7 +1312,6 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
     $cfg_ref->set('use_MMF', 1);
-    $cfg_ref->set('crm', 1);
     $cfg_ref->set('crm_nx', $opts{'crm_nx'});
     $cfg_ref->set('crm_ny', $opts{'crm_ny'});
     $cfg_ref->set('crm_nz', $opts{'crm_nz'});
