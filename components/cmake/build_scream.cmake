@@ -11,6 +11,13 @@ function(build_scream)
     # Grab CXX compiler from CIME
     include(${CASEROOT}/Macros.cmake)
 
+    # Set build type since scream manages its own flags
+    if (DEBUG)
+      set(CMAKE_BUILD_TYPE Debug)
+    else()
+      set(CMAKE_BUILD_TYPE Release)
+    endif()
+
     add_subdirectory("scream")
   endif()
 
