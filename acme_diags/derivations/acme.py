@@ -97,6 +97,14 @@ def qflxconvert_units(var):
         var.units = 'mm/day'
     return var
 
+
+def qflx_convert_to_lhflx(qflx):
+    # QFLX units: kg/((m^2)*s)
+    # Multiply by the latent heat of condensation/vaporization (in J/kg)
+    # kg/((m^2)*s) * J/kg = J/((m^2)*s) = (W*s)/((m^2)*s) = W/(m^2)
+    return qflx * 2.5e6
+
+
 def pminuse_convert_units(var):
     if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1' or var.units == 'kg/s/m^2':
         # need to find a solution for units not included in udunits
@@ -387,6 +395,8 @@ derived_variables = {
         (('prsn',), lambda prsn: qflxconvert_units(rename(prsn))),
         (('PRECSC', 'PRECSL'), lambda precsc, precsl: precst(precsc, precsl))
     ]),
+    # Sea Surface Temperature: Degrees C
+    # Temperature of the water, not the air. Ignore land.
     'SST': OrderedDict([
         # lambda sst: convert_units(rename(sst),target_units="degC")),
         (('sst',), rename),
@@ -517,8 +527,10 @@ derived_variables = {
         (('rsdscs',), rename),
         (('rsdsc',), rename)
     ]),
+    # Net surface heat flux: W/(m^2)
     'NET_FLUX_SRF': OrderedDict([
         (('FSNS','FLNS','LHFLX','SHFLX'), lambda fsns, flns, lhflx, shflx: netflux4(fsns, flns, lhflx, shflx)),
+        (('FSNS','FLNS','QFLX','SHFLX'), lambda fsns, flns, qflx, shflx: netflux4(fsns, flns, qflx_convert_to_lhflx(qflx), shflx)),
         (('rsds','rsus','rlds','rlus','hfls','hfss'), lambda rsds, rsus, rlds, rlus, hfls, hfss: netflux6(rsds, rsus, rlds, rlus, hfls, hfss))
     ]),
     'FLUT': OrderedDict([
@@ -599,12 +611,15 @@ derived_variables = {
         (('TREFHT_LAND',), lambda t: convert_units(t, target_units="DegC")),
         (('tas',), lambda t: convert_units(t, target_units="DegC"))
     ]),
+    # Surface water flux: kg/((m^2)*s)
     'QFLX': OrderedDict([
         (('evspsbl',), rename),
         (('QFLX',), lambda qflx: qflxconvert_units(qflx))
     ]),
+    # Surface latent heat flux: W/(m^2)
     'LHFLX': OrderedDict([
-        (('hfls',), rename)
+        (('hfls',), rename),
+        (('QFLX',), lambda qflx: qflx_convert_to_lhflx(qflx))
     ]),
     'SHFLX': OrderedDict([
         (('hfss',), rename)
@@ -777,6 +792,8 @@ derived_variables = {
     'AODABS': OrderedDict([
         (('abs550aer',), rename)
     ]),
+    # Surface temperature: Degrees C
+    # (Temperature of the surface (land/water) itself, not the air)
     'TS': OrderedDict([
         (('ts',), rename)
     ]),

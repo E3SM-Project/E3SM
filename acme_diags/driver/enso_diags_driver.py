@@ -14,7 +14,7 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean, std
 from acme_diags.plot.cartopy.enso_diags_plot import plot_map, plot_scatter
 
 
-def calculate_nino_index(nino_region_str, parameter):
+def calculate_nino_index(nino_region_str, parameter, test=False, ref=False):
     """
     Use the built-in HadISST nino index time series from http://www.esrl.noaa.gov/psd/gcos_wgsp/Timeseries/
     for observation datasets and when model output is not available.
@@ -24,8 +24,15 @@ def calculate_nino_index(nino_region_str, parameter):
     data_file = ''.join(['enso_', nino_region_str, '.long.data'])
     nino_index_path = os.path.join(acme_diags.INSTALL_PATH, 'enso_diags', data_file)
     sst_orig = numpy.loadtxt(nino_index_path, skiprows=1, max_rows=149)  # load data up to year 2018 from 1870
-    start = int(parameter.start_yr)
-    end = int(parameter.end_yr)
+    if test:
+        start = int(parameter.test_start_yr)
+        end = int(parameter.test_end_yr)
+    elif ref:
+        start = int(parameter.ref_start_yr)
+        end = int(parameter.ref_end_yr)
+    else:
+        start = int(parameter.start_yr)
+        end = int(parameter.end_yr)
     sst_years = sst_orig[:,0].astype(int)
     try:
         start_ind = numpy.where(sst_years == start)[0][0]
@@ -50,11 +57,22 @@ def calculate_nino_index(nino_region_str, parameter):
 
 def calculate_nino_index_model(data, nino_region_str, parameter):
     """
-    Calculate nino index based on model output TS. If this is not available use the built-in HadISST nino index
+    Calculate nino index based on model output SST or TS. If neither of these is available,
+    then use the built-in HadISST nino index.
     """
 
     try:
-        sst = data.get_timeseries_variable('SST')
+        try:
+            # Try sea surface temperature first.
+            sst = data.get_timeseries_variable('SST')
+        except RuntimeError as e1:
+            if str(e1).startswith('Neither does SST nor the variables in'):
+                print('Handling the following exception by looking for surface temperature:', e1)
+                # Try surface temperature.
+                sst = data.get_timeseries_variable('TS')
+                print('Simulated sea surface temperature not found, using surface temperature instead.')
+            else:
+                raise e1
         nino_region = default_regions.regions_specs[nino_region_str]['domain']
         sst_nino = sst(nino_region)
         # Domain average
@@ -62,9 +80,12 @@ def calculate_nino_index_model(data, nino_region_str, parameter):
         # Get anomaly from annual cycle climatology
         sst_avg_anomaly = cdutil.ANNUALCYCLE.departures(sst_avg)
         nino_index = sst_avg_anomaly
-    except:
-        nino_index = calculate_nino_index(nino_region_str, parameter)
-        print("Simulated surface temperature not found, using built-in HadISST nino index time series.")
+    except RuntimeError as e2:
+        print('Handling the following exception by trying built-in HadISST nino index time series:', e2)
+        test = data.test
+        ref = data.ref
+        nino_index = calculate_nino_index(nino_region_str, parameter, test=test, ref=ref)
+        print("Simulated surface temperature not found, using built-in HadISST nino index time series instead.")
 
     if parameter.print_statements:
         print('nino_index_model', nino_index)
@@ -157,7 +178,7 @@ def run_diag_map(parameter):
         ref_nino_index = calculate_nino_index_model(ref_data, nino_region_str, parameter)
     elif run_type == 'model_vs_obs':
         test_nino_index = calculate_nino_index_model(test_data, nino_region_str, parameter)
-        ref_nino_index = calculate_nino_index(nino_region_str, parameter)
+        ref_nino_index = calculate_nino_index(nino_region_str, parameter, ref=True)
     else:
         raise Exception('Invalid run_type={}'.format(run_type))
     test_data = utils.dataset.Dataset(parameter, test=True)
@@ -292,7 +313,7 @@ def run_diag_scatter(parameter):
         x['ref'] = calculate_nino_index_model(ref_data, x['region'], parameter)
     elif run_type == 'model_vs_obs':
         x['test'] = calculate_nino_index_model(test_data, x['region'], parameter)
-        x['ref'] = calculate_nino_index(x['region'], parameter)
+        x['ref'] = calculate_nino_index(x['region'], parameter, ref=True)
     else:
         raise Exception('Invalid run_type={}'.format(run_type))
     parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)

@@ -205,7 +205,7 @@ class Dataset():
         """
         Get the user-defined start and end years.
         """
-        if self.parameters.sets[0] in ['area_mean_time_series', 'enso_diags']:
+        if self.parameters.sets[0] in ['area_mean_time_series']:
             start_yr = getattr(self.parameters, 'start_yr')
             end_yr = getattr(self.parameters, 'end_yr')
         else:
