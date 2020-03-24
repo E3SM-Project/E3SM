@@ -16,6 +16,21 @@
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
 
+# We need to set the compilers *before* calling `project`.
+# The only way to get the compiler name, is to load Macros.cmake
+# However, we do *not* want to pollut the environment with other
+# vars coming from Macros.cmake, so we encapsulate its inclusion
+# in a new scope.
+function(set_compilers_e3sm)
+  # Grab CXX compiler from CIME
+  include(${CASEROOT}/Macros.cmake)
+
+  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "" FORCE)
+  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "" FORCE)
+  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "" FORCE)
+endfunction()
+set_compilers_e3sm()
+
 project(E3SM C CXX Fortran)
 
 # Include function definitions
