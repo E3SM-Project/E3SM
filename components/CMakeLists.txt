@@ -29,9 +29,9 @@ function(set_compilers_e3sm)
   # Grab CXX compiler from CIME
   include(${CASEROOT}/Macros.cmake)
 
-  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "" FORCE)
-  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "" FORCE)
-  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "" FORCE)
+  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
 endfunction()
 set_compilers_e3sm()
 
