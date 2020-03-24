@@ -69,9 +69,9 @@ module clm_cpl_indices
   integer, public :: nflds_l2x = 0
 
   ! IAC coupling
-  integer, public ::index_l2x_Sl_hr(0:iac_npft)  = 0
-  integer, public ::index_l2x_Sl_npp(0:iac_npft)  = 0
-  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft)  = 0
+  integer, pointer, public ::index_l2x_Sl_hr(:)
+  integer, pointer, public ::index_l2x_Sl_npp(:)
+  integer, pointer, public ::index_l2x_Sl_pftwgt(:)
 
   ! drv -> lnd (required)
 
@@ -153,8 +153,10 @@ contains
     type(mct_aVect)   :: l2x      ! temporary, land to coupler
     type(mct_aVect)   :: x2l      ! temporary, coupler to land
     integer           :: num 
-    character(len= 2) :: cnum
+    integer           :: p
     character(len=64) :: name
+    character(len= 2) :: cnum
+    character(len= 2) :: cpft
     character(len=32) :: subname = 'clm_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -316,8 +318,12 @@ contains
     ! Probably need to compare with namelist 
     iac_npft = numpft
 
+    allocate(index_l2x_Sl_hr(0:iac_npft))
+    allocate(index_l2x_Sl_npp(0:iac_npft))
+    allocate(index_l2x_Sl_pftwgt(0:iac_npft))
+
     do p = 0,iac_npft
-       write(cpft,'(I0)') 
+       write(cpft,'(I0)') p
        cpft=trim(cpft)
        index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,'Sl_hr_pft' // cpft)
        index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,'Sl_npp_pft' // cpft)

@@ -1352,6 +1352,7 @@ contains
     ! ============================================================================
     ! Update stuff to send to iac
     ! ============================================================================
+#if 0
 
     if (gcam_active) then
        call t_startf('lnd2iac')
@@ -1363,7 +1364,7 @@ contains
        !$OMP END PARALLEL DO
        call t_stopf('lnd2iac')
     end if
-
+#endif
 
     ! ============================================================================
     ! Write global average diagnostics to standard output

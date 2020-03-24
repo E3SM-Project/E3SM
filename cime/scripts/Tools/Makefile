@@ -85,7 +85,7 @@ USE_GCAM = TRUE
 # These are needed for GCAM - need to have a USE_GCAM kind of tag here.
 ifeq ($(strip $(USE_GCAM)), TRUE)
   # Hardcoded to my local directory on anvil.  Obviously not correct
-  GLIBS += -L/home/shippert/local/lib -lxerces-c -lxqilla -lstdc++
+  #GLIBS += -L/home/shippert/local/lib -lxerces-c -lxqilla -lstdc++
 endif
 
 

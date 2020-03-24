@@ -7,7 +7,7 @@ module lnd_import_export
   use lnd2glcMod   , only: lnd2glc_type
   use atm2lndType  , only: atm2lnd_type
   use glc2lndMod   , only: glc2lnd_type
-  use lnd2iacMod   , only: iac2lnd_type
+  use lnd2iacMod   , only: lnd2iac_type
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use clm_cpl_indices
@@ -1262,6 +1262,7 @@ contains
           end do
        end if
 
+#if 0
        ! iac coupling - need an iac_active logical somewhere
        if (iac_active) then
           do p = 0,iac_npft
@@ -1270,6 +1271,8 @@ contains
              l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
           end do
        end if
+#endif
+
     end do
 
   end subroutine lnd_export

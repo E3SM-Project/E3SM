@@ -28,13 +28,15 @@ module iac2lndMod
   type, public :: iac2lnd_type
      real(r8), pointer :: landuse(:,:) => null()
 
-   contains
+     contains
 
      procedure, public :: Init
      procedure, public :: Restart
-     procedure, public :: update_glc2lnd
+     !procedure, public :: update_glc2lnd
 
   end type iac2lnd_type
+   
+  contains
 
   subroutine Init(this, bounds)
     !
@@ -56,7 +58,7 @@ module iac2lndMod
     begg = bounds%begg; endg = bounds%endg
 
     ! Add in 0 as bare ground pft
-    allocate(this%landuse(begg:endg,0:npft)
+    !allocate(this%landuse(begg:endg,0:npft))
   end subroutine Init
 
   subroutine Restart(this, bounds, ncid, flag)
@@ -65,6 +67,14 @@ module iac2lndMod
     ! Read/Write iac2lnd information to/from restart file.
     ! Not yet implemented
     !
+    use ncdio_pio , only : ncd_double 
+    use pio       , only : file_desc_t
+
+    class(iac2lnd_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*),  intent(in)    :: flag
+
   end subroutine Restart
 
   !------------------------------------------------------
@@ -74,13 +84,13 @@ module iac2lndMod
     ! Extract into clm variables from iac coupled inputs
     ! 
     ! !USES:
-    use clm_varctl, only: gcam_active
+    !use gcam_var_mod, only: gcam_active
     !
     ! !ARGUMENTS:
     class(iac2lnd_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
     ! !LOCAL VARIABLES:
-    integer :: g, p, pft  ! grid and pft indices
+    integer :: g, c, p, pft  ! grid and pft indices
     integer :: begg, endg
     integer :: begp, endp
 
@@ -89,6 +99,7 @@ module iac2lndMod
     begg = bounds%begg; endg = bounds%endg
     begp = bounds%begp; endg = bounds%endp
 
+#if 0
     if (gcam_active) then 
        ! The idea is to convert (ngrid,pft) to a patch-dimensioned 1D array
        ! So, loop over patches, and extract pft and g, and copy over.
@@ -96,7 +107,7 @@ module iac2lndMod
           g=veg_pp%gridcell(p)
           pft=veg_pp%itype(p)
           
-          landuse_patch(p) = iac2lnd_vars%landuse(g,pft)
+          !landuse_patch(p) = iac2lnd_vars%landuse(g,pft)
 
           ! Is it as simple as this?  Do we need to scale the other
           ! weights, too?
@@ -118,13 +129,8 @@ module iac2lndMod
 
        ! Now, send this where it needs to go.
     endif
+#endif
 
+  end subroutine update_iac2lnd
 
-
-          
-
-
-
-
-
-     
+end module iac2lndMod

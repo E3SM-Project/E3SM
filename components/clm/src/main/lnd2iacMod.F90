@@ -1,4 +1,4 @@
-module lnd2iacMod.F90
+module lnd2iacMod
 
   !------------------------------------------------
   ! !DESCRIPTION:
@@ -30,13 +30,13 @@ module lnd2iacMod.F90
   type, public :: lnd2iac_type
      real(r8), pointer :: hr(:,:) => null()
      real(r8), pointer :: npp(:,:) => null()
-     real(r8), pointer :: pftwtg(:,:) => null()
+     real(r8), pointer :: pftwgt(:,:) => null()
 
    contains
      ! This object oriented stuff...
      procedure, public  :: Init
      procedure, public  :: update_lnd2iac
-  end type lnd2glc_type
+  end type lnd2iac_type
 
   ! !PUBLIC MEMBER FUNCTIONS:
 

@@ -948,6 +948,7 @@ contains
     ! just in case.
     !------------------------------------------------------------       
     ! Find right logical
+#if 0
     if (gcam_active) then  
        !Threading probably okay
        !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
@@ -960,6 +961,7 @@ contains
        end do
        !$OMP END PARALLEL DO
     end if
+#endif
 
     !------------------------------------------------------------       
     ! Write log output for end of initialization
