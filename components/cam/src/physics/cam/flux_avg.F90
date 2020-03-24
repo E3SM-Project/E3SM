@@ -208,7 +208,7 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
    ! to include some of the residual
    ! If the residual is small we will just add it all, 
    ! but if it is large we will add it at the rate required to put
-   ! the residual back into the flux over a 2 hour period
+   ! the residual back into the flux over a 4 hour period
    do i = 1,ncol
       maxres = max( abs(new(i)) , abs(old(i)) )
       if (abs(res(i)).lt.maxres*0.05_r8) then
