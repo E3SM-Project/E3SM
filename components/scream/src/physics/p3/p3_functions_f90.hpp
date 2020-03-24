@@ -744,7 +744,7 @@ struct GetTimeSpacePhysVarsData
   //Inputs
   Real t, pres, rho, xxlv, xxls, qvs, qvi;
 
-//Outs
+  //Outs
   Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
 };
 

@@ -798,118 +798,119 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
 
 }; //TestP3UpdatePrognosticIce
 
-  template <typename D>
-  struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
-  {
-    static void get_time_space_phys_variables_unit_bfb_tests(){
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
+{
+  static void get_time_space_phys_variables_unit_bfb_tests(){
 
-      static constexpr Int max_pack_size = 16;
+    static constexpr Int max_pack_size = 16;
 
-      REQUIRE(Spack::n <= max_pack_size);
+    REQUIRE(Spack::n <= max_pack_size);
 
       //fortran generated data is input to the following
-      GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
-	{2.9792E+02,9.8711E+04,1.1532E+00,2.5010E+06,2.8347E+06,2.0321E-02,2.0321E-02,9.3749E-05},
-	{2.9792E+02,9.8711E+04,1.1532E+00,2.5010E+06,2.8347E+06,2.0321E-02,2.0321E-02,9.3749E-05},
-	{2.9583E+02,9.7322E+04,1.1449E+00,2.5010E+06,2.8347E+06,1.8120E-02,1.8120E-02,1.8407E-05},
-	{2.9375E+02,9.5933E+04,1.1366E+00,2.5010E+06,2.8347E+06,1.6134E-02,1.6134E-02,1.8306E-05},
-	{2.8959E+02,9.3156E+04,1.1196E+00,2.5010E+06,2.8347E+06,1.2729E-02,1.2729E-02,1.8102E-05},
-	{2.8750E+02,9.1767E+04,1.1109E+00,2.5010E+06,2.8347E+06,1.1279E-02,1.1279E-02,1.7999E-05},
-	{2.8542E+02,9.0378E+04,1.1020E+00,2.5010E+06,2.8347E+06,9.9759E-03,9.9759E-03,1.7896E-05},
-	{2.8334E+02,8.8989E+04,1.0931E+00,2.5010E+06,2.8347E+06,8.8076E-03,8.8076E-03,1.7793E-05},
-	{2.8125E+02,8.7600E+04,1.0840E+00,2.5010E+06,2.8347E+06,7.7615E-03,7.7615E-03,1.7690E-05},
-	{2.7917E+02,8.6211E+04,1.0748E+00,2.5010E+06,2.8347E+06,6.8265E-03,6.8265E-03,1.7586E-05},
-	{2.7709E+02,8.4822E+04,1.0654E+00,2.5010E+06,2.8347E+06,5.9921E-03,5.9921E-03,1.7481E-05},
-	{2.7501E+02,8.3433E+04,1.0559E+00,2.5010E+06,2.8347E+06,5.2488E-03,5.2488E-03,1.7377E-05},
-	{2.7292E+02,8.2044E+04,1.0463E+00,2.5010E+06,2.8347E+06,4.5879E-03,4.5766E-03,1.7272E-05},
-	{2.7084E+02,8.0656E+04,1.0365E+00,2.5010E+06,2.8347E+06,4.0015E-03,3.9112E-03,1.7167E-05},
-	{2.6876E+02,7.9267E+04,1.0265E+00,2.5010E+06,2.8347E+06,3.4821E-03,3.3349E-03,1.7061E-05},
-	{2.6667E+02,7.7878E+04,1.0164E+00,2.5010E+06,2.8347E+06,3.0231E-03,2.8368E-03,1.6955E-05},
-      };
-      // Sync to device
-      view_1d<GetTimeSpacePhysVarsData> gtspvd_device("gtspvd", Spack::n);
-      auto gtspvd_host = Kokkos::create_mirror_view(gtspvd_device);
+    GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
+      {2.9792E+02,9.8711E+04,1.1532E+00,2.5010E+06,2.8347E+06,2.0321E-02,2.0321E-02,9.3749E-05},
+      {2.9792E+02,9.8711E+04,1.1532E+00,2.5010E+06,2.8347E+06,2.0321E-02,2.0321E-02,9.3749E-05},
+      {2.9583E+02,9.7322E+04,1.1449E+00,2.5010E+06,2.8347E+06,1.8120E-02,1.8120E-02,1.8407E-05},
+      {2.9375E+02,9.5933E+04,1.1366E+00,2.5010E+06,2.8347E+06,1.6134E-02,1.6134E-02,1.8306E-05},
+      {2.8959E+02,9.3156E+04,1.1196E+00,2.5010E+06,2.8347E+06,1.2729E-02,1.2729E-02,1.8102E-05},
+      {2.8750E+02,9.1767E+04,1.1109E+00,2.5010E+06,2.8347E+06,1.1279E-02,1.1279E-02,1.7999E-05},
+      {2.8542E+02,9.0378E+04,1.1020E+00,2.5010E+06,2.8347E+06,9.9759E-03,9.9759E-03,1.7896E-05},
+      {2.8334E+02,8.8989E+04,1.0931E+00,2.5010E+06,2.8347E+06,8.8076E-03,8.8076E-03,1.7793E-05},
+      {2.8125E+02,8.7600E+04,1.0840E+00,2.5010E+06,2.8347E+06,7.7615E-03,7.7615E-03,1.7690E-05},
+      {2.7917E+02,8.6211E+04,1.0748E+00,2.5010E+06,2.8347E+06,6.8265E-03,6.8265E-03,1.7586E-05},
+      {2.7709E+02,8.4822E+04,1.0654E+00,2.5010E+06,2.8347E+06,5.9921E-03,5.9921E-03,1.7481E-05},
+      {2.7501E+02,8.3433E+04,1.0559E+00,2.5010E+06,2.8347E+06,5.2488E-03,5.2488E-03,1.7377E-05},
+      {2.7292E+02,8.2044E+04,1.0463E+00,2.5010E+06,2.8347E+06,4.5879E-03,4.5766E-03,1.7272E-05},
+      {2.7084E+02,8.0656E+04,1.0365E+00,2.5010E+06,2.8347E+06,4.0015E-03,3.9112E-03,1.7167E-05},
+      {2.6876E+02,7.9267E+04,1.0265E+00,2.5010E+06,2.8347E+06,3.4821E-03,3.3349E-03,1.7061E-05},
+      {2.6667E+02,7.7878E+04,1.0164E+00,2.5010E+06,2.8347E+06,3.0231E-03,2.8368E-03,1.6955E-05},
+    };
 
-      // This copy only copies the input variables.
-      std::copy(&gtspvd[0], &gtspvd[0] + Spack::n, gtspvd_host.data());
-      Kokkos::deep_copy(gtspvd_device, gtspvd_host);
+    // Sync to device
+    view_1d<GetTimeSpacePhysVarsData> gtspvd_device("gtspvd", Spack::n);
+    auto gtspvd_host = Kokkos::create_mirror_view(gtspvd_device);
 
-      // Get data from fortran
-      for (Int i = 0; i < max_pack_size; ++i) {
-        get_time_space_phys_variables(gtspvd[i]);
-      }
+    // This copy only copies the input variables.
+    std::copy(&gtspvd[0], &gtspvd[0] + Spack::n, gtspvd_host.data());
+    Kokkos::deep_copy(gtspvd_device, gtspvd_host);
 
-      // Run the lookup from a kernel and copy results back to host
-      Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-
-          // Init pack inputs
-	  Spack t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
-
-	  for (Int s = 0; s < Spack::n; ++s) {
-	    t[s]      = gtspvd_device(s).t;
-	    pres[s]   = gtspvd_device(s).pres;
-	    rho[s]    = gtspvd_device(s).rho;
-	    xxlv[s]   = gtspvd_device(s).xxlv;
-	    xxls[s]   = gtspvd_device(s).xxls;
-	    qvs[s]    = gtspvd_device(s).qvs;
-	    qvi[s]    = gtspvd_device(s).qvi;
-
-	    mu[s]     = gtspvd_device(s).mu;
-	    dv[s]     = gtspvd_device(s).dv;
-	    sc[s]     = gtspvd_device(s).sc;
-	    dqsdt[s]  = gtspvd_device(s).dqsdt;
-	    dqsidt[s] = gtspvd_device(s).dqsidt;
-	    ab[s]     = gtspvd_device(s).ab;
-	    abi[s]    = gtspvd_device(s).abi;
-	    kap[s]    = gtspvd_device(s).kap;
-	    eii[s]    = gtspvd_device(s).eii;
-	  }
-
-	  Functions::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
-						   ab, abi, kap, eii);
-
-          // Copy results back into views
-	  for (Int s = 0; s < Spack::n; ++s) {
-	    gtspvd_device(s).t      = t[s];
-	    gtspvd_device(s).pres   = pres[s];
-	    gtspvd_device(s).rho    = rho[s];
-	    gtspvd_device(s).xxlv   = xxlv[s];
-	    gtspvd_device(s).xxls   = xxls[s];
-	    gtspvd_device(s).qvs    = qvs[s];
-	    gtspvd_device(s).qvi    = qvi[s];
-
-	    gtspvd_device(s).mu     = mu[s];
-	    gtspvd_device(s).dv     = dv[s];
-	    gtspvd_device(s).sc     = sc[s];
-	    gtspvd_device(s).dqsdt  = dqsdt[s];
-	    gtspvd_device(s).dqsidt = dqsidt[s];
-	    gtspvd_device(s).ab     = ab[s];
-	    gtspvd_device(s).abi    = abi[s];
-	    gtspvd_device(s).kap    = kap[s];
-	    gtspvd_device(s).eii    = eii[s];
-	  }
-	});
-
-      // Sync back to host
-      Kokkos::deep_copy(gtspvd_host, gtspvd_device);
-
-      // Validate results
-      for (Int s = 0; s < Spack::n; ++s) {
-	REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
-	REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
-	REQUIRE(gtspvd[s].sc     == gtspvd_host(s).sc);
-	REQUIRE(gtspvd[s].dqsdt  == gtspvd_host(s).dqsdt);
-	REQUIRE(gtspvd[s].dqsidt == gtspvd_host(s).dqsidt);
-	REQUIRE(gtspvd[s].ab     == gtspvd_host(s).ab);
-	REQUIRE(gtspvd[s].abi    == gtspvd_host(s).abi);
-	REQUIRE(gtspvd[s].kap    == gtspvd_host(s).kap);
-	REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
-      }
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      get_time_space_phys_variables(gtspvd[i]);
     }
-    static void run_bfb(){
-      get_time_space_phys_variables_unit_bfb_tests();
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+
+	// Init pack inputs
+	Spack t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+
+	for (Int s = 0; s < Spack::n; ++s) {
+	  t[s]      = gtspvd_device(s).t;
+	  pres[s]   = gtspvd_device(s).pres;
+	  rho[s]    = gtspvd_device(s).rho;
+	  xxlv[s]   = gtspvd_device(s).xxlv;
+	  xxls[s]   = gtspvd_device(s).xxls;
+	  qvs[s]    = gtspvd_device(s).qvs;
+	  qvi[s]    = gtspvd_device(s).qvi;
+
+	  mu[s]     = gtspvd_device(s).mu;
+	  dv[s]     = gtspvd_device(s).dv;
+	  sc[s]     = gtspvd_device(s).sc;
+	  dqsdt[s]  = gtspvd_device(s).dqsdt;
+	  dqsidt[s] = gtspvd_device(s).dqsidt;
+	  ab[s]     = gtspvd_device(s).ab;
+	  abi[s]    = gtspvd_device(s).abi;
+	  kap[s]    = gtspvd_device(s).kap;
+	  eii[s]    = gtspvd_device(s).eii;
+	}
+
+	Functions::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
+						 ab, abi, kap, eii);
+
+	// Copy results back into views
+	for (Int s = 0; s < Spack::n; ++s) {
+	  gtspvd_device(s).t      = t[s];
+	  gtspvd_device(s).pres   = pres[s];
+	  gtspvd_device(s).rho    = rho[s];
+	  gtspvd_device(s).xxlv   = xxlv[s];
+	  gtspvd_device(s).xxls   = xxls[s];
+	  gtspvd_device(s).qvs    = qvs[s];
+	  gtspvd_device(s).qvi    = qvi[s];
+
+	  gtspvd_device(s).mu     = mu[s];
+	  gtspvd_device(s).dv     = dv[s];
+	  gtspvd_device(s).sc     = sc[s];
+	  gtspvd_device(s).dqsdt  = dqsdt[s];
+	  gtspvd_device(s).dqsidt = dqsidt[s];
+	  gtspvd_device(s).ab     = ab[s];
+	  gtspvd_device(s).abi    = abi[s];
+	  gtspvd_device(s).kap    = kap[s];
+	  gtspvd_device(s).eii    = eii[s];
+	}
+      });
+
+    // Sync back to host
+    Kokkos::deep_copy(gtspvd_host, gtspvd_device);
+
+    // Validate results
+    for (Int s = 0; s < Spack::n; ++s) {
+      REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
+      REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
+      REQUIRE(gtspvd[s].sc     == gtspvd_host(s).sc);
+      REQUIRE(gtspvd[s].dqsdt  == gtspvd_host(s).dqsdt);
+      REQUIRE(gtspvd[s].dqsidt == gtspvd_host(s).dqsidt);
+      REQUIRE(gtspvd[s].ab     == gtspvd_host(s).ab);
+      REQUIRE(gtspvd[s].abi    == gtspvd_host(s).abi);
+      REQUIRE(gtspvd[s].kap    == gtspvd_host(s).kap);
+      REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
     }
-  }; //TestGetTimeSpacePhysVariables
+  }
+  static void run_bfb(){
+    get_time_space_phys_variables_unit_bfb_tests();
+  }
+}; //TestGetTimeSpacePhysVariables
 
 
 template <typename D>

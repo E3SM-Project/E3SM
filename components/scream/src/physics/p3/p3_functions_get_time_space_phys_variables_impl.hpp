@@ -39,14 +39,6 @@ void Functions<S,D>
   eii.set(t_lt_tval1,sp(0.1));
   eii.set(!t_lt_tval1 && t_lt_tval2,sp(0.1)+(t-sp(253.15))/15*sp(0.9));
   eii.set(!t_lt_tval1 && !t_lt_tval2,1);
-  /*if (t.lt.253.15_rtype){
-    eii=0.1_rtype;
-    else if (t.ge.253.15_rtype.and.t.lt.268.15_rtype){
-      eii=0.1_rtype+(t-253.15_rtype)/15._rtype*0.9_rtype; // linear ramp from 0.1 to 1 between 253.15 and 268.15 K
-    }
-    else{
-      eii=1._rtype;
-      }*/
 }
 
 
