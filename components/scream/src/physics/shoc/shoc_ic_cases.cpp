@@ -11,8 +11,8 @@ namespace {
 
 // Reference elevations for data interpolation.
 const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
-const std::array<Real, 5> qw_ref = {17.0, 16.3, 10.7, 4.2, 3.0};
-const std::array<Real, 5> ql_ref = {0.0, 5.0, 7.0, 6.0, 0.0};
+const std::array<Real, 5> qw_ref = {0.017, 0.0163, 0.0107, 0.0042, 0.003};
+const std::array<Real, 5> ql_ref = {0.0, 0.005, 0.007, 0.006, 0.0};
 const std::array<Real, 5> theta_ref = {299.7, 298.7, 302.4, 308.2, 312.85};
 
 // Wind speed interpolation data.
@@ -20,6 +20,8 @@ const std::array<Real, 3> wind_z_ref = {0.0, 700.0, 3000.0};
 const std::array<Real, 3> u_ref = {-7.75, -8.75, -4.61};
 const std::array<Real, 3> v_ref = {0.0, 0.1, 0.0};
 const std::array<Real, 3> w_ref = {0.1, 0.1, 0.0};
+
+const Real surface_pressure = 1015e2;
 
 // Linearly interpolates data at a specific elevation using elevation and
 // data arrays.
@@ -33,13 +35,9 @@ Real interpolate_data(const std::array<Real, N>& ref_elevations,
   if (index == 0)
     return ref_data[0];
   else if (index < (Int)N) {
-    const Real f1 = ref_data[index-1];
-    const Real f2 = ref_data[index];
-    const Real z1 = ref_elevations[index-1];
-    const Real z2 = ref_elevations[index];
-    const Real dfdz = (f2 - f1) / (z2 - z1);
-    const Real dz = z - z1;
-    return f1 + dfdz * dz;
+    const Real a = (z - ref_elevations[index-1]) /
+                   (ref_elevations[index] - ref_elevations[index-1]);
+    return (1.0 - a) * ref_data[index-1] + a * ref_data[index];
   }
   else {
     // Don't extrapolate off the end of the table.
@@ -60,30 +58,15 @@ void compute_column_pressure(Int col, Int nlev, const Array2& z,
   const Int i = col;
   const Real k = consts::Rair / consts::Cpair;
   const Real c = -consts::gravit * pow(consts::P0, k) / consts::Rair;
-  const Real p_s = 1015e2; // surface pressure
-  const Real theta_s = theta_ref[0]; // surface temperature
+  const Real p_s = surface_pressure;
 
-  // Compute the cell and interface pressures at the bottom of the column.
-  {
-    Real dz = z(i, 0);
-    Real theta1 = interpolate_data(z_ref, theta_ref, dz);
-    if (std::abs(theta_s - theta1) < 1e-14 * theta_s) {
-      pres(i, 0) = pow(pow(p_s, k) + k*c*dz/theta_s, 1.0/k);
-    }
-    else {
-      Real ra = dz/(theta1 - theta_s);
-      pres(i, 0) = pow(pow(p_s, k) + k*c*ra*log(theta1/theta_s), 1.0/k);
-    }
-  }
-
-  // Move up the column, computing the pressures at cell centers and
-  // interfaces.
-  for (Int j = 1; j < nlev; ++j) {
-    Real z0 = z(i, j-1);
+  // Move up the column, computing the pressures at each elevation.
+  for (Int j = 0; j < nlev; ++j) {
+    Real z0 = (j == 0) ? 0.0 : z(i, j-1);
     Real z1 = z(i, j);
     Real th0 = interpolate_data(z_ref, theta_ref, z0);
     Real th1 = interpolate_data(z_ref, theta_ref, z1);
-    Real p0 = pres(i, j-1);
+    Real p0 = (j == 0) ? p_s : pres(i, j-1);
     if (std::abs(th0 - th1) < 1e-14 * th0) {
       pres(i, j) = pow(pow(p0, k) + k*c*(z1 - z0)/th0, 1.0/k);
     }
@@ -109,12 +92,13 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     d.host_dx(i) = 5300.0;
     d.host_dy(i) = 5300.0;
 
+    d.zt_grid(i, 0) = 0;
     for (Int k = 0; k < nlev; ++k) {
 
       // Set up the vertical grid.
-      Real zi = k * dz;
+      Real zi1 = (k+1) * dz;
+      d.zi_grid(i, k+1) = zi1;
       Real zt = (k+0.5) * dz;
-      d.zi_grid(i, k) = zi;
       d.zt_grid(i, k) = zt;
 
       // Interpolate the potential temperature, introducing small variations
@@ -122,8 +106,8 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       Real theta_zt = interpolate_data(z_ref, theta_ref, zt);
       if (i > 0)
         theta_zt += ((i % 3) - 0.5)/double(nlev)*k;
-      const Real qw = 1e-3 * interpolate_data(z_ref, qw_ref, zt);
-      const Real ql = 1e-3 * interpolate_data(z_ref, ql_ref, zt);
+      const Real qw = interpolate_data(z_ref, qw_ref, zt);
+      const Real ql = interpolate_data(z_ref, ql_ref, zt);
       d.qw(i, k) = qw;
       d.shoc_ql(i, k) = ql;
       Real zvir = (consts::RH2O / consts::Rair) - 1.0;
@@ -142,7 +126,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       for (Int q = 0; q < d.num_qtracers; ++q)
       {
         d.qtracers(i, k, q) = sin(q/3. + 0.1 * zt * 0.2 * (k+1));
-        d.wtracer_sfc(i, q) = 0.1 * k;
+        d.wtracer_sfc(i, q) = 0.1 * i;
       }
 
       // Set surface fluxes and forcings.
@@ -159,7 +143,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
 
     // Compute pressure differences.
     for (Int k = 0; k < nlev; ++k) {
-      d.pdel(i, k) = d.presi(i, k+1) - d.presi(i, k);
+      d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
     }
 
     // Initialize host_dse and exner, which are assumed to be valid inputs to
@@ -168,7 +152,6 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
       d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
       d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thv(i, k) +
         consts::gravit * d.zt_grid(i, k);
-       d.thv(i, k), consts::gravit, d.zt_grid(i, k), d.host_dse(i, k));
     }
   }
 

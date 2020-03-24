@@ -47,7 +47,8 @@ contains
   !====================================================================!
   subroutine shoc_init_f90 (q) bind(c)
 
-    use shoc,                   only: shoc_init, rtype
+    use physics_utils,          only: rtype
+    use shoc,                   only: shoc_init
 
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
 
