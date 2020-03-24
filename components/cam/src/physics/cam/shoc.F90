@@ -1941,7 +1941,7 @@ subroutine shoc_length(&
     if (denom(i) .gt. 0._r8) then
       l_inf(i)=0.1_r8*(numer(i)/denom(i))
     else
-      l_inf(i)=100._r8 ! Minimum threshold
+      l_inf(i)=100._r8 
     endif
   enddo
   
@@ -1969,7 +1969,7 @@ subroutine shoc_length(&
     if (conv_vel(i) .gt. 0._r8) then 
       tscale(i)=pblh(i)/conv_vel(i)
     else
-      tscale(i)=100._r8 ! Minimum threshold
+      tscale(i)=100._r8 
     endif
   enddo
  
