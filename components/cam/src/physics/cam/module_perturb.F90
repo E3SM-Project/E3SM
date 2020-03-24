@@ -3,8 +3,8 @@ module module_perturb
   use cam_instance,    only: inst_index
 
   implicit none
-
-  integer :: kprnt = 1
+  
+  integer :: kprnt = 61
 contains
 
   function icolprnt(lchnk) result(icol)

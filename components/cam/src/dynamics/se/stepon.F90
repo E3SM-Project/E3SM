@@ -4,7 +4,7 @@
 !
 ! !INTERFACE:
 module stepon
-use module_perturb
+
 ! !USES:
 ! from cam
    use shr_kind_mod,   only: r8 => shr_kind_r8
@@ -179,12 +179,9 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (physics_buffer_desc), pointer :: pbuf2d(:,:)
    type (element_t), pointer :: elem(:)
-   integer :: c
+
 !-----------------------------------------------------------------------
 
-   do c=begchunk,endchunk
-      if(icolprnt(c)>0)write(107,*)'stepon_run1_beg:',phys_state(c)%q(icolprnt(c),kprnt,2)
-   enddo
    elem => dyn_out%elem
 
    ! NOTE: dtime_out computed here must match formula below
@@ -212,12 +209,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
-   !write(107,*)'stepon_run1_1:',dyn_out%elem(46)%state%Q(2,3,49,2)
-   call d_p_coupling (phys_state, phys_tend,  pbuf2d, dyn_out ) !BALLI
-   do c=begchunk,endchunk
-      if(icolprnt(c)>0)write(107,*)'stepon_run1_end:',phys_state(c)%q(icolprnt(c),kprnt,2)
-   enddo
-
+   call d_p_coupling (phys_state, phys_tend,  pbuf2d, dyn_out )
    call t_stopf('d_p_coupling') 
    
 end subroutine stepon_run1
@@ -544,9 +536,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')
-   write(108,*)'dynrun_bef_dyn_out:',dyn_out%elem(46)%state%Q(2,3,49,2)
    call dyn_run(dyn_out,rc)	
-   write(108,*)'dynrun_aft_dyn_out:',dyn_out%elem(46)%state%Q(2,3,49,2)
    call t_stopf  ('dyn_run')
    
    ! Update to get tendency 

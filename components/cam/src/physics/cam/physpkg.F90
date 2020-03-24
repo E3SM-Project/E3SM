@@ -1,6 +1,4 @@
 module physpkg
-use module_perturb
-
   !-----------------------------------------------------------------------
   ! Purpose:
   !
@@ -978,10 +976,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 
-    do c=begchunk,endchunk
-       if(icolprnt(c)>0)write(107,*)'run1_beg:',phys_state(c)%q(icolprnt(c),kprnt,2)
-    enddo
-
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
 
@@ -1070,10 +1064,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call gmean_mass ('between DRY', phys_state)
 #endif
     end if
-
-    do c=begchunk,endchunk
-       if(icolprnt(c)>0)write(107,*)'run1_end:',phys_state(c)%q(icolprnt(c),kprnt,2)
-    enddo
 
 end subroutine phys_run1
 
@@ -1225,10 +1215,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     ! If exit condition just return
     !
 
-    do c=begchunk,endchunk
-       if(icolprnt(c)>0)write(107,*)'run2_beg:',phys_state(c)%q(icolprnt(c),kprnt,2)
-    enddo
-
     if(single_column.and.scm_crm_mode) return
 
     if ( adiabatic .or. ideal_phys ) return
@@ -1284,7 +1270,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
 
-
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
@@ -1313,10 +1298,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call pbuf_update_tim_idx()
     call diag_deallocate()
     call t_stopf ('physpkg_st2')
-
-    do c=begchunk,endchunk
-       if(icolprnt(c)>0)write(107,*)'run2_end:',phys_state(c)%q(icolprnt(c),kprnt,2)
-    enddo
 
 end subroutine phys_run2
 
@@ -1492,12 +1473,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     !-----------------------------------------------------------------------
     !
     lchnk = state%lchnk
-    if(icolprnt(lchnk)>0)write(107,*)'ac_beg:',state%q(icolprnt(lchnk),kprnt,2)
     ncol  = state%ncol
 
     nstep = get_nstep()
-    if(icolprnt(lchnk)>0)write(108,*)'ac:',nstep
-
+    
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,l_tracer_aero_out      = l_tracer_aero      &
@@ -1855,8 +1834,6 @@ end if ! l_ac_energy_chk
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
-    if(icolprnt(lchnk)>0)write(107,*)'ac_end:',state%q(icolprnt(lchnk),kprnt,2)
-
 end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
@@ -2118,14 +2095,11 @@ subroutine tphysbc (ztodt,               &
     zero_sc(:) = 0._r8
 
     lchnk = state%lchnk
-    if(icolprnt(lchnk)>0)write(107,*)'bc_beg:',state%q(icolprnt(lchnk),kprnt,2)
     ncol  = state%ncol
 
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
-
-    if(icolprnt(lchnk)>0)write(108,*)'bc:',nstep
 
     if (pergro_test_active) then 
        !call outfld calls
@@ -2787,6 +2761,7 @@ if (l_rad) then
     !===================================================
     call t_startf('radiation')
 
+
     call radiation_tend(state,ptend, pbuf, &
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
@@ -2822,7 +2797,7 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
-    if(icolprnt(lchnk)>0)write(107,*)'bc_end:',state%q(icolprnt(lchnk),kprnt,2)
+
 end subroutine tphysbc
 
 subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)

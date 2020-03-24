@@ -16,7 +16,6 @@
 
 
 module vertremap_base
-use module_perturb
 
   !**************************************************************************************
   !
@@ -40,7 +39,7 @@ use module_perturb
 ! remap1                  ! remap any field, splines, monotone
 ! remap1_nofilter         ! remap any field, splines, no filter
 ! remap_q_ppm             ! remap state%Q, PPM, monotone
-  integer,save :: nballi = 0
+
   contains
 
 
@@ -76,7 +75,7 @@ end subroutine remap_calc_grids
 
 
 
-subroutine remap1(Qdp,nx,qsize,dp1,dp2,ie_in)
+subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -85,7 +84,6 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2,ie_in)
   ! output: remaped Qdp, conserving mass, monotone on Q=Qdp/dp
   !
   implicit none
-  integer,optional :: ie_in
   integer, intent(in) :: nx,qsize
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
@@ -108,14 +106,10 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2,ie_in)
 
   if (vert_remap_q_alg == -1) then
      call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
-     write(108,*)'ddddd'
      return
   endif
   if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3 .or. vert_remap_q_alg == 10) then
-     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2,ie_in)
-     if(present(ie_in)) then
-        if(ie_in == 82)write(108,*)'vertremap_base_1:',qdp(4,4,kprnt,2)
-     endif
+     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
      return
   endif
 
@@ -520,7 +514,7 @@ end subroutine remap1_nofilter
 !! vert_remap_q_alg == 2  means piecewise constant in 2 cells near boundaries (don't use ghost cells)
 !! vert_remap_q_alg == 3  means UKMO splines ghost cells (copy last value into all ghost cells)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,ie_in)
+subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -530,7 +524,6 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,ie_in)
   !
   use control_mod, only        : vert_remap_q_alg
   implicit none
-  integer,optional :: ie_in
   integer,intent(in) :: nx,qsize
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
@@ -598,12 +591,6 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,ie_in)
                                       !In fact, we're usually integrating very little or almost all of the cell in question
         z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent
                                                                         !coordinate domain [-0.5,0.5].
-        if(present(ie_in)) then
-           if(ie_in==82 .and. i==4 .and. j==4 .and. k==kprnt) then
-              write(108,*)'remap_q_1b:',z2(k),pin(k+1),pio(kk),pio(kk+1),dpo(kk),k,kk,k+1
-              z2(k) = 0.457408140938638
-           endif
-        endif
       enddo
 
       !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
@@ -651,17 +638,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,ie_in)
         do k = 1 , nlev
           kk = kid(k)
           massn2 = masso(kk) + integrate_parabola( coefs(:,kk) , z1(k) , z2(k) ) * dpo(kk)
-          if(present(ie_in))then
-             if(ie_in==82 .and. i==4 .and. j==4 .and. k==kprnt .and. q==2)write(108,*)'remap_q_1a:',massn2,masso(kk),z1(k),z2(k),dpo(kk),kk,k
-          endif
           Qdp(i,j,k,q) = massn2 - massn1
-          !if(Qdp(i,j,k,q)< huge(1))then
-          !   Qdp(i,j,k,q) = real(floor(massn2 - massn1),real_kind)
-          !endif
-          !Qdp(i,j,k,q) = real(floor(massn2 - massn1),real_kind)
-          if(present(ie_in))then
-             if(ie_in==82 .and. i==4 .and. j==4 .and. k==kprnt .and. q==2) write(108,*)'remap_q_1:',Qdp(i,j,k,q),massn2,massn1,massn2 - massn1,precision(massn1),range(massn1),huge(1)
-          endif
           massn1 = massn2
         enddo
       enddo

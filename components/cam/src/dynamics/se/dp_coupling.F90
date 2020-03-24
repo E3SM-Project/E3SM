@@ -2,8 +2,6 @@
 ! dynamics - physics coupling module
 !---------------------------------------------------------------------------------------------------
 module dp_coupling
-use module_perturb
-
   use constituents,   only: pcnst, cnst_name
   use cam_history,    only: outfld, write_inithist, hist_fld_active
   use dimensions_mod, only: np, npsq, nelemd, nlev
@@ -86,14 +84,11 @@ CONTAINS
     ! Transpose buffers
     real (kind=real_kind), allocatable, dimension(:) :: bbuffer 
     real (kind=real_kind), allocatable, dimension(:) :: cbuffer
-    integer :: iballi, jballi
     !---------------------------------------------------------------------------
 
     nullify(pbuf_chnk)
     nullify(pbuf_frontgf)
     nullify(pbuf_frontga)
-
-    cpter(1:pcols,0:pver) = huge(0)
 
     if (fv_nphys > 0) then
       nphys = fv_nphys
@@ -147,16 +142,6 @@ CONTAINS
           call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%derived%omega_p,      om_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp(1:ncols,:,:,ie))
           call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:), q_tmp(1:ncols,:,:,ie))
-          if(ie==82)then
-             !BALLI: Following block lets us know the 1st and second indicies of state%Q array
-             !do iballi = 1,4
-             !   do jballi = 1,4
-             !      write(107,*)'d_p_coupling_0:',q_tmp(14,kprnt,2,ie),elem(ie)%state%Q(jballi,iballi,kprnt,2),jballi,iballi
-             !   enddo
-             !enddo
-             !qtmp(npsq,pver,pcnst,nelemd)
-             write(107,*)'d_p_coupling_0:',q_tmp(14,kprnt,2,ie),elem(ie)%state%Q(4,4,kprnt,2)
-          endif
         end do
         call t_stopf('UniquePoints')
         !-----------------------------------------------------------------------
@@ -213,7 +198,6 @@ CONTAINS
           do m = 1,pcnst
             do ilyr = 1,pver
               phys_state(lchnk)%q(icol,ilyr,m) = q_tmp(ioff,ilyr,m,ie)
-              if(icolprnt(lchnk)==icol .and. m==2.and. ilyr==kprnt)write(107,*)'d_p_coupling_1:',phys_state(lchnk)%q(icol,ilyr,m),ioff,ie,icol
             end do ! ilyr
           end do ! m
         end do ! icol
@@ -229,7 +213,7 @@ CONTAINS
 
       if (par%dynproc) then
 
-         !!$omp parallel do private (ie, bpter, icol, ilyr, m, ncols)
+        !$omp parallel do private (ie, bpter, icol, ilyr, m, ncols)
         do ie = 1,nelemd
           call block_to_chunk_send_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter(1:nphys_sq,:))
           if (fv_nphys > 0) then
@@ -252,13 +236,6 @@ CONTAINS
               end if
               do m = 1,pcnst
                 bbuffer(bpter(icol,ilyr)+tsize-pcnst-1+m) = q_tmp(icol,ilyr,m,ie)
-                if(q_tmp(icol,ilyr,m,ie) > 2.272002E-003 .and. q_tmp(icol,ilyr,m,ie) < 2.275005E-003)then ! .and. ilyr == 49.and. m==4 .and. ie==7 .and. icol==4) then
-
-                !if(q_tmp(icol,ilyr,m,ie) < 2.275005E-003 .and. ilyr == 49.and. m==4 .and. ie==7 .and. icol==4) then
-                   !2.272003132086699E-003
-                   !if(ie==7 .and. icol==4 .and. ilyr == 49 .and. m==4) then
-                   write(108,*)'d_p_coupling_1d:',q_tmp(icol,ilyr,m,ie),icol,ilyr,m,ie
-                endif
               end do
             end do ! ilyr
           end do ! icol
@@ -271,18 +248,6 @@ CONTAINS
       call t_barrierf ('sync_blk_to_chk', mpicom)
       call t_startf ('block_to_chunk')
       call transpose_block_to_chunk(tsize, bbuffer, cbuffer)
-      !do lchnk = begchunk,endchunk
-         !if(icolprnt(lchnk)>0) then
-            !call block_to_chunk_recv_pters(lchnk,pcols,pver+1,46,cpter)
-            !write(107,*)'d_p_coupling_1c:',lchnk,pcols,pver+1,tsize
-            !do icol = 1,ncols
-            !   do ilyr = 1,pver
-            !      write(107,*)'d_p_coupling_1b:',cpter(icol,ilyr),icol,ilyr
-            !   enddo
-            !enddo
-         !endif
-         !if(icolprnt(lchnk)>0)write(107,*)'d_p_coupling_1a:',cbuffer(cpter(icolprnt(lchnk),49)+5+4),cpter(icolprnt(lchnk),49)
-      !enddo
       call t_stopf  ('block_to_chunk')
 
       !$omp parallel do private (lchnk, ncols, cpter, icol, ilyr, m, pbuf_chnk, pbuf_frontgf, pbuf_frontga)
@@ -302,13 +267,12 @@ CONTAINS
             phys_state(lchnk)%u    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+1)
             phys_state(lchnk)%v    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+2)
             phys_state(lchnk)%omega(icol,ilyr) = cbuffer(cpter(icol,ilyr)+3)
-            if (use_gw_front) then
+             if (use_gw_front) then
                 pbuf_frontgf(icol,ilyr) = cbuffer(cpter(icol,ilyr)+4)
                 pbuf_frontga(icol,ilyr) = cbuffer(cpter(icol,ilyr)+5)
              end if
              do m = 1,pcnst
                 phys_state(lchnk)%q(icol,ilyr,m) = cbuffer(cpter(icol,ilyr)+tsize-pcnst-1+m)
-                if(icolprnt(lchnk)==icol .and. ilyr==kprnt .and. m==2)write(107,*)'d_p_coupling_2:',phys_state(lchnk)%q(icol,ilyr,m),cpter(icol,ilyr)+tsize-pcnst-1+m,cpter(icol,ilyr),icol,ilyr,tsize,pcnst,m
              end do ! m
           end do ! ilyr
         end do ! icol
