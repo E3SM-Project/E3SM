@@ -301,7 +301,7 @@
     <group>run_component_cam</group>
     <file>env_run.xml</file>
     <desc>CAM namelist use_case.  Provides the use_case option for the
-      CAM build-namelist utility (which its called from
+      CAM build-namelist utility (which is called from
       $CASEROOT/Buildconf/cam.buildnml).  The CAM build-namelist
       leverages groups of namelist options (use cases) that are often
       paired with the CAM configure options.  These use cases are xml
