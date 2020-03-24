@@ -22,3 +22,4 @@ target_include_directories(atm SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CSM_SH
 set_target_properties(atm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
 target_link_libraries(atm scream_share scream_control p3 shoc ${SCREAM_TPL_LIBRARIES})
+target_link_directories(atm PUBLIC ${SCREAM_TPL_LIBRARY_DIRS})
