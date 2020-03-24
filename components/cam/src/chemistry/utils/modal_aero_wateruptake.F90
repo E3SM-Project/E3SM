@@ -71,7 +71,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    integer :: m, nmodes
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
-   logical :: presc_aero_data      ! produce output to generate prescribed aero files
+   logical :: get_presc_aero_data  ! produce output to generate prescribed aero files
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
@@ -86,7 +86,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-                     presc_aero_data_out = presc_aero_data, &
+                     get_presc_aero_data_out = get_presc_aero_data, &
                      pergro_mods_out = pergro_mods)
 
    do m = 1, nmodes
@@ -103,7 +103,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
             call add_default('dgnd_a'//trnum(2:3), 1, ' ')
             call add_default('dgnw_a'//trnum(2:3), 1, ' ')
          endif
-	 if (presc_aero_data .or. history_verbose) then 
+	 if (get_presc_aero_data .or. history_verbose) then 
 	   call add_default('wat_a'//trnum(3:3),  1, ' ')
 	 endif
       endif

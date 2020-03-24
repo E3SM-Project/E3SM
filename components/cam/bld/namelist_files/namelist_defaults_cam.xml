@@ -1416,7 +1416,7 @@
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>
 
 <!-- Control output to create prescribed aerosol climatology -->
-<presc_aero_data>       .false. </presc_aero_data>
+<get_presc_aero_data>       .false. </get_presc_aero_data>
 
 <!-- Control output to history file(s) -->
 <history_amwg>                 .true.   </history_amwg>
