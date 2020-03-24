@@ -8,6 +8,7 @@
     <add_link source_path="script_configuration_dir" source="scripts/copy_cell_indices_ISC.py" dest="copy_cell_indices_ISC.py"/>
     <copy_file source_path="script_configuration_dir" source="scripts/config_E3SM_coupling_files.ini" dest="config_E3SM_coupling_files.ini"/>
     <add_link source_path="script_configuration_dir" source="scripts/readme_E3SM_coupling_files" dest="readme"/>
+	<add_link source_path="initial_condition_database" source="MeltRatesRignot2013.nc" dest="MeltRatesRignot2013.nc"/>
 
 	<run_script name="run.py">
 		<step executable="python">
