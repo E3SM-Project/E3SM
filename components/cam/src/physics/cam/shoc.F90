@@ -327,22 +327,6 @@ subroutine shoc_main ( &
      qw,shoc_ql,u_wind,v_wind,&             ! Input
      se_b,ke_b,wv_b,wl_b)                   ! Input/Output
 
-  ! Compute the planetary boundary layer height, which is an
-  !   input needed for the length scale calculation.
-
-   call shoc_diag_obklen(&
-         shcol,uw_sfc,vw_sfc,&                          ! Input
-         wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
-         shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
-         ustar,kbfs,obklen)                             ! Output
-   
-   call pblintd(&
-         shcol,nlev,nlevi,&                   ! Input
-         zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
-         qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
-         ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
-         pblh)                                ! Output	 
-
   do t=1,nadv
 
     ! Check TKE to make sure values lie within acceptable
@@ -357,6 +341,22 @@ subroutine shoc_main ( &
        shcol,nlev,nlevi,&                   ! Input
        zt_grid,zi_grid,pdel,&               ! Input
        dz_zt,dz_zi,rho_zt)          ! Output
+       
+    ! Compute the planetary boundary layer height, which is an
+    !   input needed for the length scale calculation.
+
+    call shoc_diag_obklen(&
+       shcol,uw_sfc,vw_sfc,&                          ! Input
+       wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
+       shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+       ustar,kbfs,obklen)                             ! Output
+   
+    call pblintd(&
+       shcol,nlev,nlevi,&                   ! Input
+       zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
+       qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+       ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
+       pblh)                                ! Output       
 
     ! Update the turbulent length scale
     call shoc_length(&
