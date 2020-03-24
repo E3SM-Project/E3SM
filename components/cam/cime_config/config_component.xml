@@ -97,6 +97,8 @@
       <value compset="_CAM4%WCSF"     >-chem waccm_mozart_sulfur -carma sulfate</value>
       <value compset="_CAM[45]%WCMX"  >-waccmx</value>
       <!-- old MMF / super-parameterization compsets -->
+      <!-- These are needed to test against the ECP fork  -->
+      <!-- they will be removed in a future PR -->
       <value compset="_CAM5%SP[12]V1"        >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm_dx 1000 -crm_dt 5 </value>
       <value compset="_CAM5%SP[12]V1"        >-microphys mg2  </value>
       <value compset="_CAM5%SP[12]V1"        >-cppdefs ' -DMMF_DIR_NS ' </value>
