@@ -52,6 +52,9 @@ def scan_for_test_ids(old_test_archive, mach_comp, test_id_root):
 def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_root, old_test_archive, avoid_test_id):
 ###############################################################################
 
+    bytes_allowed = machine.get_value("MAX_GB_OLD_TEST_DATA") * 1000000000
+    expect(bytes_allowed > 0, "Machine {} does not support test archiving".format(machine.get_machine_name()))
+
     # Remove old cs.status, cs.submit. I don't think there's any value to leaving these around
     # or archiving them
     for old_cs_file in glob.glob("{}/cs.*".format(scratch_root)):
@@ -96,7 +99,6 @@ def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_r
 
     # Check size of archive
     bytes_of_old_test_data = int(run_cmd_no_fail("du -sb {}".format(old_test_archive)).split()[0])
-    bytes_allowed = machine.get_value("MAX_GB_OLD_TEST_DATA") * 1000000000
     if bytes_of_old_test_data > bytes_allowed:
         logging.info("TEST ARCHIVER: Too much test data, {}GB (actual) > {}GB (limit)".format(bytes_of_old_test_data / 1000000000, bytes_allowed / 1000000000))
         old_test_ids = scan_for_test_ids(old_test_archive, mach_comp, test_id_root)
