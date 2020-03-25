@@ -66,12 +66,15 @@ void flip_vertically(FortranData& d)
   flip_vertically(d.qtracers);
   flip_vertically(d.tk);
   flip_vertically(d.tkh);
+  flip_vertically(d.shoc_ql); // TODO: shoc_ql is actually in/out, not out
 }
 
 // Reference elevations for data interpolation (bottom-to-top).
+// (If this looks weird, it's because I'm trying to get bit-for-bit
+//  agreement with scream-docs/shoc-port/shocintr.py.)
 const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
-const std::array<Real, 5> qw_ref = {0.017, 0.0163, 0.0107, 0.0042, 0.003};
-const std::array<Real, 5> ql_ref = {0.0, 0.005, 0.007, 0.006, 0.0};
+const std::array<Real, 5> qw_ref = {1e-3*17, 1e-3*16.3, 1e-3*10.7, 1e-3*4.2, 1e-3*3};
+const std::array<Real, 5> ql_ref = {0.0, 1e-3*5, 1e-3*7., 1e-3*6., 0.0};
 const std::array<Real, 5> theta_ref = {299.7, 298.7, 302.4, 308.2, 312.85};
 
 // Wind speed interpolation data.
@@ -195,17 +198,17 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     compute_column_pressure(i, d.nlev, d.zt_grid, d.pres);
     compute_column_pressure(i, d.nlevi, d.zi_grid, d.presi);
 
-    // Compute pressure differences.
+    // Compute pressure differences and the exner functon.
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
+      d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
     }
 
-    // Initialize host_dse and exner, which are assumed to be valid inputs to
-    // shoc_main.
+    // Zero out other fields.
     for (Int k = 0; k < nlev; ++k) {
-      d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
-      d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thv(i, k) +
-        consts::gravit * d.zt_grid(i, k);
+      d.host_dse(i, k) = 0;
+      d.tk(i, k) = 0;
+      d.tkh(i, k) = 0;
     }
   }
 
