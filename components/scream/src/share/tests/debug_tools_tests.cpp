@@ -124,6 +124,7 @@ TEST_CASE ("fpes","") {
 
   SECTION ("default-fpes") {
     printf ("*) testing default fpes...\n");
+    feclearexcept(FE_ALL_EXCEPT);
     int mask = scream::get_enabled_fpes();
     int num_expected_fpes = has_fe_divbyzero(mask) +
                             has_fe_invalid(mask)*2 +
@@ -139,6 +140,7 @@ TEST_CASE ("fpes","") {
 
   SECTION ("user-requested-fpes") {
     printf ("*) testing user-enabled fpes...\n");
+    feclearexcept(FE_ALL_EXCEPT);
     disable_all_fpes();
     enable_fpes(FE_DIVBYZERO);
     int mask = scream::get_enabled_fpes();
@@ -156,6 +158,7 @@ TEST_CASE ("fpes","") {
 
   SECTION ("user-requested-fpes") {
     printf ("*) testing user-disabled fpes...\n");
+    feclearexcept(FE_ALL_EXCEPT);
     enable_fpes(FE_ALL_EXCEPT);
     disable_fpes(FE_DIVBYZERO);
     int mask = scream::get_enabled_fpes();
