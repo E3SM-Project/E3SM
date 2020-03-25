@@ -1012,20 +1012,9 @@ void get_time_space_phys_variables_f(Real t_, Real pres_, Real rho_, Real xxlv_,
   typename P3F::view_1d<Real> t_d("t_h", 9);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
-  Real local_mu     = *mu_;
-  Real local_dv     = *dv_;
-  Real local_sc     = *sc_;
-  Real local_dqsdt  = *dqsdt_;
-  Real local_dqsidt = *dqsidt_;
-  Real local_ab     = *ab_;
-  Real local_abi    = *abi_;
-  Real local_kap    = *kap_;
-  Real local_eii    = *eii_;
-
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       typename P3F::Spack t(t_), pres(pres_), rho(rho_), xxlv(xxlv_), xxls(xxls_), qvs(qvs_), qvi(qvi_);
-      typename P3F::Spack mu(local_mu), dv(local_dv), sc(local_sc), dqsdt(local_dqsdt),
-	dqsidt(local_dqsidt), ab(local_ab), abi(local_abi), kap(local_kap), eii(local_eii);
+      typename P3F::Spack mu, dv, sc, dqsdt,dqsidt, ab, abi, kap, eii;
 
       P3F::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
 					 ab, abi, kap, eii);
