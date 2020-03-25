@@ -561,6 +561,7 @@ contains
     ! LOCAL VARIABLES
     integer :: n2, n, nt, begr, endr, nliq, nfrz
     real(R8) :: tmp1, tmp2
+    real(R8) :: shum
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -615,6 +616,8 @@ contains
           THeat%forc_lwrad(n)= x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
           THeat%forc_solar(n)= x2r_r%rAttr(index_x2r_Faxa_swvdr,n2) + x2r_r%rAttr(index_x2r_Faxa_swvdf,n2) + &
                                x2r_r%rAttr(index_x2r_Faxa_swndr,n2) + x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
+          shum = x2r_r%rAttr(index_x2r_Sa_shum,n2)
+          THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
        end if
     enddo
 
