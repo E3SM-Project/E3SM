@@ -33,7 +33,7 @@ contains
 
    use EDParamsMod, only : FatesRegisterParams, FatesReceiveParams
    use SFParamsMod, only : SpitFireRegisterParams, SpitFireReceiveParams
-   use PRTParamsFATESMod, only : PRTRegisterParams, PRTRecieveParams
+   use PRTInitParamsFatesMod, only : PRTRegisterParams, PRTReceiveParams
    use FatesSynchronizedParamsMod, only : FatesSynchronizedParamsInst
 
    implicit none
@@ -62,7 +62,7 @@ contains
 
       call FatesReceiveParams(fates_params)
       call SpitFireReceiveParams(fates_params)
-      call PRTRecieveParams(fates_params)
+      call PRTReceiveParams(fates_params)
       call FatesSynchronizedParamsInst%ReceiveParams(fates_params)
 
       call fates_params%Destroy()

@@ -652,22 +652,22 @@
 
   <compset>
     <alias>ICLM45ED</alias>
-    <lname>2000_DATM%QIA_CLM45%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>2000_DATM%QIA_CLM45%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>ICBCLM45ED</alias>
-    <lname>2000_SATM_CLM45%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>2000_SATM_CLM45%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
   
   <compset>
     <alias>I1850CLM45ED</alias>
-    <lname>1850_DATM%QIA_CLM45%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>1850_DATM%QIA_CLM45%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
   
   <compset>
     <alias>ICB1850CLM45ED</alias>
-    <lname>1850_SATM_CLM45%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>1850_SATM_CLM45%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>

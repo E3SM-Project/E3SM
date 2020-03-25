@@ -107,7 +107,7 @@ OPTIONS
                                 fates     = functionaly assembled terrestrial ecosystem simulator
                                             with native below ground bgc
                                             This toggles on the namelist variables:
-                                            use_fates, use_vertsoilc, use_century_decomp
+                                            use_fates and no-megan
 
      -bgc_spinup "on|off"     CLM 4.5 Only. For CLM 4.0, spinup is controlled from configure.
                               Turn on given spinup mode for BGC setting of CN or FATES
