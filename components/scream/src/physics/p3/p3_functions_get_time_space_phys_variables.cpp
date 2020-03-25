@@ -9,7 +9,7 @@ namespace p3 {
  * default device.
  */
 
-  template struct Functions<Real,DefaultDevice>;
+template struct Functions<Real,DefaultDevice>;
 
 } // namespace p3
 } // namespace scream

@@ -15,7 +15,7 @@ void Functions<S,D>
 				Spack& dqsidt, Spack& ab, Spack& abi, Spack& kap, Spack& eii)
 {
   //time/space varying physical variables
-  mu = sp(1.496e-6) * pow(t,sp(1.5))/(t+sp(120));
+  mu = sp(1.496e-6) * pow(t,sp(1.5))/(t+120);
   dv = sp(8.794e-5)*pow(t,sp(1.81))/pres;
   sc = mu/(rho*dv);
 
