@@ -6,7 +6,7 @@ set(COSP_SOURCES
    cam/src/physics/cosp2/external/src/cosp_constants.F90
    cam/src/physics/cosp2/external/src/simulator/cosp_cloudsat_interface.F90
    cam/src/physics/cosp2/external/src/cosp_config.F90
-   cam/src/physics/cosp2/external/src/cosp.F90
+   cam/src/physics/cosp2/local/cosp.F90
    cam/src/physics/cosp2/external/src/cosp_stats.F90
    cam/src/physics/cosp2/external/src/simulator/quickbeam/quickbeam.F90
    cam/src/physics/cosp2/external/src/simulator/parasol/parasol.F90
