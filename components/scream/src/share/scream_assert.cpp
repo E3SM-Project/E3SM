@@ -33,6 +33,10 @@ void runtime_abort(const std::string& message, int code) {
 } // namespace scream
 
 void enable_fpes (const int mask) {
+  // Make sure we don't throw because one of those exceptions
+  // was already set, due to previous calculations
+  feclearexcept(mask);
+
   feenableexcept(mask);
 }
 
