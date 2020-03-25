@@ -9,7 +9,66 @@ namespace ic {
 
 namespace {
 
-// Reference elevations for data interpolation.
+//------------------------------------------------------------------------
+// **** IMPORTANT! ****
+// SHOC indexes elevations from top to bottom. However, our initial stab
+// at an example case is designed to compare exactly against
+// scream-docs/shoc-port/shocintr.py, which initializes values bottom-to-
+// top and then flips everything, so we do the same.
+//------------------------------------------------------------------------
+
+using KT     = KokkosTypes<HostDevice>;
+using Scalar = Real;
+using Array1 = typename KT::template lview<Scalar*>;
+using Array2 = typename KT::template lview<Scalar**>;
+using Array3 = typename KT::template lview<Scalar***>;
+
+// Flip all vertical data in the given array.
+void flip_vertically(Array2& array)
+{
+  int shcol = array.extent(0);
+  int nlev = array.extent(1);
+  for (int i = 0; i < shcol; ++i)
+    for (int k = 0; k < nlev/2; ++k)
+      std::swap(array(i, k), array(i, nlev-1-k));
+}
+
+// Flip all vertical data in the given tracers array.
+void flip_vertically(Array3& array)
+{
+  int shcol = array.extent(0);
+  int nlev = array.extent(1);
+  int num_qtracers = array.extent(2);
+  for (int i = 0; i < shcol; ++i)
+    for (int k = 0; k < nlev/2; ++k)
+      for (int l = 0; l < num_qtracers; ++l)
+        std::swap(array(i, k, l), array(i, nlev-1-k, l));
+}
+
+// Flip all vertical Fortran data.
+void flip_vertically(FortranData& d)
+{
+  flip_vertically(d.zt_grid);
+  flip_vertically(d.zi_grid);
+  flip_vertically(d.pres);
+  flip_vertically(d.presi);
+  flip_vertically(d.pdel);
+  flip_vertically(d.thv);
+  flip_vertically(d.w_field);
+  flip_vertically(d.exner);
+  flip_vertically(d.host_dse);
+  flip_vertically(d.tke);
+  flip_vertically(d.thetal);
+  flip_vertically(d.qw);
+  flip_vertically(d.u_wind);
+  flip_vertically(d.v_wind);
+  flip_vertically(d.wthv_sec);
+  flip_vertically(d.qtracers);
+  flip_vertically(d.tk);
+  flip_vertically(d.tkh);
+}
+
+// Reference elevations for data interpolation (bottom-to-top).
 const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
 const std::array<Real, 5> qw_ref = {0.017, 0.0163, 0.0107, 0.0042, 0.003};
 const std::array<Real, 5> ql_ref = {0.0, 0.005, 0.007, 0.006, 0.0};
@@ -44,11 +103,6 @@ Real interpolate_data(const std::array<Real, N>& ref_elevations,
     return ref_data[N-1];
   }
 }
-
-using KT     = KokkosTypes<HostDevice>;
-using Scalar = Real;
-using Array1 = typename KT::template lview<Scalar*>;
-using Array2 = typename KT::template lview<Scalar**>;
 
 // Calculates hydrostatic pressure for a specific column given elevation
 // data.
@@ -92,7 +146,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     d.host_dx(i) = 5300.0;
     d.host_dy(i) = 5300.0;
 
-    d.zt_grid(i, 0) = 0;
+    d.zi_grid(i, 0) = 0;
     for (Int k = 0; k < nlev; ++k) {
 
       // Set up the vertical grid.
@@ -154,6 +208,9 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
         consts::gravit * d.zt_grid(i, k);
     }
   }
+
+  // Flip the data to match SHOC's vertical indexing.
+  flip_vertically(d);
 
   return dp;
 }

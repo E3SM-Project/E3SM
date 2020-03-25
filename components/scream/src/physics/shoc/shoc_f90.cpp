@@ -158,6 +158,7 @@ void shoc_main(FortranData& d) {
               d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(),
               d.uw_sec.data(), d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(),
               d.brunt.data());
+printf("%.16g %.16g %.16g %.16g\n", d.host_dse(0, 0), d.tke(0, 0), d.thetal(0, 0), d.shoc_cldfrac(0, 0));
 }
 
 int test_FortranData () {
@@ -177,17 +178,13 @@ Int check_against_python(const FortranData& d)
   Int nerr = 0;
   if (not util::is_single_precision<Real>::value) {
     const double tol = 0;
-printf("host_dse = %g\n", d.host_dse(0, d.nlev-1));
-printf("tke = %g\n", d.tke(0, d.nlev-1));
-printf("thetal = %g\n", d.thetal(0, d.nlev-1));
-printf("cldfrac = %g\n", d.shoc_cldfrac(0, d.nlev-1));
-    if (util::reldif<double>(d.host_dse(0,d.nlev-1), 359402.4728002207) > tol)
+    if (util::reldif<double>(d.host_dse(0, 0), 359402.4728002207) > tol)
       ++nerr;
-    if (util::reldif<double>(d.tke(0,d.nlev-1), 0.0004) > tol)
+    if (util::reldif<double>(d.tke(0, 0), 0.0004) > tol)
       ++nerr;
-    if (util::reldif<double>(d.thetal(0,d.nlev-1), 310.0130659403337) > tol)
+    if (util::reldif<double>(d.thetal(0, 0), 310.0130659403337) > tol)
       ++nerr;
-    if (util::reldif<double>(d.shoc_cldfrac(0,d.nlev-1), 0.0) > tol)
+    if (util::reldif<double>(d.shoc_cldfrac(0, 0), 0.0) > tol)
       ++nerr;
   }
   return nerr;

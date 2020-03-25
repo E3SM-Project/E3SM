@@ -333,7 +333,6 @@ subroutine shoc_main ( &
   ! for the computation of total energy before SHOC is called.  This is for an
   ! effort to conserve energy since liquid water potential temperature (which SHOC
   ! conserves) and static energy (which E3SM conserves) are not exactly equal.
-
   call shoc_energy_integrals(&
      shcol,nlev,host_dse,pdel,&             ! Input
      qw,shoc_ql,u_wind,v_wind,&             ! Input

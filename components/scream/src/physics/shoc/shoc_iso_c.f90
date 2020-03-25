@@ -83,9 +83,9 @@ contains
        qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3
     real(kind=c_real), intent(out), dimension(shcol, nlev) :: wqls_sec, isotropy, brunt
 
-    call shoc_main(shcol,nlev,nlevi,dtime,nadv,host_dx, host_dy,thv,   &
+    call shoc_main(shcol, nlev, nlevi, dtime, nadv, host_dx, host_dy, thv,   &
      zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
-     wtracer_sfc, num_qtracers, w_field, exner,phis, host_dse, tke, thetal,  &
+     wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, &
      qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, &
      pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec,  &
      wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt)
