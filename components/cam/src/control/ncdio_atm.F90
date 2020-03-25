@@ -115,7 +115,6 @@ contains
     integer                   :: lonidx, latidx , iballi
 
     nullify(iodesc)
-    field = huge(1.0_r8)
 
     !
     !-----------------------------------------------------------------------
@@ -228,6 +227,7 @@ contains
 !              call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
 !           end if
 !        end if
+        write(102,*)'ncid:',ncid%fh
         call pio_read_darray(ncid, varid, iodesc, field, ierr)
       end if
     end if  ! end of readvar_tmp
@@ -310,7 +310,7 @@ contains
     integer                   :: lonidx, latidx
 
     nullify(iodesc)
-    field = huge(1.0_r8)
+
     !
     !-----------------------------------------------------------------------
     !
@@ -531,7 +531,7 @@ contains
     integer                   :: lonidx, latidx, iballi
 
     nullify(iodesc)
-    field = huge(1.0_r8)
+
     !
     !-----------------------------------------------------------------------
     !
@@ -727,7 +727,7 @@ contains
     integer                   :: lonidx, latidx
 
     nullify(iodesc)
-    field = huge(1.0_r8)
+
     !
     !-----------------------------------------------------------------------
     !

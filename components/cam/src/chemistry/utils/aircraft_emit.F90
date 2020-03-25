@@ -748,13 +748,13 @@ contains
             native_grid_strct%native_grid_flds_tslices(:,:,:,2), found, &
             gridname='physgrid', timelevel=native_grid_strct%time_coord%indxs(2))
        
-       do j = -10,12222
-          call infld(trim(spc_name), fh, dim1name, dim2name, 'lev',&
-            1, pcols, 1, native_grid_strct%lev_frc, begchunk, endchunk, &
-            tslices_dum, found, &
-            gridname='physgrid', timelevel=j)
-          i = j+1
-       enddo
+       !do j = -10,12222
+       !   call infld(trim(spc_name), fh, dim1name, dim2name, 'lev',&
+       !     1, pcols, 1, native_grid_strct%lev_frc, begchunk, endchunk, &
+       !     tslices_dum, found, &
+       !     gridname='physgrid', timelevel=j)
+       !   i = j+1
+       !enddo
 
 
 
