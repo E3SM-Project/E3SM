@@ -1150,9 +1150,9 @@ subroutine diag_third_shoc_moments(&
   a0=(0.52_rtype*c**(-2))/(c-2._rtype)
   a1=0.87_rtype/(c**2)
   a2=0.5_rtype/c
-  a3=0.6_rtype8/(c*(c-2._rtype))
-  a4=2.4_rtype8/(3._rtype*c+5._rtype)
-  a5=0.6_rtype8/(c*(3._rtype+5._rtype*c))
+  a3=0.6_rtype/(c*(c-2._rtype))
+  a4=2.4_rtype/(3._rtype*c+5._rtype)
+  a5=0.6_rtype/(c*(3._rtype+5._rtype*c))
 
   ! set lower condition
   w3(:,nlevi) = 0._rtype
