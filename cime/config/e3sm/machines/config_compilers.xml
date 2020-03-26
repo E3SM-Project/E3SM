@@ -109,6 +109,13 @@ flags should be captured within MPAS CMake files.
     <base> -Wl,--allow-multiple-definition -h byteswapio </base>
     <append compile_threaded="FALSE"> -h noomp </append>
   </LDFLAGS>
+  <MPICC> cc  </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler COMPILER="gnu">
@@ -2320,8 +2327,15 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
+  <NETCDF_C_PATH>$ENV{NETCDF}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
   <SLIBS>
-    <append>-L$ENV{NETCDF}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -lsci -llapack -lblas </append>
+    <append> $SHELL{$ENV{NETCDF_FORTRAN}/bin/nf-config --flibs} </append>
+    <append> $SHELL{$ENV{NETCDF}/bin/nc-config --libs} </append>
+# libsci (Cray's Math library: with optional MPI, OpenMP support) is loaded automatically
+# by the Cray compiler wrappers based on options
+    <!-- <append> -lsci </append> -->
   </SLIBS>
 </compiler>
 
