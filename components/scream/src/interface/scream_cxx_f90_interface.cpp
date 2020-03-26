@@ -6,10 +6,11 @@
 #include "share/grid/se_grid.hpp"
 #include "control/atmosphere_driver.hpp"
 
-#include "physics/p3/atmosphere_microphysics.hpp"
+#include "dynamics/register_dynamics.hpp"
+#include "physics/register_physics.hpp"
+
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "physics/shoc/atmosphere_macrophysics.hpp"
 #include "physics/shoc/scream_shoc_interface.hpp"
 
 #include "control/tests/dummy_grid.hpp"
@@ -63,11 +64,8 @@ void scream_init (const MPI_Fint& f_comm,
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
-  auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
-  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
-  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
-
+  register_dynamics();
+  register_physics();
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
