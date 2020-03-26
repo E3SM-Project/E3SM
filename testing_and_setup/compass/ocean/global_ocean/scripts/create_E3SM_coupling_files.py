@@ -386,30 +386,38 @@ def mapping(config, atm_scrip_tag):  # {{{
     atm_scrip_file = '{}.nc'.format(atm_scrip_tag)
     make_link('{}/{}'.format(atm_scrip_path, atm_scrip_file), atm_scrip_file)
 
+    if 'CONDA_PREFIX' not in os.environ:
+        raise ValueError('A COMPASS conda environment needs to be loaded.')
+    mpirun_path = '{}/bin/mpirun'.format(os.environ['CONDA_PREFIX'])
+    if os.path.exists(mpirun_path):
+        prefix = [mpirun_path, '-n', nprocs]
+    else:
+        prefix = list()
+
     for method, short in [['conserve', 'aave'], ['bilinear', 'blin'],
                           ['patch', 'patc']]:
 
         # Ocean to atmosphere
         mapping_file = 'map_{}{}_TO_{}_{}.{}.nc'.format(
             mesh_name, nomaskStr, atm_scrip_tag, short, date_string)
-        args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+        args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', ocn_scrip_file,
                 '--destination', atm_scrip_file,
                 '--weight', mapping_file,
                 '--ignore_unmapped']
-        run_command(args)
+        run_command(prefix + args)
 
         # Atmosphere to ocean
         mapping_file = 'map_{}_TO_{}{}_{}.{}.nc'.format(
             atm_scrip_tag, mesh_name, nomaskStr, short, date_string)
-        args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+        args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', atm_scrip_file,
                 '--destination', ocn_scrip_file,
                 '--weight', mapping_file,
                 '--ignore_unmapped']
-        run_command(args)
+        run_command(prefix + args)
 
     if ice_shelf_cavities:
         print("\n Mapping files with masks for ice shelf cavities")
@@ -424,24 +432,25 @@ def mapping(config, atm_scrip_tag):  # {{{
             # Ocean to atmosphere
             mapping_file = 'map_{}.mask_TO_{}_{}.{}.nc'.format(
                 mesh_name, atm_scrip_tag, short, date_string)
-            args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+            args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', ocn_scrip_file,
                     '--destination', atm_scrip_file,
                     '--weight', mapping_file,
                     '--ignore_unmapped']
-            run_command(args)
+            run_command(prefix + args)
 
             # Atmosphere to ocean
             mapping_file = 'map_{}_TO_{}.mask_{}.{}.nc'.format(
                 atm_scrip_tag, mesh_name, short, date_string)
-            args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+            args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', atm_scrip_file,
                     '--destination', ocn_scrip_file,
                     '--weight', mapping_file,
                     '--ignore_unmapped']
-            run_command(args)
+            run_command(prefix + args)
+
 # }}}
 
 
@@ -598,6 +607,14 @@ def salinity_restoring(config):  # {{{
                                                      date_string)
     make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
 
+    if 'CONDA_PREFIX' not in os.environ:
+        raise ValueError('A COMPASS conda environment needs to be loaded.')
+    mpirun_path = '{}/bin/mpirun'.format(os.environ['CONDA_PREFIX'])
+    if os.path.exists(mpirun_path):
+        prefix = [mpirun_path, '-n', nprocs]
+    else:
+        prefix = list()
+
     # execute commands
     salinity_restoring_output_file = \
         'sss.PHC2_monthlyClimatology.{}.{}.nc'.format(mesh_name, date_string)
@@ -607,13 +624,13 @@ def salinity_restoring(config):  # {{{
         # mapping file, 1x1 to ocean mesh
         map_Levitus_file = 'map_Levitus_1x1_TO_{}_{}.{}.nc'.format(
             mesh_name, short, date_string)
-        args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+        args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', 'grid_Levitus_1x1_scrip_file.nc',
                 '--destination', ocn_scrip_file,
                 '--weight', map_Levitus_file,
                 '--ignore_unmapped']
-        run_command(args)
+        run_command(prefix + args)
 
     # remap from 1x1 to model grid
     args = ['ncremap',
