@@ -1705,6 +1705,17 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
                     surfaceAirTemperature_F, basalHeatFlux_F,
                     indexToCellID_F);
 
+    // apparent mass balance
+    std::vector<double> appMbData(smbData.size()),
+                        appMbUncertaintyData(smbData.size());
+ 
+    for (int i=0; i<smbData.size(); ++i) {
+      appMbData[i] = smbData[i]+bmbData[i]- observedDHDtData[i];
+      //assuming fields are uncorrelated
+      double variance = std::pow(smbUncertaintyData[i],2)+std::pow(bmbUncertaintyData[i],2)+std::pow(observedDHDtUncertaintyData[i],2);
+      appMbUncertaintyData[i] =std::sqrt(variance);
+    }
+   
 
     // Write out individual fields
     write_ascii_mesh_field_int(indexToCellIDData, "mpas_cellID");
@@ -1724,6 +1735,14 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     write_ascii_mesh_field(bmbData, "basal_mass_balance");
     write_ascii_mesh_field(bmbUncertaintyData, "basal_mass_balance_uncertainty");
+    
+    write_ascii_mesh_field(observedDHDtData, "dhdt");
+    write_ascii_mesh_field(observedDHDtUncertaintyData, "dhdt_uncertainty");
+    
+    write_ascii_mesh_field(appMbData, "apparent_mass_balance");
+    write_ascii_mesh_field(appMbUncertaintyData, "apparent_mass_balance_uncertainty");
+    
+    write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
 
     write_ascii_mesh_field(effecPressData, "effective_pressure");
 
@@ -1767,10 +1786,6 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
        std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
     }
 
-    write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
-
-    write_ascii_mesh_field(observedDHDtData, "dhdt");
-    write_ascii_mesh_field(observedDHDtUncertaintyData, "dhdt_uncertainty");
 
     std::cout << "\nWriting of all Albany fields complete." << std::endl;
 
