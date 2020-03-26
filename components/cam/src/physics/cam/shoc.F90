@@ -1,4 +1,4 @@
-!--------------------------------------------------------------
+!c_doubli--------------------------------------------------------------
 ! SHOC parameterization
 !   SHOC = Simplified Higher Order Closure
 !   reference, Bogenschutz and Krueger 2013
@@ -1723,7 +1723,7 @@ subroutine shoc_tke(&
   lambda_low=0.001_rtype
   lambda_high=0.04_rtype
   lambda_slope=0.65_rtype
-  brunt_low=0.02
+  brunt_low=0.02_rtype
 
   ! Turbulent coefficients
   Cs=0.15_rtype
