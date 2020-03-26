@@ -227,7 +227,6 @@ contains
 !              call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
 !           end if
 !        end if
-        write(102,*)'ncid:',ncid%fh
         call pio_read_darray(ncid, varid, iodesc, field, ierr)
       end if
     end if  ! end of readvar_tmp

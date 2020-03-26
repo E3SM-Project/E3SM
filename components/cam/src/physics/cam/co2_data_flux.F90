@@ -243,12 +243,6 @@ subroutine co2_data_flux_advance (xin)
            1, pcols, begchunk, endchunk, xin%co2bdy(:,:,2), found, &
            gridname='physgrid', timelevel=xin%time_coord%indxs(2))
 
-      !do j = -10,12222
-      !   call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
-      !        1, pcols, begchunk, endchunk, co2bdy_dum, found, &
-      !        gridname='physgrid', timelevel=j)
-      !   i = j+1
-      !enddo
 
 
 
