@@ -24,7 +24,6 @@
 !----------------------------------------------------------------------------------
 
  check_finidat_year_consistency = .false.
- finidat = '20181209.SPIN_CNPECACNT_1850.ne30_oECv3.edison.clm2.r.0510-01-01-00000.nc'
  stream_fldfilename_ndep = '/compyfs/inputdata/lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc' 
  hist_nhtfrq = 0,-24,0,0
  hist_mfilt = 1,365,1,1
