@@ -16,7 +16,7 @@ module atm_comp_mct
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData
-  use iso_c_binding   , only: c_int, c_double
+  use iso_c_binding   , only: c_int, c_double, C_CHAR, C_NULL_CHAR
 
   ! !PUBLIC TYPES:
   implicit none
@@ -55,12 +55,13 @@ CONTAINS
     ! F90<->CXX interfaces
     !
     interface
-      subroutine scream_init(f_comm,start_ymd,start_tod) bind(c)
-        use iso_c_binding, only: c_int
+      subroutine scream_init(f_comm,start_ymd,start_tod,yaml_fname) bind(c)
+        use iso_c_binding, only: c_int, C_CHAR
         !
         ! Arguments
         !
-        integer (kind=c_int), intent(in) :: start_tod, start_ymd, f_comm
+        integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm
+        character(kind=C_CHAR), target, intent(in) :: yaml_fname(*)
       end subroutine scream_init
     end interface
     ! !DESCRIPTION: initialize dead atm model
@@ -84,6 +85,8 @@ CONTAINS
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
     integer (kind=SHR_KIND_IN)       :: start_tod, start_ymd
+
+    character(kind=C_CHAR,len=80)    :: yaml_fname = "data/scream_input.yaml"
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -134,7 +137,7 @@ CONTAINS
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-    call scream_init (mpicom, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int))
+    call scream_init (mpicom, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int),TRIM(yaml_fname)//C_NULL_CHAR)
     if (nxg == 0 .and. nyg == 0) then
        atm_present = .false.
        atm_prognostic = .false.

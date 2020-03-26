@@ -16,12 +16,18 @@
 
 #include "interface/ScreamContext.hpp"
 #include "share/mpi/scream_comm.hpp"
+#include "share/scream_parse_yaml_file.hpp"
 
 extern "C"
 {
 
 /*===============================================================================================*/
-void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start_tod) {
+
+// WARNING: make sure input_yaml_file is a null-terminated string!
+void scream_init (const MPI_Fint& f_comm,
+                  const int& start_ymd,
+                  const int& start_tod,
+                  const char* input_yaml_file) {
   using namespace scream;
   using namespace scream::control;
 
@@ -32,33 +38,27 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   constexpr int num_cols  = 32;
 
   // First of all, initialize the scream session
-  initialize_scream_session();
-  // Get the context
+  scream::initialize_scream_session();
+
+  // Create a the context
   auto& c = ScreamContext::singleton();
+
   // Create the C MPI_Comm from the Fortran one
   MPI_Comm mpi_comm_c = MPI_Comm_f2c(f_comm);
-  auto& comm = c.create<Comm>(mpi_comm_c);
+  auto& atm_comm = c.create<scream::Comm>(mpi_comm_c);
+
 
   // Create a parameter list for inputs
-  ParameterList ad_params("Atmosphere Driver");
-  auto& proc_params = ad_params.sublist("Atmosphere Processes");
+  printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
+  ParameterList scream_params("Scream Parameters");
+  parse_yaml_file (input_yaml_file, scream_params);
+  scream_params.print();
 
-  proc_params.set("Number of Entries",3);
-  proc_params.set<std::string>("Schedule Type","Sequential");
+  error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
+       "Error! Sublist 'Atmosphere Driver' not found inside '" +
+       std::string(input_yaml_file) + "'.\n");
 
-  auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "SA");
-  p0.set<std::string>("Grid","Physics");
-  auto& p1 = proc_params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "P3");
-  p1.set<std::string>("Grid","Physics");
-  auto& p2 = proc_params.sublist("Process 2");
-  p2.set<std::string>("Process Name", "SHOC");
-  p2.set<std::string>("Grid","Physics");
-
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  gm_params.set<std::string>("Type","User Provided");
-  gm_params.set<std::string>("Reference Grid","Physics");
+  auto& ad_params = scream_params.sublist("Atmosphere Driver");
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
@@ -78,9 +78,6 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   auto& upgm = c.create<UserProvidedGridsManager>(); // upgm;
   upgm.set_grid(std::make_shared<DummyPhysicsGrid>(num_cols));
   upgm.set_reference_grid("Physics");
-
-  // Create a comm
-  Comm atm_comm (MPI_COMM_WORLD);
 
   // Create the bare ad, then init it
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.

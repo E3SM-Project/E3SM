@@ -1,0 +1,19 @@
+%YAML 1.1
+---
+Atmosphere Driver:
+  Atmosphere Processes:
+    Number of Entries: 2
+    Schedule Type: Sequential
+    Process 0:
+      Process Name: SA
+      Grid:         Physics
+    Process 1:
+      Process Name: P3
+      Grid:         Physics
+    Process 2:
+      Process Name: SHOC
+      Grid:         Physics
+  Grids Manager:
+    Type: User Provided
+    Reference Grid: Physics
+...
