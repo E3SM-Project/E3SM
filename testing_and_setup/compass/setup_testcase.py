@@ -517,6 +517,8 @@ def generate_driver_scripts(config_file, configs):  # {{{
         if not os.path.exists(init_path):
             os.makedirs(init_path)
 
+        link_load_compass_env(init_path, configs)
+
         # Create script file
         script = open('{}/{}'.format(init_path, name), 'w')
 
@@ -1576,6 +1578,22 @@ def add_executable_prefix(executable, configs, conda_mpi):  # {{{
         command_args = prefix + command_args
     return command_args
 # }}}
+
+def link_load_compass_env(init_path, configs):  # {{{
+
+    if configs.getboolean('conda', 'link_load_compass'):
+        target = configs.get('conda', 'load_compass_script')
+
+        link_name = '{}/load_compass_env.sh'.format(init_path)
+        try:
+            os.symlink(target, link_name)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                os.remove(link_name)
+                os.symlink(target, link_name)
+            else:
+                raise e
+# }}}
 # }}}
 
 
@@ -1617,6 +1635,10 @@ if __name__ == "__main__":
                         help="If set, script will create case directories in "
                              "work_dir rather than the current directory.",
                         metavar="PATH")
+    parser.add_argument("--link_load_compass", dest="link_load_compass",
+                        action="store_true",
+                        help="If set, a link to load_compass_env.sh is included"
+                             " with each test case")
 
     args = parser.parse_args()
 
@@ -1716,6 +1738,17 @@ if __name__ == "__main__":
             # MPI is installed in that conda environment
             config.set('conda', 'use_conda_mpi', 'True')
             config.set('conda', 'python_prefix', '{} -np 1'.format(mpirun_path))
+
+    if not config.has_option('conda', 'link_load_compass'):
+        config.set('conda', 'link_load_compass', 'False')
+
+    if args.link_load_compass:
+        config.set('conda', 'link_load_compass', 'True')
+
+    if config.getboolean('conda', 'link_load_compass'):
+        load_script = '{}/load_compass_env.sh'.format(
+            os.path.dirname(os.path.abspath(__file__)))
+        config.set('conda', 'load_compass_script', load_script)
 
     # Build variables for history output
     old_dir = os.getcwd()
