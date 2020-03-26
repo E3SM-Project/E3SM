@@ -194,8 +194,8 @@ _TESTS = {
         "tests"   :  (
                "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.allactive-v1bgc_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BCRD_CNPRDCTC_20TR.allactive-v1bgc",
-               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
-               "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
+               "SMS_Ld2.ne30_oECv3_ICG.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
+               "SMS_Ld2.ne30_oECv3_ICG.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
         },
 
