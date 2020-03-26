@@ -264,8 +264,9 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
   if (!isDomainEmpty) {
 
-    std::map<int, int> bdExtensionMap;
-    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
+    std::map<int, int> floatBdyExtensionMap;
+    std::map<int, int> grdMarineBdyExtensionMap;
+    importFields(floatBdyExtensionMap, grdMarineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -1086,7 +1087,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> grdMarineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
@@ -1176,7 +1177,7 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
            if (elev < elevTemp) {
              elevTemp = elev;
-             bdExtensionMap[iV] = c;
+             floatBdyExtensionMap[iV] = c;
              foundNeighbor = true;
            }
            }
@@ -1193,14 +1194,18 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
          }
       } else {
         // non-floating ("grounded") boundary
+        // This can either be terrestrial (bed above sea level) or marine (bed below sea level)
         // If this margin location is below sea level, we need to force it to have reasonable values.
         // Otherwise, it will have a surface elevation below sea level,
         // which is unphysical and can cause large slopes and other issues.
         if (bedTopographyData[iV] < 0.0) {
-          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
+          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) 
+          { // Don't do this if location is a Dirichlet node!
           } else {
+            grdMarineBdyExtensionMap[iV] = c; // Save this map for use in other areas
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
-            elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
+            elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surfacea
+            betaData[iV] = minBeta; // floating so no friction
           }
         } // if below sea level
       }  // floating or not
@@ -1208,8 +1213,8 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
   }  // vertex loop
 
   // Apply floating extension where needed
-  for (std::map<int, int>::iterator it = bdExtensionMap.begin();
-      it != bdExtensionMap.end(); ++it) {
+  for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
+      it != floatBdyExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
     thicknessData[iv] = std::max(thickness_F[ic] / unit_length, eps);
@@ -1227,7 +1232,8 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
 
 }
 
-void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
+void import2DFieldsObservations(std::map<int, int> floatBdyExtensionMap,
+            std::map<int, int> grdMarineBdyExtensionMap,
             double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
             double const * bmb_F, double const * bmbUncertainty_F,
@@ -1277,8 +1283,8 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
   }
 
   //extend to the border for floating vertices (using map created by importFields above)
-  for (std::map<int, int>::iterator it = bdExtensionMap.begin();
-      it != bdExtensionMap.end(); ++it) {
+  for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
+      it != floatBdyExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
 
@@ -1297,6 +1303,29 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
     surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
     basalHeatFluxData[iv] = basalHeatFlux_F[ic];
 
+  }
+
+  //extend to the border for grounded marine vertices (using map created by importFields above)
+  for (std::map<int, int>::iterator it = grdMarineBdyExtensionMap.begin();
+      it != grdMarineBdyExtensionMap.end(); ++it) {
+    int iv = it->first;
+    int ic = it->second;
+
+    thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
+    smbUncertaintyData[iv] = smbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+    // bmb should be 0 in these locations, but copying these anyway
+    bmbData[iv] = bmb_F[ic] / unit_length * secondsInAYear / rho_ice;
+    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+
+    observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
+    observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
+    observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
+
+    observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
+    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
+
+    surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
+    basalHeatFluxData[iv] = 0.0; // no geothermal under floating ice
   }
 }
 
@@ -1661,11 +1690,13 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
 
-    std::map<int, int> bdExtensionMap;  // local map to be created by importFields
-    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
+    std::map<int, int> floatBdyExtensionMap;  // local map to be created by importFields
+    std::map<int, int> grdMarineBdyExtensionMap;  // local map to be created by importFields
+    importFields(floatBdyExtensionMap, grdMarineBdyExtensionMap, 
+                   bedTopography_F, lowerSurface_F, thickness_F, beta_F,
                    stiffnessFactor_F, effecPress_F, temperature_F, smb_F, minThickness);
 
-    import2DFieldsObservations(bdExtensionMap,
+    import2DFieldsObservations(floatBdyExtensionMap, grdMarineBdyExtensionMap,
                     thicknessUncertainty_F,
                     smbUncertainty_F,
                     bmb_F, bmbUncertainty_F,
