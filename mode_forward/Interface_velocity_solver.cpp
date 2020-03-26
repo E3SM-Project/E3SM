@@ -1120,7 +1120,7 @@ void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> gr
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[index] = stiffnessFactor_F[iCell];
     if (effecPress_F != 0)
-      effecPressData[index] = effecPress_F[iCell];  
+      effecPressData[index] = effecPress_F[iCell] / unit_length;  
   }
 
   int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
@@ -1227,7 +1227,7 @@ void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> gr
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[iv] = stiffnessFactor_F[ic];
     if (effecPress_F != 0)
-      effecPressData[iv] = effecPress_F[ic];
+      effecPressData[iv] = effecPress_F[ic] / unit_length;
   }
 
 }
