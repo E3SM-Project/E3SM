@@ -2578,7 +2578,7 @@
     <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
+    <SUPPORTED_BY>rgknox and glemieux at lbl dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -2607,7 +2607,10 @@
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">perl xml-libxml switch python/2.7</command>
+	<command name="load">cmake/3.15.0</command>
+        <command name="load">perl</command>
+	<command name="load">xml-libxml</command>
+	<command name="load">python/2.7</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>
@@ -2654,7 +2657,7 @@
     <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
+    <SUPPORTED_BY>rgknox and glemieux at lbl dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -2682,8 +2685,11 @@
       <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
-        <command name="purge"/>
-        <command name="load">perl xml-libxml switch python/2.7</command>
+	<command name="purge"/>
+        <command name="load">cmake/3.15.0</command>
+        <command name="load">perl</command>
+        <command name="load">xml-libxml</command>
+        <command name="load">python/2.7</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>
