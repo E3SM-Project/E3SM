@@ -601,6 +601,11 @@ module ColumnDataType
     real(r8), pointer :: plant_to_cwd_cflux		               (:)     => null() ! for the purpose of mass balance check
     ! Temporary and annual sums
     real(r8), pointer :: annsum_npp                            (:)     => null() ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
+     ! C4MIP output variable
+     real(r8), pointer :: plant_c_to_cwdc                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mortality, plant carbon flux to CWD
+     ! C4MIP output variable
+     real(r8), pointer :: plant_p_to_cwdp                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mortality, plant phosphorus flux to CWD
+
     real(r8), pointer :: lag_npp                               (:)     => null() ! col lagged net primary production (gC/m2/s)
     ! Variables for clm_interface_funcsMod & pflotran
     real(r8), pointer :: externalc_to_decomp_cpools            (:,:,:) => null() ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
@@ -798,6 +803,8 @@ module ColumnDataType
     real(r8), pointer :: soil_n_grossmin_flux                  (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_litter_nflux                 (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_cwd_nflux                    (:)     => null() ! for the purpose of mass balance check
+  ! C4MIP output variable
+     real(r8), pointer :: plant_n_to_cwdn                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mort
   contains
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
@@ -5516,6 +5523,13 @@ contains
     allocate(this%plant_to_litter_cflux             (begc:endc))                  ; this%plant_to_litter_cflux        (:)   = nan              
     allocate(this%plant_to_cwd_cflux	             (begc:endc))                  ; this%plant_to_cwd_cflux		       (:)   = nan 
     allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = nan 
+    ! C4MIP output variable
+     allocate(this%plant_c_to_cwdc                  (begc:endc))                  ; this%plant_c_to_cwdc              (:)  =nan
+
+    ! C4MIP output variable
+     allocate(this%plant_p_to_cwdp                  (begc:endc))                  ; this%plant_p_to_cwdp              (:)  =nan
+
+
     allocate(this%lag_npp                           (begc:endc))                  ; this%lag_npp                      (:)   = spval 
     allocate(this%externalc_to_decomp_cpools        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%externalc_to_decomp_cpools(:,:,:) = spval
     allocate(this%externalc_to_decomp_delta         (begc:endc))                  ; this%externalc_to_decomp_delta    (:)   = spval    
@@ -5973,6 +5987,18 @@ contains
        call hist_addfld1d (fname='CANNSUM_NPP', units='gC/m^2/s', &
             avgflag='A', long_name='annual sum of column-level NPP', &
             ptr_col=this%annsum_npp, default='inactive')
+
+       ! C4MIP output variable, plant carbon flux to cwd (a part of fVegLitter)
+       this%plant_c_to_cwdc(begc:endc) = spval
+       call hist_addfld1d (fname='VEGC_TO_CWDC', units='gC/m^2/s', &
+            avgflag='A', long_name='plant carbon flux to cwd', &
+            ptr_col=this%plant_c_to_cwdc, default='inactive')
+
+    ! C4MIP output variable, plant phosphorus flux to cwd (a part of fVegLitter)
+      this%plant_p_to_cwdp(begc:endc) = spval
+      call hist_addfld1d (fname='VEGP_TO_CWDP', units='gP/m^2/s', &
+         avgflag='A', long_name='plant phosphorus flux to cwd', &
+         ptr_col=this%plant_p_to_cwdp, default='inactive')
 
        ! end of C12 block
        
@@ -7455,6 +7481,7 @@ contains
     allocate(this%ndep_to_sminn                   (begc:endc))                   ; this%ndep_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_sminn                   (begc:endc))                   ; this%nfix_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_ecosysn                 (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = nan
+
     allocate(this%fert_to_sminn                   (begc:endc))                   ; this%fert_to_sminn	                 (:)   = nan
     allocate(this%soyfixn_to_sminn                (begc:endc))                   ; this%soyfixn_to_sminn               (:)   = nan
     allocate(this%hrv_deadstemn_to_prod10n        (begc:endc))                   ; this%hrv_deadstemn_to_prod10n       (:)   = nan
@@ -7586,6 +7613,10 @@ contains
     allocate(this%smin_nh4_to_plant               (begc:endc))                    ; this%smin_nh4_to_plant             (:)   = nan 
     allocate(this%plant_to_litter_nflux           (begc:endc))                    ; this%plant_to_litter_nflux         (:)   = nan
     allocate(this%plant_to_cwd_nflux              (begc:endc))                    ; this%plant_to_cwd_nflux            (:)   = nan
+    ! C4MIP output variable
+    allocate(this%plant_n_to_cwdn                  (begc:endc))                   ; this%plant_n_to_cwdn               (:)  =nan
+
+
     allocate(this%bgc_npool_ext_inputs_vr         (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_inputs_vr          (:,:,:) = nan
     allocate(this%bgc_npool_ext_loss_vr           (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_loss_vr            (:,:,:) = nan
     allocate(this%decomp_cascade_ntransfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ntransfer_vr      (:,:,:) = nan
@@ -7625,10 +7656,22 @@ contains
          avgflag='A', long_name='atmospheric N deposition to soil mineral N', &
          ptr_col=this%ndep_to_sminn)
 
+    this%nfix_to_ecosysn(begc:endc) = spval
+    call hist_addfld1d (fname='NFIX_TO_ECOSYSN', units='gN/m^2/s', &
+         avgflag='A', long_name='symbiotic/asymbiotic N fixation to the whole ecosystem', &
+         ptr_col=this%nfix_to_ecosysn,default='inactive')
+
+
     this%nfix_to_sminn(begc:endc) = spval
     call hist_addfld1d (fname='NFIX_TO_SMINN', units='gN/m^2/s', &
          avgflag='A', long_name='symbiotic/asymbiotic N fixation to soil mineral N', &
          ptr_col=this%nfix_to_sminn)
+
+    ! C4MIP output variable, plant nitrogen flux to cwd (a part of fVegLitter)
+    this%plant_n_to_cwdn(begc:endc) = spval
+    call hist_addfld1d (fname='VEGN_TO_CWDN', units='gN/m^2/s', &
+         avgflag='A', long_name='plant nitrogen flux to cwd', &
+         ptr_col=this%plant_n_to_cwdn, default='inactive')
 
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
