@@ -82,9 +82,15 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   auto& ad = c.create<AtmosphereDriver>();
 
+  // Recall that e3sm uses the int YYYYMMDD to store a date
+  std::cout << "start_ymd: " << start_ymd << "\n";
+  const int dd = start_ymd % 100;
+  const int mm = (start_ymd / 100) % 100;
+  const int yy = start_ymd / 10000;
+  util::TimeStamp time (yy,mm,dd,start_tod);
+
   // Init and run (to finalize, wait till checks are completed,
   // or you'll clear the field repo!)
-  util::TimeStamp time (0,0,0);
   ad.initialize(atm_comm,ad_params,time);
 
   (void) start_ymd;

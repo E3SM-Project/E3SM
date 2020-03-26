@@ -66,7 +66,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   AtmosphereDriver ad;
 
   // Init and run (do not finalize, or you'll clear the field repo!)
-  util::TimeStamp time (0,0,0);
+  util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
     ad.run(300.0);
