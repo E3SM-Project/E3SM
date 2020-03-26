@@ -852,7 +852,11 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       floatingEdges = li_mask_is_floating_ice_int(edgeMask)
       call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
 
-
+      ! Ensure BMB uncertainty is 0 for grounded ice (and no ice locations)
+      where (.not. (li_mask_is_floating_ice(cellMask)))
+         floatingBasalMassBalUncertainty = 0.0_RKIND
+      end where
+      
       ! Create FEM mesh
       call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
       call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
