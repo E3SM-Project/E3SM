@@ -113,7 +113,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   ! is not initialized at that point if making a restart runs
   !
   ! Forcing from physics
-  ! FU, FV, other dycores, doc, says "m/s" but I think that is m/s^2
   call addfld ('FU',  (/ 'lev' /), 'A', 'm/s2', 'Zonal wind forcing term',     gridname='GLL')
   call addfld ('FV',  (/ 'lev' /), 'A', 'm/s2', 'Meridional wind forcing term',gridname='GLL')
   call register_vector_field('FU', 'FV')
@@ -265,7 +264,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   if (single_column .and. .not. iop_scream) goto 10  
+   if (.not. single_column .or. iop_scream) then
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -296,8 +295,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call edgeVpack_nlyr(edge_g,dyn_in%elem(ie)%desc,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
 
       end do ! ie
-
-10 continue
+   endif ! single column check
 
    call bndry_exchangeV(par, edge_g)
 
@@ -306,8 +304,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
-   
-      if (single_column .and. .not. iop_scream) goto 20 
+  
+      if (.not. single_column .or. iop_scream) then 
 
          kptr=0
 
@@ -338,8 +336,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                end do
             end do ! k = 1, nlev
          end if ! fv_nphys>0
-         
-20 continue
+      
+      endif ! single_column check   
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -505,7 +503,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
                out_v(npsq,nlev), out_psv(npsq)  
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
-   real(r8), parameter :: fac = 1000._r8	     
+   real(r8), parameter :: fac = 1000._r8     
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
@@ -549,7 +547,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')
-   call dyn_run(dyn_out,rc)	
+   call dyn_run(dyn_out,rc)
    call t_stopf  ('dyn_run')  
    
    ! Update to get tendency 
@@ -561,24 +559,24 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      do k=1,nlev
        do j=1,np
          do i=1,np
-	 
+ 
            ! Note that this calculation will not provide b4b results with 
-	   !  an E3SM because the dynamics tendency is not computed in the exact
-	   !  same way as an E3SM run, introducing error with roundoff 
-	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
-	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)	
+           !  an E3SM because the dynamics tendency is not computed in the exact
+           !  same way as an E3SM run, introducing error with roundoff 
+           forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+             ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
-	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
-	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
-	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
-	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
+           out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
+           out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
+           out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
+           out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst	 	
-	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
-	        ftmp_q(i,j,k,p,ie))/dtime
-	   enddo
-	   
-	 enddo
+           do p=1,pcnst
+             forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
+               ftmp_q(i,j,k,p,ie))/dtime
+           enddo
+   
+         enddo
        enddo
      enddo
      

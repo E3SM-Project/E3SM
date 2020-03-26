@@ -361,7 +361,7 @@ contains
         swrad_off_out=swrad_off, &
         lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
-	iop_scream_out=iop_scream, &
+        iop_scream_out=iop_scream, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
@@ -426,7 +426,7 @@ contains
          single_column = single_column_in
          scmlon = scmlon_in
          scmlat = scmlat_in
-	 iop_scream = iop_scream_in
+         iop_scream = iop_scream_in
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
@@ -439,7 +439,7 @@ contains
                             swrad_off_in=swrad_off, &
                             lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
-			    iop_scream_in=iop_scream,&
+                            iop_scream_in=iop_scream,&
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif

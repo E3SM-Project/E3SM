@@ -213,21 +213,21 @@ contains
         call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
-	if (iop_scream) field(:,:) = field(dim1b,dim2b)
+        if (iop_scream) field(:,:) = field(dim1b,dim2b)
 
       else if (iop_scream) then
       
         cnt_iop(1) = 1
-	cnt_iop(2) = 1 
+        cnt_iop(2) = 1 
         call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt_iop(1) = lonidx
-	strt_iop(2) = 1
-	allocate(field_iop(1:cnt_iop(1),1:cnt_iop(2)))
+        strt_iop(2) = 1
+        allocate(field_iop(1:cnt_iop(1),1:cnt_iop(2)))
         ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
-	
-	field(:,:) = field_iop(1,1)
+
+        field(:,:) = field_iop(1,1)
         
-	deallocate(field_iop)
+        deallocate(field_iop)
       
       else
 
@@ -417,7 +417,7 @@ contains
 
         field_dnames(1) = dimname1
         field_dnames(2) = dimname2
-        if (single_column) then	
+        if (single_column) then
           ! This could be generalized but for now only handles a single point
           strt(1) = dim1b
           strt(2) = dim2b
@@ -427,21 +427,21 @@ contains
           if (iop_scream) then
 
             strt_iop(1) = lonidx
-	    strt_iop(2) = 1
-	    strt_iop(3) = 1
-	    cnt_iop(1) = 1
-	    cnt_iop(2) = cnt(2)
-	    cnt_iop(3) = 1
-	    allocate(field_iop(1:cnt_iop(1), 1:cnt_iop(2), 1:cnt_iop(3)))
-	    ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
-	    
-	    do i = dim1b, dim1e 
-	      field(i,:) = field_iop(1,:,1)
-	    enddo
-	    deallocate(field_iop)
-	  
-	  else ! if not small planet
-	  
+            strt_iop(2) = 1
+            strt_iop(3) = 1
+            cnt_iop(1) = 1
+            cnt_iop(2) = cnt(2)
+            cnt_iop(3) = 1
+            allocate(field_iop(1:cnt_iop(1), 1:cnt_iop(2), 1:cnt_iop(3)))
+            ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
+    
+            do i = dim1b, dim1e 
+              field(i,:) = field_iop(1,:,1)
+            enddo
+            deallocate(field_iop)
+
+          else ! if not small planet
+  
           if (trim(field_dnames(1)) == 'lon') then
             strt(1) = lonidx ! First dim always lon for Eulerian dycore
           else
@@ -473,8 +473,8 @@ contains
           else
             ierr = pio_get_var(ncid, varid, strt, cnt, field)
           end if
-	  
-	  endif ! if iop_scream
+  
+          endif ! if iop_scream
         else
           ! All distributed array processing
           call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:2),      &
@@ -852,7 +852,7 @@ contains
         field_dnames(2) = dimname2
         field_dnames(3) = dimname3
 
-        if (single_column) then	
+        if (single_column) then
           ! This could be generalized but for now only handles a single point
           strt(1) = dim1b
           strt(2) = dim2b

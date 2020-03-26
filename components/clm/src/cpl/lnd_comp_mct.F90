@@ -219,7 +219,7 @@ contains
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
                               iop_scream=iop_scream,                            &
-			      scmlat=scmlat, scmlon=scmlon,                     &
+                              scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
                               hostname=hostname, username=username )
@@ -242,7 +242,7 @@ contains
     call clm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &
                         single_column_in=single_column,&
-			iop_scream_in=iop_scream, scmlat_in=scmlat,       &
+                        iop_scream_in=iop_scream, scmlat_in=scmlat,       &
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
                         hostname_in=hostname, username_in=username)
 

@@ -1312,14 +1312,14 @@ contains
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
                 if (single_column) status = pio_get_var(ncid, varid, start, count, data)
-		if (iop_scream) then
-		  allocate(iop_data(1:count(1),1:count(2)))
-		  status = pio_get_var(ncid, varid, start(1:2), count(1:2), iop_data)
+                if (iop_scream) then
+                  allocate(iop_data(1:count(1),1:count(2)))
+                  status = pio_get_var(ncid, varid, start(1:2), count(1:2), iop_data)
 #if ({DIMS}==1)
                   data(:) = iop_data(1,1) ! Use data at IOP lat/lon for whole globe
 #endif
-		  deallocate(iop_data)
-		endif
+                  deallocate(iop_data)
+                endif
              else
                 status = pio_get_var(ncid, varid, data)
              end if
@@ -1537,34 +1537,34 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              deallocate( idata )
 #else
 
-	     if (single_column) status=pio_get_var(ncid,varid,start,count,data)
+             if (single_column) status=pio_get_var(ncid,varid,start,count,data)
 
              if (iop_scream) then 
              
-	       if (count(2) .gt. 0) then 	  
-	       
-	         start_iop2d(:) = start(1:2)
-	         count_iop2d(:) = count(1:2)
-	     
+               if (count(2) .gt. 0) then  
+       
+                 start_iop2d(:) = start(1:2)
+                 count_iop2d(:) = count(1:2)
+     
                  allocate(iop_data2d(count(1),count(2)))
-	         status = pio_get_var(ncid, varid, start_iop2d, count_iop2d, iop_data2d)
-	         data(:) = iop_data2d(1,1)
-	         deallocate(iop_data2d)	
-	       
-	       else
-	     
-	         start_iop1d(:) = start(1)
-	         count_iop1d(:) = count(1)
-	     
+                 status = pio_get_var(ncid, varid, start_iop2d, count_iop2d, iop_data2d)
+                 data(:) = iop_data2d(1,1)
+                 deallocate(iop_data2d)
+       
+               else
+     
+                 start_iop1d(:) = start(1)
+                 count_iop1d(:) = count(1)
+     
                  allocate(iop_data1d(count(1)))
-	         status = pio_get_var(ncid, varid, start_iop1d, count_iop1d, iop_data1d)
-	         data(:) = iop_data1d(1)
-	         deallocate(iop_data1d)	
-	       
-	       endif
-	       
-	     endif ! iop_scream	            
-	     
+                 status = pio_get_var(ncid, varid, start_iop1d, count_iop1d, iop_data1d)
+                 data(:) = iop_data1d(1)
+                 deallocate(iop_data1d)
+       
+               endif
+       
+             endif ! iop_scream	            
+     
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -1763,44 +1763,44 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              else
                 if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
                 
-		if (iop_scream) then
-		
-		  if (start(3) .eq. 0) then
-		    start_iop2d(1:2) = start(1:2)
-		    count_iop2d(1:2) = count(1:2)
-		
-		    allocate(iop_data2d(count_iop2d(1),count_iop2d(2)))
-		
+                if (iop_scream) then
+
+                  if (start(3) .eq. 0) then
+                    start_iop2d(1:2) = start(1:2)
+                    count_iop2d(1:2) = count(1:2)
+
+                    allocate(iop_data2d(count_iop2d(1),count_iop2d(2)))
+
                     status = pio_get_var(ncid, vardesc, start_iop2d, count_iop2d, iop_data2d)
-		  
-		    offset=0
-		    if (lb2 .eq. 0) offset=1
-		    do i = lb1, ub1
-		      do j = lb2, ub2
-		        data(i,j) = iop_data2d(1,j+offset)
+  
+                    offset=0
+                    if (lb2 .eq. 0) offset=1
+                    do i = lb1, ub1
+                      do j = lb2, ub2
+                        data(i,j) = iop_data2d(1,j+offset)
                       enddo 
-		    enddo
-		    deallocate(iop_data2d)
-		  else
-	            start_iop3d(1:3) = start(1:3)
-		    count_iop3d(1:3) = count(1:3)
-		
-		    allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
-		
+                    enddo
+                    deallocate(iop_data2d)
+                  else
+                    start_iop3d(1:3) = start(1:3)
+                    count_iop3d(1:3) = count(1:3)
+
+                    allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
+
                     status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
 
-		    offset=0
-		    if (lb2 .eq. 0) offset=1		     
-		    do i = lb1, ub1
-		      do j = lb2, ub2 
-		        data(i,j) = iop_data3d(1,j+offset,1)
-		      enddo
+                    offset=0
+                    if (lb2 .eq. 0) offset=1     
+                    do i = lb1, ub1
+                      do j = lb2, ub2 
+                        data(i,j) = iop_data3d(1,j+offset,1)
+                      enddo
                     enddo 
-		    deallocate(iop_data3d)
-		  endif
-		
-		endif ! if iop_scream
-		
+                    deallocate(iop_data3d)
+                  endif
+
+               endif ! if iop_scream
+
              endif ! if iop_scream or single_column
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -1988,56 +1988,55 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           if (iop_scream .or. single_column) then
              start(:) = 1 
              count(:) = 1
-             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
-	     
+             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)    
              if (present(nt)) then
                n=5
                if (start(5) .eq. 0) n=4
                start(n) = nt ; count(n) = 1
              endif
-	     
-	     if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
-	     
-	     if (iop_scream) then
-	     
-	       if (start(4) .eq. 0) then
-	       
-	         count_iop3d(1:3) = count(1:3)
-	         start_iop3d(1:3) = start(1:3)
-	     
-	         allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
-	     
-	         status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
-	     
-	         do i=1,count_iop3d(2)
-	           do j=1,count_iop3d(3)
-	             data(:,i,j) = iop_data3d(1,i,j)
-	           enddo
-	         enddo
-	     
-	         deallocate(iop_data3d)	     
              
-	       else
-	     
-	         count_iop4d(1:4) = count(1:4)
-	         start_iop4d(1:4) = start(1:4)
-	     
-	         allocate(iop_data4d(count_iop4d(1),count_iop4d(2),count_iop4d(3),count_iop4d(4)))
-	     
-	         status = pio_get_var(ncid, vardesc, start_iop4d, count_iop4d, iop_data4d)
-	     
-	         do i=1,count_iop4d(2)
-	           do j=1,count_iop4d(3)
-	             data(:,i,j) = iop_data4d(1,i,j,1)
-	           enddo
-	         enddo
-	     
-	         deallocate(iop_data4d)
-	     
-	       endif
-	     
-	     endif ! iop_scream
-	     
+             if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
+     
+             if (iop_scream) then
+     
+               if (start(4) .eq. 0) then
+       
+                 count_iop3d(1:3) = count(1:3)
+                 start_iop3d(1:3) = start(1:3)
+     
+                 allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
+     
+                 status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
+     
+                 do i=1,count_iop3d(2)
+                   do j=1,count_iop3d(3)
+                     data(:,i,j) = iop_data3d(1,i,j)
+                   enddo
+                 enddo
+     
+                 deallocate(iop_data3d)     
+             
+               else
+     
+                 count_iop4d(1:4) = count(1:4)
+                 start_iop4d(1:4) = start(1:4)
+     
+                 allocate(iop_data4d(count_iop4d(1),count_iop4d(2),count_iop4d(3),count_iop4d(4)))
+     
+                 status = pio_get_var(ncid, vardesc, start_iop4d, count_iop4d, iop_data4d)
+     
+                 do i=1,count_iop4d(2)
+                   do j=1,count_iop4d(3)
+                     data(:,i,j) = iop_data4d(1,i,j,1)
+                   enddo
+                 enddo
+     
+                 deallocate(iop_data4d)
+     
+               endif
+     
+            endif ! iop_scream
+     
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)

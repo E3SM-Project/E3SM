@@ -644,10 +644,10 @@ contains
        maxblksiz = 0
        do jb=firstblock,lastblock
           if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
-	    maxblksiz = 1
-	  else
+            maxblksiz = 1
+          else
             maxblksiz = max(maxblksiz,get_block_gcol_cnt_d(jb))
-	  endif
+          endif
        enddo
        if (pcols < maxblksiz) then
 	  write(iulog,*) 'pcols = ',pcols, ' maxblksiz=',maxblksiz
@@ -678,10 +678,10 @@ contains
        do cid=1,nchunks
           ! get number of global column indices in block
           if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
-	    max_ncols = 1
-	  else
-	    max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
-	  endif
+            max_ncols = 1
+          else
+            max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
+          endif
           ! fill cdex array with global indices from current block
           call get_block_gcol_d(cid+firstblock-1,max_ncols,cdex)
 

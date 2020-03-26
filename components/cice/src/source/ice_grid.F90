@@ -992,13 +992,11 @@
          testpoint
 
       ! variables to be compatible with IOP or SCM modes
-      real (dbl_kind), allocatable, dimension(:,:) :: &	 
-         scm_var1, scm_var2, scm_var3, scm_var4, scm_var5
+      real (dbl_kind), allocatable, dimension(:,:) :: &
+        scm_var1, scm_var2, scm_var3, scm_var4, scm_var5
 
       logical :: se_grid      ! determine whether file format is for 
                               !   SE dynamical core grid or not
-			      
-      logical :: do_this
 
       !-----------------------------------------------------------------
       ! - kmt file is actually clm fractional land file
@@ -1025,16 +1023,16 @@
 
         if (my_task == master_task) then
           allocate(scm_var1(nx_global,ny_global))
-	  allocate(scm_var2(nx_global,ny_global))
-	  allocate(scm_var3(nx_global,ny_global))
-	  allocate(scm_var4(nx_global,ny_global))
-	  allocate(scm_var5(nx_global,ny_global))
+          allocate(scm_var2(nx_global,ny_global))
+          allocate(scm_var3(nx_global,ny_global))
+          allocate(scm_var4(nx_global,ny_global))
+          allocate(scm_var5(nx_global,ny_global))
         else
           allocate(scm_var1(1,1))
-	  allocate(scm_var2(1,1))
-	  allocate(scm_var3(1,1))
-	  allocate(scm_var4(1,1))
-	  allocate(scm_var5(1,1))      
+          allocate(scm_var2(1,1))
+          allocate(scm_var3(1,1))
+          allocate(scm_var4(1,1))
+          allocate(scm_var5(1,1))      
         endif
 
         if (my_task == master_task) then
@@ -1156,22 +1154,22 @@
       
       if (single_column) then
         call scatter_global(TLON,scm_var1,master_task,distrb_info, &
-	  field_loc_noupdate,field_type_noupdate)
+          field_loc_noupdate,field_type_noupdate)
         call scatter_global(TLAT,scm_var2,master_task,distrb_info, &
-	  field_loc_noupdate,field_type_noupdate)
+          field_loc_noupdate,field_type_noupdate)
         call scatter_global(tarea,scm_var3,master_task,distrb_info, &
-	  field_loc_center,field_type_scalar)	  	  
+          field_loc_center,field_type_scalar)  
         call scatter_global(hm,scm_var4,master_task,distrb_info, &
-	  field_loc_noupdate,field_type_noupdate)
+          field_loc_noupdate,field_type_noupdate)
         call scatter_global(ocn_gridcell_frac,scm_var5,master_task,distrb_info, &
-	  field_loc_noupdate,field_type_noupdate)
-	  
-	deallocate(scm_var1)
+          field_loc_noupdate,field_type_noupdate)
+  
+        deallocate(scm_var1)
         deallocate(scm_var2)
         deallocate(scm_var3)
         deallocate(scm_var4)
         deallocate(scm_var5)  
-	  	  
+  
       endif
 
      !$OMP PARALLEL DO PRIVATE(iblk,this_block,ilo,ihi,jlo,jhi,i,j)

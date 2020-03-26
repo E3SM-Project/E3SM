@@ -89,9 +89,9 @@ subroutine scm_setinitial(elem)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
               if (have_cldice) elem(ie)%state%Q(i,j,k,icldice) = cldiceobs(k)
-	      !  If IOP-SCREAM we do NOT want to write over the dy-core vertical 
-	      !    velocity with the large-scale one.  wfld is used in forecast.F90
-	      !    for the compuation of the large-scale subsidence.
+              !  If IOP-SCREAM we do NOT want to write over the dy-core vertical 
+              !    velocity with the large-scale one.  wfld is used in forecast.F90
+              !    for the compuation of the large-scale subsidence.
               if (have_omega .and. .not. iop_scream) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
             enddo
 
@@ -260,13 +260,13 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
             forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
             elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
 #ifdef MODEL_THETA_L	    
-	    elem(ie)%derived%FT(i,j,:),elem(ie)%derived%FT(i,j,:),&
+            elem(ie)%derived%FT(i,j,:),elem(ie)%derived%FT(i,j,:),&
 #else
             elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
 #endif
             forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
             stateQin_qfcst,p(i,j,:),stateQin1,1,&
-	    tdiff_dyn,qdiff_dyn)         
+            tdiff_dyn,qdiff_dyn)         
 
 #ifdef MODEL_THETA_L
           elem(ie)%derived%FT(i,j,:) = forecast_t(:)
@@ -276,11 +276,11 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
           elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
           elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
-	  
-	  tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
-	  qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
-	  
-	enddo
+  
+          tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
+          qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
+  
+        enddo
       enddo
       
       if (iop_scream) then
@@ -288,9 +288,9 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
         call outfld('QDIFF',qdiff_out,npsq,ie)
       else
         call outfld('TDIFF',tdiff_dyn,plon,begchunk)
-	call outfld('QDIFF',tdiff_dyn,plon,begchunk)
+        call outfld('QDIFF',tdiff_dyn,plon,begchunk)
       endif
-	    
+    
     enddo
 
     end subroutine apply_SC_forcing

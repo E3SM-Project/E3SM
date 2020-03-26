@@ -213,7 +213,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-	     if (iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
+             if (iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -241,7 +241,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-	     if (iop_scream) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
+             if (iop_scream) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -275,7 +275,7 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
              !no scm in theta-l yet
-	     if (iop_scream) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
+             if (iop_scream) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
@@ -359,21 +359,21 @@ contains
         ! If precip processes are turned off, do not initialize the field	
           if (precip_off .and. (cnst_name(m_cnst) .eq. 'RAINQM' .or. cnst_name(m_cnst) .eq. 'SNOWQM' &
             .or. cnst_name(m_cnst) .eq. 'NUMRAI' .or. cnst_name(m_cnst) .eq. 'NUMSNO')) then	    
-	    found = .false.
-	    
-	  else
-	    
-	    if (.not. iop_scream) then
-	      tmp = 0.0_r8
+            found = .false.
+    
+          else
+    
+            if (.not. iop_scream) then
+              tmp = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
-	    else
-	      tmp_iop = 0.0_r8 
+            else
+              tmp_iop = 0.0_r8 
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, npsq,          &
                 1, nlev, tmp_iop, found, gridname='GLL')
-	    endif
-	    
-	  endif
+            endif
+    
+          endif
        end if
        if(.not. found) then
 
@@ -452,7 +452,7 @@ contains
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
                 if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-		if (iop_scream) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
+                if (iop_scream) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
                 indx = indx + 1
              end do
           end do

@@ -259,7 +259,7 @@ CONTAINS
             aqua_planet=aqua_planet,                                                  &
             brnch_retain_casename=brnch_retain_casename,                              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
-	    iop_scream=iop_scream,                                                    &
+            iop_scream=iop_scream,                                                    &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
             lnd_present=lnd_present, ocn_present=ocn_present,                         & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)

@@ -218,17 +218,17 @@ contains
             if (newmwdry)   write(iulog,*)'***       MWDRY     ',shr_const_mwdair,mwdry,'***'
             if (newrearth)  write(iulog,*)'***       REARTH    ',shr_const_rearth,rearth,'***'
             if (newtmelt)   write(iulog,*)'***       TMELT     ',shr_const_tkfrz,tmelt,'***'
-	    if (newomega)   write(iulog,*)'***       OMEGA     ',shr_const_omega,omega,'***'
+            if (newomega)   write(iulog,*)'***       OMEGA     ',shr_const_omega,omega,'***'
             write(iulog,*)'****************************************************************************'
          end if
          rga         = 1._r8/gravit 
          ra          = 1._r8/rearth
-	 
-	 if (.not. newomega) then
+ 
+         if (.not. newomega) then
            omega       = 2.0_R8*pi/sday
-	 endif
+         endif
          
-	 cpvir       = cpwv/cpair - 1._r8
+         cpvir       = cpwv/cpair - 1._r8
          epsilo      = mwh2o/mwdry      
          
          !  rair and rh2o have to be defined before any of the variables that use them

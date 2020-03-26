@@ -137,10 +137,10 @@ module scamMod
   real(r8), public ::      divu(plev)          ! Horiz Divergence of E/W
   real(r8), public ::      divv(plev)          ! Horiz Divergence of N/S
                                                ! mo_drydep algorithm
-					       
+       
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
   real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation
-					       
+       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
 !
@@ -205,11 +205,11 @@ module scamMod
 
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
-	single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
-	scm_relaxation_low_out, scm_relaxation_high_out, &
+        single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
+        scm_relaxation_low_out, scm_relaxation_high_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
-	swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
-	iop_scream_out)
+        swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
+        iop_scream_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -248,10 +248,10 @@ end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_relaxation_in, &
-			 scm_relaxation_low_in, scm_relaxation_high_in, &
+                         scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
-			 swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
-			 iop_scream_in)
+                         swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
+                         iop_scream_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -356,23 +356,23 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
         endif
         call wrap_open (iopfile, NF90_NOWRITE, ncid)
-	
-	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+
+        if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
            use_replay = .true.
         else
            use_replay = .false.
         endif
-	
-	if (dycore_is('SE') .and. use_replay) then
-	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
-	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-	  latsiz=lonsiz
-	else 
-	  call wrap_inq_dimid( ncid, 'lon', londimid   )
+
+        if (dycore_is('SE') .and. use_replay) then
+          call wrap_inq_dimid( ncid, 'ncol', londimid   )
+          call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+          latsiz=lonsiz
+        else 
+          call wrap_inq_dimid( ncid, 'lon', londimid   )
           call wrap_inq_dimid( ncid, 'lat', latdimid   )
           call wrap_inq_dimlen( ncid, londimid, lonsiz   )
           call wrap_inq_dimlen( ncid, latdimid, latsiz   )
-	endif
+        endif
 
         call wrap_inq_varid( ncid, 'lon', lonid   )
         call wrap_inq_varid( ncid, 'lat', latid   )

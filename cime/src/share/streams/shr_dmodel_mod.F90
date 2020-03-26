@@ -287,7 +287,7 @@ CONTAINS
        liopmode = iop_scream
        if (liopmode .and. .not. lscmmode) then
          write(logunit,*) subname, ' ERROR: IOP SCREAM mode must be run with SCM functionality'
-	 call shr_sys_abort(subname//' ERROR: IOP not in SCM mode')
+         call shr_sys_abort(subname//' ERROR: IOP not in SCM mode')
        endif       
        if (lscmmode) then
           if (.not.present(scmlon) .or. .not.present(scmlat)) then
@@ -461,8 +461,7 @@ CONTAINS
 
           !--- determine whether dealing with 2D input files (typical of Eulerian 
           !--- dynamical core) or 1D files (typical of Spectral Element)
-	  	  
-	  
+  
           if (nyg .ne. 1) then
             ni = 1
             mind = abs(lscmlon - (lon(1,1)+360.0_r8))
@@ -507,12 +506,12 @@ CONTAINS
           i_scm = ni
 
           if (liopmode) then 
-	  
-	    ! If IOP-SCREAM mode, then we want the surface to be 
-	    !   covered homogeneously, with the same lat and lon
-	    !   as close to the lat/lon in IOP forcing file as possible
-	    i_scm = ni
-	  
+  
+            ! If IOP-SCREAM mode, then we want the surface to be 
+            !   covered homogeneously, with the same lat and lon
+            !   as close to the lat/lon in IOP forcing file as possible
+            i_scm = ni
+
             n=0
             do k=1,abs(nzg)
               do j=1,nyg
@@ -527,11 +526,11 @@ CONTAINS
                 enddo
               enddo
             enddo
-	    
-	  else	  
-	  
-	    i = ni
-	    n = 1
+    
+            else  
+  
+            i = ni
+            n = 1
 
             gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
             gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
@@ -539,9 +538,9 @@ CONTAINS
             gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
             gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
             gGridRoot%data%rAttr(nhgt, n) = 1
-	    
-	  endif
-	    
+    
+          endif
+    
        else
           n=0
           do k=1,abs(nzg)

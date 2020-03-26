@@ -92,7 +92,7 @@ CONTAINS
     ! Obtain infodata variables
     call seq_infodata_getData(infodata, &
          single_column=scmMode, &
-	 iop_scream=iop_scream, &
+         iop_scream=iop_scream, &
          scmlat=scmlat, scmlon=scmLon, &
          read_restart=read_restart)
 

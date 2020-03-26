@@ -330,7 +330,7 @@ CONTAINS
     character(SHR_KIND_CL) :: restart_file       ! Restart filename
 
     logical                :: single_column      ! single column mode
-    logical                :: iop_scream      ! single column mode
+    logical                :: iop_scream         ! single column mode
     real (SHR_KIND_R8)     :: scmlat             ! single column mode latitude
     real (SHR_KIND_R8)     :: scmlon             ! single column mode longitude
     character(SHR_KIND_CS) :: logFilePostFix     ! postfix for output log files
@@ -428,7 +428,7 @@ CONTAINS
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
          scmlon, iop_scream, logFilePostFix, outPathRoot, flux_diurnal,&
-	 ocn_surface_flux_scheme, &
+         ocn_surface_flux_scheme, &
          coldair_outbreak_mod, &
          flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &

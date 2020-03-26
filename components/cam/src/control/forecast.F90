@@ -5,7 +5,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
                    q3, q3m1, q3m2, ztodt, t2, &
                    fu, fv, qfcst,etamid, &
                    qminus, nlon, &
-		   tdiff_ret,qdiff_ret)
+                   tdiff_ret,qdiff_ret)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -198,15 +198,15 @@ subroutine forecast(lat, psm1, psm2,ps, &
         ! theta_l model prog variable is temp tendency
         if (iop_scream) then 
           tfcst(k) = t3m2(k) + divt3d(k)
-	else
-	  tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
-	endif
+        else
+          tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
+        endif
 #else
         if (iop_scream) then
-	  tfcst(k) = t3m2(k) + ztodt*div3dt(k)
-	else
-	  tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
-	endif
+          tfcst(k) = t3m2(k) + ztodt*div3dt(k)
+        else
+          tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+        endif
 #endif
       end do
       do m=1,pcnst
@@ -302,11 +302,11 @@ subroutine forecast(lat, psm1, psm2,ps, &
        ufcst(k) = u3m2(k) &
            - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)) &
            + wfldint(k)*(u3m1(k) - u3m1(k-1)))
-	   
+   
        do m=1,pcnst
          qfcst(1,k,m) = qminus(1,k,m) & 
-	   - fac*(wfldint(k+1) * (qminus(1,k+1,m) - qminus(1,k,m)) &
-	   + wfldint(k)*(qminus(1,k,m) - qminus(1,k-1,m)))
+           - fac*(wfldint(k+1) * (qminus(1,k+1,m) - qminus(1,k,m)) &
+           + wfldint(k)*(qminus(1,k,m) - qminus(1,k-1,m)))
        enddo 
 
      end do
@@ -612,21 +612,21 @@ end if
             ufcst(k) = u3m2(k)
             vfcst(k) = v3m2(k)
          enddo
-	 
-	 ! Relax winds for IOP-SCREAM
-	 if (iop_scream) then
-	 
-	   do k=1,plev
-	     rtau(k) = 10800._r8
-	     rtau(k) = max(ztodt,rtau(k))
-	     relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
-	     relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
-	   
-	     ufcst(k) = ufcst(k) + relaxu(k)*ztodt
-	     vfcst(k) = vfcst(k) + relaxv(k)*ztodt
-	   enddo
-	   
-	 endif
+ 
+         ! Relax winds for IOP-SCREAM
+         if (iop_scream) then
+ 
+           do k=1,plev
+             rtau(k) = 10800._r8
+             rtau(k) = max(ztodt,rtau(k))
+             relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
+             relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
+   
+             ufcst(k) = ufcst(k) + relaxu(k)*ztodt
+             vfcst(k) = vfcst(k) + relaxv(k)*ztodt
+           enddo
+   
+         endif
 
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
       

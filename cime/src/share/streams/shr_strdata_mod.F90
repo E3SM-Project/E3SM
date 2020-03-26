@@ -379,7 +379,7 @@ contains
              call shr_dmodel_readgrid(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
                   SDAT%domainfile, compid, mpicom, &
                   decomp=decomp, readfrac=.true., scmmode=lscmmode, iop_scream=liop_scream, &
-		  scmlon=scmlon, scmlat=scmlat)
+                  scmlon=scmlon, scmlat=scmlat)
           else
              call shr_dmodel_readgrid(SDAT%grid, SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
                   SDAT%domainfile, compid, mpicom, &
