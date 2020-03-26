@@ -294,8 +294,11 @@ end function chem_is
        molectype = 'minor'
 
        qmin = 1.e-36_r8
-       
-       if ( lng_name(1:5) .eq. 'num_a' ) then ! aerosol number density
+      
+       !Guangxing Lin 
+       !if ( lng_name(1:5) .eq. 'num_a' ) then ! aerosol number density
+       if ( lng_name(1:5) .eq. 'num_a'.or.(lng_name(1:5) .eq. 'num_c')) then ! aerosol number density
+       !Guangxing Lin end 
           qmin = 1.e-5_r8
        else if ( m == o3_ndx ) then
           qmin = 1.e-12_r8
@@ -1414,10 +1417,15 @@ end function chem_is_active
        end if
     end do
     if ( ghg_chem ) lq(1) = .true.
-
+    !Guangxing Lin
+    !write(*,*) 'gxlin-test-chem1, lq = ', lq(49), lq(24)
+    !Guangxing Lin end
     call physics_ptend_init(ptend, state%psetcols, 'chemistry', lq=lq)
     
     call drydep_update( state, cam_in )
+    !Guangxing Lin
+    !write(*,*) 'gxlin-test-chem2, lq = ', ptend%lq(49), ptend%lq(24)
+    !Guangxing Lin end
 
 !-----------------------------------------------------------------------
 ! get current calendar day of year
@@ -1443,6 +1451,9 @@ end function chem_is_active
     call neu_wetdep_tend(lchnk,ncol,state%q,state%pmid,state%pdel,state%zi,state%t,dt, &
          prain, nevapr, cldfr, cmfdqr, ptend%q)
 
+    !Guangxing Lin
+    !write(*,*) 'gxlin-test-chem3, lq = ', ptend%lq(49), ptend%lq(24)
+    !Guangxing Lin end
 !-----------------------------------------------------------------------
 ! compute tendencies and surface fluxes
 !-----------------------------------------------------------------------
@@ -1463,6 +1474,9 @@ end function chem_is_active
                           chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf)
 
     call t_stopf( 'chemdr' )
+    !Guangxing Lin
+    !write(*,*) 'gxlin-test-chem4, lq = ', ptend%lq(49), ptend%lq(24)
+    !Guangxing Lin end
 
 !-----------------------------------------------------------------------
 ! set flags for tracer tendencies (water and gas phase constituents)
@@ -1520,6 +1534,9 @@ end function chem_is_active
     do k = 1,pver
        fh2o(:ncol) = fh2o(:ncol) + ptend%q(:ncol,k,1)*state%pdel(:ncol,k)/gravit
     end do
+    !Guangxing Lin
+    !write(*,*) 'gxlin-test-chem5, lq = ', ptend%lq(49), ptend%lq(24)
+    !Guangxing Lin end
   end subroutine chem_timestep_tend
 
 !-------------------------------------------------------------------

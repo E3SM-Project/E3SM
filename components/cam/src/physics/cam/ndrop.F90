@@ -27,7 +27,8 @@ use shr_spfn_mod,     only: erf => shr_spfn_erf
 #endif
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
-                            rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
+                            rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx,            &
+                            rad_cnst_get_mode_num_cw_idx, rad_cnst_get_mam_mmr_cw_idx       !Guangxing Lin
 use cam_history,      only: addfld, horiz_only, add_default, fieldname_len, outfld
 use cam_abortutils,       only: endrun
 use cam_logfile,      only: iulog
@@ -238,6 +239,16 @@ subroutine ndrop_init
             end if
             mam_cnst_idx(m,l) = lptr
             lq(lptr)          = .true.
+
+            !Guangxing Lin
+            if (l == 0) then   ! number
+               call rad_cnst_get_mode_num_cw_idx(m, lptr) !cloud-borne aerosols
+            else
+               call rad_cnst_get_mam_mmr_cw_idx(m, l, lptr) !cloud-borne aerosols
+            endif
+            lq(lptr)          = .true.
+            !Guangxing Lin, end
+                  
 
             ! Add tendency fields to the history only when prognostic MAM is enabled.
             long_name = trim(tmpname) // ' dropmixnuc mixnuc column tendency'
@@ -1083,9 +1094,9 @@ subroutine dropmixnuc( &
                   call rad_cnst_get_mode_num_cw_idx(m, lptr)
                else
                   call rad_cnst_get_mam_mmr_cw_idx(m, l, lptr)
-               
+               endif
                ptend%q(i,:,lptr) = 0.0_r8
-               ptend%q(i,top_lev:pver,lptr) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8)  ! set tendencies for cloud-borne aerosol
+               ptend%q(i,top_lev:pver,lptr) =qqcwtend(top_lev:pver)  ! set tendencies for cloud-borne aerosols
 
                !qqcw(mm)%fld(i,:) = 0.0_r8
                !qqcw(mm)%fld(i,top_lev:pver) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8) ! update cloud-borne aerosol; HW: ensure non-negative

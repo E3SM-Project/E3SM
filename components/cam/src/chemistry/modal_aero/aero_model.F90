@@ -671,6 +671,8 @@ contains
                trim(cnst_name_cw(n))//' turbulent dry deposition flux')
           call addfld (trim(cnst_name_cw(n))//'GVF',   horiz_only, 'A',   unit_basename//'/m2/s ', &
                trim(cnst_name_cw(n))//' gravitational dry deposition flux')     
+          call addfld (trim(cnst_name_cw(n))//'DTQ',(/ 'lev' /), 'A',unit_basename//'/kg/s ', &  !Guangxing Lin
+            trim(cnst_name_cw(n))//' dry deposition') !Guangxing Lin
 
           if ( history_aerosol ) then 
              if (history_verbose) then
@@ -1036,7 +1038,10 @@ contains
     real(r8)::  vlc_trb(pcols,4)          ! dep velocity
     real(r8) :: aerdepdryis(pcols,pcnst)  ! aerosol dry deposition (interstitial)
     real(r8) :: aerdepdrycw(pcols,pcnst)  ! aerosol dry deposition (cloud water)
-    real(r8), pointer :: fldcw(:,:)
+    !Guangxing Lin
+    !real(r8), pointer :: fldcw(:,:)
+    real(r8) :: fldcw(pcols,pver)
+    !Guangxing Lin,end
     real(r8), pointer :: dgncur_awet(:,:,:)
     real(r8), pointer :: wetdens(:,:,:)
     real(r8), pointer :: qaerwat(:,:,:)
@@ -1213,7 +1218,10 @@ contains
              ! use pvprogseasalts instead (means making the top level 0)
              pvmzaer(:ncol,1)=0._r8
              pvmzaer(:ncol,2:pverp) = vlc_dry(:ncol,:,jvlc)
-             fldcw => qqcw_get_field(pbuf, mm,lchnk)
+             !Guangxing Lin
+             ptend%lq(mm) = .TRUE. !Guangxing Lin
+             !fldcw => qqcw_get_field(pbuf, mm,lchnk)
+             !Guangxing Lin,end
 
              if(.true.) then ! use phil's method
              !      convert from meters/sec to pascals/sec
@@ -1223,10 +1231,16 @@ contains
              !      calculate the tendencies and sfc fluxes from the above velocities
                 call dust_sediment_tend( &
                      ncol,             dt,       state%pint(:,:), state%pmid, state%pdel, state%t , &
-                     fldcw(:,:),  pvmzaer,  dqdt_tmp(:,:), sflx  )
+                     !Guangxing Lin
+                     state%q(:,:,mm),  pvmzaer,  ptend%q(:,:,mm), sflx  )
+                     !fldcw(:,:),  pvmzaer,  dqdt_tmp(:,:), sflx  )
+                     !Guangxing Lin, end
              else   !use charlie's method
                 call d3ddflux( ncol, vlc_dry(:,:,jvlc), fldcw(:,:), state%pmid, &
-                               state%pdel, tvs, sflx, dqdt_tmp(:,:), dt )
+                               !Guangxing Lin
+                               !state%pdel, tvs, sflx, dqdt_tmp(:,:), dt )
+                               state%pdel, tvs, sflx, ptend%q(:,:,mm), dt )
+                     !Guangxing Lin, end
              endif
 
              ! apportion dry deposition into turb and gravitational settling for tapes
@@ -1235,11 +1249,14 @@ contains
                 dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
              enddo
 
-             fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
+             !Guangxing Lin
+             !fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
+             !Guangxing Lin, end
 
              call outfld( trim(cnst_name_cw(mm))//'DDF', sflx, pcols, lchnk)
              call outfld( trim(cnst_name_cw(mm))//'TBF', dep_trb, pcols, lchnk )
              call outfld( trim(cnst_name_cw(mm))//'GVF', dep_grv, pcols, lchnk )
+             call outfld( trim(cnst_name_cw(mm))//'DTQ', ptend%q(:,:,mm), pcols, lchnk) !Guangxing Lin
              aerdepdrycw(:ncol,mm) = sflx(:ncol)
 
           endif
@@ -1416,6 +1433,7 @@ contains
     integer :: lcoardust, lcoarnacl ! indices for coarse mode dust and seasalt masses
     integer :: m, mtmp ! mode index
     integer :: mm, mmai, mmtoo ! tracer (q-array) index
+    integer :: mm_cw  ! tracer (q-array) index !Guangxing Lin
     integer :: ncol ! number of atmospheric columns
     integer :: mam_prevap_resusp_optaa10, mam_prevap_resusp_optcc
 
@@ -1468,8 +1486,11 @@ contains
     real(r8) :: rtscavt_sv(pcols, pver, pcnst) ! REASTER 08/12/2015
     real(r8) :: rcscavt_cn_sv(pcols, pver)     ! REASTER 08/12/2015
     real(r8) :: rsscavt_cn_sv(pcols, pver)     ! REASTER 08/12/2015
-    
-    real(r8), pointer :: fldcw(:,:)
+   
+    !Guangxing Lin 
+    !real(r8), pointer :: fldcw(:,:)
+    real(r8) :: fldcw(pcols,pver)
+    !Guangxing Lin,end 
 
     real(r8), pointer :: dgnumwet(:,:,:)
     real(r8), pointer :: qaerwat(:,:,:)  ! aerosol water
@@ -1738,6 +1759,7 @@ lspec_loop_aa: &
                 jnummaswtr = jaeromass
                 if (lphase == 1) then
                    mm = lmassptr_amode(lspec,m)
+                   mm_cw = lmassptrcw_amode(lspec,m) !Guangxing Lin
                    jnv = 2
                 else
                    mm = lmassptrcw_amode(lspec,m)
@@ -1748,6 +1770,7 @@ lspec_loop_aa: &
                 jnummaswtr = jaeronumb
                 if (lphase == 1) then
                    mm = numptr_amode(m)
+                   mm_cw = numptrcw_amode(m) !Guangxing Lin
                    jnv = 1
                 else
                    mm = numptrcw_amode(m)
@@ -1860,8 +1883,11 @@ lphase_jnmw_conditional: &
                    !Feed in the saved cloudborne mixing ratios from phase 2
                    qqcw_in(:,:) = qqcw_sav(:,:,lspec)
                 else
-                   fldcw => qqcw_get_field(pbuf, mm,lchnk)
-                   qqcw_in(:,:) = fldcw(:,:)
+                   !Guangxing Lin      
+                   !fldcw => qqcw_get_field(pbuf, mm,lchnk)
+                   !qqcw_in(:,:) = fldcw(:,:)
+                   qqcw_in(1:ncol,:) = state%q(1:ncol,:,mm_cw) 
+                   !Guangxing Lin, end      
                 endif
 
                 call wetdepa_v2( &
@@ -2107,12 +2133,19 @@ lphase_jnmw_conditional: &
 do_lphase2_conditional: &
                 if ( do_lphase2 ) then
                    dqdt_tmp(:,:) = 0.0_r8
+                   ptend%lq(mm) = .TRUE. !Guangxing Lin
                    if (convproc_do_aer) then
-                      fldcw => qqcw_get_field(pbuf,mm,lchnk)
+                      !Guangxing Lin
+                      fldcw(1:ncol,:) = state%q(1:ncol,:,mm) 
+                      !fldcw => qqcw_get_field(pbuf,mm,lchnk)
+                      !Guangxing Lin,end
                       qqcw_sav(1:ncol,:,lspec) = fldcw(1:ncol,:)  !RCE 2012/01/12
                    else
                       qqcw_tmp(:,:) = 0.0_r8 ! rce 2010/05/01
-                      fldcw => qqcw_get_field(pbuf, mm,lchnk)
+                      !Guangxing Lin
+                      fldcw(1:ncol,:) = state%q(1:ncol,:,mm) 
+                      !fldcw => qqcw_get_field(pbuf, mm,lchnk)
+                      !Guangxing Lin,end
                    endif
                    
                 call wetdepa_v2( &
@@ -2160,8 +2193,10 @@ do_lphase2_conditional: &
                       dqdt_tmp(1:ncol,:) = dqdt_tmp(1:ncol,:) - rtscavt_sv(1:ncol,:,mmai)  ! REASTER 08/11/2015
                    endif
 
-                   
-                   fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
+                  !Guangxing Lin 
+                  ! fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
+                   ptend%q(1:ncol,:,mm) = ptend%q(1:ncol,:,mm) + dqdt_tmp(1:ncol,:)
+                   !Guangxing Lin,end 
 
                    sflx(:)=0._r8
                    do k=1,pver
@@ -2407,8 +2442,10 @@ do_lphase2_conditional: &
     real(r8) :: dvmrcwdt(ncol,pver,gas_pcnst)
     real(r8) :: dvmrdt(ncol,pver,gas_pcnst)
     real(r8) :: vmrcw(ncol,pver,gas_pcnst)            ! cloud-borne aerosol (vmr)
-
-    real(r8), pointer :: fldcw(:,:)
+    !Guangxing Lin
+    !real(r8), pointer :: fldcw(:,:)
+    real(r8) ::  fldcw(pcols,pver)
+    !Guangxing Lin, end
 
     call pbuf_get_field(pbuf, dgnum_idx,      dgnum,  start=(/1,1,1/), kount=(/pcols,pver,ntot_amode/) )
     call pbuf_get_field(pbuf, dgnumwet_idx,   dgnumwet )
@@ -2548,6 +2585,12 @@ do_lphase2_conditional: &
 
     else ! (mam_amicphys_optaa > 0) 
     ! do gas-aerosol exchange, nucleation, and coagulation using new routines
+    !Guangxing Lin
+      n=49-9
+      fldcw =0.0
+      fldcw(:ncol,:) = adv_mass(n) * vmrcw(:ncol,:,n) / mbar(:ncol,:)
+      !call outfld( 'so4_test1', fldcw(:,:), pcols, lchnk )
+    !Guangxing Lin
 
        call t_startf('modal_aero_amicphys')
 
@@ -2589,6 +2632,17 @@ do_lphase2_conditional: &
     endif ! (mam_amicphys_optaa <= 0 OR > 0)
 
     !Guangxing Lin
+    do n =1, gas_pcnst    
+       if ( .not. cnst_name_cw(n+loffset) == ' ') then             
+          !write(*,*) 'gas_pcnst_cloud_borne    ', n, trim(cnst_name_cw(n+loffset))
+     !     write(*,*) 'gas_pcnst_cloud_borne, mw    ', n, adv_mass(n)
+          vmr(:ncol,:,n) = vmrcw(:ncol,:,n) ! update cloud-borne aerosols 
+       end if
+    end do
+    n=49-9
+      fldcw =0.0
+             fldcw(:ncol,:) = adv_mass(n) * vmr(:ncol,:,n) / mbar(:ncol,:)
+         ! call outfld( 'so4_test2', fldcw(:,:), pcols, lchnk )
     !call vmr2qqcw( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
 
     ! diagnostics for cloud-borne aerosols... 

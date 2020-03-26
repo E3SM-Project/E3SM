@@ -553,25 +553,34 @@ contains
 
 
        do n = 1,pcnst
-          fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
-          if(associated(fldcw)) then
+          !Guangxing Lin
+          !fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
+          !if(associated(fldcw)) then
              select case (trim(cnst_name_cw(n)))
                 case ('bc_c1','bc_c3','bc_c4')
-                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
+                     !mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
+                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,n) 
                 case ('dst_c1','dst_c3')
-                     mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
+                     !mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
+                     mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,n) 
                 case ('mom_c1','mom_c2','mom_c3','mom_c4')
-                     mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
+                     !mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
+                     mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,n) 
                 case ('ncl_c1','ncl_c2','ncl_c3')
-                     mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
+                     !mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
+                     mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,n) 
                 case ('pom_c1','pom_c3','pom_c4')
-                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
+                     !mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
+                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,n) 
                 case ('so4_c1','so4_c2','so4_c3')
-                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
+                     !mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
+                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,n) 
                 case ('soa_c1','soa_c2','soa_c3')
-                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
+                     !mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
+                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,n)
              end select
-          endif
+          !endif
+          !Guangxing Lin
        end do
        call outfld( 'Mass_bc', mass_bc(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_dst', mass_dst(:ncol,:),ncol,lchnk)

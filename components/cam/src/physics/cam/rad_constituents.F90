@@ -43,10 +43,12 @@ public :: &
    rad_cnst_get_gas,            &! return pointer to mmr for gasses
    rad_cnst_get_aer_mmr,        &! return pointer to mmr for aerosols
    rad_cnst_get_mam_mmr_idx,    &! get constituent index of mam specie mmr (climate list only)
+   rad_cnst_get_mam_mmr_cw_idx, &! get constituent index of mam specie mmr for cloud-borne aerosols !Guangxing Lin 
    rad_cnst_get_aer_props,      &! return physical properties for aerosols
    rad_cnst_get_mode_props,     &! return physical properties for aerosol modes
    rad_cnst_get_mode_num,       &! return mode number mixing ratio
    rad_cnst_get_mode_num_idx,   &! get constituent index of mode number m.r. (climate list only)
+   rad_cnst_get_mode_num_cw_idx,&! get constituent index of mode number m.r. for cloud-borne aerosols !Guangxing Lin
    rad_cnst_out,                &! output constituent diagnostics (mass per layer and column burden)
    rad_cnst_get_call_list        ! return list of active climate/diagnostic calls to radiation
 

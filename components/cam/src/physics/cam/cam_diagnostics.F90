@@ -620,6 +620,18 @@ subroutine diag_init()
    call addfld ('TBOT&IC',horiz_only,    'I','K','Lowest model level temperature'                  )
 
 
+   !Guangxing Lin
+   call addfld ('dst_bf_drydep',(/ 'lev' /), 'A','kg/kg','dst_c3 mass mixing ratio'                   )
+   call addfld ('dst_af_drydep',(/ 'lev' /), 'A','kg/kg','dst_c3 mass mixing ratio'                   )
+   call addfld ('bc_bf_wetdep',(/ 'lev' /), 'A','kg/kg','bc_c3 mass mixing ratio'                   )
+   call addfld ('bc_af_wetdep',(/ 'lev' /), 'A','kg/kg','bc_c3 mass mixing ratio'                   )
+   call addfld ('so4_bf_chem',(/ 'lev' /), 'A','kg/kg','so4_c3 mass mixing ratio'                   )
+   call addfld ('so4_af_chem',(/ 'lev' /), 'A','kg/kg','so4_c3 mass mixing ratio'                   )
+   call addfld ('so4_bf_ndrop',(/ 'lev' /), 'A','kg/kg','so4_c3 mass mixing ratio'                   )
+   call addfld ('so4_af_ndrop',(/ 'lev' /), 'A','kg/kg','so4_c3 mass mixing ratio'                   )
+   call addfld ('so4_test1',(/ 'lev' /), 'A','kg/kg','so4_c2 mass mixing ratio'                   )
+   call addfld ('so4_test2',(/ 'lev' /), 'A','kg/kg','so4_c2 mass mixing ratio'                   )
+   !Guangxing Lin, end
    ! Initial file - Optional fields
 
    if (inithist_all) then

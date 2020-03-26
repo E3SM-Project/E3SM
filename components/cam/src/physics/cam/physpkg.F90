@@ -1393,6 +1393,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
+    use cam_history,    only: outfld !Guangxing Lin
 
     implicit none
 
@@ -1581,11 +1582,22 @@ if (l_tracer_aero) then
          cam_in%cflx)
 
     ! Chemistry calculation
+    !Guangxing Lin
+!    write(*,*) 'gxlin-test1, lq = ', ptend%lq(49)
+    call outfld('so4_bf_chem', state%q(:,:,49), pcols, lchnk   )
+    !Guangxing Lin, end
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
 
+    !Guangxing Lin
+!    write(*,*) 'gxlin-test2, lq = ', ptend%lq(49)
        call physics_update(state, ptend, ztodt, tend)
+    !Guangxing Lin, end
+    !Guangxing Lin
+!    write(*,*) 'gxlin-test3, lq = ', ptend%lq(49)
+    call outfld('so4_af_chem', state%q(:,:,49), pcols, lchnk   )
+    !Guangxing Lin, end
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, &
             cam_in%cflx)
@@ -1654,11 +1666,18 @@ end if ! l_rayleigh
 
 if (l_tracer_aero) then
 
+    !Guangxing Lin
+    !call cnst_get_ind('dst_c3', ixdstc3)
+    call outfld('dst_bf_drydep', state%q(:,:,54), pcols, lchnk   )
+    !Guangxing Lin, end
     !  aerosol dry deposition processes
     call t_startf('aero_drydep')
     call aero_model_drydep( state, pbuf, obklen, surfric, cam_in, ztodt, cam_out, ptend )
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('aero_drydep')
+    !Guangxing Lin
+    call outfld('dst_af_drydep', state%q(:,:,54), pcols, lchnk   )
+    !Guangxing Lin, end
 
    ! CARMA microphysics
    !
@@ -2617,12 +2636,21 @@ end if
           else
              call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
           end if
+          !Guangxing Lin
+          ! call outfld('so4_test1', ptend%q(:,:,49), pcols, lchnk   )
+          !Guangxing Lin, end
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then
              call physics_ptend_sum(ptend_aero, ptend, ncol)
              call physics_ptend_dealloc(ptend_aero)
           endif
+          !Guangxing Lin
+          ! call outfld('so4_test2', ptend%q(:,:,49), pcols, lchnk   )
+          !Guangxing Lin, end
 
+          !Guangxing Lin
+          ! call outfld('so4_bf_ndrop', state%q(:,:,49), pcols, lchnk   )
+          !Guangxing Lin, end
           ! Have to scale and apply for full timestep to get tend right
           ! (see above note for macrophysics).
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
@@ -2633,6 +2661,9 @@ end if
                snow_str(:ncol)/cld_macmic_num_steps, zero)
 
           call t_stopf('microp_tend')
+          !Guangxing Lin
+           call outfld('so4_af_ndrop', state%q(:,:,49), pcols, lchnk   )
+          !Guangxing Lin, end
 
         else 
         ! If microphysics is off, set surface cloud liquid/ice and rain/snow fluxes to zero
@@ -2689,6 +2720,10 @@ if (l_tracer_aero) then
           sh_e_ed_ratio = 0.0_r8
        endif
 
+       !Guangxing Lin
+       !call cnst_get_ind('dst_c3', ixdstc3)
+       call outfld('bc_bf_wetdep', state%q(:,:,57), pcols, lchnk   )
+       !Guangxing Lin, end
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
             cam_out,                                                                 & !Intent-inout
@@ -2696,6 +2731,9 @@ if (l_tracer_aero) then
             ptend                                                                    ) !Intent-out
        
        call physics_update(state, ptend, ztodt, tend)
+       !Guangxing Lin
+       call outfld('bc_af_wetdep', state%q(:,:,57), pcols, lchnk   )
+       !Guangxing Lin, end
 
 
        if (carma_do_wetdep) then

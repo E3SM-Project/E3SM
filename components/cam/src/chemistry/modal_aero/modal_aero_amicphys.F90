@@ -5398,7 +5398,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
                tmpch2 = '_a'
             else
                l = lmassptrcw_amode(l1,n)
-               lmz = 0
+               !Guangxing Lin
+               !lmz = 0
+               lmz =  l - loffset 
+               !Guangxing Lin
                tmpnamea = cnst_name_cw(l)
                tmpch2 = '_c'
             end if
@@ -5442,10 +5445,19 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
                end if
                fcvt_aer(iaer) = mwhost_aer(iaer)/mw_aer(iaer)
                fac_m2v_aer(iaer) = mw_aer(iaer)/dens_aer(iaer)
+           !Guangxing Lin
             else
                name_aercw(iaer,n) = tmpnamea
+               lmz2 = get_spc_ndx( tmpnamea )
+               if (lmz /= lmz2 .or. lmz <= 0) then
+                  msg = 'modal_aero_amicphys_init ERROR - lmz /= lmz2 for ' // tmpnamea
+                  call endrun( msg )
+               end if
+               lmapcc_all(lmz) = lmapcc_val_aer
                lmap_aercw(iaer,n) = l - loffset
+               ! no dens_aer, hygro_aer things? 
             end if
+           !Guangxing Lin, end
 
          end do ! l1
          end do ! lac
@@ -5462,6 +5474,15 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
          lmap_numcw(n) = numptrcw_amode(n) - loffset
          name_numcw(n) = cnst_name_cw(numptrcw_amode(n))
+         !Guangxing Lin
+         lmz = lmap_numcw(n)
+         lmz2 = get_spc_ndx( name_numcw(n) )
+         if (lmz /= lmz2 .or. lmz <= 0) then
+            msg = 'modal_aero_amicphys_init ERROR - lmz /= lmz2 for ' // name_numcw(n)
+            call endrun( msg )
+         end if
+         lmapcc_all(lmz) = lmapcc_val_num
+         !Guangxing Lin,end
          mwhost_num = 1.0_r8
 
       end do ! n

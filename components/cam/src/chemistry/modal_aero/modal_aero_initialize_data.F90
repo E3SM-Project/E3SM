@@ -269,7 +269,7 @@ contains
        !numptrcw_amode(m) = numptr_amode(m)  !use the same index for Q and QQCW arrays
        call search_list_of_names(                                      &
             xname_numptrcw(m), numptrcw_amode(m), cnst_name, pcnst )
-       !Guangxing Lin
+       !Guangxing Lin, end
 
        if (numptrcw_amode(m) .le. 0) then
           write(iulog,9061) 'xname_numptrcw', xname_numptrcw(m), m
@@ -282,8 +282,10 @@ contains
        end if
        species_class(numptrcw_amode(m)) = spec_class_aerosol
 
-       call pbuf_add_field(xname_numptrcw(m),'global',dtype_r8,(/pcols,pver/),iptr)
-       call qqcw_set_ptr(numptrcw_amode(m),iptr)
+       !Guangxing Lin
+       !call pbuf_add_field(xname_numptrcw(m),'global',dtype_r8,(/pcols,pver/),iptr)
+       !call qqcw_set_ptr(numptrcw_amode(m),iptr)
+       !Guangxing Lin, end
 
        !   output mode information
        if ( masterproc ) then
@@ -323,8 +325,10 @@ contains
              write(iulog,9062) 'xname_massptrcw', xname_massptrcw(l,m), l, m
              call endrun()
           end if
-          call pbuf_add_field(xname_massptrcw(l,m),'global',dtype_r8,(/pcols,pver/),iptr)
-          call qqcw_set_ptr(lmassptrcw_amode(l,m), iptr)
+          !Guangxing Lin
+!          call pbuf_add_field(xname_massptrcw(l,m),'global',dtype_r8,(/pcols,pver/),iptr)
+!          call qqcw_set_ptr(lmassptrcw_amode(l,m), iptr)
+!Guangxing Lin, end
           species_class(lmassptrcw_amode(l,m)) = spec_class_aerosol
 
           if ( masterproc ) then
@@ -539,7 +543,6 @@ contains
              end if
           end do
 
-
        !   set cnst_name_cw
        call initaermodes_set_cnstnamecw()
 
@@ -614,14 +617,16 @@ contains
        if (is_first_step()) then
           ! initialize cloud bourne constituents in physics buffer
 
-          do i = 1, pcnst
-             do lchnk = begchunk, endchunk
-                qqcw => qqcw_get_field(pbuf_get_chunk(pbuf2d,lchnk), i, lchnk, .true.)
-                if (associated(qqcw)) then
-                   qqcw = 1.e-38_r8
-                end if
-             end do
-          end do
+          !Guangxing Lin 
+          !do i = 1, pcnst
+          !   do lchnk = begchunk, endchunk
+          !      qqcw => qqcw_get_field(pbuf_get_chunk(pbuf2d,lchnk), i, lchnk, .true.)
+          !      if (associated(qqcw)) then
+          !         qqcw = 1.e-38_r8
+          !      end if
+          !   end do
+          !end do
+          !Guangxing Lin, end 
        end if
 
        if(convproc_do_aer .or. convproc_do_gas) then
