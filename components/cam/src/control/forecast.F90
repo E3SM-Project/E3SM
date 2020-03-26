@@ -203,7 +203,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
         endif
 #else
         if (iop_scream) then
-          tfcst(k) = t3m2(k) + ztodt*div3dt(k)
+          tfcst(k) = t3m2(k) + ztodt*divt3d(k)
         else
           tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
         endif
