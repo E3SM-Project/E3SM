@@ -86,7 +86,6 @@ contains
     integer  :: dtime_sync                           ! coupling time-step from the input synchronization clock
     integer  :: dtime_clm                            ! clm time-step
     logical  :: exists                               ! true if file exists
-    logical  :: no_taskmap_output                    ! true then do not write out task-to-node mapping
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
@@ -165,8 +164,6 @@ contains
 
     if (info_taskmap_comp > 0) then
 
-       no_taskmap_output = .false.
-
        if (info_taskmap_comp == 1) then
           verbose_taskmap_output = .false.
        else
@@ -183,19 +180,13 @@ contains
           call shr_sys_flush(iulog)
        endif
 
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(iulog, mpicom_lnd,                    &
+                              'LND #'//trim(adjustl(c_inst_index)), &
+                              verbose=verbose_taskmap_output        )
+       call t_stopf("shr_taskmap_write")
 
     endif
-
-    call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iulog, mpicom_lnd,                    &
-                           'LND #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
-    call t_stopf("shr_taskmap_write")
 
     ! Use infodata to set orbital values
 

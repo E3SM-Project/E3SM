@@ -31,8 +31,9 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     // Read in tables
     view_2d_table vn_table;
     view_2d_table vm_table;
+    view_2d_table revap_table;
     view_1d_table mu_r_table; view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table, vm_table, mu_r_table, dnu);
+    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);

@@ -85,8 +85,8 @@ module micro_p3_utils
 real(rtype), parameter :: dsph = 3._rtype
 
 ! Bounds for mean diameter for different constituents.
-real(rtype), parameter :: lam_bnd_rain(2) = 1._rtype/[500.e-6_rtype, 20.e-6_rtype]
-real(rtype), parameter :: lam_bnd_snow(2) = 1._rtype/[2000.e-6_rtype, 10.e-6_rtype]
+! real(rtype), parameter :: lam_bnd_rain(2) = 1._rtype/[500.e-6_rtype, 20.e-6_rtype]
+! real(rtype), parameter :: lam_bnd_snow(2) = 1._rtype/[2000.e-6_rtype, 10.e-6_rtype]
 
 ! Minimum average mass of particles.
 real(rtype), parameter :: min_mean_mass_liq = 1.e-20_rtype
@@ -118,8 +118,6 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
     real(rtype), intent(in) :: pi
     integer, intent(in)     :: iulog
     logical(btype), intent(in)     :: masterproc
-
-    real(rtype) :: ice_lambda_bounds(2)
 
     ! logfile info
     iulog_e3sm      = iulog
@@ -200,7 +198,7 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
     cons4 = 1._rtype/(dbrk**3*pi*rhow)
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm
-    cons7 = 4._rtype*piov3*rhow*(1.e-6_rtype)**3
+    cons7 = 4._rtype*piov3*rhow*1.e-18_rtype
 
     ! droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
     ! warm rain autoconversion/accretion option only (iparam = 1)

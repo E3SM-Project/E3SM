@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/util/units.hpp"
+#include "share/util/scream_units.hpp"
 
 #include <iostream>
 

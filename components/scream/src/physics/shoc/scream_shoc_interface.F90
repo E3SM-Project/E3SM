@@ -52,8 +52,7 @@ contains
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
     
     real(kind=r8) :: pref_mid(pcols,pver) ! pressure at midlevel hPa; r8 for now b/c shoc supports only r8 currently
-    integer(kind=c_int) :: its, ite, kts, kte, k
-    real(kind=c_real) :: karman
+    integer(kind=c_int) :: kts, kte, k
 
     kts     = 1
     kte     = pver

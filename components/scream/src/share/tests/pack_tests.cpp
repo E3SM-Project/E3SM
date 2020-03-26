@@ -7,6 +7,14 @@
 
 namespace {
 
+double square(double x) {
+  return x * x;
+}
+
+double cube(double x) {
+  return x * x * x;
+}
+
 template <int PACKN>
 struct TestMask {
   typedef scream::pack::Mask<PACKN> Mask;
@@ -269,6 +277,9 @@ struct TestPack {
     test_pack_gen_unary_stdfn(log10);
     test_pack_gen_unary_stdfn(tgamma);
     test_pack_gen_unary_stdfn(sqrt);
+
+    test_pack_gen_unary_fn(square, square);
+    test_pack_gen_unary_fn(cube, cube);
 
     test_mask_gen_bin_op_all(==);
     test_mask_gen_bin_op_all(!=);

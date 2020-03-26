@@ -815,6 +815,12 @@ add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
 #if 0., no rayleigh friction is applied
 add_default($nl, 'raytau0');
 
+# these options werre added for global RCE and they only work with RRTMGP
+my $rad_pkg = $cfg->get('rad');
+if ($rad_pkg eq 'rrtmgp') {
+  add_default($nl,'do_aerosol_rad');
+  add_default($nl,'fixed_total_solar_irradiance');
+}
 
 #
 # Simulated years: sim_year and sim_year_start
@@ -844,7 +850,6 @@ add_default($nl, 'bnd_topo', 'nofail'=>1);
 add_default($nl, 'tropopause_climo_file');
 
 # Radiation
-my $rad_pkg = $cfg->get('rad');
 if ($rad_pkg eq 'camrt') {
     # Only needed for CAM3/4 RT code
     # Absorptivity and emissivity data

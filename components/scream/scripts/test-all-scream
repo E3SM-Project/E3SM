@@ -10,7 +10,7 @@ Run from $scream-repo/components/scream
 from utils import check_minimum_python_version
 check_minimum_python_version(3, 4)
 
-import argparse, sys, os
+import argparse, sys, os, pathlib
 
 from test_all_scream import TestAllScream
 
@@ -30,7 +30,7 @@ OR
     \033[1;32m# Run all tests on current machine with custom flags\033[0m
     > cd $scream_repo/components/scream
     > ./scripts/test-all-scream $(which mpicxx) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
-""".format(os.path.basename(args[0])),
+""".format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -69,6 +69,13 @@ OR
 
     parser.add_argument("-i", "--integration-test", action="store_true", default="JENKINS_HOME" in os.environ,
                         help="Merge origin/master into this branch before testing.")
+
+    parser.add_argument("-r", "--root-dir",
+                        help="The root directory of the scream src you want to test. "
+                        "Default will be the scream src containing this script.")
+
+    parser.add_argument("-d", "--dry-run", action="store_true",
+                        help="Do a dry run, commands will be printed but not executed")
 
     return parser.parse_args(args[1:])
 

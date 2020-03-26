@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
+#include <string>
 
 namespace scream {
 namespace util {
@@ -33,6 +35,21 @@ bool erase (ContainerType& c, const T& value) {
 template<typename ContainerType, typename T>
 int count (const ContainerType& c, const T& value) {
   return std::count(c.begin(), c.end(), value);
+}
+
+template<typename T>
+std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
+  const int n = v.size();
+  if (n==0) {
+    return out;
+  }
+
+  for (int i=0; i<n-1; ++i) {
+    out << v[i] << std::string(" ");
+  }
+  out << v.back();
+
+  return out;
 }
 
 } // namespace util

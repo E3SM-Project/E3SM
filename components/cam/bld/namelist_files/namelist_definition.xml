@@ -1699,11 +1699,17 @@ Default: 1
 </entry>
 
 <entry id="inithist" type="char*8"  category="history"
-       group="cam_history_nl" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
+       group="cam_history_nl" valid_values="NONE,NSTEPS,HOURLY,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
 Frequency that initial files will be output: 6-hourly, daily, monthly,
-yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
+yearly, or never.  Valid values: 'NONE', 'NSTEPS','HOURLY', '6-HOURLY', 'DAILY', 'MONTHLY',
 'YEARLY', 'CAMIOP', 'ENDOFRUN'.
 Default: 'YEARLY'
+</entry>
+
+<entry id="inithist_nsteps" type="integer"  category="history"
+       group="cam_history_nl" valid_values="" >
+Number of physics steps that initial files will be output. Used only when inithist == 'NSTEPS'
+Default: 1
 </entry>
 
 <entry id="inithist_all" type="logical"  category="history"
@@ -4070,6 +4076,14 @@ Type of radiation scheme employed.
 Default: set by build-namelist
 </entry>
 
+<entry id="constant_zenith_deg" type="real"  category="radiation"
+       group="phys_ctl_nl" valid_values="" >
+Constant solar zenith angle value in degrees for idealized configurations
+such as radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
+</entry>
+
 <entry id="conv_water_in_rad" type="integer" category="radiation"
        group="phys_ctl_nl" valid_values="0,1,2" >
 Convective water used in radiation?
@@ -4115,6 +4129,20 @@ Default: -1
 Specifies length of time in timesteps (positive) or hours (negative) SW/LW
 radiation will be run for every timestep from the start of an initial run.
 Default: 0
+</entry>
+
+<entry id="do_aerosol_rad" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Indicates whether to consider aerosols in radiative calculations
+Default: TRUE
+</entry>
+
+<entry id="fixed_total_solar_irradiance" type="real"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Fixed value of solar constant for idealized configurations such as 
+radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
 </entry>
 
 <entry id="spectralflux" type="logical"  category="radiation"
@@ -7381,6 +7409,12 @@ Default: 1.0 for CAM, set by build-namelist for WACCM, T31
 Factor determining z_0 from orographic standard deviation [ no unit ] 
 Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varname>.
 set by build-namelist for WACCM, T31
+</entry>
+
+<entry id="omega" type="real" category="physconst"
+       group="physconst_nl" valid_values="" >
+Planetary rotation rate (radians/second). Value set here is ONLY used in the atmosphere.
+Default: set to shr_const value
 </entry>
 
 </namelist_definition>

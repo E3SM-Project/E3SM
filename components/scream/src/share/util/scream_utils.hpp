@@ -17,20 +17,24 @@
 #endif
 
 namespace scream {
+
+/*
+ * Utility function for handling floating point literals,
+ * so that they match the scream precision. This is
+ * especially useful for bfb tests agaisnt fortran,
+ * to ensure that literals are not a source of round-off differences.
+ */
+template<typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value,Real>::type
+sp (const T val) {
+  return Real(val);
+}
+
 namespace util {
 
 template <typename Real> struct is_single_precision {};
 template <> struct is_single_precision<float> { enum : bool { value = true }; };
 template <> struct is_single_precision<double> { enum : bool { value = false }; };
-
-// macro for floating point literals that match the scream precision. This can be
-// especially useful for bfb tests agaisnt fortran to ensure that literals are not
-// a source of round-off differences.
-#ifdef SCREAM_DOUBLE_PRECISION
-#define sp(val) val
-#else
-#define sp(val) val##F
-#endif
 
 bool eq(const std::string& a, const char* const b1, const char* const b2 = 0);
 
@@ -131,37 +135,34 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
 
 namespace check_overloads
 {
-// Note: the trick used here is taken from Alexandrescu's 'Modern C++ Design' book.
-//       We do not need implementations for the dummy functions below, since
-//       sizeof is guaranteed to not actually evaluate any expression.
-
-// We are *guaranteed* that the sizes of Yes and No are different
-using Yes = char;
-struct No
-{
-  char b[2];
-};
-
-bool Check (bool);
-bool Check (std::ostream&);
-No& Check (...);
+// Note: the trick used here is taken from https://stackoverflow.com/a/50631844/1093346
 
 // Equality operator
-template<typename T, typename Arg>
-Yes operator== (const T&, const Arg&);
-
-template <typename T, typename Arg = T>
+template <typename LHS, typename RHS>
 struct EqualExists {
-  enum : int { value = (sizeof(Check(*(T*)(0) == *(Arg*)(0))) == sizeof(Yes)) };
+  template<typename T, typename U>
+  static auto test(T &&t, U &&u) -> decltype(t == u, void(), std::true_type{});
+  static auto test(...) -> std::false_type;
+  using type = decltype(test(std::declval<LHS>(),std::declval<RHS>()));
+
+  static constexpr bool value = type::value;
 };
 
 // Streaming operator
 template<typename T>
-Yes operator<< (const std::ostream&, const T&);
-
-template<typename T>
 struct StreamExists {
-  enum : int { value = (sizeof(std::declval<std::ostream>() << std::declval<T>()) == sizeof(Yes)) };
+  template<typename U>
+  static auto test(U*)
+    -> decltype(
+        std::declval<std::ostream&>() << std::declval<U>(),
+        std::true_type());
+
+  template<typename>
+  static std::false_type test(...);
+
+  using type = decltype(test<T>(0));
+
+  static constexpr bool value = type::value;
 };
 
 } // namespace check_overloads

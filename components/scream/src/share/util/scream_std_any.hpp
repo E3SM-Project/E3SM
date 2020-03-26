@@ -11,7 +11,10 @@
  */
 
 #include <memory>
+#include <iostream>
 #include "share/scream_assert.hpp"
+#include "share/util/scream_std_utils.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace scream {
 namespace util{
@@ -26,6 +29,8 @@ class any {
     virtual ~holder_base() = default;
 
     virtual const std::type_info& type () const = 0;
+
+    virtual void print (std::ostream& os) const = 0;
   };
 
   template <typename HeldType>
@@ -53,8 +58,28 @@ class any {
 
     HeldType& value () { return *m_value; }
     std::shared_ptr<HeldType> ptr () const { return m_value; }
+
+    void print (std::ostream& os) const {
+      if (static_cast<bool>(m_value)) {
+        print_impl<HeldType>(os);
+      }
+    }
   private:
     holder () = default;
+
+    template<typename T>
+    typename std::enable_if<!check_overloads::StreamExists<T>::value>::type
+    print_impl (std::ostream& os) const {
+
+      os << "Error! Trying to print object of type '" << type().name() << "',"
+         << "       which does not overload operator<< .\n";
+    }
+
+    template<typename T>
+    typename std::enable_if<check_overloads::StreamExists<T>::value>::type
+    print_impl (std::ostream& os) const {
+      os << *m_value;
+    }
 
     // Note: we store a shared_ptr rather than a HeldType directly,
     //       since we may store multiple copies of the concrete object.
@@ -143,6 +168,13 @@ std::shared_ptr<ConcreteType> any_ptr_cast (any& src) {
   error::runtime_check(ptr!=nullptr, "Error! Failed dynamic_cast during any_cast. This is an internal problem, please, contact developers.\n", -1);
 
   return ptr->ptr();
+}
+
+// Overload stream operator
+inline std::ostream& operator<< (std::ostream& out, const any& any) {
+  any.content().print(out);
+
+  return out;
 }
 
 } // namespace util

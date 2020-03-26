@@ -145,8 +145,9 @@ module cam_history
   character(len=16)  :: logname             ! user name
   character(len=16)  :: host                ! host name
   character(len=max_string_len) :: ctitle = ' '      ! Case title
-  character(len=8)   :: inithist = 'YEARLY' ! If set to '6-HOURLY, 'DAILY', 'MONTHLY' or
+  character(len=8)   :: inithist = 'YEARLY' ! If set to 'NSTEPS','HOURLY', '6-HOURLY, 'DAILY', 'MONTHLY' or
   ! 'YEARLY' then write IC file 
+  integer :: inithist_nsteps = 1 ! interval to write IC file, when inithist == NSTEPS
   logical            :: inithist_all = .false. ! Flag to indicate set of fields to be 
                                           ! included on IC file
                                           !  .false.  include only required fields
@@ -541,8 +542,8 @@ CONTAINS
     integer                        :: interpolate_type(size(interpolate_info))
 
     ! History namelist items
-    namelist /cam_history_nl/ ndens, nhtfrq, mfilt, inithist, inithist_all,    &
-         avgflag_pertape, empty_htapes, lcltod_start, lcltod_stop,             &
+    namelist /cam_history_nl/ ndens, nhtfrq, mfilt, inithist, inithist_nsteps, &
+         inithist_all, avgflag_pertape, empty_htapes, lcltod_start, lcltod_stop, &
          fincl1lonlat, fincl2lonlat, fincl3lonlat, fincl4lonlat, fincl5lonlat, &
          fincl6lonlat, fincl7lonlat, fincl8lonlat, fincl9lonlat,               &
          fincl10lonlat, collect_column_output, hfilename_spec,                 &
@@ -567,6 +568,7 @@ CONTAINS
     nhtfrq(2:)               = -24
     mfilt                    = 30
     inithist                 = 'YEARLY'
+    inithist_nsteps          = 1
     inithist_all             = .false.
     empty_htapes             = .false.
     lcltod_start(:)          = 0
@@ -690,7 +692,8 @@ CONTAINS
       !
       ctemp = shr_string_toUpper(inithist) 
       inithist = trim(ctemp)
-      if ( (inithist /= '6-HOURLY') .and. (inithist /= 'DAILY')  .and.        &
+      if ( (inithist /= 'NSTEPS')   .and. (inithist /= 'HOURLY') .and.        &
+           (inithist /= '6-HOURLY') .and. (inithist /= 'DAILY')  .and.        &
            (inithist /= 'MONTHLY')  .and. (inithist /= 'YEARLY') .and.        &
            (inithist /= 'CAMIOP')   .and. (inithist /= 'ENDOFRUN')) then
         inithist = 'NONE'
@@ -750,7 +753,11 @@ CONTAINS
 
     ! Write out inithist info
     if (masterproc) then
-      if (inithist == '6-HOURLY' ) then
+      if (inithist == 'NSTEPS' ) then
+        write(iulog,*)'Initial conditions history files will be written every ',inithist_nsteps, 'steps.'
+      else if (inithist == 'HOURLY' ) then
+        write(iulog,*)'Initial conditions history files will be written hourly.'
+      else if (inithist == '6-HOURLY' ) then
         write(iulog,*)'Initial conditions history files will be written 6-hourly.'
       else if (inithist == 'DAILY' ) then
         write(iulog,*)'Initial conditions history files will be written daily.'
@@ -773,6 +780,7 @@ CONTAINS
     call mpi_bcast(nhtfrq, ptapes, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(mfilt, ptapes, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(inithist,len(inithist), mpi_character, masterprocid, mpicom, ierr)
+    call mpi_bcast(inithist_nsteps,1, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(inithist_all,1, mpi_logical, masterprocid, mpicom, ierr)
     call mpi_bcast(lcltod_start, ptapes, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(lcltod_stop,  ptapes, mpi_integer, masterprocid, mpicom, ierr)
@@ -4460,7 +4468,13 @@ end subroutine print_active_fldlst
       nstep = get_nstep()
       call get_curr_date(yr, mon, day, ncsec)
 
-      if    (inithist == '6-HOURLY') then
+      if (inithist == 'HOURLY') then
+        dtime  = get_step_size()
+        write_inithist = nstep /= 0 .and. mod( nstep, nint(3600._r8/dtime) ) == 0
+      elseif (inithist == 'NSTEPS') then
+        dtime  = get_step_size()
+        write_inithist = nstep /= 0 .and. mod( nstep, inithist_nsteps ) == 0
+      elseif(inithist == '6-HOURLY') then
         dtime  = get_step_size()
         write_inithist = nstep /= 0 .and. mod( nstep, nint((6._r8*3600._r8)/dtime) ) == 0
       elseif(inithist == 'DAILY'   ) then

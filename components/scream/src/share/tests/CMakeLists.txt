@@ -1,5 +1,8 @@
 INCLUDE (ScreamUtils)
 
+# Test debug tools
+CreateUnitTest(debug_tools "debug_tools_tests.cpp" scream_share)
+
 # Test utilities (f90)
 CreateUnitTest(array_io "array_io_tests.cpp;unit_test.f90" scream_share)
 
@@ -32,3 +35,9 @@ CreateUnitTest(tridiag "tridiag_tests.cpp;tridiag_tests_correctness.cpp;tridiag_
 
 # Test units framework
 CreateUnitTest(units "units.cpp" scream_share)
+
+# YAML parser
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml
+                COPYONLY)
+CreateUnitTest(yaml_parser "yaml_parser.cpp" scream_share)

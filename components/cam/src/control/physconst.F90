@@ -159,8 +159,7 @@ contains
       logical       newg, newsday, newmwh2o, newcpwv, newmwdry, newrearth, newtmelt, newomega
 
       ! Physical constants needing to be reset (ie. for aqua planet experiments)
-      namelist /physconst_nl/  cpwv, gravit, mwdry, mwh2o, rearth, sday, tmelt, tms_orocnst,&
-                               omega, tms_z0fac
+      namelist /physconst_nl/  cpwv, gravit, mwdry, mwh2o, rearth, sday, tmelt, tms_orocnst, tms_z0fac, omega
 
       !-----------------------------------------------------------------------------
 
@@ -203,8 +202,6 @@ contains
       newtmelt =  tmelt  .ne. shr_const_tkfrz
       newomega =  omega  .ne. shr_const_omega
       
-      
-      
       if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt .or. newomega) then
          if (masterproc) then
             write(iulog,*)'****************************************************************************'
@@ -223,13 +220,10 @@ contains
          end if
          rga         = 1._r8/gravit 
          ra          = 1._r8/rearth
- 
-         if (.not. newomega) then
-           omega       = 2.0_R8*pi/sday
-         endif
-         
          cpvir       = cpwv/cpair - 1._r8
          epsilo      = mwh2o/mwdry      
+
+         if (.not.newomega) omega = 2.0_r8*pi/sday
          
          !  rair and rh2o have to be defined before any of the variables that use them
          

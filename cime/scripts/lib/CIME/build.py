@@ -62,7 +62,9 @@ def xml_to_make_variable(case, varname, cmake=False):
 def uses_kokkos(case):
 ###############################################################################
     cam_target = case.get_value("CAM_TARGET")
-    return get_model() == "e3sm" and cam_target in ("preqx_kokkos", "theta-l")
+    atm_comp   = case.get_value("COMP_ATM")
+
+    return get_model() == "e3sm" and (cam_target in ("preqx_kokkos", "theta-l") and atm_comp != "scream")
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,

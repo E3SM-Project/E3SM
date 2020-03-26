@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdexcept>  // For std::logic_error
 #include "scream_config.h"
+#include <cfenv>
 
 /*
  * Asserts and error checking for Scream.
@@ -84,6 +85,50 @@ void runtime_check(bool cond, const std::string& message, int code = -1);
 void runtime_abort(const std::string& message, int code = -1);
 
 } // namespace error
+
+/*
+ * Routines to activate/deactivate floating point exceptions.
+ * These routines are only meaningful if SCREAM_FPE is defined.
+ * The last two functions activate/deactivate a predefined set
+ * of FPEs: FE_DIVBYZERO, FE_INVALID, and FE_OVERFLOW.
+ * If you need to temporarily enable/disable a specific exception,
+ * you should use the first set of functions, which accept
+ * a specific fpe mask.
+ *
+ * WARNING: be *very* careful when using these functions, as they
+ *          effectively change the FPE environment for the rest
+ *          of the translation unit. If you only need to turn off
+ *          FPEs for a few lines (perhaps you do some dirty trick
+ *          that is correct, but would throw an fpe), don't forget
+ *          to re-enable them after you're done.
+ */
+
+#ifdef SCREAM_FPE
+// #pragma STDC FENV_ACCESS ON
+#endif
+
+static unsigned int constexpr scream_default_fpes =
+#ifdef SCREAM_FPE
+  FE_DIVBYZERO |
+  FE_INVALID   |
+  FE_OVERFLOW;
+#else
+  0;
+#endif
+
+void enable_fpes (const int mask);
+void disable_fpes (const int mask);
+
+inline void enable_default_fpes () {
+  enable_fpes(scream_default_fpes);
+}
+inline void disable_default_fpes () {
+  disable_fpes(scream_default_fpes);
+}
+
+int get_enabled_fpes ();
+void disable_all_fpes ();
+
 } // namespace scream
 
 #endif // SCREAM_ASSERT_HPP

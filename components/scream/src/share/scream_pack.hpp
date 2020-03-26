@@ -397,6 +397,24 @@ OnlyPack<PackType> pow (const PackType& a, const PackType& b) {
 
 template <typename PackType>
 KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> square (const PackType& a) {
+  PackType s;
+  vector_simd for (int i = 0; i < PackType::n; ++i)
+    s[i] = a[i] * a[i];
+  return s;
+}
+
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> cube (const PackType& a) {
+  PackType s;
+  vector_simd for (int i = 0; i < PackType::n; ++i)
+    s[i] = a[i] * a[i] * a[i];
+  return s;
+}
+
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
 OnlyPack<PackType> shift_right (const PackType& pm1, const PackType& p) {
   PackType s;
   s[0] = pm1[PackType::n-1];

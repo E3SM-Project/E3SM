@@ -8,12 +8,24 @@ else()
   set(CIME_BUILD TRUE)
 endif()
 
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
+  # The new behavior for cmp0074 makes cmake use (rather than ignore)
+  # any <PackageName>_ROOT env/cmake variable previously set.
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 # Add the ./cmake folder to cmake path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include (${CMAKE_CURRENT_SOURCE_DIR}/cmake/ScreamMpiUtils.cmake)
+
+# We should avoid cxx bindings in mpi; they are already deprecated,
+# and can cause headaches at link time, cause they require -lmpi_cxx
+# (for openpmi; -lmpicxx for mpich) flag.
+DisableMpiCxxBindings()
+
 
 if (KOKKOS_ENABLE_CUDA)
-  include (SetMpiCxxBackendCompilerVarName)
-  SET_MPI_CXX_BACKEND_COMPILER_VAR_NAME()
+  SetMpiCxxBackendCompilerVarName()
   # Before starting the project, wrap mpicxx in the scream_mpicxx script, which
   # takes care of setting OMPI_CXX to point to nvcc_wrapper
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/scream_mpicxx.in ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx @ONLY)
@@ -164,6 +176,8 @@ if (${SCREAM_DOUBLE_PRECISION})
   endif()
 endif()
 
+include(YamlCpp)
+
 print_var(KOKKOS_GMAKE_DEVICES)
 print_var(CUDA_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
@@ -183,8 +197,6 @@ print_var(SCREAM_LIB_ONLY)
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-# Run sed to change '/*...*/' comments into '!/*...*/'
-execute_process(COMMAND sed -i "s;^/;!/;g" ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 string(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
