@@ -14,11 +14,6 @@ std::string active_avx_string();
 
 std::string config_string();
 
-void activate_floating_point_exceptions_if_enabled();
-
-// Use only when the situation demands it.
-void deactivate_floating_point_exceptions_if_enabled();
-
 template <typename ExeSpace>
 struct OnGpu { enum : bool { value = false }; };
 #ifdef KOKKOS_ENABLE_CUDA

@@ -64,7 +64,7 @@ real(rtype), parameter :: w2tune=1.0_rtype
 ! third moment of vertical velocity
 real(rtype), parameter :: w3clip=1.2_rtype
 ! mixing length scaling parameter
-real(rtype), parameter :: length_fac=1.0_rtype
+real(rtype), parameter :: length_fac=0.5_rtype
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -100,6 +100,8 @@ real(rtype), parameter :: pblmaxp = 4.e4_rtype
 real(rtype), parameter :: maxiso = 20000.0_rtype
 ! Mixing length [m]
 real(rtype), parameter :: maxlen = 20000.0_rtype
+! Minimum Mixing length [m]
+real(rtype), parameter :: minlen = 20.0_rtype
 ! Maximum TKE [m2/s2]
 real(rtype), parameter :: maxtke = 50.0_rtype
 ! Minimum TKE [m2/s2]
@@ -259,12 +261,13 @@ subroutine shoc_main ( &
   real(rtype), intent(inout) :: tk(shcol,nlev)
   ! eddy coefficent for heat [m2/s]
   real(rtype), intent(inout) :: tkh(shcol,nlev)
+  ! cloud liquid mixing ratio [kg/kg]
+  real(rtype), intent(inout) :: shoc_ql(shcol,nlev)
 
-! OUTPUT VARIABLES
+  ! OUTPUT VARIABLES
+
   ! Cloud fraction [-]
   real(rtype), intent(out) :: shoc_cldfrac(shcol,nlev)
-  ! cloud liquid mixing ratio [kg/kg]
-  real(rtype), intent(out) :: shoc_ql(shcol,nlev)
   ! planetary boundary layer depth [m]
   real(rtype), intent(out) :: pblh(shcol)
 
@@ -352,14 +355,30 @@ subroutine shoc_main ( &
        shcol,nlev,nlevi,&                   ! Input
        zt_grid,zi_grid,pdel,&               ! Input
        dz_zt,dz_zi,rho_zt)          ! Output
+       
+    ! Compute the planetary boundary layer height, which is an
+    !   input needed for the length scale calculation.
+
+    call shoc_diag_obklen(&
+       shcol,uw_sfc,vw_sfc,&                          ! Input
+       wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
+       shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+       ustar,kbfs,obklen)                             ! Output
+   
+    call pblintd(&
+       shcol,nlev,nlevi,&                   ! Input
+       zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
+       qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+       ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
+       pblh)                                ! Output       
 
     ! Update the turbulent length scale
     call shoc_length(&
-       shcol,nlev,nlevi, tke,&              ! Input
-       host_dx, host_dy, shoc_ql,&          ! Input
+       shcol,nlev,nlevi,tke,&               ! Input
+       host_dx,host_dy,pblh,&               ! Input
        zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
        thetal,wthv_sec,thv,&                ! Input
-       brunt,shoc_mix)                  ! Output
+       brunt,shoc_mix)                      ! Output
 
     ! Advance the SGS TKE equation
     call shoc_tke(&
@@ -369,7 +388,7 @@ subroutine shoc_main ( &
        u_wind,v_wind,brunt,&                ! Input
        uw_sfc,vw_sfc,&                      ! Input
        zt_grid,zi_grid,&                    ! Input
-       tke,tk,tkh,&                        ! Input/Output
+       tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
 
     ! If implicit diffusion solver is used,
@@ -464,7 +483,10 @@ subroutine shoc_main ( &
 
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
-  !  should be placed at this point onward
+  !  should be placed at this point onward.
+  
+  ! Update PBLH, as other routines outside of SHOC
+  !  may require this variable.
   call shoc_diag_obklen(&
      shcol,uw_sfc,vw_sfc,&                          ! Input
      wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
@@ -939,7 +961,7 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
-  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,0._rtype)
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
 
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
@@ -1122,15 +1144,15 @@ subroutine diag_third_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,shcol,(2._rtype/3._rtype)*mintke)
   call linear_interp(zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,wthv_sec,wthv_sec_zi,nlev,nlevi,shcol,largeneg)
-  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,10._rtype)
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
 
   c=7.0_rtype
   a0=(0.52_rtype*c**(-2))/(c-2._rtype)
   a1=0.87_rtype/(c**2)
   a2=0.5_rtype/c
-  a3=0.6_rtype/(c*(c-2._rtype))
-  a4=2.4_rtype/(3._rtype*c+5._rtype)
-  a5=0.6_rtype/(c*(3._rtype+5._rtype*c))
+  a3=0.6_rtype8/(c*(c-2._rtype))
+  a4=2.4_rtype8/(3._rtype*c+5._rtype)
+  a5=0.6_rtype8/(c*(3._rtype+5._rtype*c))
 
   ! set lower condition
   w3(:,nlevi) = 0._rtype
@@ -1156,7 +1178,7 @@ subroutine diag_third_shoc_moments(&
 
       f1=thedz2 * bet2**2 * iso**3 * (wthl_sec(i,k) * &
          (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_rtype * &
-         w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))) ! bug here
+          w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb)))
 
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
          (w_sec(i,kc)-w_sec(i,k))+ 2._rtype * thedz2 * bet2 * &
@@ -1186,7 +1208,7 @@ subroutine diag_third_shoc_moments(&
       Y0 = (2._rtype * a2 * buoy_sgs2 * X0) / (1._rtype - a3 * buoy_sgs2)
       X1 = (a0 * f0 + a1 * f1 + a2 * (1._rtype - a3 * buoy_sgs2) * f2) / &
         (1._rtype - (a1 + a3) * buoy_sgs2)
-      Y1 = (2._rtype * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1)) / &   ! bug here!
+      Y1 = (2._rtype * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1)) / &
         (1._rtype - a3* buoy_sgs2)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1340,9 +1362,9 @@ subroutine shoc_assumed_pdf(&
   ! Interpolate many variables from interface grid to themo grid
   call linear_interp(zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,thl_sec,thl_sec_zt,nlevi,nlev,shcol,0._rtype)
-  call linear_interp(zi_grid,zt_grid,wthl_sec,wthl_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
+  call linear_interp(zi_grid,zt_grid,wthl_sec,wthl_sec_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
-  call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
+  call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,0._rtype)
 
   do k=1,nlev
@@ -1839,7 +1861,7 @@ end subroutine check_tke
 
 subroutine shoc_length(&
          shcol,nlev,nlevi,tke,&        ! Input
-         host_dx,host_dy,cldin,&       ! Input
+         host_dx,host_dy,pblh,&        ! Input
          zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
          thetal,wthv_sec,thv,&         ! Input
          brunt,shoc_mix)               ! Output
@@ -1862,10 +1884,10 @@ subroutine shoc_length(&
   real(rtype), intent(in) :: host_dx(shcol)
   ! host model grid size [m]
   real(rtype), intent(in) :: host_dy(shcol)
+  ! Planetary boundary layer (PBL) height [m]
+  real(rtype), intent(in) :: pblh(shcol)
   ! turbulent kinetic energy [m^2/s^2]
   real(rtype), intent(in) :: tke(shcol,nlev)
-  ! cloud liquid water mixing ratio [kg/kg]
-  real(rtype), intent(in) :: cldin(shcol,nlev)
   ! heights on midpoint grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m]
@@ -1893,26 +1915,20 @@ subroutine shoc_length(&
   real(rtype) :: deep_thresh, deep_thick, cloud_thick, lstarn, thresh
   real(rtype) :: cldmix, thedel, depth
   real(rtype) :: omn, betdz, bbb, term, qsatt, dqsat, bet
-  real(rtype) :: thv_up, thv_dn, thedz, tscale, thefac, thecoef, thegam, norm
-  real(rtype) :: stabterm, conv_var, tkes, mmax, cldthresh
+  real(rtype) :: thv_up, thv_dn, thedz, thefac, thecoef, thegam, norm
+  real(rtype) :: stabterm, conv_var, tkes, mmax
   logical lf, indexr
-  logical doclouddef
-  real(rtype) :: conv_vel(shcol,nlev)
+  real(rtype) :: conv_vel(shcol), tscale(shcol)
   real(rtype) :: thv_zi(shcol,nlevi)
 
   real(rtype) :: numer(shcol)
   real(rtype) :: denom(shcol)
   real(rtype) :: l_inf(shcol)
   real(rtype) :: brunt2(shcol,nlev)
-  logical  :: cldcol(shcol)
 
-  doclouddef = .true.
-
-  tscale=400._rtype ! time scale set based on similarity results
   brunt2(:,:) = 0._rtype
   numer(:) = 0._rtype
   denom(:) = 0._rtype
-  cldcol(:) = .false.
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._rtype)
@@ -1924,17 +1940,13 @@ subroutine shoc_length(&
     enddo
   enddo
 
-  ! Find length scale outside of clouds
+  ! Find L_inf
   do k=1,nlev
     do i=1,shcol
 
-      if (cldin(i,k) .eq. 0 .or. .not. doclouddef) then
         tkes=sqrt(tke(i,k))
-    numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
-    denom(i)=denom(i)+tkes*dz_zt(i,k)
-      else
-        cldcol(i)=.true.
-      endif
+        numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
+        denom(i)=denom(i)+tkes*dz_zt(i,k)
 
     enddo
   enddo
@@ -1947,6 +1959,34 @@ subroutine shoc_length(&
     endif
   enddo
 
+  ! determine the convective velocity scale of
+  !   the planetary boundary layer
+  conv_vel(:)=0._rtype
+
+  do k=nlev-1,1,-1
+    do i=1,shcol
+      if (zt_grid(i,k) .lt. pblh(i)) then
+        conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
+      endif
+    enddo ! end i loop (column loop)
+  enddo ! end k loop (vertical loop)
+
+  ! computed quantity above is wstar3
+  ! clip, to avoid negative values and take the cubed
+  !   root to get the convective velocity scale
+  do i=1,shcol
+    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
+
+    ! Compute eddy turnover timescale.  If
+    !  convective velocity scale is zero then
+    !  set to a minimum threshold
+    if (conv_vel(i) .gt. 0._rtype) then
+      tscale(i)=pblh(i)/conv_vel(i)
+    else
+      tscale(i)=100._rtype
+    endif
+  enddo
+
   do k=1,nlev
     do i=1,shcol
 
@@ -1954,80 +1994,11 @@ subroutine shoc_length(&
 
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
-      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale*tkes*vk*zt_grid(i,k))) &
-        +(1._rtype/(tscale*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
+      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k))) &
+        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)     
 
     enddo  ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
-
-  ! Now find length scale in clouds
-  cldthresh=0._rtype
-
-  ! determine the convective velocity scale at
-  !   the top of the cloud
-
-  conv_vel(:,nlev)=0._rtype
-  do k=nlev-1,1,-1
-    do i=1,shcol
-      conv_vel(i,k) = conv_vel(i,k+1)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
-
-  ! computed quantity above is wstar3
-  ! clip, to avoid negative values and take the cubed
-  !   root to get the convective velocity scale
-  do k=1,nlev
-    do i=1,shcol
-      conv_vel(i,k) = max(0._rtype,conv_vel(i,k))**(1._rtype/3._rtype)
-    enddo
-  enddo
-
-  if (doclouddef) then
-
-  do i=1,shcol
-
-    if (cldcol(i)) then
-
-      kl=0
-      ku=0
-
-      do k=nlev-2,2,-1
-
-    ! Look for cloud base in this column
-    if (cldin(i,k) .gt. cldthresh .and. kl .eq. 0) then
-       kl=k
-    endif
-
-        ! Look for cloud top in this column
-    if (cldin(i,k) .gt. cldthresh .and. cldin(i,k-1) .le. cldthresh) then
-      ku=k
-      conv_var=conv_vel(i,k)
-    endif
-
-    ! Compute the mixing length for the layer just determined
-    if (kl .gt. 0 .and. ku .gt. 0 .and. kl-ku .gt. 1) then
-
-      if (conv_var .gt. 0) then
-
-        depth=(zt_grid(i,ku) - zt_grid(i,kl)) + dz_zt(i,kl)
-        mmax=maxlen
-        if (zt_grid(i,ku) .gt. maxlen) mmax=maxlen
-            shoc_mix(i,ku:kl)=min(mmax,sqrt(1._rtype/(((conv_var)/ &
-              (depth*sqrt(tke(i,ku:kl))))**2+0.01_rtype* &
-              (brunt2(i,ku:kl)/tke(i,ku:kl))))/length_fac)
-        endif
-
-        kl=0
-        ku=0
-      endif
-
-      enddo ! end k loop
-
-    endif ! end cldcol conditional
-
-  enddo ! end i loop
-
-  endif
 
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
@@ -2035,7 +2006,7 @@ subroutine shoc_length(&
     do i=1,shcol
 
       shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
-      shoc_mix(i,k)=max(20._rtype,shoc_mix(i,k))
+      shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
       shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
 
     enddo

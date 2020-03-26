@@ -164,6 +164,23 @@ interface
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
 
+  subroutine rain_self_collection_f(rho, qr_incld, nr_incld, nrslf) bind(C)
+    use iso_c_binding
+
+    !arguments;
+    real(kind=c_real), value, intent(in) :: rho, qr_incld, nr_incld
+    real(kind=c_real), intent(out) :: nrslf
+
+  end subroutine rain_self_collection_f
+
+  subroutine ice_melting_f(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld
+    real(kind=c_real), intent(out) :: qimlt,nimlt
+  end subroutine ice_melting_f
+
   subroutine impose_max_total_ni_f(nitot_local, max_total_Ni, inv_rho_local) bind(C)
     use iso_c_binding
     
@@ -366,6 +383,17 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(out) :: nislf
   end subroutine ice_self_collection_f
 
+  subroutine evaporate_sublimate_precip_f(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab, &
+       epsr, qv, qrevp, nrevp) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab, &
+         epsr, qv
+    real(kind=c_real), intent(out) :: qrevp, nrevp
+
+  end subroutine evaporate_sublimate_precip_f
+
   subroutine update_prognostic_liquid_f(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
        qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
     use iso_c_binding
@@ -382,6 +410,17 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine update_prognostic_liquid_f
 
+  subroutine ice_deposition_sublimation_f(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv, &
+       qidep, qisub, nisub, qiberg) bind(C)
+
+    use iso_c_binding
+    !arguments
+
+    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv
+    real(kind=c_real), intent(out) :: qidep, qisub, nisub, qiberg
+
+  end subroutine ice_deposition_sublimation_f
+
   subroutine ice_relaxation_timescale_f(rho, temp, rhofaci, f1pr05, f1pr14,   &
                                         dv, mu, sc, qitot_incld, nitot_incld, &
                                         epsi, epsi_tot) bind(C)
@@ -394,6 +433,19 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(inout) :: epsi_tot
   end subroutine ice_relaxation_timescale_f
 
+  subroutine calc_liq_relaxation_timescale_f(rho, f1r, f2r, dv, mu, sc, mu_r, &
+                                             lamr, cdistr, cdist, qr_incld,   &
+                                             qc_incld, epsr, epsc) bind(C)
+    use iso_c_binding
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: rho,f1r,f2r,dv,mu,sc,mu_r,lamr, &
+                                            cdistr,cdist,qr_incld,qc_incld
+    real(kind=c_real), intent(out) :: epsr
+    real(kind=c_real), intent(out) :: epsc
+
+  end subroutine calc_liq_relaxation_timescale_f
+
   subroutine ice_nucleation_f(temp, inv_rho, nitot, naai, supi, odt, &
                               log_predictNc, qinuc, ninuc) bind(C)
     use iso_c_binding
@@ -403,6 +455,28 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     logical(kind=c_bool), value, intent(in) :: log_predictNc
     real(kind=c_real), intent(inout) :: qinuc, ninuc
  end subroutine ice_nucleation_f
+
+ subroutine droplet_activation_f(temp,pres,qv,qc,inv_rho,sup,xxlv,npccn, log_predictNc,odt,  &
+                                  qcnuc,ncnuc) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real), value, intent(in) :: temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), intent(inout) :: qcnuc, ncnuc
+ end subroutine droplet_activation_f
+
+ subroutine ice_cldliq_wet_growth_f(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, &
+                                    mu, sc, qv, qc_incld,qitot_incld, nitot_incld, qr_incld,     &
+                                    log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd) bind(C)
+   use iso_c_binding
+
+   ! argmens
+   real(kind=c_real), value, intent(in) :: rho, temp ,pres, rhofaci, f1pr05,f1pr14, xxlv, xlf, dv, &
+                                           kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld,qr_incld
+   logical(kind=c_bool), intent(inout) :: log_wetgrowth
+   real(kind=c_real), intent(inout) :: qrcol, qccol, qwgrth, nrshdr, qcshd
+ end subroutine ice_cldliq_wet_growth_f
 
   !
   ! These are some routine math operations that are not BFB between

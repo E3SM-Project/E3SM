@@ -1,10 +1,10 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, \
-                  get_current_commit, expect, is_repo_clean, get_common_ancestor,           \
-                  merge_git_ref, checkout_git_ref, print_last_commit
+from utils import run_cmd, check_minimum_python_version, get_current_head,     \
+    get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
+    get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 check_minimum_python_version(3, 4)
 
-import os, shutil
+import os, shutil, pathlib
 import concurrent.futures as threading3
 
 ###############################################################################
@@ -14,7 +14,7 @@ class TestAllScream(object):
     ###########################################################################
     def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
                  baseline_dir=None, machine=None, no_tests=False, keep_tree=False, custom_cmake_opts=(), tests=(),
-                 integration_test="JENKINS_HOME" in os.environ):
+                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False):
     ###########################################################################
 
         self._cxx               = cxx
@@ -29,8 +29,9 @@ class TestAllScream(object):
         self._baseline_dir      = baseline_dir
         self._custom_cmake_opts = custom_cmake_opts
         self._tests             = tests
-        self._src_dir           = os.getcwd()
+        self._root_dir          = root_dir
         self._integration_test  = integration_test
+        self._dry_run           = dry_run
 
         self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
@@ -51,7 +52,20 @@ class TestAllScream(object):
                        "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
                            format(t, ", ".join(self._test_full_names.keys())))
 
-        expect(self._src_dir.endswith("components/scream"), "Run from $scream_repo/components/scream")
+        # Compute root dir
+        if not self._root_dir:
+            self._root_dir = pathlib.Path(__file__).resolve().parent.parent
+        else:
+            self._root_dir = pathlib.Path(self._root_dir).resolve()
+            expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
+                   "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
+
+        os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
+        expect(get_current_commit(), "Root dir: {}, does not appear to be a git repo".format(self._root_dir))
+
+        self._original_branch = get_current_branch()
+        self._original_commit = get_current_commit()
+
         if not self._kokkos:
             expect(self._machine, "If no kokkos provided, must provide machine name for internal kokkos build")
         if self._submit:
@@ -78,35 +92,50 @@ class TestAllScream(object):
 
                 print("Using baseline commit {}".format(self._baseline_ref))
         else:
-            if self._integration_test:
-                if get_current_commit() != get_current_commit(commit="origin/master"):
-                    merge_git_ref(git_ref="origin/master")
+            self._baseline_dir = pathlib.Path(self._baseline_dir).resolve()
+            expect(self._baseline_dir.is_dir(), "Baseline_dir {} is not a dir".format(self._baseline_dir))
+            for test in self._tests:
+                test_baseline_dir = self.get_preexisting_baseline(test)
+                expect(test_baseline_dir.is_dir(), "Missing baseline {}".format(test_baseline_dir))
 
-            print("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, "
-                  "but there will be errors if the baselines are not found.".format(self._baseline_dir))
+            if self._integration_test:
+                merge_git_ref(git_ref="origin/master")
 
         # Deduce how many resources per test
-        self._proc_count = 4 # default
+        proc_count = 4
+
         proc_set = False
         if "CTEST_PARALLEL_LEVEL" in os.environ:
             try:
-                self._proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
+                proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
                 proc_set = True
             except ValueError:
                 pass
 
         if not proc_set:
             print("WARNING: env var CTEST_PARALLEL_LEVEL unset, defaulting to {} which probably underutilizes your machine".\
-                      format(self._proc_count))
+                      format(proc_count))
+
+        self._proc_count = {"dbg" : proc_count,
+                            "sp"  : proc_count,
+                            "fpe" : proc_count}
 
         if self._parallel:
             # We need to be aware that other builds may be running too.
             # (Do not oversubscribe the machine)
-            self._proc_count = self._proc_count // len(self._tests)
+            remainder = proc_count % len(self._tests)
+            proc_count = proc_count // len(self._tests)
 
             # In case we have more tests than cores (unlikely)
-            if self._proc_count == 0:
-                self._proc_count = 1
+            if proc_count == 0:
+                proc_count = 1
+
+            for test in self._tests:
+                self._proc_count[test] = proc_count
+                if self._tests.index(test)<remainder:
+                    self._proc_count[test] = proc_count + 1
+
+                print("test {} has {} procs".format(test,self._proc_count[test]))
 
         if self._keep_tree:
             expect(not is_repo_clean(), "Makes no sense to use --keep-tree when repo is clean")
@@ -125,12 +154,29 @@ class TestAllScream(object):
                    "you can pass `--keep-tree` to allow non-clean repo.")
 
     ###############################################################################
+    def get_test_dir(self, test):
+    ###############################################################################
+        return pathlib.Path(self._root_dir, "ctest-build", self._test_full_names[test])
+
+    ###############################################################################
+    def get_preexisting_baseline(self, test):
+    ###############################################################################
+        expect(self._baseline_dir is not None, "Cannot supply preexisting baseline without baseline dir")
+        return pathlib.Path(self._baseline_dir, self._test_full_names[test], "data")
+
+    ###############################################################################
+    def get_machine_file(self):
+    ###############################################################################
+        expect(self._machine is not None, "Cannot get machine file without machine")
+        return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
+
+    ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
         if self._kokkos:
             kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
         else:
-            kokkos_cmake = "-C {}/cmake/machine-files/{}.cmake".format(self._src_dir, self._machine)
+            kokkos_cmake = "-C {}".format(self.get_machine_file())
 
         result = "{}-DCMAKE_CXX_COMPILER={} {}".format("" if for_ctest else "cmake ", self._cxx, kokkos_cmake)
         for key, value in extra_configs:
@@ -150,8 +196,8 @@ class TestAllScream(object):
     def get_taskset_id(self, test):
     ###############################################################################
         myid = self._tests.index(test)
-        start = myid * self._proc_count
-        end   = (myid+1) * self._proc_count - 1
+        start = myid * self._proc_count[test]
+        end   = (myid+1) * self._proc_count[test] - 1
 
         return start, end
 
@@ -163,10 +209,10 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
-        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
+        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count[test])
 
         if self._baseline_dir is not None:
-            cmake_config += " -DSCREAM_TEST_DATA_DIR={}/{}/data".format(self._baseline_dir,name)
+            cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -175,7 +221,7 @@ class TestAllScream(object):
             result += "-D{}={} ".format(key, value)
 
         result += "-DBUILD_NAME_MOD={} ".format(name)
-        result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir, cmake_config)
+        result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._root_dir, cmake_config)
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it.
@@ -188,27 +234,28 @@ class TestAllScream(object):
     ###############################################################################
     def generate_baselines(self, test):
     ###############################################################################
-        name = self._test_full_names[test]
-        test_dir = "ctest-build/{}".format(name)
+        test_dir = self.get_test_dir(test)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
 
-        print("Generating baseline for build type {} with config '{}'".format(name, cmake_config))
+        print("===============================================================================")
+        print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))
+        print("===============================================================================")
 
         # We cannot just crash if we fail to generate baselines, since we would
         # not get a dashboard report if we did that. Instead, just ensure there is
         # no baseline file to compare against if there's a problem.
-        stat, _, err = run_cmd("{} {}".format(cmake_config, self._src_dir), from_dir=test_dir, verbose=True)
+        stat, _, err = run_cmd("{} {}".format(cmake_config, self._root_dir), from_dir=test_dir, verbose=True, dry_run=self._dry_run)
         if stat!= 0:
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
 
-        cmd = "make -j{} && make baseline".format(self._proc_count)
+        cmd = "make -j{} && make baseline".format(self._proc_count[test])
         if self._parallel:
             start, end = self.get_taskset_id(test)
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
-        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
@@ -219,13 +266,13 @@ class TestAllScream(object):
     ###############################################################################
     def generate_all_baselines(self):
     ###############################################################################
-        git_head_commit     = get_current_commit()
-        git_head_ref        = get_current_head()
-        git_baseline_commit = get_current_commit(commit=self._baseline_ref)
+        git_head_ref = get_current_head()
 
+        print("###############################################################################")
         print("Generating baselines for ref {}".format(self._baseline_ref))
+        print("###############################################################################")
 
-        checkout_git_ref(git_ref=self._baseline_ref,verbose=True)
+        checkout_git_ref(self._baseline_ref, verbose=True)
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -243,28 +290,34 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        checkout_git_ref(git_ref=git_head_ref,verbose=True)
+        checkout_git_ref(git_head_ref, verbose=True)
 
         return success
 
     ###############################################################################
     def run_test(self, test):
     ###############################################################################
-        name = self._test_full_names[test]
         git_head = get_current_head()
-        print("Testing '{}' for build type '{}'".format(git_head,name))
 
-        test_dir = "ctest-build/{}".format(name)
+        print("===============================================================================")
+        print("Testing '{}' for test '{}'".format(git_head, self._test_full_names[test]))
+        print("===============================================================================")
+
+        test_dir = self.get_test_dir(test)
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
+        success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
 
         return success
 
     ###############################################################################
     def run_all_tests(self):
     ###############################################################################
+        print("###############################################################################")
+        print("Running tests!")
+        print("###############################################################################")
+
         success = True
         tests_success = {
             test : False
@@ -287,10 +340,11 @@ class TestAllScream(object):
 
         for t,s in tests_success.items():
             if not s:
-                name = self._test_full_names[t]
-                print("Build type {} failed. Here's a list of failed tests:".format(name))
-                out = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))[1]
-                print(out)
+                print("Build type {} failed. Here's a list of failed tests:".format(self._test_full_names[t]))
+                test_dir = self.get_test_dir(t)
+                test_results_dir = pathlib.Path(test_dir, "Testing", "Temporary")
+                for result in test_results_dir.glob("LastTestsFailed*"):
+                    print(result.read_text())
 
         return success
 
@@ -298,31 +352,35 @@ class TestAllScream(object):
     def test_all_scream(self):
     ###############################################################################
         success = True
-        # First, create build directories (one per test)
-        for test in self._tests:
-            # Get this test's build dir name and cmake args
-            full_name = self._test_full_names[test]
-            test_dir = "./ctest-build/{}".format(full_name)
+        try:
+            # First, create build directories (one per test)
+            for test in self._tests:
+                test_dir = self.get_test_dir(test)
 
-            # Create this test's build dir
-            if os.path.exists(test_dir):
-                shutil.rmtree(test_dir)
+                # Create this test's build dir
+                if test_dir.exists():
+                    shutil.rmtree(str(test_dir))
 
-            os.makedirs(test_dir)
+                test_dir.mkdir(parents=True)
 
-        if self._baseline_dir is None:
-            # Second, generate baselines
-            expect(self._baseline_ref is not None, "Missing baseline ref")
+            if self._baseline_dir is None:
+                # Second, generate baselines
+                expect(self._baseline_ref is not None, "Missing baseline ref")
 
-            success = self.generate_all_baselines()
-            if not success:
-                print ("Error(s) occurred during baselines generation phase")
-                return success
+                success = self.generate_all_baselines()
+                if not success:
+                    print ("Error(s) occurred during baselines generation phase")
+                    return False
 
-        if self._perform_tests:
-            # Finally, run the tests
-            success &= self.run_all_tests()
-            if not success:
-                print ("Error(s) occurred during test phase")
+            if self._perform_tests:
+                # Finally, run the tests
+                success &= self.run_all_tests()
+                if not success:
+                    print ("Error(s) occurred during test phase")
+
+        finally:
+            if not self._keep_tree:
+                # Cleanup the repo if needed
+                cleanup_repo(self._original_branch, self._original_commit)
 
         return success

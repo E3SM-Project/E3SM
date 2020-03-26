@@ -75,9 +75,9 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
     // don't matter in what we are testing; we are testing interpolation
     // procedures that are indepennt of particular table values.
     view_1d_table mu_r_table;
-    view_2d_table vn_table, vm_table;
+    view_2d_table vn_table, vm_table, revap_table;
     view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table, vm_table, mu_r_table, dnu);
+    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
     // Estimate two maximum slope magnitudes for two meshes, the second 10x
     // refined w.r.t. the first.

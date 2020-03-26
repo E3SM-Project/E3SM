@@ -22,7 +22,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         raise exc_type(msg)
 
 ###############################################################################
-def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
+def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
             arg_stdout=subprocess.PIPE, arg_stderr=subprocess.PIPE, env=None, combine_output=False):
 ###############################################################################
     """
@@ -32,9 +32,13 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     True
     """
     arg_stderr = subprocess.STDOUT if combine_output else arg_stderr
+    from_dir = str(from_dir) if from_dir else from_dir
 
     if verbose:
         print("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
+
+    if dry_run:
+        return 0, "", ""
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -67,7 +71,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     return stat, output, errput
 
 ###############################################################################
-def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
+def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
                     arg_stdout=subprocess.PIPE, arg_stderr=subprocess.PIPE, env=None, combine_output=False, exc_type=SystemExit):
 ###############################################################################
     """
@@ -86,7 +90,8 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
     True
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
+    stat, output, errput = run_cmd(cmd, input_str=input_str, from_dir=from_dir, verbose=verbose, dry_run=dry_run,
+                                   arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env, combine_output=combine_output)
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
@@ -310,7 +315,7 @@ def get_current_branch(repo=None):
             return output.replace("refs/heads/", "")
 
 ###############################################################################
-def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
+def get_current_commit(short=False, repo=None, tag=False, commit=None):
 ###############################################################################
     """
     Return the sha1 of the current HEAD commit
@@ -319,9 +324,13 @@ def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
     True
     """
     if tag:
-        rc, output, _ = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
+        rc, output, err = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
-        rc, output, _ = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
+        commit = "HEAD" if commit is None else commit
+        rc, output, err = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
+
+    if rc != 0:
+        print("Warning: getting current commit {} failed with error: {}".format(commit, err))
 
     return output if rc == 0 else None
 
@@ -358,7 +367,7 @@ def update_submodules(repo=None):
     """
     Updates submodules
     """
-    run_cmd_no_fail("git submodule update --init --recursive",from_dir=repo)
+    run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
 def merge_git_ref(git_ref, repo=None):
@@ -366,7 +375,8 @@ def merge_git_ref(git_ref, repo=None):
     """
     Merge given git ref into the current branch, and updates submodules
     """
-    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref),from_dir=repo)
+    expect(is_repo_clean(), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
+    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
     update_submodules(repo)
     expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
 
@@ -378,8 +388,7 @@ def print_last_commit(git_ref=None, repo=None):
     """
     git_ref = get_current_head(repo) if git_ref is None else git_ref
     last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref))
-    print("   Last commit on ref '{}':".format(git_ref))
-    print("     {}".format(last_commit))
+    print("Last commit on ref '{}': {}".format(git_ref, last_commit))
 
 ###############################################################################
 def checkout_git_ref(git_ref, verbose=False, repo=None):
@@ -389,12 +398,43 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
     """
     if get_current_commit() != get_current_commit(commit=git_ref):
         expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+        expect(git_ref is not None, "Missing git-ref")
 
-        run_cmd_no_fail("git checkout {}".format(git_ref),from_dir=repo)
+        run_cmd_no_fail("git checkout {}".format(git_ref), from_dir=repo)
         update_submodules(repo)
         git_commit = get_current_commit()
         expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
+
         if verbose:
-            print("  Switched to '{}' ({})".format(git_ref,git_commit))
+            print("Switched to '{}' ({})".format(git_ref,git_commit))
             print_last_commit(git_ref=git_ref)
 
+###############################################################################
+def get_git_toplevel_dir(repo=None):
+###############################################################################
+    """
+    Get repo toplevel directory
+    """
+    return run_cmd_no_fail("git rev-parse --show-toplevel", from_dir=repo)
+
+###############################################################################
+def cleanup_repo(orig_branch, orig_commit, repo=None):
+###############################################################################
+    """
+    Discards all unstaged changes, as well as untracked files
+    """
+    curr_commit = get_current_commit(repo=repo)
+
+    # Is this a pointless check? Maybe.
+    if not is_repo_clean(repo=repo):
+        # Discard any modifications to the repo (either tracked or untracked),
+        # but keep the ctest-build directory
+        run_cmd_no_fail("git clean -df --exclude=ctest-build", from_dir=repo)
+        toplevel_dir = get_git_toplevel_dir(repo=repo)
+        run_cmd_no_fail("git checkout -- {}".format(toplevel_dir), from_dir=repo)
+
+    checkout_git_ref(orig_branch, repo=repo)
+
+    # Is this also a pointless check?
+    if curr_commit != orig_commit:
+        run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)

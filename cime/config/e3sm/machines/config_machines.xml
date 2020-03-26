@@ -1268,16 +1268,16 @@
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/p/lustre2/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+    <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpi-serial">
       <executable/>
@@ -1304,14 +1304,12 @@
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
     </module_system>
-    <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
+      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
     </environment_variables>
   </machine>
 
@@ -1320,16 +1318,16 @@
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/p/lustre2/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+    <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>72</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpi-serial">
       <executable/>
@@ -1356,14 +1354,12 @@
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
     </module_system>
-    <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
+      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
     </environment_variables>
   </machine>
 

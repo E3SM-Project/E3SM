@@ -1,5 +1,8 @@
 INCLUDE (ScreamUtils)
 
+# Test debug tools
+CreateUnitTest(debug_tools "debug_tools_tests.cpp" scream_share)
+
 # Test utilities (f90)
 CreateUnitTest(array_io "array_io_tests.cpp;unit_test.f90" scream_share)
 
