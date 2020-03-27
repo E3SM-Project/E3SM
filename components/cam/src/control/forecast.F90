@@ -191,18 +191,18 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-      ! If IOP_SCREAM, do not consider physics temperature tendency
+      ! If IOP mode, do not consider physics temperature tendency
       !   since that will be redundant.  In pure SCM mode, that section 
       !   of dycore is not called and thus needs to be added here.  
 #ifdef MODEL_THETA_L
         ! theta_l model prog variable is temp tendency
-        if (iop_scream) then 
+        if (iop_mode) then 
           tfcst(k) = t3m2(k) + divt3d(k)
         else
           tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
         endif
 #else
-        if (iop_scream) then
+        if (iop_mode) then
           tfcst(k) = t3m2(k) + ztodt*divt3d(k)
         else
           tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
@@ -282,7 +282,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
 !    an Eulerian calculation for this.
 
-   if (iop_scream) then 
+   if (iop_mode) then 
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
@@ -519,19 +519,19 @@ end if
 !
 
    do k=1,plev
-     ! If IOP_SCREAM, do not consider physics temperature tendency
+     ! If IOP mode, do not consider physics temperature tendency
      !   since that will be redundant.  In pure SCM mode, that section 
      !   of dycore is not called and thus needs to be added here.   
 #ifdef MODEL_THETA_L
      ! in theta_l model, prog variable is temp tendency, not temp 
-     if (iop_scream) then
+     if (iop_mode) then
        tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) + divt(k)     
      else
        tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
          + (t2(k) + divt(k))
      endif
 #else
-     if (iop_scream) then
+     if (iop_mode) then
        tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
          + ztodt*(divt(k))     
      else
@@ -600,7 +600,7 @@ end if
    
    if(.not.l_uvadvect) then
 
-      if (use_iop .and. have_v .and. have_u .and. .not. iop_scream) then
+      if (use_iop .and. have_v .and. have_u .and. .not. iop_mode) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
@@ -613,8 +613,8 @@ end if
             vfcst(k) = v3m2(k)
          enddo
  
-         ! Relax winds for IOP-SCREAM
-         if (iop_scream) then
+         ! Relax winds for IOP mode
+         if (iop_mode) then
  
            do k=1,plev
              rtau(k) = 10800._r8

@@ -102,7 +102,7 @@ module phys_grid
    use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,      only: iulog
-   use scamMod,          only: single_column, scmlat, scmlon, iop_scream
+   use scamMod,          only: single_column, scmlat, scmlon, iop_mode
    use shr_const_mod,    only: SHR_CONST_PI
    use dycore,           only: dycore_is
    use units,            only: getunit, freeunit
@@ -457,9 +457,9 @@ contains
     !
     ! Initialize physics grid, using dynamics grid
     ! a) column coordinates
-    if (single_column .and. .not. iop_scream .and. dycore_is ('SE')) lbal_opt = -1
+    if (single_column .and. .not. iop_mode .and. dycore_is ('SE')) lbal_opt = -1
     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-    if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
+    if (single_column .and. .not. iop_mode .and. dycore_is('SE')) then
       ngcols = 1
     else
       ngcols = hdim1_d*hdim2_d
@@ -685,7 +685,7 @@ contains
        !
        maxblksiz = 0
        do jb=firstblock,lastblock
-          if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
+          if (single_column .and. .not. iop_mode .and. dycore_is('SE')) then
             maxblksiz = 1
           else
             maxblksiz = max(maxblksiz,get_block_gcol_cnt_d(jb))
@@ -699,7 +699,7 @@ contains
        !
        ! Determine total number of chunks
        !
-       if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
+       if (single_column .and. .not. iop_mode .and. dycore_is('SE')) then
          nchunks = 1
        else
 	 nchunks = (lastblock-firstblock+1)
@@ -719,7 +719,7 @@ contains
 
        do cid=1,nchunks
           ! get number of global column indices in block
-          if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
+          if (single_column .and. .not. iop_mode .and. dycore_is('SE')) then
             max_ncols = 1
           else
             max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
@@ -924,7 +924,7 @@ contains
     area_d = 0.0_r8
     wght_d = 0.0_r8
 
-    if (single_column .and. .not. iop_scream .and. dycore_is('SE')) then
+    if (single_column .and. .not. iop_mode .and. dycore_is('SE')) then
       area_d = 4.0_r8*pi
       wght_d = 4.0_r8*pi
     else

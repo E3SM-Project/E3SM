@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_scream
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_mode
   implicit none
   private
   public read_inidat
@@ -111,7 +111,7 @@ contains
 #ifdef MODEL_THETA_L
     ! not going to wrap each scm call in ifdef for now,
     ! but some calls have to be wrapped
-    if (single_column .and. .not. iop_scream) then
+    if (single_column .and. .not. iop_mode) then
        call endrun("read_inidat: SCM does not work with cam target theta-l.")
     endif
 #endif
@@ -193,7 +193,7 @@ contains
     fieldname = 'U'
     tmp = 0.0_r8
     
-    if (.not. iop_scream) then    
+    if (.not. iop_mode) then    
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -213,7 +213,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-             if (iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
+             if (iop_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -222,7 +222,7 @@ contains
     fieldname = 'V'
     tmp = 0.0_r8
 
-    if (.not. iop_scream) then
+    if (.not. iop_mode) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -241,7 +241,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (iop_scream) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
+             if (iop_mode) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -250,7 +250,7 @@ contains
     fieldname = 'T'
     tmp = 0.0_r8
 
-    if (.not. iop_scream) then 
+    if (.not. iop_mode) then 
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -275,12 +275,12 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
              !no scm in theta-l yet
-             if (iop_scream) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
+             if (iop_mode) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
              if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (iop_scream) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
+             if (iop_mode) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
 #endif
              indx = indx + 1
           end do
@@ -363,7 +363,7 @@ contains
     
           else
     
-            if (.not. iop_scream) then
+            if (.not. iop_mode) then
               tmp = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
@@ -452,7 +452,7 @@ contains
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
                 if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-                if (iop_scream) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
+                if (iop_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
                 indx = indx + 1
              end do
           end do
@@ -557,7 +557,7 @@ contains
       iop_update_surface = .false.
       if (masterproc) call setiopupdate()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      if (iop_scream) call scm_broadcast()
+      if (iop_mode) call scm_broadcast()
       call scm_setinitial(elem)
     endif
 

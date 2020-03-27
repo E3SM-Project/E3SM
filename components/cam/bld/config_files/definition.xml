@@ -156,8 +156,8 @@ Modifications that allow perturbation growth testing: 0=off, 1=on.
 Configure CAM for single column mode: 0=off, 1=on.  This option only
 supported for the Eulerian dycore.
 </entry>
-<entry id="iop_scream" valid_values="0,1" value="0">
-Configure SCREAM for IOP mode: 0=off, 1=on.  This option only
+<entry id="iop_mode" valid_values="0,1" value="0">
+Configure for intensive observation perdiod (IOP) mode: 0=off, 1=on.  This option only
 supported for the SE dycore.
 </entry>
 <entry id="e3smreplay" valid_values="0,1" value="0">

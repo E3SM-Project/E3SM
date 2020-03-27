@@ -26,7 +26,7 @@ module stepon
    use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata, iop_scream
+                             setiopupdate, readiopdata, iop_mode
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
    use se_single_column_mod, only: scm_broadcast
@@ -264,7 +264,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   if (.not. single_column .or. iop_scream) then
+   if (.not. single_column .or. iop_mode) then
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -305,7 +305,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    do ie=1,nelemd
   
-      if (.not. single_column .or. iop_scream) then 
+      if (.not. single_column .or. iop_mode) then 
 
          kptr=0
 

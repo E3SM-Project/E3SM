@@ -57,7 +57,7 @@ module ice_comp_mct
 
   use ice_kinds_mod,   only : int_kind, dbl_kind, char_len_long, log_kind
   use ice_boundary,    only : ice_HaloUpdate 
-  use ice_scam,        only : scmlat, scmlon, single_column, iop_scream
+  use ice_scam,        only : scmlat, scmlon, single_column, iop_mode
   use ice_fileunits,   only : nu_diag, inst_index, inst_name, inst_suffix
   use ice_dyn_evp,     only : kdyn
   use ice_prescribed_mod
@@ -198,12 +198,12 @@ contains
     ! Preset single column values
 
     single_column = .false.
-    iop_scream = .false. 
+    iop_mode = .false. 
     scmlat = -999.
     scmlon = -999.
 
     call seq_infodata_GetData( infodata, case_name=runid   ,  &  
-       single_column=single_column,iop_scream=iop_scream, &
+       single_column=single_column,iop_mode=iop_mode, &
        scmlat=scmlat,scmlon=scmlon)
     call seq_infodata_GetData( infodata, start_type=starttype)
 

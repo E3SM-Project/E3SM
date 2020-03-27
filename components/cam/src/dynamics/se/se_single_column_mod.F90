@@ -89,10 +89,10 @@ subroutine scm_setinitial(elem)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
               if (have_cldice) elem(ie)%state%Q(i,j,k,icldice) = cldiceobs(k)
-              !  If IOP-SCREAM we do NOT want to write over the dy-core vertical 
+              !  If IOP mode we do NOT want to write over the dy-core vertical 
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
-              if (have_omega .and. .not. iop_scream) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              if (have_omega .and. .not. iop_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
             enddo
 
           endif
@@ -157,8 +157,8 @@ subroutine scm_setfield(elem,iop_update_phase1)
   do ie=1,nelemd
     if (have_ps .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs 
     do i=1, PLEV
-      ! If IOP-SCREAM do NOT write over dycore vertical velocity
-      if ((have_omega .and. iop_update_phase1) .and. .not. iop_scream) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      ! If IOP mode do NOT write over dycore vertical velocity
+      if ((have_omega .and. iop_update_phase1) .and. .not. iop_mode) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
 
@@ -218,7 +218,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     nelemd_todo = 1
     np_todo = 1
     
-    if (iop_scream) then
+    if (iop_mode) then
       nelemd_todo = nelemd
       np_todo = np
     endif
@@ -283,7 +283,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
         enddo
       enddo
       
-      if (iop_scream) then
+      if (iop_mode) then
         call outfld('TDIFF',tdiff_out,npsq,ie)
         call outfld('QDIFF',qdiff_out,npsq,ie)
       else

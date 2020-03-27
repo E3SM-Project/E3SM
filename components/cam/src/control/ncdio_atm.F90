@@ -18,7 +18,7 @@ module ncdio_atm
   use shr_scam_mod,   only: shr_scam_getCloseLatLon  ! Standardized system subroutines
   use spmd_utils,     only: masterproc
   use cam_abortutils, only: endrun
-  use scamMod,        only: scmlat,scmlon,single_column,iop_scream
+  use scamMod,        only: scmlat,scmlon,single_column,iop_mode
   use cam_logfile,    only: iulog
   !
   ! !PUBLIC TYPES:
@@ -105,7 +105,7 @@ contains
     integer                   :: strt(1) = 1 ! start ncol index for netcdf 1-d
     integer                   :: cnt (1) = 1 ! ncol count for netcdf 1-d
         
-    ! Offsets for reading global variables for IOP-SCREAM mode
+    ! Offsets for reading global variables for IOP mode
     integer                   :: strt_iop(2) = 1 ! start ncol index for netcdf 1-d
     integer                   :: cnt_iop (2) = 1 ! ncol count for netcdf 1-d
     character(len=PIO_MAX_NAME) :: tmpname
@@ -213,9 +213,9 @@ contains
         call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
-        if (iop_scream) field(:,:) = field(dim1b,dim2b)
+        if (iop_mode) field(:,:) = field(dim1b,dim2b)
 
-      else if (iop_scream) then
+      else if (iop_mode) then
       
         cnt_iop(1) = 1
         cnt_iop(2) = 1 
@@ -424,7 +424,7 @@ contains
           cnt = arraydimsize
           call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
 
-          if (iop_scream) then
+          if (iop_mode) then
 
             strt_iop(1) = lonidx
             strt_iop(2) = 1
@@ -474,7 +474,7 @@ contains
             ierr = pio_get_var(ncid, varid, strt, cnt, field)
           end if
   
-          endif ! if iop_scream
+          endif ! if iop_mode
         else
           ! All distributed array processing
           call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:2),      &

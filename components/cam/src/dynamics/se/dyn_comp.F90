@@ -337,7 +337,7 @@ CONTAINS
   subroutine dyn_run( dyn_state, rc )
 
     ! !USES:
-    use scamMod,          only: single_column, iop_scream, use_3dfrc
+    use scamMod,          only: single_column, iop_mode, use_3dfrc
     use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
@@ -379,19 +379,19 @@ CONTAINS
 
        single_column_in = single_column
        
-       ! if IOP-SCREAM mode we want dycore to operate in non-SCM mode,
+       ! if IOP mode we want dycore to operate in non-SCM mode,
        !   thus turn this switch to false for dycore input.  NOTE that
        !   dycore in SCM mode means that only the large scale vertical 
        !   advection is computed (i.e. no horizontal communication)
-       if (iop_scream) then
+       if (iop_mode) then
          single_column_in = .false.
        endif
        
-       ! if true SCM mode (not IOP-SCREAM) do not call 
+       ! if true SCM mode (not IOP mode) do not call 
        !   dynamical core if 3D forcing is prescribed
        !   (since large scale vertical advection is accounted for
        !   in that forcing)
-       if (single_column .and. .not. iop_scream) then
+       if (single_column .and. .not. iop_mode) then
          if (use_3dfrc) do_prim_run = .false.
        endif
        

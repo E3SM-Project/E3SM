@@ -191,7 +191,7 @@ CONTAINS
 
   subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid, mpicom, &
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
-       scmmode, iop_scream, scmlon, scmlat)
+       scmmode, iop_mode, scmlon, scmlat)
 
     use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
@@ -216,7 +216,7 @@ CONTAINS
     character(len=*) ,optional, intent(in)    :: fracname ! name of frac variable in file
     logical          ,optional, intent(in)    :: readfrac ! T <=> also read frac  in file
     logical          ,optional, intent(in)    :: scmmode  ! single column mode
-    logical          ,optional, intent(in)    :: iop_scream ! iop_scream mode
+    logical          ,optional, intent(in)    :: iop_mode ! iop mode
     real(R8)         ,optional, intent(in)    :: scmlon   ! single column lon
     real(R8)         ,optional, intent(in)    :: scmlat   ! single column lat
 
@@ -284,9 +284,9 @@ CONTAINS
     liopmode = .false. 
     if (present(scmmode)) then
        lscmmode = scmmode
-       liopmode = iop_scream
+       liopmode = iop_mode
        if (liopmode .and. .not. lscmmode) then
-         write(logunit,*) subname, ' ERROR: IOP SCREAM mode must be run with SCM functionality'
+         write(logunit,*) subname, ' ERROR: IOP mode must be run with SCM functionality'
          call shr_sys_abort(subname//' ERROR: IOP not in SCM mode')
        endif       
        if (lscmmode) then
@@ -507,7 +507,7 @@ CONTAINS
 
           if (liopmode) then 
   
-            ! If IOP-SCREAM mode, then we want the surface to be 
+            ! If IOP mode, then we want the surface to be 
             !   covered homogeneously, with the same lat and lon
             !   as close to the lat/lon in IOP forcing file as possible
             i_scm = ni

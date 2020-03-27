@@ -19,7 +19,7 @@ module ncdio_pio
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep
   use clm_varcon     , only : spval,ispval
-  use clm_varctl     , only : single_column, iop_scream, iulog
+  use clm_varctl     , only : single_column, iop_mode, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
@@ -1307,12 +1307,12 @@ contains
 #else
        if (varpresent) then      
        
-	  if (iop_scream .or. single_column) then
+	  if (iop_mode .or. single_column) then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
                 if (single_column) status = pio_get_var(ncid, varid, start, count, data)
-                if (iop_scream) then
+                if (iop_mode) then
                   allocate(iop_data(1:count(1),1:count(2)))
                   status = pio_get_var(ncid, varid, start(1:2), count(1:2), iop_data)
 #if ({DIMS}==1)
@@ -1518,7 +1518,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (iop_scream .or. single_column) then
+          if (iop_mode .or. single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,clmlevel,vardesc,start,count)
              if (present(nt)) then
@@ -1539,7 +1539,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
              if (single_column) status=pio_get_var(ncid,varid,start,count,data)
 
-             if (iop_scream) then 
+             if (iop_mode) then 
              
                if (count(2) .gt. 0) then  
        
@@ -1563,7 +1563,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        
                endif
        
-             endif ! iop_scream	            
+             endif ! iop_mode	            
      
 #endif
           else
@@ -1745,7 +1745,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
 !          if (single_column) then
-          if (iop_scream .or. single_column) then
+          if (iop_mode .or. single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (present(nt)) then
@@ -1763,7 +1763,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              else
                 if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
                 
-                if (iop_scream) then
+                if (iop_mode) then
 
                   if (start(3) .eq. 0) then
                     start_iop2d(1:2) = start(1:2)
@@ -1799,9 +1799,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                     deallocate(iop_data3d)
                   endif
 
-               endif ! if iop_scream
+               endif ! if iop_mode
 
-             endif ! if iop_scream or single_column
+             endif ! if iop_mode or single_column
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)
@@ -1985,7 +1985,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
        
-          if (iop_scream .or. single_column) then
+          if (iop_mode .or. single_column) then
              start(:) = 1 
              count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)    
@@ -1997,7 +1997,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              
              if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
      
-             if (iop_scream) then
+             if (iop_mode) then
      
                if (start(4) .eq. 0) then
        
@@ -2035,7 +2035,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
      
                endif
      
-            endif ! iop_scream
+            endif ! iop_mode
      
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)

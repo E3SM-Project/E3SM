@@ -444,7 +444,7 @@ end function shoc_implements_cnst
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
-    use scamMod,        only: single_column, iop_scream  
+    use scamMod,        only: single_column, iop_mode  
  
     implicit none
     
@@ -682,10 +682,10 @@ end function shoc_implements_cnst
 
    ! Set grid space, in meters. If SCM, set to a grid size representative
    !  of a typical GCM.  Otherwise, compute locally.    
-   if (single_column .and. .not. iop_scream) then
+   if (single_column .and. .not. iop_mode) then
      host_dx_in(:) = 100000._r8
      host_dy_in(:) = 100000._r8
-   else if (iop_scream) then
+   else if (iop_mode) then
      call grid_size_uniform(host_dx, host_dy)
      host_dx_in(:) = host_dx
      host_dy_in(:) = host_dy
@@ -1102,7 +1102,7 @@ end function shoc_implements_cnst
     ! Estimate grid box size at equator using
     !  the earth radius set for this case.  This assumes
     !  that all grid points are uniform, which is 
-    !  reasonable for IOP-SCREAM (not currently compatible with RRM) 
+    !  reasonable for IOP mode (not currently compatible with RRM) 
   
     use physical_constants, only: rearth, dd_pi
     use dimensions_mod, only: np, ne
