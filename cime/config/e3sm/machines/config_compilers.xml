@@ -1124,7 +1124,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
-  <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
+  <ALBANY_PATH>/global/cfs/cdirs/e3sm/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -1143,7 +1143,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-knl" COMPILER="intel">
-  <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
+  <ALBANY_PATH>/global/cfs/cdirs/e3sm/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
