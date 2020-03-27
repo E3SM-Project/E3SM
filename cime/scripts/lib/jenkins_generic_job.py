@@ -52,7 +52,9 @@ def scan_for_test_ids(old_test_archive, mach_comp, test_id_root):
 def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_root, old_test_archive, avoid_test_id):
 ###############################################################################
 
-    bytes_allowed = machine.get_value("MAX_GB_OLD_TEST_DATA") * 1000000000
+    gb_allowed    = machine.get_value("MAX_GB_OLD_TEST_DATA")
+    gb_allowed    = 500 if gb_allowed is None else gb_allowed
+    bytes_allowed = gb_allowed * 1000000000
     expect(bytes_allowed > 0, "Machine {} does not support test archiving".format(machine.get_machine_name()))
 
     # Remove old cs.status, cs.submit. I don't think there's any value to leaving these around
