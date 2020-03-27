@@ -3465,6 +3465,7 @@ qidep,qisub,nisub,qiberg)
       call ice_deposition_sublimation_f(qitot_incld,nitot_incld,t,    &
            qvs,qvi,epsi,abi,qv,    &
            qidep,qisub,nisub,qiberg)
+      return
    endif
 #endif
 
@@ -3530,6 +3531,7 @@ qrevp,nrevp)
       call evaporate_sublimate_precip_f(qr_incld,qc_incld,nr_incld,qitot_incld,    &
            lcldm,rcldm,qvs,ab,epsr,qv,    &
            qrevp,nrevp)
+      return
    endif
 #endif
 
