@@ -124,14 +124,12 @@ contains
 
    !-------------------------------------------------------------------------------
 
-   subroutine calculate_heating_rate(fluxes, pint, heating_rate)
+   subroutine calculate_heating_rate(flux_up, flux_dn, pint, heating_rate)
 
       use physconst, only: gravit
-      use mo_fluxes_byband, only: ty_fluxes_byband
 
       ! Inputs
-      type(ty_fluxes_byband), intent(in) :: fluxes
-      real(r8), intent(in) :: pint(:,:)
+      real(r8), intent(in), dimension(:,:) :: flux_up, flux_dn, pint
 
       ! Output heating rate; same size as pint with one fewer vertical level
       real(r8), intent(out) :: heating_rate(:,:)
@@ -143,10 +141,10 @@ contains
       character(len=32) :: subname = 'calculate_heating_rate'
 
       ! Get dimension sizes and make sure arrays conform
-      call assert(size(pint,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
-      call assert(size(pint,2) == size(fluxes%flux_up,2), subname // ': sizes do not conform.')
-      call assert(size(heating_rate,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
-      call assert(size(heating_rate,2) == size(fluxes%flux_up,2)-1, subname // ': sizes do not conform.')
+      call assert(size(pint,1) == size(flux_up,1), subname // ': sizes do not conform.')
+      call assert(size(pint,2) == size(flux_up,2), subname // ': sizes do not conform.')
+      call assert(size(heating_rate,1) == size(flux_up,1), subname // ': sizes do not conform.')
+      call assert(size(heating_rate,2) == size(flux_up,2)-1, subname // ': sizes do not conform.')
 
       ! Loop over levels and calculate heating rates; note that the fluxes *should*
       ! be defined at interfaces, so the loop ktop,kbot and grabbing the current
@@ -166,8 +164,8 @@ contains
       do ilev = 1,size(pint,2)-1
          do icol = 1,size(pint,1)
             heating_rate(icol,ilev) = ( &
-               fluxes%flux_up(icol,ilev+1) - fluxes%flux_up(icol,ilev) - &
-               fluxes%flux_dn(icol,ilev+1) + fluxes%flux_dn(icol,ilev) &
+               flux_up(icol,ilev+1) - flux_up(icol,ilev) - &
+               flux_dn(icol,ilev+1) + flux_dn(icol,ilev) &
             ) * gravit / (pint(icol,ilev+1) - pint(icol,ilev))
          end do
       end do

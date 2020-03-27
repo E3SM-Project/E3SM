@@ -74,7 +74,13 @@ class MakeMacroWriter(MacroWriterBase):
         >>> str(s.getvalue())
         'ifeq (foo,bar)\\n'
         """
-        self.write_line("ifeq (" + left + "," + right + ")")
+        if right.startswith("!"):
+            right = right.lstrip("!")
+            not_str = "n"
+        else:
+            not_str = ""
+
+        self.write_line("if{}eq ({},{})".format(not_str, left, right))
         self.indent_right()
 
     def end_ifeq(self):

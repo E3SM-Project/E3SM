@@ -695,7 +695,7 @@
     <default_value>500</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
-    <desc>How much old test to allow</desc>
+    <desc>How much old test data to allow in archive. Setting this to 0 will disable archiving and old test data will be deleted instead</desc>
   </entry>
 
   <entry id="GLC_NEC">
