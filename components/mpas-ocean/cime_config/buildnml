@@ -358,6 +358,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="output"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         if ocn_grid.startswith("oRRS1"):
             lines.append('        io_type="pnetcdf,cdf5"')
         else:
@@ -637,6 +638,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="eddyProductVariablesOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         if ocn_grid.startswith("oRRS1"):
             lines.append('        io_type="pnetcdf,cdf5"')
         else:
@@ -659,6 +661,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="highFrequencyOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
@@ -706,6 +709,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="mixedLayerDepthsOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.hist.am.mixedLayerDepths.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
@@ -722,6 +726,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
@@ -771,6 +776,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         if ocn_grid.startswith("oRRS1"):
             lines.append('        io_type="pnetcdf,cdf5"')
         else:
@@ -963,6 +969,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="timeSeriesStatsClimatologyOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
@@ -976,6 +983,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="timeSeriesStatsCustomOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsCustom.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
