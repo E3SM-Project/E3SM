@@ -76,7 +76,7 @@ struct Constants
   static constexpr Scalar NCCNST      = 200.0e+6;
   static constexpr Scalar Karman      = 0.4;
   static constexpr Scalar Avogad      = 6.02214e26;
-  static constexpr Scalar Boltz       = 1.37065e-23;
+  static constexpr Scalar Boltz       = 1.38065e-23;
   static constexpr Scalar Rgas        = Avogad * Boltz;
   static constexpr Scalar MWWV        = 18.016;
   static constexpr Scalar RWV         = Rgas / MWWV;

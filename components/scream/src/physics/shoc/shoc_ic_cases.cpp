@@ -178,11 +178,12 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
 
       // Set turbulent kinetic energy.
       // TODO: Not done yet!
+      d.tke(i, k) = 0;
 
       // Set tracers.
       for (Int q = 0; q < d.num_qtracers; ++q)
       {
-        d.qtracers(i, k, q) = sin(q/3. + 0.1 * zt * 0.2 * (k+1));
+        d.qtracers(i, k, q) = sin(q/3. + 0.1 * zt * 0.2 * (i+1));
         d.wtracer_sfc(i, q) = 0.1 * i;
       }
 
