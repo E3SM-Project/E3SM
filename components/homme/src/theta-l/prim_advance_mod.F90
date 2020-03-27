@@ -419,6 +419,7 @@ contains
                               calc_nonlinear_stats, update_nonlinear_stats, &
                               rel_tol, abs_tol, use_column_solver
     use iso_c_binding
+    use imex_mod, only: compute_stage_value_dirk
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
