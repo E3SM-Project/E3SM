@@ -1030,7 +1030,7 @@ contains
           do j = 1,np
              do i = 1,np
                 if (any(elem(ie)%derived%divdp(i,j,:) < zero)) then
-                   write(iulog,*), 'i,j,dp_star(i,j,:)', i, j, elem(ie)%derived%divdp(i,j,:)
+                   write(iulog,*) 'i,j,dp_star(i,j,:)', i, j, elem(ie)%derived%divdp(i,j,:)
                    call abortmp('sl_vertically_remap_tracers> -ve dp_star')
                 end if
              end do

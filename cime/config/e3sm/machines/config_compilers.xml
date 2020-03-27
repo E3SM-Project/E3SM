@@ -135,7 +135,12 @@ flags should be captured within MPAS CMake files.
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
     <append compile_threaded="TRUE"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0, 8.2.0, 8.3.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -212,8 +217,8 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
     <append DEBUG="FALSE"> -O3  </append>
-    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt -qsuppress=1520-045 </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
@@ -242,8 +247,8 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
     <append DEBUG="FALSE"> -O2 -qstrict -Q </append>
-    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt -qsuppress=1520-045 </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
     <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -382,8 +387,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler COMPILER="pgi">
   <CFLAGS>
-    <base> -gopt -time </base>
-    <append compile_threaded="FALSE"> </append>
+    <base> -time </base>
     <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
@@ -403,7 +407,6 @@ flags should be captured within MPAS CMake files.
     <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
     <!-- -->
     <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
     <!--  -Mbounds        => Add array bounds checking  -->
     <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
     <!--                     * inv: invalid operands         -->
@@ -418,8 +421,7 @@ flags should be captured within MPAS CMake files.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
-    <append compile_threaded="FALSE"> </append>
+    <base>  -i4 -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="TRUE"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
     <append COMP_NAME="datm"> -Mnovect </append>
@@ -446,7 +448,6 @@ flags should be captured within MPAS CMake files.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition </base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
@@ -460,7 +461,6 @@ flags should be captured within MPAS CMake files.
 <compiler COMPILER="pgiacc">
   <CFLAGS>
     <base> -time </base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
@@ -480,7 +480,6 @@ flags should be captured within MPAS CMake files.
     <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
     <!-- -->
     <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
     <!--  -Mbounds        => Add array bounds checking  -->
     <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
     <!--                     * inv: invalid operands         -->
@@ -496,7 +495,6 @@ flags should be captured within MPAS CMake files.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
     <append COMP_NAME="cam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -524,7 +522,6 @@ flags should be captured within MPAS CMake files.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition -acc</base>
-    <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
@@ -1165,6 +1162,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
+    <append COMP_NAME="cam">-Mnovect</append>
   </FFLAGS>
   <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
@@ -1830,6 +1828,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <SLIBS>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
@@ -1852,10 +1853,12 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX  </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
     <append> -qspillsize=2500 -qextname=flush </append>
+    <append COMP_NAME="cice" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </FFLAGS>
   <LDFLAGS>
     <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
@@ -1886,6 +1889,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <SLIBS>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
@@ -1924,6 +1930,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </FFLAGS>
   <CPPDEFS>
     <append> -DGPU </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
   <LDFLAGS>
@@ -2030,11 +2037,11 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -llapack -lblas</append>
   </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -2056,11 +2063,11 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -llapack -lblas</append>
   </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -2290,6 +2297,25 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <LDFLAGS>
     <base>compile_threaded="TRUE"> -qopenmp</base>
   </LDFLAGS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="modex">
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
+    <append DEBUG="TRUE"> -g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_PATH}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
+  </SLIBS>
+  <HDF5_PATH>$ENV{HDF5_HOME}</HDF5_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <!--<SCC MPILIB="mpi-serial">gcc</SCC>
+  <SFC MPILIB="mpi-serial">gfortran</SFC>-->
 </compiler>
 
 <compiler MACH="userdefined">

@@ -70,7 +70,7 @@ contains
     real(kind=c_real), intent(inout) :: naai(pcols,pver)     ! ice nucleation number
     real(kind=c_real), intent(inout) :: npccn(pcols,pver)    ! liquid activation number tendency
 
-    character(len=100) :: case_title, tmp_c1, tmp_c2
+    character(len=100) :: case_title
 
     integer(kind=c_int) :: i, k
     logical(kind=c_bool) :: masterproc

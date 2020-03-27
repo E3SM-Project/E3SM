@@ -30,7 +30,9 @@ struct Constants
   static constexpr Scalar LatIce      = 333700.0;
   static constexpr Scalar CpLiq       = 4188.0;
   static constexpr Scalar Tmelt       = 273.15;
+  static constexpr Scalar ZeroDegC    = Tmelt;
   static constexpr Scalar homogfrze   = Tmelt - 40;
+  static constexpr Scalar RainFrze    = Tmelt - 4;
   static constexpr Scalar Pi          = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc  = true;
@@ -43,9 +45,14 @@ struct Constants
   static constexpr Scalar SXTH        = 1.0/6.0;
   static constexpr Scalar PIOV3       = Pi*THIRD;
   static constexpr Scalar PIOV6       = Pi*SXTH;
+  static constexpr Scalar AIMM        = 0.65;
+  static constexpr Scalar BIMM        = 2.0;
   static constexpr Scalar CONS1       = PIOV6*RHOW;
   static constexpr Scalar CONS2       = 4.*PIOV3*RHOW;
   static constexpr Scalar CONS3       =  1.0/(CONS2*1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
+  static constexpr Scalar CONS5       = PIOV6*BIMM;
+  static constexpr Scalar CONS6       = PIOV6*PIOV6*RHOW*BIMM;
+  static constexpr Scalar CONS7       = 4.*PIOV3*RHOW*1.e-18;
   static constexpr Scalar QSMALL      = 1.e-14;
   static constexpr Scalar QTENDSMALL = 1e-20;
   static constexpr Scalar BSMALL      = 1.e-15;
@@ -99,6 +106,9 @@ constexpr Scalar Constants<Scalar>::Tmelt;
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tol;
 
+  //template <typename Scalar>
+  //constexpr Scalar Constants<Scalar>::Pi;
+  
 } // namespace p3
 } // namespace scream
 

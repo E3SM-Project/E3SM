@@ -60,6 +60,8 @@ struct UnitWrap {
     // Put struct decls here
     struct TestTableIce;
     struct TestTable3;
+    struct TestBackToCellAverage;
+    struct TestPreventIceOverdepletion;
     struct TestFind;
     struct TestUpwind;
     struct TestGenSed;
@@ -67,14 +69,27 @@ struct UnitWrap {
     struct TestDsd2;
     struct TestP3Conservation;
     struct TestP3CloudWaterAutoconversion;
+    struct TestCalcRimeDensity;
+    struct TestCldliqImmersionFreezing;
+    struct TestRainImmersionFreezing;
+    struct TestDropletSelfCollection;
     struct TestCloudSed;
     struct TestCloudRainAccretion;
     struct TestIceSed;
     struct TestRainSed;
     struct TestP3UpdatePrognosticIce;
     struct TestIceCollection;
+    struct TestEvapSublPrecip;
+    struct TestRainSelfCollection;
+    struct TestP3IceMelting;
     struct TestP3UpdatePrognosticLiq;
+    struct TestP3IceDepSublimation;
     struct TestP3FunctionsImposeMaxTotalNi;
+    struct TestIceRelaxationTimescale;
+    struct TestCalcLiqRelaxationTimescale;
+    struct TestIceNucleation;
+    struct TestDropletActivation;
+    struct TestIceCldliqWetGrowth;
   };
 
 };
