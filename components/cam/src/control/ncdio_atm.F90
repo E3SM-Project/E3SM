@@ -112,7 +112,7 @@ contains
 
     ! For SCAM
     real(r8)                  :: closelat, closelon
-    integer                   :: lonidx, latidx , iballi
+    integer                   :: lonidx, latidx
 
     nullify(iodesc)
 
@@ -212,21 +212,6 @@ contains
         ! All distributed array processing
         call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:ndims),    &
              pio_double, iodesc)
-!        do iballi = -10,200
-!           if(ndims == 2) then
-!              if(present(timelevel)) then
-!
-!                 call pio_setframe(ncid, varid, int(iballi,kind=pio_offset_kind))
-!              endif
-!           endif
-!           call pio_read_darray(ncid, varid, iodesc, field, ierr)
-!        enddo
-!
-!        if(ndims == 2) then
-!           if(present(timelevel)) then
-!              call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
-!           end if
-!        end if
         call pio_read_darray(ncid, varid, iodesc, field, ierr)
       end if
     end if  ! end of readvar_tmp
@@ -527,7 +512,7 @@ contains
 
     ! For SCAM
     real(r8)                  :: closelat, closelon
-    integer                   :: lonidx, latidx, iballi
+    integer                   :: lonidx, latidx
 
     nullify(iodesc)
 
@@ -623,22 +608,6 @@ contains
       ! NB: strt and cnt were initialized to 1
       call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:2),        &
              pio_double, iodesc, field_dnames=field_dnames)
-!
-!      do iballi = -10, 20
-!         if(ndims == 3) then
-!            if(present(timelevel)) then
-!               call pio_setframe(ncid, varid, int(iballi,kind=pio_offset_kind))
-!            end if
-!         end if
-!         call pio_read_darray(ncid, varid, iodesc, field, ierr)
-!      enddo
-
-!      if(ndims == 3) then
-!         if(present(timelevel)) then
-!            call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
-!         end if
-!      end if
-
       call pio_read_darray(ncid, varid, iodesc, field, ierr)
     end if  ! end of readvar_tmp
 
