@@ -79,9 +79,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
+   subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracers, &
                                    redi_term1, redi_term2, redi_term3, RediKappa,           &
-                                   slopeTriadUp, slopeTriadDown, kappaRediCell, tend, err)!{{{
+                                   slopeTriadUp, slopeTriadDown, kappaRediCell, kappaRediEdge, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -97,12 +97,13 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
+         layerThickness,     &!< Input: thickness at centers
          zMid,               &!< Input: Z coordinate at the center of a cell
-         kappaRediCell          !< Input: vertical structure of GM/Redi limiter
+         kappaRediCell        !< Input: vertical structure of GM/Redi limiter
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         slopeTriadUp, slopeTriadDown, &
-        tracers !< Input: tracer quantities
+        tracers, kappaRediEdge !< Input: tracer quantities
 
       !-----------------------------------------------------------------
       !
@@ -143,9 +144,9 @@ contains
 
       call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
-      call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
+      call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, zMid, tracers, &
                                      redi_term1, redi_term2, redi_term3, RediKappa,           &
-                                     slopeTriadUp, slopeTriadDown, kappaRediCell, tend, err1)
+                                     slopeTriadUp, slopeTriadDown, kappaRediCell, kappaRediEdge, tend, err1)
 
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")

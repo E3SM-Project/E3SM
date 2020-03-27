@@ -345,13 +345,9 @@
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
     />
-    <nml_option name="config_Redi_half_slope" type="real" default_value="0.004" units="non-dimensional"
-        description="value of slope where set to half max"
-        possible_values="positive real numbers less than slope max"
-    />
-    <nml_option name="config_Redi_half_width" type="real" default_value="0.001" units="non-dimensional"
-        description="value of half width of tanh function limiter"
-        possible_values="very small positive real numbers"
+    <nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
+        description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
+        possible_values="positive real numbers, but small"
     />
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
@@ -2609,14 +2605,18 @@
 			description="phase speed for the bolus velocity calculation"
 			packages="forwardMode;analysisMode"
 			/>
-		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+		<var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying Redi kappa"
 			packages="forwardMode;analysisMode"
-		/>
+      />
+    <var name="kappaRediEdge" type="real" dimensions="nVertLevelsP1 TWO nEdges Time" units="NA"
+      description="edge based version of slope tapering"
+      packages="forwardMode;analysisMode"
+      />
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 			 packages="forwardMode;analysisMode"
