@@ -206,6 +206,11 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_enax4v1" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.enax4v1_oRRS18to6_simyr2000_c180430.nc</finidat>
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
+<!-- Initial conditions for DYAMOND1 -->
+<finidat hgrid="360x720cru" mask="oRRS15to5"   ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45-360x720cru.clm2.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="r0125"      mask="oRRS15to5"   ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS15to5.clm2.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="r0125"      mask="oRRS18to6v3" ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2016-08-01-00000.nc</finidat>
+
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
