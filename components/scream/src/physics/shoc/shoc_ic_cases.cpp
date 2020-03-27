@@ -153,9 +153,10 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     for (Int k = 0; k < nlev; ++k) {
 
       // Set up the vertical grid.
+      Real zi0 = k * dz;
       Real zi1 = (k+1) * dz;
       d.zi_grid(i, k+1) = zi1;
-      Real zt = (k+0.5) * dz;
+      Real zt = 0.5 * (zi0 + zi1);
       d.zt_grid(i, k) = zt;
 
       // Interpolate the potential temperature, introducing small variations
