@@ -343,6 +343,7 @@ GLC_PRESENT ?= TRUE
 WAV_PRESENT ?= TRUE
 ESP_PRESENT ?= TRUE
 IAC_PRESENT ?= TRUE
+MED_PRESENT ?= TRUE
 ifeq ($(ULIBDEP),$(null))
   ifneq ($(LIBROOT),$(null))
     ifeq ($(ATM_PRESENT),TRUE)
@@ -379,6 +380,9 @@ ifeq ($(ULIBDEP),$(null))
     endif
     ifeq ($(IAC_PRESENT),TRUE)
       ULIBDEP += $(LIBROOT)/libiac.a
+    endif
+    ifeq ($(MED_PRESENT),TRUE)
+      CPPDEFS += -DMED_PRESENT
     endif
   endif
 endif

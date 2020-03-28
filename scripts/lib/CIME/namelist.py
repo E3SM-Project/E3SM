@@ -1131,7 +1131,8 @@ class Namelist(object):
             group_variables[name] = value
         return group_variables
 
-    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True, skip_comps=None):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True, 
+              skip_comps=None, skip_mediator=None):
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1153,13 +1154,15 @@ class Namelist(object):
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
                 if format_ == 'nuopc':
-                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups, skip_comps=skip_comps)
+                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups, 
+                                      skip_comps=skip_comps, skip_mediator=skip_mediator)
                 else:
                     self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
             if format_ == 'nuopc':
-                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups, skip_comps=skip_comps)
+                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups, 
+                                  skip_comps=skip_comps, skip_mediator=mediator)
             else:
                 self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
@@ -1211,7 +1214,7 @@ class Namelist(object):
             if format_ == 'nmlcontents':
                 out_file.write("\n")
 
-    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps):
+    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, skip_mediator):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
@@ -1235,6 +1238,8 @@ class Namelist(object):
                     for skip_comp in skip_comps:
                         if skip_comp in values[0]:
                             values[0] = values[0].replace(skip_comp,"")
+                    if skip_mediator: 
+                            values[0] = values[0].replace("MED","")
 
                 # @ is used in a namelist to put the same namelist variable in multiple groups
                 # in the write phase, all characters in the namelist variable name after

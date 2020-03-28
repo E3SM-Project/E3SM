@@ -429,16 +429,16 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">openblas/0.3.6</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-g</command>
+        <command name="load">esmf-8.0.0-defio-mpi-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-O</command>
+        <command name="load">esmf-8.0.0-defio-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
         <command name="load">esmf-8.0.0-ncdfio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
+        <command name="load">esmf-8.0.0-ncdfio-uni-O</command>
       </modules>
 
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
