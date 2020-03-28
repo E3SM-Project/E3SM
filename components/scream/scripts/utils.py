@@ -387,7 +387,7 @@ def print_last_commit(git_ref=None, repo=None):
     Prints a one-liner of the last commit
     """
     git_ref = get_current_head(repo) if git_ref is None else git_ref
-    last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref))
+    last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref), from_dir=repo)
     print("Last commit on ref '{}': {}".format(git_ref, last_commit))
 
 ###############################################################################
