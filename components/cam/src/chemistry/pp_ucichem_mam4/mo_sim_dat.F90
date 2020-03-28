@@ -28,8 +28,8 @@
 
       clscnt(:) = (/      8,     0,     0,    53,     0 /)
 
-      cls_rxt_cnt(:,1) = (/      9,    11,     0,     8 /)
-      cls_rxt_cnt(:,4) = (/      2,    30,    54,    53 /)
+      cls_rxt_cnt(:,1) = (/      9,    12,     0,     8 /)
+      cls_rxt_cnt(:,4) = (/      2,    30,    53,    53 /)
 
       solsym(: 61) = (/ 'O3              ','OH              ','HO2             ','H2O2            ','CH2O            ', &
                         'CH3O2           ','CH3OOH          ','NO              ','NO2             ','NO3             ', &
@@ -128,11 +128,12 @@
                                      'jacet           ', 'jmvk            ', 'uci4            ', 'uci5            ', &
                                      'uci6            ', 'HNO4            ', 'N2O5            ', 'PAN             ', &
                                      'uci7            ', 'uci8            ', 'uci9            ', 'ucih1           ', &
-                                     'ucih2           ', 'ucih3           ', 'usr_DMS_OH      ', 'usr_SO2_OH      ' /)
+                                     'ucih2           ', 'ucih3           ', 'usr_DMS_OH      ', 'usr_SO2_OH      ', &
+                                     'usr_e90         ' /)
       rxt_tag_map(:rxt_tag_cnt) = (/    1,   2,   3,   4,   5,   6,   7,   8,   9,  10, &
                                        11,  12,  13,  14,  15,  16,  17,  18,  34,  35, &
-                                       45,  47,  48,  49,  50,  51,  52,  80,  81,  82, &
-                                       85,  86 /)
+                                       44,  46,  47,  48,  49,  50,  51,  79,  80,  81, &
+                                       84,  85,  86 /)
       if( allocated( pht_alias_lst ) ) then
          deallocate( pht_alias_lst )
       end if
