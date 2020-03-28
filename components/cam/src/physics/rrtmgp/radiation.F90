@@ -1276,7 +1276,7 @@ contains
          ! Do shortwave cloud optics calculations
          call t_startf('rad_cld_optics_sw')
          call get_cloud_optics_sw( &
-            ncol, pver, nswbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+            ncol, pver, nswbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rel, rei, &
             cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
          )
@@ -1363,7 +1363,7 @@ contains
 
          call t_startf('rad_cld_optics_lw')
          call get_cloud_optics_lw( &
-            ncol, pver, nlwbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rei, &
             cld_tau_bnd_lw &
          )
@@ -2634,5 +2634,21 @@ contains
 
    end subroutine expand_day_fluxes
 
+   ! Should we do snow optics? Check for existence of "cldfsnow" variable
+   logical function do_snow_optics()
+      use physics_buffer, only: pbuf_get_index
+      use cam_abortutils, only: endrun
+      real(r8), pointer :: pbuf(:)
+      integer :: err, idx
+
+      idx = pbuf_get_index('CLDFSNOW', errcode=err)
+      if (idx > 0) then
+         do_snow_optics = .true.
+      else
+         do_snow_optics = .false.
+      end if
+
+      return
+   end function do_snow_optics 
 
 end module radiation

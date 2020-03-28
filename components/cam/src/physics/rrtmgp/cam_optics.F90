@@ -27,7 +27,7 @@ contains
    !-------------------------------------------------------------------------------
 
    subroutine get_cloud_optics_sw( &
-         ncol, nlev, nbnd, cld, cldfsnow, iclwp, iciwp, icswp, &
+         ncol, nlev, nbnd, do_snow, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rel, rei, &
          tau_out, ssa_out, asm_out)
 
@@ -38,6 +38,7 @@ contains
       use slingo, only: slingo_liq_optics_sw
 
       integer, intent(in) :: ncol, nlev, nbnd
+      logical, intent(in) :: do_snow
       real(r8), intent(in), dimension(:,:) :: &
          cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rel, rei
@@ -134,7 +135,7 @@ contains
                         'get_cloud_optics_sw: liq_tau')
 
       ! Get snow cloud optics
-      if (do_snow_optics()) then
+      if (do_snow) then
          call mitchell_ice_optics_sw( &
             ncol, nlev, icswp, des, &
             snow_tau, snow_tau_ssa, &
@@ -211,7 +212,7 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine get_cloud_optics_lw( &
-         ncol, nlev, nbnd, cld, cldfsnow, iclwp, iciwp, icswp, &
+         ncol, nlev, nbnd, do_snow, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rei, &
          tau_out)
 
@@ -222,6 +223,7 @@ contains
       use radconstants, only: nlwbands
 
       integer, intent(in) :: ncol, nlev, nbnd
+      logical, intent(in) :: do_snow
       real(r8), intent(in), dimension(:,:) :: &
          cld, cldfsnow, &
          iclwp, iciwp, icswp, &
@@ -260,7 +262,7 @@ contains
       end if
 
       ! Get snow optics?
-      if (do_snow_optics()) then
+      if (do_snow) then
          call mitchell_ice_optics_lw(ncol, nlev, icswp, des, snow_tau)
 
          ! Combined cloud optics
@@ -566,22 +568,5 @@ contains
    end function reordered
 
    !----------------------------------------------------------------------------
-
-   ! Should we do snow optics? Check for existence of "cldfsnow" variable
-   logical function do_snow_optics()
-      use physics_buffer, only: pbuf_get_index
-      use cam_abortutils, only: endrun
-      real(r8), pointer :: pbuf(:)
-      integer :: err, idx
-
-      idx = pbuf_get_index('CLDFSNOW', errcode=err)
-      if (idx > 0) then
-         do_snow_optics = .true.
-      else
-         do_snow_optics = .false.
-      end if
-
-      return
-   end function do_snow_optics 
 
 end module cam_optics
