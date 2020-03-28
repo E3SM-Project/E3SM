@@ -36,18 +36,19 @@
       integer, parameter :: rid_jmvk =   18                                     
       integer, parameter :: rid_uci4 =   34                                     
       integer, parameter :: rid_uci5 =   35                                     
-      integer, parameter :: rid_uci6 =   45                                     
-      integer, parameter :: rid_HNO4 =   47                                     
-      integer, parameter :: rid_N2O5 =   48                                     
-      integer, parameter :: rid_PAN =   49                                      
-      integer, parameter :: rid_uci7 =   50                                     
-      integer, parameter :: rid_uci8 =   51                                     
-      integer, parameter :: rid_uci9 =   52                                     
-      integer, parameter :: rid_ucih1 =   80                                    
-      integer, parameter :: rid_ucih2 =   81                                    
-      integer, parameter :: rid_ucih3 =   82                                    
-      integer, parameter :: rid_usr_DMS_OH =   85                               
-      integer, parameter :: rid_usr_SO2_OH =   86                               
+      integer, parameter :: rid_uci6 =   44                                     
+      integer, parameter :: rid_HNO4 =   46                                     
+      integer, parameter :: rid_N2O5 =   47                                     
+      integer, parameter :: rid_PAN =   48                                      
+      integer, parameter :: rid_uci7 =   49                                     
+      integer, parameter :: rid_uci8 =   50                                     
+      integer, parameter :: rid_uci9 =   51                                     
+      integer, parameter :: rid_ucih1 =   79                                    
+      integer, parameter :: rid_ucih2 =   80                                    
+      integer, parameter :: rid_ucih3 =   81                                    
+      integer, parameter :: rid_usr_DMS_OH =   84                               
+      integer, parameter :: rid_usr_SO2_OH =   85                               
+      integer, parameter :: rid_usr_e90 =   86                                  
                                                                                 
       integer, parameter :: rid_r0019 =   19                                    
       integer, parameter :: rid_r0020 =   20                                    
@@ -72,8 +73,8 @@
       integer, parameter :: rid_r0041 =   41                                    
       integer, parameter :: rid_r0042 =   42                                    
       integer, parameter :: rid_r0043 =   43                                    
-      integer, parameter :: rid_r0044 =   44                                    
-      integer, parameter :: rid_r0046 =   46                                    
+      integer, parameter :: rid_r0045 =   45                                    
+      integer, parameter :: rid_r0052 =   52                                    
       integer, parameter :: rid_r0053 =   53                                    
       integer, parameter :: rid_r0054 =   54                                    
       integer, parameter :: rid_r0055 =   55                                    
@@ -100,8 +101,7 @@
       integer, parameter :: rid_r0076 =   76                                    
       integer, parameter :: rid_r0077 =   77                                    
       integer, parameter :: rid_r0078 =   78                                    
-      integer, parameter :: rid_r0079 =   79                                    
+      integer, parameter :: rid_r0082 =   82                                    
       integer, parameter :: rid_r0083 =   83                                    
-      integer, parameter :: rid_r0084 =   84                                    
                                                                                 
       end module m_rxt_id                                                       
