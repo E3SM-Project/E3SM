@@ -183,8 +183,7 @@ CHEMISTRY
    OH + NO3 -> HO2 + NO2                          ; 2.200e-11, 0
    NO + NO3 -> 2.*NO2                             ; 1.500e-11, 170
    HNO4 + OH -> NO2 + H2O + O2                    ; 1.300E-12, 380
-   HNO3 + OH -> NO3 + H2O                         ; 2.400E-14, 460
-[uci6] HNO3 + OH -> NO3 + H2O                     ; 2.400E-14, 460
+[uci6] HNO3 + OH -> NO3 + H2O
 *    k[uci6] = (k2*k3*[M])/(k2 + k3*[M])  k2=2.7e-17*exp(2199/T)  k3=6.5e-34*exp(1335/T)*[M]
    NO2 + OH + M -> HNO3 + M                       ; 1.80e-30, 3.0,  2.80e-11, 0.0, 0.6
 [HNO4]   NO2 + HO2 + M -> HNO4 + M                ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
@@ -232,6 +231,10 @@ CHEMISTRY
               DMS + OH -> SO2                     ; 9.600E-12, -234
 [usr_DMS_OH]  DMS + OH ->  .5 * SO2 + .5 * HO2
 [usr_SO2_OH]  SO2 + OH -> H2SO4
+* --------------------------------------------------------------
+* decay for e90
+* --------------------------------------------------------------
+ [usr_e90]  e90 ->                                ; 1.286E-7, 0.
 
  End Reactions
 
@@ -262,4 +265,6 @@ SIMULATION PARAMETERS
         modules = on
      End Version Options
 
-END SIMULATION PARAMETERS
+   END SIMULATION PARAMETERS
+
+ENDSIM

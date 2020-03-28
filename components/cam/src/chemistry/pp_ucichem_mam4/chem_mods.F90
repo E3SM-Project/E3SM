@@ -41,7 +41,7 @@
                             indexm    = 1, &    ! index of total atm density in invariant array
                             indexh2o  = 4, &  ! index of water vapor density
                             clsze     = 1, &     ! loop length for implicit chemistry
-                            rxt_tag_cnt = 32, &
+                            rxt_tag_cnt = 33, &
                             nslvd     = 0
 
       integer   :: clscnt(5)            = 0

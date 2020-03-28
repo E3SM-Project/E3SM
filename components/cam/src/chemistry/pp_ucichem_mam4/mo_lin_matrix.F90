@@ -42,7 +42,7 @@
          mat(197) = .886_r8*rxt(11)
 
          mat(240) = -( rxt(21) + rxt(19)*y(15) + rxt(20)*y(15) + rxt(22)*y(16) &
-                      + rxt(23)*y(17) + rxt(24)*y(18) + rxt(68)*y(21) + rxt(69)*y(21) &
+                      + rxt(23)*y(17) + rxt(24)*y(18) + rxt(67)*y(21) + rxt(68)*y(21) &
                  + het_rates(2) )
          mat(255) = 2.000_r8*rxt(1) + rxt(2) + rxt(3)
          mat(37) = 2.000_r8*rxt(5)
@@ -51,12 +51,12 @@
          mat(60) = rxt(13)
          mat(65) = .330_r8*rxt(14)
 
-         mat(214) = -( rxt(82)*y(32) + het_rates(3) )
+         mat(214) = -( rxt(81)*y(32) + het_rates(3) )
          mat(254) = rxt(2)
          mat(77) = 2.000_r8*rxt(6)
          mat(69) = rxt(8)
          mat(74) = rxt(9)
-         mat(64) = .670_r8*rxt(14) + rxt(50)
+         mat(64) = .670_r8*rxt(14) + rxt(49)
          mat(135) = rxt(15)
          mat(126) = .500_r8*rxt(18)
          mat(239) = rxt(21) + rxt(20)*y(15) + rxt(24)*y(18)
@@ -66,7 +66,7 @@
          mat(76) = -( rxt(6) + rxt(7) + het_rates(5) )
          mat(67) = rxt(8)
          mat(117) = 2.000_r8*rxt(18)
-         mat(227) = rxt(68)*y(21) + rxt(69)*y(21)
+         mat(227) = rxt(67)*y(21) + rxt(68)*y(21)
 
          mat(169) = -( het_rates(6) )
          mat(132) = rxt(15)
@@ -81,24 +81,24 @@
 
          mat(182) = -( rxt(10) + het_rates(9) )
          mat(193) = .886_r8*rxt(11)
-         mat(43) = rxt(12) + rxt(51)
+         mat(43) = rxt(12) + rxt(50)
          mat(58) = rxt(13)
-         mat(62) = .670_r8*rxt(14) + rxt(50)
-         mat(40) = rxt(16) + rxt(52)
+         mat(62) = .670_r8*rxt(14) + rxt(49)
+         mat(40) = rxt(16) + rxt(51)
 
-         mat(194) = -( rxt(11) + rxt(81)*y(32) + het_rates(10) )
-         mat(44) = rxt(12) + rxt(51)
+         mat(194) = -( rxt(11) + rxt(80)*y(32) + het_rates(10) )
+         mat(44) = rxt(12) + rxt(50)
          mat(63) = .330_r8*rxt(14)
 
-         mat(41) = -( rxt(12) + rxt(51) + rxt(80)*y(32) + het_rates(11) )
+         mat(41) = -( rxt(12) + rxt(50) + rxt(79)*y(32) + het_rates(11) )
 
          mat(57) = -( rxt(13) + het_rates(12) )
-         mat(42) = 2.000_r8*rxt(80)*y(32)
-         mat(188) = rxt(81)*y(32)
+         mat(42) = 2.000_r8*rxt(79)*y(32)
+         mat(188) = rxt(80)*y(32)
 
-         mat(61) = -( rxt(14) + rxt(50) + het_rates(13) )
+         mat(61) = -( rxt(14) + rxt(49) + het_rates(13) )
 
-         mat(38) = -( rxt(16) + rxt(52) + het_rates(14) )
+         mat(38) = -( rxt(16) + rxt(51) + het_rates(14) )
 
          mat(99) = -( het_rates(22) )
          mat(230) = rxt(23)*y(17)
@@ -110,8 +110,8 @@
          mat(233) = .200_r8*rxt(24)*y(18)
 
          mat(139) = -( het_rates(25) )
-         mat(39) = rxt(16) + rxt(52)
-         mat(234) = rxt(68)*y(21) + rxt(69)*y(21)
+         mat(39) = rxt(16) + rxt(51)
+         mat(234) = rxt(67)*y(21) + rxt(68)*y(21)
 
          mat(45) = -( het_rates(19) )
 
