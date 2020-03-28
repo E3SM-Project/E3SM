@@ -8,6 +8,7 @@ sim_dat_path       = ../output/
 sim_dat_filename   = chemUCI_mam4.dat
 
 Comments
+     "Modified by Juno Hsu and Qi Tang"
      "chemUCI for E3SM, Prather last touch 20200326"
 End Comments
 
@@ -41,7 +42,7 @@ SPECIES
   CH3CHO
   CH3CO3
   ISOP -> C5H8
-  ISOPO2 -> HOCH2COOCH3CHCH2,
+  ISOPO2 -> HOCH2COOCH3CHCH2
   MVKMACR
 * MVKMACR = sum of MVK -> CH2CHCOCH3 + MACR -> CH2CCH3CHO
   MVKO2
