@@ -2138,8 +2138,8 @@
     <domain name="ne1024np4">
       <nx>56623106</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024np4_oRRS15to5.190514.nc</file>
-      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.190514.nc</file>
+      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024np4_oRRS15to5.200228.nc</file>
+      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.200228.nc</file>
       <desc>ne1024np4 is Spectral Elem 3km grid:</desc>
     </domain>
 
@@ -2874,7 +2874,7 @@
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
     </gridmap>
 
 
