@@ -39,7 +39,7 @@ class EnvMachSpecific(EnvBase):
                 if len(nodes) == 0:
                     example_name = "NAME"
                     example_text = "ARGUMENT"
-                    empty_env_node = self.make_child("environment_variables", text = "" )
+                    empty_env_node = self.make_child("environment_variables" )
                     example_env_node = self.make_child("env", attributes={"name":example_name}, root=empty_env_node, text = example_text)
             if item == "run_exe" or item == "run_misc_suffix":
                 if len(nodes) == 0:
