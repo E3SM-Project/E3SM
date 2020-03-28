@@ -282,7 +282,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_device, cwdc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       cloud_water_conservation(cwdc[i]);
     }
 
@@ -379,7 +379,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(iwdc_device, iwdc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       ice_water_conservation(iwdc[i]);
     }
 
@@ -479,7 +479,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(rwdc_device, rwdc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       rain_water_conservation(rwdc[i]);
     }
 
@@ -662,7 +662,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     Kokkos::deep_copy(pupidc_device, pupidc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       update_prognostic_ice(pupidc[i]);
     }
 
@@ -836,7 +836,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     Kokkos::deep_copy(gtspvd_device, gtspvd_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       get_time_space_phys_variables(gtspvd[i]);
     }
 
@@ -952,7 +952,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Kokkos::deep_copy(espd_device, espd_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       evaporate_sublimate_precip(espd[i]);
     }
 
@@ -1099,7 +1099,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     Kokkos::deep_copy(pupldc_device, pupldc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       update_prognostic_liquid(pupldc[i]);
     }
 
@@ -1234,7 +1234,7 @@ struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
     Kokkos::deep_copy(ids_device, ids_host);
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       ice_deposition_sublimation(ids[i]);
     }
 
