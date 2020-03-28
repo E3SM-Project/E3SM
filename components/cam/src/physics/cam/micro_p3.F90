@@ -3601,6 +3601,7 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    if (use_cxx) then
       call get_time_space_phys_variables_f(t,pres,rho,xxlv,xxls,qvs,qvi, &
            mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
+      return
    endif
 #endif
 
