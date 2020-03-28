@@ -1307,7 +1307,6 @@ if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Superparameterization mode (MMF)
-
 if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
@@ -1321,7 +1320,7 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
     $cfg_ref->set('crm_adv', $opts{'crm_adv'});
-# Check that model is not using threading for the MMF 
+    # Check that model is not using threading for the MMF 
     if ($nthreads > 1) {
      die <<"EOF";
 **  ERROR: MMF mode may only use single thread
@@ -1329,12 +1328,7 @@ if (defined $opts{'use_MMF'}) {
 **         
 EOF
     }
-
-   # print "---> $opts{'crm_nx'} $opts{'crm_ny'} $opts{'crm_nz'} $opts{'crm_dx'} $opts{'crm_dt'} $opts{'MMF_microphysics_scheme'} $eol";
 }
-
-my $use_MMF = $cfg_ref->get('use_MMF') ? "ON" : "OFF";
-if ($print>=2) { print "Configure EAM for MMF (super-parameterization) mode: $use_MMF.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1887,33 +1881,33 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
 # Building for MMF/super-parameterization
-my $crm_nx = $cfg_ref->get('crm_nx');
-my $crm_ny = $cfg_ref->get('crm_ny');
-my $crm_nz = $cfg_ref->get('crm_nz');
-my $crm_dx = $cfg_ref->get('crm_dx');
-my $crm_dt = $cfg_ref->get('crm_dt');
-my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
-my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
-my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
-my $crm_adv    = $cfg_ref->get('crm_adv');
-my $yes3Dval = 1;
-if ($crm_ny eq 1) {$yes3Dval = 0;}
-$cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
-$cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
-$cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
-
-if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
-if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
-
-if (defined $opts{'crm_nx_rad'}) { 
-    $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
-} else {
-    $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx " 
-}
-if (defined $opts{'crm_ny_rad'}) { 
-    $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
-} else {
-    $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
+if (defined $opts{'use_MMF'}) {
+    my $crm_nx = $cfg_ref->get('crm_nx');
+    my $crm_ny = $cfg_ref->get('crm_ny');
+    my $crm_nz = $cfg_ref->get('crm_nz');
+    my $crm_dx = $cfg_ref->get('crm_dx');
+    my $crm_dt = $cfg_ref->get('crm_dt');
+    my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
+    my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
+    my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+    my $crm_adv = $cfg_ref->get('crm_adv');
+    my $yes3Dval = 1;
+    if ($crm_ny eq 1) {$yes3Dval = 0;}
+    $cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
+    $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+    if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
+    if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
+    if (defined $opts{'crm_nx_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx " 
+    }
+    if (defined $opts{'crm_ny_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
+    }
 }
 
 # Configure CAM to produce IOP files for SCAM
@@ -2623,8 +2617,6 @@ sub write_filepath
     # Component interface specifier
     my $comp_intf = $cfg_ref->get('comp_intf');
 
-    my $MMF_microphysics_scheme    = $cfg_ref->get('MMF_microphysics_scheme');
-
     # Start writing paths to the file.  *** Order is important ***  The
     # sequence of paths will be used to set the GNU Makefile's VPATH macro
     # which tells make where to search for dependencies.
@@ -2657,13 +2649,14 @@ sub write_filepath
     # MMF/super-parameterization; this code section needs to appear before those
     # adding the physics and chemistry packages to override versions of files
     # that appear in both places
-    if ($use_MMF) {
+    if (defined $opts{'use_MMF'}) {
 
         # interface and base model code
         print $fh "$camsrcdir/cam/src/physics/crm\n";
         print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
 
         # microphysics
+        my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
         if ($MMF_microphysics_scheme eq 'sam1mom') {
             print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
         } elsif ($MMF_microphysics_scheme eq 'm2005') {
@@ -2673,11 +2666,12 @@ sub write_filepath
         # turbulence closure
         print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
 
-        if ( defined $opts{'use_ECPP'}) {
+        if (defined $opts{'use_ECPP'}) {
             print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
         }
 
         # advection scheme
+        my $crm_adv = $cfg_ref->get('crm_adv');
         if ($crm_adv eq 'UM5') {
             print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
         } else {
