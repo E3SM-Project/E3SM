@@ -1430,7 +1430,7 @@ sub setup_cmdl_maxpft {
     # NOTE: maxpatchpft sizes already checked for clm4_0 by configure.
   } else {
     my %maxpatchpft;
-    $maxpatchpft{'.true.'}   = 79;
+    $maxpatchpft{'.true.'}   = 25;
     $maxpatchpft{'.false.'} = 17;
     if ( $opts->{$var} ne "default") {
       $val = $opts->{$var};
@@ -1879,7 +1879,7 @@ sub process_namelist_commandline_use_case {
     my $uc_defaults = Build::NamelistDefaults->new("$opts->{'use_case_dir'}/$opts->{'use_case'}.xml", $cfg);
 
     my %settings;
-    $settings{'res'}            = $nl_flags->{'res'};
+    $settings{'hgrid'}          = $nl_flags->{'res'};
     $settings{'rcp'}            = $nl_flags->{'rcp'};
     $settings{'mask'}           = $nl_flags->{'mask'};
     $settings{'sim_year'}       = $nl_flags->{'sim_year'};

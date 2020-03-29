@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use clm_varctl         , only : iulog, use_var_soil_thick, tw_irr
+  use clm_varctl         , only : iulog, use_var_soil_thick
   use clm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type

@@ -222,7 +222,7 @@ contains
     namelist /clm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, tw_irr, all_active
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active
     ! Urban options
 
     namelist /clm_inparm/  &
@@ -663,6 +663,8 @@ contains
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(extra_gw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(firrig_data, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Landunit generation
     call mpi_bcast(create_crop_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)

@@ -46,7 +46,7 @@ module rof_comp_mct
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
-                                index_r2x_Flrr_supply
+                                index_r2x_Flrr_supply, index_r2x_Flrr_deficit
 
   use mct_mod
   use ESMF
@@ -103,7 +103,6 @@ contains
     integer :: lsize                                 ! size of attribute vector
     integer :: g,i,j,n                               ! indices
     logical :: exists                                ! true if file exists
-    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
     integer :: nsrest                                ! restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
@@ -179,8 +178,6 @@ contains
 
     if (info_taskmap_comp > 0) then
 
-       no_taskmap_output = .false.
-
        if (info_taskmap_comp == 1) then
           verbose_taskmap_output = .false.
        else
@@ -197,19 +194,13 @@ contains
           call shr_sys_flush(iulog)
        endif
 
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(iulog, mpicom_rof,                    &
+                              'ROF #'//trim(adjustl(c_inst_index)), &
+                              verbose=verbose_taskmap_output        )
+       call t_stopf("shr_taskmap_write")
 
     endif
-
-    call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iulog, mpicom_rof,                    &
-                           'ROF #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
-    call t_stopf("shr_taskmap_write")
 
     ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
@@ -720,9 +711,11 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
-       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8 
+       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8
+       r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = 0._r8
        if (wrmflag) then
-          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s (Tian)
+          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
+          r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
        endif
     end do
 

@@ -562,6 +562,7 @@ module ColumnDataType
     real(r8), pointer :: dwt_conv_cflux                        (:)     => null() ! (gC/m2/s) conversion C flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10c_gain                      (:)     => null() ! (gC/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100c_gain                     (:)     => null() ! (gC/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productc_gain                (:)     => null() ! (gC/m2/s) addition to crop product pool
     real(r8), pointer :: dwt_closs                             (:)     => null() ! (gC/m2/s) total carbon loss from product pools and conversion
     real(r8), pointer :: landuseflux                           (:)     => null() ! (gC/m2/s) dwt_closs+product_closs
     real(r8), pointer :: landuptake                            (:)     => null() ! (gC/m2/s) nee-landuseflux
@@ -582,6 +583,8 @@ module ColumnDataType
     real(r8), pointer :: nep                                   (:)     => null() ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nbp                                   (:)     => null() ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
+    real(r8), pointer :: cinputs                               (:)     => null() ! column-level C inputs (gC/m2/s) 
+    real(r8), pointer :: coutputs                              (:)     => null() ! column-level C outputs (gC/m2/s)
     ! CLAMP summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: bgc_cpool_ext_inputs_vr               (:,:,:) => null() ! col-level extneral organic carbon input gC/m3 /time step
     real(r8), pointer :: bgc_cpool_ext_loss_vr                 (:,:,:) => null() ! col-level extneral organic carbon loss gC/m3 /time step
@@ -756,6 +759,7 @@ module ColumnDataType
     real(r8), pointer :: dwt_conv_nflux                        (:)     => null() ! (gN/m2/s) conversion N flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10n_gain                      (:)     => null() ! (gN/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100n_gain                     (:)     => null() ! (gN/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productn_gain                (:)     => null() ! (gN/m2/s) addition to crop product pool
     real(r8), pointer :: dwt_frootn_to_litr_met_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootn_to_litr_cel_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootn_to_litr_lig_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
@@ -901,6 +905,7 @@ module ColumnDataType
     real(r8), pointer :: dwt_conv_pflux                        (:)     ! (gP/m2/s) conversion P flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10p_gain                      (:)     ! (gP/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100p_gain                     (:)     ! (gP/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productp_gain                (:)     ! (gP/m2/s) addition to crop product pool
     real(r8), pointer :: dwt_frootp_to_litr_met_p              (:,:)   ! (gP/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootp_to_litr_cel_p              (:,:)   ! (gP/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootp_to_litr_lig_p              (:,:)   ! (gP/m3/s) fine root to litter due to landcover change
@@ -2987,9 +2992,8 @@ contains
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
-            this%prod1c(c)   + &
-            this%ctrunc(c)   + & 
-            this%totpftc(c)  + & 
+            this%totprodc(c) + &
+            this%ctrunc(c)   + &
             this%cropseedc_deficit(c)
             
        this%totabgc(c) =       &
@@ -3943,7 +3947,7 @@ contains
        this%totprodn(c) = &
             this%prod1n(c) + &
             this%prod10n(c) + &
-            this%prod100n(c)	 
+            this%prod100n(c) 
     
        ! total ecosystem nitrogen, including veg (TOTECOSYSN)
        this%totecosysn(c) = &
@@ -3963,7 +3967,7 @@ contains
             this%totlitn(c) + &
             this%totsomn(c) + &
             this%sminn(c) + &
-            this%prod1n(c) + &
+            this%totprodn(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
             this%cropseedn_deficit(c)
@@ -4967,7 +4971,7 @@ contains
       this%totprodp(c) = &
            this%prod1p(c) + &
            this%prod10p(c) + &
-           this%prod100p(c)	 
+           this%prod100p(c) 
 
       ! total ecosystem phosphorus, including veg (TOTECOSYSP)
       this%totecosysp(c) = &
@@ -4988,7 +4992,7 @@ contains
            this%cwdp(c) + &
            this%totlitp(c) + &
            this%totsomp(c) + &
-           this%prod1p(c) + &
+           this%totprodp(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
@@ -5581,6 +5585,7 @@ contains
     allocate(this%dwt_conv_cflux                    (begc:endc))                  ; this%dwt_conv_cflux               (:)   = nan    
     allocate(this%dwt_prod10c_gain                  (begc:endc))                  ; this%dwt_prod10c_gain             (:)   = nan    
     allocate(this%dwt_prod100c_gain                 (begc:endc))                  ; this%dwt_prod100c_gain            (:)   = nan    
+    allocate(this%dwt_crop_productc_gain            (begc:endc))                  ; this%dwt_crop_productc_gain       (:)   = nan
     allocate(this%dwt_closs                         (begc:endc))                  ; this%dwt_closs                    (:)   = nan    
     allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = nan    
     allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = nan    
@@ -5600,6 +5605,8 @@ contains
     allocate(this%nep                               (begc:endc))                  ; this%nep                          (:)   = nan    
     allocate(this%nbp                               (begc:endc))                  ; this%nbp                          (:)   = nan    
     allocate(this%nee                               (begc:endc))                  ; this%nee                          (:)   = nan    
+    allocate(this%cinputs                           (begc:endc))                  ; this%cinputs                      (:)   = nan
+    allocate(this%coutputs                          (begc:endc))                  ; this%coutputs                     (:)   = nan
     allocate(this%bgc_cpool_ext_inputs_vr           (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_inputs_vr(:,:,:) = nan
     allocate(this%bgc_cpool_ext_loss_vr             (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_loss_vr  (:,:,:) = nan
     allocate(this%cwdc_hr                           (begc:endc))                  ; this%cwdc_hr                      (:)   = nan    
@@ -6017,6 +6024,11 @@ contains
             avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
             ptr_col=this%dwt_prod100c_gain, default='inactive')
 
+       this%dwt_crop_productc_gain(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_CROP_PRODUCTC_GAIN', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain, default='inactive')
+
        this%prod100c_loss(begc:endc) = spval
        call hist_addfld1d (fname='PROD100C_LOSS', units='gC/m^2/s', &
             avgflag='A', long_name='loss from 100-yr wood product pool', &
@@ -6213,6 +6225,11 @@ contains
        call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 conversion C flux (immediate loss to atm)', &
             ptr_col=this%dwt_conv_cflux)
+
+       this%dwt_crop_productc_gain(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_CROP_PRODUCTC_GAIN', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain)
 
        this%dwt_prod10c_gain(begc:endc) = spval
        call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN', units='gC13/m^2/s', &
@@ -6519,6 +6536,7 @@ contains
           this%dwt_conv_cflux(c)        = 0._r8
           this%dwt_prod10c_gain(c)      = 0._r8
           this%dwt_prod100c_gain(c)     = 0._r8
+          this%dwt_crop_productc_gain(c) = 0._r8
           this%prod1c_loss(c)           = 0._r8
           this%prod10c_loss(c)          = 0._r8
           this%prod100c_loss(c)         = 0._r8
@@ -7243,6 +7261,8 @@ contains
        this%nep(i)                       = value_column
        this%nbp(i)                       = value_column
        this%nee(i)                       = value_column
+       this%cinputs(i)                   = value_column
+       this%coutputs(i)                  = value_column
        this%fire_closs(i)                = value_column
        this%cwdc_hr(i)                   = value_column
        this%cwdc_loss(i)                 = value_column
@@ -7386,6 +7406,7 @@ contains
        this%dwt_conv_cflux(c)           = 0._r8
        this%dwt_prod10c_gain(c)         = 0._r8
        this%dwt_prod100c_gain(c)        = 0._r8
+       this%dwt_crop_productc_gain(c)   = 0._r8
        this%dwt_slash_cflux(c)          = 0._r8
     end do
 
@@ -7656,6 +7677,7 @@ contains
     allocate(this%dwt_conv_nflux                  (begc:endc))                   ; this%dwt_conv_nflux                 (:)   = nan
     allocate(this%dwt_prod10n_gain                (begc:endc))                   ; this%dwt_prod10n_gain               (:)   = nan
     allocate(this%dwt_prod100n_gain               (begc:endc))                   ; this%dwt_prod100n_gain              (:)   = nan
+    allocate(this%dwt_crop_productn_gain          (begc:endc))                   ; this%dwt_crop_productn_gain         (:)   = nan
     allocate(this%dwt_nloss                       (begc:endc))                   ; this%dwt_nloss                      (:)   = nan
     allocate(this%wood_harvestn                   (begc:endc))                   ; this%wood_harvestn                  (:)   = nan
     allocate(this%dwt_frootn_to_litr_met_n        (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n       (:,:) = nan
@@ -8418,6 +8440,11 @@ contains
          avgflag='A', long_name='conversion N flux (immediate loss to atm)', &
          ptr_col=this%dwt_conv_nflux, default='inactive')
 
+    this%dwt_crop_productn_gain(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_CROP_PRODUCTN_GAIN', units='gN/m^2/s', &
+         avgflag='A', long_name='addition to crop product pool', &
+         ptr_col=this%dwt_crop_productn_gain, default='inactive')
+
     this%dwt_prod10n_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10N_GAIN', units='gN/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
@@ -8965,6 +8992,7 @@ contains
        this%dwt_conv_nflux(c)        = 0._r8
        this%dwt_prod10n_gain(c)      = 0._r8
        this%dwt_prod100n_gain(c)     = 0._r8
+       this%dwt_crop_productn_gain(c) = 0._r8
        this%dwt_slash_nflux(c)       = 0._r8
     end do
 
@@ -9598,6 +9626,7 @@ contains
     allocate(this%dwt_conv_pflux                   (begc:endc))                   ; this%dwt_conv_pflux                (:)   = nan
     allocate(this%dwt_prod10p_gain                 (begc:endc))                   ; this%dwt_prod10p_gain              (:)   = nan
     allocate(this%dwt_prod100p_gain                (begc:endc))                   ; this%dwt_prod100p_gain             (:)   = nan
+    allocate(this%dwt_crop_productp_gain           (begc:endc))                   ; this%dwt_crop_productp_gain        (:)   = nan
     allocate(this%dwt_ploss                        (begc:endc))                   ; this%dwt_ploss                     (:)   = nan
     allocate(this%wood_harvestp                    (begc:endc))                   ; this%wood_harvestp                 (:)   = nan
     allocate(this%dwt_frootp_to_litr_met_p         (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_met_p      (:,:) = nan
@@ -10121,6 +10150,11 @@ contains
          avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
          ptr_col=this%dwt_conv_pflux, default='inactive')
 
+    this%dwt_crop_productp_gain(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_CROP_PRODUCTP_GAIN', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to crop product pool', &
+         ptr_col=this%dwt_crop_productp_gain, default='inactive')
+
     this%dwt_prod10p_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
@@ -10389,9 +10423,9 @@ contains
        this%secondp_to_labilep(i)        = value_column
        this%secondp_to_occlp(i)          = value_column
        this%sminp_leached(i)             = value_column
+       this%fire_ploss(i)                = value_column
        this%pinputs(i)                   = value_column
        this%poutputs(i)                  = value_column
-       this%fire_ploss(i)                = value_column
        this%som_p_leached(i)             = value_column
        this%somp_erode(i)                = value_column
        this%somp_deposit(i)              = value_column
@@ -10527,6 +10561,7 @@ contains
        this%dwt_conv_pflux(c)        = 0._r8
        this%dwt_prod10p_gain(c)      = 0._r8
        this%dwt_prod100p_gain(c)     = 0._r8
+       this%dwt_crop_productp_gain(c) = 0._r8
        this%dwt_slash_pflux(c)       = 0._r8
     end do
 

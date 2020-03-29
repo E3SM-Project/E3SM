@@ -196,6 +196,18 @@ If TRUE, irrigation will be two-way coupled with MOSART.
 irrigation supply will be constrained by surface water availability from MOSART
 </entry>
 
+<entry id="extra_gw_irr" type="logical" category="clm_physics"
+       group="clm_inparm"  >
+Only effective when tw_irr is TRUE. If TRUE, extra groundwater pumping will be performed to meet the irrigation demand.
+surface water irrigation supply will still be constrained by surface water availability from MOSART
+</entry>
+
+<entry id="firrig_data" type="logical" category="clm_physics"
+       group="clm_inparm"  >
+If TRUE, Firrig, Fsurf, and Fgrnd will be read from the ELM surface data.
+If False, use constant values.
+</entry>
+
 <entry id="maxpatch_glcmec" type="integer"  category="clm_physics"
        group="clm_inparm" valid_values="0,1,3,5,10,36" >
 Number of  multiple elevation classes over glacier points.
