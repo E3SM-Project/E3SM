@@ -97,6 +97,8 @@ REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for c
 real(rtype), parameter :: incloud_limit = 5.1E-3
 real(rtype), parameter :: precip_limit  = 1.0E-2
 
+logical :: use_cxx = .true.
+
     contains
 !__________________________________________________________________________________________!
 !                                                                                          !
@@ -261,11 +263,24 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
           inv_lcldm,inv_icldm,inv_rcldm, &
           qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: calculate_incloud_mixingratios_f
+#endif
+
        real(rtype),intent(in)   :: qc, qr, qitot, qirim
        real(rtype),intent(in)   :: nc, nr, nitot, birim
        real(rtype),intent(in)   :: inv_lcldm, inv_icldm, inv_rcldm
        real(rtype),intent(out)  :: qc_incld, qr_incld, qitot_incld, qirim_incld
        real(rtype),intent(out)  :: nc_incld, nr_incld, nitot_incld, birim_incld
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+      call calculate_incloud_mixingratios_f(qc,qr,qitot,qirim,nc,nr,nitot,birim, &
+                inv_lcldm,inv_icldm,inv_rcldm, &
+                qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
+       return
+    endif
+#endif
 
 
        if (qc.ge.qsmall) then
