@@ -90,6 +90,7 @@ struct UnitWrap {
     struct TestIceNucleation;
     struct TestDropletActivation;
     struct TestIceCldliqWetGrowth;
+    struct TestIncloudMixing;
   };
 
 };
