@@ -424,7 +424,7 @@ contains
                kappaGMCell(k,iCell) = max(config_GM_min_stratification_ratio, &
                                           BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
 
-               kappaRediCell(k,iCell) = 1.0_RKIND !kappaGMCell(k,iCell)
+               kappaRediCell(k,iCell) = kappaGMCell(k,iCell)
            enddo
 
 !           kappaSmooth(:maxLevelCell(iCell)) = kappaRediCell(:maxLevelCell(iCell),iCell)
@@ -525,18 +525,18 @@ contains
 !               slopeTriadDown(k,iCellSelf,iEdge) = max(-0.01_RKIND,slopeTriadDown(k,iCellSelf,iEdge))
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
-               if (slopeTriadDown(k,iCellSelf,iEdge) > 0.6_RKIND*config_redi_maximum_slope) THEN
+               if (abs(slopeTriadDown(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) THEN
                   slopeTaperDown = 0.0_RKIND
-               else if (slopeTriadDown(k,iCellSelf,iEdge) < 0.2_RKIND*config_redi_maximum_slope) THEN
+               else if (abs(slopeTriadDown(k,iCellSelf,iEdge)) < 0.2_RKIND*config_redi_maximum_slope) THEN
                   slopeTaperDown = 1.0_RKIND
                else
                   slopeTaperDown = 0.5_RKIND*(1.0_RKIND - ((2.5_RKIND*abs(slopeTriadDown(k,iCellSelf,iEdge))) / &
                     config_Redi_maximum_slope - 1.0_RKIND)*(4.0_RKIND - abs(10.0_RKIND* &
                     abs(slopeTriadDown(k,iCellSelf,iEdge)) / config_Redi_maximum_slope - 4.0_RKIND)))
                endif
-               if (slopeTriadUp(k,iCellSelf,iEdge) > 0.6_RKIND*config_redi_maximum_slope) THEN
+               if (abs(slopeTriadUp(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) THEN
                   slopeTaperUp = 0.0_RKIND
-               else if (slopeTriadUp(k,iCellSelf,iEdge) < 0.2_RKIND*config_redi_maximum_slope) THEN
+               else if (abs(slopeTriadUp(k,iCellSelf,iEdge)) < 0.2_RKIND*config_redi_maximum_slope) THEN
                   slopeTaperUp = 1.0_RKIND
                else
                   slopeTaperUp = 0.5_RKIND*(1.0_RKIND - ((2.5_RKIND*abs(slopeTriadUp(k,iCellSelf,iEdge))) / &

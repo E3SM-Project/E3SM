@@ -496,7 +496,8 @@ contains
       ! three dimensional pointers
       !
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        tracerGroup, tracerGroupTend, redi_term1, redi_term2, redi_term3, vertNonLocalFlux
+        tracerGroup, tracerGroupTend, redi_term1, redi_term2, redi_term3, &
+        vertNonLocalFlux
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         activeTracers, &  !  need T, S for ecosys
@@ -522,7 +523,7 @@ contains
       ! local integers/reals/logicals
       !
       integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
-      logical :: activeTracersOnly    ! if true, only compute for active tracers
+      logical :: activeTracersOnly, isActiveTracer    ! if true, only compute for active tracers
 
       !
       ! set time level of optional argument is present
@@ -886,8 +887,12 @@ contains
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
+
+               isActiveTracer = .false.
+               if(trim(groupItr % memberName)=='activeTracers') isActiveTracer = .true.
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
-                                         redi_term1, redi_term2, redi_term3, RediKappa, slopeTriadUp, slopeTriadDown, &
+                                         redi_term1, redi_term2, redi_term3, &
+                                         RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
                                          kappaRediCell, kappaRediEdge, tracerGroupTend, err)
 
                !
