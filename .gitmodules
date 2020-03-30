@@ -30,3 +30,7 @@
 [submodule "externals/yaml-cpp"]
 	path = externals/yaml-cpp
 	url = git@github.com:SNLComputation/yaml-cpp.git
+[submodule "components/cam/src/physics/cosp2/external"]
+	path = components/cam/src/physics/cosp2/external
+	url = git@github.com:CFMIP/COSPv2.0.git
+	branch = CESM_v2.1.4

@@ -41,7 +41,6 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swvdf = 0   ! atm->rof shorwave visible diffus flux
   integer, public :: index_x2r_Faxa_swndr = 0   ! atm->rof shorwave near-ir direct flux
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
-
   integer, public :: nflds_x2r = 0
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
@@ -58,6 +57,7 @@ module rof_cpl_indices
   integer, public :: index_r2x_Flrr_volr = 0    ! rof->lnd volr total volume back to land
   integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
   integer, public :: index_r2x_Flrr_supply = 0  ! rof->lnd supply flux for land use
+  integer, public :: index_r2x_Flrr_deficit = 0 ! rof->lnd supply deficit
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -127,6 +127,7 @@ contains
     index_r2x_Flrr_volr  = mct_avect_indexra(avtmp,'Flrr_volr')
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
     index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
+    index_r2x_Flrr_deficit = mct_avect_indexra(avtmp,'Flrr_deficit')
     nflds_r2x = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)

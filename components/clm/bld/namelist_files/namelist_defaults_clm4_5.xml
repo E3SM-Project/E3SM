@@ -44,6 +44,12 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- twowayirrigation default -->
 <tw_irr>.false.</tw_irr>
 
+<!-- extra gw pumping for irrigation default -->
+<extra_gw_irr>.false.</extra_gw_irr>
+
+<!-- firrig from surface data default -->
+<firrig_data>.false.</firrig_data>
+
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
 <suplnitro use_fates=".true." >NONE</suplnitro>
