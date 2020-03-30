@@ -32,45 +32,29 @@ void Functions<S,D>
    const auto qr_ge_qsmall = qr >= qsmall;
    const auto not_qr_ge_qsmall = ! qr_ge_qsmall;
 
-   qc_incld.set(qc_ge_qsmall,
-                qc*inv_lcldm);
-   nc_incld.set(qc_ge_qsmall,
-                pack::max(nc*inv_lcldm,sp(0)));
+   qc_incld.set(qc_ge_qsmall, qc*inv_lcldm);
+   nc_incld.set(qc_ge_qsmall, pack::max(nc*inv_lcldm, 0));
 
-   qc_incld.set(not_qc_ge_qsmall,
-                sp(0));
-   nc_incld.set(not_qc_ge_qsmall,
-                sp(0));
+   qc_incld.set(not_qc_ge_qsmall, 0);
+   nc_incld.set(not_qc_ge_qsmall, 0);
 
-   qitot_incld.set(qitot_ge_qsmall,
-                   qitot*inv_icldm);
-   nitot_incld.set(qitot_ge_qsmall,
-                   pack::max(nitot*inv_icldm, sp(0)));
+   qitot_incld.set(qitot_ge_qsmall, qitot*inv_icldm);
+   nitot_incld.set(qitot_ge_qsmall, pack::max(nitot*inv_icldm, 0));
 
-   qitot_incld.set(not_qitot_ge_qsmall,
-                  sp(0));
-   nitot_incld.set(not_qitot_ge_qsmall,
-                  sp(0));
+   qitot_incld.set(not_qitot_ge_qsmall, 0);
+   nitot_incld.set(not_qitot_ge_qsmall, 0);
 
-   qirim_incld.set(qitot_and_qirim_ge_qsmall,
-                   qirim*inv_icldm);
-   birim_incld.set(qitot_and_qirim_ge_qsmall,
-                   pack::max(birim*inv_lcldm, sp(0)));
+   qirim_incld.set(qitot_and_qirim_ge_qsmall, qirim*inv_icldm);
+   birim_incld.set(qitot_and_qirim_ge_qsmall, pack::max(birim*inv_lcldm, 0));
 
-   qirim_incld.set(not_qitot_and_qirim_ge_qsmall,
-                   sp(0));
-   birim_incld.set(not_qitot_and_qirim_ge_qsmall,
-                   sp(0));
+   qirim_incld.set(not_qitot_and_qirim_ge_qsmall, 0);
+   birim_incld.set(not_qitot_and_qirim_ge_qsmall, 0);
 
-   qr_incld.set(qr_ge_qsmall,
-                qr*inv_rcldm);
-   nr_incld.set(qr_ge_qsmall,
-                pack::max(nr*inv_rcldm, sp(0)));
+   qr_incld.set(qr_ge_qsmall, qr*inv_rcldm);
+   nr_incld.set(qr_ge_qsmall, pack::max(nr*inv_rcldm, 0));
 
-   qr_incld.set(not_qr_ge_qsmall,
-                sp(0));
-   nr_incld.set(not_qr_ge_qsmall,
-                sp(0));
+   qr_incld.set(not_qr_ge_qsmall, 0);
+   nr_incld.set(not_qr_ge_qsmall, 0);
 
    const auto any_gt_limit = (qc_incld > incloud_limit) || (qitot_incld > incloud_limit) || (qr_incld > precip_limit)
                           || (birim_incld > incloud_limit);
