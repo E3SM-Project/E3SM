@@ -184,6 +184,9 @@ module radiation
    ! this mean?)
    integer, public, allocatable :: tot_chnk_till_this_prc(:,:,:)
 
+   ! indices to pbuf fields
+   integer :: cldfsnow_idx = 0 
+
    !============================================================================
 
 contains
@@ -455,7 +458,6 @@ contains
       integer :: history_budget_histfile_num ! output history file number for budget fields
       integer :: err
       integer :: dtime  ! time step
-      integer :: cldfsnow_idx = 0 
 
       logical :: use_SPCAM  ! SPCAM flag
 
@@ -1088,25 +1090,12 @@ contains
       use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
-<<<<<<< HEAD
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_optical_props, only: ty_optical_props, &
-                                  ty_optical_props_1scl
-=======
->>>>>>> upstream/master
       use mo_fluxes_byband, only: ty_fluxes_byband
 
       ! CAM history module provides subroutine to send output data to the history
       ! buffer to be aggregated and written to disk
       use cam_history, only: outfld
 
-<<<<<<< HEAD
-      ! CAM optical properties; includes cam_optics_type class for holding optical
-      ! properties, and subroutines to get CAM aerosol and cloud optical properties
-      ! via CAM parameterizations
-      use cam_optics, only: cam_optics_type
-      use physconst, only: cpair, stebol, pi
-=======
       use radiation_state, only: set_rad_state
       use radiation_utils, only: clip_values
       use cam_control_mod, only: aqua_planet
@@ -1115,7 +1104,7 @@ contains
                             get_cloud_optics_lw, sample_cloud_optics_lw, &
                             set_aerosol_optics_sw
       use aer_rad_props, only: aer_rad_props_lw
->>>>>>> upstream/master
+      use physconst, only: pi
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1192,6 +1181,10 @@ contains
       ! Gas volume mixing ratios
       real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr
 
+      ! Latitude and longitude arrays for extra debugging information when
+      ! things go wrong
+      real(r8), dimension(pcols) :: lat, lon
+
       ! Needed for shortwave aerosol; TODO: remove this dependency
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
@@ -1201,7 +1194,7 @@ contains
       logical :: conserve_energy = .true.
 
       ! Number of columns
-      integer :: ncol
+      integer :: ncol, icol
 
       ! For loops over diagnostic calls
       integer :: icall
@@ -1212,6 +1205,8 @@ contains
 
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
+
+      real(r8), target, dimension(pcols,pver) :: zeros
 
 
       !----------------------------------------------------------------------
@@ -1226,24 +1221,30 @@ contains
 
       ! Get fields from pbuf for optics
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
       call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
       call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
       call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
       call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
       call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
+      ! May or may not have snow properties depending on microphysics
+      if (cldfsnow_idx > 0) then
+         call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+      else
+         zeros = 0
+         cldfsnow => zeros
+         icswp => zeros
+         des => zeros
+      end if
 
       ! Initialize clearsky-heating rates to make sure we do not get garbage
       ! for columns beyond ncol or nday
       qrsc(:,:) = 0
       qrlc(:,:) = 0
 
-<<<<<<< HEAD
-=======
       if (radiation_do('sw') .or. radiation_do('lw')) then
          ! Make copies of state variables because we may need to modify in-place, and because we need
          ! to add a level above model top to account for heating
@@ -1253,20 +1254,27 @@ contains
             pmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1) &
          )
 
-         ! Make sure temperatures are within range for aqua planets
-         if (aqua_planet) then
-            call clip_values( &
-               tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               varname='tmid', warn=.true. &
-            )
-            call clip_values( &
-               tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               varname='tint', warn=.true. &
-            )
-         end if
+         ! Check temperatures to make sure they are within the bounds of the
+         ! absorption coefficient look-up tables. If out of bounds, optionally clip
+         ! values to min/max specified (depending on value of
+         ! rrtmgp_clip_temperatures)
+         do icol = 1,ncol
+            lat(icol) = state%lat(icol) * 180._r8 / pi
+            lon(icol) = state%lon(icol) * 180._r8 / pi
+         end do
+         call t_startf('rrtmgp_check_temperatures')
+         call check_range( &
+            tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+            trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
+         )
+         call check_range( &
+            tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+            trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
+         )
+         call t_stopf('rrtmgp_check_temperatures')
+
       end if
      
->>>>>>> upstream/master
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
 
@@ -1471,14 +1479,8 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_utils, only: calculate_heating_rate, clip_values
-<<<<<<< HEAD
-      use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
-      use physconst, only: pi
-      use cam_control_mod, only: aqua_planet
-=======
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             compress_optics_sw, set_aerosol_optics_sw
->>>>>>> upstream/master
 
       ! Inputs
       integer, intent(in) :: ncol
@@ -1525,7 +1527,7 @@ contains
       real(r8) :: tsi_scaling
 
       ! Loop indices
-      integer :: iband, iday, icol
+      integer :: iband, iday, icol, igas
 
       ! State fields that are passed into RRTMGP. Some of these may need to
       ! modified from what exist in the physics_state object, i.e. to clip
@@ -1534,11 +1536,6 @@ contains
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day, tint_day
 
       real(r8), dimension(size(active_gases),ncol,pver) :: gas_vmr_day
-      integer :: igas, iday, icol
-
-      ! Latitude and longitude arrays for extra debugging information when
-      ! things go wrong
-      real(r8), dimension(pcols) :: lat, lon
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
@@ -1571,47 +1568,6 @@ contains
          return
       end if
 
-<<<<<<< HEAD
-      ! Populate RRTMGP input variables. Use the day_indices index array to
-      ! map CAM variables on all columns to the daytime-only arrays, and take
-      ! only the ktop:kbot vertical levels (mapping CAM vertical grid to
-      ! RRTMGP vertical grid). Note that we populate the state separately for
-      ! shortwave and longwave, because we need to compress to just the daytime
-      ! columns for the shortwave, but the longwave uses all columns
-      call set_rad_state(state, cam_in, &
-                         tmid(1:nday,1:nlev_rad), & 
-                         tint(1:nday,1:nlev_rad+1), &
-                         pmid(1:nday,1:nlev_rad), &
-                         pint(1:nday,1:nlev_rad+1), &
-                         col_indices=day_indices(1:nday))
-
-      ! Check temperatures to make sure they are within the bounds of the
-      ! absorption coefficient look-up tables
-      do iday = 1,nday
-         icol = day_indices(iday)
-         lat(iday) = state%lat(icol) * 180._r8 / pi
-         lon(iday) = state%lon(icol) * 180._r8 / pi
-      end do
-      call t_startf('rrtmgp_check_temperatures')
-      call check_range( &
-         tmid(1:nday,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
-      )
-      call check_range( &
-         tint(1:nday,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
-      )
-      call t_stopf('rrtmgp_check_temperatures')
-
-
-      ! Get albedo. This uses CAM routines internally and just provides a
-      ! wrapper to improve readability of the code here.
-      call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
-
-      ! Send albedos to history buffer (useful for debugging)
-      call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(1:nswbands,1:ncol)), ncol, state%lchnk)
-      call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse(1:nswbands,1:ncol)), ncol, state%lchnk)
-=======
       ! Compress state to daytime-only
       do iday = 1,nday
          icol = day_indices(iday)
@@ -1619,7 +1575,6 @@ contains
          pmid_day(iday,:) = pmid(icol,:)
          pint_day(iday,:) = pint(icol,:)
       end do
->>>>>>> upstream/master
 
       ! Compress to daytime-only arrays
       do iband = 1,nswbands
@@ -1815,14 +1770,7 @@ contains
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
-      use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
-<<<<<<< HEAD
-      use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
-      use physconst, only: pi
-      use cam_control_mod, only: aqua_planet
-=======
->>>>>>> upstream/master
 
       ! Inputs
       integer, intent(in) :: ncol
@@ -1836,22 +1784,6 @@ contains
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_lw'
 
-<<<<<<< HEAD
-      ! For loops over diagnostic calls (TODO: what does this mean?)
-      logical :: active_calls(0:N_DIAG)
-
-      ! State fields that are passed into RRTMGP. Some of these may need to
-      ! modified from what exist in the physics_state object, i.e. to clip
-      ! temperatures to make sure they are within the valid range.
-      real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
-      real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
-
-      ! Latitude and longitude arrays for extra debugging information when
-      ! things go wrong
-      real(r8), dimension(pcols) :: lat, lon
-
-=======
->>>>>>> upstream/master
       ! Surface emissivity needed for longwave
       real(r8) :: surface_emissivity(nlwbands,ncol)
 
@@ -1860,47 +1792,10 @@ contains
 
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
-<<<<<<< HEAD
-      type(ty_optical_props_1scl) :: aerosol_optics_lw
-      type(ty_optical_props_1scl) :: cloud_optics_lw
-
-      integer :: ncol, icol, icall
-
-      ! Number of physics columns in this "chunk"; used in multiple places
-      ! throughout this subroutine, so set once for convenience
-      ncol = state%ncol
-
-      ! Set rad state variables
-      call set_rad_state(state, cam_in, &
-                         tmid(1:ncol,1:nlev_rad), &
-                         tint(1:ncol,1:nlev_rad+1), &
-                         pmid(1:ncol,1:nlev_rad), &
-                         pint(1:ncol,1:nlev_rad+1))
-
-      ! Check temperatures to make sure they are within the bounds of the
-      ! absorption coefficient look-up tables. If out of bounds, optionally clip
-      ! values to min/max specified (depending on value of
-      ! rrtmgp_clip_temperatures)
-      do icol = 1,ncol
-         lat(icol) = state%lat(icol) * 180._r8 / pi
-         lon(icol) = state%lon(icol) * 180._r8 / pi
-      end do
-      call t_startf('rrtmgp_check_temperatures')
-      call check_range( &
-         tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
-      )
-      call check_range( &
-         tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
-      )
-      call t_stopf('rrtmgp_check_temperatures')
-
-=======
       type(ty_optical_props_1scl) :: aer_optics_lw
       type(ty_optical_props_1scl) :: cld_optics_lw
 
->>>>>>> upstream/master
+
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make

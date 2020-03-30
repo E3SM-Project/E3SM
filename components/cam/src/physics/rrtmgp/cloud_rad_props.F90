@@ -232,54 +232,8 @@ end subroutine cloud_rad_props_init
 
 !==============================================================================
 
-<<<<<<< HEAD
-subroutine get_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
-   type(physics_state), intent(in)   :: state
-   type(physics_buffer_desc),pointer :: pbuf(:)
-
-   ! NOTE: should be nswbands,ncols,pver
-   real(r8),intent(out) :: tau    (nswbands,pcols,pver) ! extinction optical depth
-   real(r8),intent(out) :: tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
-   real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
-   real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
-
-   real(r8), pointer :: iciwpth(:,:), dei(:,:)
-
-   ! Get relevant pbuf fields, and interpolate optical properties from
-   ! the lookup tables.
-   call pbuf_get_field(pbuf, i_iciwp, iciwpth)
-   call pbuf_get_field(pbuf, i_dei,   dei)
-   call interpolate_ice_optics_sw(state%ncol, iciwpth, dei, tau, tau_w, &
-                                  tau_w_g, tau_w_f)
-
-end subroutine get_ice_optics_sw
-
-!==============================================================================
-
-subroutine get_ice_optics_lw(state, pbuf, abs_od)
-   type(physics_state), intent(in)     :: state
-   type(physics_buffer_desc), pointer  :: pbuf(:)
-   real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
-
-   real(r8), pointer :: iciwpth(:,:), dei(:,:)
-
-   ! Get relevant pbuf fields, and interpolate optical properties from
-   ! the lookup tables.
-   call pbuf_get_field(pbuf, i_iciwp, iciwpth)
-   call pbuf_get_field(pbuf, i_dei,   dei)
-   call interpolate_ice_optics_lw(state%ncol,iciwpth, dei, abs_od)
-
-end subroutine get_ice_optics_lw
-
-!==============================================================================
-
-subroutine get_liquid_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
-   type(physics_state), intent(in)   :: state
-   type(physics_buffer_desc),pointer :: pbuf(:)
-=======
 subroutine gammadist_liq_optics_sw(ncol, nlev, iclwpth, lamc, pgam, tau, tau_w, tau_w_g, tau_w_f)
    integer, intent(in) :: ncol, nlev
->>>>>>> upstream/master
 
    ! Inputs have dimension ncol,nlev
    real(r8), intent(in), dimension(:,:) :: lamc, pgam, iclwpth
@@ -327,53 +281,6 @@ subroutine gammadist_liq_optics_lw(ncol, nlev, iclwpth, lamc, pgam, abs_od)
    enddo
 end subroutine gammadist_liq_optics_lw
 
-<<<<<<< HEAD
-end subroutine get_liquid_optics_lw
-
-!==============================================================================
-
-subroutine get_snow_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
-   type(physics_state), intent(in)   :: state
-   type(physics_buffer_desc),pointer :: pbuf(:)
-
-   real(r8),intent(out) :: tau    (nswbands,pcols,pver) ! extinction optical depth
-   real(r8),intent(out) :: tau_w  (nswbands,pcols,pver) ! single scattering albedo * tau
-   real(r8),intent(out) :: tau_w_g(nswbands,pcols,pver) ! assymetry parameter * tau * w
-   real(r8),intent(out) :: tau_w_f(nswbands,pcols,pver) ! forward scattered fraction * tau * w
-
-   real(r8), pointer :: icswpth(:,:), des(:,:)
-
-   ! This does the same thing as get_ice_optics_sw, except with a different
-   ! water path and effective diameter.
-   call pbuf_get_field(pbuf, i_icswp, icswpth)
-   call pbuf_get_field(pbuf, i_des,   des)
-
-   call interpolate_ice_optics_sw(state%ncol, icswpth, des, tau, tau_w, &
-        tau_w_g, tau_w_f)
-
-end subroutine get_snow_optics_sw   
-
-!==============================================================================
-
-subroutine get_snow_optics_lw(state, pbuf, abs_od)
-   type(physics_state), intent(in)    :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   real(r8), intent(out) :: abs_od(nlwbands,pcols,pver)
-
-   real(r8), pointer :: icswpth(:,:), des(:,:)
-
-   ! This does the same thing as ice_cloud_get_rad_props_lw, except with a
-   ! different water path and effective diameter.
-   call pbuf_get_field(pbuf, i_icswp, icswpth)
-   call pbuf_get_field(pbuf, i_des,   des)
-   call interpolate_ice_optics_lw(state%ncol,icswpth, des, abs_od)
-
-end subroutine get_snow_optics_lw
-
-!==============================================================================
-! Private methods
-=======
->>>>>>> upstream/master
 !==============================================================================
 
 subroutine mitchell_ice_optics_sw(ncol, nlev, iciwpth, dei, tau, tau_w, &
