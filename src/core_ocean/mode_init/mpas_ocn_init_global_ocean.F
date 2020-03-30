@@ -850,7 +850,7 @@ contains
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
        type (field1DInteger), pointer :: maxLevelCellField
-       type (field1DReal), pointer :: bottomDepthObservedField
+       type (field1DReal), pointer :: bottomDepthObservedField, bottomDepthField
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
 
@@ -1032,6 +1032,8 @@ contains
        call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
        call mpas_pool_get_field(meshPool, 'maxLevelCell', maxLevelCellField)
        call mpas_dmpar_exch_halo_field(maxLevelCellField)
+       call mpas_pool_get_field(meshPool, 'bottomDepth', bottomDepthField)
+       call mpas_dmpar_exch_halo_field(bottomDepthField)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
