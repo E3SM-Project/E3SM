@@ -445,7 +445,7 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:), pointer, intent(in) :: cellValue  !< value on cells
+      real(kind=RKIND), dimension(:), pointer, intent(out) :: cellValue  !< value on cells
 
       !-----------------------------------------------------------------
       ! local variables
@@ -507,7 +507,7 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:,:), pointer, intent(in) :: cellValue  !< value on cells
+      real(kind=RKIND), dimension(:,:), pointer, intent(out) :: cellValue  !< value on cells
 
       !-----------------------------------------------------------------
       ! local variables
