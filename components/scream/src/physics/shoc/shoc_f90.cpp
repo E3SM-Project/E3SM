@@ -380,8 +380,12 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   {
     std::vector<std::shared_ptr<FortranData> > ics;
     ics.push_back(d);
-    if (gen_plot_scripts)
-      gen_plot_script(ics, "plot_ics.py", "ics");
+    if (gen_plot_scripts) {
+      const char* script_name = "plot_ics.py";
+      const char* pdf_prefix = "ics";
+      fprintf(stderr, "Generating %s...", script_name);
+      gen_plot_script(ics, script_name, pdf_prefix);
+    }
   }
 
   // 3. Run 100 steps, each of size dtime = 10 (as in that method)
@@ -393,8 +397,15 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   {
     std::vector<std::shared_ptr<FortranData> > data;
     data.push_back(d);
-    if (gen_plot_scripts)
-      gen_plot_script(data, "plot_results.py", "results");
+    if (gen_plot_scripts) {
+      const char* script_name = "plot_results.py";
+      const char* pdf_prefix = "results";
+      fprintf(stderr, "Generating %s...", script_name);
+      gen_plot_script(data, script_name, pdf_prefix);
+      fprintf(stderr, "To generate PDFs of initial and final conditions, run\n"
+                      "the plot_*.py python scripts using a Python 3 interpreter\n"
+                      "with numpy and Matplotlib installed.\n");
+    }
   }
 
   // 5. Compare the results
