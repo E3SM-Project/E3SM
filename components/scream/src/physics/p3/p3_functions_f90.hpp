@@ -177,7 +177,7 @@ struct BackToCellAverageData
        qiberg;
 
   // This populates all fields with test data within [0,1].
-  void randomize(); 
+  void randomize();
 };
 
 void back_to_cell_average(BackToCellAverageData& d);
@@ -371,7 +371,7 @@ struct CloudWaterAutoconversionData
 void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
 extern "C"{
 
-  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, 
+  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld,
     Real* qcaut, Real* ncautc, Real* ncautr);
 }
 
@@ -380,8 +380,8 @@ extern "C"{
 
 struct RainSelfCollectionData
 {
-  //inputs 
-  Real rho, qr_incld, nr_incld; 
+  //inputs
+  Real rho, qr_incld, nr_incld;
 
   //output
   Real nrslf;
@@ -398,7 +398,7 @@ extern "C"{
 struct ImposeMaxTotalNiData{
   // inout
   Real nitot_local;
-  
+
   //input
   Real max_total_Ni, inv_rho_local;
 };
@@ -424,7 +424,7 @@ extern "C"{
 
 void ice_melting_f(Real rho,Real t,Real pres,Real rhofaci,Real f1pr05,Real f1pr14,Real xxlv,Real xlf,Real dv,Real sc,Real mu,Real kap,Real qv,Real qitot_incld,Real nitot_incld,Real* qimlt,Real* nimlt);
 }
- 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GetCloudDsd2Data
@@ -739,6 +739,27 @@ void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GetTimeSpacePhysVarsData
+{
+  //Inputs
+  Real t, pres, rho, xxlv, xxls, qvs, qvi;
+
+  //Outs
+  Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+};
+
+void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
+
+extern "C"{
+
+void get_time_space_phys_variables_f(Real t, Real pres, Real rho, Real xxlv, Real xxls, Real qvs, Real qvi,
+				     Real* mu, Real* dv, Real* sc, Real* dqsdt, Real* dqsidt, Real* ab,
+				     Real* abi, Real* kap, Real* eii);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct P3UpdatePrognosticIceData
 {
   // Inputs
@@ -830,10 +851,10 @@ struct IceCldliqCollectionData
   // Inputs
   Real rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld;
   Real nitot_incld, nc_incld;
-  
+
   // Outputs
   Real qccol, nccol, qcshd, ncshdc;
-  
+
 };
 void ice_cldliq_collection(IceCldliqCollectionData& d);
 
