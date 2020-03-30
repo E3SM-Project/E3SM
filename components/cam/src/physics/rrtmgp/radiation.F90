@@ -16,6 +16,8 @@ module radiation
    use cam_abortutils,   only: endrun
    use scamMod,          only: scm_crm_mode, single_column, swrad_off
    use rad_constituents, only: N_DIAG
+   use radconstants,     only: &
+      set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -508,6 +510,10 @@ contains
       ! Likewise for g-points
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
+
+      ! Set values in radconstants
+      call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
+      call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -1083,9 +1089,6 @@ contains
 
       ! For getting radiative constituent gases
       use rad_constituents, only: N_DIAG, rad_cnst_get_call_list
-
-      ! Index to visible channel for diagnostic outputs
-      use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
       use mo_fluxes_byband, only: ty_fluxes_byband
