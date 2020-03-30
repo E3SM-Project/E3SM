@@ -82,7 +82,11 @@ Int check_against_python(const FortranData& d);
 
 int test_FortranData();
 int test_shoc_init(bool use_fortran);
-int test_shoc_ic(bool use_fortran);
+
+// Test SHOC by running initial conditions for a number of steps and comparing
+// against reference data. If gen_plot_scripts is true, Python scripts are
+// emitted that plot initial and final conditions.
+int test_shoc_ic(bool use_fortran, bool gen_plot_scripts = false);
 
 }  // namespace shoc
 }  // namespace scream

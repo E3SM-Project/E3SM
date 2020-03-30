@@ -369,7 +369,7 @@ Int check_against_python(const FortranData& d)
   return nerr;
 }
 
-int test_shoc_ic (bool use_fortran) {
+int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   shoc_init(use_fortran);
   // Here we:
   // 1. Initialize a standard case with settings identical to
@@ -380,7 +380,8 @@ int test_shoc_ic (bool use_fortran) {
   {
     std::vector<std::shared_ptr<FortranData> > ics;
     ics.push_back(d);
-    gen_plot_script(ics, "plot_ics.py", "ics");
+    if (gen_plot_scripts)
+      gen_plot_script(ics, "plot_ics.py", "ics");
   }
 
   // 3. Run 100 steps, each of size dtime = 10 (as in that method)
@@ -392,7 +393,8 @@ int test_shoc_ic (bool use_fortran) {
   {
     std::vector<std::shared_ptr<FortranData> > data;
     data.push_back(d);
-    gen_plot_script(data, "plot_results.py", "results");
+    if (gen_plot_scripts)
+      gen_plot_script(data, "plot_results.py", "results");
   }
 
   // 5. Compare the results

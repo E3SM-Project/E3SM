@@ -29,7 +29,7 @@ TEST_CASE("shoc_init_f", "shoc") {
 }
 
 TEST_CASE("shoc_ic_f", "shoc") {
-  int nerr = scream::shoc::test_shoc_ic(true);
+  int nerr = scream::shoc::test_shoc_ic(true, true);
   REQUIRE(nerr == 0);
 }
 
