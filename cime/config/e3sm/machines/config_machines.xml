@@ -2719,7 +2719,7 @@
     <DESC>small developer workhorse at lbl climate sciences</DESC>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpi-serial,openmpi</MPILIBS>
+    <MPILIBS>mpi-serial</MPILIBS>
     <PROJECT>ngeet</PROJECT>
     <CIME_OUTPUT_ROOT>/home/lbleco/e3sm/</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/lbleco/cesm/cesm_input_datasets/</DIN_LOC_ROOT>

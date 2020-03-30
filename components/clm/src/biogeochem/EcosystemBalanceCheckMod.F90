@@ -431,12 +431,6 @@ contains
             ! calculate total column-level outputs
             col_noutputs(c) = denit(c) + col_fire_nloss(c)
 
-            ! Fluxes to product pools are included in column-level outputs: the product
-            ! pools are not included in totcolc, so are outside the system with respect to
-            ! these balance checks
-            col_noutputs(c) = col_noutputs(c) + &
-                 hrv_deadstemn_to_prod10n(c) + hrv_deadstemn_to_prod100n(c)
-
          end if
          
          ! forest fertilization
@@ -745,8 +739,6 @@ contains
          write(iulog,*)'supplement_to_sminp = ',supplement_to_sminp(c)*dt
          write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
          write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
-         write(iulog,*)'deadstmp = ',hrv_deadstemp_to_prod10p(c)*dt
-         write(iulog,*)'prod100 = ',hrv_deadstemp_to_prod100p(c)*dt
 
          if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
