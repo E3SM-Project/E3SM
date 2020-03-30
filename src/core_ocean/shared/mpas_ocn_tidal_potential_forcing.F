@@ -68,7 +68,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_tidal_potential_forcing_layer_thickness
+!  routine ocn_compute_tidal_potential_forcing
 !
 !> \brief   Computes equilibrium tidal potential 
 !> \author  Steven Brus
