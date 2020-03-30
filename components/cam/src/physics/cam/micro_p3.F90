@@ -3615,6 +3615,7 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    ab     = 1._rtype+dqsdt*xxlv*inv_cp
    abi    = 1._rtype+dqsidt*xxls*inv_cp
    kap    = 1.414e+3_rtype*mu
+
    ! very simple temperature dependent aggregation efficiency
    if (t.lt.253.15_rtype) then
       eii=0.1_rtype

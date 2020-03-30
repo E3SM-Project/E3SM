@@ -16,23 +16,22 @@ void Functions<S,D>
 {
   //time/space varying physical variables
   mu = sp(1.496e-6) * pow(t,sp(1.5))/(t+120);
-  dv = sp(8.794e-5)*pow(t,sp(1.81))/pres;
+  dv = sp(8.794e-5) * pow(t,sp(1.81))/pres;
   sc = mu/(rho*dv);
 
   constexpr Scalar RV     = C::RV;
   constexpr Scalar INV_CP = C::INV_CP;
+  constexpr Scalar tval1  = 253.15;
+  constexpr Scalar tval2  = 268.15;
 
-  const auto dum = 1/(RV*pow(t,2));
+  const auto dum = 1/(RV*square(t));
   dqsdt  = xxlv*qvs*dum;
   dqsidt = xxls*qvi*dum;
   ab     = 1+dqsdt*xxlv*INV_CP;
   abi    = 1+dqsidt*xxls*INV_CP;
   kap    = sp(1.414e+3)*mu;
+
   //very simple temperature dependent aggregation efficiency
-
-  const auto tval1 = 253.15;
-  const auto tval2 = 268.15;
-
   const auto t_lt_tval1 = t < tval1;
   const auto t_lt_tval2 = t < tval2;
 
