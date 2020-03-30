@@ -362,7 +362,7 @@
   <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <BASELINE_ROOT>/global/cfs/cdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
+  <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/global/cfs/cdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>e3sm,acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
