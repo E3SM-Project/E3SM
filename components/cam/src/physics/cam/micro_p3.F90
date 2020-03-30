@@ -71,14 +71,14 @@ module micro_p3
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
        rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
-       lookup_table_1a_dum1_c
+       lookup_table_1a_dum1_c, use_cxx
 
   implicit none
   save
 
   public  :: p3_init,p3_main
 
-  logical :: use_cxx = .true.
+!  logical :: use_cxx = .true.
 
   ! protected items should be treated as private for everyone except tests
 

@@ -97,7 +97,7 @@ REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for c
 real(rtype), parameter :: incloud_limit = 5.1E-3
 real(rtype), parameter :: precip_limit  = 1.0E-2
 
-logical :: use_cxx = .true.
+logical, public :: use_cxx = .true.
 
     contains
 !__________________________________________________________________________________________!
