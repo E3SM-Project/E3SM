@@ -158,7 +158,6 @@ void shoc_main(FortranData& d) {
               d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(),
               d.uw_sec.data(), d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(),
               d.brunt.data());
-printf("%.16g %.16g %.16g %.16g\n", d.host_dse(0, 0), d.tke(0, 0), d.thetal(0, 0), d.shoc_cldfrac(0, 0));
 }
 
 int test_FortranData () {
@@ -230,6 +229,8 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
   FILE* fp = fopen(script_path, "w");
   if (fp != NULL)
   {
+    fprintf(stderr, "Generating %s...", script_path);
+
     // Plotting code, cribbed from scream-docs/shoc-port/shocintr.py.
     const char* plotting_code =
       "import numpy as npy\n"
@@ -299,13 +300,13 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
     fprintf(fp, "%s", plotting_code);
 
     // Write out state data (a list of dicts).
-#define WRITE_FIELD(field) \
-    auto field = array_as_string(d.field); \
-    fprintf(fp, "        '%s': %s,\n", #field, field.c_str())
 
     fprintf(fp, "data = [\n");
     for (size_t i = 0; i < data.size(); ++i)
     {
+#define WRITE_FIELD(field) \
+    auto field = array_as_string(d.field); \
+    fprintf(fp, "        '%s': %s,\n", #field, field.c_str())
       const FortranData& d = *(data[i]);
       fprintf(fp, "    {\n");
       WRITE_FIELD(zt_grid);
@@ -339,15 +340,17 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
       WRITE_FIELD(host_dse);
       WRITE_FIELD(exner);
       fprintf(fp, "    },\n");
+#undef WRITE_FIELD
     }
     fprintf(fp, "]\n\n");
-#undef WRITE_FIELD
 
     // Write the plot call.
     fprintf(fp, "print('Writing %s.pdf...')\n", pdf_prefix);
     fprintf(fp, "plot_basics(data, \"%s\")\n", pdf_prefix);
     fclose(fp);
   }
+  else
+    fprintf(stderr, "Couldn't open %s for writing (skipping).", script_path);
 }
 
 } // end anonymous namespace
@@ -381,10 +384,7 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
     std::vector<std::shared_ptr<FortranData> > ics;
     ics.push_back(d);
     if (gen_plot_scripts) {
-      const char* script_name = "plot_ics.py";
-      const char* pdf_prefix = "ics";
-      fprintf(stderr, "Generating %s...", script_name);
-      gen_plot_script(ics, script_name, pdf_prefix);
+      gen_plot_script(ics, "plot_ics.py", "ics");
     }
   }
 
@@ -392,16 +392,15 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   d->nadv = 100;
   d->dtime = 10;
   shoc_main(*d);
+printf("%.16g %.16g %.16g %.16g\n", d->host_dse(0, 0), d->tke(0, 0),
+       d->thetal(0, 0), d->shoc_cldfrac(0, 0));
 
   // 4. Generate a Python script that plots the results.
   {
     std::vector<std::shared_ptr<FortranData> > data;
     data.push_back(d);
     if (gen_plot_scripts) {
-      const char* script_name = "plot_results.py";
-      const char* pdf_prefix = "results";
-      fprintf(stderr, "Generating %s...", script_name);
-      gen_plot_script(data, script_name, pdf_prefix);
+      gen_plot_script(data, "plot_results.py", "results");
       fprintf(stderr, "To generate PDFs of initial and final conditions, run\n"
                       "the plot_*.py python scripts using a Python 3 interpreter\n"
                       "with numpy and Matplotlib installed.\n");

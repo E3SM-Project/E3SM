@@ -48,12 +48,12 @@ void flip_vertically(Array3& array)
 // Flip all vertical Fortran data.
 void flip_vertically(FortranData& d)
 {
+  flip_vertically(d.thv);
   flip_vertically(d.zt_grid);
   flip_vertically(d.zi_grid);
   flip_vertically(d.pres);
   flip_vertically(d.presi);
   flip_vertically(d.pdel);
-  flip_vertically(d.thv);
   flip_vertically(d.w_field);
   flip_vertically(d.exner);
   flip_vertically(d.host_dse);
@@ -62,10 +62,10 @@ void flip_vertically(FortranData& d)
   flip_vertically(d.qw);
   flip_vertically(d.u_wind);
   flip_vertically(d.v_wind);
-  flip_vertically(d.wthv_sec);
   flip_vertically(d.qtracers);
-  flip_vertically(d.tk);
+  flip_vertically(d.wthv_sec);
   flip_vertically(d.tkh);
+  flip_vertically(d.tk);
   flip_vertically(d.shoc_ql); // TODO: shoc_ql is actually in/out, not out
 }
 
@@ -187,28 +187,29 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
         d.qtracers(i, k, q) = sin(q/3. + 0.1 * zt * 0.2 * (i+1));
         d.wtracer_sfc(i, q) = 0.1 * i;
       }
-
-      // Set surface fluxes and forcings.
-      // (Not clear whether these can be set independent of mesh)
-      d.wthl_sfc[i] = 1e-4;
-      d.wqw_sfc[i] = 1e-6;
-      d.uw_sfc[i] = 1e-2;
-      d.vw_sfc[i] = 1e-4;
     }
+
+    // Set surface fluxes and forcings.
+    // (Not clear whether these can be set independent of mesh)
+    d.wthl_sfc[i] = 1e-4;
+    d.wqw_sfc[i] = 1e-6;
+    d.uw_sfc[i] = 1e-2;
+    d.vw_sfc[i] = 1e-4;
 
     // Compute hydrostatic pressure at cell centers and interfaces.
     compute_column_pressure(i, d.nlev, d.zt_grid, d.pres);
     compute_column_pressure(i, d.nlevi, d.zi_grid, d.presi);
 
-    // Compute pressure differences and the exner functon.
+    // Compute pressure differences and host_dse / exner.
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
       d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
+      d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thetal(i, k) +
+                         consts::gravit * d.zt_grid(i, k);
     }
 
     // Zero out other fields.
     for (Int k = 0; k < nlev; ++k) {
-      d.host_dse(i, k) = 0;
       d.tk(i, k) = 0;
       d.tkh(i, k) = 0;
     }
