@@ -80,8 +80,9 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracers, &
-                                   redi_term1, redi_term2, redi_term3, RediKappa,           &
-                                   slopeTriadUp, slopeTriadDown, kappaRediCell, kappaRediEdge, tend, err)!{{{
+                                   redi_term1, redi_term2, redi_term3, &
+                                   RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer,          &
+                                   kappaRediCell, kappaRediEdge, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -104,6 +105,10 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         slopeTriadUp, slopeTriadDown, &
         tracers, kappaRediEdge !< Input: tracer quantities
+
+      real (kind=RKIND), intent(in) :: dt
+
+      logical,intent(in) :: isActiveTracer
 
       !-----------------------------------------------------------------
       !
@@ -144,8 +149,9 @@ contains
 
       call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
-      call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, zMid, tracers, &
-                                     redi_term1, redi_term2, redi_term3, RediKappa,           &
+      call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
+                                     redi_term1, redi_term2, redi_term3,  &
+                                     RediKappa, dt, isActiveTracer,        &
                                      slopeTriadUp, slopeTriadDown, kappaRediCell, kappaRediEdge, tend, err1)
 
       err = ior(err1, err2)
