@@ -469,7 +469,9 @@
 
    <batch_system MACH="cades" type="slurm" >
          <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+		 <directive>-A {{ project }}</directive>
+      		 <directive>-l nodes={{ num_nodes }}</directive>
+      		 <directive>-env "all"</directive>
          </directives>
          <queues>
            <queue default="true">burst</queue>
