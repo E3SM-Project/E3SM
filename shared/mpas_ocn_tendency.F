@@ -61,6 +61,7 @@ module ocn_tendency
    use ocn_vmix
    use ocn_wetting_drying
    use ocn_tidal_potential_forcing
+   use ocn_vel_tidal_potential
 
    implicit none
    private
@@ -322,31 +323,6 @@ contains
       call ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertAleTransportTop, tend_normalVelocity, err)
 
       !
-      ! velocity tendency: tidal potential (if needed) 
-      !   For RK4, subtract the tidal potential from the zMid array and store in a work array, 
-      !   Then point zMid to work array so the tidal potential terms are included inside the grad computed in ocn_vel_pressure_grad_tend
-      !   zMid is pointed back to the typical value afterward, so the work array is not used in place of zMid elsewhere.
-      !
-      if (config_use_tidal_potential_forcing) then
-        call ocn_compute_tidal_potential_forcing(meshPool, forcingPool, diagnosticsPool, err)
-      end if
-
-      if (config_use_tidal_potential_forcing .and. config_time_integrator == 'RK4') then
-        call mpas_pool_get_array(forcingPool, 'tidalPotentialZMid', tidalPotentialZMid)
-        call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', tidalPotentialEta)
-        call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-        do iCell = 1, nCells
-          do k = 1, maxLevelCell(iCell)
-            tidalPotentialZMid(k,iCell) = zMid(k,iCell) - tidalPotentialEta(iCell) &
-                                        - config_self_attraction_and_loading_beta * zMid(k,iCell)
-          end do 
-        end do
-
-        call mpas_pool_get_array(forcingPool, 'tidalPotentialZMid', zMid)
-      end if
-
-      !
       ! velocity tendency: pressure gradient
       !
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
@@ -362,10 +338,14 @@ contains
               inSituThermalExpansionCoeff,inSituSalineContractionCoeff)
       endif
 
-      if (config_use_tidal_potential_forcing .and. config_time_integrator == 'RK4') then
-        ! point zMid back to usual array, to be safe
-        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      end if
+      !
+      ! velocity tendency: tidal potential (if needed) 
+      !
+      call ocn_compute_tidal_potential_forcing(meshPool, forcingPool, diagnosticsPool, err)
+      if (config_time_integrator == 'RK4') then
+        ! for split explicit, tidal forcing is added in barotropic subsycles
+        call ocn_vel_tidal_potential_tend(meshPool, forcingPool, ssh, tend_normalVelocity, err) 
+      endif
 
       !
       ! velocity tendency: del2 dissipation, \nu_2 \nabla^2 u
