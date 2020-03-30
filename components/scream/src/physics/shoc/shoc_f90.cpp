@@ -355,7 +355,7 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
 Int check_against_python(const FortranData& d)
 {
   Int nerr = 0;
-  if (not util::is_single_precision<Real>::value) {
+  if (util::is_double_precision<Real>::value) {
     const double tol = 10 * std::numeric_limits<double>::epsilon();
     if (util::reldif<double>(d.host_dse(0, 0), 359403.8686805374) > tol)
       ++nerr;
