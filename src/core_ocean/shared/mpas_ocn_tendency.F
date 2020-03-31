@@ -60,7 +60,6 @@ module ocn_tendency
    use ocn_vel_forcing
    use ocn_vmix
    use ocn_wetting_drying
-   use ocn_tidal_potential_forcing
    use ocn_vel_tidal_potential
 
    implicit none
