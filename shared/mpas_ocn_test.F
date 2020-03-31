@@ -335,6 +335,7 @@ contains
       c1 = R*(1-exp(-zBot/L))/(exp(zBot/L) - exp(-zBot/L))
       c2 = R-c1
 
+      !$omp parallel
       !$omp do schedule(runtime) private(k, zTop)
       do iCell = 1, nCells
 
@@ -357,6 +358,7 @@ contains
 
       end do
       !$omp end do
+      !$omp end parallel
 
       !$omp barrier
       !$omp master

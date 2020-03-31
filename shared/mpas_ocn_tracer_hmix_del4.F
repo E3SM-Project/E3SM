@@ -182,6 +182,7 @@ contains
       nCells = nCellsArray( 2 )
 
       ! first del2: div(h \nabla \phi) at cell center
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
         delsq_tracer(:, :, iCell) = 0.0_RKIND
@@ -205,11 +206,13 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
       ! Only need tendency on owned cells
       nCells = nCellsArray( 1 )
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
@@ -232,6 +235,7 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
       !$omp barrier
       !$omp master
