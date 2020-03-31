@@ -154,6 +154,7 @@ contains
       !$omp end master
       !$omp barrier
 
+      !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! TODO: should only apply to floating land ice, once wetting/drying is supported

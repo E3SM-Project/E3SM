@@ -136,7 +136,10 @@ contains
 
       density_ice = rho_ice
 
-      !$omp do schedule(runtime)
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(iCell, maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, &
+      !$omp         energyChange, temperatureChange, thicknessChange, iceThicknessChange, iTracer)
       do iCell = 1, nCellsSolve ! Check performance of these two loop definitions
 !     do iCell = nCellsSolve, 1, -1
          maxLevel = min(maxLevelCell(iCell), verticalLevelCap)
@@ -242,6 +245,7 @@ contains
          end if
       end do
       !$omp end do
+      !$omp end parallel
 
       deallocate(iceTracer)
 
