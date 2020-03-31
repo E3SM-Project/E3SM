@@ -7370,6 +7370,12 @@ Radius of Earth [m].
 Default: set to shr_const value
 </entry>
 
+<entry id="omega" type="real" category="physconst"
+       group="physconst_nl" valid_values="" >
+Earth Rotation rate [m/s].
+Default: set to shr_const value
+</entry>
+
 <entry id="gravit" type="real" category="physconst"
        group="physconst_nl" valid_values="" >
 Acceleration of gravity [m/s**2].

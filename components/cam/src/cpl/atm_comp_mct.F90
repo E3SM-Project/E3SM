@@ -51,7 +51,7 @@ module atm_comp_mct
   use cam_logfile      , only: iulog
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
-  use scamMod          , only: single_column,scmlat,scmlon
+  use scamMod          , only: single_column,scmlat,scmlon,iop_mode
 
 !
 ! !PUBLIC TYPES:
@@ -259,6 +259,7 @@ CONTAINS
             aqua_planet=aqua_planet,                                                  &
             brnch_retain_casename=brnch_retain_casename,                              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
+            iop_mode=iop_mode,                                                        &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
             lnd_present=lnd_present, ocn_present=ocn_present,                         & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
@@ -288,7 +289,7 @@ CONTAINS
        !
        filein = "atm_in" // trim(inst_suffix)
        call read_namelist(single_column_in=single_column, scmlat_in=scmlat, &
-            scmlon_in=scmlon, nlfilename_in=filein)
+            scmlon_in=scmlon, iop_mode_in=iop_mode, nlfilename_in=filein)
        !
        ! Initialize cam time manager
        !

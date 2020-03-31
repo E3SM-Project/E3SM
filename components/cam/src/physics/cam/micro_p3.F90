@@ -3574,7 +3574,7 @@ t,pres,rho,xxlv,xxls,qvs,qvi, &
 mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: cxx_pow, cxx_sqrt
+    use micro_p3_iso_f, only: get_time_space_phys_variables_f, cxx_pow, cxx_sqrt
 #endif
 
    implicit none
@@ -3597,6 +3597,13 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    real(rtype), intent(out) :: eii
 
    real(rtype) :: dum
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call get_time_space_phys_variables_f(t,pres,rho,xxlv,xxls,qvs,qvi, &
+           mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
+      return
+   endif
+#endif
 
    !time/space varying physical variables
    mu     = 1.496e-6_rtype*bfb_pow(t,1.5_rtype)/(t+120._rtype)
@@ -3608,6 +3615,7 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    ab     = 1._rtype+dqsdt*xxlv*inv_cp
    abi    = 1._rtype+dqsidt*xxls*inv_cp
    kap    = 1.414e+3_rtype*mu
+
    ! very simple temperature dependent aggregation efficiency
    if (t.lt.253.15_rtype) then
       eii=0.1_rtype

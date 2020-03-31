@@ -481,6 +481,14 @@ struct Functions
 
   // TODO (comments)
   KOKKOS_FUNCTION
+  static void get_time_space_phys_variables(const Spack& t, const Spack& pres, const Spack& rho,
+					    const Spack& xxlv, const Spack& xxls,
+					    const Spack& qvs, const Spack& qvi, Spack& mu,
+					    Spack& dv, Spack& sc, Spack& dqsdt, Spack& dqsidt,
+					    Spack& ab, Spack& abi, Spack& kap, Spack& eii);
+
+  // TODO (comments)
+  KOKKOS_FUNCTION
   static void ice_cldliq_collection(const Spack& rho, const Spack& temp,
                                     const Spack& rhofaci, const Spack& f1pr04,
                                     const Spack& qitot_incld, const Spack& qc_incld,
@@ -612,6 +620,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_ice_sed_impl.hpp"
 # include "p3_functions_rain_sed_impl.hpp"
 # include "p3_functions_rain_imm_freezing_impl.hpp"
+# include "p3_functions_get_time_space_phys_variables_impl.hpp"
 # include "p3_functions_evaporate_sublimate_precip_impl.hpp"
 # include "p3_functions_update_prognostics_impl.hpp"
 # include "p3_functions_ice_collection_impl.hpp"

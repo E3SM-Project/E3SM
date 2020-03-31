@@ -591,6 +591,17 @@
       <grid name="wav">null</grid>
       <mask>oRRS15to5</mask>
     </model_grid>
+
+    <model_grid alias="r0125_r0125_oRRS18to6v3" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">r0125</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <!--  spectral element grids -->
 
     <model_grid alias="ne4_oQU480">
@@ -2346,6 +2357,7 @@
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
       <file grid="atm" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
       <file grid="lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
+      <file grid="atm" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>

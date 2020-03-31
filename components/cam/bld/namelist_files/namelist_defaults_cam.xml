@@ -1433,6 +1433,9 @@
 <!-- iop dataset for SCAM mode -->
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
 
+<!-- IOP mode -->
+<omega iop_mode="1">0.D0</omega> 
+
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>

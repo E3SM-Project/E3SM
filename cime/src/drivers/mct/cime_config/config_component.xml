@@ -1141,6 +1141,15 @@
     <file>env_build.xml</file>
     <desc>grid mask - DO NOT EDIT (for experts only)</desc>
   </entry>
+  
+  <entry id="IOP_MODE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Propogate a single point to the global grid  - DO NOT EDIT (for experts only)</desc>
+  </entry>  
 
   <entry id="PTS_MODE">
     <type>logical</type>

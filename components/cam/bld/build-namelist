@@ -633,6 +633,12 @@ if ($scam) {
     }
 }
 
+# IOP mode
+my $iop_mode = $cfg->get('iop_mode');
+if ($iop_mode) {
+    add_default($nl, 'omega');
+}
+
 ######################################
 # namelist group: seq_timemgr_inparm #
 ######################################
