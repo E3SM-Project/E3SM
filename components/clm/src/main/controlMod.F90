@@ -274,6 +274,7 @@ contains
          budget_ann, budget_ltann, budget_ltend
 	
 	namelist /clm_inparm/use_downscaling_to_topounit
+    namelist /clm_inparm/precip_downscaling_method
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -836,6 +837,7 @@ contains
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
     write(iulog,*) '    use_downscaling_to_topounit = ', use_downscaling_to_topounit
+    write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
     !write(iulog,*) '    Maximum number of topounits per grid = ', max_topounits
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'

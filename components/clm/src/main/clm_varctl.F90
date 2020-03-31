@@ -309,7 +309,7 @@ module clm_varctl
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
   logical, public :: use_downscaling_to_topounit  = .false.
-!  logical, public :: use_multiple_topounits  = .false.
+  character(len=32), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
 
   !----------------------------------------------------------
   ! VSFM switches
