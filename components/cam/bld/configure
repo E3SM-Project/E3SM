@@ -172,6 +172,10 @@ OPTIONS
      -e3smreplay        Configure E3SM to generate an IOP file that can be used to drive the SCM.
                         This switch only works with the Spectral Element dycore.		
      -scam              Compiles model in single column mode.  Only works with SE dycore.
+     
+  Options relevent to IOP mode:
+  
+     -iop_mode        
 
   CAM parallelization:
 
@@ -379,6 +383,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
+    "iop_mode"                  => \$opts{'iop_mode'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -1288,6 +1293,23 @@ EOF
 }
 
 if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# IOP Mode
+if (defined $opts{'iop_mode'}) {
+    $cfg_ref->set('iop_mode', 1);
+}
+my $iop_mode = $cfg_ref->get('iop_mode') ? "ON" : "OFF";
+
+# Currently only Spectral Element dycores support IOP mode
+if ($iop_mode eq 'ON' and $dyn_pkg ne 'se') {
+    die <<"EOF";
+**  ERROR: IOP mode only works with Spectral Element dycore.
+**         Requested dycore is: $dyn_pkg
+EOF
+}
+
+if ($print>=2) { print "IOP mode: $iop_mode$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP

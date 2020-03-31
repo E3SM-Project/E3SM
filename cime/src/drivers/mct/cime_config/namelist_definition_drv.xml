@@ -1470,6 +1470,20 @@
       <value>$EPS_OAREA</value>
     </values>
   </entry>
+  
+  <entry id="iop_mode" modify_via_xml="IOP_MODE">
+    <type>logical</type>
+    <category>seq_infodata_inparm</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      turns on Intensive Observation Period (IOP) mode, a planet covered 
+      with homogenous surface and forced identically with a forcing file,
+      set by IOP_MODE in env_case.xml, default: false
+    </desc>
+    <values>
+      <value>$IOP_MODE</value>
+    </values>
+  </entry>  
 
   <entry id="single_column" modify_via_xml="PTS_MODE">
     <type>logical</type>
