@@ -56,7 +56,6 @@ module ocn_forward_mode
    use ocn_surface_land_ice_fluxes
    use ocn_frazil_forcing
    use ocn_tidal_forcing
-   use ocn_tidal_potential_forcing
    use ocn_vel_tidal_potential
 
    use ocn_tracer_hmix
@@ -212,8 +211,6 @@ module ocn_forward_mode
       call ocn_tidal_forcing_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_tidal_potential_forcing_init(domain,err_tmp)
-      ierr = ior(ierr, err_tmp)
-      call ocn_vel_tidal_potential_init(err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)
