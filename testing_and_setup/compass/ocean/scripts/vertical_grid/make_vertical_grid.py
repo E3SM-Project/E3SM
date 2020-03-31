@@ -1,12 +1,17 @@
 #!/usr/bin/env python
-'''
-This script creates the vertical grid for MPAS-Ocean and writes it to a netcdf file.
-'''
+"""
+This script creates the vertical grid for MPAS-Ocean and writes it to a netcdf
+file.
+"""
 # import modules
 # {{{
 from netCDF4 import Dataset
 import numpy as np
 import argparse
+from scipy.optimize import root_scalar
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 # }}}
 
 
@@ -26,7 +31,7 @@ def main():
         action='store_true')
     parser.add_argument(
         '-bd', '--bottom_depth', dest='bottom_depth',
-        default=5000,
+        default=5000.0,
         help='bottom depth for the chosen vertical coordinate [m]',
         type=float)
     parser.add_argument(
@@ -44,107 +49,81 @@ def main():
         default=250.0,
         help='Target maximum thickness in column [m]',
         type=float)
-    parser.add_argument(
-        '-eps', '--error_tolerance', dest='epsilon',
-        default=1e-2,
-        help='Threshold for iterations', type=float)
-    parser.add_argument(
-        '-maxit',
-        '--max_iterations',
-        dest='maxit',
-        default=1000,
-        help='maximum number of iterations for grid convergences',
-        type=int)
     args = parser.parse_args()
 
     create_vertical_grid(args.bottom_depth, args.nz, args.dz1,
                          args.dz2, args.plot_vertical_grid,
-                         maxit=args.maxit, epsilon=args.epsilon,
-                         outFile=args.output_filename_name)
+                         outfile=args.output_filename_name)
 # }}}
 
 
-def create_vertical_grid(
-        bottom_depth,
-        nz,
-        dz1_in,
-        dz2_in,
-        plot_vertical_grid,
-        maxit,
-        epsilon,
-        outFile):
+def create_vertical_grid(bottom_depth=5000.0, nz=64, dz1_in=2.0, dz2_in=250.0,
+                         plot_vertical_grid=False,
+                         outfile='MPAS-Ocean_vertical_grid.nc'):
     # {{{
+    """
+    This function creates the vertical grid for MPAS-Ocean and writes it to a
+    NetCDF file.
+
+    Parameters
+    ----------
+
+    bottom_depth : float, optional
+        bottom depth for the chosen vertical coordinate [m]
+
+    nz : int, optional
+        Number of vertical levels for the grid
+
+    dz1_in : float, optional
+        Target thickness of the first layer [m]
+
+    dz2_in : float, optional
+        Target maximum thickness in column [m]
+
+    plot_vertical_grid : bool, optional
+        Whether to plot the vertical grid
+
+    outfile : str, optional
+        MPAS file name for output of vertical grid
+    """
+
     print('Creating mesh with ', nz, ' layers...')
     dz1 = dz1_in
     dz2 = dz2_in
     # open a new netCDF file for writing.
-    ncfile = Dataset(outFile, 'w')
+    ncfile = Dataset(outfile, 'w')
     # create the depth_t dimension.
     ncfile.createDimension('nVertLevels', nz)
 
     refBottomDepth = ncfile.createVariable(
-        'refBottomDepth', np.dtype('float64').char, ('nVertLevels'))
+        'refBottomDepth', np.dtype('float64').char, ('nVertLevels',))
     refMidDepth = ncfile.createVariable(
-        'refMidDepth', np.dtype('float64').char, ('nVertLevels'))
+        'refMidDepth', np.dtype('float64').char, ('nVertLevels',))
     refLayerThickness = ncfile.createVariable(
-        'refLayerThickness', np.dtype('float64').char, ('nVertLevels'))
+        'refLayerThickness', np.dtype('float64').char, ('nVertLevels',))
 
-    Hmax = bottom_depth
-    nLayers = 0
+    # the bracket here is large enough that it should hopefully encompass any
+    # reasonable value of delta, the characteristic length scale over which
+    # dz varies.  The args are passed on to the match_bottom function below,
+    # and the root finder will determine a value of delta (sol.root) such that
+    # match_bottom is within a tolerance of zero, meaning the bottom of the
+    # coordinate computed by cumsum_z hits bottom_depth almost exactly
+    sol = root_scalar(match_bottom, method='brentq',
+                      bracket=[dz1, 10*bottom_depth],
+                      args=(nz, dz1, dz2, bottom_depth))
 
-    layerThickness = np.zeros(nz)
-    dz = [epsilon]
-    z = [0]
-    count = 0
-
-    while nLayers != nz and count < maxit:
-        zval = -epsilon
-        dz = [epsilon]
-        z = [0]
-        nLayers = 0
-        while zval > -Hmax:
-            difference = dz_z(zval, Hmax, epsilon, dz2) - zval
-            while abs(difference) > 0.3:
-                zval -= epsilon
-                difference = dz_z(zval, Hmax, epsilon, dz2) - z[nLayers] + zval
-            z.append(zval)
-            dz.append(dz_z(zval, Hmax, epsilon, dz2))
-            nLayers += 1
-            zval -= epsilon
-
-        dz_arr = np.asarray(dz)
-        ind = abs(dz_arr - dz1).argmin()
-
-        dztemp = dz_arr[ind:]
-        nLayers = len(dztemp)
-        change = nz - nLayers
-        dz2 -= float(change)
-        count += 1
-
-    layerThickness[:nLayers] = dztemp
+    delta = sol.root
+    layerThickness, z = cumsum_z(delta, nz, dz1, dz2)
     nVertLevels = nz
-    botDepth = np.zeros(nVertLevels)
-    midDepth = np.zeros(nVertLevels)
-    botDepth[0] = layerThickness[0]
-    midDepth[0] = 0.5 * layerThickness[0]
+    botDepth = -z[1:]
+    midDepth = -0.5*(z[0:-1] + z[1:])
 
-    for i in range(1, nVertLevels):
-        botDepth[i] = botDepth[i - 1] + layerThickness[i]
-        midDepth[i] = midDepth[i - 1] + 0.5 * \
-            (layerThickness[i] + layerThickness[i - 1])
-
-    if count >= maxit:
-        print('Error: grid did not converge, adjust parameters')
-    else:
-        refBottomDepth[:] = botDepth
-        refMidDepth[:] = midDepth
-        refLayerThickness[:] = layerThickness[:nVertLevels]
-        ncfile.close()
+    refBottomDepth[:] = botDepth
+    refMidDepth[:] = midDepth
+    refLayerThickness[:] = layerThickness[:nVertLevels]
+    ncfile.close()
 
     if plot_vertical_grid:
-        import matplotlib
-        import matplotlib.pyplot as plt
-        matplotlib.use('Agg')
         fig = plt.figure()
         fig.set_size_inches(16.0, 8.0)
         zInd = np.arange(1, nVertLevels + 1)
@@ -171,13 +150,13 @@ def create_vertical_grid(
         plt.grid()
 
         txt = \
-            'number layers: ' + str(nz) + '\n' + \
-            'bottom depth requested:  ' + '{:8.2f}'.format(bottom_depth) + '\n' +  \
-            'bottom depth actual:     ' + '{:8.2f}'.format(np.amax(botDepth)) + '\n' +  \
-            'min thickness reqeusted: ' + '{:8.2f}'.format(dz1_in) + '\n' + \
-            'min thickness actual:    ' + '{:8.2f}'.format(np.amin(layerThickness[:])) + '\n' + \
-            'max thickness reqeusted: ' + '{:8.2f}'.format(dz2_in) + '\n' + \
-            'max thickness actual:    ' + '{:8.2f}'.format(np.amax(layerThickness[:]))
+            'number layers: {}\n'.format(nz) + \
+            'bottom depth requested:  {:8.2f}\n'.format(bottom_depth) +  \
+            'bottom depth actual:     {:8.2f}\n'.format(np.amax(botDepth)) +  \
+            'min thickness reqeusted: {:8.2f}\n'.format(dz1_in) + \
+            'min thickness actual:    {:8.2f}\n'.format(np.amin(layerThickness[:])) + \
+            'max thickness reqeusted: {:8.2f}\n'.format(dz2_in) + \
+            'max thickness actual:    {:8.2f}'.format(np.amax(layerThickness[:]))
         print(txt)
         plt.subplot(2, 2, 4)
         plt.text(0, 0, txt, fontsize=12)
@@ -187,8 +166,104 @@ def create_vertical_grid(
 # }}}
 
 
-def dz_z(z, Hmax, epsilon, dzmax):
-    return dzmax * np.tanh(-z * np.pi / Hmax) + epsilon
+def match_bottom(delta, nz, dz1, dz2, bottom_depth):
+    """
+    Compute the difference between the bottom depth computed with the given
+    parameters and the target ``bottom_depth``, used in the root finding
+    algorithm to determine which value of ``delta`` to use.
+
+    Parameters
+    ----------
+    delta : float
+        The characteristic length scale over which dz varies (this parameter
+        will be optimized to hit a target depth in a target number of layers)
+
+    nz : int
+        The number of layers
+
+    dz1 : float
+        The layer thickness at the top of the ocean (z = 0)
+
+    dz2 : float
+        The layer thickness at z --> -infinity
+
+    bottom_depth: float
+        depth of the bottom of the ocean that should match the bottom layer
+        interface.  Note: the bottom_depth is positive, whereas the layer
+        interfaces are negative.
+
+    Returns
+    -------
+    diff : float
+        The computed bottom depth minus the target ``bottom_depth``.  ``diff``
+        should be zero when we have found the desired ``delta``.
+    """
+    _, z = cumsum_z(delta, nz, dz1, dz2)
+    diff = -bottom_depth - z[-1]
+    return diff
+
+
+def cumsum_z(delta, nz, dz1, dz2):
+    """
+    Compute layer interface depths and layer thicknesses over ``nz`` layers
+
+    Parameters
+    ----------
+    delta : float
+        The characteristic length scale over which dz varies (this parameter
+        will be optimized to hit a target depth in a target number of layers)
+
+    nz : int
+        The number of layers
+
+    dz1 : float
+        The layer thickness at the top of the ocean (z = 0)
+
+    dz2 : float
+        The layer thickness at z --> -infinity
+
+    Returns
+    -------
+    dz : numpy.ndarray
+        The layer thicknesses for each layer
+
+    z : numpy.ndarray
+        The depth (positive up) of each layer interface (``nz + 1`` total
+        elements)
+    """
+    dz = np.zeros(nz)
+    z = np.zeros(nz+1)
+    for zindex in range(nz):
+        dz[zindex] = dz_z(z[zindex], dz1, dz2, delta)
+        z[zindex+1] = z[zindex] - dz[zindex]
+    return dz, z
+
+
+def dz_z(z, dz1, dz2, delta):
+    """
+    layer thickness as a funciton of depth
+
+    Parameters
+    ----------
+    z : float
+        Depth coordinate (positive up) at which to find the layer thickness
+
+    dz1 : float
+        The layer thickness at the top of the ocean (z = 0)
+
+    dz2 : float
+        The layer thickness at z --> -infinity
+
+    delta : float
+        The characteristic length scale over which dz varies (this parameter
+        will be optimized to hit a target depth in a target numer of layers)
+
+    Returns
+    -------
+    dz : float
+        The layer thickness
+    """
+    return (dz2 - dz1) * np.tanh(-z * np.pi / delta) + dz1
 
 
 if __name__ == '__main__':
