@@ -898,6 +898,7 @@ contains
           do k = 1, nVertLevels
              if (refBottomDepth(k).gt.config_global_ocean_minimum_depth) then
                 minimum_levels = k
+                exit
              end if
           end do
 
