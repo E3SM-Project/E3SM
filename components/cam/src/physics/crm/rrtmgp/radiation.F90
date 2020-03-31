@@ -1128,7 +1128,8 @@ contains
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: free_optics_sw       , free_optics_lw       , &
                             set_cloud_optics_lw  , set_cloud_optics_sw  , &
-                            set_aerosol_optics_lw, set_aerosol_optics_sw
+                            set_aerosol_optics_lw, set_aerosol_optics_sw, &
+                            do_snow_optics, get_cloud_optics_lw, sample_cloud_optics_lw
 
 #ifdef MODAL_AERO
       use modal_aero_data, only: ntot_amode
@@ -1187,9 +1188,6 @@ contains
       real(r8) :: qrsc(pcols,pver)
       real(r8) :: qrlc(pcols,pver)
 
-      ! Need to set effective radii for single-moment microphysics optics
-      real(r8), pointer :: rel(:,:), rei(:,:)
-
       ! Options for MMF/SP
       logical :: use_MMF
       character(len=16) :: MMF_microphysics_scheme
@@ -1234,7 +1232,11 @@ contains
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrl_all, qrlc_all
 
       ! Pointers to CRM fields on physics buffer
-      real(r8), pointer, dimension(:,:) :: iclwp, iciwp, cld
+      real(r8), pointer, dimension(:,:) :: &
+         cld, cldfsnow, &
+         iclwp, iciwp, icswp, &
+         mu, lambdac, dei, des, rei, rel
+      real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
       real(r8), pointer, dimension(:,:,:,:,:) :: crm_qaerwat, crm_dgnumwet
       real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
@@ -1244,7 +1246,6 @@ contains
 #ifdef MODAL_AERO
       real(r8), dimension(pcols,pver,ntot_amode) :: qaerwat_save, dgnumwet_save
 #endif
-      real(r8), pointer :: dei(:,:)
       real(r8), dimension(pcols,pver) :: dei_save, rei_save, rel_save
 
       ! Arrays to hold gas volume mixing ratios
@@ -1285,12 +1286,16 @@ contains
          cld_optics_sw_col, cld_optics_sw_all
       type(ty_optical_props_1scl) :: &
          aer_optics_lw_col, aer_optics_lw_all, &
-         cld_optics_lw_col, cld_optics_lw_all
+         cld_optics_lw_all
 
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrs_all, qrsc_all
 
       ! Area factor for calculating CRM domain averages
       real(r8), parameter :: area_factor = 1._r8 / (crm_nx_rad * crm_ny_rad)
+
+      ! Working variables for optics
+      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw
+      real(r8), dimension(pcols,pver,nlwgpts) :: cld_tau_gpt_lw
 
       !----------------------------------------------------------------------
 
@@ -1308,35 +1313,39 @@ contains
       ncol_tot = ncol * crm_nx_rad * crm_ny_rad
 
       ! Set flags for MMF/SP
-      call phys_getopts(use_MMF_out           = use_MMF          )
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      call phys_getopts(use_MMF_out=use_MMF)
+      call phys_getopts(MMF_microphysics_scheme_out=MMF_microphysics_scheme)
 
       ! Set pointers to heating rates stored on physics buffer. These will be
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
 
-      ! Set surface emissivity to 1 here. There is a note in the RRTMG
-      ! implementation that this is treated in the land model, but the old
-      ! RRTMG implementation also sets this to 1. This probably does not make
-      ! a lot of difference either way, but if a more intelligent value
-      ! exists or is assumed in the model we should use it here as well.
-      surface_emissivity = 1.0_r8
-
-      ! pbuf fields we need to overwrite with CRM fields to work with optics
+      ! Get pbuf fields
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
       call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
       call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLD'  ), cld  )
-      call pbuf_get_field(pbuf, pbuf_get_index('DEI'  ), dei  )
+      call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
       call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
       call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
+      call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
+      call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
+      ! Snow properties may or may not be present, depending on microphysics
+      if (do_snow_optics()) then
+         call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+      else
+         zeros = 0
+         cldfsnow => zeros
+         icswp => zeros
+         des => zeros
+      end if
 #ifdef MODAL_AERO
       call pbuf_get_field(pbuf, pbuf_get_index('QAERWAT'), qaerwat)
       call pbuf_get_field(pbuf, pbuf_get_index('DGNUMWET'), dgnumwet)
 #endif
-
       ! CRM fields
-      call phys_getopts(use_MMF_out=use_MMF)
       if (use_MMF) then
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t  )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv )
@@ -1347,10 +1356,16 @@ contains
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QAERWAT' ), crm_qaerwat )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_DGNUMWET'), crm_dgnumwet)
 #endif
-
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
       end if
+
+      ! Set surface emissivity to 1 here. There is a note in the RRTMG
+      ! implementation that this is treated in the land model, but the old
+      ! RRTMG implementation also sets this to 1. This probably does not make
+      ! a lot of difference either way, but if a more intelligent value
+      ! exists or is assumed in the model we should use it here as well.
+      surface_emissivity = 1.0_r8
 
       ! Save pbuf things to restore when we are done working with them. This is
       ! needed because the CAM optics routines bury pbuf dependencies down deep
@@ -1427,12 +1442,10 @@ contains
                call handle_error(cld_optics_sw_all%alloc_2str( &
                   ncol_tot, nlev_rad, k_dist_sw, name='cld_optics_sw' &
                ))
-               call handle_error(cld_optics_lw_col%alloc_1scl( &
-                  ncol, nlev_rad, k_dist_lw, name='cld_optics_lw' &
-               ))
                call handle_error(cld_optics_lw_all%alloc_1scl( &
                   ncol_tot, nlev_rad, k_dist_lw, name='cld_optics_lw' &
                ))
+               cld_optics_lw_all%tau = 0
 
                ! Initialize aerosol optics; passing only the wavenumber bounds for each
                ! "band" rather than passing the full spectral discretization object, and
@@ -1553,7 +1566,18 @@ contains
                      ! Do optics; TODO: refactor to take array arguments?
                      if (radiation_do('lw')) then
                         call t_startf('rad_cloud_optics_lw')
-                        call set_cloud_optics_lw(state, pbuf, k_dist_lw, cld_optics_lw_col)
+                        ! Get optics by band
+                        call get_cloud_optics_lw( &
+                           ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
+                           lambdac, mu, dei, des, rei, &
+                           cld_tau_bnd_lw &
+                        )
+                        ! Do MCICA sampling
+                        call sample_cloud_optics_lw( &
+                           ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
+                           state%pmid, cld, cldfsnow, &
+                           cld_tau_bnd_lw, cld_tau_gpt_lw &
+                        )
                         call t_stopf('rad_cloud_optics_lw')
 
                         call t_startf('rad_aerosol_optics_lw')
@@ -1571,11 +1595,11 @@ contains
                         tmid(j,:) = tmid_col(ic,:)
                         pint(j,:) = pint_col(ic,:)
                         tint(j,:) = tint_col(ic,:)
-                        cld_optics_lw_all%tau(j,:,:) = cld_optics_lw_col%tau(ic,:,:)
-                        aer_optics_lw_all%tau(j,:,:) = aer_optics_lw_col%tau(ic,:,:)
+                        cld_optics_lw_all%tau(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
                         cld_optics_sw_all%tau(j,:,:) = cld_optics_sw_col%tau(ic,:,:)
                         cld_optics_sw_all%ssa(j,:,:) = cld_optics_sw_col%ssa(ic,:,:)
                         cld_optics_sw_all%g  (j,:,:) = cld_optics_sw_col%g  (ic,:,:)
+                        aer_optics_lw_all%tau(j,:,:) = aer_optics_lw_col%tau(ic,:,:)
                         aer_optics_sw_all%tau(j,:,:) = aer_optics_sw_col%tau(ic,:,:)
                         aer_optics_sw_all%ssa(j,:,:) = aer_optics_sw_col%ssa(ic,:,:)
                         aer_optics_sw_all%g  (j,:,:) = aer_optics_sw_col%g  (ic,:,:)
@@ -1786,7 +1810,6 @@ contains
                call free_fluxes(fluxes_clrsky)
                call free_fluxes(fluxes_allsky_all)
                call free_fluxes(fluxes_clrsky_all)
-               call free_optics_lw(cld_optics_lw_col)
                call free_optics_lw(cld_optics_lw_all)
                call free_optics_lw(aer_optics_lw_col)
                call free_optics_lw(aer_optics_lw_all)
