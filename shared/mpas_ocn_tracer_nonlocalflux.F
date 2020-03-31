@@ -129,6 +129,7 @@ contains
 
       nCells = nCellsArray( 1 )
 
+      !$omp parallel
       !$omp do schedule(runtime) private(k, iTracer, fluxTopOfCell, fluxBottomOfCell)
       do iCell = 1, nCells
         do k = 2, maxLevelCell(iCell)-1
@@ -159,6 +160,7 @@ contains
 
       end do
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop('non-local flux')
 

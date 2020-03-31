@@ -149,6 +149,7 @@ contains
 
       nCells = nCellsArray( 1 )
 
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux)
       do iCell = 1, nCells
         invAreaCell = 1.0_RKIND / areaCell(iCell)
@@ -161,6 +162,7 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop("thick hadv")
 
