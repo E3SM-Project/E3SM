@@ -788,8 +788,8 @@
       use ice_colpkg_tracers, only: nt_fbri, nt_zbgc_frac, &
                                     ntrcr, nlt_bgc_Nit, tr_bgc_Fe, tr_zaero, &
                                     nlt_bgc_Fed, nlt_zaero, bio_index, tr_bgc_N, &
-                                    nlt_bgc_N
-      use ice_constants_colpkg, only: c0, c1, c2, p5, puny, pi
+                                    nlt_bgc_N, tr_bgc_C, nlt_bgc_DIC
+      use ice_constants_colpkg, only: c0, c1, c2, p5, puny, pi, p1
       use ice_colpkg_shared, only: hi_ssl, dEdd_algae, solve_zbgc, &
                                    R_dFe2dust, dustFe_sol, algal_vel
 
@@ -967,13 +967,15 @@
       real (kind=dbl_kind), parameter :: &
          accuracy = 1.0e-14_dbl_kind, &
          r_c  = 3.0e3_dbl_kind     , & ! ice crystal radius (um)
-         r_bac= 15.0_dbl_kind    , & ! diatom large radius (um)
+         r_bac= 4.7_dbl_kind    , & ! diatom large radius (um)
          r_alg= 10.0_dbl_kind    , & ! diatom small radius (um)
-         N_vol = 0.04e-12_dbl_kind  , & ! (g) Nitrogen per um^3
-         Ng_to_mmol =0.0140067_dbl_kind , & ! (g/mmol) Nitrogen
-         f_s = c1 , &  ! fracton of sites available for saturation
-         f_a = c1 , &  ! fraction of collector available for attachment
-         f_v = 0.7854  ! fraction of algal coverage on area availabel for attachment 4(pi r^2)/(4r)^2  [Johnson et al, 1995, water res. research]
+         Nquota_A = 0.88_dbl_kind, & ! slope in Nitrogen quota to cell volume fit
+                                     ! (Lomas et al. 2019, Edwards et al. 2012)
+         Nquota_I = 0.0408_dbl_kind, & ! Intercept in N quota to cell volume fit
+         f_s = p1, & ! fracton of sites available for saturation
+         f_a = 0.3_dbl_kind, & !c1 , &  ! fraction of collector available for attachment
+         f_v = 0.7854  ! fraction of algal coverage on area availabel for attachment
+                       ! 4(pi r^2)/(4r)^2  [Johnson et al, 1995, water res. research]
 
       integer, parameter :: &
          nt_zfswin = 1    ! for interpolation of short wave to bgrid
@@ -1051,9 +1053,9 @@
       phi_max = maxval(bphin_N(2:nblyr+1))
       S_col   = 4.0_dbl_kind*pi*r_c**2
       P_b     = pi*r_bac**2    !*10-6 for colloids
-      V_c     = 4.0_dbl_kind*pi*r_c**3/3.0_dbl_kind*(1.0e-6_dbl_kind)**3  ! (m^3) sphere
+      V_c     = 4.0_dbl_kind*pi*r_c**3/3.0_dbl_kind  !*(1.0e-6_dbl_kind)**3  (m^3) sphere
       V_alg   = pi/6.0_dbl_kind*r_bac*r_alg**2       ! prolate spheroid (*10-9 for colloids)
-      Sat_conc= f_s*f_a*f_v*(c1-phi_max)/V_c*S_col/P_b*N_vol*V_alg/Ng_to_mmol
+      Sat_conc= f_s*f_a*f_v*(c1-phi_max)/V_c*S_col/P_b*(V_alg)**Nquota_A*Nquota_I * 1.0e9_dbl_kind
       !mmol/m^3 (algae, don, hum...) and umols/m^3 for colloids 
 
       !-----------------------------------------------------------------
@@ -1351,8 +1353,11 @@
 
       do m = 1,nbtrcr
          do k = 1,nblyr+1                  ! back to bulk quantity
-            bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)  
-
+            bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)
+            if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp < -puny) then  ! satisfy DIC demands from ocean
+               flux_bio(m) = flux_bio(m) - bio_tmp
+               bio_tmp = c0
+            end if
             if (m .eq. nlt_bgc_Nit) then
                initcons_mobile(k) = max(c0,(biomat_brine(k,m)-nitrification(k) + &
                   react(k,m))*iphin_N(k)*trcrn(nt_zbgc_frac+m-1))
@@ -2189,14 +2194,14 @@
         do k = 1,n_fep
               reactb(nlt_bgc_Fep(k))= Fep_s (k) - Fep_r (k) 
         enddo
-       endif 
+       endif
        if (tr_bgc_DMS) then
               reactb(nlt_bgc_DMSPd) = DMSPd_s - DMSPd_r
               reactb(nlt_bgc_DMS)   = DMS_s   - DMS_r
        endif
        if (tr_bgc_C) then
-       if (abs(dC) > maxval(reactb(:))*maxval(R_C2N(:))*1.0e-10_dbl_kind .or. &
-          abs(dN) > maxval(reactb(:))*1.0e-10_dbl_kind) then
+       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-10_dbl_kind .or. &
+          abs(dN) > maxval(abs(reactb(:)))*1.0e-10_dbl_kind) then
             conserve_N = .false.
             write(warning, *) 'Conservation error!'
             call add_warning(warning)
