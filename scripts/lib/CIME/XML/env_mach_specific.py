@@ -37,10 +37,8 @@ class EnvMachSpecific(EnvBase):
             nodes = machobj.get_first_child_nodes(item)
             if item == "environment_variables":
                 if len(nodes) == 0:
-                    example_name = "E3SM_ENV_VAR_HELP"
-                    example_text = "User can add specific env vars in this xml section"
-                    empty_env_node = self.make_child("environment_variables")
-                    example_env_node = self.make_child("env", attributes={"name":example_name}, root=empty_env_node, text = example_text)
+                    example_text = """\n  <environment_variables>\n    <env name="NAME">ARGUMENT</env>\n  </environment_variables>\n  """
+                    empty_env_node = self.make_child_comment(text = example_text)
             if item == "run_exe" or item == "run_misc_suffix":
                 if len(nodes) == 0:
                     value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
