@@ -60,13 +60,13 @@ void Functions<S,D>
                           || (birim_incld > incloud_limit);
 
    qc_incld.set(any_gt_limit,
-                pack::max(qc_incld, incloud_limit));
+                pack::min(qc_incld, incloud_limit));
    qitot_incld.set(any_gt_limit,
-                   pack::max(qitot_incld, incloud_limit));
+                   pack::min(qitot_incld, incloud_limit));
    birim_incld.set(any_gt_limit,
-                   pack::max(birim_incld, incloud_limit));
+                   pack::min(birim_incld, incloud_limit));
    qr_incld.set(any_gt_limit,
-                pack::max(qr_incld, precip_limit));
+                pack::min(qr_incld, precip_limit));
 }
 
 } // namespace p3
