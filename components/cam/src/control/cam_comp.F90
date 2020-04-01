@@ -7,6 +7,7 @@ module cam_comp
 !           host of surface components.
 !
 !-----------------------------------------------------------------------
+   use constituents
    use shr_kind_mod,      only: r8 => SHR_KIND_R8, cl=>SHR_KIND_CL, cs=>SHR_KIND_CS
    use pmgrid,            only: plat, plev
    use spmd_utils,        only: masterproc
@@ -216,12 +217,14 @@ subroutine cam_run1(cam_in, cam_out)
 #endif
    use time_manager,     only: get_nstep
 
+
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
 
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
 #endif
+   integer :: iballi,cballi
 !-----------------------------------------------------------------------
 
 #if ( defined SPMD )
@@ -237,6 +240,13 @@ subroutine cam_run1(cam_in, cam_out)
    !----------------------------------------------------------
    call t_barrierf ('sync_stepon_run1', mpicom)
    call t_startf ('stepon_run1')
+   if(pcnst>40) then
+      do iballi = 41,43
+         do cballi = begchunk,endchunk
+            !phys_state(cballi)%q(:,:,iballi) = 0.0_r8
+         enddo
+      enddo
+   endif
    call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
    call t_stopf  ('stepon_run1')
 
@@ -247,6 +257,14 @@ subroutine cam_run1(cam_in, cam_out)
    !
    call t_barrierf ('sync_phys_run1', mpicom)
    call t_startf ('phys_run1')
+   if(pcnst>40) then
+      do iballi = 41,43
+         do cballi = begchunk,endchunk
+            !phys_state(cballi)%q(:,:,iballi) = 0.0_r8
+         enddo
+      enddo
+   endif
+
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
    call t_stopf  ('phys_run1')
 
@@ -273,7 +291,7 @@ subroutine cam_run2( cam_out, cam_in )
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
-
+   integer :: iballi,cballi
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
    type(cam_in_t),  intent(inout) :: cam_in(begchunk:endchunk)
 
@@ -282,6 +300,14 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_phys_run2', mpicom)
    call t_startf ('phys_run2')
+   if(pcnst>40) then
+      do iballi = 41,43
+         do cballi = begchunk,endchunk
+            !phys_state(cballi)%q(:,:,iballi) = 0.0_r8
+         enddo
+      enddo
+   endif
+
    call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in )
    call t_stopf  ('phys_run2')
 
@@ -290,6 +316,14 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_stepon_run2', mpicom)
    call t_startf ('stepon_run2')
+   if(pcnst>40) then
+      do iballi = 41,43
+         do cballi = begchunk,endchunk
+            phys_state(cballi)%q(:,:,iballi) = 0.0_r8
+         enddo
+      enddo
+   endif
+
    call stepon_run2( phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_stopf  ('stepon_run2')
@@ -320,12 +354,21 @@ subroutine cam_run3( cam_out )
 #endif
 
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
+   integer :: iballi,cballi
 !-----------------------------------------------------------------------
    !
    ! Third phase of dynamics
    !
    call t_barrierf ('sync_stepon_run3', mpicom)
    call t_startf ('stepon_run3')
+   if(pcnst>40) then
+      do iballi = 41,43
+         do cballi = begchunk,endchunk
+            !phys_state(cballi)%q(:,:,iballi) = 0.0_r8
+         enddo
+      enddo
+   endif
+
    call stepon_run3( dtime, cam_out, phys_state, dyn_in, dyn_out )
 
    call t_stopf  ('stepon_run3')
