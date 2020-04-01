@@ -9,6 +9,7 @@
 		<option name="config_hurricane_vert_levels">100</option>
 		<option name="config_hurricane_min_depth">10.0</option>
 		<option name="config_hurricane_max_depth">6000.0</option>
+		<option name="config_use_variable_drag">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
@@ -41,6 +42,7 @@
 				<member name="maxLevelCell" type="var"/>
 				<member name="vertCoordMovementWeights" type="var"/>
 				<member name="ssh" type="var"/>
+				<member name="bottomDrag" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
