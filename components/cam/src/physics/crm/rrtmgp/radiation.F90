@@ -1081,6 +1081,20 @@ contains
    ! drivers, and calculates the radiative heating from the resulting fluxes.
    ! Primary output from this routine is the heating tendency due to radiative
    ! transfer, as a ptend object.
+   !
+   ! Notes for MMF:
+   ! We are currently using a separate driver when compiling the code using the
+   ! MMF configuration, and right now this code is quite a bit more complicated
+   ! than it needs to be. The plan with this is to factor pbuf and state objects
+   ! out of the lower-level routines so that we can call most of these routines
+   ! with arbitrary numbers of columns, and then pack the MMF data into arrays
+   ! dimensioned (ncol*crm_nx_rad*crm_ny_rad, nlev, ...). The majority of this
+   ! routine could then be run as-is, with just a "packing" routine at the top,
+   ! and then a domain averaging routine at the end (to get the domain-averaged
+   ! fluxes the non-CRM code expects, like surface fluxes to exchange with the
+   ! surface models). This will expose a lot more parallelism and make the code
+   ! a lot more GPU-friendly, but we still need to refactor the aerosol optics
+   ! code to accomplish this, which is a big task.
    subroutine radiation_tend(state_in,ptend,    pbuf,          cam_out, cam_in,  &
                              landfrac,landm,    icefrac,       snowh,            &
                              fsns,    fsnt,     flns,          flnt,             &
@@ -1282,12 +1296,8 @@ contains
       real(r8) :: tsi_scaling
 
       ! Cloud and aerosol optics
-      type(ty_optical_props_2str) :: &
-         aer_optics_sw_col, aer_optics_sw_all, &
-         cld_optics_sw_col, cld_optics_sw_all
-      type(ty_optical_props_1scl) :: &
-         aer_optics_lw_col, aer_optics_lw_all, &
-         cld_optics_lw_all
+      type(ty_optical_props_2str) :: cld_optics_sw, aer_optics_sw
+      type(ty_optical_props_1scl) :: cld_optics_lw, aer_optics_lw
 
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrs_all, qrsc_all
 
@@ -1295,10 +1305,11 @@ contains
       real(r8), parameter :: area_factor = 1._r8 / (crm_nx_rad * crm_ny_rad)
 
       ! Working variables for optics
-      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw
+      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
       real(r8), dimension(pcols,pver,nlwgpts) :: cld_tau_gpt_lw
       real(r8), dimension(pcols,pver,nswbands) :: &
-         cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw
+         cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
+         aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
       real(r8), dimension(pcols,pver,nswgpts) :: &
          cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
 
@@ -1441,19 +1452,19 @@ contains
                nnight = count(night_indices(1:ncol) > 0)
 
                ! Initialize cloud optics objects
-               call handle_error(cld_optics_sw_col%alloc_2str( &
+               call handle_error(cld_optics_sw%alloc_2str( &
                   ncol, nlev_rad, k_dist_sw, name='cld_optics_sw' &
                ))
-               call handle_error(cld_optics_sw_all%alloc_2str( &
+               call handle_error(cld_optics_sw%alloc_2str( &
                   ncol_tot, nlev_rad, k_dist_sw, name='cld_optics_sw' &
                ))
-               call handle_error(cld_optics_lw_all%alloc_1scl( &
+               call handle_error(cld_optics_lw%alloc_1scl( &
                   ncol_tot, nlev_rad, k_dist_lw, name='cld_optics_lw' &
                ))
-               cld_optics_lw_all%tau = 0
-               cld_optics_sw_all%tau = 0
-               cld_optics_sw_all%ssa = 0
-               cld_optics_sw_all%g   = 0
+               cld_optics_lw%tau = 0
+               cld_optics_sw%tau = 0
+               cld_optics_sw%ssa = 0
+               cld_optics_sw%g   = 0
 
                ! Initialize aerosol optics; passing only the wavenumber bounds for each
                ! "band" rather than passing the full spectral discretization object, and
@@ -1462,22 +1473,18 @@ contains
                ! treatment of aerosol optics in the model, and prevents us from having to
                ! map bands to g-points ourselves since that will all be handled by the
                ! private routines internal to the optics class.
-               call handle_error(aer_optics_sw_all%alloc_2str(              &
+               call handle_error(aer_optics_sw%alloc_2str(              &
                   ncol_tot, nlev_rad, k_dist_sw%get_band_lims_wavenumber(), &
-                  name='aer_optics_sw_all'                                  &
+                  name='aer_optics_sw'                                  &
                ))
-               call handle_error(aer_optics_lw_all%alloc_1scl(          &
+               call handle_error(aer_optics_lw%alloc_1scl(          &
                   ncol_tot, nlev_rad, k_dist_lw%get_band_lims_wavenumber(), &
-                  name='aer_optics_lw_all'                              &
+                  name='aer_optics_lw'                              &
                ))
-               call handle_error(aer_optics_sw_col%alloc_2str(              &
-                  ncol    , nlev_rad, k_dist_sw%get_band_lims_wavenumber(), &
-                  name='aer_optics_sw_col'                                  &
-               ))
-               call handle_error(aer_optics_lw_col%alloc_1scl(          &
-                  ncol    , nlev_rad, k_dist_lw%get_band_lims_wavenumber(), &
-                  name='aer_optics_lw_col'                              &
-               ))
+               aer_optics_lw%tau = 0
+               aer_optics_sw%tau = 0
+               aer_optics_sw%ssa = 0
+               aer_optics_sw%g   = 0
 
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
@@ -1546,18 +1553,14 @@ contains
                      do igas = 1,size(active_gases)
                         ! Get volume mixing ratio for this gas
                         call get_gas_vmr(icall, state, pbuf, trim(active_gases(igas)), vmr_col(igas,1:ncol,ktop:kbot))
-
                         ! Copy top model level to level above model top
                         vmr_col(igas,1:ncol,1) = vmr_col(igas,1:ncol,ktop)
                      end do
                      call t_stopf('rad_gas_concentrations')
 
-                     ! Do shortwave cloud optics calculations
-                     ! TODO: refactor the set_cloud_optics codes to allow passing arrays
-                     ! rather than state/pbuf so that we can use this for superparameterized
-                     ! simulations...or alternatively add logic within the set_cloud_optics
-                     ! routines to handle this.
+                     ! Do shortwave cloud and aerosol optics calculations
                      if (radiation_do('sw')) then
+                        ! Do cloud optics
                         call t_startf('rad_cloud_optics_sw')
                         call get_cloud_optics_sw( &
                            ncol, pver, nswbands, do_snow_optics(), &
@@ -1572,18 +1575,18 @@ contains
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
                         )
                         call t_stopf('rad_cloud_optics_sw')
-
-                        ! Get shortwave aerosol optics
+                        ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_sw')
-                        call set_aerosol_optics_sw(icall, state, pbuf, &
-                                                   night_indices(1:nnight), &
-                                                   is_cmip6_volc, &
-                                                   aer_optics_sw_col)
+                        call set_aerosol_optics_sw( &
+                           icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                           aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
+                        )
                         call t_stopf('rad_aerosol_optics_sw')
                      end if
 
-                     ! Do optics; TODO: refactor to take array arguments?
+                     ! Longwave cloud and aerosol optics
                      if (radiation_do('lw')) then
+                        ! Do cloud optics
                         call t_startf('rad_cloud_optics_lw')
                         call get_cloud_optics_lw( &
                            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
@@ -1596,9 +1599,9 @@ contains
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
                         call t_stopf('rad_cloud_optics_lw')
-
+                        ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_lw')
-                        call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_optics_lw_col)
+                        call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
                         call t_stopf('rad_aerosol_optics_lw')
                      end if
 
@@ -1612,14 +1615,14 @@ contains
                         tmid(j,:) = tmid_col(ic,:)
                         pint(j,:) = pint_col(ic,:)
                         tint(j,:) = tint_col(ic,:)
-                        cld_optics_lw_all%tau(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
-                        cld_optics_sw_all%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
-                        cld_optics_sw_all%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
-                        cld_optics_sw_all%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
-                        aer_optics_lw_all%tau(j,:,:) = aer_optics_lw_col%tau(ic,:,:)
-                        aer_optics_sw_all%tau(j,:,:) = aer_optics_sw_col%tau(ic,:,:)
-                        aer_optics_sw_all%ssa(j,:,:) = aer_optics_sw_col%ssa(ic,:,:)
-                        aer_optics_sw_all%g  (j,:,:) = aer_optics_sw_col%g  (ic,:,:)
+                        cld_optics_lw%tau(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
+                        cld_optics_sw%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
+                        cld_optics_sw%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
+                        cld_optics_sw%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
+                        aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
+                        aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
+                        aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
+                        aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
                         j = j + 1
                      end do  ! ic = 1,ncol
@@ -1653,7 +1656,7 @@ contains
                   coszrs_all(1:ncol_tot), &
                   albedo_direct_all(1:nswbands,1:ncol_tot), &
                   albedo_diffuse_all(1:nswbands,1:ncol_tot), &
-                  cld_optics_sw_all, aer_optics_sw_all, &
+                  cld_optics_sw, aer_optics_sw, &
                   fluxes_allsky_all, fluxes_clrsky_all, tsi_scaling &
                )
                call t_stopf('rad_calculate_fluxes_sw')
@@ -1731,11 +1734,8 @@ contains
                call free_fluxes(fluxes_clrsky_all)
 
                ! Free optical properties
-               call free_optics_sw(cld_optics_sw_all)
-               call free_optics_sw(aer_optics_sw_all)
-               call free_optics_sw(cld_optics_sw_col)
-               call free_optics_sw(aer_optics_sw_col)
-
+               call free_optics_sw(cld_optics_sw)
+               call free_optics_sw(aer_optics_sw)
             else
 
                ! Conserve energy
@@ -1764,7 +1764,7 @@ contains
                   surface_emissivity(1:nlwbands,1:ncol_tot),                    &
                   pmid(1:ncol_tot,1:nlev_rad  ), tmid(1:ncol_tot,1:nlev_rad  ), &
                   pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,1:nlev_rad+1), &
-                  cld_optics_lw_all            , aer_optics_lw_all,             &
+                  cld_optics_lw            , aer_optics_lw,             &
                   fluxes_allsky_all            , fluxes_clrsky_all              &
                )
                call t_stopf('rad_fluxes_lw')
@@ -1826,9 +1826,8 @@ contains
                call free_fluxes(fluxes_clrsky)
                call free_fluxes(fluxes_allsky_all)
                call free_fluxes(fluxes_clrsky_all)
-               call free_optics_lw(cld_optics_lw_all)
-               call free_optics_lw(aer_optics_lw_col)
-               call free_optics_lw(aer_optics_lw_all)
+               call free_optics_lw(cld_optics_lw)
+               call free_optics_lw(aer_optics_lw)
 
             else
 
