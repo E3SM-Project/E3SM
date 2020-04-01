@@ -1140,11 +1140,9 @@ contains
 
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
-      use cam_optics, only: free_optics_sw, free_optics_lw, &
-                            set_aerosol_optics_lw, set_aerosol_optics_sw, &
+      use cam_optics, only: set_aerosol_optics_lw, set_aerosol_optics_sw, & 
                             get_cloud_optics_sw, sample_cloud_optics_sw, &
-                            get_cloud_optics_lw, sample_cloud_optics_lw, &
-                            do_snow_optics
+                            get_cloud_optics_lw, sample_cloud_optics_lw
 
 #ifdef MODAL_AERO
       use modal_aero_data, only: ntot_amode
@@ -1905,7 +1903,6 @@ contains
       use mo_gas_concentrations, only: ty_gas_concs
       use mo_rrtmgp_util_string, only: lower_case
       use mo_rrtmgp_clr_all_sky, only: rte_sw
-      use cam_optics, only: free_optics_sw
 
       character(len=*), intent(in) :: gas_names(:)
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
@@ -2702,6 +2699,27 @@ contains
       if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
    end subroutine free_fluxes
 
+   !----------------------------------------------------------------------------
+
+   subroutine free_optics_sw(optics)
+      use mo_optical_props, only: ty_optical_props_2str
+      type(ty_optical_props_2str), intent(inout) :: optics
+      if (allocated(optics%tau)) deallocate(optics%tau)
+      if (allocated(optics%ssa)) deallocate(optics%ssa)
+      if (allocated(optics%g)) deallocate(optics%g)
+      call optics%finalize()
+   end subroutine free_optics_sw
+
+   !----------------------------------------------------------------------------
+
+   subroutine free_optics_lw(optics)
+      use mo_optical_props, only: ty_optical_props_1scl
+      type(ty_optical_props_1scl), intent(inout) :: optics
+      if (allocated(optics%tau)) deallocate(optics%tau)
+      call optics%finalize()
+   end subroutine free_optics_lw
+
+   !----------------------------------------------------------------------------
 
    subroutine get_gas_vmr(icall, state, pbuf, gas_name, vmr)
 
@@ -2802,6 +2820,36 @@ contains
       end select
 
    end subroutine get_gas_vmr
-   
+
+   !----------------------------------------------------------------------------
+
+   ! Should we do snow optics? Check for existence of "cldfsnow" variable
+   logical function do_snow_optics()
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index
+      use phys_control, only: phys_getopts
+      use cam_abortutils, only: endrun
+      real(r8), pointer :: pbuf(:)
+      integer :: err, idx
+      logical :: use_MMF
+      character(len=16) :: MMF_microphysics_scheme
+
+      idx = pbuf_get_index('CLDFSNOW', errcode=err)
+      if (idx > 0) then
+         do_snow_optics = .true.
+      else
+         do_snow_optics = .false.
+      end if
+
+      ! Reset to false if using MMF with 1-mom scheme
+      call phys_getopts(use_MMF_out           = use_MMF          )
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
+         do_snow_optics = .false.
+      end if
+
+      return
+   end function do_snow_optics
+
+   !----------------------------------------------------------------------------
 
 end module radiation
