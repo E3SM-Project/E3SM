@@ -8,7 +8,6 @@
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
-
 	<get_file dest_path="initial_condition_database" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc">
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
@@ -25,6 +24,7 @@
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
+	<add_link source="../culled_mesh/land_ice_mask.nc" dest="land_ice_mask.nc"/>
     <add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="layer_depth.nc"/>
 	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="salinity.nc"/>
@@ -47,6 +47,7 @@
 	<streams name="streams.ocean" keep="immutable" mode="init">
 		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">
