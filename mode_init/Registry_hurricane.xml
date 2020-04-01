@@ -39,4 +39,24 @@
 			description="Amplitude of sea level rise."
 			possible_values="Any real number."
 		/>
+		<nml_option name="config_hurricane_land_z_limit" type="real" default_value="-2.0" units="m"
+			description="Vertical elevation corresponding to increased drag on land (bottom depth positive)."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_marsh_z_limit" type="real" default_value="2.0" units="m"
+			description="Vertical elevation corresponding to increased drag on marsh (bottom depth positive)."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_land_drag" type="real" default_value="0.1" units="non-dimensional or Manning's n"
+			description="Value of land drag for either Cd or Manning's n above config_land_z_limit."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_marsh_drag" type="real" default_value="0.05" units="non-dimensional or Manning's n"
+			description="Value of marsh drag between config_marsh_z_limit and config_land_z_limit for either Cd or Manning's n."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_channel_drag" type="real" default_value="0.02" units="non-dimensional or Manning's n"
+			description="Value of channel drag below config_marsh_z_limit for either Cd or Manning's n."
+			possible_values="Any real number."
+		/>
 	</nml_record>
