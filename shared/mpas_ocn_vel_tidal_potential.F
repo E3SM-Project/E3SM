@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tidal_potential_forcing
+!  ocn_vel_tidal_potential
 !
 !> \brief MPAS ocean tidal potential forcing module
 !> \author Steven Brus 
@@ -19,7 +19,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_tidal_potential_forcing
+module ocn_vel_tidal_potential
 
    use mpas_kind_types
    use mpas_constants
@@ -47,7 +47,7 @@ module ocn_tidal_potential_forcing
 
    public :: ocn_vel_tidal_potential_tend, &
              ocn_compute_tidal_potential_forcing, &
-             ocn_tidal_potential_forcing_init
+             ocn_vel_tidal_potential_init
 
    !--------------------------------------------------------------------
    !
@@ -271,7 +271,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_tidal_potential_forcing_init
+!  routine ocn_vel_tidal_potential_init
 !
 !> \brief   Initializes ocean tidal protential forcing module.
 !> \author  Steven Brus
@@ -282,7 +282,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tidal_potential_forcing_init(domain,err)!{{{
+   subroutine ocn_vel_tidal_potential_init(domain,err)!{{{
 
       type (domain_type), intent(inout) :: domain
       integer, intent(out) :: err !< Output: error flag
@@ -448,7 +448,7 @@ contains
       end do      
 
 
-   end subroutine ocn_tidal_potential_forcing_init!}}}
+   end subroutine ocn_vel_tidal_potential_init!}}}
 
 
 !***********************************************************************
@@ -754,7 +754,7 @@ contains
 
 !***********************************************************************
 
-end module ocn_tidal_potential_forcing!}}}
+end module ocn_vel_tidal_potential!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
