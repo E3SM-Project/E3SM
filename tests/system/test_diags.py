@@ -130,6 +130,35 @@ class TestAllSets(unittest.TestCase):
                 plev=plev
             )
 
+    def check_enso_map_plots(self, case_id):
+        case_id_lower = case_id.lower()
+        nino_region_lower = 'NINO34'.lower()
+        set_name = 'enso_diags'
+        variables = ['TREFHT']
+        for variable in variables:
+            variable_lower = variable.lower()
+            png_path = '{}/{}/regression-coefficient-{}-over-{}.png'.format(
+                set_name, case_id, variable_lower, nino_region_lower)
+            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+            self.assertTrue(os.path.exists(full_png_path))
+            html_path = '{}viewer/{}/map/{}/plot.html'.format(
+                TestAllSets.results_dir, set_name, case_id_lower)
+            self.check_html_image(html_path, png_path)
+
+    def check_enso_scatter_plots(self, case_id):
+        case_id_lower = case_id.lower()
+        set_name = 'enso_diags'
+        variables = ['TREFHT']
+        for variable in variables:
+            region = 'NINO3'
+            png_path = '{}/{}/feedback-{}-{}-TS-NINO3.png'.format(
+                set_name, case_id, variable, region)
+            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+            self.assertTrue(os.path.exists(full_png_path))
+            html_path = '{}viewer/{}/scatter/{}/plot.html'.format(
+                TestAllSets.results_dir, set_name, case_id_lower)
+            self.check_html_image(html_path, png_path)
+
     # Test results_dir
     def test_results_dir(self):
         self.assertTrue(TestAllSets.results_dir.endswith('all_sets_results_test/'))
@@ -158,35 +187,28 @@ class TestAllSets(unittest.TestCase):
         )
 
     def test_enso_diags_map(self):
-        case_id = 'TREFHT-response'
-        case_id_lower = case_id.lower()
-        nino_region_lower = 'NINO34'.lower()
-        set_name = 'enso_diags'
-        variables = ['TREFHT']
-        for variable in variables:
-            variable_lower = variable.lower()
-            png_path = '{}/{}/regression-coefficient-{}-over-{}.png'.format(
-                set_name, case_id, variable_lower, nino_region_lower)
-            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
-            self.assertTrue(os.path.exists(full_png_path))
-            html_path = '{}viewer/{}/map/{}/plot.html'.format(
-                TestAllSets.results_dir, set_name, case_id_lower)
-            self.check_html_image(html_path, png_path)
+        case_id = 'TREFHT-response-map'
+        self.check_enso_map_plots(case_id)
+
+    def test_enso_diags_map_start_yrs(self):
+        case_id = 'TREFHT-response-map-start-yrs'
+        self.check_enso_map_plots(case_id)
+
+    def test_enso_diags_map_test_ref_yrs(self):
+        case_id = 'TREFHT-response-map-test-ref-yrs'
+        self.check_enso_map_plots(case_id)
 
     def test_enso_diags_scatter(self):
-        case_id = 'TREFHT'
-        case_id_lower = case_id.lower()
-        set_name = 'enso_diags'
-        variables = ['TREFHT']
-        for variable in variables:
-            region = 'NINO3'
-            png_path = '{}/{}/feedback-{}-{}-TS-NINO3.png'.format(
-                set_name, case_id, variable, region)
-            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
-            self.assertTrue(os.path.exists(full_png_path))
-            html_path = '{}viewer/{}/scatter/{}/plot.html'.format(
-                TestAllSets.results_dir, set_name, case_id_lower)
-            self.check_html_image(html_path, png_path)
+        case_id = 'TREFHT-response-scatter'
+        self.check_enso_scatter_plots(case_id)
+
+    def test_enso_diags_scatter_start_yrs(self):
+        case_id = 'TREFHT-response-scatter-start-yrs'
+        self.check_enso_scatter_plots(case_id)
+
+    def test_enso_diags_scatter_test_ref_yrs(self):
+        case_id = 'TREFHT-response-scatter-test-ref-yrs'
+        self.check_enso_scatter_plots(case_id)
 
     def test_lat_lon(self):
         self.check_plots_plevs('lat_lon', 'global', [850.0])
