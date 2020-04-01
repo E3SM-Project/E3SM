@@ -470,7 +470,7 @@
    <batch_system MACH="cades" type="slurm" >
          <directives>
 		 <directive>-A {{ project }}</directive>
-      		 <directive>-l nodes={{ num_nodes }}</directive>
+      		 <directive>-- nodes={{ num_nodes }}</directive>
       		 <directive>-env "all"</directive>
          </directives>
          <queues>
