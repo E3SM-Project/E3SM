@@ -355,7 +355,7 @@ subroutine shoc_main ( &
        shcol,nlev,nlevi,&                   ! Input
        zt_grid,zi_grid,pdel,&               ! Input
        dz_zt,dz_zi,rho_zt)          ! Output
-       
+
     ! Compute the planetary boundary layer height, which is an
     !   input needed for the length scale calculation.
 
@@ -364,13 +364,13 @@ subroutine shoc_main ( &
        wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
        shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
        ustar,kbfs,obklen)                             ! Output
-   
+
     call pblintd(&
        shcol,nlev,nlevi,&                   ! Input
        zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
        qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
        ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
-       pblh)                                ! Output       
+       pblh)                                ! Output
 
     ! Update the turbulent length scale
     call shoc_length(&
@@ -484,7 +484,7 @@ subroutine shoc_main ( &
   ! Remaining code is to diagnose certain quantities
   !  related to PBL.  No answer changing subroutines
   !  should be placed at this point onward.
-  
+
   ! Update PBLH, as other routines outside of SHOC
   !  may require this variable.
   call shoc_diag_obklen(&
@@ -1995,7 +1995,7 @@ subroutine shoc_length(&
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
       shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k))) &
-        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)     
+        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
 
     enddo  ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
