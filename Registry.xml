@@ -369,10 +369,6 @@
       description="If true, the N2 limiting is applied to the horizontal diffusion term"
       possible_values=".true. or .false."
     />
-    <nml_option name="config_Redi_num_smooth_loops" type="integer" default_value="0" units="unitless"
-      description="Number of smoothing passes for vertical gradient in Triads"
-      possiblve_values="small integers, likely 0, 1, or 2"
-    />
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
@@ -2617,6 +2613,10 @@
       description="edge based version of slope tapering"
       packages="forwardMode;analysisMode"
       />
+    <var name="rediLimiterCount" type="integer" dimensions="Time" units="NA"
+      description="count of times redi limiter is invoked on a timestep"
+      packages="forwardMode;analysisMode"
+      />
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 			 packages="forwardMode;analysisMode"
@@ -2706,7 +2706,10 @@
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
-    />
+       />
+    <var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
+      description="index of model where mixed layer depth occurs (always one past)"
+      />
     <var name="rediRossbyRadius" type="real" dimensions="nEdges Time" units="m"
        description="Rossby radius of deformation used to compute Redi limiting near surface"
        packages="forwardMode;analysisMode"
