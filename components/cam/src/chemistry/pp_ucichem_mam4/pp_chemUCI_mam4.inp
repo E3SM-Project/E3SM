@@ -8,7 +8,8 @@ sim_dat_path       = ../output/
 sim_dat_filename   = chemUCI_mam4.dat
 
 Comments
-     "chemUCI for E3SM, Prather last touch 20200326"
+     "chemUCI + MAM4 for E3SM"
+     "last touch 20200331 - MJP"
 End Comments
 
 SPECIES
@@ -47,8 +48,7 @@ SPECIES
   MVKO2
   e90
   O3S
-  ASAD
-  
+
 
 * MAM4 species
   DMS -> C2H6S
@@ -102,7 +102,7 @@ Solution Classes
 
  Explicit
    CO, CH4, C2H6, C3H8, CH3COCH3
-   e90, O3S, ASAD
+   e90, O3S
  End Explicit
 
  Implicit
@@ -113,10 +113,10 @@ Solution Classes
    DMS, SO2, H2SO4, SOAG
    so4_a1,  so4_a2,  so4_a3
    pom_a1,           pom_a3,  pom_a4
-   soa_a1,  soa_a2,  soa_a3,
+   soa_a1,  soa_a2,  soa_a3
    bc_a1,            bc_a3,   bc_a4
-   dst_a1,           dst_a3,
-   ncl_a1,  ncl_a2,  ncl_a3,
+   dst_a1,           dst_a3
+   ncl_a1,  ncl_a2,  ncl_a3
    mom_a1,  mom_a2,  mom_a3,  mom_a4
    num_a1,  num_a2,  num_a3,  num_a4
  End Implicit
@@ -127,12 +127,8 @@ End Solution Classes
 CHEMISTRY
 
  Photolysis
-  [j2ohA->,jo3_a]   O3 + hv -> 2*OH
-  [j2ohB->,jo3_a]   O3 + hv -> OH + HO2
-  [j2ohC->,jo3_a]   O3 + hv -> OH + CH3OO
-*   these 3 rates for O(1D) rxt w/ H2O, H2, CH4. must be user defined
-*   key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
-*     H2O = 1.63e-10 exp(63/T), H2 = 1.20e-10, CH4 = 1.75e-10
+  [jo1d->,jo3_a]   O3 + hv -> O3
+* Production rate of O(1D), this rate is null so as to not lose O3.
   [jo2]       O2 + hv -> 2*O3
   [jh2o2]     H2O2 + hv -> 2*OH
   [jch2o_a]   CH2O + hv -> CO + 2*HO2
@@ -156,8 +152,17 @@ CHEMISTRY
  End Photolysis
 
  Reactions
-   CO + OH -> CO2 + H                             ; 1.750E-10,  0
-   CO + OH + M -> CO2 + HO2 + M                   ; 5.90E-33, 1.0, 1.10E-12, -1.3, 0.6
+[uci1] O3 + H2O -> 2*OH                           ; 1.630E-10, 63
+[uci2] O3 + H2 -> OH + HO2                        ; 1.200E-10,  0
+[uci3] O3 + CH4 -> OH + CH3OO                     ; 1.750E-10,  0
+*  These 3 rates for O(1D) rxt w/ H2O, H2, CH4 are scaled with jo1d and divided
+*  by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
+*  and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
+*  k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
+*     (1.63e-10*exp(63/T)*[H2O] + 3.30e
+   T)*[N2] + 2.15e-11*exp(110/T)*[O2])
+   CO + OH -> CO2 + H                             ; 1.440E-13,  0
+   CO + OH + M -> CO2 + HO2 + M                   ; 2.670E-33,  0
    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
    CH4 + OH -> CH3O2 + H2O                        ; 2.450E-12, -1775
    C2H6 + OH -> C2H5O2                            ; 7.660E-12, -1020
@@ -190,11 +195,11 @@ CHEMISTRY
 [N2O5]   NO2 + NO3 + M -> N2O5 + M                ; 2.40E-30, 3.0,  1.60E-12,-0.1, 0.6
 [PAN]    CH3CO3 + NO2 + M -> PAN + M              ; 9.70E-29, 5.6,  9.30E-12, 1.5, 0.6
 [uci7]   HNO4 -> HO2 + NO2                        ; 2.10E-27, 10900
-*     k[uci7] -> k[uci7] * k[HNO4]
+*     k[uci7] -> k[HNO4] / k[uci7]
 [uci8]   N2O5 -> NO2 + NO3                        ; 5.80E-27, 10840
-*     k[uci8] -> k[uci8] * k[N2O5]
+*     k[uci8] -> k[N2O5] / k[uci8]
 [uci9]   PAN -> CH3CO3 + NO2                      ; 9.00E-29, 14000
-*     k[uci9] -> k[uci9] * k[PAN]
+*     k[uci9] -> k[PAN] / k[uci9]
    CH3O2 + HO2 -> CH3OOH + O2                     ; 4.100E-13, 750
    CH3O2 + NO -> CH2O + HO2 + NO2                 ; 2.800E-12, 300
    CH3O2 + CH3O2 -> 2*CH2O +  2*HO2               ; 9.500E-14, 390
@@ -223,10 +228,10 @@ CHEMISTRY
    MVKO2 + NO -> 0.5*CH3CO3 + CH2O + NO2          ; 2.700E-12, 360
    MVKO2 + HO2 -> C2H5OOH + CO                    ; 1.820E-13, 1300
 
-[ucih1]  N2O5 + ASAD -> 2*HNO3                    ; 0.05E+00
-[ucih2]  NO3  + ASAD -> HNO3                      ; 0.03E+00
-[ucih3]  HO2  + ASAD ->                           ; 0.10E+00
-              HNO4 + OH -> NO2 + H2O + O2         ; 1.300E-12, 380
+[ucih1]  N2O5  -> 2*HNO3                          ; 0.05E+00
+[ucih2]  NO3   -> HNO3                            ; 0.03E+00
+[ucih3]  HO2   ->                                 ; 0.10E+00
+
 * MAM4 chemistry below
               DMS + OH -> SO2                     ; 9.600E-12, -234
 [usr_DMS_OH]  DMS + OH ->  .5 * SO2 + .5 * HO2
@@ -248,7 +253,6 @@ CHEMISTRY
       bc_a1 <- dataset
       num_a1 <- dataset
       num_a2 <- dataset
-      ASAD  <-  dataset
  End Ext Forcing
 
 END CHEMISTRY
