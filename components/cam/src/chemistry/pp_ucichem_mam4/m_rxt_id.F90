@@ -16,41 +16,41 @@
                                                                                 
       implicit none                                                             
                                                                                 
-      integer, parameter :: rid_j2ohA =    1                                    
-      integer, parameter :: rid_j2ohB =    2                                    
-      integer, parameter :: rid_j2ohC =    3                                    
-      integer, parameter :: rid_jo2 =    4                                      
-      integer, parameter :: rid_jh2o2 =    5                                    
-      integer, parameter :: rid_jch2o_a =    6                                  
-      integer, parameter :: rid_jch2o_b =    7                                  
-      integer, parameter :: rid_jch3ooh =    8                                  
-      integer, parameter :: rid_jc2h5ooh =    9                                 
-      integer, parameter :: rid_jno2 =   10                                     
-      integer, parameter :: rid_jno3 =   11                                     
-      integer, parameter :: rid_jn2o5 =   12                                    
-      integer, parameter :: rid_jhno3 =   13                                    
-      integer, parameter :: rid_jho2no2 =   14                                  
-      integer, parameter :: rid_jch3cho =   15                                  
-      integer, parameter :: rid_jpan =   16                                     
-      integer, parameter :: rid_jacet =   17                                    
-      integer, parameter :: rid_jmvk =   18                                     
-      integer, parameter :: rid_uci4 =   34                                     
-      integer, parameter :: rid_uci5 =   35                                     
-      integer, parameter :: rid_uci6 =   44                                     
-      integer, parameter :: rid_HNO4 =   46                                     
-      integer, parameter :: rid_N2O5 =   47                                     
-      integer, parameter :: rid_PAN =   48                                      
-      integer, parameter :: rid_uci7 =   49                                     
-      integer, parameter :: rid_uci8 =   50                                     
-      integer, parameter :: rid_uci9 =   51                                     
-      integer, parameter :: rid_ucih1 =   79                                    
-      integer, parameter :: rid_ucih2 =   80                                    
-      integer, parameter :: rid_ucih3 =   81                                    
+      integer, parameter :: rid_jo1d =    1                                     
+      integer, parameter :: rid_jo2 =    2                                      
+      integer, parameter :: rid_jh2o2 =    3                                    
+      integer, parameter :: rid_jch2o_a =    4                                  
+      integer, parameter :: rid_jch2o_b =    5                                  
+      integer, parameter :: rid_jch3ooh =    6                                  
+      integer, parameter :: rid_jc2h5ooh =    7                                 
+      integer, parameter :: rid_jno2 =    8                                     
+      integer, parameter :: rid_jno3 =    9                                     
+      integer, parameter :: rid_jn2o5 =   10                                    
+      integer, parameter :: rid_jhno3 =   11                                    
+      integer, parameter :: rid_jho2no2 =   12                                  
+      integer, parameter :: rid_jch3cho =   13                                  
+      integer, parameter :: rid_jpan =   14                                     
+      integer, parameter :: rid_jacet =   15                                    
+      integer, parameter :: rid_jmvk =   16                                     
+      integer, parameter :: rid_uci1 =   17                                     
+      integer, parameter :: rid_uci2 =   18                                     
+      integer, parameter :: rid_uci3 =   19                                     
+      integer, parameter :: rid_uci4 =   35                                     
+      integer, parameter :: rid_uci5 =   36                                     
+      integer, parameter :: rid_uci6 =   45                                     
+      integer, parameter :: rid_HNO4 =   47                                     
+      integer, parameter :: rid_N2O5 =   48                                     
+      integer, parameter :: rid_PAN =   49                                      
+      integer, parameter :: rid_uci7 =   50                                     
+      integer, parameter :: rid_uci8 =   51                                     
+      integer, parameter :: rid_uci9 =   52                                     
+      integer, parameter :: rid_ucih1 =   80                                    
+      integer, parameter :: rid_ucih2 =   81                                    
+      integer, parameter :: rid_ucih3 =   82                                    
       integer, parameter :: rid_usr_DMS_OH =   84                               
       integer, parameter :: rid_usr_SO2_OH =   85                               
       integer, parameter :: rid_usr_e90 =   86                                  
                                                                                 
-      integer, parameter :: rid_r0019 =   19                                    
       integer, parameter :: rid_r0020 =   20                                    
       integer, parameter :: rid_r0021 =   21                                    
       integer, parameter :: rid_r0022 =   22                                    
@@ -65,7 +65,7 @@
       integer, parameter :: rid_r0031 =   31                                    
       integer, parameter :: rid_r0032 =   32                                    
       integer, parameter :: rid_r0033 =   33                                    
-      integer, parameter :: rid_r0036 =   36                                    
+      integer, parameter :: rid_r0034 =   34                                    
       integer, parameter :: rid_r0037 =   37                                    
       integer, parameter :: rid_r0038 =   38                                    
       integer, parameter :: rid_r0039 =   39                                    
@@ -73,8 +73,8 @@
       integer, parameter :: rid_r0041 =   41                                    
       integer, parameter :: rid_r0042 =   42                                    
       integer, parameter :: rid_r0043 =   43                                    
-      integer, parameter :: rid_r0045 =   45                                    
-      integer, parameter :: rid_r0052 =   52                                    
+      integer, parameter :: rid_r0044 =   44                                    
+      integer, parameter :: rid_r0046 =   46                                    
       integer, parameter :: rid_r0053 =   53                                    
       integer, parameter :: rid_r0054 =   54                                    
       integer, parameter :: rid_r0055 =   55                                    
@@ -101,7 +101,7 @@
       integer, parameter :: rid_r0076 =   76                                    
       integer, parameter :: rid_r0077 =   77                                    
       integer, parameter :: rid_r0078 =   78                                    
-      integer, parameter :: rid_r0082 =   82                                    
+      integer, parameter :: rid_r0079 =   79                                    
       integer, parameter :: rid_r0083 =   83                                    
                                                                                 
       end module m_rxt_id                                                       
