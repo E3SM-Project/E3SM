@@ -1126,10 +1126,11 @@ contains
 
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
-      use cam_optics, only: free_optics_sw       , free_optics_lw       , &
-                            set_cloud_optics_lw  , set_cloud_optics_sw  , &
+      use cam_optics, only: free_optics_sw, free_optics_lw, &
                             set_aerosol_optics_lw, set_aerosol_optics_sw, &
-                            do_snow_optics, get_cloud_optics_lw, sample_cloud_optics_lw
+                            get_cloud_optics_sw, sample_cloud_optics_sw, &
+                            get_cloud_optics_lw, sample_cloud_optics_lw, &
+                            do_snow_optics
 
 #ifdef MODAL_AERO
       use modal_aero_data, only: ntot_amode
@@ -1296,6 +1297,10 @@ contains
       ! Working variables for optics
       real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw
       real(r8), dimension(pcols,pver,nlwgpts) :: cld_tau_gpt_lw
+      real(r8), dimension(pcols,pver,nswbands) :: &
+         cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw
+      real(r8), dimension(pcols,pver,nswgpts) :: &
+         cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
 
       !----------------------------------------------------------------------
 
@@ -1446,6 +1451,9 @@ contains
                   ncol_tot, nlev_rad, k_dist_lw, name='cld_optics_lw' &
                ))
                cld_optics_lw_all%tau = 0
+               cld_optics_sw_all%tau = 0
+               cld_optics_sw_all%ssa = 0
+               cld_optics_sw_all%g   = 0
 
                ! Initialize aerosol optics; passing only the wavenumber bounds for each
                ! "band" rather than passing the full spectral discretization object, and
@@ -1551,7 +1559,18 @@ contains
                      ! routines to handle this.
                      if (radiation_do('sw')) then
                         call t_startf('rad_cloud_optics_sw')
-                        call set_cloud_optics_sw(state, pbuf, k_dist_sw, cld_optics_sw_col)
+                        call get_cloud_optics_sw( &
+                           ncol, pver, nswbands, do_snow_optics(), &
+                           cld, cldfsnow, iclwp, iciwp, icswp, &
+                           lambdac, mu, dei, des, rel, rei, &
+                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
+                        )
+                        call sample_cloud_optics_sw( &
+                           ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
+                           state%pmid, cld, cldfsnow, &
+                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
+                           cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
+                        )
                         call t_stopf('rad_cloud_optics_sw')
 
                         ! Get shortwave aerosol optics
@@ -1566,13 +1585,11 @@ contains
                      ! Do optics; TODO: refactor to take array arguments?
                      if (radiation_do('lw')) then
                         call t_startf('rad_cloud_optics_lw')
-                        ! Get optics by band
                         call get_cloud_optics_lw( &
                            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
                            lambdac, mu, dei, des, rei, &
                            cld_tau_bnd_lw &
                         )
-                        ! Do MCICA sampling
                         call sample_cloud_optics_lw( &
                            ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
                            state%pmid, cld, cldfsnow, &
@@ -1596,9 +1613,9 @@ contains
                         pint(j,:) = pint_col(ic,:)
                         tint(j,:) = tint_col(ic,:)
                         cld_optics_lw_all%tau(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
-                        cld_optics_sw_all%tau(j,:,:) = cld_optics_sw_col%tau(ic,:,:)
-                        cld_optics_sw_all%ssa(j,:,:) = cld_optics_sw_col%ssa(ic,:,:)
-                        cld_optics_sw_all%g  (j,:,:) = cld_optics_sw_col%g  (ic,:,:)
+                        cld_optics_sw_all%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
+                        cld_optics_sw_all%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
+                        cld_optics_sw_all%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
                         aer_optics_lw_all%tau(j,:,:) = aer_optics_lw_col%tau(ic,:,:)
                         aer_optics_sw_all%tau(j,:,:) = aer_optics_sw_col%tau(ic,:,:)
                         aer_optics_sw_all%ssa(j,:,:) = aer_optics_sw_col%ssa(ic,:,:)
@@ -1610,7 +1627,6 @@ contains
 
                   end do  ! ix = 1,crm_nx_rad
                end do  ! iy = 1,crm_ny_rad
-
             end if  !(radiation_do('sw') .or. radiation_do('lw')) then
 
             ! Do shortwave stuff...
@@ -1971,6 +1987,9 @@ contains
          aer_optics_day%ssa(iday,:,:) = aer_optics%ssa(icol,:,:)
          aer_optics_day%g  (iday,:,:) = aer_optics%g  (icol,:,:)
       end do
+
+      ! Apply delta scaling to account for forward-scattering
+      call handle_error(cld_optics_day%delta_scale())
 
       ! Check incoming optical properties
       call handle_error(cld_optics_day%validate())
