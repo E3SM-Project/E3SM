@@ -80,8 +80,6 @@ struct Baseline {
         shoc_main(*d);
         write(fid, d);
       }
-
-      // Save the fields to the baseline file.
     }
     return nerr;
   }
