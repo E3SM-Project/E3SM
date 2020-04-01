@@ -82,7 +82,7 @@ contains
    subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracers, &
                                    redi_term1, redi_term2, redi_term3, &
                                    RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer,          &
-                                   kappaRediCell, kappaRediEdge, tend, err)!{{{
+                                   kappaRediCell, kappaRediEdge, rediLimiterCount, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -107,6 +107,8 @@ contains
         tracers, kappaRediEdge !< Input: tracer quantities
 
       real (kind=RKIND), intent(in) :: dt
+
+      integer, intent(inout) :: rediLimiterCount
 
       logical,intent(in) :: isActiveTracer
 
@@ -152,7 +154,8 @@ contains
       call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                      redi_term1, redi_term2, redi_term3,  &
                                      RediKappa, dt, isActiveTracer,        &
-                                     slopeTriadUp, slopeTriadDown, kappaRediCell, kappaRediEdge, tend, err1)
+                                     slopeTriadUp, slopeTriadDown, kappaRediCell, kappaRediEdge, &
+                                     rediLimiterCount, tend, err1)
 
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")

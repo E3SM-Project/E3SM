@@ -466,7 +466,8 @@ contains
 
       logical, pointer :: config_compute_active_tracer_budgets, &
                           config_cvmix_kpp_nonlocal_with_implicit_mix
-     real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
+      real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
+      integer, pointer :: rediLimiterCount
 
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
@@ -583,6 +584,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
       call mpas_pool_get_array(diagnosticsPool, 'kappaRediEdge', kappaRediEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', rediLimiterCount)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
@@ -893,7 +895,7 @@ contains
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
                                          redi_term1, redi_term2, redi_term3, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
-                                         kappaRediCell, kappaRediEdge, tracerGroupTend, err)
+                                         kappaRediCell, kappaRediEdge, rediLimiterCount, tracerGroupTend, err)
 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number

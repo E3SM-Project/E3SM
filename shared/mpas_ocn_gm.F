@@ -105,15 +105,16 @@ contains
          layerThickness, inSituThermalExpansionCoeff, &
          inSituSalineContractionCoeff, kappaGMCell, kappaRediCell
 
-      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed
+      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed, ssh
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown, kappaRediEdge
       real(kind=RKIND), dimension(:), pointer :: rediRossbyRadius
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
+      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
-      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf
+      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, indexMLDedge
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: kappaGMEdge, sumN2, countN2, maxN, kappaSum, ltSum
+      real(kind=RKIND)                 :: zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown,invAreaCell
       real(kind=RKIND) :: verticalDisplacement, rValue, zEdge, diabaticTaperUp, diabaticTaperDown
@@ -143,6 +144,7 @@ contains
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_subpool(statePool,   'tracers', tracersPool)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -152,6 +154,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
       call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
       call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
@@ -183,28 +186,9 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_field(scratchPool, 'gradDensityEdge', gradDensityEdgeField)
-!      call mpas_pool_get_field(scratchPool, 'gradDensityConstZTopOfEdge', gradDensityConstZTopOfEdgeField)
-!      call mpas_pool_get_field(scratchPool, 'dDensityDzTopOfCell', dDensityDzTopOfCellField)
-!      call mpas_pool_get_field(scratchPool, 'dDensityDzTopOfEdge', dDensityDzTopOfEdgeField)
-!      call mpas_pool_get_field(scratchPool, 'gradZMidEdge', gradZMidEdgeField)
-!      call mpas_pool_get_field(scratchPool, 'gradZMidTopOfEdge', gradZMidTopOfEdgeField)
-!      call mpas_pool_get_field(scratchPool, 'areaCellSum', areaCellSumField)
-
       call mpas_allocate_scratch_field(gradDensityEdgeField, .True., .false.)
-!      call mpas_allocate_scratch_field(gradDensityConstZTopOfEdgeField, .True., .false.)
-!      call mpas_allocate_scratch_field(dDensityDzTopOfCellField, .True., .false.)
-!      call mpas_allocate_scratch_field(dDensityDzTopOfEdgeField, .True., .false.)
-!      call mpas_allocate_scratch_field(gradZMidEdgeField, .True., .false.)
-!      call mpas_allocate_scratch_field(gradZMidTopOfEdgeField, .True., .false.)
-!      call mpas_allocate_scratch_field(areaCellSumField, .True., .false.)
 
       gradDensityEdge => gradDensityEdgeField % array
-!      gradDensityConstZTopOfEdge => gradDensityConstZTopOfEdgeField % array
-!      dDensityDzTopOfCell => dDensityDzTopOfCellField % array
-!      dDensityDzTopOfEdge => dDensityDzTopOfEdgeField % array
-!      gradZMidEdge => gradZMidEdgeField % array
-!      gradZMidTopOfEdge => gradZMidTopOfEdgeField % array
-!      areaCellSum => areaCellSumField % array
 
       allocate(rightHandSide(nVertLevels))
       allocate(tridiagA(nVertLevels))
@@ -221,7 +205,6 @@ contains
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             gradDensityEdge(k, iEdge) = 0.0_RKIND 
- !           gradZMidEdge(k, iEdge) = huge(0D0)
             normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
          end do
       end do
@@ -230,8 +213,6 @@ contains
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels 
- !           dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
- !           gradZMidTopOfEdge(k, iEdge) = huge(0D0)
             slopeTriadUp(k,:,iEdge) = 0.0_RKIND
             slopeTriadDown(k,:,iEdge) = 0.0_RKIND
          end do
@@ -241,7 +222,6 @@ contains
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells + 1
          do k = 1, nVertLevels
- !           dDensityDzTopOfCell(k,  iCell) = huge(0D0)
             k33(k, iCell) = 0.0_RKIND
          end do
       end do
@@ -300,14 +280,6 @@ contains
                kappaRediCell(k,iCell) = kappaGMCell(k,iCell)
            enddo
 
-!           kappaSmooth(:maxLevelCell(iCell)) = kappaRediCell(:maxLevelCell(iCell),iCell)
-!           do nsmooth = 1,2
-!             do k=2,maxLevelCell(iCell)-1
-!               kappaSmooth(k) = 0.25_RKIND*(kappaRediCell(k-1,iCell) + 2.0_RKIND*kappaRediCell(k,iCell) + &
-!                                      kappaRediCell(k+1,iCell))
-!             enddo
-!             kappaRediCell(:maxLevelCell(iCell),iCell) = kappaSmooth(:maxLevelCell(iCell))
-!           enddo
            kappaRediCell(maxLevelCell(iCell) + 1, iCell) = kappaRediCell(maxLevelCell(iCell), iCell)
          enddo
          !$omp end do
@@ -338,18 +310,6 @@ contains
          dTdzTop(maxLevelCell(iCell)+1) = -1e-15_RKIND
          dSdzTop(maxLevelCell(iCell)+1) = -1e-15_RKIND
 
-         dTdzSmooth(1:maxLevelCell(iCell)+1) = dTdzTop(maxLevelCell(iCell)+1)
-         dSdzSmooth(1:maxLevelCell(iCell)+1) = dSdzTop(maxLevelCell(iCell)+1)
-
-         do nsmooth=1,config_Redi_num_smooth_loops
-           do k=2,maxLevelCell(iCell)
-             dTdzSmooth(k) = (dTdzTop(k-1) + 2.0_RKIND*dTdzTop(k) + dTdzTop(k+1)) / 4.0_RKIND
-             dSdzSmooth(k) = (dSdzTop(k-1) + 2.0_RKIND*dSdzTop(k) + dSdzTop(k+1)) / 4.0_RKIND
-           enddo
-           dTdzTop(1:maxLevelCell(iCell)) = dTdzSmooth(1:maxLevelCell(iCell))
-           dSdzTop(1:maxLevelCell(iCell)) = dSdzSmooth(1:maxLevelCell(iCell))
-         enddo
-
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1,iEdge)
@@ -364,6 +324,15 @@ contains
             endif
             dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
             areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
+
+            if (maxLevelEdgeTop(iEdge) > 0) then  
+              indexMLDedge = max(1,indMLD(cell1), indMLD(cell2))
+              indexMLDedge = min(maxLevelEdgeTop(iEdge),indexMLDedge)
+            else
+              indexMLDedge = 1
+            endif
+            sshEdge = max(ssh(cell1), ssh(cell2))
+            zMLD = sshEdge - 0.5_RKIND*(zMid(indexMLDedge,cell1) + zMid(indexMLDedge,cell2))
 
             do k = 1, maxLevelEdgeTop(iEdge)
                drhoDT = -inSituThermalExpansionCoeff(k,iCell)
@@ -408,6 +377,7 @@ contains
                     abs(slopeTriadUp(k,iCellSelf,iEdge)) / config_Redi_maximum_slope - 4.0_RKIND)))
                endif
 
+               !POTENTIALLY TRY WITHOUT THIS PART
                if (k < maxLevelCell(iCell)) THEN
                  if (BruntVaisalaFreqTop(k,iCell) < config_Redi_diabatic_limit) THEN 
                    diabaticTaperUp = 0.0_RKIND
@@ -430,8 +400,10 @@ contains
                slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(diabaticTaperUp*slopeTaperUp - 1.0_RKIND)
                slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(diabaticTaperDown*slopeTaperDown - 1.0_RKIND)
 
-               !Try the Danabasoglu et al 2008 transition layer implementation, assuming MLD is okay
-               zEdge = 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
+               !linear ML tapering (equivalent to Danabasoglu et al 2008 for small transition layer)
+               zEdge = sshEdge - 0.5_RKIND*(zMid(k,cell1) + zMid(k,cell2))
+               sfcTaper = min(1.0_RKIND, abs(zEdge / zMLD))
+
                verticalDisplacement = rediRossbyRadius(iEdge)*abs(slopeTriadUp(k,iCellSelf,iEdge))
                rValue = max(0.0_RKIND, min(1.0_RKIND, abs(zEdge / verticalDisplacement)))
 
@@ -442,8 +414,8 @@ contains
 
                sfcTaperDown = 0.5_RKIND * (1.0_RKIND + sin(3.141592_RKIND*(rValue - 0.5_RKIND)))
 
-               sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaperUp - 1.0_RKIND)
-               sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaperDown - 1.0_RKIND)
+               sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(min(sfcTaperUp,sfcTaper) - 1.0_RKIND)
+               sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(min(sfcTaperDown,sfcTaper) - 1.0_RKIND)
 
                kappaRediEdge(k,iCellSelf,iEdge) = 1.0_RKIND !0.5_RKIND * (sfcTaperUp*slopeTaperUp &
                 !  + sfcTaperDown*slopeTaperDown)
@@ -805,7 +777,14 @@ contains
          endif
 
          if (config_Redi_use_surface_taper) then
-           sfcTaperFactor = 1.0_RKIND
+           if(config_AM_mixedLayerDepths_enable .and. config_AM_mixedLayerDepths_Dthreshold) THEN
+              sfcTaperFactor = 1.0_RKIND
+           else
+              call mpas_log_write('Redi Surface tapering requires MLD AM enabled with dThresh option selected.', &
+                MPAS_LOG_CRIT)
+              err=1
+              call mpas_dmpar_finalize(domain % dminfo)
+           endif
          else
            sfcTaperFactor = 0.0_RKIND
          endif
