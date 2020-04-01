@@ -1,4 +1,5 @@
 #include "catch2/catch.hpp"
+#include "share/util/scream_test_utils.hpp"
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_ic_cases.hpp"
 
@@ -28,8 +29,29 @@ TEST_CASE("shoc_init_f", "shoc") {
   REQUIRE(nerr == 0);
 }
 
+// This helper returns true if we've been asked to generate Python
+// plotting scripts, false otherwise.
+bool generating_plot_scripts() {
+  bool gen_plot_scripts = false;
+  auto& ts = scream::util::TestSession::get();
+  auto iter = ts.params.find("gen_plot_scripts");
+  if (iter != ts.params.end()) {
+    // Here's val, passed as gen_plot_scripts=val
+    std::string val = iter->second;
+    // Low-case the thing. Isn't C++ a friendly language??
+    std::transform(val.begin(), val.end(), val.begin(),
+      [](unsigned char c){ return std::tolower(c); });
+
+    // Now decide if the value is true or not. Use CMake sensibilities.
+    gen_plot_scripts = ((val == "1") or (val == "true") or
+                        (val == "yes") or (val == "on"));
+  }
+  return gen_plot_scripts;
+}
+
 TEST_CASE("shoc_ic_f", "shoc") {
-  int nerr = scream::shoc::test_shoc_ic(true, true);
+
+  int nerr = scream::shoc::test_shoc_ic(true, generating_plot_scripts());
   REQUIRE(nerr == 0);
 }
 
@@ -43,5 +65,5 @@ TEST_CASE("shoc_ic_c", "shoc") {
   REQUIRE(nerr == 0);
 }
 
+} // anonymous namespace
 
-} // empty namespace

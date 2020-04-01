@@ -390,8 +390,6 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   d->nadv = 100;
   d->dtime = 10;
   shoc_main(*d);
-printf("%.16g %.16g %.16g %.16g\n", d->host_dse(0, 0), d->tke(0, 0),
-       d->thetal(0, 0), d->shoc_cldfrac(0, 0));
 
   // 4. Generate a Python script that plots the results.
   {
