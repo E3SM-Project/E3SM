@@ -17,7 +17,8 @@
 
                 <option name="config_use_cvmix_background">.true.</option>
                 <option name="config_cvmix_background_viscosity">1.0e4</option>
-		<option name="config_use_variable_drag">.true.</option>
+
+		<option name="config_use_variable_drag">.false.</option>
 
                 <option name="config_use_bulk_wind_stress">.true.</option>
                 <option name="config_use_time_varying_atmospheric_forcing">.true.</option>
