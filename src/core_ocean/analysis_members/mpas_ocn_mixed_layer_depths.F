@@ -179,7 +179,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraft
       real (kind=RKIND), dimension(:), pointer :: dThreshMLD, dGradientMLD, landIcePressure
-      integer, dimension(:), pointer :: landIceMask 
+      integer, dimension(:), pointer :: landIceMask, indMLD 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:), pointer :: zTop, zMid, pressure
       real (kind=RKIND), dimension(:,:), pointer :: potentialDensity
@@ -314,6 +314,7 @@ contains
 
          if(dThresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
+            call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
             do iCell = 1,nCellsSolve
 
@@ -344,6 +345,7 @@ contains
                                    interp_local, mldTemp)!, dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
                         dThreshMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
+                        indMLD(iCell) = k+1
                         found_den_mld = .true.
                         exit
                      endif
@@ -351,8 +353,10 @@ contains
 
 ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
 
-                    if(.not. found_den_mld) dThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
-
+                    if(.not. found_den_mld) THEN
+                      dThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
+                      indMLD(iCell) = maxLevelCell(iCell)
+                    endif
              enddo !iCell
 
              if (associated(landIceMask) ) THEN

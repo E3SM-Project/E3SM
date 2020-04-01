@@ -74,7 +74,8 @@ contains
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                     redi_term1, redi_term2, redi_term3,  &
                     RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown,  &
-                    kappaRediCell, kappaRediEdge, tend, err)!{{{
+                    kappaRediCell, kappaRediEdge, rediLimiterCount, tend, err)!{{{
+
 
       !-----------------------------------------------------------------
       !
@@ -98,6 +99,8 @@ contains
          tracers, kappaRediEdge !< Input: tracer quantities
 
       real (kind=RKIND), intent(in) :: dt
+
+      integer, intent(inout) :: rediLimiterCount
 
       logical, intent(in) :: isActiveTracer
 
@@ -138,6 +141,7 @@ contains
       real (kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, flux_terms12, sign_term1, dTracerDx, coef
       real (kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
+      integer, dimension(:), allocatable :: limitCount
       real (kind=RKIND), dimension(:), allocatable :: areaSum, minimumVal
       real (kind=RKIND), dimension(:,:), allocatable :: fluxRediZTop
       real (kind=RKIND), dimension(:,:,:), allocatable :: redi_term2_edge, redi_term3_topOfCell
@@ -168,6 +172,7 @@ contains
       nEdges = nEdgesArray( size(nEdgesArray) )
 
       allocate(minimumVal(nTracers))
+      allocate(limitCount(nTracers))
       allocate(redi_term2_edge(nTracers,nVertLevels,nEdges))
       allocate(redi_term3_topOfCell(nTracers,nVertLevels+1,nCells))
 
@@ -385,10 +390,12 @@ contains
       deallocate(fluxRediZTop)
       deallocate(areaSum)
 
+      limitCount(:) = 0
       !loop over cells and check for out of bounds
       if(isActiveTracer) then
         minimumVal(1) = -2.0_RKIND
         minimumVal(2:nTracers) = 0.0_RKIND
+        rediLimiterCount = 0
       else
         minimumVal(:) = 0.0_RKIND
       endif
@@ -407,10 +414,15 @@ contains
 
                   redi_term3_topOfCell(iTr,k,iCell) = 0.0_RKIND
                   redi_term3_topOfCell(iTr,k+1,iCell) = 0.0_RKIND
+                  limitCount(iTr) = limitCount(iTr) + 1
               endif
            enddo
         enddo
      enddo
+
+     if(isActiveTracer) then
+       rediLimiterCount = limitCount(1)
+     endif
 
      !now go back and reapply all tendencies
      do iCell=1,nCells
