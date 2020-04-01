@@ -476,7 +476,7 @@ contains
       real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
       character(len=32) :: subname = 'radiation_init'
 
-      character(len=6), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
+      character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
 
       !-----------------------------------------------------------------------
 
