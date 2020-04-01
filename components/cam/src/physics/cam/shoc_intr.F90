@@ -444,7 +444,7 @@ end function shoc_implements_cnst
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
-    use scamMod,        only: single_column   
+    use scamMod,        only: single_column, iop_mode  
  
     implicit none
     
@@ -520,6 +520,7 @@ end function shoc_implements_cnst
    real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
+   real(r8) :: host_dx, host_dy
    real(r8) :: host_temp(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
    real(r8) :: shoc_mix_out(pcols,pver), tk_in(pcols,pver), tkh_in(pcols,pver)
@@ -681,9 +682,13 @@ end function shoc_implements_cnst
 
    ! Set grid space, in meters. If SCM, set to a grid size representative
    !  of a typical GCM.  Otherwise, compute locally.    
-   if (single_column) then
+   if (single_column .and. .not. iop_mode) then
      host_dx_in(:) = 100000._r8
      host_dy_in(:) = 100000._r8
+   else if (iop_mode) then
+     call grid_size_uniform(host_dx, host_dy)
+     host_dx_in(:) = host_dx
+     host_dy_in(:) = host_dy
    else
      call grid_size(state1, host_dx_in, host_dy_in)
    endif
@@ -1090,6 +1095,24 @@ end function shoc_implements_cnst
       grid_dy(i) = grid_dx(i) ! Assume these are the same
   enddo   
 
-  end subroutine grid_size      
+  end subroutine grid_size  
+  
+  subroutine grid_size_uniform(grid_dx, grid_dy)
+  
+    ! Estimate grid box size at equator using
+    !  the earth radius set for this case.  This assumes
+    !  that all grid points are uniform, which is 
+    !  reasonable for IOP mode (not currently compatible with RRM) 
+  
+    use physical_constants, only: rearth, dd_pi
+    use dimensions_mod, only: np, ne
+    
+    real(r8), intent(out) :: grid_dx, grid_dy
+    
+    grid_dx = dd_pi*rearth/(2000.d0*dble(ne*(np-1)))
+    grid_dx = grid_dx*1000._r8
+    grid_dy = grid_dx
+  
+  end subroutine grid_size_uniform    
 
 end module shoc_intr

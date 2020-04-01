@@ -591,6 +591,17 @@
       <grid name="wav">null</grid>
       <mask>oRRS15to5</mask>
     </model_grid>
+
+    <model_grid alias="r0125_r0125_oRRS18to6v3" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">r0125</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <!--  spectral element grids -->
 
     <model_grid alias="ne4_oQU480">
@@ -2138,8 +2149,8 @@
     <domain name="ne1024np4">
       <nx>56623106</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024np4_oRRS15to5.190514.nc</file>
-      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.190514.nc</file>
+      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024np4_oRRS15to5.200228.nc</file>
+      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.200228.nc</file>
       <desc>ne1024np4 is Spectral Elem 3km grid:</desc>
     </domain>
 
@@ -2346,6 +2357,7 @@
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
       <file grid="atm" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
       <file grid="lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
+      <file grid="atm" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
@@ -2874,7 +2886,7 @@
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
     </gridmap>
 
 

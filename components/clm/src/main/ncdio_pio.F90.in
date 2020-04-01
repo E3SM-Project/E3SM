@@ -19,7 +19,7 @@ module ncdio_pio
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep
   use clm_varcon     , only : spval,ispval
-  use clm_varctl     , only : single_column, iulog
+  use clm_varctl     , only : single_column, iop_mode, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
@@ -1283,6 +1283,8 @@ contains
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     {VTYPE} :: temp(1)
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_{TYPE}_glob'
+    
+    {VTYPE}, allocatable :: iop_data(:,:)
     !-----------------------------------------------------------------------
 
     start(:) = 0
@@ -1303,18 +1305,28 @@ contains
           endif
        end if
 #else
-       if (varpresent) then
-          if (single_column) then
+       if (varpresent) then      
+       
+	  if (iop_mode .or. single_column) then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
-                status = pio_get_var(ncid, varid, start, count, data)
+                if (single_column) status = pio_get_var(ncid, varid, start, count, data)
+                if (iop_mode) then
+                  allocate(iop_data(1:count(1),1:count(2)))
+                  status = pio_get_var(ncid, varid, start(1:2), count(1:2), iop_data)
+#if ({DIMS}==1)
+                  data(:) = iop_data(1,1) ! Use data at IOP lat/lon for whole globe
+#endif
+                  deallocate(iop_data)
+                endif
              else
                 status = pio_get_var(ncid, varid, data)
              end if
           else
              status = pio_get_var(ncid, varid, data)
           endif
+
        endif
 #endif
        if (present(readvar)) readvar = varpresent
@@ -1455,6 +1467,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical          , optional, intent(in)  :: cnvrtnan2fill ! true => convert any NaN's to _FillValue (spval)
     !
     ! Local Variables
+    
+    {VTYPE}, allocatable :: iop_data2d(:,:)
+    {VTYPE}, allocatable :: iop_data1d(:)   
+ 
     character(len=8)                 :: clmlevel   ! clmlevel
     character(len=32)                :: dimname    ! temporary
     integer                          :: n          ! index      
@@ -1466,6 +1482,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: dids(4)    ! dim ids
     integer                          :: start(3)   ! netcdf start index
     integer                          :: count(3)   ! netcdf count index
+    integer                          :: start_iop2d(2)   ! netcdf start index
+    integer                          :: count_iop2d(2)   ! netcdf count index 
+    integer                          :: start_iop1d(1)   ! netcdf start index
+    integer                          :: count_iop1d(1)   ! netcdf count index        
     integer                          :: status     ! error code  
     logical                          :: varpresent ! if true, variable is on tape
     integer                , pointer :: idata(:)   ! Temporary integer data to send to file
@@ -1473,6 +1493,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter       :: subname='ncd_io_1d_{TYPE}' ! subroutine name
+
     !-----------------------------------------------------------------------
 
     start(:) = 0
@@ -1497,7 +1518,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+          if (iop_mode .or. single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,clmlevel,vardesc,start,count)
              if (present(nt)) then
@@ -1515,7 +1536,35 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              end if
              deallocate( idata )
 #else
-             status = pio_get_var(ncid, varid, start, count, data)
+
+             if (single_column) status=pio_get_var(ncid,varid,start,count,data)
+
+             if (iop_mode) then 
+             
+               if (count(2) .gt. 0) then  
+       
+                 start_iop2d(:) = start(1:2)
+                 count_iop2d(:) = count(1:2)
+     
+                 allocate(iop_data2d(count(1),count(2)))
+                 status = pio_get_var(ncid, varid, start_iop2d, count_iop2d, iop_data2d)
+                 data(:) = iop_data2d(1,1)
+                 deallocate(iop_data2d)
+       
+               else
+     
+                 start_iop1d(:) = start(1)
+                 count_iop1d(:) = count(1)
+     
+                 allocate(iop_data1d(count(1)))
+                 status = pio_get_var(ncid, varid, start_iop1d, count_iop1d, iop_data1d)
+                 data(:) = iop_data1d(1)
+                 deallocate(iop_data1d)
+       
+               endif
+       
+             endif ! iop_mode	            
+     
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -1632,6 +1681,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 #else
     real(r8), pointer :: temp(:,:)
 #endif
+
+    {VTYPE}, allocatable :: iop_data3d(:,:,:)
+    {VTYPE}, allocatable :: iop_data2d(:,:)
+
     integer           :: ndim1,ndim2       
     character(len=8)  :: clmlevel   ! clmlevel
     character(len=32) :: dimname    ! temporary      
@@ -1645,9 +1698,14 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: iodnum     ! iodesc num in list
     integer           :: start(4)   ! netcdf start index
     integer           :: count(4)   ! netcdf count index
+    integer           :: start_iop2d(2)   ! netcdf start index
+    integer           :: count_iop2d(2)   ! netcdf count index
+    integer           :: start_iop3d(3)   ! netcdf start index
+    integer           :: count_iop3d(3)   ! netcdf count index
     logical           :: varpresent ! if true, variable is on tape
     integer           :: lb1,lb2
     integer           :: ub1,ub2
+    integer           :: offset
     type(iodesc_plus_type) , pointer  :: iodesc_plus
     type(var_desc_t)                  :: vardesc
     character(len=*),parameter :: subname='ncd_io_2d_{TYPE}' ! subroutine name
@@ -1686,10 +1744,11 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+!          if (single_column) then
+          if (iop_mode .or. single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
-                if (present(nt)) then
+             if (present(nt)) then
                    n=4
                    if (start(4) .eq. 0) n=3
                    start(n) = nt; count(n) = 1
@@ -1702,8 +1761,47 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                    end do
                 end do
              else
-                status = pio_get_var(ncid, vardesc, start, count, data)
-             endif
+                if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
+                
+                if (iop_mode) then
+
+                  if (start(3) .eq. 0) then
+                    start_iop2d(1:2) = start(1:2)
+                    count_iop2d(1:2) = count(1:2)
+
+                    allocate(iop_data2d(count_iop2d(1),count_iop2d(2)))
+
+                    status = pio_get_var(ncid, vardesc, start_iop2d, count_iop2d, iop_data2d)
+  
+                    offset=0
+                    if (lb2 .eq. 0) offset=1
+                    do i = lb1, ub1
+                      do j = lb2, ub2
+                        data(i,j) = iop_data2d(1,j+offset)
+                      enddo 
+                    enddo
+                    deallocate(iop_data2d)
+                  else
+                    start_iop3d(1:3) = start(1:3)
+                    count_iop3d(1:3) = count(1:3)
+
+                    allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
+
+                    status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
+
+                    offset=0
+                    if (lb2 .eq. 0) offset=1     
+                    do i = lb1, ub1
+                      do j = lb2, ub2 
+                        data(i,j) = iop_data3d(1,j+offset,1)
+                      enddo
+                    enddo 
+                    deallocate(iop_data3d)
+                  endif
+
+               endif ! if iop_mode
+
+             endif ! if iop_mode or single_column
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)
@@ -1847,7 +1945,12 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer, optional, intent(in)  :: nt              ! time sample index
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
     !
+
+    {VTYPE}, allocatable :: iop_data4d(:,:,:,:)
+    {VTYPE}, allocatable :: iop_data3d(:,:,:)
+
     ! !LOCAL VARIABLES:
+    integer                          :: i, j
     integer                          :: ndim1,ndim2       
     character(len=8)                 :: clmlevel   ! clmlevel
     character(len=32)                :: dimname    ! temporary      
@@ -1861,6 +1964,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: iodnum     ! iodesc num in list
     integer                          :: start(5)   ! netcdf start index
     integer                          :: count(5)   ! netcdf count index
+    integer                          :: start_iop3d(3)   ! netcdf start index
+    integer                          :: count_iop3d(3)   ! netcdf count index
+    integer                          :: start_iop4d(4)   ! netcdf start index
+    integer                          :: count_iop4d(4)   ! netcdf count index        
     logical                          :: varpresent ! if true, variable is on tape
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
@@ -1877,17 +1984,59 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+       
+          if (iop_mode .or. single_column) then
              start(:) = 1 
              count(:) = 1
-             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
+             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)    
              if (present(nt)) then
                n=5
                if (start(5) .eq. 0) n=4
                start(n) = nt ; count(n) = 1
              endif
              
-             status = pio_get_var(ncid, vardesc, start, count, data)
+             if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
+     
+             if (iop_mode) then
+     
+               if (start(4) .eq. 0) then
+       
+                 count_iop3d(1:3) = count(1:3)
+                 start_iop3d(1:3) = start(1:3)
+     
+                 allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
+     
+                 status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
+     
+                 do i=1,count_iop3d(2)
+                   do j=1,count_iop3d(3)
+                     data(:,i,j) = iop_data3d(1,i,j)
+                   enddo
+                 enddo
+     
+                 deallocate(iop_data3d)     
+             
+               else
+     
+                 count_iop4d(1:4) = count(1:4)
+                 start_iop4d(1:4) = start(1:4)
+     
+                 allocate(iop_data4d(count_iop4d(1),count_iop4d(2),count_iop4d(3),count_iop4d(4)))
+     
+                 status = pio_get_var(ncid, vardesc, start_iop4d, count_iop4d, iop_data4d)
+     
+                 do i=1,count_iop4d(2)
+                   do j=1,count_iop4d(3)
+                     data(:,i,j) = iop_data4d(1,i,j,1)
+                   enddo
+                 enddo
+     
+                 deallocate(iop_data4d)
+     
+               endif
+     
+            endif ! iop_mode
+     
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)

@@ -1,0 +1,4 @@
+flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_1x1_smallvilleIA_mp24_hist_simyr1850-1855_c141229.nc'
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp24_simyr2000_c130927.nc'
+
+check_dynpft_consistency = .false.

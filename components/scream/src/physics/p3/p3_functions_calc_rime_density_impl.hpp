@@ -38,36 +38,36 @@ void Functions<S,D>
     if (qccol_and_qc_not_small_and_t_freezing.any()) {
 
       // Droplet fall speed (using Stokes' formulation, with analytic soln).
-      Spack Vt_qc = acn * tgamma(sp(4.)+bcn+mu_c) /
-        (pow(lamc, bcn) * tgamma(sp(4.)+mu_c));
+      Spack Vt_qc = acn * tgamma(4+bcn+mu_c) /
+        (pow(lamc, bcn) * tgamma(4+mu_c));
 
       // Use mass-weighted mean size
-      Spack D_c = (sp(4.) + mu_c) / lamc;
+      Spack D_c = (4 + mu_c) / lamc;
       Spack V_impact = abs(vtrmi1-Vt_qc);
       Spack inv_Tc = 1/min(sp(-0.001), t-ZeroDegC);
-      Spack Ri = max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, sp(12.)));
+      Spack Ri = max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, 12));
 
       const auto Ri_le_8 = (Ri <= sp(8.0));
       rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and Ri_le_8,
-                    (sp(0.051) + sp(0.114)*Ri - sp(0.0055)*square(Ri))*sp(1000.));
+                    (sp(0.051) + sp(0.114)*Ri - sp(0.0055)*square(Ri))*1000);
 
       // For Ri > 8, assume a linear fit between 8 and 12.
       // rhorime = 900 kg m-3 at Ri = 12
       // This is somewhat ad-hoc but allows a smoother transition
       // in rime density up to wet growth.
       rhorime_c.set(qccol_and_qc_not_small_and_t_freezing and not Ri_le_8,
-                    sp(611.) + sp(72.25) * (Ri-sp(8.)));
+                    sp(611.) + sp(72.25) * (Ri-8));
     }
 
     // If qc_incld is small, just set rhorime_c to 400.
     const auto qccol_not_small_and_qc_small_and_t_freezing =
       qccol_not_small_and_t_freezing && (qc_incld < qsmall);
-    rhorime_c.set(qccol_not_small_and_qc_small_and_t_freezing, sp(400.));
+    rhorime_c.set(qccol_not_small_and_qc_small_and_t_freezing, 400);
   }
 
   // Handle the cases we haven't handled above.
   vtrmi1.set(not qccol_not_small_and_t_freezing, 0); // no velocity if no ice
-  rhorime_c.set(not qccol_not_small_and_t_freezing, sp(400.));
+  rhorime_c.set(not qccol_not_small_and_t_freezing, 400);
 }
 
 } // namespace p3

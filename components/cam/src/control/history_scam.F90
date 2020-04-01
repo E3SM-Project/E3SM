@@ -15,7 +15,7 @@ module history_scam
    use pmgrid,       only: plev
    use cam_history,  only:    addfld, horiz_only, outfld, add_default
 
-   use scamMod, only :divq3d,divt3d,wfld,divq,divt,divu,divv
+   use scamMod, only :divq3d,divt3d,wfld,divq,divt,divu,divv,iop_mode
 
    implicit none
 
@@ -59,10 +59,16 @@ CONTAINS
 ! Call addfld to add each field to the Master Field List.
 !
       !+ Make this have backwards compatibility with Eulerian core
-      call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname=trim(dyngrid))
+      if (iop_mode) then
+        call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname='GLL')
+        call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname='GLL')
+      else 
+        call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname=trim(dyngrid))
+        call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname=trim(dyngrid))
+      endif      
 
       call addfld ('TOBS',(/ 'lev' /),    'A','K','observed temp',gridname=trim(dyngrid))
-      call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname=trim(dyngrid))
+
 
       call addfld ('QOBS',(/ 'lev' /),    'A','kg/kg','observed water',gridname=trim(dyngrid))
       call addfld ('PRECOBS',(/ 'lev' /),    'A','mm/day','Total (convective and large-scale) precipitation rate',gridname=trim(dyngrid))

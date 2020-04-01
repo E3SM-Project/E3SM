@@ -71,7 +71,7 @@ class TestAllScream(object):
         if self._submit:
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
-        print_last_commit()
+        print_last_commit(git_ref="HEAD")
 
         # Compute baseline info
         expect(not (self._baseline_ref and self._baseline_dir),
