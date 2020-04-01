@@ -1,3 +1,8 @@
+The code in this directory is provided by Donatella Pasqualini (A-1)
+It has been modified slightly from the original version to:
+  1) output the wind and pressure data into the format used for time-varying atmospheric forcing in MPAS-O
+  2) To use the initial date in the json file to create time stamps for the wind and pressure time snaps
+
 # Hurricane Winds
 
 A project to develop tools for creating sequences of vector wind and pressure  fields from hurricane storm track data.
