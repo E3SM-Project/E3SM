@@ -8,6 +8,7 @@ sim_dat_path       = ../output/
 sim_dat_filename   = chemUCI_mam4.dat
 
 Comments
+     "Modified by Juno Hsu and Qi Tang"
      "chemUCI + MAM4 for E3SM"
      "last touch 20200331 - MJP"
 End Comments
@@ -17,7 +18,7 @@ SPECIES
  Solution
 * UCI Chem species
   O3
-  OH -> HO
+  OH
   HO2
   H2O2
   CH2O
@@ -35,19 +36,19 @@ SPECIES
   C2H6
   C3H8
   C2H4
-  ROHO2
+  ROHO2 -> CH3COCH2OHO2
   CH3COCH3
   C2H5O2
   C2H5OOH
   CH3CHO
   CH3CO3
   ISOP -> C5H8
-  ISOPO2 -> HOCH2COOCH3CHCH2,
-  MVKMACR
+  ISOPO2 -> HOCH2COOCH3CHCH2
+  MVKMACR -> CH2CHCOCH3
 * MVKMACR = sum of MVK -> CH2CHCOCH3 + MACR -> CH2CCH3CHO
-  MVKO2
-  e90
-  O3S
+  MVKO2 -> CH2CHCOCH3O2
+  e90 -> O3
+  O3S -> O3
 
 
 * MAM4 species
@@ -159,8 +160,7 @@ CHEMISTRY
 *  by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
 *  and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
 *  k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
-*     (1.63e-10*exp(63/T)*[H2O] + 3.30e
-   T)*[N2] + 2.15e-11*exp(110/T)*[O2])
+*     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2])
    CO + OH -> CO2 + H                             ; 1.440E-13,  0
    CO + OH + M -> CO2 + HO2 + M                   ; 2.670E-33,  0
    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
