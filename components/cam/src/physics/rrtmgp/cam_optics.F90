@@ -15,7 +15,8 @@ module cam_optics
           sample_cloud_optics_sw, &
           sample_cloud_optics_lw, &
           compress_optics_sw, &
-          set_aerosol_optics_sw
+          set_aerosol_optics_sw, &
+          set_aerosol_optics_lw
 
    ! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
    integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
@@ -162,24 +163,30 @@ contains
       cld_tau = ice_tau + liq_tau
       cld_tau_ssa = ice_tau_ssa + liq_tau_ssa
       cld_tau_ssa_g = ice_tau_ssa_g + liq_tau_ssa_g
-      call combine_properties( &
-         nbnd, ncol, nlev, &
-         cld(1:ncol,1:nlev), cld_tau(1:nbnd,1:ncol,1:nlev), &
-         cldfsnow(1:ncol,1:nlev), snow_tau(1:nbnd,1:ncol,1:nlev), &
-         combined_tau(1:nbnd,1:ncol,1:nlev) &
-      )
-      call combine_properties( &
-         nbnd, ncol, nlev, &
-         cld(1:ncol,1:nlev), cld_tau_ssa(1:nbnd,1:ncol,1:nlev), &
-         cldfsnow(1:ncol,1:nlev), snow_tau_ssa(1:nbnd,1:ncol,1:nlev), &
-         combined_tau_ssa(1:nbnd,1:ncol,1:nlev) &
-      )
-      call combine_properties( &
-         nbnd, ncol, nlev, &
-         cld(1:ncol,1:nlev), cld_tau_ssa_g(1:nbnd,1:ncol,1:nlev), &
-         cldfsnow(1:ncol,1:nlev), snow_tau_ssa_g(1:nbnd,1:ncol,1:nlev), &
-         combined_tau_ssa_g(1:nbnd,1:ncol,1:nlev) &
-      )
+      if (do_snow) then
+         call combine_properties( &
+            nbnd, ncol, nlev, &
+            cld(1:ncol,1:nlev), cld_tau(1:nbnd,1:ncol,1:nlev), &
+            cldfsnow(1:ncol,1:nlev), snow_tau(1:nbnd,1:ncol,1:nlev), &
+            combined_tau(1:nbnd,1:ncol,1:nlev) &
+         )
+         call combine_properties( &
+            nbnd, ncol, nlev, &
+            cld(1:ncol,1:nlev), cld_tau_ssa(1:nbnd,1:ncol,1:nlev), &
+            cldfsnow(1:ncol,1:nlev), snow_tau_ssa(1:nbnd,1:ncol,1:nlev), &
+            combined_tau_ssa(1:nbnd,1:ncol,1:nlev) &
+         )
+         call combine_properties( &
+            nbnd, ncol, nlev, &
+            cld(1:ncol,1:nlev), cld_tau_ssa_g(1:nbnd,1:ncol,1:nlev), &
+            cldfsnow(1:ncol,1:nlev), snow_tau_ssa_g(1:nbnd,1:ncol,1:nlev), &
+            combined_tau_ssa_g(1:nbnd,1:ncol,1:nlev) &
+         )
+      else
+         combined_tau = cld_tau
+         combined_tau_ssa = cld_tau_ssa
+         combined_tau_ssa_g = cld_tau_ssa_g
+      end if
       
       ! Copy to output arrays, converting to optical depth, single scattering
       ! albedo, and assymmetry parameter from the products that the CAM routines
@@ -261,12 +268,12 @@ contains
          call endrun('liqcldoptics ' // trim(liqcldoptics) // ' not supported.')
       end if
 
+      ! Combined cloud optics
+      cld_tau = liq_tau + ice_tau
+
       ! Get snow optics?
       if (do_snow) then
          call mitchell_ice_optics_lw(ncol, nlev, icswp, des, snow_tau)
-
-         ! Combined cloud optics
-         cld_tau = liq_tau + ice_tau
          call combine_properties(nbnd, ncol, nlev, &
             cld(1:ncol,1:nlev), cld_tau(1:nbnd,1:ncol,1:nlev), &
             cldfsnow(1:ncol,1:nlev), snow_tau(1:nbnd,1:ncol,1:nlev), &
@@ -374,7 +381,7 @@ contains
       do igpt = 1,ngpt
          do ilev = 1,nlev
             do icol = 1,ncol
-               if (iscloudy(igpt,icol,ilev)) then
+               if (iscloudy(igpt,icol,ilev) .and. combined_cld(icol,ilev) > 0._r8) then
                   tau_gpt(icol,ilev,igpt) = tau_bnd(icol,ilev,gpt2bnd(igpt))
                   ssa_gpt(icol,ilev,igpt) = ssa_bnd(icol,ilev,gpt2bnd(igpt))
                   asm_gpt(icol,ilev,igpt) = asm_bnd(icol,ilev,gpt2bnd(igpt))
@@ -421,7 +428,6 @@ contains
          ncol, nlev, ngpt, gpt2bnd, &
          pmid, cld, cldfsnow, &
          tau_bnd, tau_gpt)
-      use ppgrid, only: pcols
       use mcica_subcol_gen, only: mcica_subcol_mask
 
       integer, intent(in) :: ncol, nlev, ngpt
@@ -455,7 +461,7 @@ contains
       do igpt = 1,ngpt
          do ilev = 1,nlev
             do icol = 1,ncol
-               if (iscloudy(igpt,icol,ilev)) then
+               if (iscloudy(igpt,icol,ilev) .and. combined_cld(icol,ilev) > 0._r8) then
                   tau_gpt(icol,ilev,igpt) = tau_bnd(icol,ilev,gpt2bnd(igpt))
                else
                   tau_gpt(icol,ilev,igpt) = 0
@@ -541,6 +547,32 @@ contains
       end do
 
    end subroutine set_aerosol_optics_sw
+
+   !----------------------------------------------------------------------------
+
+   subroutine set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, tau)
+     
+      use ppgrid, only: pcols, pver
+      use physics_types, only: physics_state
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
+                                pbuf_get_field, pbuf_old_tim_idx
+      use aer_rad_props, only: aer_rad_props_lw
+      use radconstants, only: nlwbands
+
+      integer, intent(in) :: icall
+      type(physics_state), intent(in) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      logical, intent(in) :: is_cmip6_volc
+      real(r8), intent(out), dimension(:,:,:) :: tau(pcols,pver,nlwbands)
+
+      ! Subroutine name for error messages
+      character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_lw'
+
+      ! Get aerosol absorption optical depth from CAM routine
+      tau = 0.0
+      call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, tau)
+
+   end subroutine set_aerosol_optics_lw
 
    !----------------------------------------------------------------------------
 
