@@ -3,8 +3,6 @@ if (NOT DEFINED PROJECT_NAME)
   cmake_policy(SET CMP0057 NEW)
   set(CIME_BUILD FALSE)
 else()
-  find_path(CXX_PATH ${MPICXX})
-  set(CMAKE_CXX_COMPILER ${CXX_PATH}/${MPICXX} CACHE STRING "" FORCE)
   set(CIME_BUILD TRUE)
 endif()
 
