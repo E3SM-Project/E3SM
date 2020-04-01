@@ -204,12 +204,14 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
       d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
-      d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thetal(i, k) +
+      d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thv(i, k) +
                          consts::gravit * d.zt_grid(i, k);
     }
 
-    // Zero out other fields.
+    // Zero the other input fields.
+    d.phis(i) = 0;
     for (Int k = 0; k < nlev; ++k) {
+      d.wthv_sec(i, k) = 0;
       d.tk(i, k) = 0;
       d.tkh(i, k) = 0;
     }

@@ -10,8 +10,7 @@ using scream::Real;
 using scream::Int;
 extern "C" {
   void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
-                   Real zvir, Real latvap, Real latice, Real karman,
-                   Real* pref_mid, int nbot_shoc, int ntop_shoc);
+                   Real zvir, Real latvap, Real latice, Real karman);
   void shoc_use_cxx_c(bool use_cxx);
   void shoc_main_c(int shcol, int nlev, int nlevi, Real dtime, int nadv,
                    Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
@@ -130,14 +129,11 @@ FortranDataIterator::getfield (Int i) const {
 void shoc_init(Int nlev, bool use_fortran) {
   static bool is_init = false;
   if (!is_init) {
-    using KT     = KokkosTypes<HostDevice>;
     using Scalar = Real;
-    using Array1 = typename KT::template lview<Scalar*>;
     using C = scream::physics::Constants<Scalar>;
 
-    auto pref_mid = Array1("reference pressures (unused)", nlev);
     shoc_init_c((int)nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR,
-                C::LatVap, C::LatIce, C::Karman, pref_mid.data(), (int)nlev, 1);
+                C::LatVap, C::LatIce, C::Karman);
     is_init = true;
   }
   shoc_use_cxx_c(!use_fortran);
@@ -168,7 +164,8 @@ int test_FortranData () {
 }
 
 int test_shoc_init (bool use_fortran) {
-  shoc_init(use_fortran);
+  Int nz = 160;
+  shoc_init(nz, use_fortran);
   return 0;
 }
 
@@ -229,7 +226,7 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
   FILE* fp = fopen(script_path, "w");
   if (fp != NULL)
   {
-    fprintf(stderr, "Generating %s...", script_path);
+    fprintf(stderr, "Generating %s...\n", script_path);
 
     // Plotting code, cribbed from scream-docs/shoc-port/shocintr.py.
     const char* plotting_code =
@@ -373,11 +370,12 @@ Int check_against_python(const FortranData& d)
 }
 
 int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
-  shoc_init(use_fortran);
+  Int nz = 160;
+  shoc_init(nz, use_fortran);
   // Here we:
   // 1. Initialize a standard case with settings identical to
   //    scream-doc/ѕhoc_port/shocintr.py's example_run_case method
-  auto d = ic::Factory::create(ic::Factory::standard, 1, 160, 1);
+  auto d = ic::Factory::create(ic::Factory::standard, 1, nz, 1);
 
   // 4. Generate a Python script that plots the initial conditions.
   {
@@ -401,8 +399,8 @@ printf("%.16g %.16g %.16g %.16g\n", d->host_dse(0, 0), d->tke(0, 0),
     data.push_back(d);
     if (gen_plot_scripts) {
       gen_plot_script(data, "plot_results.py", "results");
-      fprintf(stderr, "To generate PDFs of initial and final conditions, run\n"
-                      "the plot_*.py python scripts using a Python 3 interpreter\n"
+      fprintf(stderr, "To generate PDFs of initial and final conditions, run "
+                      "the plot_*.py python scripts using a Python 3 interpreter "
                       "with numpy and Matplotlib installed.\n");
     }
   }

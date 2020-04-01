@@ -24,9 +24,8 @@ contains
   end subroutine append_precision
 
   subroutine shoc_init_c(nlev, gravit, rair, rh2o, cpair, &
-                         zvir, latvap, latice, karman, &
-                         pref_mid, nbot_shoc, ntop_shoc) bind(c)
-    use shoc, only: shoc_init
+                         zvir, latvap, latice, karman) bind(c)
+    use shoc, only: shoc_init, npbl
 
     integer(kind=c_int), value, intent(in) :: nlev ! number of levels
 
@@ -39,15 +38,13 @@ contains
     real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
     real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
 
-    real(kind=c_real), intent(in), dimension(nlev) :: pref_mid ! reference pressures at midpoints
+    real(8) :: pref_mid(nlev) ! unused values
 
-    integer(kind=c_int), value, intent(in) :: nbot_shoc ! Bottom level to which SHOC is applied
-    integer(kind=c_int), value, intent(in) :: ntop_shoc ! Top level to which SHOC is applied
-
+    pref_mid = 0
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
                    zvir, latvap, latice, karman, &
-                   pref_mid, nbot_shoc, ntop_shoc)
-
+                   pref_mid, nlev, 1)
+    npbl = nlev ! set pbl layer explicitly so we don't need pref_mid.
   end subroutine shoc_init_c
 
   subroutine shoc_main_c(shcol,nlev,nlevi,dtime,nadv,host_dx, host_dy, thv,  &
