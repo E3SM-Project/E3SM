@@ -53,11 +53,11 @@
 
 	<run_script name="run.py">
 		<step executable="gpmetis">
-			<argument flag="graph.info">8</argument>
+			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="./define_vertical_grid.py">
 		</step>
-		<model_run procs="8" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 
 </config>

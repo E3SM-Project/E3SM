@@ -1,1 +1,1 @@
-../../../scripts/vertical_grid/define_vertical_grid_64_layers.py
+../../../scripts/vertical_grid/define_vertical_grid_16_layers.py
