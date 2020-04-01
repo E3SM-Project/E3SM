@@ -30,6 +30,8 @@
                 <option name="config_tidal_potential_reference_time">'2012-10-10_00:00:00'</option>
                 <option name="config_tidal_potential_ramp">10.0</option>
 
+                <option name="config_pressure_gradient_type">'ssh_gradient'</option>
+
                 <option name="config_AM_pointwiseStats_enable">.true.</option>
 	</namelist>
 
