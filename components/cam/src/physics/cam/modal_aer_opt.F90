@@ -1281,7 +1281,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
                                      qaerwat_m, wetdens_m)
    endif
 
-   do m = 1, 4!Bnmodes !BALLI
+   do m = 1, nmodes
 
       dgnumwet => dgnumwet_m(:,:,m)
       qaerwat  => qaerwat_m(:,:,m)

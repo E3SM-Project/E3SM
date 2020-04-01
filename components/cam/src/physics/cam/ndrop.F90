@@ -1665,7 +1665,7 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
 1  continue
 
    sum=0
-   do m=1,nmode
+   do m=1,4!nmode
       if(eta(m).gt.1.e-20_r8)then
          g1=zeta(m)/eta(m)
          g1sqrt=sqrt(g1)
@@ -1679,7 +1679,7 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
          g2=smc(m)/sqrt(eta(m)+3._r8*zeta(m))
          g2sqrt=sqrt(g2)
          g2=g2sqrt*g2
-                 if(m<5)sum=sum+(f1(m)*g1+f2(m)*g2)/(smc(m)*smc(m))
+         sum=sum+(f1(m)*g1+f2(m)*g2)/(smc(m)*smc(m))
       else
          sum=1.e20_r8
       endif

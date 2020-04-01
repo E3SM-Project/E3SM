@@ -8,8 +8,6 @@ module seasalt_model
   use modal_aero_data,only: ntot_amode
   use tracer_data,    only: trfld, trfile
   use cam_logfile,    only: iulog
-use module_perturb
-  use time_manager,    only: is_first_step, get_nstep
 
   implicit none
   private
@@ -214,25 +212,16 @@ contains
     use sslt_sections, only: sslt_sections_init
     use constituents,  only: cnst_get_ind
 
-    integer :: m, islt
+    integer :: m
 
     do m = 1, seasalt_nbin
        call cnst_get_ind(seasalt_names(m), seasalt_indices(m),abort=.false.)
-       !write(107,*)'sst_emissions_init_1:',seasalt_indices(m),seasalt_names(m),m,seasalt_nbin
     enddo
     do m = 1, seasalt_nnum
        call cnst_get_ind(seasalt_names(seasalt_nbin+m), seasalt_indices(seasalt_nbin+m),abort=.false.)
-       !write(107,*)'sst_emissions_init_2:',seasalt_indices(seasalt_nbin+m),seasalt_names(seasalt_nbin+m),seasalt_nbin+m,seasalt_nnum
     enddo
 
-    !do islt = 1, nslt
-    !   do islt_nm = 1, seasalt_nbin
-    !   enddo
-    !enddo
-
-
-    
-    if(seasalt_nbin+seasalt_nnum>10)seasalt_indices(m+5)=43 !BALLI
+    if(seasalt_nbin+seasalt_nnum>10)seasalt_indices(m+5)=43
     seasalt_active = any(seasalt_indices(:) > 0)
 
     if (.not.seasalt_active) return
@@ -554,7 +543,6 @@ end subroutine ocean_data_readnl
        mm = seasalt_indices(ibin)
        ! Index of number mode
        mn = seasalt_indices(nslt+nslt_om+ibin)
-       !if(icolprnt(lchnk)>0)write(107,*)'sst_emissions_index:',mm,ibin,mn,nslt+nslt_om+ibin !seasalt_nbin,seasalt_nnum
 
        if (mn>0) then
 !! Total number flux per mode
@@ -563,7 +551,7 @@ end subroutine ocean_data_readnl
              cflx_help2(:ncol) = 0.0_r8
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
-                if ((ibin==3).or.(ibin==4)) then !BALLI- should we include ibin==5?
+                if ((ibin==3).or.(ibin==4)) then !BSINGH- should we include ibin==5?
                    ! Don't apply OM parameterization to fine or coarse SS mode
                    cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)
                 else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
@@ -594,7 +582,7 @@ end subroutine ocean_data_readnl
        cflx(:ncol,mm)=0.0_r8
        section_loop_sslt_mass: do i=1, nsections
           if ( has_mam_mom ) then
-          if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin) .and. mm .ne. 41) then !BALLI
+          if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin) .and. mm .ne. 41) then
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
@@ -678,8 +666,7 @@ add_om_species: if ( has_mam_mom ) then
        end if
        m = om_num_ind(m_om)
        mn=seasalt_indices(nslt+nslt_om+m)
-       if(m==4)mn=40 !BALLI
-       !if(icolprnt(lchnk)>0)write(107,*)'sst_emissions_index_2:',m,m_om,mn,nslt+nslt_om+m,nslt,nslt_om
+       if(m==4)mn=40 !BSINGH
 
           ! add number tracers for organics-only modes
           if (emit_this_mode(m_om)) then

@@ -217,7 +217,6 @@ subroutine cam_run1(cam_in, cam_out)
 #endif
    use time_manager,     only: get_nstep
 
-
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
 
@@ -275,7 +274,7 @@ subroutine cam_run2( cam_out, cam_in )
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
-   integer :: iballi,cballi
+   integer :: cb
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
    type(cam_in_t),  intent(inout) :: cam_in(begchunk:endchunk)
 
@@ -293,11 +292,10 @@ subroutine cam_run2( cam_out, cam_in )
    call t_barrierf ('sync_stepon_run2', mpicom)
    call t_startf ('stepon_run2')
    if(pcnst>40) then
-      do cballi = begchunk,endchunk
-         phys_state(cballi)%q(:,:,43) = 0.0_r8
+      do cb = begchunk,endchunk
+         phys_state(cb)%q(:,:,43) = 0.0_r8
       enddo
    endif
-
    call stepon_run2( phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_stopf  ('stepon_run2')
