@@ -1,16 +1,16 @@
 BEGSIM
 output_unit_number = 7
-output_file        = chemUCI_mam4.doc
+output_file        = chemUCI.doc
 procout_path       = ../output/
 src_path           = ../bkend/
 procfiles_path     = ../procfiles/cam/
 sim_dat_path       = ../output/
-sim_dat_filename   = chemUCI_mam4.dat
+sim_dat_filename   = chemUCI.dat
 
 Comments
-     "Modified by Juno Hsu and Qi Tang"
-     "chemUCI + MAM4 for E3SM"
-     "last touch 20200331 - MJP"
+     "Modified by Qi Tang"
+     "chemUCI standalone for E3SM"
+     "last touch 20200401 - MJP"
 End Comments
 
 SPECIES
@@ -49,42 +49,6 @@ SPECIES
   MVKO2 -> C4H7O4
   e90 -> O3
   O3S -> O3
-
-
-* MAM4 species
-  DMS -> C2H6S
-  SO2 -> O2S
-  H2SO4
-  SOAG -> C
-  so4_a1 -> NH4HSO4
-  so4_a2 -> NH4HSO4
-  so4_a3 -> NH4HSO4
-  pom_a1 -> C
-* pom_a2 does not exist
-  pom_a3 -> C
-  pom_a4 -> C
-  soa_a1 -> C
-  soa_a2 -> C
-  soa_a3 -> C
-  bc_a1 -> C
-* bc_a2 does not exist
-  bc_a3 -> C
-  bc_a4 -> C
-  dst_a1 -> AlSiO5
-* dst_a2 does not exist
-  dst_a3 -> AlSiO5
-* dst_a4 does not exist
-  ncl_a1 -> NaCl
-  ncl_a2 -> NaCl
-  ncl_a3 -> NaCl
-  mom_a1 -> C8520H11360O8520
-  mom_a2 -> C8520H11360O8520
-  mom_a3 -> C8520H11360O8520
-  mom_a4 -> C8520H11360O8520
-  num_a1 -> H
-  num_a2 -> H
-  num_a3 -> H
-  num_a4 -> H
  End Solution
 
  Fixed
@@ -111,15 +75,6 @@ Solution Classes
    NO, NO2, NO3, N2O5, HNO3, HNO4, PAN
    C2H5O2, C2H5OOH, CH3CHO, CH3CO3, C2H4, ROHO2
    ISOP, ISOPO2, MVKMACR, MVKO2
-   DMS, SO2, H2SO4, SOAG
-   so4_a1,  so4_a2,  so4_a3
-   pom_a1,           pom_a3,  pom_a4
-   soa_a1,  soa_a2,  soa_a3
-   bc_a1,            bc_a3,   bc_a4
-   dst_a1,           dst_a3
-   ncl_a1,  ncl_a2,  ncl_a3
-   mom_a1,  mom_a2,  mom_a3,  mom_a4
-   num_a1,  num_a2,  num_a3,  num_a4
  End Implicit
 
 End Solution Classes
@@ -157,10 +112,11 @@ CHEMISTRY
 [uci2] O3 + H2 -> OH + HO2                        ; 1.200E-10,  0
 [uci3] O3 + CH4 -> OH + CH3OO                     ; 1.750E-10,  0
 *  These 3 rates for O(1D) rxt w/ H2O, H2, CH4 are scaled with jo1d and divided
-*  by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
-*  and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
-*  k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
-*     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2])
+*     by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
+*     and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
+*  effectively k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
+*     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2]
+*  and rxt[uci1] = k[uci1]*[O3]*[H2O]
    CO + OH -> CO2 + H                             ; 1.440E-13,  0
    CO + OH + M -> CO2 + HO2 + M                   ; 2.670E-33,  0
    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
@@ -232,27 +188,11 @@ CHEMISTRY
 [ucih2]  NO3   -> HNO3                            ; 0.03E+00
 [ucih3]  HO2   ->                                 ; 0.10E+00
 
-* MAM4 chemistry below
-              DMS + OH -> SO2                     ; 9.600E-12, -234
-[usr_DMS_OH]  DMS + OH ->  .5 * SO2 + .5 * HO2
-[usr_SO2_OH]  SO2 + OH -> H2SO4
-* --------------------------------------------------------------
-* decay for e90
-* --------------------------------------------------------------
- [usr_e90]  e90 ->                                ; 1.286E-7, 0.
+[usr_e90]  e90 ->                                 ; 1.286E-7, 0.
 
  End Reactions
 
  Ext Forcing
-      NO
-      NO2 <- dataset
-      SO2 <- dataset
-      so4_a1 <- dataset
-      so4_a2 <- dataset
-      pom_a1 <- dataset
-      bc_a1 <- dataset
-      num_a1 <- dataset
-      num_a2 <- dataset
  End Ext Forcing
 
 END CHEMISTRY
