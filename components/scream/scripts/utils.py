@@ -347,10 +347,10 @@ def get_current_head(repo=None):
         return branch
 
 ###############################################################################
-def is_repo_clean(repo=None):
+def is_repo_clean(repo=None, silent=False):
 ###############################################################################
     rc, output, _ = run_cmd("git status --porcelain --untracked-files=no", combine_output=True, from_dir=repo)
-    if rc != 0 or output != "":
+    if (rc != 0 or output != "") and not silent:
         print("Warning: repo is not clean: {}".format(output))
 
     return rc == 0 and output == ""
