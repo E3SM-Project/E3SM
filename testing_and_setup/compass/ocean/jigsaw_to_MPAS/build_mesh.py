@@ -28,8 +28,7 @@ from jigsaw_to_MPAS.inject_meshDensity import inject_meshDensity
 from jigsaw_to_MPAS.inject_preserve_floodplain import \
     inject_preserve_floodplain
 
-from define_base_mesh import define_base_mesh
-
+import define_base_mesh
 
 def build_mesh(
         preserve_floodplain=False,
