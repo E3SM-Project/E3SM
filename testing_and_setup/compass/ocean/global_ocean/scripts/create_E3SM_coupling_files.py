@@ -140,7 +140,12 @@ def initial_condition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
     # create links
-    make_link('../init.nc', mesh_name + '.nc')
+    init_filename = config.get('main', 'initial_condition')
+    base_path = os.path.dirname(os.getcwd())
+    # make it an absolute path with respect to the parent directory if it isn't
+    # already
+    init_filename = os.path.normpath(os.path.join(base_path, init_filename))
+    make_link(init_filename, mesh_name + '.nc')
 
     # command line execution
     args = ['ncks', '-x', '-v', 'xtime', '-O',
@@ -195,8 +200,12 @@ def graph_partition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
 def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
-    # create links
-    make_link('../init.nc', mesh_name + '.nc')
+    init_filename = config.get('main', 'initial_condition')
+    base_path = os.path.dirname(os.getcwd())
+    # make it an absolute path with respect to the parent directory if it isn't
+    # already
+    init_filename = os.path.normpath(os.path.join(base_path, init_filename))
+    make_link(init_filename, mesh_name + '.nc')
 
     # command line execution
     args = ['ncks', '-x', '-v',
@@ -230,7 +239,7 @@ def scrip(config, mesh_name, date_string, ice_shelf_cavities):
         nomaskStr=''
 
     # create links
-    make_link('../init.nc', mesh_name + '.nc')
+    make_link('../mesh.nc', mesh_name + '.nc')
 
     # command line execution
     scrip_file = ('ocean.' + mesh_name + nomaskStr + '.scrip.' + date_string + '.nc')
@@ -563,12 +572,12 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
     # switch those files.
     if ice_shelf_cavities:
         make_link('../copy_cell_indices_ISC.py', 'copy_cell_indices_ISC.py')
-        make_link('../init.nc', 'init.nc')
+        make_link('../mesh.nc', 'mesh.nc')
         make_link('../no_ISC_culled_mesh.nc', 'no_ISC_culled_mesh.nc.nc')
         args = ['./copy_cell_indices_ISC.py',
             '-i', 'map_oQU240wISC_coast_to_oQU240wISC_sm_e1000r300_200202.nc',
             '-o', 'map_output.nc',
-            '-w', 'init.nc',
+            '-w', 'mesh.nc',
             '-n', 'no_ISC_culled_mesh.nc.nc'
             ]
         run_command(args)
@@ -668,7 +677,7 @@ def prescribed_ismf(config, mesh_name, date_string, ice_shelf_cavities):  # {{{
 
     mpiTasks = config.getint('main', 'nprocs')
 
-    remap_rignot(inFileName=in_filename, meshFileName='../init.nc',
+    remap_rignot(inFileName=in_filename, meshFileName='../mesh.nc',
                  meshName=mesh_name, outFileName=out_filename,
                  mappingDirectory='.', method='conserve',
                  renormalizationThreshold=None, inVarName='melt_actual',
@@ -728,7 +737,7 @@ def run_command(args):
 def make_moc_masks(mesh_name): # {{{
     gf = GeometricFeatures()
 
-    mesh_filename = '../init.nc'
+    mesh_filename = '../mesh.nc'
 
     mask_filename = '{}_moc_masks.nc'.format(mesh_name)
     mask_and_transect_filename = '{}_moc_masks_and_transects.nc'.format(
@@ -958,7 +967,7 @@ def make_ice_shelf_masks(gf):  # {{{
 
 
 def make_region_masks(mesh_name, suffix, fcMask):  # {{{
-    mesh_filename = '../init.nc'
+    mesh_filename = '../mesh.nc'
 
     geojson_filename = '{}.geojson'.format(suffix)
     mask_filename = '{}_{}.nc'.format(mesh_name, suffix)
@@ -984,7 +993,7 @@ def make_region_masks(mesh_name, suffix, fcMask):  # {{{
 
 def make_analysis_lat_lon_map(config, mesh_name):
     # {{{
-    mesh_filename = '../init.nc'
+    mesh_filename = '../mesh.nc'
 
     inDescriptor = MpasMeshDescriptor(mesh_filename, mesh_name)
 
@@ -1009,7 +1018,7 @@ def make_analysis_lat_lon_map(config, mesh_name):
 
 def make_analysis_polar_map(config, mesh_name, projection):
     # {{{
-    mesh_filename = '../init.nc'
+    mesh_filename = '../mesh.nc'
 
     upperProj = projection[0].upper() + projection[1:]
 
