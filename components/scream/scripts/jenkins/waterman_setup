@@ -1,0 +1,5 @@
+export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-waterman/bin:$PATH
+
+source ./scream/components/scream/scripts/jenkins/sandia_srn_proxy
+
+SCREAM_MACHINE=waterman
