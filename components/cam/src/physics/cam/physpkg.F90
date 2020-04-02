@@ -66,6 +66,9 @@ module physpkg
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
   integer ::  rice2_idx          = 0
+  integer ::  rprddp_idx         = 0
+  integer ::  nevapr_dpcu_idx    = 0
+  integer ::  ttend_dp_idx       = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -83,6 +86,7 @@ module physpkg
   character(len=16) :: shallow_scheme
   character(len=16) :: macrop_scheme
   character(len=16) :: microp_scheme 
+  integer           :: deep_num_steps          ! Number of deep convection substeps
   integer           :: cld_macmic_num_steps    ! Number of macro/micro substeps
   logical           :: do_clubb_sgs
   logical           :: use_subcol_microp   ! if true, use subcolumns in microphysics
@@ -164,6 +168,7 @@ subroutine phys_register
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
                       microp_scheme_out        = microp_scheme,   &
+                      deep_num_steps_out       = deep_num_steps, &
                       cld_macmic_num_steps_out = cld_macmic_num_steps, &
                       do_clubb_sgs_out         = do_clubb_sgs,     &
                       do_aerocom_ind3_out      = do_aerocom_ind3,  &
@@ -879,6 +884,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     snow_dp_idx  = pbuf_get_index('SNOW_DP')
     prec_sh_idx  = pbuf_get_index('PREC_SH')
     snow_sh_idx  = pbuf_get_index('SNOW_SH')
+
+    rprddp_idx  = pbuf_get_index('RPRDDP')
+    nevapr_dpcu_idx  = pbuf_get_index('NEVAPR_DPCU')
+    ttend_dp_idx  = pbuf_get_index('TTEND_DP')
 
     if (shallow_scheme .eq. 'UNICON') then
         rice2_idx    = pbuf_get_index('rice2')
@@ -1906,6 +1915,9 @@ subroutine tphysbc (ztodt,               &
 
     integer  i,k,m,ihist                       ! Longitude, level, constituent indices
     integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
+    ! for ZM substepping
+    integer :: deep_it                         ! iteration variables
+    real(r8) :: deep_ztodt                     ! modified timestep
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
     real(r8) :: cld_macmic_ztodt               ! modified timestep
@@ -1939,6 +1951,11 @@ subroutine tphysbc (ztodt,               &
 
     real(r8),pointer :: rice2(:)                  ! reserved ice from UNICON [m/s]
 
+    ! Variables from deep convection used by wet deposition or gravity waves
+    real(r8),pointer :: rprddp(:,:)
+    real(r8),pointer :: nevapr_dpcu(:,:)
+    real(r8),pointer :: ttend_dp(:,:)
+
     ! carma precipitation variables
     real(r8) :: prec_sed_carma(pcols)          ! total precip from cloud sedimentation (CARMA)
     real(r8) :: snow_sed_carma(pcols)          ! snow from cloud ice sedimentation (CARMA)
@@ -1960,6 +1977,13 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: snow_pcw_macmic(pcols)
     real(r8) :: prec_sed_macmic(pcols)
     real(r8) :: snow_sed_macmic(pcols)
+
+    real(r8) :: prec_dp_accum(pcols)
+    real(r8) :: snow_dp_accum(pcols)
+    real(r8) :: rprddp_accum(pcols,pver)
+    real(r8) :: nevapr_dpcu_accum(pcols,pver)
+    real(r8) :: ttend_dp_accum(pcols,pver)
+    real(r8) :: rliq_accum(pcols)
 
     ! energy checking variables
     real(r8) :: zero(pcols)                    ! array of zeros
@@ -2279,21 +2303,6 @@ end if
     ! Moist convection
     !===================================================
     call t_startf('moist_convection')
-    !
-    ! Since the PBL doesn't pass constituent perturbations, they
-    ! are zeroed here for input to the moist convection routine
-    !
-    call t_startf ('convect_deep_tend')
-    call convect_deep_tend(  &
-         cmfmc,      cmfcme,             &
-         dlf,        pflx,    zdu,       &
-         rliq,    &
-         ztodt,   &
-         state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-         dsubcld, jt, maxg, ideep, lengath) 
-    call t_stopf('convect_deep_tend')
-
-    call physics_update(state, ptend, ztodt, tend)
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2307,13 +2316,59 @@ end if
     call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw )
 
     if (use_subcol_microp) then
-      call pbuf_get_field(pbuf, prec_str_idx, prec_str_sc, col_type=col_type_subcol)
-      call pbuf_get_field(pbuf, snow_str_idx, snow_str_sc, col_type=col_type_subcol)
+       call pbuf_get_field(pbuf, prec_str_idx, prec_str_sc, col_type=col_type_subcol)
+       call pbuf_get_field(pbuf, snow_str_idx, snow_str_sc, col_type=col_type_subcol)
     end if
 
-    ! Check energy integrals, including "reserved liquid"
-    flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
+    call pbuf_get_field(pbuf, rprddp_idx, rprddp)
+    call pbuf_get_field(pbuf, nevapr_dpcu_idx, nevapr_dpcu)
+    call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
+
+    prec_dp_accum = 0._r8
+    snow_dp_accum = 0._r8
+    rprddp_accum = 0._r8
+    nevapr_dpcu_accum = 0._r8
+    ttend_dp_accum = 0._r8
+    rliq_accum = 0._r8
+
+    deep_ztodt = ztodt / deep_num_steps
+
+    do deep_it = 1, deep_num_steps
+       !
+       ! Since the PBL doesn't pass constituent perturbations, they
+       ! are zeroed here for input to the moist convection routine
+       !
+       call t_startf ('convect_deep_tend')
+       call convect_deep_tend(  &
+            cmfmc,      cmfcme,             &
+            dlf,        pflx,    zdu,       &
+            rliq,    &
+            deep_ztodt,   &
+            state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
+            dsubcld, jt, maxg, ideep, lengath) 
+       call t_stopf('convect_deep_tend')
+
+       call physics_ptend_scale(ptend, 1._r8/deep_num_steps, ncol)
+       call physics_update(state, ptend, ztodt, tend)
+
+       ! Check energy integrals, including "reserved liquid"
+       flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
+       call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, &
+            flx_cnd/deep_num_steps, snow_dp/deep_num_steps, zero)
+       
+       prec_dp_accum(:ncol) = prec_dp_accum(:ncol) + prec_dp(:ncol)
+       snow_dp_accum(:ncol) = snow_dp_accum(:ncol) + snow_dp(:ncol)
+       rprddp_accum(:ncol,:) = rprddp_accum(:ncol,:) + rprddp(:ncol,:)
+       nevapr_dpcu_accum(:ncol,:) = nevapr_dpcu_accum(:ncol,:) + nevapr_dpcu(:ncol,:)
+       ttend_dp_accum(:ncol,:) = ttend_dp_accum(:ncol,:) + ttend_dp(:ncol,:)
+       rliq_accum(:ncol) = rliq_accum(:ncol) + rliq(:ncol)
+    end do
+    prec_dp(:ncol) = prec_dp_accum(:ncol) / deep_num_steps
+    snow_dp(:ncol) = snow_dp_accum(:ncol) / deep_num_steps
+    rprddp(:ncol,:) = rprddp_accum(:ncol,:) / deep_num_steps
+    nevapr_dpcu(:ncol,:) = nevapr_dpcu_accum(:ncol,:) / deep_num_steps
+    ttend_dp(:ncol,:) = ttend_dp_accum(:ncol,:) / deep_num_steps
+    rliq(:ncol) = rliq_accum(:ncol) / deep_num_steps
 
     !
     ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection

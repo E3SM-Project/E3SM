@@ -1016,6 +1016,8 @@
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>
 <deep_scheme unicon="1"        >UNICON   </deep_scheme>
 
+<deep_num_steps>1</deep_num_steps>
+
 <!-- PBL scheme -->
 <eddy_scheme pbl="uw"             >diag_TKE </eddy_scheme>
 <eddy_scheme pbl="hb"             >HB       </eddy_scheme>

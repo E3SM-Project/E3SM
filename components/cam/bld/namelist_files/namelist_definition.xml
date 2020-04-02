@@ -2076,6 +2076,14 @@ This default logical is set in cospsimulator_intr.F90
 Default: FALSE
 </entry>
 
+<!-- Deep convection -->
+
+<entry id="deep_num_steps" type="integer" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Number of deep convection substeps.
+Default: 1
+</entry>
+
 <!-- Cloud Macro/Micro-physics -->
 
 <entry id="cld_macmic_num_steps" type="integer" category="conv"

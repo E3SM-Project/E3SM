@@ -112,6 +112,8 @@ logical, public, protected :: print_fixer_message  = .false.     ! switch on err
 integer, public, protected :: ieflx_opt = 0
 logical, public, protected :: l_ieflx_fix = .false.
 
+! Deep convection substeps
+integer           :: deep_num_steps = 1
 ! Macro/micro-physics co-substeps
 integer           :: cld_macmic_num_steps = 1
 
@@ -184,7 +186,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_qqflx_fixer, & 
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
-      cld_macmic_num_steps, micro_do_icesupersat, &
+      deep_num_steps, cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
@@ -270,6 +272,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(l_st_mac,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_st_mic,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_rad,                           1 , mpilog,  0, mpicom)
+   call mpibcast(deep_num_steps,                  1 , mpiint,  0, mpicom)
    call mpibcast(cld_macmic_num_steps,            1 , mpiint,  0, mpicom)
    call mpibcast(prc_coef1,                       1 , mpir8,   0, mpicom)
    call mpibcast(prc_exp,                         1 , mpir8,   0, mpicom)
@@ -337,6 +340,14 @@ subroutine phys_ctl_readnl(nlfile)
          call endrun('CLUBB and eddy, macrop or shallow schemes incompatible')
       endif
    endif
+
+   ! Deep convection substepping support.
+   if (deep_num_steps > 1) then
+      if (deep_scheme /= "ZM") then
+         call endrun ("Setting deep_num_steps > 1 is only supported with the &
+              &ZM deep convection scheme.")
+      end if
+   end if
 
    ! Macro/micro co-substepping support.
    if (cld_macmic_num_steps > 1) then
@@ -415,7 +426,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         use_mass_borrower_out, & 
                         l_ieflx_fix_out, & 
                         use_qqflx_fixer_out, & 
-                        print_fixer_message_out, & 
+                        print_fixer_message_out, deep_num_steps_out, &
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
@@ -492,6 +503,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: l_rad_out
    logical,           intent(out), optional :: mg_prc_coeff_fix_out
    logical,           intent(out), optional :: rrtmg_temp_fix_out
+   integer,           intent(out), optional :: deep_num_steps_out
    integer,           intent(out), optional :: cld_macmic_num_steps_out
    real(r8),          intent(out), optional :: prc_coef1_out
    real(r8),          intent(out), optional :: prc_exp_out
@@ -555,6 +567,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(l_st_mac_out            ) ) l_st_mac_out          = l_st_mac
    if ( present(l_st_mic_out            ) ) l_st_mic_out          = l_st_mic
    if ( present(l_rad_out               ) ) l_rad_out             = l_rad
+   if ( present(deep_num_steps_out      ) ) deep_num_steps_out    = deep_num_steps
    if ( present(cld_macmic_num_steps_out) ) cld_macmic_num_steps_out = cld_macmic_num_steps
    if ( present(prc_coef1_out           ) ) prc_coef1_out            = prc_coef1
    if ( present(prc_exp_out             ) ) prc_exp_out              = prc_exp

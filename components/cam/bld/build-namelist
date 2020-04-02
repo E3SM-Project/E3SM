@@ -3366,6 +3366,7 @@ add_default($nl,'fix_g1_err_ndrop','val'=>'.false.');
 
 # Deep convection scheme
 add_default($nl, 'deep_scheme');
+add_default($nl, 'deep_num_steps');
 
 # Radiation scheme
 add_default($nl, 'radiation_scheme');
