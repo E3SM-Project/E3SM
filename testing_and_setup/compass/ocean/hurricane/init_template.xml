@@ -10,6 +10,11 @@
 		<option name="config_hurricane_min_depth">10.0</option>
 		<option name="config_hurricane_max_depth">6000.0</option>
 		<option name="config_use_variable_drag">.true.</option>
+		<option name="config_hurricane_land_z_limit">-2.0</option>
+		<option name="config_hurricane_marsh_z_limit">2.0</option>
+		<option name="config_hurricane_land_drag">0.1</option>
+		<option name="config_hurricane_marsh_drag">0.05</option>
+		<option name="config_hurricane_channel_drag">0.02</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
