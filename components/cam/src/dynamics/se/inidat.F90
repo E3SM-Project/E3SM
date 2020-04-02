@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_mode
   implicit none
   private
   public read_inidat
@@ -28,6 +28,7 @@ module inidat
 contains
 
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
+  
     use dyn_comp,                only: dyn_import_t, hvcoord, dom_mt
     use parallel_mod,            only: par
     use bndry_mod,               only: bndry_exchangev
@@ -57,11 +58,12 @@ contains
     use cam_map_utils,           only: iMap
     use shr_const_mod,           only: SHR_CONST_PI
     use scamMod,                 only: setiopupdate, readiopdata
-    use se_single_column_mod,    only: scm_setinitial
+    use se_single_column_mod,    only: scm_setinitial, scm_broadcast
     use element_ops,             only: set_thermostate
     use fv_physics_coupling_mod, only: fv_phys_to_dyn_topo
     use control_mod,             only: se_fv_phys_remap_alg
     use gllfvremap_mod,          only: gfr_fv_phys_to_dyn_topo
+
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -69,6 +71,7 @@ contains
     real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
+    real(r8), allocatable :: tmp_iop(:,:)  ! (npsp,nlev)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     real(r8) :: ps(np,np)     
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
@@ -108,7 +111,7 @@ contains
 #ifdef MODEL_THETA_L
     ! not going to wrap each scm call in ifdef for now,
     ! but some calls have to be wrapped
-    if (single_column) then
+    if (single_column .and. .not. iop_mode) then
        call endrun("read_inidat: SCM does not work with cam target theta-l.")
     endif
 #endif
@@ -125,7 +128,9 @@ contains
       call endrun(trim(subname)//': mismatch in local input array size')
     end if
     allocate(tmp(npsq,nlev,nelemd))
+    allocate(tmp_iop(npsq,nlev))
     tmp = 0.0_r8
+    tmp_iop = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
 
     if (fv_nphys>0) then
@@ -141,7 +146,7 @@ contains
     end if
 
 !   Determine column closest to SCM point
-    if (single_column) then
+    if (single_column .and. par%dynproc) then
       if (scmlon .lt. 0._r8) then
         scmposlon=scmlon+360._r8
       else
@@ -184,11 +189,19 @@ contains
     else
       ncol_name = 'ncol'
     endif
-
+    
     fieldname = 'U'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+    
+    if (.not. iop_mode) then    
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    else
+      tmp_iop = 0.0_r8 
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+           1, nlev, tmp_iop, found, gridname='GLL')
+    endif  
+      
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
     end if
@@ -200,6 +213,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
+             if (iop_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -207,8 +221,16 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+
+    if (.not. iop_mode) then
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    else
+      tmp_iop = 0.0_r8 
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+           1, nlev, tmp_iop, found, gridname='GLL')
+    endif     
+
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
     end if
@@ -219,6 +241,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (iop_mode) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -226,8 +249,16 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+
+    if (.not. iop_mode) then 
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    else
+      tmp_iop = 0.0_r8 
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+           1, nlev, tmp_iop, found, gridname='GLL')
+    endif
+
     if(.not. found) then
        call endrun('Could not find T field on input datafile')
     end if
@@ -244,9 +275,12 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
              !no scm in theta-l yet
+             if (iop_mode) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+
              if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (iop_mode) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
 #endif
              indx = indx + 1
           end do
@@ -325,15 +359,21 @@ contains
         ! If precip processes are turned off, do not initialize the field	
           if (precip_off .and. (cnst_name(m_cnst) .eq. 'RAINQM' .or. cnst_name(m_cnst) .eq. 'SNOWQM' &
             .or. cnst_name(m_cnst) .eq. 'NUMRAI' .or. cnst_name(m_cnst) .eq. 'NUMSNO')) then	    
-	    found = .false.
-	    
-	  else
-	    
-	    tmp = 0.0_r8
-            call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
-                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
-	    
-	  endif
+            found = .false.
+    
+          else
+    
+            if (.not. iop_mode) then
+              tmp = 0.0_r8
+              call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
+                   1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+            else
+              tmp_iop = 0.0_r8 
+              call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, npsq,          &
+                1, nlev, tmp_iop, found, gridname='GLL')
+            endif
+    
+          endif
        end if
        if(.not. found) then
 
@@ -412,6 +452,7 @@ contains
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
                 if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
+                if (iop_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
                 indx = indx + 1
              end do
           end do
@@ -514,8 +555,9 @@ contains
     
     if (single_column) then
       iop_update_surface = .false.
-      call setiopupdate()
-      call readiopdata(iop_update_surface,hyam,hybm)
+      if (masterproc) call setiopupdate()
+      if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
+      if (iop_mode) call scm_broadcast()
       call scm_setinitial(elem)
     endif
 

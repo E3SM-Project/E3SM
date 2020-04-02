@@ -9,7 +9,7 @@ define_property(GLOBAL
 get_property(IS_YAMLCPP_ALREADY_BUILT GLOBAL PROPERTY E3SM_YAMLCPP_ALREADY_BUILT SET)
 
 if (NOT IS_YAMLCPP_ALREADY_BUILT)
-  set (YAMLCPP_SRC_DIR ${SCREAM_SOURCE_DIR}/../../externals/yaml-cpp)
+  set (YAMLCPP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
   set (YAMLCPP_BIN_DIR ${CMAKE_BINARY_DIR}/externals/yaml-cpp)
 
   set (BUILD_TESTING FALSE)

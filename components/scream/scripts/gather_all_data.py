@@ -1,6 +1,6 @@
 from utils import run_cmd_no_fail
 
-import os
+import os, pathlib
 import concurrent.futures as threading3
 
 # MACHINE -> (env_setup, compiler, batch submit prefix)
@@ -42,7 +42,7 @@ class GatherAllData(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, run, commit, machines, scream_docs, local, kokkos):
+    def __init__(self, run, commit, machines, scream_docs, local, kokkos, root_dir, dry_run):
     ###########################################################################
         self._run         = run
         self._commit      = commit
@@ -50,6 +50,8 @@ class GatherAllData(object):
         self._scream_docs = scream_docs
         self._local       = local
         self._kokkos      = kokkos
+        self._root_dir    = root_dir
+        self._dry_run     = dry_run
 
     ###########################################################################
     def formulate_command(self, machine):
@@ -57,46 +59,54 @@ class GatherAllData(object):
         env_setup, compiler, batch = MACHINE_METADATA[machine]
         env_setup_str = " && ".join(env_setup)
 
+        root_dir = pathlib.Path(str(self._root_dir).replace("$machine", machine))
+
         # Compute locations of key repos
         if self._local:
-            scream_docs_repo = os.path.abspath("./scream-docs/micro-apps")
-            scream_repo      = os.path.abspath("./scream/components/scream")
+            if self._scream_docs:
+                scream_docs_repo = root_dir
+                scream_repo      = pathlib.Path(__file__).resolve().parent.parent
+            else:
+                scream_docs_repo = None
+                scream_repo      = root_dir
         else:
-            scream_docs_repo = "~/scream-docs-perf-{}/micro-apps".format(machine)
-            scream_repo      = "~/scream-perf-{}/components/scream".format(machine)
+            if self._scream_docs:
+                scream_docs_repo = root_dir
+                scream_repo      = pathlib.Path("~/scream-perf-{}/components/scream".format(machine))
+            else:
+                scream_docs_repo = None
+                scream_repo      = root_dir
 
         repo = scream_docs_repo if self._scream_docs else scream_repo
 
-        # Need to know kokkos location in order to set up OMPI_CXX
+        # Compute kokkos location
         if self._kokkos:
-            kokkos_loc = self._kokkos.replace("$machine", machine).replace("$compiler", compiler)
+            kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$compiler", compiler))
         else:
-            kokkos_loc = os.path.join(os.path.dirname(os.path.dirname(scream_repo)), "externals", "kokkos")
+            kokkos_loc = pathlib.Path(scream_repo.parent.parent, "externals", "kokkos")
 
         local_cmd = self._run
         # Do magic replacements here
         local_cmd = local_cmd.\
             replace("$compiler", compiler).\
-            replace("$kokkos", kokkos_loc).\
+            replace("$kokkos", str(kokkos_loc)).\
             replace("$machine", machine).\
-            replace("$scream_docs", scream_docs_repo).\
-            replace("$scream", scream_repo)
+            replace("$scream_docs", str(scream_docs_repo)).\
+            replace("$scream", str(scream_repo))
 
         # Scream-docs tests may depend on scream's Kokkos and scripts, so update scream repo too if we're doing
         # a scream-docs test.
         setup = ""
         if (not self._local and self._scream_docs):
-            setup = "cd {} && git fetch && git reset --hard origin/master && git submodule update --init && "\
+            setup = "cd {} && git fetch && git reset --hard origin/master && git submodule update --init --recursive && "\
                 .format(scream_repo)
 
         extra_env = ""
         is_cuda_machine = "cuda" in env_setup_str
-        if is_cuda_machine and "OMPI_CXX" not in env_setup_str:
-            extra_env = "OMPI_CXX={}/bin/nvcc_wrapper ".format(kokkos_loc)
-        else:
+        if not is_cuda_machine:
             extra_env = "OMP_PROC_BIND=spread "
 
-        repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init".format(self._commit)
+        repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init --recursive".format(self._commit)
 
         cmd = "{}cd {} && {} && {} && {}{} {}".format(setup, repo, env_setup_str, repo_setup, extra_env, batch, local_cmd)
 
@@ -109,11 +119,11 @@ class GatherAllData(object):
         print("Starting analysis on {} with cmd: {}".format(machine, cmd))
 
         if self._local:
-            run_cmd_no_fail(cmd, arg_stdout=None, arg_stderr=None, verbose=True, exc_type=RuntimeError)
+            run_cmd_no_fail(cmd, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run, exc_type=RuntimeError)
         else:
             try:
                 ssh_cmd = "ssh -o StrictHostKeyChecking=no {} '{}'".format(machine, cmd)
-                output = run_cmd_no_fail(ssh_cmd, exc_type=RuntimeError, combine_output=True)
+                output = run_cmd_no_fail(ssh_cmd, dry_run=self._dry_run, exc_type=RuntimeError, combine_output=True)
             except RuntimeError as e:
                 output = str(e)
                 raise

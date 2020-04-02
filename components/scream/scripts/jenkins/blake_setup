@@ -1,0 +1,5 @@
+export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH
+
+source ./scream/components/scream/scripts/jenkins/sandia_son_proxy
+
+SCREAM_MACHINE=blake

@@ -188,7 +188,7 @@ contains
           end if
           
           col_pp%wtlunit(c) = wtcft_cur(g,m)
-	  crop_inst%fertnitro_patch(p) = fertcft_cur(g,m)
+          crop_inst%fertnitro_patch(p) = fertcft_cur(g,m)
           col_set(c) = .true.
        end if
     end do

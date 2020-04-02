@@ -8,10 +8,6 @@
 #include "share/scream_types.hpp"
 #include "share/scream_config.hpp"
 
-#ifdef SCREAM_FPE
-# include <xmmintrin.h>
-#endif
-
 /*
  * Implementations of scream_arch.hpp functions.
  */
@@ -62,25 +58,6 @@ std::string config_string () {
 #endif
     ;
   return ss.str();
-}
-
-#ifdef SCREAM_FPE
-static unsigned int constexpr exceptions =
-  _MM_MASK_INVALID |
-  _MM_MASK_DIV_ZERO |
-  _MM_MASK_OVERFLOW;
-#endif
-
-void activate_floating_point_exceptions_if_enabled () {
-#ifdef SCREAM_FPE
-  _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~exceptions);
-#endif
-}
-
-void deactivate_floating_point_exceptions_if_enabled () {
-#ifdef SCREAM_FPE
-  _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() | exceptions);
-#endif
 }
 
 } // namespace util

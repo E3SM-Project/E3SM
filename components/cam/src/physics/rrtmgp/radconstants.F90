@@ -16,7 +16,7 @@ module radconstants
 ! radiation interface.
 
 use shr_kind_mod,   only: r8 => shr_kind_r8
-use cam_abortutils,     only: endrun
+use cam_abortutils, only: endrun
 
 implicit none
 private
@@ -32,16 +32,11 @@ integer, parameter, public :: nswbands = 14
 ! Note: Currently rad_solar_var extends the lowest band down to
 ! 100 cm^-1 if it is too high to cover the far-IR. Any changes meant
 ! to affect IR solar variability should take note of this.
-
-real(r8),parameter :: wavenum_low(nswbands) = & ! in cm^-1
-  (/ 820._r8, 2600._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, &
-    7700._r8, 8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8/)
-real(r8),parameter :: wavenum_high(nswbands) = & ! in cm^-1
-  (/2600._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, &
-    8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,50000._r8/)
+real(r8), dimension(nswbands) :: wavenum_sw_lower, wavenum_sw_upper
 
 ! Solar irradiance at 1 A.U. in W/m^2 assumed by radiation code
 ! Rescaled so that sum is precisely 1368.22 and fractional amounts sum to 1.0
+! NOTE: This is copied from RRTMG; should be revisited for RRTMGP
 real(r8), parameter :: solar_ref_band_irradiance(nswbands) = & 
    (/ &
     12.89_r8,  12.11_r8,  20.3600000000001_r8, 23.73_r8, &
@@ -54,7 +49,6 @@ real(r8), parameter :: solar_ref_band_irradiance(nswbands) = &
 integer, parameter, public :: idx_sw_diag = 11 ! index to sw visible band
 integer, parameter, public :: idx_nir_diag = 9 ! index to sw near infrared (778-1240 nm) band
 integer, parameter, public :: idx_uv_diag = 12 ! index to sw uv (345-441 nm) band
-
 integer, parameter, public :: rrtmg_sw_cloudsim_band = 10  ! rrtmg band for .67 micron
 
 ! Number of evenly spaced intervals in rh
@@ -80,13 +74,8 @@ integer, parameter, public :: rrtmg_lw_cloudsim_band = 6  ! rrtmg band for 10.5 
 ! number of lw bands
 integer, parameter, public :: nlwbands = 16
 
-real(r8), parameter :: wavenumber1_longwave(nlwbands) = &! Longwave spectral band limits (cm-1)
-    (/   10._r8,  350._r8, 500._r8,   630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, &
-       1180._r8, 1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2600._r8 /)
+real(r8), dimension(nlwbands) :: wavenum_lw_lower, wavenum_lw_upper
 
-real(r8), parameter :: wavenumber2_longwave(nlwbands) = &! Longwave spectral band limits (cm-1)
-    (/  350._r8,  500._r8,  630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, 1180._r8, &
-       1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2600._r8, 3250._r8 /)
 
 !These can go away when old camrt disappears
 ! Index of volc. abs., H2O non-window
@@ -122,14 +111,19 @@ integer, parameter, public :: ot_length = 32
 public :: rad_gas_index
 
 public :: get_number_sw_bands, &
+          set_sw_spectral_boundaries, &
+          set_lw_spectral_boundaries, &
           get_sw_spectral_boundaries, &
           get_lw_spectral_boundaries, &
           get_ref_solar_band_irrad, &
           get_ref_total_solar_irrad, &
-          get_solar_band_fraction_irrad
+          get_solar_band_fraction_irrad, &
+          check_wavenumber_bounds
 
 contains
+
 !------------------------------------------------------------------------------
+
 subroutine get_solar_band_fraction_irrad(fractional_irradiance)
    ! provide Solar Irradiance for each band in RRTMG
 
@@ -141,7 +135,9 @@ subroutine get_solar_band_fraction_irrad(fractional_irradiance)
    fractional_irradiance = solar_ref_band_irradiance / tsi
 
 end subroutine get_solar_band_fraction_irrad
+
 !------------------------------------------------------------------------------
+
 subroutine get_ref_total_solar_irrad(tsi)
    ! provide Total Solar Irradiance assumed by RRTMG
 
@@ -150,7 +146,9 @@ subroutine get_ref_total_solar_irrad(tsi)
    tsi = sum(solar_ref_band_irradiance)
 
 end subroutine get_ref_total_solar_irrad
+
 !------------------------------------------------------------------------------
+
 subroutine get_ref_solar_band_irrad( band_irrad )
 
    ! solar irradiance in each band (W/m^2)
@@ -159,7 +157,9 @@ subroutine get_ref_solar_band_irrad( band_irrad )
    band_irrad = solar_ref_band_irradiance
 
 end subroutine get_ref_solar_band_irrad
+
 !------------------------------------------------------------------------------
+
 subroutine get_number_sw_bands(number_of_bands)
 
    ! number of solar (shortwave) bands in the rrtmg code
@@ -170,28 +170,51 @@ subroutine get_number_sw_bands(number_of_bands)
 end subroutine get_number_sw_bands
 
 !------------------------------------------------------------------------------
-subroutine get_lw_spectral_boundaries(low_boundaries, high_boundaries, units)
+
+subroutine set_sw_spectral_boundaries(wavenum_bnds)
+   real(r8), intent(in), dimension(:,:) :: wavenum_bnds
+   integer :: ibnd
+   do ibnd = 1,nswbands
+      wavenum_sw_lower(ibnd) = wavenum_bnds(1,ibnd)
+      wavenum_sw_upper(ibnd) = wavenum_bnds(2,ibnd)
+   end do
+end subroutine
+
+!------------------------------------------------------------------------------
+
+subroutine set_lw_spectral_boundaries(wavenum_bnds)
+   real(r8), intent(in), dimension(:,:) :: wavenum_bnds
+   integer :: ibnd
+   do ibnd = 1,nlwbands
+      wavenum_lw_lower(ibnd) = wavenum_bnds(1,ibnd)
+      wavenum_lw_upper(ibnd) = wavenum_bnds(2,ibnd)
+   end do
+end subroutine
+
+!------------------------------------------------------------------------------
+
+subroutine get_lw_spectral_boundaries(lower_bounds, upper_bounds, units)
    ! provide spectral boundaries of each longwave band
 
-   real(r8), intent(out) :: low_boundaries(nlwbands), high_boundaries(nlwbands)
+   real(r8), intent(out) :: lower_bounds(nlwbands), upper_bounds(nlwbands)
    character(*), intent(in) :: units ! requested units
 
    select case (units)
    case ('inv_cm','cm^-1','cm-1')
-      low_boundaries  = wavenumber1_longwave
-      high_boundaries = wavenumber2_longwave
+      lower_bounds  = wavenum_lw_lower
+      upper_bounds = wavenum_lw_upper
    case('m','meter','meters')
-      low_boundaries  = 1.e-2_r8/wavenumber2_longwave
-      high_boundaries = 1.e-2_r8/wavenumber1_longwave
+      lower_bounds  = 1.e-2_r8/wavenum_lw_upper
+      upper_bounds = 1.e-2_r8/wavenum_lw_lower
    case('nm','nanometer','nanometers')
-      low_boundaries  = 1.e7_r8/wavenumber2_longwave
-      high_boundaries = 1.e7_r8/wavenumber1_longwave
+      lower_bounds  = 1.e7_r8/wavenum_lw_upper
+      upper_bounds = 1.e7_r8/wavenum_lw_lower
    case('um','micrometer','micrometers','micron','microns')
-      low_boundaries  = 1.e4_r8/wavenumber2_longwave
-      high_boundaries = 1.e4_r8/wavenumber1_longwave
+      lower_bounds  = 1.e4_r8/wavenum_lw_upper
+      upper_bounds = 1.e4_r8/wavenum_lw_lower
    case('cm','centimeter','centimeters')
-      low_boundaries  = 1._r8/wavenumber2_longwave
-      high_boundaries = 1._r8/wavenumber1_longwave
+      lower_bounds  = 1._r8/wavenum_lw_upper
+      upper_bounds = 1._r8/wavenum_lw_lower
    case default
       call endrun('get_lw_spectral_boundaries: spectral units not acceptable'//units)
    end select
@@ -199,28 +222,29 @@ subroutine get_lw_spectral_boundaries(low_boundaries, high_boundaries, units)
 end subroutine get_lw_spectral_boundaries
 
 !------------------------------------------------------------------------------
-subroutine get_sw_spectral_boundaries(low_boundaries, high_boundaries, units)
+
+subroutine get_sw_spectral_boundaries(lower_bounds, upper_bounds, units)
    ! provide spectral boundaries of each shortwave band
 
-   real(r8), intent(out) :: low_boundaries(nswbands), high_boundaries(nswbands)
+   real(r8), intent(out) :: lower_bounds(nswbands), upper_bounds(nswbands)
    character(*), intent(in) :: units ! requested units
 
    select case (units)
    case ('inv_cm','cm^-1','cm-1')
-      low_boundaries = wavenum_low
-      high_boundaries = wavenum_high
+      lower_bounds = wavenum_sw_lower
+      upper_bounds = wavenum_sw_upper
    case('m','meter','meters')
-      low_boundaries = 1.e-2_r8/wavenum_high
-      high_boundaries = 1.e-2_r8/wavenum_low
+      lower_bounds = 1.e-2_r8/wavenum_sw_upper
+      upper_bounds = 1.e-2_r8/wavenum_sw_lower
    case('nm','nanometer','nanometers')
-      low_boundaries = 1.e7_r8/wavenum_high
-      high_boundaries = 1.e7_r8/wavenum_low
+      lower_bounds = 1.e7_r8/wavenum_sw_upper
+      upper_bounds = 1.e7_r8/wavenum_sw_lower
    case('um','micrometer','micrometers','micron','microns')
-      low_boundaries = 1.e4_r8/wavenum_high
-      high_boundaries = 1.e4_r8/wavenum_low
+      lower_bounds = 1.e4_r8/wavenum_sw_upper
+      upper_bounds = 1.e4_r8/wavenum_sw_lower
    case('cm','centimeter','centimeters')
-      low_boundaries  = 1._r8/wavenum_high
-      high_boundaries = 1._r8/wavenum_low
+      lower_bounds  = 1._r8/wavenum_sw_upper
+      upper_bounds = 1._r8/wavenum_sw_lower
    case default
       call endrun('rad_constants.F90: spectral units not acceptable'//units)
    end select
@@ -228,6 +252,7 @@ subroutine get_sw_spectral_boundaries(low_boundaries, high_boundaries, units)
 end subroutine get_sw_spectral_boundaries
 
 !------------------------------------------------------------------------------
+
 integer function rad_gas_index(gasname)
 
    ! return the index in the gaslist array of the specified gasname
@@ -244,5 +269,35 @@ integer function rad_gas_index(gasname)
    enddo
    call endrun ("rad_gas_index: can not find gas with name "//gasname)
 end function rad_gas_index
+
+!------------------------------------------------------------------------------
+! Testing routines below here
+
+! Simple check to make sure we are setting the wavenumber bounds correctly. This does not need to
+! be run during normal execution, and is included here just to make sure that our setting of
+! wavenumber bounds is consistent with what we expect. In general, we are not hard-coding these
+! values anymore because with RRTMGP, we allow changing these via the absorption coefficient
+! inputfiles.
+subroutine check_wavenumber_bounds()
+   use assertions, only: assert
+   real(r8) :: wavenum_sw_lower_old(nswbands) = & ! in cm^-1
+     (/ 820._r8, 2680._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, &
+       7700._r8, 8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8/)
+   real(r8) :: wavenum_sw_upper_old(nswbands) = & ! in cm^-1
+     (/2680._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, &
+       8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,50000._r8/)
+   real(r8) :: wavenum_lw_lower_old(nlwbands) = &! Longwave spectral band limits (cm-1)
+       (/   10._r8,  250._r8, 500._r8,   630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, &
+          1180._r8, 1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2680._r8 /)
+   real(r8) :: wavenum_lw_upper_old(nlwbands) = &! Longwave spectral band limits (cm-1)
+       (/  250._r8,  500._r8,  630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, 1180._r8, &
+          1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2680._r8, 3250._r8 /)
+   call assert(all(wavenum_sw_lower .eq. wavenum_sw_lower_old), 'wavenum_sw_lower')
+   call assert(all(wavenum_sw_upper .eq. wavenum_sw_upper_old), 'wavenum_sw_upper')
+   call assert(all(wavenum_lw_lower .eq. wavenum_lw_lower_old), 'wavenum_lw_lower')
+   call assert(all(wavenum_sw_upper .eq. wavenum_sw_upper_old), 'wavenum_sw_upper')
+end subroutine check_wavenumber_bounds
+
+!------------------------------------------------------------------------------
 
 end module radconstants

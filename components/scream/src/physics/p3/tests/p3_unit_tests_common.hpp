@@ -77,6 +77,7 @@ struct UnitWrap {
     struct TestCloudRainAccretion;
     struct TestIceSed;
     struct TestRainSed;
+    struct TestGetTimeSpacePhysVariables;
     struct TestP3UpdatePrognosticIce;
     struct TestIceCollection;
     struct TestEvapSublPrecip;

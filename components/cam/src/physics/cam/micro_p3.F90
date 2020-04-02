@@ -3475,6 +3475,7 @@ qidep,qisub,nisub,qiberg)
       call ice_deposition_sublimation_f(qitot_incld,nitot_incld,t,    &
            qvs,qvi,epsi,abi,qv,    &
            qidep,qisub,nisub,qiberg)
+      return
    endif
 #endif
 
@@ -3540,6 +3541,7 @@ qrevp,nrevp)
       call evaporate_sublimate_precip_f(qr_incld,qc_incld,nr_incld,qitot_incld,    &
            lcldm,rcldm,qvs,ab,epsr,qv,    &
            qrevp,nrevp)
+      return
    endif
 #endif
 
@@ -3581,6 +3583,10 @@ subroutine get_time_space_phys_variables( &
 t,pres,rho,xxlv,xxls,qvs,qvi, &
 mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: get_time_space_phys_variables_f, cxx_pow, cxx_sqrt
+#endif
+
    implicit none
 
    real(rtype), intent(in)  :: t
@@ -3601,17 +3607,25 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
    real(rtype), intent(out) :: eii
 
    real(rtype) :: dum
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call get_time_space_phys_variables_f(t,pres,rho,xxlv,xxls,qvs,qvi, &
+           mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
+      return
+   endif
+#endif
 
    !time/space varying physical variables
-   mu     = 1.496e-6_rtype*t**1.5_rtype/(t+120._rtype)
-   dv     = 8.794e-5_rtype*t**1.81_rtype/pres
+   mu     = 1.496e-6_rtype*bfb_pow(t,1.5_rtype)/(t+120._rtype)
+   dv     = 8.794e-5_rtype*bfb_pow(t,1.81_rtype)/pres
    sc     = mu/(rho*dv)
-   dum    = 1._rtype/(rv*t**2)
+   dum    = 1._rtype/(rv*bfb_square(t))
    dqsdt  = xxlv*qvs*dum
    dqsidt = xxls*qvi*dum
    ab     = 1._rtype+dqsdt*xxlv*inv_cp
    abi    = 1._rtype+dqsidt*xxls*inv_cp
    kap    = 1.414e+3_rtype*mu
+
    ! very simple temperature dependent aggregation efficiency
    if (t.lt.253.15_rtype) then
       eii=0.1_rtype
