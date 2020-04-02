@@ -1,3 +1,7 @@
+# Author: Steven Brus
+# Date: August 2019
+# Description: This script concatenates a series of CFSR data files into a single file
+
 import subprocess
 import os
 import glob

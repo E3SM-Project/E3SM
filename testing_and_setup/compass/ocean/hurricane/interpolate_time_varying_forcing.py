@@ -1,3 +1,8 @@
+# Author: Steven Brus
+# Date: August, 2019
+# Description: Interpolates CFSR atmospheric reanalysis data onto the MPAS-O mesh and 
+#              creates an input file to support time varying atmospheric forcing in the model
+
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy as np
@@ -69,7 +74,6 @@ def interpolate_data_to_grid(grid_file,data_file,var):
   xtime = np.array(xtime,'S64')
 
   return lon_grid,lat_grid,interp_data,lon_data,lat_data,data,xtime
-
 
 ##################################################################################################
 ##################################################################################################

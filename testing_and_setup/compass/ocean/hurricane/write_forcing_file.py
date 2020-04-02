@@ -1,3 +1,7 @@
+# Author: Steven Brus
+# Date: April, 2020
+# Description: This function writes time-varying forcing data to an input file for the model run.
+
 import os
 import numpy as np
 import netCDF4

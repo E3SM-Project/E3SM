@@ -1,3 +1,8 @@
+# Author: Steven Brus
+# Date: August 2019
+# Description: Creates an input file for the pointwiseStats AM for a given mesh
+#              based off of a list of station locations.
+
 import netCDF4
 import numpy as np
 from scipy import spatial

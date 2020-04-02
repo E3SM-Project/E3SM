@@ -1,3 +1,17 @@
+# Author: Steven Brus
+# Date April, 2020
+# Description: 
+#    This creates a "dummy" time varying forcing file
+#    with zero wind zero atmospheric pressure perturbation
+#    for the tidal spinup run.
+#
+#    The tidal spinup is run using this "dummy" atmospheric forcing
+#    because the time varying atmospheric forcing for the 
+#    forward run requires information in the restart file.
+#    The inclusion of this additional information in the restart
+#    file is trigged by the use of time varying atmospheric forcing
+#    in the tidal spinup.
+
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,17 +29,6 @@ plt.switch_backend('agg')
 ##################################################################################################
 
 if __name__ == '__main__':
-
-  # This creates a "dummy" time varying forcing file
-  # with zero wind zero atmospheric pressure perturbation
-  # for the tidal spinup run.
-  #
-  # The tidal spinup is run using this "dummy" atmospheric forcing
-  # because the time varying atmospheric forcing for the 
-  # forward run requires information in the restart file.
-  # The inclusion of this additional information in the restart
-  # file is trigged by the use of time varying atmospheric forcing
-  # in the tidal spinup.
 
   parser = argparse.ArgumentParser()
   parser.add_argument('--start_time')
