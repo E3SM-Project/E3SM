@@ -350,6 +350,9 @@ def get_current_head(repo=None):
 def is_repo_clean(repo=None):
 ###############################################################################
     rc, output, _ = run_cmd("git status --porcelain --untracked-files=no", combine_output=True, from_dir=repo)
+    if rc != 0 or output != "":
+        print("Warning: repo is not clean: {}".format(output))
+
     return rc == 0 and output == ""
 
 ###############################################################################
@@ -375,10 +378,10 @@ def merge_git_ref(git_ref, repo=None):
     """
     Merge given git ref into the current branch, and updates submodules
     """
-    expect(is_repo_clean(), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
+    expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
     run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
-    update_submodules(repo)
-    expect(is_repo_clean(), "Something went wrong while performing the merge of '{}'".format(git_ref))
+    update_submodules(repo=repo)
+    expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
 
 ###############################################################################
 def print_last_commit(git_ref=None, repo=None):
@@ -397,13 +400,13 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
     Checks out 'branch_ref', and updates submodules
     """
     if get_current_commit() != get_current_commit(commit=git_ref):
-        expect(is_repo_clean(), "If we need to change HEAD, then the repo must be clean before running")
+        expect(is_repo_clean(repo=repo), "If we need to change HEAD, then the repo must be clean before running")
         expect(git_ref is not None, "Missing git-ref")
 
         run_cmd_no_fail("git checkout {}".format(git_ref), from_dir=repo)
-        update_submodules(repo)
+        update_submodules(repo=repo)
         git_commit = get_current_commit()
-        expect(is_repo_clean(), "Something went wrong when checking out git ref '{}'".format(git_ref))
+        expect(is_repo_clean(repo=repo), "Something went wrong when checking out git ref '{}'".format(git_ref))
 
         if verbose:
             print("Switched to '{}' ({})".format(git_ref,git_commit))
