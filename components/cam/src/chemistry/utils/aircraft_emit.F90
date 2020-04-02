@@ -30,11 +30,10 @@ module aircraft_emit
   use input_data_utils, only: time_coordinate
   use time_manager,   only: get_nstep
 
-  
   implicit none
   private
   save 
-  
+
   public :: aircraft_emit_init
   public :: aircraft_emit_adv
   public :: aircraft_emit_register
@@ -46,7 +45,7 @@ module aircraft_emit
   !same grid horizontally as the model is running on. For example, 
   !if the model is running on ne30 grid, forcing file has to be on
   !ne30 grid horizontally. The vertical resolution can be different 
-  !from the model vertical resolution.
+  !from the model's vertical resolution.
   !------------------------------------------------------------------
   
   type :: forc_air_native_grid

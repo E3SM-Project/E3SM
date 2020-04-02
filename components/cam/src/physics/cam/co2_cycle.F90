@@ -36,6 +36,7 @@ public co2_cycle_set_ptend           ! set tendency from aircraft emissions
 public co2_cycle_set_cnst_type       ! set co2 tracers mixing type for local versions of cnst_type
 
 ! Public data
+ 
 public data_flux_ocn                 ! data read in for co2 flux from ocn
 public data_flux_fuel                ! data read in for co2 flux from fuel
  
@@ -75,7 +76,7 @@ contains
 !================================================================================================
 
 subroutine co2_cycle_readnl(nlfile)
-  
+
    !-----------------------------------------------------------------------
    ! Read co2_cycle_nl namelist group.
    !
@@ -258,7 +259,7 @@ subroutine co2_init
 
 
     if (.not. co2_flag) return
-
+ 
     ! Add constituents and fluxes to history file
     do m_ind = 1, ncnst
         mm = c_i(m_ind)
@@ -286,7 +287,7 @@ subroutine co2_init
     if (co2_readFlux_ocn) then
        call co2_data_flux_init ( co2flux_ocn_file,  'CO2_flux', data_flux_ocn )
     end if
-    
+ 
     if (co2_readFlux_fuel) then
        call co2_data_flux_init ( co2flux_fuel_file, 'CO2_flux', data_flux_fuel )
     end if
@@ -312,7 +313,7 @@ subroutine co2_init
    !----------------------------------------------------------------------------
 
    if (.not. co2_flag) return
-
+ 
    if (co2_readFlux_ocn)  then
       call co2_data_flux_advance ( data_flux_ocn )
    endif
@@ -338,11 +339,11 @@ subroutine co2_init
    !----------------------------------------------------------------------------
 
    if (.not. co2_flag) return
-
+ 
    if (co2_readFlux_fuel) then
       call co2_data_flux_advance ( data_flux_fuel )
    endif
-
+ 
   end subroutine co2_time_interp_fuel
 
 !===========================================================================================
@@ -467,6 +468,4 @@ subroutine co2_cycle_set_cnst_type(cnst_type_loc, cnst_type_val)
 end subroutine co2_cycle_set_cnst_type
 !===============================================================================
  
-
-
 end module co2_cycle

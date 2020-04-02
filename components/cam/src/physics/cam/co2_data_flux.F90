@@ -24,11 +24,7 @@ module co2_data_flux
 ! ^^^ 3D ^^^                                                                      !
 !---------------------------------------------------------------------------------!
 
-! vvv 2D vvv
-!  use shr_kind_mod,     only : r8 => shr_kind_r8, cx => shr_kind_cx, cl => shr_kind_cl
-! ^^^ 2D ^^^   ///   vvv 3D vvv
   use shr_kind_mod,     only : r8 => shr_kind_r8, cx => shr_kind_cx, cl => shr_kind_cl, cxx => shr_kind_cxx
-! ^^^ 3D ^^^
   use ppgrid,           only : begchunk, endchunk, pcols
   use cam_abortutils,   only : endrun
   use dycore,           only: dycore_is
