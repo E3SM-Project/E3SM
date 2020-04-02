@@ -1,19 +1,31 @@
+# Author: Steven Brus
+# Date: April, 2020
+# Description: Plots syntetic wind/pressure timeseries on MPAS-O mesh
+
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.basemap import Basemap
+import os
+import cartopy
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 plt.switch_backend('agg')
+cartopy.config['pre_existing_data_dir'] = \
+    os.getenv('CARTOPY_DIR', cartopy.config.get('pre_existing_data_dir'))
+
+#######################################################################
+#######################################################################
 
 def plot_data(lon_grid,lat_grid,data,var_label,var_abrev,time):
 
   fig = plt.figure()
-  ax1 = fig.add_subplot(1,1,1)
-  levels = np.linspace(np.amin(data),np.amax(data),10)
-  cf = ax1.tricontourf(lon_grid,lat_grid,data,levels=levels)
-  m = Basemap(projection='cyl',llcrnrlat=-90,urcrnrlat=90,\
-                               llcrnrlon=0,urcrnrlon=360,resolution='c')
-  m.fillcontinents(color='tan',lake_color='lightblue')
-  m.drawcoastlines()
+  ax1 = fig.add_subplot(1,1,1,projection=ccrs.PlateCarree())
+  levels = np.linspace(np.amin(data),np.amax(data),100)
+  cf = ax1.tricontourf(lon_grid,lat_grid,data,levels=levels,transform=ccrs.PlateCarree())
+  ax1.set_extent([0, 359.9, -90, 90], crs=ccrs.PlateCarree())
+  ax1.add_feature(cfeature.LAND, zorder=100)
+  ax1.add_feature(cfeature.LAKES, alpha=0.5, zorder=101)
+  ax1.add_feature(cfeature.COASTLINE, zorder=101)
   ax1.set_title('interpolated data '+time.strip())
   cbar = fig.colorbar(cf,ax=ax1)
   cbar.set_label(var_label)
@@ -23,6 +35,8 @@ def plot_data(lon_grid,lat_grid,data,var_label,var_abrev,time):
   fig.savefig(var_abrev+'_'+str(i).zfill(4)+'.png',box_inches='tight')
   plt.close()
 
+#######################################################################
+#######################################################################
 
 if __name__ == '__main__':
   
@@ -39,7 +53,7 @@ if __name__ == '__main__':
   p_data = data_nc.variables['atmosPressure'][:]
   xtime = data_nc.variables['xtime'][:]
 
-  for i in range(u_data.shape[0]):
+  for i in range(u_data.shape[0]-1):
 
       print('Plotting vel: '+str(i))
 
