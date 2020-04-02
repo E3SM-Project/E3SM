@@ -205,6 +205,14 @@ def buildnml(case, caseroot, compname):
             safe_copy(os.path.join(camconf_dir, "atm_in"), os.path.join(rundir, "atm_in{}".format(inst_string)))
             safe_copy(os.path.join(camconf_dir, "drv_flds_in"), os.path.join(rundir, "drv_flds_in"))
 
+        # -----------------------------------------------------
+        # copy scream input data
+        # -----------------------------------------------------
+
+        scream_data_dir = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+        for item in os.listdir(scream_data_dir):
+            safe_copy(os.path.join(scream_data_dir, item), os.path.join(din_loc_root, "atm/cam/physprops"))
+
 ###############################################################################
 def _main_func():
 ###############################################################################
