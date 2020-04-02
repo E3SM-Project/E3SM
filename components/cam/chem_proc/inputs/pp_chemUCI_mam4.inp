@@ -157,10 +157,11 @@ CHEMISTRY
 [uci2] O3 + H2 -> OH + HO2                        ; 1.200E-10,  0
 [uci3] O3 + CH4 -> OH + CH3OO                     ; 1.750E-10,  0
 *  These 3 rates for O(1D) rxt w/ H2O, H2, CH4 are scaled with jo1d and divided
-*  by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
-*  and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
-*  k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
+*     by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
+*     and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
+*  effectively k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
 *     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2])
+*  and rxt[uci1] = k[uci1]*[O3]*[H2O]
    CO + OH -> CO2 + H                             ; 1.440E-13,  0
    CO + OH + M -> CO2 + HO2 + M                   ; 2.670E-33,  0
    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
