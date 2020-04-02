@@ -4,7 +4,7 @@
 	<add_link source="../initial_state/initial_state.nc" dest="init0.nc"/>
 
 	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/iterate_init.py" dest="iterate_init.py"/>
-	<add_link source_path="script_core_dir" source="scripts/plot_globalStats.py" dest="plot_globalStats.py"/>
+	<add_link source_path="script_core_dir" source="scripts/plots/plot_globalStats.py" dest="plot_globalStats.py"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>

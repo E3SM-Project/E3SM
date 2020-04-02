@@ -45,7 +45,7 @@ def main():
         '-p', '--plot_vertical_grid', dest='plot_vertical_grid',
         action='store_true')
     parser.add_argument(
-        '-o', '--output_file_name', dest='output_filename_name',
+        '-o', '--output_file_name', dest='output_file_name',
         default='MPAS-Ocean_vertical_grid.nc',
         help='MPAS file name for output of vertical grid.',
         metavar='NAME')
@@ -53,7 +53,7 @@ def main():
 
     create_vertical_grid(args.bottom_depth, args.nz, args.dz1,
                          args.dz2, args.plot_vertical_grid,
-                         outfile=args.output_filename_name)
+                         outfile=args.output_file_name)
 # }}}
 
 
