@@ -33,7 +33,12 @@ def main():  # {{{
     print("****** Creating E3SM coupling files ******")
     # obtain configuration settings
     config = configparser.ConfigParser()
-    config.read("config_E3SM_coupling_files.ini")
+    # first, read in the default config options
+    config.read("defaults.ini")
+    if os.path.exists('config_E3SM_coupling_files.ini'):
+        # there are custom config options, too, so we'll read those in next so
+        # they override the defaults where necessary
+        config.read("config_E3SM_coupling_files.ini")
 
     function_list = [initial_condition_ocean,
                      graph_partition_ocean,
