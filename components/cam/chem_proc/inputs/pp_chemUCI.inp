@@ -115,7 +115,7 @@ CHEMISTRY
 *     by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
 *     and H2O = 1.63e-10 exp(63/T), and then multiplied by the rates above.
 *  effectively k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
-*     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2]
+*     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2])
 *  and rxt[uci1] = k[uci1]*[O3]*[H2O]
    CO + OH -> CO2 + H                             ; 1.440E-13,  0
    CO + OH + M -> CO2 + HO2 + M                   ; 2.670E-33,  0
@@ -193,6 +193,8 @@ CHEMISTRY
  End Reactions
 
  Ext Forcing
+      NO
+      NO2 <- dataset
  End Ext Forcing
 
 END CHEMISTRY
