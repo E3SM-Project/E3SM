@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <config case="e3sm_coupling">
 
-	<add_link source="../initial_state/initial_state.nc" dest="mesh.nc"/>
+	<add_link source="../initial_state/initial_state.nc" dest="mesh_before_metadata.nc"/>
 	<add_link source="../initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/no_ISC_culled_mesh.nc" dest="no_ISC_culled_mesh.nc"/>
     <add_link source_path="script_configuration_dir" source="scripts/create_E3SM_coupling_files.py" dest="create_E3SM_coupling_files.py"/>

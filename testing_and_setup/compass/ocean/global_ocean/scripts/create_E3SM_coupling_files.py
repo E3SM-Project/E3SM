@@ -25,6 +25,7 @@ import pyproj
 from pyremap import MpasMeshDescriptor, ProjectionGridDescriptor, Remapper, \
     get_lat_lon_descriptor, get_polar_descriptor
 from mpas_tools.scrip.from_mpas import scrip_from_mpas
+from netCDF4 import Dataset
 # }}}
 
 
@@ -32,7 +33,8 @@ def main():  # {{{
 
     print("****** Creating E3SM coupling files ******")
     # obtain configuration settings
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(
+        interpolation=configparser.ExtendedInterpolation())
     # first, read in the default config options
     config.read("defaults.ini")
     if os.path.exists('config_E3SM_coupling_files.ini'):
@@ -56,11 +58,12 @@ def main():  # {{{
                      salinity_restoring,
                      prescribed_ismf]
 
-# clean: Delete all directories
     parser = argparse.ArgumentParser()
     parser.add_argument('--clean', action='store_true')
     parser.add_argument('--ice_shelf_cavities', action='store_true')
     args = parser.parse_args()
+
+    # clean: Delete all directories
     if args.clean:
         print('****** clean out directories ******')
         for function in function_list:
@@ -77,32 +80,13 @@ def main():  # {{{
     print("- ice_shelf_cavities set to {}".format(
         config.get('main', 'ice_shelf_cavities')))
 
-    # determine mesh name
-    mesh_name = config.get('main', 'mesh_name')
-    currentDir = os.getcwd()
-    if mesh_name == 'autodetect':
-        path = currentDir.split('/')
-        if 'global_ocean' in path:
-            index = path.index('global_ocean') + 1
-            mesh_name = 'o{}'.format(path[index])
-            print("- mesh name autodetected from path: {}".format(mesh_name))
-            config.set('main', 'mesh_name', mesh_name)
-        else:
-            raise ValueError("mesh name not found in path. Please specify "
-                             "the mesh_name in config_E3SM_coupling_files.ini.")
-    else:
-        print("- mesh name specified in config file: ", mesh_name)
+    parse_mesh_metadata(config)
+    mesh_name = config.get('mesh', 'short_name')
 
-    # determine date string
-    date_string = config.get('main', 'date_string')
+    shutil.copyfile('mesh_before_metadata.nc', 'mesh.nc')
+    append_mesh_metadata(config, 'mesh.nc')
+
     currentDir = os.getcwd()
-    if date_string == 'autodetect':
-        now = datetime.now()
-        date_string = now.strftime("%y%m%d")
-        print("- date string autodetected from today's date:", date_string)
-        config.set('main', 'date_string', date_string)
-    else:
-        print("- date string specified in config file:", date_string)
 
     # create inputdata directories
     make_dir('assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
@@ -146,7 +130,7 @@ def main():  # {{{
 
 def initial_condition_ocean(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
 
     # create links
     init_filename = config.get('main', 'initial_condition')
@@ -173,7 +157,7 @@ def initial_condition_ocean(config):  # {{{
 
 def graph_partition_ocean(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
 
     # create links
@@ -210,7 +194,7 @@ def graph_partition_ocean(config):  # {{{
 
 def initial_condition_seaice(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
 
     init_filename = config.get('main', 'initial_condition')
     base_path = os.path.dirname(os.getcwd())
@@ -244,7 +228,7 @@ def initial_condition_seaice(config):  # {{{
 
 def scrip(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -280,7 +264,7 @@ def scrip(config):  # {{{
 
 def transects_and_regions(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
     make_moc_masks(mesh_name)
@@ -316,7 +300,7 @@ def transects_and_regions(config):  # {{{
 
 def mapping_analysis(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
 
     make_analysis_lat_lon_map(config, mesh_name)
     make_analysis_polar_map(config, mesh_name, projection='antarctic')
@@ -372,7 +356,7 @@ def mapping_ne30(config):  # {{{
 
 def mapping(config, atm_scrip_tag):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -476,7 +460,7 @@ def domain_ne30(config):  # {{{
 
 def make_domain_files(config, mapping_suffix):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -510,7 +494,7 @@ def make_domain_files(config, mapping_suffix):  # {{{
 
 def mapping_runoff(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -588,7 +572,7 @@ def mapping_runoff(config):  # {{{
 
 def salinity_restoring(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -673,7 +657,7 @@ def salinity_restoring(config):  # {{{
 
 def prescribed_ismf(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -1145,6 +1129,149 @@ def remap_rignot(inFileName, meshFileName, meshName, outFileName,
 
     dsRemap.attrs['history'] = ' '.join(sys.argv)
     write_netcdf(dsRemap, outFileName)  # }}}
+
+
+def parse_mesh_metadata(config):  # {{{
+
+    if config.get('mesh', 'author') == '':
+        raise ValueError('You must fill in the "author" option in the "mesh" '
+                         'section of the config file')
+
+    if config.get('mesh', 'institution') == '':
+        raise ValueError('You must fill in the "institution" option in the '
+                         '"mesh" section of the config file')
+
+    # determine date string
+    date_string = config.get('main', 'date_string')
+    if date_string == 'autodetect':
+        now = datetime.now()
+        date_string = now.strftime("%y%m%d")
+        print("- date string autodetected from today's date: {}".format(
+            date_string))
+        config.set('main', 'date_string', date_string)
+    else:
+        print("- date string specified in config file: {}".format(date_string))
+
+    # determine creation date
+    date_string = config.get('mesh', 'creation_date')
+    if date_string == 'autodetect':
+        now = datetime.now()
+        date_string = now.strftime("%m/%d/%Y %H:%M:%S")
+        print("- creation date autodetected from today's date: {}".format(
+            date_string))
+        config.set('mesh', 'creation_date', date_string)
+    else:
+        print("- creation date specified in config file: {}".format(
+            date_string))
+
+    # determine the maximum depth of the ocean
+    if config.get('mesh', 'max_depth') == 'autodetect':
+        with xr.open_dataset('mesh_before_metadata.nc') as dsMesh:
+            max_depth = dsMesh.refBottomDepth.isel(nVertLevels=-1).values
+            # round to the nearest 0.1 m
+            max_depth = np.round(max_depth, 1)
+
+        print("- maximum ocean depth autodetected mesh file: {}".format(
+            max_depth))
+        config.set('mesh', 'max_depth', '{}'.format(max_depth))
+    else:
+        max_depth = config.getfloat('mesh', 'max_depth')
+        print("- maximum ocean depth in config file: {}".format(max_depth))
+
+    # determine the number of vertical levels in the ocean
+    if config.get('mesh', 'levels') == 'autodetect':
+        with xr.open_dataset('mesh_before_metadata.nc') as dsMesh:
+            levels = dsMesh.sizes['nVertLevels']
+
+        print("- number of vertical levels in the ocean autodetected mesh file:"
+              " {}".format(levels))
+        config.set('mesh', 'levels', '{}'.format(levels))
+    else:
+        levels = config.getfloat('mesh', 'levels')
+        print("- number of vertical levels in the ocean in config file: "
+              "{}".format(levels))
+
+    # determine mesh name.  We do this last because other config options may
+    # be part of the mesh name
+    mesh_name = config.get('mesh', 'short_name')
+    currentDir = os.getcwd()
+    if mesh_name == 'autodetect':
+        path = currentDir.split('/')
+        if 'global_ocean' in path:
+            index = path.index('global_ocean') + 1
+            mesh_name = 'o{}'.format(path[index])
+            print("- mesh name autodetected from path: {}".format(mesh_name))
+            config.set('mesh', 'short_name', mesh_name)
+        else:
+            raise ValueError("mesh name not found in path. Please specify "
+                             "the mesh_name in config_E3SM_coupling_files.ini.")
+    else:
+        print("- mesh name specified in config file: ", mesh_name)
+
+    # }}}
+
+
+def append_mesh_metadata(config, filename):  # {{{
+    ds = Dataset(filename, "r+")
+
+    prefix = config.get('mesh', 'prefix')
+
+    if config.getboolean('main', 'ice_shelf_cavities'):
+        ice_shelf_cavities = 'ON'
+    else:
+        ice_shelf_cavities = 'OFF'
+
+    attrdict = {'MPAS Mesh Short Name': config.get('mesh', 'short_name'),
+                'MPAS Mesh Long Name': config.get('mesh', 'long_name'),
+                'MPAS Mesh Description': config.get('mesh', 'description'),
+                'MPAS Mesh E3SM Version': config.getint('mesh', 'e3sm_version'),
+                'MPAS Mesh {} Version'.format(prefix):
+                    config.get('mesh', 'mesh_version'),
+                'MPAS Mesh {} Version Author'.format(prefix):
+                    config.get('mesh', 'author'),
+                'MPAS Mesh {} Version Author Institution'.format(prefix):
+                    config.get('mesh', 'institution'),
+                'MPAS Mesh {} Version Creation Date'.format(prefix):
+                    config.get('mesh', 'creation_date'),
+                'MPAS Mesh {} Minimum Resolution (km)'.format(prefix):
+                    config.getfloat('mesh', 'min_res'),
+                'MPAS Mesh {} Maximum Resolution (km)'.format(prefix):
+                    config.getfloat('mesh', 'max_res'),
+                'MPAS Mesh {} Maximum Depth (m)'.format(prefix):
+                    config.getfloat('mesh', 'max_depth'),
+                'MPAS Mesh {} Number of Levels'.format(prefix):
+                    config.getfloat('mesh', 'levels'),
+                'MPAS Mesh Ice Shelf Cavities': ice_shelf_cavities,
+                'MPAS Mesh Runoff Description': config.get(
+                    'mesh', 'runoff_description')}
+
+    packages = {'COMPASS': 'compass', 'JIGSAW': 'jigsaw',
+                'JIGSAW-Python': 'jigsawpy', 'MPAS-Tools': 'mpas_tools',
+                'NCO': 'nco', 'ESMF': 'esmf',
+                'Geometric Features': 'geometric_features',
+                'Metis': 'metis', 'pyremap': 'pyremap'}
+
+    for name in packages:
+        package = packages[name]
+        attrdict['MPAS Mesh {} Version'.format(name)] = \
+            get_conda_package_version(package)
+
+    ds.setncatts(attrdict)
+
+    # }}}
+
+
+def get_conda_package_version(package):  # {{{
+    conda = subprocess.check_output(['conda', 'list', package]).decode("utf-8")
+    lines = conda.split('\n')
+    for line in lines:
+        parts = line.split()
+        if parts[0] == package:
+            return parts[1]
+
+    raise ValueError('Package {} not found in the conda environment'.format(
+        package))
+    # }}}
 
 
 if __name__ == '__main__':
