@@ -1222,8 +1222,10 @@ def append_mesh_metadata(config, filename):  # {{{
         ice_shelf_cavities = 'OFF'
 
     attrdict = {'MPAS Mesh Short Name': config.get('mesh', 'short_name'),
-                'MPAS Mesh Long Name': config.get('mesh', 'long_name'),
-                'MPAS Mesh Description': config.get('mesh', 'description'),
+                'MPAS Mesh Long Name':
+                    config.get('mesh', 'long_name').replace('\n', ' '),
+                'MPAS Mesh Description':
+                    config.get('mesh', 'description').replace('\n', ' '),
                 'MPAS Mesh E3SM Version': config.getint('mesh', 'e3sm_version'),
                 'MPAS Mesh {} Version'.format(prefix):
                     config.get('mesh', 'mesh_version'),
