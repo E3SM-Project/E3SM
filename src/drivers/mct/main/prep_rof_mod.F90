@@ -75,9 +75,6 @@ module prep_rof_mod
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
-  logical :: rof_present   ! .true.  => rof is present
-  logical :: lnd_present   ! .true.  => lnd is present
-  logical :: atm_present   ! .true.  => atm is present
 
   ! field names and lists, for fields that need to be treated specially
   character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
@@ -113,6 +110,7 @@ contains
     logical                     :: esmf_map_flag ! .true. => use esmf for mapping
     logical                     :: rof_present   ! .true.  => rof is present
     logical                     :: lnd_present   ! .true.  => lnd is present
+    logical                     :: atm_present   ! .true.  => atm is present
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
@@ -549,38 +547,41 @@ contains
                'lfrac*l2x%Flrl_rofi_HDO'
        end if
 	   
-       index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
-       index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
-       index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
-       index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
-       index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
-       index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
-       index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
-       index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
-       index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
-       index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
+       if ( rof_heat ) then
+          index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
+          index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
+          index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
+          index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
+          index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
+          index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
+          index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
+          index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
+          index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
+          index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
      
-       index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
-       index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
-       index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
-       index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
-       index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
-       index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
-       index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
-       index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
-       index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
-       index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
-     
-       mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
-       mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
-       mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
-       mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
-       mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
-       mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
-       mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
-       mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
-       mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
-       mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+          index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
+          index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
+          index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
+          index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
+          index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
+          index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
+          index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
+          index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
+          index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
+          index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
+
+          mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
+          mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
+          mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
+          mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
+          mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
+          mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
+          mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
+          mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
+          mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
+          mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+       endif 
+
     end if
 
     do i = 1,lsize
@@ -606,17 +607,19 @@ contains
           x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * lfrac
           x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * lfrac
        end if
-
-       x2r_r%rAttr(index_x2r_Sa_tbot,i)    = a2x_r%rAttr(index_a2x_Sa_tbot,i)
-       x2r_r%rAttr(index_x2r_Sa_pbot,i)    = a2x_r%rAttr(index_a2x_Sa_pbot,i)
-       x2r_r%rAttr(index_x2r_Sa_u,i)       = a2x_r%rAttr(index_a2x_Sa_u,i)
-       x2r_r%rAttr(index_x2r_Sa_v,i)       = a2x_r%rAttr(index_a2x_Sa_v,i)
-       x2r_r%rAttr(index_x2r_Sa_shum,i)    = a2x_r%rAttr(index_a2x_Sa_shum,i)
-       x2r_r%rAttr(index_x2r_Faxa_swndr,i) = a2x_r%rAttr(index_a2x_Faxa_swndr,i)
-       x2r_r%rAttr(index_x2r_Faxa_swndf,i) = a2x_r%rAttr(index_a2x_Faxa_swndf,i)
-       x2r_r%rAttr(index_x2r_Faxa_swvdr,i) = a2x_r%rAttr(index_a2x_Faxa_swvdr,i)
-       x2r_r%rAttr(index_x2r_Faxa_swvdf,i) = a2x_r%rAttr(index_a2x_Faxa_swvdf,i)
-       x2r_r%rAttr(index_x2r_Faxa_lwdn,i)  = a2x_r%rAttr(index_a2x_Faxa_lwdn,i)
+      
+       if ( rof_heat ) then
+          x2r_r%rAttr(index_x2r_Sa_tbot,i)    = a2x_r%rAttr(index_a2x_Sa_tbot,i)
+          x2r_r%rAttr(index_x2r_Sa_pbot,i)    = a2x_r%rAttr(index_a2x_Sa_pbot,i)
+          x2r_r%rAttr(index_x2r_Sa_u,i)       = a2x_r%rAttr(index_a2x_Sa_u,i)
+          x2r_r%rAttr(index_x2r_Sa_v,i)       = a2x_r%rAttr(index_a2x_Sa_v,i)
+          x2r_r%rAttr(index_x2r_Sa_shum,i)    = a2x_r%rAttr(index_a2x_Sa_shum,i)
+          x2r_r%rAttr(index_x2r_Faxa_swndr,i) = a2x_r%rAttr(index_a2x_Faxa_swndr,i)
+          x2r_r%rAttr(index_x2r_Faxa_swndf,i) = a2x_r%rAttr(index_a2x_Faxa_swndf,i)
+          x2r_r%rAttr(index_x2r_Faxa_swvdr,i) = a2x_r%rAttr(index_a2x_Faxa_swvdr,i)
+          x2r_r%rAttr(index_x2r_Faxa_swvdf,i) = a2x_r%rAttr(index_a2x_Faxa_swvdf,i)
+          x2r_r%rAttr(index_x2r_Faxa_lwdn,i)  = a2x_r%rAttr(index_a2x_Faxa_lwdn,i)
+       endif
 
     end do
 
