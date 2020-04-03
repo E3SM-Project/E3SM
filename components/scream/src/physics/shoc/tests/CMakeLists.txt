@@ -1,7 +1,6 @@
 INCLUDE (ScreamUtils)
 
-SET (shocLib shoc)
-SET (NEED_LIBS ${shocLib} scream_control scream_share)
+SET (NEED_LIBS shoc physics_common scream_control scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_unit_tests.cpp)

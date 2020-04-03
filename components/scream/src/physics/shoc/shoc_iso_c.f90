@@ -38,7 +38,7 @@ contains
     real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
     real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
 
-    real(8) :: pref_mid(nlev) ! unused values
+    real(kind=c_real) :: pref_mid(nlev) ! unused values
 
     pref_mid = 0
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
