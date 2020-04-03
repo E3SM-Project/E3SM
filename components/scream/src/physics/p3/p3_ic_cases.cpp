@@ -1,5 +1,5 @@
 #include "p3_ic_cases.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_assert.hpp"
 
@@ -9,7 +9,7 @@ namespace ic {
 
 // From mixed_case_data.py in scream-docs at commit 4bbea4.
 FortranData::Ptr make_mixed (const Int ncol) {
-  using consts = Constants<Real>;
+  using consts = scream::physics::Constants<Real>;
 
   const Int nk = 72;
   Int k;

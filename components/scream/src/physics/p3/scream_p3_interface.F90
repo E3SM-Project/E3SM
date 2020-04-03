@@ -5,7 +5,7 @@
 module scream_p3_interface_mod
 
   use iso_c_binding, only: c_ptr, c_f_pointer, c_int, c_double, c_bool,C_NULL_CHAR, c_float
-  use micro_p3_utils, only: rtype
+  use physics_utils, only: rtype
 
   implicit none
 

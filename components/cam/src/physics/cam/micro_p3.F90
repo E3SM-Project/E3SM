@@ -35,31 +35,13 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
-#define bfb_square(val) ((val)*(val))
-#define bfb_cube(val) ((val)*(val)*(val))
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#  define bfb_pow(base, exp) cxx_pow(base, exp)
-#  define bfb_sqrt(base) cxx_sqrt(base)
-#  define bfb_cbrt(base) cxx_cbrt(base)
-#  define bfb_gamma(val) cxx_gamma(val)
-#  define bfb_log(val) cxx_log(val)
-#  define bfb_log10(val) cxx_log10(val)
-#  define bfb_exp(val) cxx_exp(val)
-#else
-#  define bfb_pow(base, exp) (base)**(exp)
-#  define bfb_cbrt(base) (base)**thrd
-#  define bfb_gamma(val) gamma(val)
-#  define bfb_log(val) log(val)
-#  define bfb_log10(val) log10(val)
-#  define bfb_exp(val) exp(val)
-#  define bfb_sqrt(val) sqrt(val)
-#endif
+! Include bit-for-bit math macros.
+#include "bfb_math.inc"
 
 module micro_p3
 
    ! get real kind from utils
-   use micro_p3_utils, only: rtype,rtype8,btype
+   use physics_utils, only: rtype,rtype8,btype
 
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
@@ -72,6 +54,12 @@ module micro_p3
        rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c, use_cxx
+
+  ! Bit-for-bit math functions.
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use physics_common_iso_f, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
+                                  cxx_log10, cxx_exp
+#endif
 
   implicit none
   save
@@ -1555,7 +1543,7 @@ contains
     ! Finds indices in 3D ice (only) lookup table
     !------------------------------------------------------------------------------------------!
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f, cxx_log10
+    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f
 #endif
 
     implicit none
@@ -1625,7 +1613,7 @@ contains
     ! Finds indices in 3D rain lookup table
     !------------------------------------------------------------------------------------------!
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f, cxx_cbrt, cxx_log10
+    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f
 #endif
 
     implicit none
@@ -1724,7 +1712,7 @@ contains
   subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_cloud_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt
+    use micro_p3_iso_f, only: get_cloud_dsd2_f
 #endif
 
     implicit none
@@ -1800,7 +1788,7 @@ contains
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt, cxx_log10, cxx_exp, cxx_log
+    use micro_p3_iso_f, only: get_rain_dsd2_f
 #endif
 
     ! Computes and returns rain size distribution parameters
@@ -2140,7 +2128,7 @@ contains
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: ice_rain_collection_f, cxx_pow
+    use micro_p3_iso_f, only: ice_rain_collection_f
 #endif
 
    implicit none
@@ -2261,9 +2249,9 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
    ! include RH dependence
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: ice_melting_f, cxx_cbrt, cxx_sqrt
+    use micro_p3_iso_f, only: ice_melting_f
 #endif
-  
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2317,7 +2305,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
            log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: ice_cldliq_wet_growth_f, cxx_cbrt, cxx_sqrt
+    use micro_p3_iso_f, only: ice_cldliq_wet_growth_f
 #endif
 
    implicit none
@@ -2396,7 +2384,7 @@ epsi,epsi_tot)
    ! calcualte total inverse ice relaxation timescale combined for all ice categories
    ! note 'f1pr' values are normalized, so we need to multiply by N
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: ice_relaxation_timescale_f, cxx_cbrt, cxx_sqrt
+    use micro_p3_iso_f, only: ice_relaxation_timescale_f
 #endif
    implicit none
 
@@ -2442,7 +2430,7 @@ dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
 epsr,epsc)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: calc_liq_relaxation_timescale_f, cxx_gamma, cxx_sqrt, cxx_cbrt
+   use micro_p3_iso_f, only: calc_liq_relaxation_timescale_f
 #endif
    implicit none
 
@@ -2509,7 +2497,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: calc_rime_density_f, cxx_gamma, cxx_pow
+   use micro_p3_iso_f, only: calc_rime_density_f
 #endif
    !.........................
    ! calculate rime density
@@ -2594,7 +2582,7 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cldliq_immersion_freezing_f, cxx_gamma, cxx_exp
+   use micro_p3_iso_f, only: cldliq_immersion_freezing_f
 #endif
    !............................................................
    ! contact and immersion freezing droplets
@@ -2637,7 +2625,7 @@ lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: rain_immersion_freezing_f, cxx_log, cxx_gamma, cxx_exp
+   use micro_p3_iso_f, only: rain_immersion_freezing_f
 #endif
    !............................................................
    ! immersion freezing of rain
@@ -2686,7 +2674,7 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
    ! allow ice nucleation if < -15 C and > 5% ice supersaturation
    ! use CELL-AVERAGE values, freezing of vapor
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: ice_nucleation_f, cxx_exp
+    use micro_p3_iso_f, only: ice_nucleation_f
 #endif
 
    implicit none
@@ -2842,7 +2830,7 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
    qcacc,ncacc)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cloud_rain_accretion_f, cxx_pow
+   use micro_p3_iso_f, only: cloud_rain_accretion_f
 #endif
 
 !............................
@@ -2903,7 +2891,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    ! (breakup following modified Verlinde and Cotton scheme)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: rain_self_collection_f, cxx_cbrt, cxx_exp
+   use micro_p3_iso_f, only: rain_self_collection_f
 #endif
 
    implicit none
@@ -2956,7 +2944,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
    qcaut,ncautc,ncautr)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cloud_water_autoconversion_f, cxx_pow
+   use micro_p3_iso_f, only: cloud_water_autoconversion_f
 #endif
 
    implicit none
@@ -3635,7 +3623,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: cloud_sedimentation_f, cxx_gamma, cxx_pow
+    use micro_p3_iso_f, only: cloud_sedimentation_f
 #endif
 
    implicit none

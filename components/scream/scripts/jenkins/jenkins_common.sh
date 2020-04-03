@@ -7,10 +7,6 @@ git config --global user.name "Jenkins Jenkins"
 
 SUBMIT="--submit"
 if [ -n "$PULLREQUESTNUM" ]; then
-    cd ./scream
-    git checkout -b pr/$PULLREQUESTNUM
-    git submodule update --recursive
-    cd -
     SUBMIT="" # We don't submit AT runs
 fi
 
