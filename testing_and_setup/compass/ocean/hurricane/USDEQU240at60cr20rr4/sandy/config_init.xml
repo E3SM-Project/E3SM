@@ -4,8 +4,8 @@
 	<add_link source="../../build_mesh/culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source_path="initial_condition_database" source="sandy_wnd10m.nc" dest="wnd10m.nc"/>
 	<add_link source_path="initial_condition_database" source="sandy_prmsl.nc" dest="prmsl.nc"/>
-	<add_link source_path="script_configuration_dir" source="interpolate_time_varying_forcing.py" dest="interpolate_time_varying_forcing.py"/>
-	<add_link source_path="script_configuration_dir" source="create_pointstats_file.py" dest="create_pointstats_file.py"/>
+  <add_link source_path="script_configuration_dir" source="scripts/interpolate_time_varying_forcing.py" dest="interpolate_time_varying_forcing.py"/>
+	<add_link source_path="script_configuration_dir" source="scripts/create_pointstats_file.py" dest="create_pointstats_file.py"/>
   <add_link source_path="script_configuration_dir" source="sandy_stations/NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
 	<add_link source_path="script_configuration_dir" source="sandy_stations/USGS_stations.txt" dest="USGS_stations.txt"/>
 
