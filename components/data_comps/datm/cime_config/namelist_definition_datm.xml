@@ -2585,7 +2585,6 @@
       <value stream="co2tseries.20tr">1850</value>
       <!-- ncycles*(year_end-year_start+1)-(year_end-co2_year_start) -->
       <value stream="co2tseries.omip" datm_mode="CORE2_IAF">213</value>    <!-- 6*(2009-1948+1)-(2009-1850) -->
-      <value stream="co2tseries.omip" datm_mode="CORE_IAF_JRA">188</value> <!-- 6*(2016-1958+1)-(2016-1850) -->
       <value stream="co2tseries.omip" datm_mode="CORE_IAF_JRA.*2018">198</value> <!-- 6*(2018-1958+1)-(2018-1850) -->
       <value stream="co2tseries.SSP">2015</value>
       <value stream="BC.QIAN.Precip">1979</value>
