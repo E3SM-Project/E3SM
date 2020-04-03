@@ -355,23 +355,20 @@ if ( `lowercase $fetch_code` == true ) then
 
   e3sm_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
   mkdir -p $code_root_dir
-  git clone git@github.com:E3SM-Project/E3SM.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
+
+  if ( `lowercase $e3sm_tag` == master ) then  
+    git clone git@github.com:E3SM-Project/E3SM.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
+  else
+    e3sm_newline
+    e3sm_print 'Checking out branch ${e3sm_tag} = '${e3sm_tag}
+    git clone -b ${e3sm_tag} git@github.com:E3SM-Project/E3SM.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name    
+  endif
+  
   ## Setup git hooks
   rm -rf $code_root_dir/$tag_name/.git/hooks
   git clone git@github.com:E3SM-Project/E3SM-Hooks.git $code_root_dir/$tag_name/.git/hooks         # checkout with write permission.
   cd $code_root_dir/$tag_name
   git config commit.template $code_root_dir/$tag_name/.git/hooks/commit.template
-
-  if ( `lowercase $e3sm_tag` == master ) then
-    e3sm_newline
-    ##e3sm_print 'Detaching from the master branch to avoid accidental changes to master by user.'
-    ##git checkout --detach
-    echo 'KLUDGE: git version on anvil (1.7.1) is too old to be able to detach'
-  else
-    e3sm_newline
-    e3sm_print 'Checking out branch ${e3sm_tag} = '${e3sm_tag}
-    git checkout ${e3sm_tag}
-  endif
 
   ## Update submodules (including MPAS).
   git submodule update --init --recursive
