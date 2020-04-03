@@ -215,14 +215,14 @@ def initial_condition_seaice(config):  # {{{
 
     filename = 'seaice.{}.nc'.format(mesh_name)
     # command line execution
-    args = ['ncks', '-x', '-v',
-            'bottomDepth, refBottomDepth,restingThickness,temperature,salinity,'
-            'temperatureSurfaceValue,salinitySurfaceValue,surfaceVelocityZonal,'
-            'surfaceVelocityMeridional,SSHGradientZonal,SSHGradientMeridional,'
-            'vertNonLocalFluxTemp,normalVelocity,layerThickness,'
-            'normalBarotropicVelocity,vertCoordMovementWeights,'
-            'boundaryLayerDepth,seaIcePressure,atmosphericPressure,'
-            'filteredSSHGradientZonal,filteredSSHGradientMeridional',
+    args = ['ncks', '-v',
+            'areaCell,cellsOnCell,edgesOnCell,fCell,indexToCellID,latCell,'
+            'lonCell,meshDensity,nEdgesOnCell,verticesOnCell,xCell,yCell,zCell,'
+            'angleEdge,cellsOnEdge,dcEdge,dvEdge,edgesOnEdge,fEdge,'
+            'indexToEdgeID,latEdge,lonEdge,nEdgesOnCell,nEdgesOnEdge,'
+            'verticesOnEdge,weightsOnEdge,xEdge,yEdge,zEdge,areaTriangle,'
+            'cellsOnVertex,edgesOnVertex,fVertex,indexToVertexID,'
+            'kiteAreasOnVertex,latVertex,lonVertex,xVertex,yVertex,zVertex',
             '-O',
             '{}.nc'.format(mesh_name),
             filename]
