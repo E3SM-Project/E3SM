@@ -2,7 +2,7 @@
 #define P3_FUNCTIONS_CONSERVATION_IMPL_HPP
 
 #include "p3_functions.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -17,7 +17,7 @@ void Functions<S,D>
   const auto sources = qc + (qcnuc)*dt; // Source of cloud water
   Spack ratio;
 
-  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
+  constexpr Scalar qtendsmall = scream::physics::Constants<Scalar>::QTENDSMALL;
   Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
   Smask nothing_todo = !enforce_conservation;
 
@@ -56,7 +56,7 @@ void Functions<S,D>
   const auto sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt; // Sources of rain water
   Spack ratio;
 
-  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
+  constexpr Scalar qtendsmall = scream::physics::Constants<Scalar>::QTENDSMALL;
   Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
 
   if (enforce_conservation.any()){
@@ -76,7 +76,7 @@ void Functions<S,D>
   const auto sinks = (qisub+qimlt)*dt; // Sinks of ice water
   const auto sources = qitot + (qidep+qinuc+qrcol+qccol+qrheti+qcheti+qiberg)*dt; // Sources of ice water
   Spack ratio;
-  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
+  constexpr Scalar qtendsmall = scream::physics::Constants<Scalar>::QTENDSMALL;
   Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
   if(enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);

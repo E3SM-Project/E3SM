@@ -4,7 +4,7 @@
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
 #include "share/scream_workspace.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -73,7 +73,7 @@ struct Functions
 
   using KT = KokkosTypes<Device>;
 
-  using C = Constants<Scalar>;
+  using C = scream::physics::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;

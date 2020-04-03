@@ -1,6 +1,6 @@
 #include "p3_f90.hpp"
 #include "p3_functions_f90.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 #include "p3_ic_cases.hpp"
 
 #include "share/scream_assert.hpp"
@@ -120,7 +120,7 @@ FortranDataIterator::getfield (Int i) const {
 }
 
 void micro_p3_utils_init () {
-  using c = Constants<Real>;
+  using c = scream::physics::Constants<Real>;
   micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RhoH2O, 
                  c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce, 
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
