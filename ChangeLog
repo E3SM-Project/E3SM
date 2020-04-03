@@ -1,6 +1,41 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-3-2020 
+Tag: cime5.8.19
+Answer Changes: None
+Tests:  scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+
+    - Clean up follow maint5.6 merge.
+    - Change sst_aquap11 to sst_aquap_constant
+    - case.setup: Add --keep option
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+2656300d5 Merge pull request #3462 from mnlevy1981/cleanup_maint-5.6_merge
+06760c7c2 Merge pull request #3469 from ESMCI/fischer/sst_aquap_constant
+bb2d15680 Merge pull request #3464 from ESMCI/jgfouca/case_setup_keep_list
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids_common.xml
+M       scripts/Tools/case.setup
+M       scripts/lib/CIME/case/case_setup.py
+M       src/components/data_comps_mct/datm/cime_config/config_component.xml
+M       src/components/data_comps_mct/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps_mct/datm/src/datm_comp_mod.F90
+M       src/components/data_comps_mct/drof/cime_config/namelist_definition_drof.xml
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 3-20-2020
 Tag: cime5.8.18
 Answer Changes: None
