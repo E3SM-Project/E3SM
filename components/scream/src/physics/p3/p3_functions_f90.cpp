@@ -179,6 +179,10 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 
+void calculate_incloud_mixingratios_c(Real qc, Real qr, Real qitot, Real qirim, Real nc, Real nr, Real nitot, Real birim,
+                                      Real inv_lcldm, Real inv_icldm, Real inv_rcldm,
+                                      Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
+                                      Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);
 }
 
 namespace scream {
@@ -484,6 +488,16 @@ void ice_cldliq_wet_growth(IceWetGrowthData& d)
                           d.kap, d.mu, d.sc, d.qv, d.qc_incld,
                           d.qitot_incld, d.nitot_incld, d.qr_incld, &d.log_wetgrowth,
                           &d.qrcol, &d.qccol, &d.qwgrth, &d.nrshdr, &d.qcshd);
+}
+
+void calculate_incloud_mixingratios(IncloudMixingData& d)
+{
+  p3_init(true);
+
+  calculate_incloud_mixingratios_c(d.qc, d.qr, d.qitot, d.qirim, d.nc, d.nr, d.nitot, d.birim, d.inv_lcldm, d.inv_icldm, d.inv_rcldm,
+                                   &d.qc_incld, &d.qr_incld, &d.qitot_incld, &d.qirim_incld,
+                                   &d.nc_incld, &d.nr_incld, &d.nitot_incld, &d.birim_incld);
+
 }
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
@@ -2499,6 +2513,52 @@ void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, R
   *qcshd_         = t_h(4);
 }
 
+void calculate_incloud_mixingratios_f(Real qc_, Real qr_, Real qitot_, Real qirim_, Real nc_, Real nr_, Real nitot_, Real birim_,
+                                      Real inv_lcldm_, Real inv_icldm_, Real inv_rcldm_,
+                                      Real* qc_incld_, Real* qr_incld_, Real* qitot_incld_, Real* qirim_incld_,
+                                      Real* nc_incld_, Real* nr_incld_, Real* nitot_incld_, Real* birim_incld_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack        = typename P3F::Spack;
+  using Smask        = typename P3F::Smask;
+  using view_1d      = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_d", 8);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+
+    Spack qc{qc_}, qr{qr_}, qitot{qitot_}, qirim{qirim_}, nc{nc_}, nr{nr_}, nitot{nitot_},
+          birim{birim_}, inv_lcldm{inv_lcldm_}, inv_icldm{inv_icldm_}, inv_rcldm{inv_rcldm_};
+
+    Spack qc_incld{0.}, qr_incld{0.}, qitot_incld{0.}, qirim_incld{0.}, 
+          nc_incld{0.}, nr_incld{0.}, nitot_incld{0.}, birim_incld{0.};
+
+    P3F::calculate_incloud_mixingratios(qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm,
+                           qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld);
+
+    t_d(0) = qc_incld[0];
+    t_d(1) = qr_incld[0];
+    t_d(2) = qitot_incld[0];
+    t_d(3) = qirim_incld[0];
+    t_d(4) = nc_incld[0];
+    t_d(5) = nr_incld[0];
+    t_d(6) = nitot_incld[0];
+    t_d(7) = birim_incld[0];
+  });
+
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qc_incld_         = t_h(0);
+  *qr_incld_         = t_h(1);
+  *qitot_incld_      = t_h(2);
+  *qirim_incld_      = t_h(3);
+  *nc_incld_         = t_h(4);
+  *nr_incld_         = t_h(5);
+  *nitot_incld_      = t_h(6);
+  *birim_incld_      = t_h(7);
+}
 
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.

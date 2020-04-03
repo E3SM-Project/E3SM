@@ -796,4 +796,20 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                               log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
  end subroutine ice_cldliq_wet_growth_c
 
+ subroutine calculate_incloud_mixingratios_c(qc, qr, qitot, qirim, nc, nr, nitot, birim,   &
+                                             inv_lcldm, inv_icldm, inv_rcldm,              &
+                                             qc_incld, qr_incld, qitot_incld, qirim_incld, &
+                                             nc_incld, nr_incld, nitot_incld, birim_incld) bind(C)
+   use micro_p3, only: calculate_incloud_mixingratios
+
+   ! argumens
+   real(kind=c_real), value, intent(in) :: qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm
+   real(kind=c_real), intent(inout) :: qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
+
+   call calculate_incloud_mixingratios(qc, qr, qitot, qirim, nc, nr, nitot, birim,   &
+                                       inv_lcldm, inv_icldm, inv_rcldm,              &
+                                       qc_incld, qr_incld, qitot_incld, qirim_incld, &
+                                       nc_incld, nr_incld, nitot_incld, birim_incld) 
+ end subroutine calculate_incloud_mixingratios_c
+ 
 end module micro_p3_iso_c

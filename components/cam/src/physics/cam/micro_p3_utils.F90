@@ -73,6 +73,8 @@ REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for c
 real(rtype), parameter :: incloud_limit = 5.1E-3
 real(rtype), parameter :: precip_limit  = 1.0E-2
 
+logical, public :: use_cxx = .true.
+
     contains
 !__________________________________________________________________________________________!
 !                                                                                          !
@@ -237,11 +239,24 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
           inv_lcldm,inv_icldm,inv_rcldm, &
           qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: calculate_incloud_mixingratios_f
+#endif
+
        real(rtype),intent(in)   :: qc, qr, qitot, qirim
        real(rtype),intent(in)   :: nc, nr, nitot, birim
        real(rtype),intent(in)   :: inv_lcldm, inv_icldm, inv_rcldm
        real(rtype),intent(out)  :: qc_incld, qr_incld, qitot_incld, qirim_incld
        real(rtype),intent(out)  :: nc_incld, nr_incld, nitot_incld, birim_incld
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+      call calculate_incloud_mixingratios_f(qc,qr,qitot,qirim,nc,nr,nitot,birim, &
+                inv_lcldm,inv_icldm,inv_rcldm, &
+                qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
+       return
+    endif
+#endif
 
 
        if (qc.ge.qsmall) then
@@ -277,10 +292,10 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
        end if
        if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
 !          write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, ', qi:',qitot_incld,', qr:',qr_incld
-          qc_incld    = max(qc_incld,incloud_limit)
-          qitot_incld = max(qitot_incld,incloud_limit)
-          birim_incld = max(birim_incld,incloud_limit)
-          qr_incld    = max(qr_incld,precip_limit)
+          qc_incld    = min(qc_incld,incloud_limit)
+          qitot_incld = min(qitot_incld,incloud_limit)
+          birim_incld = min(birim_incld,incloud_limit)
+          qr_incld    = min(qr_incld,precip_limit)
 !          if (masterproc) write(iulog,*)  errmsg
 
 !          call handle_errmsg('Micro-P3 (Init)',subname='In-cloud mixing

@@ -575,6 +575,13 @@ struct Functions
                                     const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
                                     const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
                                     Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
+
+  KOKKOS_FUNCTION
+  static void calculate_incloud_mixingratios(const Spack& qc, const Spack& qr, const Spack& qitot, const Spack& qirim, const Spack& nc,
+                                             const Spack& nr, const Spack& nitot, const Spack& birim, const Spack& inv_lcldm,
+                                             const Spack& inv_icldm, const Spack& inv_rcldm,
+                                             Spack& qc_incld, Spack& qr_incld, Spack& qitot_incld, Spack& qirim_incld,
+                                             Spack& nc_incld, Spack& nr_incld, Spack& nitot_incld, Spack& birim_incld);
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -624,6 +631,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_droplet_activation_impl.hpp"
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
+# include "p3_functions_incloud_mixingratios_impl.hpp"
 #endif
 
 #endif
