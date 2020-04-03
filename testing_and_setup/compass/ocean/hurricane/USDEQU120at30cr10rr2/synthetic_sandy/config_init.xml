@@ -2,10 +2,10 @@
 <config case="init">
 	<add_link source="../../build_mesh/culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../../build_mesh/culled_mesh/culled_graph.info" dest="graph.info"/>
-  <add_link source_path="script_configuration_dir" source="sandy_stations/NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
+	<add_link source_path="script_configuration_dir" source="sandy_stations/NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
 	<add_link source_path="script_configuration_dir" source="sandy_stations/USGS_stations.txt" dest="USGS_stations.txt"/>
 	<add_link source_path="script_configuration_dir" source="create_pointstats_file.py" dest="create_pointstats_file.py"/>
-  <add_link source_path="script_configuration_dir" source="spinup_time_varying_forcing.py" dest="spinup_time_varying_forcing.py"/>
+	<add_link source_path="script_configuration_dir" source="spinup_time_varying_forcing.py" dest="spinup_time_varying_forcing.py"/>
 	<add_link source_path="script_configuration_dir" source="hurricane_wind_pressure/main.py" dest="create_time_varying_forcing.py"/>
 	<add_link source_path="script_configuration_dir" source="synthetic_hurricanes/SANDY_017771.json" dest="SANDY_017771.json"/>
 	<add_link source_path="script_configuration_dir" source="synthetic_hurricanes/SANDY_017771_hurricane_inputs.txt" dest="hurricane_inputs.txt"/>
