@@ -3,9 +3,9 @@
            |--------------------------------------------------------------------------------------------------|
            |                                                                                                  |
            |                                                                                                  |
-           |                                   Modified by Qi Tang                                            |
-           |                                   chemUCI standalone for E3SM                                    |
-           |                                   last touch 20200401 - MJP                                      |
+           |                              Modified by Qi Tang & Michael Prather                               |
+           |                              chemUCI standalone for E3SM                                         |
+           |                              last touch 20200401 - MJP                                           |
            |                                                                                                  |
            |                                                                                                  |
            |--------------------------------------------------------------------------------------------------|
@@ -151,13 +151,13 @@ Class List
                    ( 30)   NO2 + OH + M ->  HNO3 + M                                            troe : ko=1.80E-30*(300/t)**3.00  ( 46)
                                                                                                        ki=2.80E-11                
                                                                                                         f=0.60                    
-  HNO4             ( 31)   NO2 + HO2 + M ->  HNO4 + M                                           troe : ko=1.90E-31*(300/t)**3.40  ( 47)
+  HNO4f            ( 31)   NO2 + HO2 + M ->  HNO4 + M                                           troe : ko=1.90E-31*(300/t)**3.40  ( 47)
                                                                                                        ki=4.00E-12*(300/t)**0.30  
                                                                                                         f=0.60                    
-  N2O5             ( 32)   NO2 + NO3 + M ->  N2O5 + M                                           troe : ko=2.40E-30*(300/t)**3.00  ( 48)
+  N2O5f            ( 32)   NO2 + NO3 + M ->  N2O5 + M                                           troe : ko=2.40E-30*(300/t)**3.00  ( 48)
                                                                                                        ki=1.60E-12*(300/t)**-0.10 
                                                                                                         f=0.60                    
-  PAN              ( 33)   CH3CO3 + NO2 + M ->  PAN + M                                         troe : ko=9.70E-29*(300/t)**5.60  ( 49)
+  PANf             ( 33)   CH3CO3 + NO2 + M ->  PAN + M                                         troe : ko=9.70E-29*(300/t)**5.60  ( 49)
                                                                                                        ki=9.30E-12*(300/t)**1.50  
                                                                                                         f=0.60                    
   uci7             ( 34)   HNO4 ->  HO2 + NO2                                                   rate = 2.10E-27*exp(  10900./t)   ( 50)

@@ -97,8 +97,8 @@
                                      'jno3            ', 'jn2o5           ', 'jhno3           ', 'jho2no2         ', &
                                      'jch3cho         ', 'jpan            ', 'jacet           ', 'jmvk            ', &
                                      'uci1            ', 'uci2            ', 'uci3            ', 'uci4            ', &
-                                     'uci5            ', 'uci6            ', 'HNO4            ', 'N2O5            ', &
-                                     'PAN             ', 'uci7            ', 'uci8            ', 'uci9            ', &
+                                     'uci5            ', 'uci6            ', 'HNO4f           ', 'N2O5f           ', &
+                                     'PANf            ', 'uci7            ', 'uci8            ', 'uci9            ', &
                                      'ucih1           ', 'ucih2           ', 'ucih3           ', 'usr_e90         ' /)
       rxt_tag_map(:rxt_tag_cnt) = (/    1,   2,   3,   4,   5,   6,   7,   8,   9,  10, &
                                        11,  12,  13,  14,  15,  16,  17,  18,  19,  35, &

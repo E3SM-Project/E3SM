@@ -38,9 +38,9 @@
       integer, parameter :: rid_uci4 =   35                                     
       integer, parameter :: rid_uci5 =   36                                     
       integer, parameter :: rid_uci6 =   45                                     
-      integer, parameter :: rid_HNO4 =   47                                     
-      integer, parameter :: rid_N2O5 =   48                                     
-      integer, parameter :: rid_PAN =   49                                      
+      integer, parameter :: rid_HNO4f =   47                                    
+      integer, parameter :: rid_N2O5f =   48                                    
+      integer, parameter :: rid_PANf =   49                                     
       integer, parameter :: rid_uci7 =   50                                     
       integer, parameter :: rid_uci8 =   51                                     
       integer, parameter :: rid_uci9 =   52                                     
