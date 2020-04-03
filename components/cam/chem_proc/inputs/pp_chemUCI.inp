@@ -8,7 +8,7 @@ sim_dat_path       = ../output/
 sim_dat_filename   = chemUCI.dat
 
 Comments
-     "Modified by Qi Tang"
+     "Modified by Qi Tang & Michael Prather"
      "chemUCI standalone for E3SM"
      "last touch 20200401 - MJP"
 End Comments
@@ -147,9 +147,9 @@ CHEMISTRY
 [uci6] HNO3 + OH -> NO3 + H2O
 *    k[uci6] = (k2*k3*[M])/(k2 + k3*[M])  k2=2.7e-17*exp(2199/T)  k3=6.5e-34*exp(1335/T)*[M]
    NO2 + OH + M -> HNO3 + M                       ; 1.80e-30, 3.0,  2.80e-11, 0.0, 0.6
-[HNO4]   NO2 + HO2 + M -> HNO4 + M                ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
-[N2O5]   NO2 + NO3 + M -> N2O5 + M                ; 2.40E-30, 3.0,  1.60E-12,-0.1, 0.6
-[PAN]    CH3CO3 + NO2 + M -> PAN + M              ; 9.70E-29, 5.6,  9.30E-12, 1.5, 0.6
+[HNO4f]  NO2 + HO2 + M -> HNO4 + M                ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
+[N2O5f]  NO2 + NO3 + M -> N2O5 + M                ; 2.40E-30, 3.0,  1.60E-12,-0.1, 0.6
+[PANf]   CH3CO3 + NO2 + M -> PAN + M              ; 9.70E-29, 5.6,  9.30E-12, 1.5, 0.6
 [uci7]   HNO4 -> HO2 + NO2                        ; 2.10E-27, 10900
 *     k[uci7] -> k[HNO4] / k[uci7]
 [uci8]   N2O5 -> NO2 + NO3                        ; 5.80E-27, 10840
