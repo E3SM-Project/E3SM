@@ -6,8 +6,8 @@
 	<add_link source_path="initial_condition_database" source="sandy_prmsl.nc" dest="prmsl.nc"/>
 	<add_link source_path="script_configuration_dir" source="interpolate_time_varying_forcing.py" dest="interpolate_time_varying_forcing.py"/>
 	<add_link source_path="script_configuration_dir" source="create_pointstats_file.py" dest="create_pointstats_file.py"/>
-	<add_link source_path="script_test_dir" source="NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
-	<add_link source_path="script_test_dir" source="USGS_stations.txt" dest="USGS_stations.txt"/>
+	<add_link source_path="script_configuration_dir" source="sandy_stations/NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
+	<add_link source_path="script_configuration_dir" source="sandy_stations/USGS_stations.txt" dest="USGS_stations.txt"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="init_template.xml" path_base="script_configuration_dir"/>
