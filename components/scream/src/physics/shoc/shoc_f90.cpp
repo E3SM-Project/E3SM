@@ -363,7 +363,7 @@ Int check_against_python(const FortranData& d)
       ++nerr;
     if (util::reldif<double>(d.thetal(0, 0), 310.0143540856747) > tol)
       ++nerr;
-    if (util::reldif<double>(d.shoc_cldfrac(0, 0), 0.0) > tol)
+    if (std::abs(d.shoc_cldfrac(0, 0)) > tol)
       ++nerr;
   }
   return nerr;
