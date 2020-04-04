@@ -108,63 +108,64 @@ ifneq ($(USER_FC),$(null))
 endif
 
 #------------------------------------------------------------------------
-#------------------------------------------------------------------------
-# set compiler flags ...
-#------------------------------------------------------------------------
-ifeq ($(COMPILER),ifort)
-  FFLAGS      :=  -O2 -c -132 -ftz -g -FR  -I $(OBJ_DIR)
-  ifeq ($(DEBUG),TRUE)
-    FFLAGS    += -CB
-  endif
-endif
-ifeq ($(COMPILER),lf95)
-  ifeq ($(DEBUG),TRUE)
-    FFLAGS    := --nfix --nap --chk --g --npca --nsav --trace --trap -c --mod $(OBJ_DIR) -O
-  else
-    FFLAGS    := --nfix --nap --nchk --ng --npca --nsav --ntrace -c --mod $(OBJ_DIR) -O2
-  endif
-endif
-ifeq ($(COMPILER),pgf90)
-  FFLAGS      := -O2 -c -g -Mfree -module $(OBJ_DIR)
-  ifeq ($(DEBUG),TRUE)
-    FFLAGS    += -C
-  endif
-endif
-ifeq ($(COMPILER),pgf95)
-  FFLAGS      := -O2 -c -g -Mfree -module $(OBJ_DIR)
-  ifeq ($(DEBUG),TRUE)
-    FFLAGS    += -C
-  endif
-endif
-ifeq ($(COMPILER),f90)
-  FFLAGS      := -c -freeform -I $(OBJ_DIR) -O2 $(MACHFLGS)
-endif
-ifeq ($(COMPILER),f95)
-  FFLAGS      := -O4 -c -tune host -arch host -free -module $(OBJ_DIR) -I $(OBJ_DIR)
-endif
-ifeq ($(COMPILER),xlf95)
-  FFLAGS      := -g -c -qarch=auto -qnosave -qfree=f90 -qmoddir=$(OBJ_DIR) -I $(OBJ_DIR) -qstrict -O3
-endif
-ifeq ($(COMPILER),gfortran)
-  FFLAGS      := -g -c -ffree-form -J $(OBJ_DIR)
-endif
-ifeq ($(COMPILER),g95)
-  FFLAGS      := -g -c -ffree-form
-endif
-ifeq ($(COMPILER),ftn)
-  FFLAGS      := -f free
-endif
-
-#------------------------------------------------------------------------
-#------------------------------------------------------------------------
-#------------------------------------------------------------------------
-
 FC := $(COMPILER)
 
 # if compiler is intel, change to ifort
 ifeq ($(COMPILER),intel)
   FC := ifort
 endif
+
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
+# set compiler flags ...
+#------------------------------------------------------------------------
+ifeq ($(FC),ifort)
+  FFLAGS      :=  -O2 -c -132 -ftz -g -FR  -I $(OBJ_DIR)
+  ifeq ($(DEBUG),TRUE)
+    FFLAGS    += -CB
+  endif
+endif
+ifeq ($(FC),lf95)
+  ifeq ($(DEBUG),TRUE)
+    FFLAGS    := --nfix --nap --chk --g --npca --nsav --trace --trap -c --mod $(OBJ_DIR) -O
+  else
+    FFLAGS    := --nfix --nap --nchk --ng --npca --nsav --ntrace -c --mod $(OBJ_DIR) -O2
+  endif
+endif
+ifeq ($(FC),pgf90)
+  FFLAGS      := -O2 -c -g -Mfree -module $(OBJ_DIR)
+  ifeq ($(DEBUG),TRUE)
+    FFLAGS    += -C
+  endif
+endif
+ifeq ($(FC),pgf95)
+  FFLAGS      := -O2 -c -g -Mfree -module $(OBJ_DIR)
+  ifeq ($(DEBUG),TRUE)
+    FFLAGS    += -C
+  endif
+endif
+ifeq ($(FC),f90)
+  FFLAGS      := -c -freeform -I $(OBJ_DIR) -O2 $(MACHFLGS)
+endif
+ifeq ($(FC),f95)
+  FFLAGS      := -O4 -c -tune host -arch host -free -module $(OBJ_DIR) -I $(OBJ_DIR)
+endif
+ifeq ($(FC),xlf95)
+  FFLAGS      := -g -c -qarch=auto -qnosave -qfree=f90 -qmoddir=$(OBJ_DIR) -I $(OBJ_DIR) -qstrict -O3
+endif
+ifeq ($(FC),gfortran)
+  FFLAGS      := -g -c -ffree-form -J $(OBJ_DIR)
+endif
+ifeq ($(FC),g95)
+  FFLAGS      := -g -c -ffree-form
+endif
+ifeq ($(FC),ftn)
+  FFLAGS      := -f free
+endif
+
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
 # Default rules
