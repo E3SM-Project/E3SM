@@ -2,7 +2,7 @@
 #define P3_FUNCTIONS_GET_TIME_SPACE_PHYS_VARIABLES_IMPL.HPP
 
 #include "p3_functions.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 
 namespace scream {
 namespace p3 {

@@ -4,7 +4,7 @@
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
 #include "share/scream_workspace.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -73,7 +73,7 @@ struct Functions
 
   using KT = KokkosTypes<Device>;
 
-  using C = Constants<Scalar>;
+  using C = scream::physics::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -580,6 +580,13 @@ struct Functions
   static void check_values(const view_1d<Spack>& qv, const view_1d<Spack>& temp, const Int& kts, const Int& kte,
                            const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
                            const view_1d<Spack>& col_loc);
+
+  KOKKOS_FUNCTION
+  static void calculate_incloud_mixingratios(const Spack& qc, const Spack& qr, const Spack& qitot, const Spack& qirim, const Spack& nc,
+                                             const Spack& nr, const Spack& nitot, const Spack& birim, const Spack& inv_lcldm,
+                                             const Spack& inv_icldm, const Spack& inv_rcldm,
+                                             Spack& qc_incld, Spack& qr_incld, Spack& qitot_incld, Spack& qirim_incld,
+                                             Spack& nc_incld, Spack& nr_incld, Spack& nitot_incld, Spack& birim_incld);
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -630,6 +637,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
 # include "p3_functions_check_values_impl.hpp"
+# include "p3_functions_incloud_mixingratios_impl.hpp"
 #endif
 
 #endif

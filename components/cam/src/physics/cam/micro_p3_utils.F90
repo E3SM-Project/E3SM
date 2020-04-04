@@ -1,34 +1,10 @@
 module micro_p3_utils
 
-#ifdef SCREAM_CONFIG_IS_CMAKE
-  use iso_c_binding, only: c_double, c_float, c_bool
-#else
-  use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
-#endif
+  use physics_utils, only: rtype, rtype8, itype, btype
 
   implicit none
   private
   save
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#include "scream_config.f"
-
-  integer,parameter,public :: rtype8 = c_double ! 8 byte real, compatible with c type double
-  integer,parameter,public :: btype  = c_bool ! boolean type, compatible with c
-
-#  ifdef SCREAM_DOUBLE_PRECISION
-  integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
-#  else
-  integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
-#  endif
-
-  integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
-
-#else
-  integer,parameter,public :: btype = kind(.true.) ! native logical
-  public :: rtype
-  integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
-#endif
 
     public :: get_latent_heat, micro_p3_utils_init, &
               avg_diameter, calculate_incloud_mixingratios
@@ -96,6 +72,8 @@ real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
 real(rtype), parameter :: incloud_limit = 5.1E-3
 real(rtype), parameter :: precip_limit  = 1.0E-2
+
+logical, public :: use_cxx = .true.
 
     contains
 !__________________________________________________________________________________________!
@@ -261,11 +239,24 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
           inv_lcldm,inv_icldm,inv_rcldm, &
           qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: calculate_incloud_mixingratios_f
+#endif
+
        real(rtype),intent(in)   :: qc, qr, qitot, qirim
        real(rtype),intent(in)   :: nc, nr, nitot, birim
        real(rtype),intent(in)   :: inv_lcldm, inv_icldm, inv_rcldm
        real(rtype),intent(out)  :: qc_incld, qr_incld, qitot_incld, qirim_incld
        real(rtype),intent(out)  :: nc_incld, nr_incld, nitot_incld, birim_incld
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+      call calculate_incloud_mixingratios_f(qc,qr,qitot,qirim,nc,nr,nitot,birim, &
+                inv_lcldm,inv_icldm,inv_rcldm, &
+                qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
+       return
+    endif
+#endif
 
 
        if (qc.ge.qsmall) then
@@ -301,10 +292,10 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
        end if
        if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
 !          write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, ', qi:',qitot_incld,', qr:',qr_incld
-          qc_incld    = max(qc_incld,incloud_limit)
-          qitot_incld = max(qitot_incld,incloud_limit)
-          birim_incld = max(birim_incld,incloud_limit)
-          qr_incld    = max(qr_incld,precip_limit)
+          qc_incld    = min(qc_incld,incloud_limit)
+          qitot_incld = min(qitot_incld,incloud_limit)
+          birim_incld = min(birim_incld,incloud_limit)
+          qr_incld    = min(qr_incld,precip_limit)
 !          if (masterproc) write(iulog,*)  errmsg
 
 !          call handle_errmsg('Micro-P3 (Init)',subname='In-cloud mixing

@@ -92,6 +92,7 @@ struct UnitWrap {
     struct TestDropletActivation;
     struct TestIceCldliqWetGrowth;
     struct TestCheckValues;
+    struct TestIncloudMixing;
   };
 
 };
