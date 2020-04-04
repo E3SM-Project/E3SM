@@ -1,6 +1,7 @@
 #-----------------------------------------------------------------------
 # This Makefile is for building MOZART2 Pre-processor
 #------------------------------------------------------------------------
+# 04/04/2020, update to use the same compiler as the model
 
 # Set up special characters
 null  :=
@@ -99,6 +100,11 @@ endif
 #------------------------------------------------------------------------
 #------------------------------------------------------------------------
 
+endif
+
+# use USER_FC (if defined) to overwrite default compiler
+ifneq ($(USER_FC),$(null))
+  COMPILER := $(USER_FC)
 endif
 
 #------------------------------------------------------------------------
