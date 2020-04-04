@@ -353,10 +353,6 @@
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
     />
-    <nml_option name="config_Redi_diabatic_limit" type="real" default_value="5e-7" units="s^{-2}"
-      description="Brunt Vaisala Frequency cutoff for diabatic convection"
-      possible_values="small positive real numbers or zero"
-    />
     <nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
       description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
       possible_values=".true. or .false."
@@ -2605,15 +2601,11 @@
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+		<var name="kappaRediSfcTaper" type="real" dimensions="nVertLevels nCells Time" units="NA"
 			description="spatially and depth varying Redi kappa"
 			packages="forwardMode;analysisMode"
       />
-    <var name="kappaRediEdge" type="real" dimensions="nVertLevelsP1 TWO nEdges Time" units="NA"
-      description="edge based version of slope tapering"
-      packages="forwardMode;analysisMode"
-      />
-    <var name="rediLimiterCount" type="integer" dimensions="Time" units="NA"
+    <var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="NA"
       description="count of times redi limiter is invoked on a timestep"
       packages="forwardMode;analysisMode"
       />
