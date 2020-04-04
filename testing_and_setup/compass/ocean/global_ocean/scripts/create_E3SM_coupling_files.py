@@ -61,6 +61,12 @@ def main():  # {{{
     parser = argparse.ArgumentParser()
     parser.add_argument('--clean', action='store_true')
     parser.add_argument('--ice_shelf_cavities', action='store_true')
+    parser.add_argument('--author', dest='author', required=False,
+                        help='name of the author of the mesh version to include'
+                             ' in metadata')
+    parser.add_argument('--email', dest='email', required=False,
+                        help='email address of the author to include in '
+                             'metadata')
     args = parser.parse_args()
 
     # clean: Delete all directories
@@ -76,6 +82,12 @@ def main():  # {{{
         config.set('main', 'ice_shelf_cavities', 'True')
     else:
         config.set('main', 'ice_shelf_cavities', 'False')
+
+    if args.author is not None:
+        config.set('mesh', 'author', args.author)
+
+    if args.email is not None:
+        config.set('mesh', 'email', args.email)
 
     print("- ice_shelf_cavities set to {}".format(
         config.get('main', 'ice_shelf_cavities')))
@@ -147,6 +159,8 @@ def initial_condition_ocean(config):  # {{{
             filename]
     run_command(args)
 
+    append_mesh_metadata(config, filename)
+
     # create link to output directory
     os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
         mesh_name))
@@ -217,6 +231,8 @@ def initial_condition_seaice(config):  # {{{
             '{}.nc'.format(mesh_name),
             filename]
     run_command(args)
+
+    append_mesh_metadata(config, filename)
 
     # make links to output directory
     os.chdir('../assembled_files_for_upload/inputdata/ice/mpas-cice/{}'.format(
@@ -1133,13 +1149,25 @@ def remap_rignot(inFileName, meshFileName, meshName, outFileName,
 
 def parse_mesh_metadata(config):  # {{{
 
-    if config.get('mesh', 'author') == '':
-        raise ValueError('You must fill in the "author" option in the "mesh" '
-                         'section of the config file')
+    if config.get('mesh', 'author') == 'autodetect':
+        author = subprocess.check_output(['git', 'config', 'user.name']).decode(
+            "utf-8").strip()
+        print("- author's name autodetected from git config: {}".format(
+            author))
+        config.set('mesh', 'author', author)
+    else:
+        print("- author's name specified in config file: {}".format(
+            config.get('mesh', 'author')))
 
-    if config.get('mesh', 'institution') == '':
-        raise ValueError('You must fill in the "institution" option in the '
-                         '"mesh" section of the config file')
+    if config.get('mesh', 'email') == 'autodetect':
+        email = subprocess.check_output(['git', 'config', 'user.email']).decode(
+            "utf-8").strip()
+        print("- author's email autodetected from git config: {}".format(
+            email))
+        config.set('mesh', 'email', email)
+    else:
+        print("- author's name specified in config file: {}".format(
+            config.get('mesh', 'email')))
 
     # determine date string
     date_string = config.get('main', 'date_string')
@@ -1221,41 +1249,41 @@ def append_mesh_metadata(config, filename):  # {{{
     else:
         ice_shelf_cavities = 'OFF'
 
-    attrdict = {'MPAS Mesh Short Name': config.get('mesh', 'short_name'),
-                'MPAS Mesh Long Name':
+    attrdict = {'MPAS_Mesh_Short_Name': config.get('mesh', 'short_name'),
+                'MPAS_Mesh_Long_Name':
                     config.get('mesh', 'long_name').replace('\n', ' '),
-                'MPAS Mesh Description':
+                'MPAS_Mesh_Description':
                     config.get('mesh', 'description').replace('\n', ' '),
-                'MPAS Mesh E3SM Version': config.getint('mesh', 'e3sm_version'),
-                'MPAS Mesh {} Version'.format(prefix):
+                'MPAS_Mesh_E3SM_Version': config.getint('mesh', 'e3sm_version'),
+                'MPAS_Mesh_{}_Version'.format(prefix):
                     config.get('mesh', 'mesh_version'),
-                'MPAS Mesh {} Version Author'.format(prefix):
+                'MPAS_Mesh_{}_Version_Author'.format(prefix):
                     config.get('mesh', 'author'),
-                'MPAS Mesh {} Version Author Institution'.format(prefix):
-                    config.get('mesh', 'institution'),
-                'MPAS Mesh {} Version Creation Date'.format(prefix):
+                'MPAS_Mesh_{}_Version_Author_E-mail'.format(prefix):
+                    config.get('mesh', 'email'),
+                'MPAS_Mesh_{}_Version_Creation_Date'.format(prefix):
                     config.get('mesh', 'creation_date'),
-                'MPAS Mesh {} Minimum Resolution (km)'.format(prefix):
+                'MPAS_Mesh_{}_Minimum_Resolution_km'.format(prefix):
                     config.getfloat('mesh', 'min_res'),
-                'MPAS Mesh {} Maximum Resolution (km)'.format(prefix):
+                'MPAS_Mesh_{}_Maximum_Resolution_km'.format(prefix):
                     config.getfloat('mesh', 'max_res'),
-                'MPAS Mesh {} Maximum Depth (m)'.format(prefix):
+                'MPAS_Mesh_{}_Maximum_Depth_m'.format(prefix):
                     config.getfloat('mesh', 'max_depth'),
-                'MPAS Mesh {} Number of Levels'.format(prefix):
+                'MPAS_Mesh_{}_Number_of_Levels'.format(prefix):
                     config.getfloat('mesh', 'levels'),
-                'MPAS Mesh Ice Shelf Cavities': ice_shelf_cavities,
-                'MPAS Mesh Runoff Description': config.get(
+                'MPAS_Mesh_Ice_Shelf_Cavities': ice_shelf_cavities,
+                'MPAS_Mesh_Runoff_Description': config.get(
                     'mesh', 'runoff_description')}
 
     packages = {'COMPASS': 'compass', 'JIGSAW': 'jigsaw',
                 'JIGSAW-Python': 'jigsawpy', 'MPAS-Tools': 'mpas_tools',
                 'NCO': 'nco', 'ESMF': 'esmf',
-                'Geometric Features': 'geometric_features',
+                'geometric_features': 'geometric_features',
                 'Metis': 'metis', 'pyremap': 'pyremap'}
 
     for name in packages:
         package = packages[name]
-        attrdict['MPAS Mesh {} Version'.format(name)] = \
+        attrdict['MPAS_Mesh_{}_Version'.format(name)] = \
             get_conda_package_version(package)
 
     ds.setncatts(attrdict)
