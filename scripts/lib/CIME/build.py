@@ -418,7 +418,8 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
-    compile_cmd = "MODEL={} COMP_CLASS={} COMP_NAME={} {} {} {} {} ".format(compclass, compclass, compname, cmd, caseroot, libroot, bldroot)
+    compile_cmd = "MODEL={compclass} COMP_CLASS={compclass} COMP_NAME={compname} {cmd} {caseroot} {libroot} {bldroot} ".\
+        format(compclass=compclass, compname=compname, cmd=cmd, caseroot=caseroot, libroot=libroot, bldroot=bldroot)
     if get_model() != "ufs":
         compile_cmd = "SMP={} {}".format(stringify_bool(smp), compile_cmd)
 

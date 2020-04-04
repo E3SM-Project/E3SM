@@ -92,8 +92,8 @@ def run_gmake(case, compclass, compname, libroot, bldroot, libname="", user_cppd
 
     makefile = os.path.join(case.get_value("CASETOOLS"), "Makefile")
 
-    cmd = "{} complib -j {:d} MODEL={} COMP_CLASS={} COMP_NAME={} COMPLIB={} {} -f {} -C {} " \
-        .format(gmake, gmake_j, compclass, compclass, compname, complib, gmake_args, makefile, bldroot)
+    cmd = "{gmake} complib -j {gmake_j:d} MODEL={compclass} COMP_CLASS={compclass} COMP_NAME={compname} COMPLIB={complib} {gmake_args} -f {makefile} -C {bldroot} " \
+        .format(gmake=gmake, gmake_j=gmake_j, compclass=compclass, compname=compname, complib=complib, gmake_args=gmake_args, makefile=makefile, bldroot=bldroot)
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
