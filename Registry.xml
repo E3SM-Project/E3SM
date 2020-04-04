@@ -2601,7 +2601,7 @@
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="kappaRediSfcTaper" type="real" dimensions="nVertLevels nCells Time" units="NA"
+		<var name="kappaRediSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying Redi kappa"
 			packages="forwardMode;analysisMode"
       />

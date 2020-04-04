@@ -245,12 +245,12 @@ contains
 
          !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1,nCells
-            k = indMLD(iCell)
+            k = min(maxLevelCell(iCell)-1,max(1,indMLD(iCell)))
             maxN =  max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
-            do while (BruntVaisalaFreqTop(k+1,iCell) > maxN .and. k < maxLevelCell(iCell))
+            do while (BruntVaisalaFreqTop(k+1,iCell) > maxN .and. k < maxLevelCell(iCell)-1)
               k = k + 1
               maxN = max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
-              enddo
+            enddo
 
             maxLocation = k 
             do k=maxLocation,maxLevelCell(iCell)
@@ -267,7 +267,8 @@ contains
       if (config_Redi_use_surface_taper) then
         !$omp do schedule (runtime) private(zMLD, k)
         do iCell = 1,nCells
-          zMLD = ssh(iCell) - zMid(indMLD(iCell),iCell)
+          k = max(1,indMLD(iCell))
+          zMLD = ssh(iCell) - zMid(k,iCell)
 
           do k = 1, indMLD(iCell)
              kappaRediSfcTaper(k,iCell) = abs((ssh(iCell) - zMid(k,iCell)) / (zMLD))
@@ -332,11 +333,11 @@ contains
                slopeTriadUp(k,iCellSelf,iEdge) = &
                   - drhoDx / &
                   (  drhoDT * dTdzTop(k) &
-                   + drhoDS * dSdzTop(k) )
+                   + drhoDS * dSdzTop(k) + 1E-15_RKIND)
                slopeTriadDown(k,iCellSelf,iEdge) = &
                   - drhoDx / &
                   (  drhoDT * dTdzTop(k+1) &
-                   + drhoDS * dSdzTop(k+1) )
+                   + drhoDS * dSdzTop(k+1) + 1E-15_RKIND)
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
                if (abs(slopeTriadDown(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) THEN
