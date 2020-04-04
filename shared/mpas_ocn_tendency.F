@@ -467,7 +467,7 @@ contains
       logical, pointer :: config_compute_active_tracer_budgets, &
                           config_cvmix_kpp_nonlocal_with_implicit_mix
       real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
-      integer, pointer :: rediLimiterCount
+      integer, dimension(:,:), pointer :: rediLimiterCount
 
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
@@ -491,7 +491,7 @@ contains
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
         fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaRediCell
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaGMCell, kappaRediSfcTaper
 
       !
       ! three dimensional pointers
