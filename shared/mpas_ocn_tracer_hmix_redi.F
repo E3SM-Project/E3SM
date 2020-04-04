@@ -71,10 +71,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
+   subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                     redi_term1, redi_term2, redi_term3,  &
                     RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown,  &
-                    kappaRediCell, kappaRediEdge, rediLimiterCount, tend, err)!{{{
+                    kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -92,15 +92,17 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
          zMid,               &!< Input: Z coordinate at the center of a cell
-         kappaRediCell        !< Input: vertical structure of GM/Redi limiter
+         kappaRediSfcTaper,  &!< Input: vertical structure of GM/Redi limiter
+         kappaGMCell,       &
+         layerThickness
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          slopeTriadUp, slopeTriadDown, &
-         tracers, kappaRediEdge !< Input: tracer quantities
+         tracers !< Input: tracer quantities
 
       real (kind=RKIND), intent(in) :: dt
 
-      integer, intent(inout) :: rediLimiterCount
+      integer, dimension(:,:), intent(inout) :: rediLimiterCount
 
       logical, intent(in) :: isActiveTracer
 
@@ -198,17 +200,14 @@ contains
 
             do k = 1, maxLevelEdgeTop(iEdge)
 
-               kappaRediEdgeVal = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
-                        kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2)) * &
-                        (0.5_RKIND*(kappaRediEdge(k,1,iEdge) + kappaRediEdge(k,2,iEdge)))
-!                                kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
+               kappaRediEdgeVal = 0.25_RKIND * (kappaGMCell(k,cell1) + kappaGMCell(k,cell2) + &
+                        kappaGMCell(k+1,cell1) + kappaGMCell(k+1,cell2))
                do iTr = 1, nTracers
                   ! \kappa_2 \nabla \phi on edge
                   tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
 
                   ! div(h \kappa_2 \nabla \phi) at cell center
-                  flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * r_tmp * RediKappa(iCell) !* (1.0_RKIND + term1TaperFactor * &
-!                          (kappaRediEdge - 1.0_RKIND)) * RediKappa(iCell) * r_tmp
+                  flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * r_tmp * RediKappa(iCell) 
 
                   redi_term1(iTr,k,iCell) = redi_term1(iTr,k,iCell) - (1.0_RKIND + term1TaperFactor * &
                           (kappaRediEdgeVal - 1.0_RKIND)) *edgeSignOnCell(i, iCell) * flux * invAreaCell
@@ -241,16 +240,18 @@ contains
             coef = edgeSignOnCell(i, iCell) * dvEdge(iEdge) * invAreaCell
 
            k=1
-           kappaRediEdgeVal = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
-                            kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
+           kappaRediEdgeVal = 0.25_RKIND * (kappaGMCell(k,cell1) + kappaGMCell(k,cell2) +   &
+                            kappaGMCell(k+1,cell1) + kappaGMCell(k+1,cell2)) * 0.25_RKIND * &
+                            (kappaRediSfcTaper(k,cell1) + kappaRediSfcTaper(k,cell2) +      &
+                            kappaRediSfcTaper(k+1,cell1) + kappaRediSfcTaper(k+1,cell2))
            do iTr = 1, nTracers
 
                ! For top layer, only use triads pointing down:
-               flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+               flux_term2 = coef * kappaRediEdgeVal * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
                   0.25_RKIND * &
-                  (  kappaRediCell(k+1,cell1) * slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
+                  (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
                                   / (zMid(k,cell1) - zMid(k+1,cell1)) &
-                   + kappaRediCell(k+1,cell2) * slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
+                   + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
                                   / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
 
                redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
@@ -259,19 +260,21 @@ contains
             end do
 
             do k = 2, maxLevelEdgeTop(iEdge) - 1
-              kappaRediEdgeVal = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
-                              kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
+               kappaRediEdgeVal = 0.25_RKIND * (kappaGMCell(k,cell1) + kappaGMCell(k,cell2) +   &
+                            kappaGMCell(k+1,cell1) + kappaGMCell(k+1,cell2)) * 0.25_RKIND * &
+                            (kappaRediSfcTaper(k,cell1) + kappaRediSfcTaper(k,cell2) +      &
+                            kappaRediSfcTaper(k+1,cell1) + kappaRediSfcTaper(k+1,cell2))
               do iTr = 1, nTracers
                   ! There are four triads associated with each edge:
-                  flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                  flux_term2 = coef * RediKappa(iCell) * kappaRediEdgeVal * layerThicknessEdge(k, iEdge) * &
                      0.25_RKIND * &
-                     (  kappaRediCell(k,cell1) * slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+                     (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                      / (zMid(k-1,cell1) - zMid(k,cell1)) &
-                      + kappaRediCell(k,cell2) * slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+                      + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
                                      / (zMid(k-1,cell2) - zMid(k,cell2)) &
-                      + kappaRediCell(k+1,cell1) * slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
+                      + slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
                                      / (zMid(k,cell1) - zMid(k+1,cell1)) &
-                      + kappaRediCell(k+1,cell2) * slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
+                      + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
                                      / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
 
                   redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
@@ -281,25 +284,27 @@ contains
             end do
 
            k=maxLevelEdgeTop(iEdge)
-           kappaRediEdgeVal = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
-                           kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
+           kappaRediEdgeVal = 0.25_RKIND * (kappaGMCell(k,cell1) + kappaGMCell(k,cell2) +   &
+                            kappaGMCell(k+1,cell1) + kappaGMCell(k+1,cell2)) * 0.25_RKIND * &
+                            (kappaRediSfcTaper(k,cell1) + kappaRediSfcTaper(k,cell2) +      &
+                            kappaRediSfcTaper(k+1,cell1) + kappaRediSfcTaper(k+1,cell2))
            do iTr = 1, nTracers
                ! For bottom layer, only use triads pointing up:
-               flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+               flux_term2 = coef * kappaRediEdgeVal * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
                   0.25_RKIND * &
-                  (  kappaRediCell(k,cell1) * slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+                  (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                   / (zMid(k-1,cell1) - zMid(k,cell1)) &
-                   + kappaRediCell(k,cell2) * slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+                   + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
                                   / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
 
                if ( maxLevelCell(cell1) > maxLevelEdgeTop(iEdge) ) then
                  flux_term2 = flux_term2 + coef * RediKappa(iCell) *  &
-                        layerThicknessEdge(k, iEdge) * 0.25_RKIND * kappaRediCell(k+1,cell1) * slopeTriadDown(k,1,iEdge) * &
+                        layerThicknessEdge(k, iEdge) * 0.25_RKIND * kappaRediEdgeVal * slopeTriadDown(k,1,iEdge) * &
                         (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) / (zMid(k,cell1) - zMid(k+1,cell1))
                endif
                if ( maxLevelCell(cell2) > maxLevelEdgeTop(iEdge) ) then
                  flux_term2 = flux_term2 + coef * RediKappa(iCell) *  &
-                   layerThicknessEdge(k, iEdge) * 0.25_RKIND * kappaRediCell(k+1,cell2) * slopeTriadDown(k,2,iEdge) * &
+                   layerThicknessEdge(k, iEdge) * 0.25_RKIND * kappaRediEdgeVal * slopeTriadDown(k,2,iEdge) * &
                    (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) / (zMid(k,cell2) - zMid(k+1,cell2))
                endif
               redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
@@ -348,16 +353,13 @@ contains
 !               areaSum(k) = areaSum(k) + areaEdge
 !               areaSum(k+1) = areaSum(k+1) + areaEdge
 
-               kappaRediEdgeVal = 0.25_RKIND * (kappaRediCell(k,cell1) + kappaRediCell(k,cell2) + &
-                           kappaRediCell(k+1,cell1) + kappaRediCell(k+1,cell2))
-
                do iTr = 1, nTracers
                   ! Gradient of tracer at edge.
                   ! dvEdge on following line is equal to areaEdge/dcEdge
                   dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) * dvEdge(iEdge) * 0.25_RKIND
                   fluxRediZTop(iTr,k) = fluxRediZTop(iTr,k) + &
                      0.5_RKIND*(slopeTriadUp(k,iCellSelf,iEdge) + slopeTriadDown(k-1,iCellSelf,iEdge)) &
-                            * dTracerDx * kappaRediEdgeVal * invAreaCell                  
+                            * dTracerDx * invAreaCell
                           !                  fluxRediZTop(iTr,k+1) = fluxRediZTop(iTr,k+1) + &
 !                     slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx * kappaRediEdgeVal
                end do
@@ -379,7 +381,8 @@ contains
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
                flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
-                   (fluxRediZTop(iTr,k) - fluxRediZTop(iTr,k+1))
+                   (kappaRediSfcTaper(k,iCell)*kappaGMcell(k,iCell)*fluxRediZTop(iTr,k) - &
+                    kappaRediSfcTaper(k+1,iCell)*kappaGMcell(k+1,iCell)*fluxRediZTop(iTr,k+1))
 
                redi_term3(iTr,k,iCell) = redi_term3(iTr,k,iCell) + flux_term3
 !               tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
@@ -395,7 +398,7 @@ contains
       if(isActiveTracer) then
         minimumVal(1) = -2.0_RKIND
         minimumVal(2:nTracers) = 0.0_RKIND
-        rediLimiterCount = 0
+        rediLimiterCount(:,:) = 0
       else
         minimumVal(:) = 0.0_RKIND
       endif
@@ -404,7 +407,8 @@ contains
         do k = 1, maxLevelCell(iCell)
            do iTr=1,ntracers
               tempTracer = tracers(iTr,k,iCell) + dt*(redi_term1(iTr,k,iCell) + redi_term2(iTr,k,iCell) + &
-                              redi_term3(iTr,k,iCell))
+                              redi_term3(iTr,k,iCell))/layerThickness(k,iCell)
+
               if(tempTracer < minimumVal(iTr)) then
 
                   do i = 1, nEdgesOnCell(iCell)
@@ -415,14 +419,12 @@ contains
                   redi_term3_topOfCell(iTr,k,iCell) = 0.0_RKIND
                   redi_term3_topOfCell(iTr,k+1,iCell) = 0.0_RKIND
                   limitCount(iTr) = limitCount(iTr) + 1
+                  rediLimiterCount(k,iCell) = 1.0_RKIND
               endif
            enddo
         enddo
      enddo
 
-     if(isActiveTracer) then
-       rediLimiterCount = limitCount(1)
-     endif
 
      !now go back and reapply all tendencies
      do iCell=1,nCells
@@ -430,7 +432,9 @@ contains
           do iTr = 1,ntracers
              tend(iTr,k,iCell) = tend(iTr,k,iCell) + redi_term1(iTr,k,iCell)
              tend(iTr,k,iCell) = tend(iTr,k,iCell) + rediKappa(iCell)*2.0_RKIND* &
-                      (redi_term3_topOfCell(iTr,k,iCell) - redi_term3_topOfCell(iTr,k+1,iCell))
+                      (kappaRediSfcTaper(k,iCell)*kappaGMcell(k,iCell)* &
+                      redi_term3_topOfCell(iTr,k,iCell) - kappaRediSfcTaper(k+1,iCell) &
+                      *kappaGMcell(k+1,iCell)*redi_term3_topOfCell(iTr,k+1,iCell))
           enddo
         enddo
 
@@ -444,12 +448,11 @@ contains
         enddo
      enddo
 
+     deallocate(minimumVal)
+     deallocate(redi_term2_edge)
+     deallocate(redi_term3_topOfCell)
 
-      deallocate(minimumVal)
-      deallocate(redi_term2_edge)
-      deallocate(redi_term3_topOfCell)
-
-      call mpas_timer_stop("tracer redi")
+     call mpas_timer_stop("tracer redi")
 
    !--------------------------------------------------------------------
 

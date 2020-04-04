@@ -582,8 +582,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediEdge', kappaRediEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaRediSfcTaper', kappaRediSfcTaper)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
       call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', rediLimiterCount)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
@@ -895,7 +895,7 @@ contains
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
                                          redi_term1, redi_term2, redi_term3, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
-                                         kappaRediCell, kappaRediEdge, rediLimiterCount, tracerGroupTend, err)
+                                         kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tracerGroupTend, err)
 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number
