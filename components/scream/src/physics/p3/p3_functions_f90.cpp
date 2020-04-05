@@ -179,6 +179,7 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 
+void get_latent_heat_c(Int its, Int ite, Int kts, Int kte, Real** s, Real** v, Real** f);
 }
 
 namespace scream {
@@ -321,6 +322,78 @@ void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
   p3_init(true);
   cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld,
                               &d.qcheti, &d.ncheti);
+}
+
+LatentHeatData::LatentHeatData(
+  Int kts_, Int kte_, Int its_, Int ite_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), its(its_), ite(ite_)
+{
+ Int ni = ite - its + 1;
+ Int nk = kte - kts + 1;
+ std::default_random_engine generator;
+
+ v = new Real*[ni];
+ s = new Real*[ni];
+ f = new Real*[ni];
+ for (Int k=0; k<ni; ++k) {
+   v[k] = new Real[nk];
+   s[k] = new Real[nk];
+   f[k] = new Real[nk];
+ }
+
+ std::array<Real***, NUM_ARRAYS> ptrs = {&v, &s, &f};
+ for (size_t t = 0; t < NUM_ARRAYS; ++t) {
+   std::uniform_real_distribution<Real> data_dist(ranges[t].first, ranges[t].second);
+   for(Int k = 0; k < nk; ++k) {
+     for(Int i = 0; i <ni; ++i) {
+       (*ptrs[t])[i][k] = data_dist(generator);
+     }
+   }
+ }
+}
+
+LatentHeatData::~LatentHeatData() {
+  Int ni = ite - its + 1;
+  for (Int i = 0; i < ni; ++i) {
+     delete[] s[i];
+     delete[] v[i];
+     delete[] f[i];
+  }
+  delete[] s;
+  delete[] v;
+  delete[] f;
+}
+
+LatentHeatData::LatentHeatData(const LatentHeatData& rhs) : 
+            kts(rhs.kts), kte(rhs.kte), its(rhs.its), ite(rhs.ite)
+{
+ Int ni = ite - its + 1;
+ Int nk = kte - kts + 1;
+ 
+ v = new Real*[ni];
+ s = new Real*[ni];
+ f = new Real*[ni];
+ for (Int k=0; k<ni; ++k) {
+   v[k] = new Real[nk];
+   s[k] = new Real[nk];
+   f[k] = new Real[nk];
+ }
+ 
+ // copy data
+ for (Int i=0; i<ni; ++i) {
+   for (Int k=0; k<nk; ++k) {
+     v[i][k] = rhs.v[i][k];
+     s[i][k] = rhs.s[i][k];
+     f[i][k] = rhs.f[i][k];
+   }
+ }
+}
+
+void get_latent_heat(LatentHeatData& d)
+{
+  p3_init(true);
+  get_latent_heat_c(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
 }
 
 void droplet_self_collection(DropletSelfCollectionData& d)
@@ -2499,6 +2572,76 @@ void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, R
   *qcshd_         = t_h(4);
 }
 
+void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real** v, Real** s, Real** f)
+{
+  using P3F        = Functions<Real, DefaultDevice>;
+  using Spack      = typename P3F::Spack;
+  using view_2d    = typename P3F::view_2d<Spack>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+
+  scream_require_msg(kte > kts,
+                    "kte must be larger than kts, kts, kte " << kts << kte);
+
+  scream_require_msg(ite > its,
+                    "ite must be larger than its, its, ite " << its << ite);
+
+  kts -= 1;
+  kte -= 1;
+  its -= 1;
+  ite -= 1;
+
+  Int nk = kte - kts + 1;
+  Int ni = ite - its + 1;
+
+  P3F::view_2d<Spack> v_d("v", ni, nk);
+  P3F::view_2d<Spack> s_d("s", ni, nk);
+  P3F::view_2d<Spack> f_d("f", ni, nk);
+ 
+  auto v_h = Kokkos::create_mirror_view(v_d);
+  auto s_h = Kokkos::create_mirror_view(s_d);
+  auto f_h = Kokkos::create_mirror_view(f_d);
+
+  for (Int i = 0; i < ni; ++i) {
+    for (Int k = 0; k < nk; ++k) {
+      for (Int t = 0; t < Spack::n; ++t) {
+        v_h(i,k)[t] = v[i][k];
+        s_h(i,k)[t] = s[i][k];
+        f_h(i,k)[t] = f[i][k];
+      }
+    }
+  }
+
+  Kokkos::deep_copy(v_d, v_h);
+  Kokkos::deep_copy(s_d, s_h);
+  Kokkos::deep_copy(f_d, f_h);
+
+  // launch ni teams with nk threads per team
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    Int ni_d{ni}, nk_d{nk};
+    view_2d v2_d{v_d}, s2_d{s_d}, f2_d{f_d};
+
+    P3F::get_latent_heat(ni_d, nk_d, team, v2_d, s2_d, f2_d);
+
+  });
+
+  Kokkos::deep_copy(v_h, v_d);
+  Kokkos::deep_copy(s_h, s_d);
+  Kokkos::deep_copy(f_h, f_d);
+
+  for (Int i = 0; i < ni; ++i) {
+    for (Int k = 0; k < nk; ++k) {
+      for (size_t t = 0; t < Spack::n; ++t) {
+        v[i][k]  = v_d(i,k)[t];
+        s[i][k]  = s_d(i,k)[t];
+        f[i][k]  = f_d(i,k)[t];
+      }
+    }
+  }
+}
 
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.

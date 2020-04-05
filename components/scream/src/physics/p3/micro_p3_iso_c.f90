@@ -796,4 +796,14 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                               log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
  end subroutine ice_cldliq_wet_growth_c
 
+ subroutine get_latent_heat_c(its,ite,kts,kte,v,s,f) bind(C)
+   use micro_p3, only: get_latent_heat
+
+   ! arguments
+   integer(kind=c_int), intent(in), value :: its, ite, kts, kte
+   real(kind=c_real), dimension(its:ite, kts:kte), intent(out) :: v, s, f
+ 
+   call get_latent_heat(its,ite,kts,kte,v,s,f)
+end subroutine get_latent_heat_c
+
 end module micro_p3_iso_c
