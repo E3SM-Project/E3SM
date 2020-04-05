@@ -11,7 +11,6 @@
 
 module llnl_O1D_to_2OH_adj
 
-  save
   use shr_kind_mod, only : r8 => shr_kind_r8
 
   implicit none
@@ -19,11 +18,13 @@ module llnl_O1D_to_2OH_adj
   private
   public :: O1D_to_2OH_adj, O1D_to_2OH_adj_init
 
+  save
+
   integer :: jo1d_ndx
 
 !-chemUCI
   integer :: uci1_ndx, uci2_ndx, uci3_ndx, uci4_ndx, uci5_ndx, uci6_ndx, uci7_ndx, uci8_ndx, uci9_ndx
-  integer :: jo1dU_ndx, HNO4_ndx, N2O5_ndx, PAN_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
+  integer :: jo1dU_ndx, HNO4f_ndx, N2O5f_ndx, PANf_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
 
 
 contains
@@ -78,7 +79,7 @@ contains
 
     use chem_mods,    only : nfs, phtcnt, rxntot, nfs !PJC added rxntot, nfs
     use ppgrid,       only : pcols, pver              !PJC added pcols
-    use mo_setinv,    only : n2_ndx, o2_ndx, h2o_ndx, o3_ndx  !PJC + MJP
+    use mo_setinv,    only : n2_ndx, o2_ndx, h2o_ndx  !PJC + MJP
 
     implicit none
 
@@ -112,11 +113,6 @@ contains
     real(r8) :: o2_rate(ncol,pver)
     real(r8) :: h2o_rate(ncol,pver)
 
-
-             sfc    => sfc_array(i,k,:)
-             dm_aer => dm_array(i,k,:)
-             rxt(i,k,ucih2_ndx) = hetrxtrate( sfc, dm_aer, dg, c_no3 , gamma_no3  )
-
 ! maybe need these is calling aero_model_surfarea()
     real(r8), pointer :: sfc(:), dm_aer(:)
     integer :: ntot_amode
@@ -129,6 +125,11 @@ contains
     real(r8), parameter :: y1 = 110.0_r8
     real(r8), parameter :: y2 =  55.0_r8
     real(r8), parameter :: y3 =  60.0_r8
+
+
+             sfc    => sfc_array(i,k,:)
+             dm_aer => dm_array(i,k,:)
+             rxt(i,k,ucih2_ndx) = hetrxtrate( sfc, dm_aer, dg, c_no3 , gamma_no3  )
 
 !
 !-chemUCI reset of all user rates, including those with the O(1D) fix
