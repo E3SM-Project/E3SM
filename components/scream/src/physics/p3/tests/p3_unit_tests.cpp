@@ -54,28 +54,45 @@ struct UnitWrap::UnitTest<D>::TestP3Func
 
   static void run()
   {
+    /*Originally written by Kyle Pressel, updated by Peter Caldwell on 4/5/20. 
+     *This code tests polysvp1 and qv_sat at 0 degrees C, at a very cold T, and at a very hot T
+     *to make sure our impl gets the same answer as Flatau et al 1992:
+     *(https://journals.ametsoc.org/doi/abs/10.1175/1520-0450%281992%29031%3C1507%3APFTSVP%3E2.0.CO%3B2
+     *For 0 degrees C, polysvp values can be read directly from Flatau. For other cases, I independently 
+     *coded up the Flatau scheme in python and used it to derive the expected values. My python code is
+     *in https://github.com/E3SM-Project/scream-docs.git analysis-scripts/test_qv_sat.py
+     */
+
+    
     int nerr = 0;
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
 
       errors = 0;
       const auto tmelt = C::Tmelt;
-      // Test values @ the melting point of H20 @ 1e5 Pa
-      saturation_tests(tmelt, 1e5, 610.7960763188032, 610.7960763188032,
-        0.003822318507864685,  0.003822318507864685, errors);
+      
+      // Just Freezing Case: Test values @ 273.15K @ 1e5 Pa
+      //---------------------------------------
+      // This is the nicest test b/c polysvp1 is a polynomial fit around (T-273.15)
+      // so T=273.15 collapses back to the intercept coefficient which can be read 
+      // directly from the RHS of table 4 of Flatau et al 1992. 
+      saturation_tests(tmelt, 1e5, 611.147274, 611.239921,
+		       0.0038245297922393051, 0.0038251131382843278, errors);
 
-      //Test vaules @ 243.15K @ 1e5 Pa
-      saturation_tests(243.15, 1e5, 37.98530141245404, 50.98455924912173,
-         0.00023634717905493638,  0.0003172707211143376, errors);
+      // Cold Case: Test values @ 243.15K @ 1e5 Pa
+      //---------------------------------------
+      saturation_tests(243.15, 1e5, 38.024844602056589, 51.032583257625078,
+		       0.00023659331311441808, 0.0003175697212751689, errors);
 
-      //Test values @ 303.15 @ 1e5 Pa
-      saturation_tests(303.15, 1e5, 4242.757341329608, 4242.757341329608,
-        0.0275579183092878, 0.0275579183092878, errors);
+      //Warm Case: Test values @ 303.15 @ 1e5 Pa
+      //---------------------------------------
+      saturation_tests(303.15, 1e5, 4245.1933273786717, 4245.1933273786717,
+		       0.027574442204332306, 0.027574442204332306, errors);
 
     }, nerr);
 
     Kokkos::fence();
-    //REQUIRE(nerr == 0);
+    REQUIRE(nerr == 0);
   }
 };
 
