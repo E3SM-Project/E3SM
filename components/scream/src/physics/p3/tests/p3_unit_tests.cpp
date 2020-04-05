@@ -75,9 +75,10 @@ struct UnitWrap::UnitTest<D>::TestP3Func
       //---------------------------------------
       // This is the nicest test b/c polysvp1 is a polynomial fit around (T-273.15)
       // so T=273.15 collapses back to the intercept coefficient which can be read 
-      // directly from the RHS of table 4 of Flatau et al 1992. 
-      saturation_tests(tmelt, 1e5, 611.147274, 611.239921,
-		       0.0038245297922393051, 0.0038251131382843278, errors);
+      // directly from the RHS of table 4 of Flatau et al 1992. Note that ice values
+      // are identical to liquid values b/c C++ uses liq val for T>=0 C.
+      saturation_tests(tmelt, 1e5, 611.239921, 611.239921,
+		       0.0038251131382843278, 0.0038251131382843278, errors);
 
       // Cold Case: Test values @ 243.15K @ 1e5 Pa
       //---------------------------------------
