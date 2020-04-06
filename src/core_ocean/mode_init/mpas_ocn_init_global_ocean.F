@@ -2012,7 +2012,7 @@ contains
 
        character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_temperature_varname, &
                                            config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_tracer_ndepth_dimname
 
        iErr = 0
 
@@ -2023,7 +2023,7 @@ contains
                                  config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', &
                                  config_global_ocean_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_ndepth_dimname', config_global_ocean_tracer_ndepth_dimname)
 
        ! Define stream for temperature IC
        call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, &
@@ -2036,7 +2036,7 @@ contains
        tracerIC % dimSizes(3) = nDepthTracer
        tracerIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        tracerIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_tracer_ndepth_dimname)
        tracerIC % isVarArray = .false.
        tracerIC % isPersistent = .true.
        tracerIC % isActive = .true.
@@ -2074,7 +2074,7 @@ contains
 
        character (len=StrKIND), pointer :: config_global_ocean_salinity_file, config_global_ocean_salinity_varname, &
                                            config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_tracer_ndepth_dimname
 
        iErr = 0
 
@@ -2084,7 +2084,8 @@ contains
                                  config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', &
                                  config_global_ocean_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_ndepth_dimname', &
+                                 config_global_ocean_tracer_ndepth_dimname)
 
        ! Define stream for salinity IC
        call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_salinity_file, MPAS_IO_NETCDF, &
@@ -2097,7 +2098,7 @@ contains
        tracerIC % dimSizes(3) = nDepthTracer
        tracerIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        tracerIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_tracer_ndepth_dimname)
        tracerIC % isVarArray = .false.
        tracerIC % isPersistent = .true.
        tracerIC % isActive = .true.
@@ -2140,7 +2141,7 @@ contains
 
        character (len=StrKIND), pointer :: config_global_ocean_ecosys_nlon_dimname,  &
                                            config_global_ocean_ecosys_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_ecosys_ndepth_dimname
 
        iErr = 0
 
@@ -2148,8 +2149,8 @@ contains
             config_global_ocean_ecosys_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlat_dimname', &
             config_global_ocean_ecosys_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', &
-            config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_ndepth_dimname', &
+            config_global_ocean_ecosys_ndepth_dimname)
 
        ! Define stream for ecosys IC
        call MPAS_createStream(tracerStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
@@ -2161,7 +2162,7 @@ contains
        tracerIC % dimSizes(3) = nDepthEcosys
        tracerIC % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
        tracerIC % dimNames(2) = trim(config_global_ocean_ecosys_nlat_dimname)
-       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_ecosys_ndepth_dimname)
        tracerIC % isVarArray = .false.
        tracerIC % isPersistent = .true.
        tracerIC % isActive = .true.

@@ -24,6 +24,7 @@
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
+	<add_link source_path="script_core_dir" source="scripts/plots/plot_initial_state.py" dest="plot_initial_state.py"/>
 	<add_link source="../culled_mesh/land_ice_mask.nc" dest="land_ice_mask.nc"/>
 	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="layer_depth.nc"/>
 	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
@@ -55,6 +56,7 @@
 			<argument flag="graph.info">4</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./plot_initial_state.py">
+		</step>
 	</run_script>
-
 </config>

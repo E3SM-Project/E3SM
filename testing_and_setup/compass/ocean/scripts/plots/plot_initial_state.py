@@ -3,19 +3,17 @@
 This script creates plots of the initial condition.
 """
 # import modules
-# {{{
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
 import argparse
+import datetime
 import matplotlib
 matplotlib.use('Agg')
-# }}}
 
 
 def main():
     # parser
-    # {{{
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawTextHelpFormatter)
@@ -28,7 +26,6 @@ def main():
         default='initial_state.png',
         help='File name for output image.')
     args = parser.parse_args()
-    # }}}
 
     # load mesh variables
     ncfile = Dataset(args.input_file_name, 'r')
@@ -37,38 +34,77 @@ def main():
     nVertLevels = ncfile.dimensions['nVertLevels'].size
 
     fig = plt.figure()
-    fig.set_size_inches(16.0, 8.0)
+    fig.set_size_inches(16.0, 12.0)
     plt.clf()
 
     print('plotting histograms of the initial condition')
+    print('see: init/initial_state/initial_state.png')
+    d = datetime.datetime.today()
     txt = \
+        'MPAS-Ocean initial state\n' + \
+        'date: {}\n'.format(d.strftime('%m/%d/%Y')) + \
         'number cells: {}\n'.format(nCells) + \
         'number cells, millions: {:6.3f}\n'.format(nCells / 1.e6) + \
-        'number layers: {}\n'.format(nVertLevels)
-    print(txt)
-    plt.subplot(2, 2, 1)
-    plt.text(0, 0, txt, fontsize=12)
-    plt.axis('off')
+        'number layers: {}\n\n'.format(nVertLevels) + \
+        '  min val   max val  variable name\n'
 
-    maxLevelCell = ncfile.variables['maxLevelCell']
-    plt.subplot(2, 2, 2)
-    plt.hist(maxLevelCell, bins=nVertLevels - 4)
-    plt.xlabel('maxLevelCell')
+    plt.subplot(3, 3, 2)
+    varName = 'maxLevelCell'
+    var = ncfile.variables[varName]
+    plt.hist(var, bins=nVertLevels - 4)
     plt.ylabel('frequency')
+    plt.xlabel(varName)
+    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
+        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
 
-    bottomDepth = ncfile.variables['bottomDepth']
-    plt.subplot(2, 2, 4)
-    plt.hist(bottomDepth, bins=nVertLevels - 4)
-    plt.xlabel('bottomDepth [m]')
+    plt.subplot(3, 3, 3)
+    varName = 'bottomDepth'
+    var = ncfile.variables[varName]
+    plt.hist(var, bins=nVertLevels - 4)
+    plt.xlabel(varName)
+    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
+        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+
+    plt.subplot(3, 3, 4)
+    varName = 'temperature'
+    var = ncfile.variables[varName]
+    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
     plt.ylabel('frequency')
+    plt.xlabel(varName)
+    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
+        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+
+    plt.subplot(3, 3, 5)
+    varName = 'salinity'
+    var = ncfile.variables[varName]
+    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
+    plt.xlabel(varName)
+    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
+        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+
+    plt.subplot(3, 3, 6)
+    varName = 'layerThickness'
+    var = ncfile.variables[varName]
+    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
+    plt.xlabel(varName)
+    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
+        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
 
     rx1Edge = ncfile.variables['rx1Edge']
-    plt.subplot(2, 2, 3)
-    plt.hist(np.squeeze(rx1Edge[0, :]))
-    plt.xlabel('Haney Number')
+    plt.subplot(3, 3, 7)
+    varName = 'rx1Edge'
+    var = ncfile.variables[varName]
+    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
     plt.ylabel('frequency')
-    plt.title('Haney Number, max={:4.2f}'.format(
-        np.max(np.squeeze(rx1Edge[0, :, :]))))
+    plt.xlabel('Haney Number, max={:4.2f}'.format(
+        np.max(np.ndarray.flatten(rx1Edge[0, :, :]))))
+    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
+        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+
+    print(txt)
+    plt.subplot(3, 3, 1)
+    plt.text(0, 1, txt, fontsize=12, verticalalignment='top')
+    plt.axis('off')
 
     plt.savefig(args.output_file_name)
 
