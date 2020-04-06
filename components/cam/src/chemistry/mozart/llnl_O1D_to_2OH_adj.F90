@@ -24,7 +24,7 @@ module llnl_O1D_to_2OH_adj
 
 !-chemUCI
   integer :: uci1_ndx, uci2_ndx, uci3_ndx, uci4_ndx, uci5_ndx, uci6_ndx, uci7_ndx, uci8_ndx, uci9_ndx
-  integer :: jo1dU_ndx, HNO4f_ndx, N2O5f_ndx, PANf_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
+  integer :: HNO4f_ndx, N2O5f_ndx, PANf_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
 
 
 contains
@@ -68,7 +68,7 @@ contains
 !chemUCI
        write(iulog,*) 'O1D_to_2OH_adj_init: chemUCI diagnostics '
        write(iulog,'(10i5)') uci1_ndx, uci2_ndx, uci3_ndx, uci4_ndx, uci5_ndx, uci6_ndx, uci7_ndx, uci8_ndx, uci9_ndx
-       write(iulog,'(10i5)') jo1dU_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
+       write(iulog,'(10i5)') jo1d_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
     endif
 
   end subroutine O1D_to_2OH_adj_init
@@ -80,6 +80,9 @@ contains
     use chem_mods,    only : nfs, phtcnt, rxntot, nfs !PJC added rxntot, nfs
     use ppgrid,       only : pcols, pver              !PJC added pcols
     use mo_setinv,    only : n2_ndx, o2_ndx, h2o_ndx  !PJC + MJP
+!    use carma_flags_mod, only : carma_do_hetchem
+!    use aero_model,      only : aero_model_surfarea
+!    use rad_constituents,only : rad_cnst_get_info
 
     implicit none
 
@@ -117,7 +120,10 @@ contains
     real(r8), pointer :: sfc(:), dm_aer(:)
     integer :: ntot_amode
     real(r8), pointer :: sfc_array(:,:,:), dm_array(:,:,:)
-
+!    real(r8) :: sad_total(pcols,pver)    ! total surface area density (cm2/cm3)
+!    ! worry about strato_sad later, as CARMA is not used for now.
+!    ! otherwise, it needs to be passed in.
+!    real(r8) :: strato_sad(pcols,pver)     ! stratospheric aerosol sad (1/cm)
 
     real(r8), parameter :: x1 = 2.15e-11_r8
     real(r8), parameter :: x2 = 3.30e-11_r8
@@ -135,36 +141,36 @@ contains
 !-chemUCI reset of all user rates, including those with the O(1D) fix
 !     remember that the rxt()'s heref have been calculated rxt =k[X&Y] * [X] * [Y]
 !
-   if( uci1_ndx > 0 ) then
-
-      if( ucih1_ndx > 0 .or. ucih2_ndx > 0 .or. ucih3_ndx > 0 ) then
-!----all this is to get reactive aerosol surface area for std trop het-chem---may not quite work
-         call rad_cnst_get_info(0, nmodes=ntot_amode)
-         if (ntot_amode>0) then
-            allocate(sfc_array(pcols,pver,ntot_amode), dm_array(pcols,pver,ntot_amode) )
-         else
-            allocate(sfc_array(pcols,pver,5), dm_array(pcols,pver,5) )
-         endif
-         sfc_array(:,:,:) = 0._r8
-         dm_array(:,:,:) = 0._r8
-         sad_total(:,:) = 0._r8
-         if( carma_do_hetchem ) then
-            sad_total(:ncol,:pver)=strato_sad(:ncol,:pver)
-         else
-            call aero_model_surfarea( &
-               mmr, rm1, relhum, pmid, temp, strato_sad, &
-               sulfate, m, ltrop, het1_ndx, pbuf, ncol, sfc_array, dm_array, sad_total )
-         endif
-!-------------------------not sure if the above will work---------------------
-      endif
+!   if( uci1_ndx > 0 ) then
+!
+!      if( ucih1_ndx > 0 .or. ucih2_ndx > 0 .or. ucih3_ndx > 0 ) then
+!!----all this is to get reactive aerosol surface area for std trop het-chem---may not quite work
+!         call rad_cnst_get_info(0, nmodes=ntot_amode)
+!         if (ntot_amode>0) then
+!            allocate(sfc_array(pcols,pver,ntot_amode), dm_array(pcols,pver,ntot_amode) )
+!         else
+!            allocate(sfc_array(pcols,pver,5), dm_array(pcols,pver,5) )
+!         endif
+!         sfc_array(:,:,:) = 0._r8
+!         dm_array(:,:,:) = 0._r8
+!         sad_total(:,:) = 0._r8
+!         if( carma_do_hetchem ) then
+!            sad_total(:ncol,:pver)=strato_sad(:ncol,:pver)
+!         else
+!            call aero_model_surfarea( &
+!               mmr, rm1, relhum, pmid, temp, strato_sad, &
+!               sulfate, m, ltrop, het1_ndx, pbuf, ncol, sfc_array, dm_array, sad_total )
+!         endif
+!!-------------------------not sure if the above will work---------------------
+!      endif
 
     level_loop : do k = 1,pver
        tinv(:)           = 1._r8 / temp(:ncol,k)
        tp(:)             = 300._r8 * tinv(:)
        sqrt_t(:)         = sqrt( temp(:ncol,k) )
 
-       if( jo1dU_ndx > 0 ) then
-          prod_O1D(:) = rxt(:,k,jo1dU_ndx)   ! 1/sec, = production of O(1D) when *[O3]
+       if( jo1d_ndx > 0 ) then
+          prod_O1D(:) = rxt(:,k,jo1d_ndx)   ! 1/sec, = production of O(1D) when *[O3]
              call comp_exp( exp_fac, 110._r8*tinv, ncol )
           fc(:) =         2.15e-11_r8 * exp_fac(:) * invariants(:,k,n2_ndx)
              call comp_exp( exp_fac, 55._r8*tinv, ncol )
@@ -205,7 +211,7 @@ contains
 
 ! thermal decomposition rates for HNO4(uci7), N2O5(uci8), and PAN(uci9)
        if( uci7_ndx > 0 ) then
-          if ( HNO4_ndx > 0 ) then
+          if ( HNO4f_ndx > 0 ) then
              rxt(:,k,uci7_ndx) = rxt(:,k,HNO4f_ndx)/rxt(:,k,uci7_ndx)
           else
              rxt(:,k,uci7_ndx) = 0._r8
@@ -213,7 +219,7 @@ contains
        endif
 
        if( uci8_ndx > 0 ) then
-          if ( N2O5_ndx > 0 ) then
+          if ( N2O5f_ndx > 0 ) then
              rxt(:,k,uci8_ndx) = rxt(:,k,N2O5f_ndx)/rxt(:,k,uci8_ndx)
           else
              rxt(:,k,uci8_ndx) = 0._r8
@@ -221,7 +227,7 @@ contains
        endif
 
        if( uci9_ndx > 0 ) then
-          if ( PAN_ndx > 0 ) then
+          if ( PANf_ndx > 0 ) then
              rxt(:,k,uci9_ndx) = rxt(:,k,PANf_ndx)/rxt(:,k,uci9_ndx)
           else
              rxt(:,k,uci9_ndx) = 0._r8
@@ -260,7 +266,7 @@ contains
 !-chemUCI----------------------------------------------------------------
 
 !---revert to superfast fixes here ONLY if not doing chemUCI
-   else if ( jo1d_ndx > 0 ) then
+   if ( jo1d_ndx > 0 ) then
 
     n2_rate(:,:)  = x1 * Exp ( y1 / temp(:ncol,:)) * invariants(:,:,n2_ndx)
     o2_rate(:,:)  = x2 * Exp ( y2 / temp(:ncol,:)) * invariants(:,:,o2_ndx)
