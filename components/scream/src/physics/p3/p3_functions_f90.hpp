@@ -1020,7 +1020,7 @@ struct CheckValuesData
 
   private:
   // Internals
- 
+
   Int m_nk;
   std::vector<Real> m_data;
 };
@@ -1035,14 +1035,14 @@ struct IncloudMixingData
 {
   // Inputs
   Real qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm;
-  
-  // Outputs                                  
+
+  // Outputs
   Real qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld;
 };
 void calculate_incloud_mixingratios(IncloudMixingData& d);
 
 extern "C" {
-void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, Real nc, Real nr, Real nitot, Real birim, 
+void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, Real nc, Real nr, Real nitot, Real birim,
                                       Real inv_lcldm, Real inv_icldm, Real inv_rcldm,
                                       Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
                                       Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);

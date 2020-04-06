@@ -506,6 +506,8 @@ CheckValuesData::CheckValuesData(
   Real* data_begin = m_data.data();
   Int offset = m_nk*NUM_ARRAYS;
   col_loc = data_begin + offset;
+  col_loc[1] = 2.0;
+  col_loc[2] = 3.0;
 }
 
 CheckValuesData::CheckValuesData(const CheckValuesData& rhs) :
@@ -2560,11 +2562,10 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
 {
   using P3F        = Functions<Real, DefaultDevice>;
   using Spack      = typename P3F::Spack;
-  using Smask      = typename P3F::Smask;
   using uview_1d   = typename P3F::uview_1d<Spack>;
   using view_1d    = typename P3F::view_1d<Spack>;
-  using sview_1d   = typename P3F::view_1d<Smask>;
-  using usview_1d  = typename P3F::view_1d<Smask>;
+  using suview_1d  = typename P3F::uview_1d<Real>;
+  using sview_1d   = typename P3F::view_1d<Real>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
@@ -2574,32 +2575,21 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
 
   kstart -= 1;
   kend -= 1;
-  const Int nk = kend - kstart + 1;
+  const Int nk = (kend - kstart) + 1;
+  Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS+1> cvd_d;
 
-  Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS> cvd_d;
+  pack::host_to_device({qv, temp, col_loc}, {nk, nk, 3}, cvd_d);
 
-  pack::host_to_device({qv, temp},
-                       nk, cvd_d);
-
-  view_1d qv_d(cvd_d[0]),
-          temp_d(cvd_d[1]);
-
-  Kokkos::Array<view_1d, 1> col_d;
-
-  pack::host_to_device({col_loc}, 3, col_d);
-  
-  view_1d col_loc_d(col_d[0]);
+  view_1d qv_d(cvd_d[0]), temp_d(cvd_d[1]), col_loc_d(cvd_d[2]);
+  suview_1d ucol_loc_d(reinterpret_cast<Real*>(col_loc_d.data()), 3);
 
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    view_1d qv_d(cvd_d[0]),
-            temp_d(cvd_d[1]);
+    uview_1d uqv_d(qv_d), utemp_d(temp_d);
 
-    view_1d col_loc_d(col_d[0]);
-
-    P3F::check_values(qv_d, temp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
-                      col_loc_d);
+    P3F::check_values(uqv_d, utemp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
+                      ucol_loc_d);
   });
 }
 
@@ -2622,7 +2612,7 @@ void calculate_incloud_mixingratios_f(Real qc_, Real qr_, Real qitot_, Real qiri
     Spack qc{qc_}, qr{qr_}, qitot{qitot_}, qirim{qirim_}, nc{nc_}, nr{nr_}, nitot{nitot_},
           birim{birim_}, inv_lcldm{inv_lcldm_}, inv_icldm{inv_icldm_}, inv_rcldm{inv_rcldm_};
 
-    Spack qc_incld{0.}, qr_incld{0.}, qitot_incld{0.}, qirim_incld{0.}, 
+    Spack qc_incld{0.}, qr_incld{0.}, qitot_incld{0.}, qirim_incld{0.},
           nc_incld{0.}, nr_incld{0.}, nitot_incld{0.}, birim_incld{0.};
 
     P3F::calculate_incloud_mixingratios(qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm,

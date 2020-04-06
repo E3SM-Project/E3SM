@@ -10,14 +10,14 @@ namespace p3 {
 /*!------------------------------------------------------------------------------------
   Checks current values of prognotic variables for reasonable values and
   stops and prints values if they are out of specified allowable ranges.
-  
+
   'check_consistency' means include trap for inconsistency in moments;
   otherwise, only trap for Q, T, and negative Qx, etc.  This option is here
   to allow for Q<qsmall.and.N>nsmall or Q>qsmall.and.N<small which can be produced
   at the leading edges due to sedimentation and whose values are accpetable
   since lambda limiters are later imposed after SEDI (so one does not necessarily
   want to trap for inconsistency after sedimentation has been called).
-  
+
   The value 'source_ind' indicates the approximate location in 'p3_main'
   from where 'check_values' was called before it resulted in a trap.
   -----------------------------------------------------------------------------------
@@ -25,9 +25,9 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::check_values(const view_1d<Spack>& qv, const view_1d<Spack>& temp, const Int& kts, const Int& kte, 
-               const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team, 
-               const view_1d<Spack>& col_loc)
+::check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
+               const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
+               const uview_1d<Scalar>& col_loc)
 {
   constexpr Scalar T_low  = 173.;
   constexpr Scalar T_high = 323.;
@@ -45,7 +45,7 @@ void Functions<S,D>
     const int pk = kmin + pk_;
 
     const auto t_gt_low_bound   = temp(pk) > T_low;
-    const auto t_lt_high_bound   = temp(pk) < T_high;
+    const auto t_lt_high_bound  = temp(pk) < T_high;
 
     const auto qv_gt_low_bound  = qv(pk) > Q_low;
     const auto qv_lt_high_bound = qv(pk) < Q_high;
@@ -55,18 +55,19 @@ void Functions<S,D>
 
     if (t_out_bounds.any()) {
       for (auto s=0; s<Spack::n; ++s) {
-         trap = true;
-         printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
-                ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,temp(pk)[s]);
+        trap = true;
+        printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
+                ,source_ind,static_cast<int>(col_loc(0)),col_loc(1),col_loc(2),pk,timestepcount,temp(pk)[s]);
       }
     }
 
     if (qv_out_bounds.any()) {
       for (auto s=0; s<Spack::n; ++s) {
-         printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
-                ,source_ind,static_cast<int>(col_loc(0)[0]),col_loc(1)[0],col_loc(2)[0],pk,timestepcount,qv(pk)[s]);
+        // trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp
+        printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
+                ,source_ind,static_cast<int>(col_loc(0)),col_loc(1),col_loc(2),pk,timestepcount,qv(pk)[s]);
       }
-    } 
+    }
 
     if (trap && force_abort) {
       printf ("**********************************************************\n");

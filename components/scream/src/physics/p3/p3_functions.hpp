@@ -388,7 +388,7 @@ struct Functions
    Spack& qrevp, Spack& qrcol, Spack& qrheti);
 
   KOKKOS_FUNCTION
-  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt, 
+  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt,
    Spack& qisub, Spack& qimlt);
 
   // TODO: comment
@@ -577,9 +577,9 @@ struct Functions
                                     Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
 
   KOKKOS_FUNCTION
-  static void check_values(const view_1d<Spack>& qv, const view_1d<Spack>& temp, const Int& kts, const Int& kte,
+  static void check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
                            const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
-                           const view_1d<Spack>& col_loc);
+                           const uview_1d<Scalar>& col_loc);
 
   KOKKOS_FUNCTION
   static void calculate_incloud_mixingratios(const Spack& qc, const Spack& qr, const Spack& qitot, const Spack& qirim, const Spack& nc,

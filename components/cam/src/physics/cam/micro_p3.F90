@@ -2026,7 +2026,6 @@ contains
     endif
 #endif
 
-
     trap = .false.
 
     k_loop: do k = kts, kte
