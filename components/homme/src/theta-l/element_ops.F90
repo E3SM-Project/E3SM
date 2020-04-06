@@ -332,7 +332,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
     if(theta_hydrostatic_mode) then
        dp=elem%state%dp3d(:,:,:,nt)
-       call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp,dp,phi_i)
+       call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i)
     else
        phi_i = elem%state%phinh_i(:,:,:,nt)
     endif
