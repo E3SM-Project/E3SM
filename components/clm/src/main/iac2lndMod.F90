@@ -24,7 +24,7 @@ module iac2lndMod
   save
 
   ! iac -> land structure
-  ! Dimensioned by (ngrid,npft)
+  ! Dimensioned by (ngrid,numpft)
   type, public :: iac2lnd_type
      real(r8), pointer :: landuse(:,:) => null()
 
@@ -32,9 +32,11 @@ module iac2lndMod
 
      procedure, public :: Init
      procedure, public :: Restart
-     procedure, public :: update_glc2lnd
+     procedure, public :: update_iac2lnd
 
   end type iac2lnd_type
+
+contains
 
   subroutine Init(this, bounds)
     !
@@ -56,7 +58,7 @@ module iac2lndMod
     begg = bounds%begg; endg = bounds%endg
 
     ! Add in 0 as bare ground pft
-    allocate(this%landuse(begg:endg,0:npft)
+    allocate(this%landuse(begg:endg,0:numpft))
   end subroutine Init
 
   subroutine Restart(this, bounds, ncid, flag)
@@ -64,7 +66,17 @@ module iac2lndMod
     ! !DESCRIPTION:
     ! Read/Write iac2lnd information to/from restart file.
     ! Not yet implemented
+
+    ! !USES:
+    use ncdio_pio , only : ncd_double, file_desc_t
+    use decompMod , only : bounds_type
     !
+    ! !ARGUMENTS:
+    class(iac2lnd_type) , intent(inout) :: this
+    type(bounds_type)   , intent(in)    :: bounds 
+    type(file_desc_t)   , intent(inout) :: ncid ! netcdf id
+    character(len=*)    , intent(in)    :: flag ! 'read' or 'write'
+
   end subroutine Restart
 
   !------------------------------------------------------
@@ -74,13 +86,13 @@ module iac2lndMod
     ! Extract into clm variables from iac coupled inputs
     ! 
     ! !USES:
-    use clm_varctl, only: gcam_active
+    use clm_varctl, only: iac_active
     !
     ! !ARGUMENTS:
     class(iac2lnd_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
     ! !LOCAL VARIABLES:
-    integer :: g, p, pft  ! grid and pft indices
+    integer :: g, p, c, pft  ! grid and pft indices
     integer :: begg, endg
     integer :: begp, endp
 
@@ -89,18 +101,20 @@ module iac2lndMod
     begg = bounds%begg; endg = bounds%endg
     begp = bounds%begp; endg = bounds%endp
 
-    if (gcam_active) then 
+    if (iac_active) then 
        ! The idea is to convert (ngrid,pft) to a patch-dimensioned 1D array
        ! So, loop over patches, and extract pft and g, and copy over.
        do p = begp,endp
           g=veg_pp%gridcell(p)
           pft=veg_pp%itype(p)
           
-          landuse_patch(p) = iac2lnd_vars%landuse(g,pft)
+          ! I think this was renamed below, but keeping it for reference in case I'm wrong
+          ! landuse_patch(p) = iac2lnd_vars%landuse(g,pft)
 
           ! Is it as simple as this?  Do we need to scale the other
           ! weights, too?
-          veg_pp%wtgcell(p) = iac2lnd_vars%landuse(g,pft)
+          !veg_pp%wtgcell(p) = iac2lnd_vars%landuse(g,pft)
+          veg_pp%wtgcell(p) = this%landuse(g,pft)
 
           ! Assuming we do, follow compute_higher_order_weights, line
           ! 247 in subgridWeightsMod.F90: compute wtcol first using
@@ -118,13 +132,6 @@ module iac2lndMod
 
        ! Now, send this where it needs to go.
     endif
+  end subroutine update_iac2lnd
+end module iac2lndMod
 
-
-
-          
-
-
-
-
-
-     

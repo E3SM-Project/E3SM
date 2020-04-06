@@ -20,9 +20,10 @@ module clm_cpl_indices
   !
   integer , public :: glc_nec     ! number of elevation classes for glacier_mec landunits 
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
-  integer , parameter, private:: glc_nec_max = 100
+  integer , parameter, private :: glc_nec_max = 100
 
-  integer , public :: iac_npft    ! Number of veg pfts (index 0 for bare ground)
+  integer, public :: iac_npft ! Number of veg pfts (index 0 for bare ground)
+  integer , parameter, private :: iac_npft_max = 30  ! just for allocation
 
   ! lnd -> drv (required)
 
@@ -69,9 +70,9 @@ module clm_cpl_indices
   integer, public :: nflds_l2x = 0
 
   ! IAC coupling
-  integer, public ::index_l2x_Sl_hr(0:iac_npft)  = 0
-  integer, public ::index_l2x_Sl_npp(0:iac_npft)  = 0
-  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft)  = 0
+  integer, public ::index_l2x_Sl_hr(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_npp(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft_max)  = 0
 
   ! drv -> lnd (required)
 
@@ -152,8 +153,8 @@ contains
     ! !LOCAL VARIABLES:
     type(mct_aVect)   :: l2x      ! temporary, land to coupler
     type(mct_aVect)   :: x2l      ! temporary, coupler to land
-    integer           :: num 
-    character(len= 2) :: cnum
+    integer           :: num, p
+    character(len= 2) :: cnum, cpft
     character(len=64) :: name
     character(len=32) :: subname = 'clm_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
