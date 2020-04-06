@@ -1,8 +1,8 @@
-module elm_driver
+module clm_driver
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! This module provides the main ELM driver physics calling sequence.  Most
+  ! This module provides the main CLM driver physics calling sequence.  Most
   ! computations occurs over ``clumps'' of gridcells (and associated subgrid
   ! scale entities) assigned to each MPI process. Computation is further
   ! parallelized by looping over clumps on each process using shared memory OpenMP.
@@ -15,9 +15,9 @@ module elm_driver
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use elm_varctl             , only : use_erosion, use_fates_sp
+  use elm_varctl             , only : iac_active
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
-  use clm_time_manager       , only : get_curr_calday, get_days_per_year
-  use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
+  use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
   use filterMod              , only : filter, filter_inactive_and_active
@@ -89,43 +89,42 @@ module elm_driver
   use DaylengthMod           , only : UpdateDaylength
   use perf_mod
   !
-  use elm_instMod            , only : ch4_vars, ep_betr
-  use elm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
-  use elm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
-  use elm_instMod            , only : nitrogenstate_vars
-  use elm_instMod            , only : nitrogenflux_vars
-  use elm_instMod            , only : phosphorusstate_vars
-  use elm_instMod            , only : phosphorusflux_vars
-  use elm_instMod            , only : crop_vars
-  use elm_instMod            , only : cnstate_vars
-  use elm_instMod            , only : dust_vars
-  use elm_instMod            , only : vocemis_vars
-  use elm_instMod            , only : drydepvel_vars
-  use elm_instMod            , only : aerosol_vars
-  use elm_instMod            , only : canopystate_vars
-  use elm_instMod            , only : energyflux_vars
-  use elm_instMod            , only : frictionvel_vars
-  use elm_instMod            , only : lakestate_vars
-  use elm_instMod            , only : photosyns_vars
-  use elm_instMod            , only : sedflux_vars
-  use elm_instMod            , only : soilstate_vars
-  use elm_instMod            , only : soilhydrology_vars
-  use elm_instMod            , only : solarabs_vars
-  use elm_instMod            , only : soilhydrology_vars
-  use elm_instMod            , only : surfalb_vars
-  use elm_instMod            , only : surfrad_vars
-  use elm_instMod            , only : temperature_vars
-  use elm_instMod            , only : col_es
-  use elm_instMod            , only : waterflux_vars
-  use elm_instMod            , only : waterstate_vars
-  use elm_instMod            , only : atm2lnd_vars
-  use elm_instMod            , only : lnd2atm_vars
-  use elm_instMod            , only : glc2lnd_vars
-  use elm_instMod            , only : lnd2glc_vars
-  use elm_instMod            , only : soil_water_retention_curve
-  use elm_instMod            , only : chemstate_vars
-  use elm_instMod            , only : alm_fates
-  use elm_instMod            , only : PlantMicKinetics_vars
+  use clm_instMod            , only : ch4_vars, ep_betr
+  use clm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
+  use clm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
+  use clm_instMod            , only : nitrogenstate_vars
+  use clm_instMod            , only : nitrogenflux_vars
+  use clm_instMod            , only : phosphorusstate_vars
+  use clm_instMod            , only : phosphorusflux_vars
+  use clm_instMod            , only : crop_vars
+  use clm_instMod            , only : cnstate_vars
+  use clm_instMod            , only : dust_vars
+  use clm_instMod            , only : vocemis_vars
+  use clm_instMod            , only : drydepvel_vars
+  use clm_instMod            , only : aerosol_vars
+  use clm_instMod            , only : canopystate_vars
+  use clm_instMod            , only : energyflux_vars
+  use clm_instMod            , only : frictionvel_vars
+  use clm_instMod            , only : lakestate_vars
+  use clm_instMod            , only : photosyns_vars
+  use clm_instMod            , only : soilstate_vars
+  use clm_instMod            , only : soilhydrology_vars
+  use clm_instMod            , only : solarabs_vars
+  use clm_instMod            , only : soilhydrology_vars
+  use clm_instMod            , only : surfalb_vars
+  use clm_instMod            , only : surfrad_vars
+  use clm_instMod            , only : temperature_vars
+  use clm_instMod            , only : waterflux_vars
+  use clm_instMod            , only : waterstate_vars
+  use clm_instMod            , only : atm2lnd_vars
+  use clm_instMod            , only : lnd2atm_vars
+  use clm_instMod            , only : glc2lnd_vars
+  use clm_instMod            , only : lnd2glc_vars
+  use clm_instMod            , only : lnd2iac_vars
+  use clm_instMod            , only : soil_water_retention_curve
+  use clm_instMod            , only : chemstate_vars
+  use clm_instMod            , only : alm_fates
+  use clm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
@@ -1380,7 +1379,7 @@ contains
     ! Update stuff to send to iac
     ! ============================================================================
 
-    if (gcam_active) then
+    if (iac_active) then
        call t_startf('lnd2iac')
        !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
        do nc = 1,nclumps
