@@ -388,7 +388,7 @@ struct Functions
    Spack& qrevp, Spack& qrcol, Spack& qrheti);
 
   KOKKOS_FUNCTION
-  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt, 
+  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt,
    Spack& qisub, Spack& qimlt);
 
   // TODO: comment
@@ -577,6 +577,11 @@ struct Functions
                                     Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
 
   KOKKOS_FUNCTION
+  static void check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
+                           const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
+                           const uview_1d<Scalar>& col_loc);
+
+  KOKKOS_FUNCTION
   static void calculate_incloud_mixingratios(const Spack& qc, const Spack& qr, const Spack& qitot, const Spack& qirim, const Spack& nc,
                                              const Spack& nr, const Spack& nitot, const Spack& birim, const Spack& inv_lcldm,
                                              const Spack& inv_icldm, const Spack& inv_rcldm,
@@ -631,6 +636,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_droplet_activation_impl.hpp"
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
+# include "p3_functions_check_values_impl.hpp"
 # include "p3_functions_incloud_mixingratios_impl.hpp"
 #endif
 
