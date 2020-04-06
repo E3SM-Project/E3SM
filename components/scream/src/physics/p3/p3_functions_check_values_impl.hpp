@@ -34,13 +34,13 @@ void Functions<S,D>
   constexpr Scalar Q_high = 40.e-3;
   constexpr Scalar Q_low  = 0.;
 
-  bool trap{false};
-
   Int kmin, kmax;
   util::set_min_max(kts, kte, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
+
+    bool trap{false};
 
     const int pk = kmin + pk_;
 
@@ -54,7 +54,7 @@ void Functions<S,D>
     const auto qv_out_bounds = !(qv_gt_low_bound && qv_lt_high_bound);
 
     if (t_out_bounds.any()) {
-      for (auto s=0; s<Spack::n; ++s) {
+      for (int s=0; s<Spack::n; ++s) {
         trap = true;
         printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
                 ,source_ind,static_cast<int>(col_loc(0)),col_loc(1),col_loc(2),pk,timestepcount,temp(pk)[s]);
@@ -62,7 +62,7 @@ void Functions<S,D>
     }
 
     if (qv_out_bounds.any()) {
-      for (auto s=0; s<Spack::n; ++s) {
+      for (int s=0; s<Spack::n; ++s) {
         // trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp
         printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
                 ,source_ind,static_cast<int>(col_loc(0)),col_loc(1),col_loc(2),pk,timestepcount,qv(pk)[s]);
