@@ -40,15 +40,30 @@ struct UnitWrap::UnitTest<D>::TestP3Func
 
     // The correct results were computed with double precision, so we need
     // significantly greater tolerance for single precision.
-    Scalar tol = (util::is_single_precision<Scalar>::value || util::OnGpu<ExeSpace>::value) ? C::Tol*100 : C::Tol;
+    //Scalar tol = (util::is_single_precision<Scalar>::value || util::OnGpu<ExeSpace>::value) ? C::Tol*100 : C::Tol;
+    //PMC comment: C::Tol already has logic to make it 2e-5 if single precision, so multiplying by another 100 seems
+    //gratuitous. Also not sure why coarse tol is used if GPU. 
+    const Scalar tol = C::Tol;
 
+    printf("===============================\n");
+    printf("tol = %e %f \n",tol,temperature);
+    printf("===============================\n");
+    
     for(int s = 0; s < sat_ice_p.n; ++s){
       // Test vapor pressure
-      if (abs(sat_ice_p[s] - correct_sat_ice_p) > tol ) {errors++;}
-      if (abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {errors++;}
+      if ( std::abs(sat_ice_p[s] - correct_sat_ice_p ) > tol ) {
+	printf("abs(sat_ice_p[s]-correct_sat_ice_p )=%e\n",std::abs(sat_ice_p[s] - correct_sat_ice_p ));
+	errors++;}
+      if (std::abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {
+	printf("abs(sat_liq_p[s]-correct_sat_liq_p )=%e\n",std::abs(sat_liq_p[s] - correct_sat_liq_p ));
+	errors++;}
       //Test mixing-ratios
-      if (abs(mix_ice_r[s] -  correct_mix_ice_r) > tol ) {errors++;}
-      if (abs(mix_liq_r[s] -  correct_mix_liq_r) > tol ) {errors++;}
+      if (std::abs(mix_ice_r[s] -  correct_mix_ice_r) > tol ) {
+	printf("abs(mix_ice_r[s]-correct_mix_ice_r)=%e\n",std::abs(mix_ice_r[s] -  correct_mix_ice_r));
+	errors++;}
+      if (std::abs(mix_liq_r[s] -  correct_mix_liq_r) > tol ) {
+	printf("abs(mix_liq_r[s]-correct_mix_liq_r)=%e\n",std::abs(mix_liq_r[s] -  correct_mix_liq_r));
+	errors++;}
     }
   }
 
@@ -77,19 +92,30 @@ struct UnitWrap::UnitTest<D>::TestP3Func
       // so T=273.15 collapses back to the intercept coefficient which can be read 
       // directly from the RHS of table 4 of Flatau et al 1992. Note that ice values
       // are identical to liquid values b/c C++ uses liq val for T>=0 C.
-      saturation_tests(tmelt, 1e5, 611.239921, 611.239921,
-		       0.0038251131382843278, 0.0038251131382843278, errors);
+      //saturation_tests(tmelt, 1e5, 611.239921, 611.239921,
+      //0.0038251131382843278, 0.0038251131382843278, errors);
 
+      saturation_tests(tmelt, 1e5, 611.23992100000009, 611.23992100000009,
+		       0.0038251131382843278, 0.0038251131382843278, errors);
+      
       // Cold Case: Test values @ 243.15K @ 1e5 Pa
       //---------------------------------------
-      saturation_tests(243.15, 1e5, 38.024844602056589, 51.032583257625078,
-		       0.00023659331311441808, 0.0003175697212751689, errors);
+      //saturation_tests(243.15, 1e5, 38.024844602056795, 51.032583257625078,
+      //0.00023659331311441935, 0.0003175697212751689, errors);
 
+      saturation_tests(243.15, 1e5, 38.024844602056795, 51.032583257624964,
+		       0.00023659331311441935, 0.00031756972127516819, errors);
+      
       //Warm Case: Test values @ 303.15 @ 1e5 Pa
       //---------------------------------------
       saturation_tests(303.15, 1e5, 4245.1933273786717, 4245.1933273786717,
 		       0.027574442204332306, 0.027574442204332306, errors);
 
+      //Change Pressure Case: Test values @ 243.15 @ 500 mb
+      //---------------------------------------
+      saturation_tests(243.15, 5e4, 38.024844602056795, 51.032583257624964,
+		       0.00047336669164733106, 0.00063546390177500586, errors);
+      
     }, nerr);
 
     Kokkos::fence();
