@@ -19,5 +19,11 @@
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 		<option name="config_use_Redi">.true.</option>
 		<option name="config_use_GM">.true.</option>
+		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
 	</namelist>
+	<streams>
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="mixed_layer_depths.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</streams>
 </template>

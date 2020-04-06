@@ -18,6 +18,7 @@
 		<stream name="output_ssh">
 			<attribute name="output_interval">0000_06:00:00</attribute>
 		</stream>
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">
