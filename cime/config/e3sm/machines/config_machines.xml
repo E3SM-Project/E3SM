@@ -211,17 +211,17 @@
     <OS>CNL</OS>
     <COMPILERS>intel,gnu,intel19</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
-    <PROJECT>acme</PROJECT>
-    <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
-    <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <PROJECT>e3sm</PROJECT>
+    <SAVE_TIMING_DIR>/project/projectdirs/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/cori-knl</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>/global/project/projectdirs/e3sm/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_URL_ROOT>http://portal.nersc.gov/project/e3sm/$ENV{USER}</CIME_URL_ROOT>
+    <DIN_LOC_ROOT>/project/projectdirs/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/project/projectdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/project/projectdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>

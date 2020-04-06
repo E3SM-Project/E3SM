@@ -265,6 +265,31 @@
        Default: none
        </entry>
 
+<!-- JS ADD -->
+<entry id="Nudge_Method" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Method to perform Nudging analyses.
+       Default: Step
+       </entry>
+
+<entry id="Nudge_Tau" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Use user-defined relaxation time scale.
+       Default: -999
+       </entry>
+
+<entry id="Nudge_Curr" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Linearly interpolate nudging data to current or future model time step
+       Default: FALSE
+       </entry>
+
+<entry id="Num_Slice" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of time slices per nudging data file; Must be 1 or Nudge_Times_Per_Day
+       Default: 1
+       </entry>
+<!-- JS END -->
 
 <!-- Nudging Parameters -->
 

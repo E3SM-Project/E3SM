@@ -2206,6 +2206,8 @@ do_lphase2_conditional: &
                    enddo
                   !Guangxing Lin 
                    call outfld( trim(cnst_name_cw(mm))//'SFWET', sflx, pcols, lchnk)
+                   !Guangxing Lin
+                   call outfld( 'so4_test2', state%pdel(:,:), pcols, lchnk)
                    aerdepwetcw(:ncol,mm) = sflx(:ncol)
                    
                    sflx(:)=0._r8
