@@ -39,9 +39,9 @@
 
 	<run_script name="run.py">
 		<step executable="gpmetis">
-			<argument flag="graph.info">144</argument>
+			<argument flag="graph.info">1296</argument>
 		</step>
 
-		<model_run procs="144" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="1296" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

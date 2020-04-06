@@ -38,6 +38,7 @@
 		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
+		<template file="template_initial_state.xml" path_base="script_resolution_dir"/>
 		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
 		<option name="config_global_ocean_depth_file">'vertical_grid.nc'</option>
 		<option name="config_global_ocean_depth_dimname">'nVertLevels'</option>
