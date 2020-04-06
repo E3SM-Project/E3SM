@@ -322,7 +322,7 @@ contains
                             ,usr_MCO3_NO2_ndx,usr_MPAN_M_ndx,usr_XOOH_OH_ndx,usr_SO2_OH_ndx,usr_DMS_OH_ndx,usr_HO2_aer_ndx
 !chemUCI
        write(iulog,*) 'usrrxt_inti: chemUCI diagnostics '
-       write(iulog,'(10i5)') uci1, uci2, uci3, uci4, uci5, uci6, uci7, uci8, uci9, jo1d, ucih1, ucih2, ucih3
+       write(iulog,'(10i5)') uci1_ndx, uci2_ndx, uci3_ndx, uci4_ndx, uci5_ndx, uci6_ndx, uci7_ndx, uci8_ndx, uci9_ndx, jo1d_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
 
     end if
 
@@ -450,6 +450,8 @@ contains
 
     real(r8), pointer :: sfc_array(:,:,:), dm_array(:,:,:)
 
+    real(r8) :: uci_gamma_n2o5, uci_gamma_no3, uci_gamma_ho2
+
     ! get info about the modal aerosols
     ! get ntot_amode
     call rad_cnst_get_info(0, nmodes=ntot_amode)
@@ -485,20 +487,20 @@ contains
              call comp_exp( exp_fac, 110._r8*tinv, ncol )
           fc(:) =         2.15e-11_r8 * exp_fac(:) * invariants(:,k,n2_ndx)    ! <<< check that n2_ndx and inv() are defined
              call comp_exp( exp_fac, 55._r8*tinv, ncol )
-          fc(:) = fc(:) + 3.30e-11_r8 * exp_fac(:) * invariants(:,k,o2_ndx)
+          fc(:) = fc(:) + 3.30e-11_r8 * exp_fac(:) * invariants(:,k,inv_o2_ndx)
              call comp_exp( exp_fac, 60._r8*tinv, ncol )
-          fc(:) = fc(:) + 1.63e-10_r8 * exp_fac(:) * invariants(:,k,h2o_ndx)
+          fc(:) = fc(:) + 1.63e-10_r8 * exp_fac(:) * invariants(:,k,inv_h2o_ndx)
 
           if( uci1_ndx > 0 ) then
-             rxt(:,k,uci1_ndx) = rxt(:,k,uci1_ndx) * p_rate(:,k,jo1d_ndx) / fc(:)  ! <<< check that p_rate() can be used here
+             rxt(:,k,uci1_ndx) = rxt(:,k,uci1_ndx) * rxt(:,k,jo1d_ndx) / fc(:)  ! <<< check that p_rate() can be used here
           endif
 
           if( uci2_ndx > 0 ) then
-             rxt(:,k,uci2_ndx) = rxt(:,k,uci2_ndx) * p_rate(:,k,jo1d_ndx) / fc(:)
+             rxt(:,k,uci2_ndx) = rxt(:,k,uci2_ndx) * rxt(:,k,jo1d_ndx) / fc(:)
           endif
 
           if( uci3_ndx > 0 ) then
-             rxt(:,k,uci3_ndx) = rxt(:,k,uci3_ndx) * p_rate(:,k,jo1d_ndx) / fc(:)
+             rxt(:,k,uci3_ndx) = rxt(:,k,uci3_ndx) * rxt(:,k,jo1d_ndx) / fc(:)
           endif
        endif
 
@@ -556,18 +558,17 @@ contains
              c_n2o5 = 1.40e3_r8 * sqrt_t(i)         ! mean molecular speed of n2o5
              c_no3  = 1.85e3_r8 * sqrt_t(i)         ! mean molecular speed of no3
              c_ho2  = 2.53e3_r8 * sqrt_t(i)         ! mean molecular speed of ho2
-             gamma_n2o5 = rxt(i,k,ucih1_ndx)
-             gamma_no3  = rxt(i,k,ucih2_ndx)
-             gamma_ho2  = rxt(i,k,ucih3_ndx)
+             uci_gamma_n2o5 = rxt(i,k,ucih1_ndx)
+             uci_gamma_no3  = rxt(i,k,ucih2_ndx)
+             uci_gamma_ho2  = rxt(i,k,ucih3_ndx)
              if( ucih1_ndx > 0 ) then
-                rxt(i,k,ucih1_ndx) = hetrxtrate( sfc, dm_aer, dg, c_n2o5, gamma_n2o5 )
+                rxt(i,k,ucih1_ndx) = hetrxtrate( sfc, dm_aer, dg, c_n2o5, uci_gamma_n2o5 )
              end if
              if( ucih2_ndx > 0 ) then
-                rxt(i,k,ucih2_ndx) = hetrxtrate( sfc, dm_aer, dg, c_no3 , gamma_no3  )
+                rxt(i,k,ucih2_ndx) = hetrxtrate( sfc, dm_aer, dg, c_no3 , uci_gamma_no3  )
              end if
              if( ucih3_ndx > 0 ) then
-                rxt(i,k,ucih3_ndx) = hetrxtrate( sfc, dm_aer, dg, c_ho2 , gamma_ho2  )
-             end if
+                rxt(i,k,ucih3_ndx) = hetrxtrate( sfc, dm_aer, dg, c_ho2 , uci_gamma_ho2  )
              end if
           enddo uci_loop
        endif
