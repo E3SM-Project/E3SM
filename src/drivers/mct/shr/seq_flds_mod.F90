@@ -1406,9 +1406,7 @@ contains
        units    = 'W m-2'
        attname  = 'Fioo_meltp'
        call metadata_set(attname, longname, stdname, units)
-    end if
 
-    if (trim(cime_model) == 'e3sm') then
        ! Ocean frazil production
        call seq_flds_add(o2x_fluxes,"Fioo_frazil")
        call seq_flds_add(x2i_fluxes,"Fioo_frazil")
@@ -2016,21 +2014,21 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrl_demand'
        call metadata_set(attname, longname, stdname, units)
-    call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
-    call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
-    longname = 'Temperature of surface runoff'
-    stdname  = 'Temperature_of_surface_runoff'
-    units    = 'Kelvin'
-    attname  = 'Flrl_Tqsur'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
+       call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
+       longname = 'Temperature of surface runoff'
+       stdname  = 'Temperature_of_surface_runoff'
+       units    = 'Kelvin'
+       attname  = 'Flrl_Tqsur'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(l2x_fluxes,'Flrl_Tqsub')
-    call seq_flds_add(x2r_fluxes,'Flrl_Tqsub')
-    longname = 'Temperature of subsurface runoff'
-    stdname  = 'Temperature_of_subsurface_runoff'
-    units    = 'Kelvin'
-    attname  = 'Flrl_Tqsub'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_Tqsub')
+       call seq_flds_add(x2r_fluxes,'Flrl_Tqsub')
+       longname = 'Temperature of subsurface runoff'
+       stdname  = 'Temperature_of_subsurface_runoff'
+       units    = 'Kelvin'
+       attname  = 'Flrl_Tqsub'
+       call metadata_set(attname, longname, stdname, units)
     endif
 
     ! Currently only the CESM land and runoff models treat irrigation as a separate
@@ -2121,9 +2119,7 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrr_supply'
        call metadata_set(attname, longname, stdname, units)
-    endif
-    
-	if (trim(cime_model) == 'e3sm') then   
+
        call seq_flds_add(r2x_fluxes,'Flrr_deficit')
        call seq_flds_add(x2l_fluxes,'Flrr_deficit')
        longname = 'River model supply deficit'
