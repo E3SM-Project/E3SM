@@ -330,13 +330,20 @@ contains
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eri = 1,num_inst_rof
-       eli = mod((eri-1),num_inst_lnd) + 1
-       call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
-       eai = mod((eri-1),num_inst_atm) + 1
-      if (rof_heat)  call mct_avect_avg(a2racc_ax(eai),a2racc_ax_cnt)
-    end do
+    if(l2racc_lx_cnt > 1) then
+       do eri = 1,num_inst_rof
+          eli = mod((eri-1),num_inst_lnd) + 1
+          call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
+       enddo
+    endif
     l2racc_lx_cnt = 0
+
+    if((a2racc_ax_cnt > 1) .and. rof_heat) then
+       do eri = 1,num_inst_rof
+          eai = mod((eri-1),num_inst_atm) + 1
+          call mct_avect_avg(a2racc_ax(eai),a2racc_ax_cnt)
+       enddo
+    endif
     a2racc_ax_cnt = 0
     call t_drvstopf (trim(timer))
 
