@@ -186,7 +186,7 @@ contains
     if (present(check)) gfr%check = check
 
     gfr%boost_pg1 = .false.
-    if (present(boost_pg1)) gfr%boost_pg1 = boost_pg1    
+    if (nphys == 1 .and. present(boost_pg1)) gfr%boost_pg1 = boost_pg1    
 
     gfr%tolfac = one
     if (par%masterproc) then
