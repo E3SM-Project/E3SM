@@ -1150,18 +1150,19 @@
         <command name="load">cmake/3.13.4-354d6wl</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/17.0.4-74uvhji</command>
-        <command name="load">intel-mkl/2017.3.196-jyjmyut</command>
-        <command name="load">netcdf/4.4.1.1-prsuusl</command>
-        <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
+        <command name="load">intel/18.0.4-443hhug</command>
+        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
+        <command name="load">hdf5/1.10.5-3mk3uik</command>
+        <command name="load">netcdf/4.7.0-krelxcz</command>
+        <command name="load">netcdf-fortran/4.4.5-74lj75q</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
-        <command name="load">intel-mpi/2017.3-dfphq6k</command>
-        <command name="load">parallel-netcdf/1.6.1</command>
+        <command name="load">intel-mpi/2018.4.274-4hmwfl6</command>
+        <command name="load">parallel-netcdf/1.11.0-acswzws</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="load">mvapich2/2.2-n6lclff</command>
-        <command name="load">parallel-netcdf/1.6.1-mvapich2.2</command>
+        <command name="load">mvapich2/2.3.1-verbs-omjz3ck</command>
+        <command name="load">parallel-netcdf/1.11.2-7fy6qz3</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-g7hppkz</command>
