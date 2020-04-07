@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#Remove exe if chem pp exe (campp) already exists (it ensures that exe is always built)
+/bin/rm -f $CIMEROOT/../components/cam/chem_proc/campp
+
+#Modify campp input file so that it starts from "SPECIES" and creates "chem_inp_tmp" file
+sed -n '/^\s*SPECIES$/,$p' $CIMEROOT/../components/cam/chem_proc/inputs/pp_linoz_mam4_resus_mom_soag.inp >& chem_inp_tmp
+
+#Invoke campp (chem_inp_tmp file is at $CASEROOT and campp exe is at Buildconf/camconf, move back two directories)
+./xmlchange --append CAM_CONFIG_OPTS='-usr_mech_infile ../../chem_inp_tmp'
+
