@@ -1081,6 +1081,19 @@ contains
                                   ! components/cam/src/cpl/atm_comp_mct.F90
       ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
           typeA, typeB, ATM_PHYS_CID, id_join)
+
+      !  we also need to define the tags for receiving the physics data, on atm on coupler pes
+      ! corresponding to 'T_ph;u_ph;v_ph';
+      tagnameProj = 'T_ph16'//CHAR(0)
+      tagtype = 1  ! dense, double
+      numco = 16 !  hard coded, 16 values per cell!
+      ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+      ! define more tags
+      tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
+      ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+      tagnameProj = 'v_ph16'//CHAR(0)  ! V component of velocity
+      ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+
     endif
     ! ocean
     if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then

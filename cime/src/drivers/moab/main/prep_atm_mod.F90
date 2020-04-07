@@ -19,6 +19,7 @@ module prep_atm_mod
 
   use shr_mpi_mod,  only:  shr_mpi_commrank
   use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
+  use seq_comm_mct, only : mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
   use seq_comm_mct, only : mhid     ! iMOAB id for atm instance
@@ -526,6 +527,45 @@ contains
       endif
 
     endif
+
+    ! we also know that phys atm was loaded with some data; send it to the coupler atm
+        ! send data to atm on coupler PEs, using the par comm graph computed
+    ! in clp comp exch:
+    ! ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+    !      typeA, typeB, ATM_PHYS_CID, id_join)
+    context_id = -1 !  this is the original
+    if (mphaid .ge. 0) then
+    ! we are on atm phys pes (atm pes)
+       tagname = 'T_ph;u_ph;v_ph'//CHAR(0)
+       ! context_id is the other comp id, in this case it has to be 6, id_join
+       context_id = id_join
+       ierr = iMOAB_SendElementTag(mphaid, tagname, mpicom_join, context_id)
+    endif
+
+    if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+        ! receive on atm tag on coupler pes, in original migrate
+        ! receive from ATM PHYS, which in this case is 200 + 5
+      tagname = 'T_ph16;u_ph16;v_ph16'//CHAR(0)
+      context_id = 200 + atmid ! 200 + 5 for atm
+      ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
+      !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+    ! we can now free the sender buffers
+    if (mhid .ge. 0) then
+       ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+       ! CHECKRC(ierr, "cannot free buffers used to phys atm tag towards the coupler atm spectral mesh")
+    endif
+#ifdef MOABDEBUG
+    ! we can also write the atm spectral mesh on coupler PEs to file
+    !     to check the tags received
+    if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_proj
+      outfile = 'wholeATM_ph'//trim(lnum)//'.h5m'//CHAR(0)
+      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+    endif
+#endif
 
   end subroutine prep_atm_migrate_moab
 

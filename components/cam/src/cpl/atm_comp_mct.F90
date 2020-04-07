@@ -944,7 +944,7 @@ CONTAINS
 
     integer , external :: iMOAB_RegisterFortranApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities
+         iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from mct
@@ -1080,6 +1080,9 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to create v velo on phys tag ')
 
+    ! need to identify that the mesh is indeed point cloud
+    !  this call will set the point_cloud to true inside iMOAB appData structure
+    ierr = iMOAB_UpdateMeshInfo(mphaid)
 
 !    tagname='area'//CHAR(0)
 !    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
