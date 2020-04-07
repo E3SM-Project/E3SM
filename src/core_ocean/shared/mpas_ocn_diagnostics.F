@@ -706,7 +706,7 @@ contains
 
       endif
 
-      nCells = nCellsArray( 3 )
+      nCells = nCellsArray( size(nCellsArray) )
 
       !
       ! Brunt-Vaisala frequency (this has units of s^{-2})
@@ -726,6 +726,7 @@ contains
       ! Gradient Richardson number
       !
 
+      nCells = nCellsArray(3)
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, factor, delU2, shearMean)
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND

@@ -165,10 +165,10 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
 
       ! Here are some example variables which may be needed for your analysis member
-      integer, pointer :: nVertLevels, nCellsSolve
-      integer :: k, iCell, i, refIndex, refLevel(1)
+      integer, pointer :: nVertLevels
+      integer :: k, iCell, i, refIndex, nCells, refLevel(1)
       integer, pointer :: index_temperature
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, nCellsArray
 
       logical :: found_temp_mld, found_den_mld
       logical,pointer :: tThresholdFlag, dThresholdFlag
@@ -233,7 +233,7 @@ contains
          pressureAdjustedForLandIce => pressureAdjustedForLandIceField % array
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
 
@@ -251,10 +251,11 @@ contains
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
+         nCells = nCellsArray( size(nCellsArray) ) 
          pressureAdjustedForLandIce(:,:) = pressure(:,:)
          !If landice cavity remove land ice pressure to search for ML depth
          if ( associated(landIcePressure) ) THEN
-           do iCell = 1,nCellsSolve
+           do iCell = 1,nCells
              do k = 1,maxLevelCell(iCell)
                 pressureAdjustedForLandIce(k,iCell) = pressureAdjustedForLandIce(k,iCell)   &
                                                         - landIcePressure(iCell)
@@ -264,7 +265,7 @@ contains
 
          if(tThresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThreshMLD)
-            do iCell = 1,nCellsSolve
+            do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
                refIndex = maxLevelCell(iCell)
@@ -305,7 +306,7 @@ contains
                enddo !iCell
 
                if (associated(landIceMask) ) THEN
-                  do iCell = 1, nCellsSolve
+                  do iCell = 1, nCells
                      tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
                   enddo
                endif
@@ -316,7 +317,7 @@ contains
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
             call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
-            do iCell = 1,nCellsSolve
+            do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
                refIndex = maxLevelCell(iCell)
@@ -360,7 +361,7 @@ contains
              enddo !iCell
 
              if (associated(landIceMask) ) THEN
-               do iCell = 1, nCellsSolve
+               do iCell = 1, nCells
                   dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
                enddo
 
@@ -377,7 +378,7 @@ contains
 
            allocate(temperatureGradient(nVertLevels,2))
 
-           do iCell = 1,nCellsSolve
+           do iCell = 1,nCells
 
             temperatureGradient(:,1) = 0.0_RKIND
             temperatureGradient(1,2) = 1
@@ -385,7 +386,7 @@ contains
                found_temp_mld=.false.
 
                do k=2,maxLevelCell(iCell)-1
-                     dz=abs(pressureAdjustedForLandIce(k-1,iCell)-pressureAdjustedForLandIce(k,iCell))
+                     dz=abs(pressureAdjustedForLandIce(k-1,iCell)-pressureAdjustedForLandIce(k,iCell)) + 1.0E-15_RKIND
                      temperatureGradient(k,1) = abs(tracers(index_temperature,k-1,iCell) - tracers(index_temperature,k,iCell)) / dz
                      temperatureGradient(k,2) = k
                enddo
@@ -421,7 +422,7 @@ contains
 
          !normalize MLD to top of ice cavity
          if (associated(landIceMask) ) THEN
-           do iCell = 1, nCellsSolve
+           do iCell = 1, nCells
              tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
            enddo
          endif
@@ -436,7 +437,7 @@ contains
 
              allocate(densityGradient(nVertLevels,2))
 
-           do iCell = 1,nCellsSolve
+           do iCell = 1,nCells
 
             densityGradient(:,:)=0.0_RKIND
             densityGradient(1,2) = 1
@@ -444,7 +445,7 @@ contains
                found_den_mld=.false.
 
                do k=2,maxLevelCell(iCell)-1
-                     dz=abs(pressureAdjustedForLandIce(k-1,iCell)-pressureAdjustedForLandIce(k,iCell))
+                     dz=abs(pressureAdjustedForLandIce(k-1,iCell)-pressureAdjustedForLandIce(k,iCell)) + 1.0E-15_RKIND
                      densityGradient(k,1) = abs(potentialDensity(k-1,iCell)-potentialDensity(k,iCell)) / dz
                      densityGradient(k,2) = k
                enddo
@@ -477,7 +478,7 @@ contains
          enddo !icell
 
          if (associated(landIceMask) ) THEN
-           do iCell = 1, nCellsSolve
+           do iCell = 1, nCells
              dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
            enddo
          endif
