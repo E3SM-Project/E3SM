@@ -1,6 +1,162 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-7-2020
+Tag: cime5.8.20
+Answer Changes: None
+Tests: scripts_regression_tests, check_inputdata
+Dependencies:
+
+Brief Summary:
+    - Add ftp timeout, fix failover to svn.
+    - E3SM 03-16-2020 merger.
+    - Remove unneeded encodes.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+708a9338b Merge pull request #3479 from jedwards4b/ftp_timeout
+263de7e86 Merge pull request #3457 from ESMCI/jgfouca/branch-for-acme-split-2020-03-16
+611ca9c1e wget: hotfix, remove unneeded encodes
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/config_tests.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_files.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/Depends.gnu.cmake
+M	config/e3sm/machines/Depends.ibm.cmake
+M	config/e3sm/machines/Depends.intel.cmake
+M	config/e3sm/machines/Depends.summit.pgiacc.cmake
+M	config/e3sm/machines/Depends.summitdev.pgiacc.cmake
+D	config/e3sm/machines/Depends.theta.intel
+D	config/e3sm/machines/Depends.theta.intel.cmake
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+A	config/e3sm/testmods_dirs/bench/gmpas_noio/shell_commands
+A	config/e3sm/testmods_dirs/bench/gmpas_noio/user_nl_mpaso
+A	config/e3sm/testmods_dirs/bench/gmpas_noio/user_nl_mpassi
+A	config/e3sm/testmods_dirs/bench/wcycl/hires/shell_commands
+A	config/e3sm/testmods_dirs/bench/wcycl/hires/user_nl_cam
+A	config/e3sm/testmods_dirs/bench/wcycl/hires/user_nl_mpaso
+A	config/e3sm/testmods_dirs/bench/wcycl/hires/user_nl_mpassi
+A	config/e3sm/testmods_dirs/bench/wcycl/lores/shell_commands
+A	config/e3sm/testmods_dirs/bench/wcycl/lores/user_nl_cam
+A	config/e3sm/testmods_dirs/bench/wcycl/lores/user_nl_clm
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_compilers_v2.xsd
+M	config/xml_schemas/config_grids_v2.1.xsd
+M	config/xml_schemas/config_grids_v2.xsd
+M	scripts/Tools/bld_diff
+M	scripts/Tools/case.build
+A	scripts/Tools/get_case_env
+M	scripts/Tools/get_standard_makefile_args
+M	scripts/create_newcase
+M	scripts/lib/CIME/BuildTools/cmakemacroswriter.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/homme.py
+A	scripts/lib/CIME/SystemTests/hommebaseclass.py
+A	scripts/lib/CIME/SystemTests/hommebfb.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/tests/scripts_regression_tests.py
+A	src/CMake/CorrectWindowsPaths.cmake
+A	src/CMake/FindPackageMultipass.cmake
+A	src/CMake/ResolveCompilerPaths.cmake
+M	src/build_scripts/buildlib.cprnc
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.kokkos
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+M	src/build_scripts/buildlib.pio
+A	src/build_scripts/buildlib_cmake.internal_components
+A	src/components/data_comps_mct/datm/cime_config/buildlib_cmake
+A	src/components/data_comps_mct/desp/cime_config/buildlib_cmake
+A	src/components/data_comps_mct/dice/cime_config/buildlib_cmake
+A	src/components/data_comps_mct/dlnd/cime_config/buildlib_cmake
+M	src/components/data_comps_mct/dlnd/cime_config/config_component.xml
+M	src/components/data_comps_mct/dlnd/cime_config/namelist_definition_dlnd.xml
+A	src/components/data_comps_mct/docn/cime_config/buildlib_cmake
+M	src/components/data_comps_mct/docn/cime_config/config_component.xml
+A	src/components/data_comps_mct/drof/cime_config/buildlib_cmake
+A	src/components/data_comps_mct/dwav/cime_config/buildlib_cmake
+A	src/components/data_comps_nuopc/datm/cime_config/buildlib_cmake
+M	src/components/data_comps_nuopc/datm/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/datm/cime_config/namelist_definition_datm.xml
+A	src/components/data_comps_nuopc/dice/cime_config/buildlib_cmake
+A	src/components/data_comps_nuopc/dlnd/cime_config/buildlib_cmake
+A	src/components/data_comps_nuopc/docn/cime_config/buildlib_cmake
+A	src/components/data_comps_nuopc/drof/cime_config/buildlib_cmake
+A	src/components/data_comps_nuopc/dwav/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/satm/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/sesp/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/sglc/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/siac/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/sice/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/slnd/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/socn/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/srof/cime_config/buildlib_cmake
+A	src/components/stub_comps_mct/swav/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/satm/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/sesp/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/sglc/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/siac/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/sice/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/slnd/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/socn/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/srof/cime_config/buildlib_cmake
+A	src/components/stub_comps_nuopc/swav/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xatm/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xglc/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xice/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xlnd/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xocn/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xrof/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_mct/xwav/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xatm/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xglc/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xice/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xlnd/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xocn/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xrof/cime_config/buildlib_cmake
+A	src/components/xcpl_comps_nuopc/xwav/cime_config/buildlib_cmake
+A	src/drivers/mct/cime_config/buildlib_cmake
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/prep_rof_mod.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/share/timing/GPTLget_memusage.c
+M	src/share/timing/GPTLprint_memusage.c
+M	src/share/timing/gptl.c
+M	src/share/util/shr_mem_mod.F90
+M	src/share/util/shr_orb_mod.F90
+M	src/share/util/shr_sys_mod.F90
+M	tools/mapping/gen_domain_files/src/gen_domain.F90
+A	tools/mapping/gen_domain_files/test_gen_domain.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 4-3-2020 
 Tag: cime5.8.19
 Answer Changes: None
