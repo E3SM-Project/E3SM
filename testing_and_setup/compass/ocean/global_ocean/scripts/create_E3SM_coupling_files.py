@@ -372,7 +372,7 @@ def mapping_ne30(config):  # {{{
 
 def mapping(config, atm_scrip_tag):  # {{{
 
-    mesh_name = config.get('mesh', 'long_name')
+    short_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -386,7 +386,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
     # make links
     ocn_scrip_file = 'ocean.{}{}.scrip.{}.nc'.format(
-        mesh_name, nomaskStr, date_string)
+        short_name, nomaskStr, date_string)
     make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
     atm_scrip_file = '{}.nc'.format(atm_scrip_tag)
     make_link('{}/{}'.format(atm_scrip_path, atm_scrip_file), atm_scrip_file)
@@ -404,7 +404,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
         # Ocean to atmosphere
         mapping_file = 'map_{}{}_TO_{}_{}.{}.nc'.format(
-            mesh_name, nomaskStr, atm_scrip_tag, short, date_string)
+            short_name, nomaskStr, atm_scrip_tag, short, date_string)
         args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', ocn_scrip_file,
@@ -415,7 +415,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
         # Atmosphere to ocean
         mapping_file = 'map_{}_TO_{}{}_{}.{}.nc'.format(
-            atm_scrip_tag, mesh_name, nomaskStr, short, date_string)
+            atm_scrip_tag, short_name, nomaskStr, short, date_string)
         args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', atm_scrip_file,
@@ -427,7 +427,7 @@ def mapping(config, atm_scrip_tag):  # {{{
     if ice_shelf_cavities:
         print("\n Mapping files with masks for ice shelf cavities")
         # make links
-        ocn_scrip_file = 'ocean.{}.mask.scrip.{}.nc'.format(mesh_name,
+        ocn_scrip_file = 'ocean.{}.mask.scrip.{}.nc'.format(short_name,
                                                             date_string)
         make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
 
@@ -436,7 +436,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
             # Ocean to atmosphere
             mapping_file = 'map_{}.mask_TO_{}_{}.{}.nc'.format(
-                mesh_name, atm_scrip_tag, short, date_string)
+                short_name, atm_scrip_tag, short, date_string)
             args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', ocn_scrip_file,
@@ -447,7 +447,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
             # Atmosphere to ocean
             mapping_file = 'map_{}_TO_{}.mask_{}.{}.nc'.format(
-                atm_scrip_tag, mesh_name, short, date_string)
+                atm_scrip_tag, short_name, short, date_string)
             args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', atm_scrip_file,
@@ -476,7 +476,7 @@ def domain_ne30(config):  # {{{
 
 def make_domain_files(config, mapping_suffix):  # {{{
 
-    mesh_name = config.get('mesh', 'long_name')
+    short_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -492,12 +492,12 @@ def make_domain_files(config, mapping_suffix):  # {{{
     # make links
     make_link(domain_exe, 'domain_exe')
     mapping_file = 'map_{}{}_TO_{}_aave.{}.nc'.format(
-        mesh_name, nomaskStr, atm_scrip_tag, date_string)
+        short_name, nomaskStr, atm_scrip_tag, date_string)
     make_link('../mapping_{}/{}'.format(mapping_suffix, mapping_file),
               mapping_file)
 
     # execute commands
-    args = ['./domain_exe', '-m', mapping_file, '-o', mesh_name, '-l', 'T62']
+    args = ['./domain_exe', '-m', mapping_file, '-o', short_name, '-l', 'T62']
     run_command(args)
 
     # make links in output directories
@@ -510,7 +510,7 @@ def make_domain_files(config, mapping_suffix):  # {{{
 
 def mapping_runoff(config):  # {{{
 
-    mesh_name = config.get('mesh', 'long_name')
+    short_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -531,7 +531,7 @@ def mapping_runoff(config):  # {{{
     make_link(runoff_map_exe, 'runoff_map_exe')
     make_link(runoff_map_lnd_file, 'runoff.daitren.annual.nc')
     ocn_scrip_file = 'ocean.{}{}.scrip.{}.nc'.format(
-        mesh_name, nomaskStr, date_string)
+        short_name, nomaskStr, date_string)
     make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
 
     # write namelist file
@@ -543,13 +543,13 @@ def mapping_runoff(config):  # {{{
     f.write("   file_roff    = 'runoff.daitren.annual.nc'\n")
     f.write("   file_ocn     = '{}'\n".format(ocn_scrip_file))
     f.write("   file_nn      = 'map_rx1_to_{}_coast_nearestdtos_{}.nc'\n"
-            "".format(mesh_name, date_string))
+            "".format(short_name, date_string))
     f.write("   file_smooth  = 'map_{}_coast_to_{}_sm_e1000r300_{}.nc'\n"
-            "".format(mesh_name, mesh_name, date_string))
+            "".format(short_name, short_name, date_string))
     f.write("   file_new     = 'map_rx1_to__nnsm_e1000r300_{}.nc'\n".format(
-        mesh_name, date_string))
+        short_name, date_string))
     f.write("   title        = 'runoff map: rx1 -> {}, nearest neighbor and "
-            "smoothed'\n".format(mesh_name))
+            "smoothed'\n".format(short_name))
     f.write("   eFold        = 1000000.0\n")
     f.write("   rMax         =  300000.0\n")
     f.write("   restrict_smooth_src_to_nn_dest = .true.\n")
