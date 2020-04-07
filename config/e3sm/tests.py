@@ -59,6 +59,7 @@ _TESTS = {
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_ne4.FC5AV1C-L.cam-chem_pp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
