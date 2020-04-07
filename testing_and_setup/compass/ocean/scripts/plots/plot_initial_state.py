@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script creates plots of the initial condition.
+This script creates historgram plots of the initial condition.
 """
 # import modules
 from netCDF4 import Dataset
@@ -56,16 +56,14 @@ def main():
     plt.hist(var, bins=nVertLevels - 4)
     plt.ylabel('frequency')
     plt.xlabel(varName)
-    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
-        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
 
     plt.subplot(3, 3, 3)
     varName = 'bottomDepth'
     var = ncfile.variables[varName]
     plt.hist(var, bins=nVertLevels - 4)
     plt.xlabel(varName)
-    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
-        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
 
     cellsOnEdge = ncfile.variables['cellsOnEdge']
     cellMask = np.zeros((nCells, nVertLevels), bool)
@@ -85,24 +83,21 @@ def main():
     plt.hist(var, bins=100, log=True)
     plt.ylabel('frequency')
     plt.xlabel(varName)
-    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
-        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
 
     plt.subplot(3, 3, 5)
     varName = 'salinity'
     var = ncfile.variables[varName][0, :, :][cellMask]
     plt.hist(var, bins=100, log=True)
     plt.xlabel(varName)
-    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
-        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
 
     plt.subplot(3, 3, 6)
     varName = 'layerThickness'
     var = ncfile.variables[varName][0, :, :][cellMask]
     plt.hist(var, bins=100, log=True)
     plt.xlabel(varName)
-    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
-        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
 
     rx1Edge = ncfile.variables['rx1Edge']
     plt.subplot(3, 3, 7)
@@ -111,9 +106,8 @@ def main():
     plt.hist(var, bins=100, log=True)
     plt.ylabel('frequency')
     plt.xlabel('Haney Number, max={:4.2f}'.format(
-        np.max(np.ndarray.flatten(rx1Edge[0, :, :]))))
-    txt = txt + ' {:9.2e}'.format(np.min(var)) + \
-        ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
+        np.max(rx1Edge[:].ravel())))
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
 
     font = FontProperties()
     font.set_family('monospace')
