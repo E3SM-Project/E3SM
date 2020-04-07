@@ -93,7 +93,7 @@ def main():  # {{{
         config.get('main', 'ice_shelf_cavities')))
 
     parse_mesh_metadata(config)
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     shutil.copyfile('mesh_before_metadata.nc', 'mesh.nc')
     append_mesh_metadata(config, 'mesh.nc')
@@ -142,7 +142,7 @@ def main():  # {{{
 
 def initial_condition_ocean(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     # create links
     init_filename = config.get('main', 'initial_condition')
@@ -171,7 +171,7 @@ def initial_condition_ocean(config):  # {{{
 
 def graph_partition_ocean(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
 
     # create links
@@ -208,7 +208,7 @@ def graph_partition_ocean(config):  # {{{
 
 def initial_condition_seaice(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     init_filename = config.get('main', 'initial_condition')
     base_path = os.path.dirname(os.getcwd())
@@ -244,7 +244,7 @@ def initial_condition_seaice(config):  # {{{
 
 def scrip(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -280,7 +280,7 @@ def scrip(config):  # {{{
 
 def transects_and_regions(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
     make_moc_masks(mesh_name)
@@ -316,7 +316,7 @@ def transects_and_regions(config):  # {{{
 
 def mapping_analysis(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     make_analysis_lat_lon_map(config, mesh_name)
     make_analysis_polar_map(config, mesh_name, projection='antarctic')
@@ -372,7 +372,7 @@ def mapping_ne30(config):  # {{{
 
 def mapping(config, atm_scrip_tag):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -476,7 +476,7 @@ def domain_ne30(config):  # {{{
 
 def make_domain_files(config, mapping_suffix):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -510,7 +510,7 @@ def make_domain_files(config, mapping_suffix):  # {{{
 
 def mapping_runoff(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -588,7 +588,7 @@ def mapping_runoff(config):  # {{{
 
 def salinity_restoring(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -673,7 +673,7 @@ def salinity_restoring(config):  # {{{
 
 def prescribed_ismf(config):  # {{{
 
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -1221,7 +1221,7 @@ def parse_mesh_metadata(config):  # {{{
 
     # determine mesh name.  We do this last because other config options may
     # be part of the mesh name
-    mesh_name = config.get('mesh', 'short_name')
+    mesh_name = config.get('mesh', 'long_name')
     currentDir = os.getcwd()
     if mesh_name == 'autodetect':
         path = currentDir.split('/')
@@ -1229,7 +1229,7 @@ def parse_mesh_metadata(config):  # {{{
             index = path.index('global_ocean') + 1
             mesh_name = 'o{}'.format(path[index])
             print("- mesh name autodetected from path: {}".format(mesh_name))
-            config.set('mesh', 'short_name', mesh_name)
+            config.set('mesh', 'long_name', mesh_name)
         else:
             raise ValueError("mesh name not found in path. Please specify "
                              "the mesh_name in config_E3SM_coupling_files.ini.")
@@ -1250,8 +1250,7 @@ def append_mesh_metadata(config, filename):  # {{{
         ice_shelf_cavities = 'OFF'
 
     attrdict = {'MPAS_Mesh_Short_Name': config.get('mesh', 'short_name'),
-                'MPAS_Mesh_Long_Name':
-                    config.get('mesh', 'long_name').replace('\n', ' '),
+                'MPAS_Mesh_Long_Name': config.get('mesh', 'long_name'),
                 'MPAS_Mesh_Description':
                     config.get('mesh', 'description').replace('\n', ' '),
                 'MPAS_Mesh_E3SM_Version': config.getint('mesh', 'e3sm_version'),
