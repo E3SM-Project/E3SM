@@ -127,9 +127,9 @@ sub chem_preprocess
 	    }
 	} else {
           my $log_file = "$chem_proc_bld/MAKE.out";
-	  open OUT,">> $log_file"  || die "Failed to open $log_file\n";
+          open OUT,">> $log_file"  || die "Failed to open $log_file\n";
           print OUT  "Use pre-built chem-preprocessor: $proc_exe_path\n";
-	  close OUT;
+          close OUT;
 	}
 
 	run_chem_preproc($chem_proc_bld,$proc_exe_path,$chem_mech_infile,$chem_proc_src,$cam_bld);
