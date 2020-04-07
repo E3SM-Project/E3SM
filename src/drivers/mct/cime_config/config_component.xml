@@ -1387,6 +1387,40 @@
     <desc>atm2lnd state mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2ROF_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2rof flux mapping file</desc>
+  </entry>
+
+  <entry id="ATM2ROF_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2rof flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ATM2ROF_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2rof state mapping file</desc>
+  </entry>
+
+  <entry id="ATM2ROF_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2rof state mapping file decomp type</desc>
+  </entry>
+
   <entry id="ATM2WAV_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>

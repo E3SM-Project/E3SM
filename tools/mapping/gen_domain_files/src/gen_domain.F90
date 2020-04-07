@@ -26,7 +26,6 @@ program fmain
   integer :: n                      ! index
   integer :: set_fv_pole_yc         ! fix pole ycs on this grid [0,1,2]
   integer :: nargs                  ! number of arguments
-  integer, external  :: iargc       ! number of arguments function
   character(LEN=512) :: arg         ! input argument
   character(LEN=512) :: cmdline     ! input command line
   character(LEN=512) :: fmap        ! file name ( input nc file)

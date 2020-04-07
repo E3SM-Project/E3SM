@@ -69,6 +69,7 @@
     <values>
       <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
+      <value dlnd_mode="CLMNLDAS">clm.nldas</value>
       <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
     </values>
   </entry>
@@ -79,7 +80,7 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value>null</value>
+      <value stream="clm.nldas">$DLND_CPLHIST_DIR</value>
     </values>
   </entry>
 
@@ -89,7 +90,7 @@
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
     <values>
-      <value>null</value>
+      <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
     </values>
   </entry>
 
@@ -106,6 +107,13 @@
         doml_aream   area
         doml_mask    mask
       </value>
+      <value stream="clm.nldas">
+        time     time
+        lon      lon
+        lat      lat
+        area     area
+        landfrac mask
+      </value>
     </values>
   </entry>
 
@@ -115,6 +123,7 @@
     <group>streams_file</group>
     <desc>Stream data file directory.</desc>
     <values>
+      <value>$DLND_CPLHIST_DIR</value>
       <value stream="sno.cplhist">$DLND_CPLHIST_DIR</value>
     </values>
   </entry>
@@ -125,7 +134,8 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value  stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
+      <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
     </values>
   </entry>
 
@@ -139,6 +149,10 @@
         l2x1yr_glc_Sl_tsrf%glc     tsrf%glc
         l2x1yr_glc_Sl_topo%glc     topo%glc
         l2x1yr_glc_Flgl_qice%glc   qice%glc
+      </value>
+      <value     stream="clm.nldas">
+        QDRAI     rofsub
+        QOVER     rofsur
       </value>
     </values>
   </entry>
@@ -159,6 +173,7 @@
     <group>streams_file</group>
     <desc>Simulation year to align stream to.</desc>
     <values>
+      <value>$DLND_CPLHIST_YR_ALIGN</value>
       <value stream="sno.cplhist">$DLND_CPLHIST_YR_ALIGN</value>
     </values>
   </entry>
@@ -169,6 +184,7 @@
     <group>streams_file</group>
     <desc>First year of stream.</desc>
     <values>
+      <value>$DLND_CPLHIST_YR_START</value>
       <value stream="sno.cplhist">$DLND_CPLHIST_YR_START</value>
     </values>
   </entry>
@@ -179,7 +195,8 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value   stream="sno.cplhist">$DLND_CPLHIST_YR_END</value>
+      <value>$DLND_CPLHIST_YR_END</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_YR_END</value>
     </values>
   </entry>
 
@@ -211,6 +228,7 @@
       <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
       <value dlnd_mode="CPLHIST">COPYALL</value>
+      <value dlnd_mode="CLMNLDAS">COPYALL</value>
     </values>
   </entry>
 
@@ -243,6 +261,7 @@
     </desc>
     <values>
       <value>nn</value>
+      <value dlnd_mode="CLMNLDAS">copy</value>
     </values>
   </entry>
 

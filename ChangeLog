@@ -1037,6 +1037,204 @@ M	src/share/util/shr_scam_mod.F90
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-24-2019
+Tag: cime5.8.13
+Answer Changes: None
+Tests: scripts_regeression_tests
+Dependencies:
+
+Brief Summary:
+    - Add a raw xml option to the query_config interface.
+    - Add --only-job option to case.submit.
+
+User interface changes: 
+    - Add --xml to query_config.
+    - Add option --only-job to case.submit.
+    - Fix an issue with Lockedfile error when case.submit is used with the --no-batch flag.
+    - Change globally uniform SST mode from AQP11 to AQPCONST.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+f22ebdafa Merge pull request #3268 from jedwards4b/add_xml_to_query_config
+ab4d53999 Merge pull request #3267 from jedwards4b/no_workflow
+4cd12246f Merge pull request #3265 from jedwards4b/fix_batch_lock_issue
+a45130996 Merge pull request #3257 from ESMCI/whannah/add-AQPCONST-mode
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/case.submit
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_submit.py
+M       scripts/lib/CIME/utils.py
+M       scripts/query_config
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M       src/components/data_comps/docn/mct/docn_comp_mod.F90
+M       src/components/data_comps/docn/mct/docn_shr_mod.F90
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/share/util/shr_scam_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-15-2019
+Tag: cime5.8.12
+Answer Changes: None
+Tests: ERS.T5_T5_mg37.QPC4, scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Add missing domain files for T5_T5_mg37 grid.
+    - Merge maint-5.6 to master 2019-11-10.
+    - Updates for cam testing updates.
+    - Fix nuopc esmf paths.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+7f1d48fe9 Merge pull request #3263 from ESMCI/fischer/T5_grid_fix
+3468404c1 Merge pull request #3260 from ESMCI/fischer/maint-5.6_merge
+7070d8a5c Merge pull request #3256 from ESMCI/fischer/cam_testing
+4a9b008f2 fix nuopc esmf paths
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_files.xml
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_machines.xml
+M       config/cesm/machines/config_workflow.xml
+M       config/e3sm/machines/config_workflow.xml
+M       config/xml_schemas/config_workflow.xsd
+M       scripts/create_newcase
+M       scripts/lib/CIME/XML/workflow.py
+M       scripts/lib/CIME/case/case.py
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/seq_flux_mct.F90
+M       src/share/util/shr_flux_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-01-2019
+Tag: cime5.8.11
+Answer Changes: None
+Tests: scripts_regression_tests, Hand tested SMS_D_Vnuopc.f09_g17.X.cheyenne_intel 
+Dependencies:
+
+Brief Summary:
+    - Correct the way esmf is built to avoid library mismatch.
+    - Update gnu compiler on cheyenne, bit for bit.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+693383167 Merge pull request #3252 from jedwards4b/nuopc_esmf_build_correction
+fcc629127 Merge pull request #3253 from ESMCI/fischer/gnu_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/Makefile
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-26-2019
+Tag: cime5.8.10
+Answer Changes: None
+Tests: scripts_regression_tests, tested with nuopc
+Dependencies:
+
+Brief Summary:
+    - Don't call mpi_bcast on null communicator.
+    - Fix nag compiler flags.
+    - Fix issue with workflow prior to run on master.
+    - Merge maint-5.6.
+    - Update esmf paths on cheyenne for nuopc.
+    - Fix issue in scripts_regression_tests.py.
+    - Fix issue 3232
+    - Update DROF(JRA) to MOM6 mapping file.
+    - acme split 2019-09-05 merge.
+    - Clean up some issues in scripts_regression_tests.py.
+    - Add /cluster/torque/bin to path on izumi.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+809bcb3b8 Merge pull request #3248 from jedwards4b/mct_null_comm_fix
+2a2b9ecfe Merge pull request #3244 from ESMCI/fischer/cam_nag_fix
+5f4f1c6da Merge pull request #3243 from jedwards4b/workflow_before_run_master
+23409d7e9 Merge pull request #3241 from ESMCI/fischer/maint-5.6_09182019
+47b630012 Merge pull request #3239 from jedwards4b/cheyenne_esmf_update
+00d664666 fix issue in scripts_regression_tests.py
+474dc5fc0 fix issue 3232
+209b1e19b Merge pull request #3233 from alperaltuntas/update_TL319_t061
+35bc87f4f Merge pull request #3230 from ESMCI/jgfouca/branch-for-acme-split-2019-09-05
+d2f7157b8 Merge pull request #3227 from jedwards4b/srt_update
+8bffca6d3 Merge pull request #3221 from billsacks/izumi_add_to_path
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_grids_common.xml
+M	config/cesm/machines/Depends.nag
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/allactive/config_compsets.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/config_pio.xml
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_machines.xsd
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+M	scripts/Tools/preview_run
+M	scripts/climate_reproducibility/README.md
+M	scripts/lib/CIME/SystemTests/mvk.py
+M	scripts/lib/CIME/SystemTests/pgn.py
+M	scripts/lib/CIME/SystemTests/tsc.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/machines.py
+A	scripts/lib/CIME/XML/stream.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/datm/cime_config/buildnml
+M	src/components/data_comps/dice/cime_config/buildnml
+M	src/components/data_comps/dlnd/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M	src/components/data_comps/docn/mct/docn_comp_mod.F90
+M	src/components/data_comps/docn/mct/docn_shr_mod.F90
+M	src/components/data_comps/drof/cime_config/buildnml
+M	src/components/data_comps/dwav/cime_config/buildnml
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/share/streams/shr_tInterp_mod.F90
+M	src/share/util/shr_orb_mod.F90
+M	src/share/util/shr_scam_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 8-29-2019
 Tag: cime5.8.9
 Answer Changes: None
