@@ -3,13 +3,14 @@
 This script creates plots of the initial condition.
 """
 # import modules
-import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
 import argparse
 import datetime
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 
 
 def main():
@@ -51,6 +52,7 @@ def main():
     plt.subplot(3, 3, 2)
     varName = 'maxLevelCell'
     var = ncfile.variables[varName]
+    maxLevelCell = var[:]
     plt.hist(var, bins=nVertLevels - 4)
     plt.ylabel('frequency')
     plt.xlabel(varName)
@@ -65,10 +67,22 @@ def main():
     txt = txt + ' {:9.2e}'.format(np.min(var)) + \
         ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
 
+    cellsOnEdge = ncfile.variables['cellsOnEdge']
+    cellMask = np.zeros((nCells, nVertLevels), bool)
+    edgeMask = np.zeros((nEdges, nVertLevels), bool)
+    for k in range(nVertLevels):
+        cellMask[:, k] = k < maxLevelCell
+        cell0 = cellsOnEdge[:, 0]-1
+        cell1 = cellsOnEdge[:, 1]-1
+        edgeMask[:, k] = np.logical_and(np.logical_and(cellMask[cell0, k],
+                                                       cellMask[cell1, k]),
+                                        np.logical_and(cell0 >= 0,
+                                                       cell1 >= 0))
+
     plt.subplot(3, 3, 4)
     varName = 'temperature'
-    var = ncfile.variables[varName]
-    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
+    var = ncfile.variables[varName][0, :, :][cellMask]
+    plt.hist(var, bins=100, log=True)
     plt.ylabel('frequency')
     plt.xlabel(varName)
     txt = txt + ' {:9.2e}'.format(np.min(var)) + \
@@ -76,16 +90,16 @@ def main():
 
     plt.subplot(3, 3, 5)
     varName = 'salinity'
-    var = ncfile.variables[varName]
-    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
+    var = ncfile.variables[varName][0, :, :][cellMask]
+    plt.hist(var, bins=100, log=True)
     plt.xlabel(varName)
     txt = txt + ' {:9.2e}'.format(np.min(var)) + \
         ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
 
     plt.subplot(3, 3, 6)
     varName = 'layerThickness'
-    var = ncfile.variables[varName]
-    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
+    var = ncfile.variables[varName][0, :, :][cellMask]
+    plt.hist(var, bins=100, log=True)
     plt.xlabel(varName)
     txt = txt + ' {:9.2e}'.format(np.min(var)) + \
         ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
@@ -93,17 +107,20 @@ def main():
     rx1Edge = ncfile.variables['rx1Edge']
     plt.subplot(3, 3, 7)
     varName = 'rx1Edge'
-    var = ncfile.variables[varName]
-    plt.hist(np.ndarray.flatten(var[:]), bins=100, log=True)
+    var = ncfile.variables[varName][0, :, :][edgeMask]
+    plt.hist(var, bins=100, log=True)
     plt.ylabel('frequency')
     plt.xlabel('Haney Number, max={:4.2f}'.format(
         np.max(np.ndarray.flatten(rx1Edge[0, :, :]))))
     txt = txt + ' {:9.2e}'.format(np.min(var)) + \
         ' {:9.2e}'.format(np.max(var)) + ' ' + varName + '\n'
 
+    font = FontProperties()
+    font.set_family('monospace')
+    font.set_size(12)
     print(txt)
     plt.subplot(3, 3, 1)
-    plt.text(0, 1, txt, fontsize=12, verticalalignment='top')
+    plt.text(0, 1, txt, verticalalignment='top', fontproperties=font)
     plt.axis('off')
 
     plt.savefig(args.output_file_name)
