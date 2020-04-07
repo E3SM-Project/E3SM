@@ -99,11 +99,13 @@ module gllfvremap_mod
           ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
           fv_metdet(:,:), & ! (nphys*nphys,nelemd)
           ! Vector on ref elem -> vector on sphere
-          D_f(:,:,:,:,:), &   ! (nphys,nphys,2,2,nelemd)
+          D_f(:,:,:,:,:), & ! (nphys,nphys,2,2,nelemd)
           ! Inverse of D_f
           Dinv_f(:,:,:,:,:), &
           qmin(:,:,:), qmax(:,:,:), &
-          phis(:,:)
+          phis(:,:), &
+          ! For 'check', when it's on
+          check_areas(:,:)
      type (spherical_polar_t), allocatable :: &
           spherep_f(:,:,:) ! (nphys,nphys,nelemd)
      type (Pg1SolverData_t) :: pg1sd
@@ -245,6 +247,7 @@ contains
     if (.not. allocated(gfr%fv_metdet)) return
     deallocate(gfr%fv_metdet, gfr%D_f, gfr%Dinv_f, gfr%qmin, gfr%qmax, gfr%phis, &
          gfr%spherep_f)
+    if (gfr%check) deallocate(gfr%check_areas)
   end subroutine gfr_finish
 
   subroutine gfr_dyn_to_fv_phys_hybrid(hybrid, nt, hvcoord, elem, nets, nete, &
@@ -1074,19 +1077,77 @@ contains
     ! Compute the reference-element-to-sphere Jacobian (metdet) for FV
     ! subcells consistent with those for GLL nodes.
 
+    use kinds, only: iulog
+    use control_mod, only: cubed_sphere_map
+    use coordinate_systems_mod, only: cartesian3D_t, sphere_tri_area
+    use cube_mod, only: ref2sphere
+
     type (element_t), intent(in) :: elem(:)
     type (GllFvRemap_t), intent(inout) :: gfr
 
-    real(kind=real_kind) :: ones(np*np), ones2(np,np), wrk(np,np)
-    integer :: nf, nf2, ie
+    type (spherical_polar_t) :: p_sphere
+    type (cartesian3D_t) :: fv_corners_xyz(2,2)
+    real(kind=real_kind) :: ones(np*np), ones2(np,np), wrk(np,np), ae(2), be(2), &
+         spherical_area, tmp
+    integer :: nf, nf2, ie, i, j, k, ai, bi, idx
 
     nf = gfr%nphys
     nf2 = nf*nf
-    ones = one
-    ones2 = one
+    if (cubed_sphere_map == 2) then
+       do ie = 1,nelemd
+          do j = 1,nf
+             do i = 1,nf
+                k = i+(j-1)*nf
+                call gfr_f_ref_edges(nf, i, ae)
+                call gfr_f_ref_edges(nf, j, be)
+                do bi = 1,2
+                   do ai = 1,2
+                      if ( (i == 1  .and. ai == 1 .and. j == 1  .and. bi == 1) .or. &
+                           (i == 1  .and. ai == 1 .and. j == nf .and. bi == 2) .or. &
+                           (i == nf .and. ai == 2 .and. j == 1  .and. bi == 1) .or. &
+                           (i == nf .and. ai == 2 .and. j == nf .and. bi == 2)) then
+                         ! Use the element corner if we are at it.
+                         idx = 2*(bi-1)
+                         if (bi == 1) then
+                            idx = idx + ai
+                         else
+                            idx = idx + 3 - ai
+                         end if
+                         fv_corners_xyz(ai,bi) = elem(ie)%corners3D(idx)
+                      else
+                         ! p_sphere is unused. fv_corners_xyz(ai,bi) contains
+                         ! the cartesian point before it's converted to lat-lon.
+                         p_sphere = ref2sphere(ae(ai), be(bi), elem(ie)%corners3D, &
+                              cubed_sphere_map, elem(ie)%corners, elem(ie)%facenum, &
+                              fv_corners_xyz(ai,bi))
+                      end if
+                   end do
+                end do
+                call sphere_tri_area(fv_corners_xyz(1,1), fv_corners_xyz(2,1), &
+                     fv_corners_xyz(2,2), spherical_area)
+                call sphere_tri_area(fv_corners_xyz(1,1), fv_corners_xyz(2,2), &
+                     fv_corners_xyz(1,2), tmp)
+                spherical_area = spherical_area + tmp
+                gfr%fv_metdet(k,ie) = spherical_area/gfr%w_ff(k)
+             end do
+          end do
+       end do
+    else
+       ones = one
+       ones2 = one
+       do ie = 1,nelemd
+          call gfr_g2f_remapd(gfr, elem(ie)%metdet, ones, ones2, wrk)
+          gfr%fv_metdet(:nf2,ie) = reshape(wrk(:nf,:nf), (/nf2/))
+       end do
+    end if
+
+    ! Make the spherical area of the element according to FV and GLL agree to
+    ! machine precision.
+    if (gfr%check) allocate(gfr%check_areas(1,nelemd))
     do ie = 1,nelemd
-       call gfr_g2f_remapd(gfr, elem(ie)%metdet, ones, ones2, wrk)
-       gfr%fv_metdet(:,ie) = reshape(wrk(:nf,:nf), (/nf2/))
+       if (gfr%check) gfr%check_areas(1,ie) = sum(gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie))
+       gfr%fv_metdet(:nf2,ie) = gfr%fv_metdet(:nf2,ie)* &
+            (sum(elem(ie)%spheremp)/sum(gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie)))
     end do
   end subroutine gfr_init_fv_metdet
 
@@ -1115,57 +1176,18 @@ contains
   subroutine gfr_init_geometry(elem, gfr)
     ! Compute various geometric quantities, described below.
 
-    use coordinate_systems_mod, only: cartesian3D_t, change_coordinates, sphere_tri_area
-    use cube_mod, only: Dmap, ref2sphere
     use control_mod, only: cubed_sphere_map
+    use cube_mod, only: Dmap, ref2sphere
 
     type (element_t), intent(in) :: elem(:)
     type (GllFvRemap_t), intent(inout) :: gfr
 
-    type (spherical_polar_t) :: p_sphere
-    type (cartesian3D_t) :: fv_corners_xyz(2,2)
-    real(kind=real_kind) :: wrk(2,2), det, a, b, ae(2), be(2), tmp, spherical_area
-    integer :: ie, nf, nf2, i, j, k, ai, bi
+    real(kind=real_kind) :: wrk(2,2), det, a, b
+    integer :: ie, nf, nf2, i, j, k
 
     nf = gfr%nphys
     nf2 = nf*nf
     
-    if (cubed_sphere_map == 2) then
-       ! Reset fv_metdet to match flux coupler's definition of FV
-       ! subcell area, which is spherical area of the FV subcell
-       ! spherical polygon.
-       do ie = 1,nelemd
-          do j = 1,nf
-             do i = 1,nf
-                k = i+(j-1)*nf
-
-                call gfr_f_ref_edges(nf, i, ae)
-                call gfr_f_ref_edges(nf, j, be)
-                do ai = 1,2
-                   do bi = 1,2
-                      p_sphere = ref2sphere(ae(ai), be(bi), elem(ie)%corners3D, cubed_sphere_map, &
-                           elem(ie)%corners, elem(ie)%facenum)
-                      fv_corners_xyz(ai,bi) = change_coordinates(p_sphere)
-                   end do
-                end do
-                call sphere_tri_area(fv_corners_xyz(1,1), fv_corners_xyz(2,1), fv_corners_xyz(2,2), &
-                     spherical_area)
-                call sphere_tri_area(fv_corners_xyz(1,1), fv_corners_xyz(2,2), fv_corners_xyz(1,2), &
-                     tmp)
-                spherical_area = spherical_area + tmp
-                gfr%fv_metdet(k,ie) = spherical_area/gfr%w_ff(k)
-             end do
-          end do
-       end do
-    end if
-
-    ! Make the spherical area of the element according to FV and GLL agree to
-    ! machine precision.
-    do ie = 1,nelemd
-       gfr%fv_metdet(:nf2,ie) = gfr%fv_metdet(:nf2,ie)* &
-            (sum(elem(ie)%spheremp)/sum(gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie)))
-    end do
-
     ! Jacobian matrices to map a vector between reference element and
     ! sphere.
     do ie = 1,nelemd
@@ -2222,6 +2244,7 @@ contains
     use global_norms_mod, only: wrap_repro_sum
     use reduction_mod, only: ParallelMin, ParallelMax
     use prim_advection_base, only: edgeAdvQminmax
+    use physical_constants, only: dd_pi
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -2230,7 +2253,7 @@ contains
     logical, intent(in) :: verbose
 
     real(kind=real_kind) :: a, b, rd, x, y, f0(np,np), f1(np,np), g(np,np), &
-         wrk(np,np), qmin, qmax, qmin1, qmax1, wr1(np,np,1)
+         wrk(np,np), qmin, qmax, qmin1, qmax1, wr1(np,np,1), sphere_area
     integer :: nf, nf2, ie, i, j, iremap, info, ilimit, it
     real(kind=real_kind), allocatable :: Qdp_fv(:,:,:), ps_v_fv(:,:,:), &
          qmins(:,:,:), qmaxs(:,:,:)
@@ -2258,6 +2281,26 @@ contains
           write(iulog,*) 'gfr> M_sgf', gfr%npi, nf, gfr%M_sgf(:gfr%npi, :gfr%npi, :nf, :nf)
           write(iulog,*) 'gfr> interp', gfr%npi, np, gfr%interp(:gfr%npi, :gfr%npi, :np, :np)
           write(iulog,*) 'gfr> f2g_remapd', np, nf, gfr%f2g_remapd(:nf*nf,:,:)
+       end if
+    end if
+
+    ! Check global area
+    if (gfr%check) then
+       do ie = nets,nete
+          global_shared_buf(ie,1) = gfr%check_areas(1,ie)
+          global_shared_buf(ie,2) = sum(gfr%fv_metdet(:nf2,ie))*(4.0_real_kind/nf2)
+          global_shared_buf(ie,3) = sum(elem(ie)%spheremp)
+       end do
+       call wrap_repro_sum(nvars=3, comm=par%comm)
+       sphere_area = 4*dd_pi
+       if (hybrid%masterthread) then
+          write(iulog,*) 'gfr> area fv raw', global_shared_sum(1), &
+               abs(global_shared_sum(1) - sphere_area)/sphere_area
+          write(iulog,*) 'gfr> area fv adj', &
+               abs(global_shared_sum(2) - sphere_area)/sphere_area, &
+               abs(global_shared_sum(2) - global_shared_sum(3))/global_shared_sum(3)
+          write(iulog,*) 'gfr> area gll   ', &
+               abs(global_shared_sum(3) - sphere_area)/sphere_area
        end if
     end if
 
