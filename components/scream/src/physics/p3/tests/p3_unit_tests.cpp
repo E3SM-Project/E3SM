@@ -172,14 +172,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     const auto ratio = cwdc[0].qc/(cwdc[0].qcaut * cwdc[0].dt);
-    REQUIRE(abs(cwdc_host(0).qcaut - cwdc[0].qcaut*ratio) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qcaut - cwdc[0].qcaut*ratio) <= C::Tol);
     REQUIRE(cwdc_host(0).qcacc == 0.0);
     REQUIRE(cwdc_host(0).qccol == 0.0);
     REQUIRE(cwdc_host(0).qcheti == 0.0);
     REQUIRE(cwdc_host(0).qcshd == 0.0);
     REQUIRE(cwdc_host(0).qiberg == 0.0);
-    REQUIRE(abs(cwdc_host(0).qisub -(1.0 - ratio)) <= C::Tol);
-    REQUIRE(abs(cwdc_host(0).qidep - (1.0 - ratio)) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qisub -(1.0 - ratio)) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qidep - (1.0 - ratio)) <= C::Tol);
     REQUIRE(cwdc_host[0].qcaut * cwdc[0].dt <= cwdc_host[0].qc);
   }
 
@@ -230,7 +230,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(rwdc_host(0).qcshd == 0.0);
 
     //Check the value of qrevp
-    REQUIRE(abs(rwdc_host(0).qrevp- rwdc[0].qrevp*ratio)<= C::Tol);
+    REQUIRE(std::abs(rwdc_host(0).qrevp- rwdc[0].qrevp*ratio)<= C::Tol);
 
     //Now test that conservation has actually been enforced
     REQUIRE( rwdc_host(0).qrevp * rwdc_host(0).dt  <= rwdc_host(0).qr);
