@@ -27,6 +27,7 @@ module physics_utils
 #else
   integer,parameter,public :: btype = kind(.true.) ! native logical
   public :: rtype
+  public :: itype
   integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
 
 #endif
