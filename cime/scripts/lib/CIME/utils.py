@@ -843,7 +843,7 @@ def safe_copy(src_path, tgt_path, preserve_meta=True):
         if not os.access(tgt_path, os.W_OK):
             if owner_uid == os.getuid():
                 # I am the owner, make writeable
-                os.chmod(st.st_mode | statlib.S_IWRITE)
+                os.chmod(tgt_path, st.st_mode | statlib.S_IWRITE)
             else:
                 # I won't be able to copy this file
                 raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))

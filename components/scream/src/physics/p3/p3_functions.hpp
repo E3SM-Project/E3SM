@@ -4,7 +4,7 @@
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
 #include "share/scream_workspace.hpp"
-#include "p3_constants.hpp"
+#include "physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -73,7 +73,7 @@ struct Functions
 
   using KT = KokkosTypes<Device>;
 
-  using C = Constants<Scalar>;
+  using C = scream::physics::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -390,7 +390,7 @@ struct Functions
    Spack& qrevp, Spack& qrcol, Spack& qrheti);
 
   KOKKOS_FUNCTION
-  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt, 
+  static void ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt,
    Spack& qisub, Spack& qimlt);
 
   // TODO: comment
@@ -505,7 +505,7 @@ struct Functions
                                   const Spack& qitot_incld, const Spack& nitot_incld,
                                   const Spack& qr_incld,
                                   Spack& qrcol, Spack& nrcol);
-  
+
   // TODO (comments)
   KOKKOS_FUNCTION
   static void ice_self_collection(const Spack& rho, const Spack& rhofaci,
@@ -523,11 +523,11 @@ struct Functions
   //get number and mass tendencies due to melting ice
   KOKKOS_FUNCTION
   static void ice_melting(const Spack& rho, const Spack& t, const Spack& pres, const Spack& rhofaci,
-			  const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, 
-			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap, 
+			  const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf,
+			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
 			  const Spack& qv, const Spack& qitot_incld, const Spack& nitot_incld,
 			  Spack& qimlt, Spack& nimlt);
-  
+
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
@@ -580,6 +580,18 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void get_latent_heat(const Int& ni, const Int& nk, const MemberType& team, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);
+
+  KOKKOS_FUNCTION
+  static void check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
+                           const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
+                           const uview_1d<Scalar>& col_loc);
+
+  KOKKOS_FUNCTION
+  static void calculate_incloud_mixingratios(const Spack& qc, const Spack& qr, const Spack& qitot, const Spack& qirim, const Spack& nc,
+                                             const Spack& nr, const Spack& nitot, const Spack& birim, const Spack& inv_lcldm,
+                                             const Spack& inv_icldm, const Spack& inv_rcldm,
+                                             Spack& qc_incld, Spack& qr_incld, Spack& qitot_incld, Spack& qirim_incld,
+                                             Spack& nc_incld, Spack& nr_incld, Spack& nitot_incld, Spack& birim_incld);
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -630,6 +642,8 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
 # include "p3_functions_get_latent_heat_impl.hpp"
+# include "p3_functions_check_values_impl.hpp"
+# include "p3_functions_incloud_mixingratios_impl.hpp"
 #endif
 
 #endif

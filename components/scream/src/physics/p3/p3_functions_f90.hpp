@@ -1019,6 +1019,57 @@ extern "C" {
 void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real** v, Real** s, Real** f);
 }
 
+struct CheckValuesData
+{
+  static constexpr size_t NUM_ARRAYS = 2;
+
+  // Inputs
+   Int kts, kte;
+   Int timestepcount, source_ind;
+
+   bool force_abort;
+
+   Real *qv, *temp, *col_loc;
+
+   CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
+                   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+
+  CheckValuesData(const CheckValuesData& rhs);
+
+  Int nk() const { return m_nk; }
+
+  private:
+  // Internals
+
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+void check_values(CheckValuesData& d);
+
+extern "C" {
+void check_values_f(Real* Qv, Real* temp, Int kstart, Int kend,
+                    Int timestepcount, bool force_abort, Int source_ind, Real* col_loc);
+}
+
+struct IncloudMixingData
+{
+  // Inputs
+  Real qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm;
+
+  // Outputs
+  Real qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld;
+};
+void calculate_incloud_mixingratios(IncloudMixingData& d);
+
+extern "C" {
+void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, Real nc, Real nr, Real nitot, Real birim,
+                                      Real inv_lcldm, Real inv_icldm, Real inv_rcldm,
+                                      Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
+                                      Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////

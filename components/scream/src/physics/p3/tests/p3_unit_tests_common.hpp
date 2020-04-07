@@ -92,10 +92,11 @@ struct UnitWrap {
     struct TestDropletActivation;
     struct TestIceCldliqWetGrowth;
     struct TestLatentHeat;
+    struct TestCheckValues;
+    struct TestIncloudMixing;
   };
 
 };
-
 
 } // namespace unit_test
 } // namespace p3

@@ -2,7 +2,6 @@
 #define P3_FUNCTIONS_UPDATE_PROGNOSTICS_IMPL_HPP
 
 #include "p3_functions.hpp"
-#include "p3_constants.hpp"
 
 namespace scream {
 namespace p3 {

@@ -201,6 +201,8 @@ class TestScheduler(object):
         else:
             self._parallel_jobs = parallel_jobs
 
+        logger.info("create_test will do up to {} tasks simultaneously".format(self._parallel_jobs))
+
         self._baseline_cmp_name = baseline_cmp_name # Implies comparison should be done if not None
         self._baseline_gen_name = baseline_gen_name # Implies generation should be done if not None
 
@@ -247,6 +249,8 @@ class TestScheduler(object):
             self._proc_pool = int(pes * 1.25)
         else:
             self._proc_pool = int(proc_pool)
+
+        logger.info("create_test will use up to {} cores simultaneously".format(self._proc_pool))
 
         self._procs_avail = self._proc_pool
 

@@ -1,6 +1,6 @@
 include(ScreamUtils)
 
-set(NEED_LIBS p3 scream_share)
+set(NEED_LIBS p3 physics_common scream_share)
 set(P3_TESTS_SRCS
   p3_tests.cpp
   p3_unit_tests.cpp
@@ -29,6 +29,8 @@ set(P3_TESTS_SRCS
   p3_droplet_activation_unit_tests.cpp
   p3_ice_cldliq_wet_growth_unit_tests.cpp
   p3_get_latent_heat_unit_tests.cpp
+  p3_check_values_unit_tests.cpp
+  p3_incloud_mixingratios_unit_tests.cpp
 )
 
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)

@@ -186,6 +186,7 @@ contains
 
     gfr%tolfac = one
     if (par%masterproc) then
+       write(iulog,*) 'gfr> Running with dynamics and physics on separate grids (physgrid).'
        write(iulog, '(a,i3,a,l2,a,i2,a,l2)') 'gfr> init nphys', nphys, ' check', gfr%check, &
             ' ftype', ftype, ' boost_pg1', gfr%boost_pg1
        if (nphys == 1) then
