@@ -243,9 +243,11 @@ contains
 
       if (local_config_GM_kappa_lat_depth_variable) then
 
-         !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
+         !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1,nCells
+             
             k = min(maxLevelCell(iCell)-1,max(1,indMLD(iCell)))
+            k=1
             maxN =  max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
             do while (BruntVaisalaFreqTop(k+1,iCell) > maxN .and. k < maxLevelCell(iCell)-1)
               k = k + 1
@@ -512,7 +514,7 @@ contains
                         layerThicknessEdge(k,iEdge))
                kappaGMEdge = 0.5_RKIND*(kappaGMCell(k,cell1) + kappaGMCell(k,cell2)) * &
                               min(kappaRediSfcTaper(k,cell1), kappaRediSfcTaper(k,cell2))
-               BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+              BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
                tridiagA(k-2) = 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / layerThicknessEdge(k-1, iEdge) &
                              / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))

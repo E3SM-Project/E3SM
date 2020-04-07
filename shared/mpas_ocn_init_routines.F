@@ -554,7 +554,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       integer :: i, iEdge, iCell, k
       integer :: err1
 
-      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell
+      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell, indMLD
       integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
       real (kind=RKIND), dimension(:), pointer :: areaCell, boundaryLayerDepth
@@ -603,6 +603,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
+      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
@@ -634,6 +635,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       if (.not. config_do_restart) then
          do iCell=1,nCells
             boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5_RKIND
+            indMLD(iCell) = 1
          end do
       end if
 
