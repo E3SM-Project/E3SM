@@ -1,7 +1,7 @@
 import numpy as np
 import jigsaw_to_MPAS.mesh_definition_tools as mdt
 from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
-    compute_cell_width
+    mask_from_geojson
 from geometric_features import read_feature_collection
 import xarray
 
@@ -49,13 +49,23 @@ def cellWidthVsLatLon():
     _, PacGrid = np.meshgrid(lon, PacVsLat)
 
     fc = read_feature_collection('Atlantic_region.geojson')
-
     signed_distance = signed_distance_from_geojson(fc, lon, lat,
                                                    max_length=0.25)
 
     mask = 0.5*(1+np.tanh(signed_distance/1000.0e3)) 
-    
-    cellWidth = AtlGrid*mask + PacGrid*(1-mask)
+    mergeSmooth = AtlGrid*mask + PacGrid*(1-mask)
+
+    mask = 0.5*(1+np.sign(signed_distance))
+    mergeStep = AtlGrid*mask + PacGrid*(1-mask)
+
+    fc = read_feature_collection('Americas_land_mask.geojson')
+    Americas_land_mask = mask_from_geojson(fc, lon, lat)
+    fc = read_feature_collection('Europe_Africa_land_mask.geojson')
+    Europe_Africa_land_mask = mask_from_geojson(fc, lon, lat)
+    land_mask = np.fmax(Americas_land_mask,Europe_Africa_land_mask)
+
+    cellWidth = mergeStep*land_mask + mergeSmooth*(1-land_mask)
+
 
     # save signed distance to a file
     #da = xarray.DataArray(signed_distance,
