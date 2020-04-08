@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+
+"""
+Dump what the CIME environment would be for a case.
+
+Only supports E3SM for now.
+"""
+from standard_script_setup import *
+from CIME.XML.machines   import Machines
+from CIME.test_scheduler import TestScheduler
+from CIME.utils import parse_test_name, expect
+import get_tests
+
+import argparse, tempfile, shutil
+
+###############################################################################
+def parse_command_line(raw_args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""{0} [-c <case>]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Get the default CIME env \033[0m
+    > ./{0}
+    \033[1;32m# Get the default CIME env and load it into your current shell env \033[0m
+    > eval $(./{0})
+    \033[1;32m# Get the CIME env for a different machine or compiler  \033[0m
+    > ./{0} -c SMS.f09_g16.X.mach_compiler
+    \033[1;32m# Get the CIME env for a different mpi (serial in this case)  \033[0m
+    > ./{0} -c SMS_Mmpi-serial.f09_g16.X
+    \033[1;32m# Same as above but also load it into current shell env \033[0m
+    > eval $(./{0} -c SMS_Mmpi-serial.f09_g16.X)
+
+""".format(os.path.basename(raw_args[0])),
+description=description,
+formatter_class=argparse.RawTextHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("-c", "--case", default="SMS.f09_g16.X",
+                        help="The case for which you want the env. Default=%(default)s")
+
+    raw_args.append("--silent")
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(raw_args, parser)
+
+    return args.case
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    casename = parse_command_line(sys.argv, description)
+
+    compiler = parse_test_name(casename)[5]
+    machine = get_tests.infer_machine_name_from_tests([casename])
+    mach_obj = Machines(machine=machine)
+    compiler = mach_obj.get_default_compiler() if compiler is None else compiler
+    full_test_name = get_tests.get_full_test_names([casename], mach_obj.get_machine_name(), compiler)[0]
+
+    output_root = tempfile.mkdtemp()
+    shell_env = None
+
+    try:
+        impl = TestScheduler([full_test_name], no_build=True, machine_name=machine, compiler=compiler,
+                             output_root=output_root)
+        success = impl.run_tests()
+        test_dir = impl._get_test_dir(full_test_name) # pylint: disable=protected-access
+        shell_exe = os.path.split(os.environ["SHELL"])[-1]
+        suffix = ".sh" if shell_exe in ["bash", "sh"] else ".csh"
+        file_to_read = os.path.join(test_dir, ".env_mach_specific{}".format(suffix))
+        expect(success, "Failed to create case {}".format(full_test_name))
+
+        shell_envs = []
+        with open(file_to_read, "r") as fd:
+            for line in fd.readlines():
+                if not line.startswith("#") and line.strip() != "":
+                    shell_envs.append(line.strip())
+
+        shell_env = " && ".join(shell_envs)
+
+    except BaseException:
+        success = False
+        errs = str(sys.exc_info()[1])
+    finally:
+        shutil.rmtree(output_root)
+
+    if success:
+        expect(shell_env is not None, "Bad shell_env state")
+        print(shell_env)
+    else:
+        print(errs)#, file=sys.stderr)
+        sys.exit(1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

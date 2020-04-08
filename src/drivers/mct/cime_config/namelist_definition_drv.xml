@@ -199,6 +199,19 @@
     </values>
   </entry>
 
+  <entry id="rof_heat">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate heat in the river model
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value cime_model='e3sm'>.true.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -510,6 +523,21 @@
     </desc>
     <values>
       <value>1.e36</value>
+    </values>
+  </entry>
+
+  <entry id="constant_zenith_deg">
+    <type>real</type>
+    <category>orbital</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Constant solar zenith angle value in degrees for idealized configurations
+      such as radiative-convective equilibrium experiments. This is disabled when 
+      the value is less than 0
+      Default: -1
+    </desc>
+    <values>
+      <value>-1</value>
     </values>
   </entry>
 
@@ -1400,6 +1428,7 @@
     </desc>
     <values>
       <value>$EPS_AGRID</value>
+      <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
     </values>
   </entry>
 
@@ -3876,6 +3905,66 @@
     </desc>
     <values>
       <value>$ROF2LND_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_fmapname"    modify_via_xml="ATM2ROF_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff flux mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_fmaptype"    modify_via_xml="ATM2ROF_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_smapname"    modify_via_xml="ATM2ROF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff state mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_smaptype"    modify_via_xml="ATM2ROF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2ROF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
