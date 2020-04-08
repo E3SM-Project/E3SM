@@ -197,9 +197,6 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
       nEdges = nEdgesArray( size(nEdgesArray) )
 
-! mrp performance note: are these actually needed? check if they are re-initialized below
-      ! Assign a huge value to the scratch variables which may manifest itself when
-      ! there is a bug.
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
@@ -225,8 +222,6 @@ contains
          end do
       end do
       !$omp end do
-      allocate(BVFCol(nVertLevels+1))
-      allocate(BVFSmooth(nVertLevels+1))
       allocate(dzTop(nVertLevels+1))
       allocate(dTdzTop(nVertLevels+1))
       allocate(dSdzTop(nVertLevels+1))
@@ -245,7 +240,6 @@ contains
 
          !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1,nCells
-             
             k = min(maxLevelCell(iCell)-1,max(1,indMLD(iCell)))
             k=1
             maxN =  max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
@@ -397,8 +391,6 @@ contains
       end do ! iCell
       !$omp end do
 
-      deallocate(BVFCol)
-      deallocate(BVFSmooth)
       deallocate(dzTop)
       deallocate(dTdzTop)
       deallocate(dSdzTop)
@@ -597,13 +589,6 @@ contains
 
       ! Deallocate scratch variables
       call mpas_deallocate_scratch_field(gradDensityEdgeField, .true.)
-!      call mpas_deallocate_scratch_field(gradDensityConstZTopOfEdgeField, .true.)
-!      call mpas_deallocate_scratch_field(dDensityDzTopOfCellField, .true.)
-!      call mpas_deallocate_scratch_field(dDensityDzTopOfEdgeField, .true.)
-!      call mpas_deallocate_scratch_field(gradZMidEdgeField, .true.)
-!      call mpas_deallocate_scratch_field(gradZMidTopOfEdgeField, .true.)
-!      call mpas_deallocate_scratch_field(areaCellSumField, .true.)
-
       call mpas_timer_stop('gm bolus velocity')
 
    end subroutine ocn_GM_compute_Bolus_velocity!}}}

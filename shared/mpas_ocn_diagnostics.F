@@ -607,7 +607,7 @@ contains
       !
 
       ! Only need densities on 0, 1, and 2 halo cells
-      nCells = nCellsArray( 3 )
+      nCells = nCellsArray( size(nCellsArray) )
 
       ! compute in-place density
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
