@@ -1,14 +1,37 @@
+import cartopy.crs as ccrs
+from cartopy import config
+import matplotlib.pyplot as plt
 import numpy as np
 import jigsaw_to_MPAS.mesh_definition_tools as mdt
 from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
     mask_from_geojson
 from geometric_features import read_feature_collection
 import xarray
+import matplotlib
+matplotlib.use('Agg')
 
-# Uncomment to plot the cell size distribution.
-# import matplotlib
-# matplotlib.use('Agg')
-# import matplotlib.pyplot as plt
+
+def plot_cartopy(nPlot, varName, var):
+    ax = plt.subplot(4, 2, nPlot, projection=ccrs.PlateCarree())
+    ax.set_global()
+    im = ax.imshow(var,
+                   origin='lower',
+                   transform=ccrs.PlateCarree(),
+                   extent=[-180, 180, -90, 90], cmap='jet')
+    ax.coastlines()
+    gl = ax.gridlines(
+        crs=ccrs.PlateCarree(),
+        draw_labels=True,
+        linewidth=1,
+        color='gray',
+        alpha=0.5,
+        linestyle='-')
+    gl.xlabels_top = False
+    gl.xlabels_bottom = False
+    gl.ylabels_right = False
+    gl.ylabels_left = False
+    plt.colorbar(im, shrink=.9)
+    plt.title(varName)
 
 
 def cellWidthVsLatLon():
@@ -26,7 +49,7 @@ def cellWidthVsLatLon():
             degrees
     """
     # To speed up for testing, set following line to 1.0 degrees
-    dlon = 0.1
+    dlon = 1.0
     dlat = dlon
     nlon = int(360. / dlon) + 1
     nlat = int(180. / dlat) + 1
@@ -48,75 +71,60 @@ def cellWidthVsLatLon():
 
     # Signed distance of Atlantic region
     fc = read_feature_collection('Atlantic_region.geojson')
-    signed_distance = signed_distance_from_geojson(fc, lon, lat,
-                                                   max_length=0.25)
+    signedDistance = signed_distance_from_geojson(fc, lon, lat,
+                                                 max_length=0.25)
 
     # Merge Atlantic and Pacific distrubutions smoothly
     transitionWidth = 500.0e3  # [m]
-    maskSmooth = 0.5 * (1 + np.tanh(signed_distance / transitionWidth))
-    cellWidthSmooth = AtlGrid * maskSmooth + PacGrid * (1 - maskSmooth)
+    maskSmooth = 0.5 * (1 + np.tanh(signedDistance / transitionWidth))
+    cellWidthSmooth = PacGrid * maskSmooth + AtlGrid * (1 - maskSmooth)
 
     # Merge Atlantic and Pacific distrubutions with step function
-    maskStep = 0.5 * (1 + np.sign(signed_distance))
-    cellWidthStep = AtlGrid * maskStep + PacGrid * (1 - maskStep)
+    maskStep = 0.5 * (1 + np.sign(signedDistance))
+    cellWidthStep = PacGrid * maskStep + AtlGrid * (1 - maskStep)
 
     # Create a land mask that is 1 over land
     fc = read_feature_collection('Americas_land_mask.geojson')
     Americas_land_mask = mask_from_geojson(fc, lon, lat)
     fc = read_feature_collection('Europe_Africa_land_mask.geojson')
     Europe_Africa_land_mask = mask_from_geojson(fc, lon, lat)
-    land_mask = np.fmax(Americas_land_mask, Europe_Africa_land_mask)
+    landMask = np.fmax(Americas_land_mask, Europe_Africa_land_mask)
 
     # Merge: step transition over land, smooth transition over water
-    cellWidth = cellWidthStep * land_mask + cellWidthSmooth * (1 - land_mask)
+    cellWidth = cellWidthStep * landMask + cellWidthSmooth * (1 - landMask)
 
     # save signed distance to a file
-    # da = xarray.DataArray(signed_distance,
+    # da = xarray.DataArray(signedDistance,
     #                      dims=['y', 'x'],
     #                      coords={'y': lat, 'x': lon},
-    #                      name='signed_distance')
-    #cw_filename = 'signed_distance.nc'
+    #                      name='signedDistance')
+    #cw_filename = 'signedDistance.nc'
     # da.to_netcdf(cw_filename)
 
-# replace this:
-    #cellWidth = mdt.AtlanticPacificGrid(lat, lon, AtlGrid, PacGrid)
-
-    import matplotlib.pyplot as plt
-    import matplotlib
-    matplotlib.use('Agg')
-    from cartopy import config
-    import cartopy.crs as ccrs
-
     print('plotting ...')
-    fig, axs = plt.subplots(2, 4)
-    fig.set_size_inches(8.5, 11.0)
+    fig = plt.figure()
+    plt.clf()
+    fig.set_size_inches(10.0, 10.0)
 
-    ax = axs[0, 0]
-    ax.plot(lat, AtlGrid, label='Atlantic')
-    ax.plot(lat, PacGrid, label='Pacific')
+    ax = plt.subplot(4, 2, 1)
+    ax.plot(lat, AtlVsLat, label='Atlantic')
+    ax.plot(lat, PacVsLat, label='Pacific')
     ax.grid(True)
-    plt.xlabel('latitude')
-    plt.title('Grid cell size, km')
+    plt.title('Grid cell size [km] versus latitude')
     plt.legend()
 
-    var = signed_distance
-    ax = axs[1, 0]
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    ax.set_global()
-    im = ax.imshow(var, origin='lower', transform=ccrs.PlateCarree(
-    ), extent=[-180, 180, -90, 90], cmap='jet')
-    ax.coastlines()
-    gl = ax.gridlines(
-        crs=ccrs.PlateCarree(),
-        draw_labels=True,
-        linewidth=1,
-        color='gray',
-        alpha=0.5,
-        linestyle='-')
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    plt.colorbar(im, shrink=.60)
-    plt.title('signed_distance')
+    varNames = [
+        'signedDistance',
+        'maskSmooth',
+        'cellWidthSmooth',
+        'maskStep',
+        'cellWidthStep',
+        'landMask',
+        'cellWidth']
+    j = 2
+    for varName in varNames:
+        plot_cartopy(j, varName, vars()[varName])
+        j += 1
 
     plt.savefig('mesh_construction.png')
 
