@@ -6,7 +6,6 @@
 	<add_link source="make_graph_file.py" source_path="utility_scripts" dest="make_graph_file.py"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<option name="config_use_tidal_forcing">.true.</option>
@@ -63,7 +62,7 @@
 		<step executable="./make_graph_file.py">
 			<argument flag="-f">init.nc</argument>
 		</step>
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
