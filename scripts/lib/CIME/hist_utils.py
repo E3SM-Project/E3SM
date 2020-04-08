@@ -371,7 +371,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
                     files_match = False
                     comment = CPRNC_FIELDLISTS_DIFFER
             else:
-                expect(False, "Did not find an expected summary string in cprnc output")
+                expect(False, "Did not find an expected summary string in cprnc output:\n{}".format(out))
     else:
         # If there is an error in cprnc, we do the safe thing of saying the comparison failed
         files_match = False
