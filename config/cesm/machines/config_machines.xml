@@ -363,13 +363,13 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
     <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
-    <MPILIBS compiler="gnu" >openmpi</MPILIBS>
+    <MPILIBS compiler="gnu" >mpt,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC> 
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -417,57 +417,65 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">ncarenv/1.2</command>
+	<command name="load">ncarenv/1.3</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/19.0.2</command>
+	<command name="load">intel/19.0.5</command>
 	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
+      <modules compiler="gnu">
+        <command name="load">gnu/9.1.0</command>
+        <command name="load">openblas/0.3.6</command>
+      </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-g</command>
+        <command name="load">esmf-8.0.0-defio-mpi-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-O</command>
+        <command name="load">esmf-8.0.0-defio-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
+        <command name="load">esmf-8.0.0-ncdfio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
+        <command name="load">esmf-8.0.0-ncdfio-uni-O</command>
       </modules>
+
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
+        <command name="load">esmf-8.1.0b11-ncdfio-mpt-g</command>
+      </modules>
+
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.1.0b11-ncdfio-mpt-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
+        <command name="load">esmf-8.1.0b11-ncdfio-mpt-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
+        <command name="load">esmf-8.1.0b11-ncdfio-mpiuni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
+        <command name="load">esmf-8.1.0b11-ncdfio-mpiuni-O</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
-      <modules compiler="gnu">
-        <command name="load">gnu/8.3.0</command>
-        <command name="load">openblas/0.3.6</command>
-      </modules>
+
       <modules mpilib="mpt" compiler="gnu">
-	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
+	<command name="load">mpt/2.21</command>
+	<command name="load">netcdf-mpi/4.7.3</command>
+	<command name="load">pnetcdf/1.12.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.19</command>
+	<command name="load">mpt/2.21</command>
 	<!-- known failure in parallel netcdf with mpt, use serial -->
-	<command name="load">netcdf/4.7.1</command>
-	<command name="load">pnetcdf/1.11.0</command>
+	<command name="load">netcdf/4.7.3</command>
+	<command name="load">pnetcdf/1.12.1</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
@@ -496,7 +504,7 @@ This allows using a different mpirun command to launch unit tests
       </modules>
     </module_system>
     <environment_variables>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_STACKSIZE">1024M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
@@ -2660,7 +2668,7 @@ This allows using a different mpirun command to launch unit tests
       <!-- must load after compiler -->
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
-      </modules>	
+      </modules>
       <modules mpilib="openmpi">
 	<command name="load">openmpi/4.0.3</command>
 	<command name="load">netcdf-mpi/4.7.1</command>

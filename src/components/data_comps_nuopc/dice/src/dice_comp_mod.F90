@@ -94,8 +94,8 @@ module dice_comp_mod
   real(r8), pointer ::  Fioi_bcpho(:)    => null()
   real(r8), pointer ::  Fioi_bcphi(:)    => null()
   real(r8), pointer ::  Fioi_flxdst(:)   => null()
-  real(r8), pointer ::  Si_ifrac_01(:,:) => null()
-  real(r8), pointer ::  Fioi_swpen_ifrac_01(:,:) => null()
+  real(r8), pointer ::  Si_ifrac_n(:,:)  => null()
+  real(r8), pointer ::  Fioi_swpen_ifrac_n(:,:) => null()
 
   ! import fields
   real(r8), pointer :: Faxa_swvdr(:)    => null()
@@ -261,6 +261,13 @@ contains
     call dshr_dfield_add(dfields, sdat, state_fld='Si_ifrac', strm_fld='ifrac', &
          state=exportState, state_ptr=Si_ifrac, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (flds_i2o_per_cat) then
+       call state_getfldptr(exportState, fldname='Si_ifrac_n'        , fldptr2=Si_ifrac_n        , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(exportState, fldname='Fioi_swpen_ifrac_n', fldptr2=Fioi_swpen_ifrac_n, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     ! Set pointers to exportState fields that have no corresponding stream field
     call state_getfldptr(exportState, fldname='Si_imask'    , fldptr1=Si_imask    , rc=rc)
@@ -625,9 +632,9 @@ contains
     !-------------------------------------------------
 
     if (flds_i2o_per_cat) then
-       do n=1,lsize
-          Si_iFrac_01(1,n)         = Si_ifrac(n)
-          Fioi_swpen_iFrac_01(1,n) = Fioi_swpen(n) * Si_ifrac(n)
+       do n = 1,lsize
+          Si_iFrac_n(1,n)         = Si_ifrac(n)
+          Fioi_swpen_iFrac_n(1,n) = Fioi_swpen(n) * Si_ifrac(n)
        end do
     end if
 
