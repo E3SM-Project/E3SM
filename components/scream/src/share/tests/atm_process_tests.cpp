@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
-#include "share/atmosphere_process.hpp"
-#include "share/atmosphere_process_group.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process_group.hpp"
 
 namespace scream {
 

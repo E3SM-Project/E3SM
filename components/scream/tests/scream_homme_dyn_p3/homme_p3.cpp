@@ -1,7 +1,6 @@
 #include "catch2/catch.hpp"
 
 #include "control/atmosphere_driver.hpp"
-#include "control/surface_coupling.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"

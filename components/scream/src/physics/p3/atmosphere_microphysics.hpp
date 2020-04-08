@@ -1,7 +1,7 @@
 #ifndef SCREAM_P3_MICROPHYSICS_HPP
 #define SCREAM_P3_MICROPHYSICS_HPP
 
-#include "share/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_parameter_list.hpp"
 
 #include <string>

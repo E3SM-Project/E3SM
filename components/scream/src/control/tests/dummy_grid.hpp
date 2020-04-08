@@ -1,5 +1,5 @@
 #include "share/grid/se_grid.hpp"
-#include "share/remap/abstract_remapper.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 
 namespace scream {
 

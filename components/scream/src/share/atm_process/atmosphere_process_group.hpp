@@ -1,8 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
-#include "share/remap/abstract_remapper.hpp"
-#include "share/atmosphere_process.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_parameter_list.hpp"
 
 #include <string>

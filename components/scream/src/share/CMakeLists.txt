@@ -1,13 +1,13 @@
 set(SHARE_SRC
-  atmosphere_process_group.cpp
-  scream_assert.cpp
-  scream_session.cpp
+  atm_process/atmosphere_process_group.cpp
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
   field/field_layout.cpp
   field/field_tracking.cpp
   mpi/scream_comm.cpp
+  scream_assert.cpp
+  scream_session.cpp
   scream_parameter_list.cpp
   scream_parse_yaml_file.cpp
   util/scream_utils.cpp
@@ -21,8 +21,8 @@ set(SHARE_SRC
 
 # So far this is pointless, since we are not installing the library
 set(SHARE_HEADERS
-  atmosphere_process.hpp
-  atmosphere_process_group.hpp
+  atm_process/atmosphere_process.hpp
+  atm_process/atmosphere_process_group.hpp
   scream_assert.hpp
   field/field.hpp
   field/field_alloc_prop.hpp
@@ -38,12 +38,13 @@ set(SHARE_HEADERS
   grid/grid_utils.hpp
   grid/grids_manager.hpp
   grid/user_provided_grids_manager.hpp
-  remap/abstract_remapper.hpp
-  remap/identity_remapper.hpp
-  remap/inverse_remapper.hpp
+  grid/remap/abstract_remapper.hpp
+  grid/remap/identity_remapper.hpp
+  grid/remap/inverse_remapper.hpp
   scream_parameter_list.hpp
   scream_parse_yaml_file.hpp
   scream_session.hpp
+  scream_workspace.hpp
   mpi/scream_comm.hpp
   util/scream_factory.hpp
   util/file_utils.hpp
@@ -56,7 +57,6 @@ set(SHARE_HEADERS
   util/scream_scaling_factor.hpp
   util/scream_units.hpp
   util/time_stamp.hpp
-  scream_workspace.hpp
 )
 
 add_library(scream_share ${SHARE_SRC})
