@@ -2521,16 +2521,16 @@
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
     <values>
-      <value compclass="ATM"></value>
-      <value compclass="CPL"></value>
-      <value compclass="OCN"></value>
-      <value compclass="WAV"></value>
-      <value compclass="GLC"></value>
-      <value compclass="ICE"></value>
-      <value compclass="ROF"></value>
-      <value compclass="LND"></value>
-      <value compclass="ESP"></value>
-      <value compclass="IAC"></value>
+      <value compclass="ATM">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="IAC">$MAX_MPITASKS_PER_NODE</value>
     </values>
   </entry>
 
