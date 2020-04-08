@@ -283,6 +283,10 @@ contains
             veg_ps%deadcrootp(p) = veg_ps%deadcrootp(p) + veg_pf%livecrootp_to_deadcrootp(p)*dt
             veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_retransp(p)*dt
             veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
+         else ! Nonwoody rhizome turnover (B Sulman)
+            veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_litter(p)*dt
+            veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_retransp(p)*dt
+            veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
             veg_ps%frootp(p)     = veg_ps%frootp(p)     - veg_pf%frootp_to_retransp(p)*dt

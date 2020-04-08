@@ -75,6 +75,7 @@ implicit none
   integer :: f_livecrootc_xfer_to_livecrootc
   integer :: f_livecrootc_storage_to_xfer
   integer :: f_livecrootc_to_deadcrootc
+  integer :: f_livecrootc_to_litter
   integer :: f_deadcrootc_xfer_to_deadcrootc
   integer :: f_deadcrootc_storage_to_xfer
   integer :: f_grainc_to_food
@@ -139,6 +140,7 @@ implicit none
   integer :: f_livecrootn_storage_to_xfer
   integer :: f_livecrootn_xfer_to_livecrootn
   integer :: f_livecrootn_to_deadcrootn
+  integer :: f_livecrootn_to_litter
   integer :: f_livecrootn_to_retransn
   integer :: f_deadstemn_storage_to_xfer
   integer :: f_deadstemn_xfer_to_deadstem
@@ -264,6 +266,7 @@ contains
   f_livecrootc_xfer_to_livecrootc= ic_next(id)
   f_livecrootc_storage_to_xfer   = ic_next(id)
   f_livecrootc_to_deadcrootc     = ic_next(id)
+  f_livecrootc_to_litter         = ic_next(id)
   f_deadcrootc_xfer_to_deadcrootc= ic_next(id)
   f_deadcrootc_storage_to_xfer   = ic_next(id)
   f_grainc_to_food               = ic_next(id)
@@ -329,6 +332,7 @@ contains
   f_livestemn_to_retransn         = ic_next(id)
   f_livestemn_to_deadstemn        = ic_next(id)
   f_livecrootn_to_deadcrootn      = ic_next(id)
+  f_livecrootn_to_litter          = ic_next(id)
   f_livecrootn_to_retransn        = ic_next(id)
   f_livecrootn_storage_to_xfer    = ic_next(id)
   f_livecrootn_xfer_to_livecrootn = ic_next(id)
@@ -387,6 +391,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_deadstemc_xfer_to_deadstemc  , s_deadstemc_xfer, nelms)
   call spm_list_insert(spm_list, -1._r8, f_deadstemc_storage_to_xfer    , s_deadstemc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livecrootc_to_deadcrootc     , s_livecrootc, nelms)
+  call spm_list_insert(spm_list, -1._r8, f_livecrootc_to_litter         , s_livecrootc, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livecrootc_xfer_to_livecrootc, s_livecrootc_xfer, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livecrootc_storage_to_xfer   , s_livecrootc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_deadcrootc_xfer_to_deadcrootc, s_deadcrootc_xfer, nelms)
@@ -697,6 +702,7 @@ contains
       rfluxes(f_livecrootc_xfer_to_livecrootc)= veg_cf%livecrootc_xfer_to_livecrootc(p)
       rfluxes(f_livecrootc_storage_to_xfer)   = veg_cf%livecrootc_storage_to_xfer(p)
       rfluxes(f_livecrootc_to_deadcrootc)     = veg_cf%livecrootc_to_deadcrootc(p)
+      rfluxes(f_livecrootc_to_litter)        = veg_cf%livecrootc_to_litter(p)
     if (woody(ivt(p)) == 1._r8) then
       rfluxes(f_cpool_to_livestemc)           = veg_cf%cpool_to_livestemc(p)
       rfluxes(f_cpool_to_livestemc_storage)   = veg_cf%cpool_to_livestemc_storage(p)
@@ -750,6 +756,7 @@ contains
       call fpmax(rfluxes(f_livecrootc_xfer_to_livecrootc), veg_cf%livecrootc_xfer_to_livecrootc(p))
       call fpmax(rfluxes(f_livecrootc_storage_to_xfer)   , veg_cf%livecrootc_storage_to_xfer(p))
       call fpmax(rfluxes(f_livecrootc_to_deadcrootc)     , veg_cf%livecrootc_to_deadcrootc(p))
+      call fpmax(rfluxes(f_livecrootc_to_litter)        , veg_cf%livecrootc_to_litter(p))
 
     if (woody(ivt(p)) == 1._r8) then
       call fpmax(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))

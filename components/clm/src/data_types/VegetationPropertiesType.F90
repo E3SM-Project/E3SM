@@ -62,6 +62,7 @@ module VegetationPropertiesType
      real(r8), allocatable :: fr_flig       (:)   ! fine root litter lignin fraction
      real(r8), allocatable :: leaf_long     (:)   ! leaf longevity (yrs)
      real(r8), allocatable :: froot_long    (:)   ! fine root longevity (yrs)
+     real(r8), allocatable :: rhizome_long  (:)   ! nonwoody rhizome longevity (yrs)
      real(r8), allocatable :: evergreen     (:)   ! binary flag for evergreen leaf habit (0 or 1)
      real(r8), allocatable :: stress_decid  (:)   ! binary flag for stress-deciduous leaf habit (0 or 1)
      real(r8), allocatable :: season_decid  (:)   ! binary flag for seasonal-deciduous leaf habit (0 or 1)
@@ -167,7 +168,7 @@ contains
     use pftvarcon , only : c3psn, slatop, dsladlai, leafcn, flnr, woody
     use pftvarcon , only : lflitcn, frootcn, livewdcn, deadwdcn, froot_leaf, stem_leaf, croot_stem
     use pftvarcon , only : flivewd, fcur, lf_flab, lf_fcel, lf_flig, fr_flab, fr_fcel, fr_flig
-    use pftvarcon , only : leaf_long, froot_long, evergreen, stress_decid, season_decid
+    use pftvarcon , only : leaf_long, froot_long, rhizome_long, evergreen, stress_decid, season_decid
     use pftvarcon , only : fertnitro, graincn, fleafcn, ffrootcn, fstemcn, dwood
     use pftvarcon , only : presharv, convfact, fyield
     use pftvarcon , only : leafcp,lflitcp, frootcp, livewdcp, deadwdcp,graincp
@@ -236,6 +237,7 @@ contains
     allocate(this%fr_flig       (0:numpft))        ; this%fr_flig      (:)   =nan
     allocate(this%leaf_long     (0:numpft))        ; this%leaf_long    (:)   =nan
     allocate(this%froot_long    (0:numpft))        ; this%froot_long   (:)   =nan
+    allocate(this%rhizome_long  (0:numpft))        ; this%rhizome_long (:)   =nan
     allocate(this%evergreen     (0:numpft))        ; this%evergreen    (:)   =nan
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =nan
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =nan
@@ -350,6 +352,7 @@ contains
        this%fr_flig(m)      = fr_flig(m)
        this%leaf_long(m)    = leaf_long(m)
        this%froot_long(m)   = froot_long(m)
+       this%rhizome_long(m) = rhizome_long(m)
        this%evergreen(m)    = evergreen(m)
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)
