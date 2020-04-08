@@ -82,6 +82,7 @@ contains
     use chem_mods,    only : nfs, phtcnt, rxntot, nfs !PJC added rxntot, nfs
     use ppgrid,       only : pcols, pver              !PJC added pcols
     use mo_setinv,    only : n2_ndx, o2_ndx, h2o_ndx  !PJC + MJP
+    use mo_usrrxt,    only : comp_exp
 
     implicit none
 
@@ -267,3 +268,5 @@ contains
 
 
   end subroutine O1D_to_2OH_adj
+
+end module llnl_O1D_to_2OH_adj
