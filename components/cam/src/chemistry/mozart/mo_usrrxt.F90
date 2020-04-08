@@ -9,7 +9,7 @@ module mo_usrrxt
   implicit none
 
   private
-  public :: usrrxt, usrrxt_inti, usrrxt_hrates
+  public :: usrrxt, usrrxt_inti, usrrxt_hrates, comp_exp
 
   save
 
