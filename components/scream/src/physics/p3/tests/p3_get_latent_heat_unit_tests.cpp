@@ -26,18 +26,12 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
 
   static void run_latent_heat_bfb()
   {
-    const std::array< std::pair<Real, Real>, LatentHeatData::NUM_ARRAYS > ranges = {
-      std::make_pair(4.056E-01, 1.153E+00), // v
-      std::make_pair(1.000E+02, 5.000E+02), // s
-      std::make_pair(1.000E+01, 2.000E+01), // f
-    };
-
     LatentHeatData latent_fortran[] = {
      // its, ite, kts, kte, ranges
-      LatentHeatData(1,  7,   1,  10,  ranges),
-      LatentHeatData(1,  7,   1,  10,  ranges),
-      LatentHeatData(1,  7,   1,  10,  ranges),
-      LatentHeatData(1,  7,   1,  10,  ranges),
+      LatentHeatData(1,  7,   1,  10),
+      LatentHeatData(1,  7,   1,  10),
+      LatentHeatData(1,  7,   1,  10),
+      LatentHeatData(1,  7,   1,  10),
     };
 
     static constexpr Int num_runs = sizeof(latent_fortran) / sizeof(LatentHeatData);
@@ -49,27 +43,19 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
       LatentHeatData(latent_fortran[3]),
     };
 
-
     for (Int i = 0; i < num_runs; ++i) {
-      get_latent_heat(latent_fortran[i]);
-    }
+      LatentHeatData& h = latent_fortran[i];
+      get_latent_heat(h);
 
-    for (Int i = 0; i < num_runs; ++i) {
       LatentHeatData& d = latent_cxx[i];
       get_latent_heat_f(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
 
-      LatentHeatData& h = latent_fortran[i];
-      Int ni = d.ite - d.its + 1;
-      Int nk = d.kte - d.kts + 1;
-      Int n = 0;
-      for (Int k = 0; k < nk; ++k) {
-        for (Int j = 0; j < ni; ++j) {
-printf("n= %d, d.s= %f, h.s= %f ",n,d.s[n],h.s[n]);
-          REQUIRE(d.s[n] == h.s[n]);
-          REQUIRE(d.v[n] == h.v[n]);
-          REQUIRE(d.f[n] == h.f[n]);
-          ++n;
-        }
+      REQUIRE(h.m_total == d.m_total);
+
+      for (Int j = 0; j < h.m_total; ++j) {
+        REQUIRE(d.v[j] == h.v[j]);
+        REQUIRE(d.s[j] == h.s[j]);
+        REQUIRE(d.f[j] == h.f[j]);
       }
     }
   }

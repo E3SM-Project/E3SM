@@ -1002,21 +1002,26 @@ struct LatentHeatData
   static constexpr size_t NUM_ARRAYS = 3;
 
   // Inputs
-  Real** v;
-  Real** s;
-  Real** f;
-
   Int its, ite, kts, kte;
 
-  LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_,
-              const std::array<std::pair<Real, Real>, NUM_ARRAYS >& ranges);
-  ~LatentHeatData();
+  // Outputs
+  Real* v, *s, *f;
+
+  LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
   LatentHeatData(const LatentHeatData& rhs);
+  LatentHeatData& operator=(const LatentHeatData& rhs);
+
+  void transpose();
+  void init_ptrs();
+
+  // Internals
+  Int m_ni, m_nk, m_total;
+  std::vector<Real> m_data;
 };
 void get_latent_heat(LatentHeatData& d);
 
 extern "C" {
-void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real** v, Real** s, Real** f);
+void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f);
 }
 
 struct CheckValuesData

@@ -86,7 +86,7 @@ struct Functions
   template <typename S>
   using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
   template <typename S>
-  using uview_2d = typename ko::template Unmanaged<view_1d<S> >;
+  using uview_2d = typename ko::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
@@ -578,8 +578,8 @@ struct Functions
                                     const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
                                     Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
 
-  KOKKOS_FUNCTION
-  static void get_latent_heat(const Int& ni, const Int& nk, const MemberType& team, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);
+  // Note: not a kernel function
+  static void get_latent_heat(const Int& ni, const Int& nk, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);
 
   KOKKOS_FUNCTION
   static void check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
