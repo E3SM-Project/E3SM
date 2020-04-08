@@ -80,8 +80,8 @@ def cellWidthVsLatLon():
     cellWidthSmooth = PacGrid * maskSmooth + AtlGrid * (1 - maskSmooth)
 
     # Merge Atlantic and Pacific distrubutions with step function
-    maskStep = 0.5 * (1 + np.sign(signedDistance))
-    cellWidthStep = PacGrid * maskStep + AtlGrid * (1 - maskStep)
+    maskSharp = 0.5 * (1 + np.sign(signedDistance))
+    cellWidthSharp = PacGrid * maskSharp + AtlGrid * (1 - maskSharp)
 
     # Create a land mask that is 1 over land
     fc = read_feature_collection('Americas_land_mask.geojson')
@@ -91,7 +91,7 @@ def cellWidthVsLatLon():
     landMask = np.fmax(Americas_land_mask, Europe_Africa_land_mask)
 
     # Merge: step transition over land, smooth transition over water
-    cellWidth = cellWidthStep * landMask + cellWidthSmooth * (1 - landMask)
+    cellWidth = cellWidthSharp * landMask + cellWidthSmooth * (1 - landMask)
 
     # save signed distance to a file
     # da = xarray.DataArray(signedDistance,
@@ -117,8 +117,8 @@ def cellWidthVsLatLon():
         'signedDistance',
         'maskSmooth',
         'cellWidthSmooth',
-        'maskStep',
-        'cellWidthStep',
+        'maskSharp',
+        'cellWidthSharp',
         'landMask',
         'cellWidth']
     j = 2
