@@ -39,8 +39,6 @@ CONTAINS
     use gravity_waves_sources,   only: gws_src_fnct
     use dyn_comp,                only: frontgf_idx, frontga_idx, hvcoord
     use phys_control,            only: use_gw_front
-    use fv_physics_coupling_mod, only: dyn_to_fv_phys
-    use control_mod,             only: se_fv_phys_remap_alg
     use dyn_comp,                only: dom_mt
     use gllfvremap_mod,          only: gfr_dyn_to_fv_phys
 
@@ -116,14 +114,8 @@ CONTAINS
         ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_fv_phys')
-        if (se_fv_phys_remap_alg == 0) then
-          call dyn_to_fv_phys(elem,ps_tmp(1:nphys_sq,:),zs_tmp(1:nphys_sq,:),     &
-               T_tmp(1:nphys_sq,:,:),uv_tmp(1:nphys_sq,:,:,:),&
-               om_tmp(1:nphys_sq,:,:),q_tmp(1:nphys_sq,:,:,:))
-        else
-          call gfr_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, ps_tmp, zs_tmp, &
-               T_tmp, uv_tmp, om_tmp, q_tmp)
-        end if
+        call gfr_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, ps_tmp, zs_tmp, &
+             T_tmp, uv_tmp, om_tmp, q_tmp)
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
@@ -341,8 +333,7 @@ CONTAINS
   subroutine p_d_coupling(phys_state, phys_tend,  dyn_in)
     use shr_vmath_mod,           only: shr_vmath_log
     use cam_control_mod,         only: adiabatic
-    use fv_physics_coupling_mod, only: fv_phys_to_dyn
-    use control_mod,             only: ftype, se_fv_phys_remap_alg
+    use control_mod,             only: ftype
     use dyn_comp,                only: dom_mt, hvcoord
     use gllfvremap_mod,          only: gfr_fv_phys_to_dyn
     use time_manager,            only: get_step_size
@@ -480,15 +471,9 @@ CONTAINS
       if (fv_nphys > 0) then
         call t_startf('fv_phys_to_dyn')
         ! Map FV physics state to dynamics grid
-        if (se_fv_phys_remap_alg == 0) then
-          call fv_phys_to_dyn(elem,T_tmp(1:nphys_sq,:,:),   &
-               uv_tmp(1:nphys_sq,:,:,:),&
-               q_tmp(1:nphys_sq,:,:,:))
-        else
-          dtime = get_step_size()
-          call gfr_fv_phys_to_dyn(par, dom_mt, TimeLevel%n0, dtime, hvcoord, elem, T_tmp, &
-               uv_tmp, q_tmp)
-        end if
+        dtime = get_step_size()
+        call gfr_fv_phys_to_dyn(par, dom_mt, TimeLevel%n0, dtime, hvcoord, elem, T_tmp, &
+             uv_tmp, q_tmp)
         call t_stopf('fv_phys_to_dyn')
 
       else ! physics is on GLL nodes
