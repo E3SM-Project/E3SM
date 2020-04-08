@@ -80,6 +80,7 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
+      <value>null</value>
       <value stream="clm.nldas">$DLND_CPLHIST_DIR</value>
     </values>
   </entry>
@@ -90,6 +91,7 @@
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
     <values>
+      <value>null</value>
       <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
     </values>
   </entry>
