@@ -11,7 +11,7 @@ module shal_movie_mod
   use kinds, only : real_kind
   ! ---------------------
   use dimensions_mod, only : np, ne, nelem, nelemd, nlev, nelemdmax, &
-       GlobalUniqueCols, npsq 
+       GlobalUniqueCols, npsq
   ! ---------------------
   use hybrid_mod, only : hybrid_t
   ! ---------------------
@@ -30,7 +30,8 @@ module shal_movie_mod
   use coordinate_systems_mod, only : cartesian2d_t, spherical_polar_t
   ! ---------------------
   use physical_constants, only : omega, g, rearth, dd_pi, g
-  use derivative_mod, only : derivative_t, derivative_stag_t, vorticity
+  use derivative_mod, only : derivative_t, vorticity
+  ! derivative_stag_t
   ! ---------------------
 
 !  use interpolate_mod
@@ -63,7 +64,7 @@ module shal_movie_mod
        nf_put_var => nf_put_var_netcdf, &
        iodesc2d, iodesc3d, iodescT, pio_subsystem
 
-  use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile, & 
+  use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile, &
                   pio_iotask_rank
   ! ---------------------
   use dof_mod, only : UniqueNcolsP, Uniquepoints, UniqueCoords, CreateUniqueIndex
@@ -181,7 +182,7 @@ contains
             ! if (par%masterproc .and. mod(ie,1).eq.0 ) print *,'ie=',ie
 	    if(ie<=nelemd) then
                en=st+elem(ie)%idxp%NumUniquePts-1
-               call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,latp(st:en), lonp(st:en)) 
+               call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,latp(st:en), lonp(st:en))
                st=en+1
             end if
           enddo
@@ -206,16 +207,16 @@ contains
     end do
     deallocate(latp)
     deallocate(lonp)
-    
-    
+
+
   end subroutine shal_movie_init
 
   subroutine shal_movie_output(elem,tl,hybrid, phimean, nets, nete,deriv)
     use time_mod, only : Timelevel_t, time_at
     use derivative_mod, only : vorticity_sphere
 
-    integer,          intent(in)    :: nets,nete  
-    type (derivative_t),intent(in)  :: deriv 
+    integer,          intent(in)    :: nets,nete
+    type (derivative_t),intent(in)  :: deriv
     type (element_t), intent(inout) :: elem(:)
     type (TimeLevel_t), intent(in)  :: tl
     type (hybrid_t), intent(in)     :: hybrid
@@ -228,13 +229,13 @@ contains
     character(len=2) :: vname
     real(kind=real_kind),parameter :: dayspersec=1./(3600.*24.)
     integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2)
-    integer :: ncnt 
+    integer :: ncnt
 
     real (kind=real_kind)  :: varp2d(npsq)
     real (kind=real_kind)  :: varp3d(npsq,nlev)
 
 !    real(kind=real_kind)                      :: v1,v2
-    real (kind=real_kind), dimension(np,np,2) :: vco 
+    real (kind=real_kind), dimension(np,np,2) :: vco
     real (kind=real_kind)                     :: rad2deg
     real (kind=real_kind)                     :: lenscale
     integer                                   :: i,j,st,en,jj,cindex
@@ -244,13 +245,13 @@ contains
     real (kind=real_kind) :: var3d(nxyp,nlev)
     character(len=280) :: namell
 
-    lenscale = rearth 
+    lenscale = rearth
 
     allocate(field1(np,np,nets:nete))
 
 
     do ios=1,max_output_streams
-       ! intel compiler creashes when taking module(*,0), so test 
+       ! intel compiler creashes when taking module(*,0), so test
        ! on output_frequency(ios) > 0 in seperate if statement:
        if (output_frequency(ios) .gt. 0) then
        if(  (output_start_time(ios) .le. tl%nstep) .and. &
@@ -302,7 +303,7 @@ contains
              count(3)=1
 
              call nf_put_var(ncdf(ios),var3d,start, count, name='zeta')
-	  endif 
+	  endif
 
 	  if(nf_selectedvar('div', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: divergence'
@@ -321,7 +322,7 @@ contains
              count(3)=1
 
              call nf_put_var(ncdf(ios),var3d,start, count, name='div')
-	  endif 
+	  endif
 
           if(nf_selectedvar('geop', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: geop'
@@ -333,7 +334,7 @@ contains
                       varptmp(:,:,k) = (elem(ie)%state%p(:,:,k,tl%n0) + elem(ie)%state%ps + phimean)/g
                    end do
                    if (kmass.ne.-1) then
-                      ! p(:,:,kmass) = is the density, 
+                      ! p(:,:,kmass) = is the density,
                       ! other levels are tracers.  Output concentration:
                       if(k.ne.kmass) &
                            varptmp(:,:,k)=varptmp(:,:,k)/elem(ie)%state%p(:,:,kmass,tl%n0)
@@ -415,7 +416,7 @@ contains
     istat=0
   end subroutine shal_movie_finish
 
-! 
+!
 ! Called by control_mod to set the list of variables available in this model
 !
   subroutine setvarnames(nlvarnames)
@@ -426,5 +427,3 @@ contains
 
 #endif
 end module shal_movie_mod
-
-

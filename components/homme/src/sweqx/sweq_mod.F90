@@ -54,7 +54,7 @@ contains
 #ifdef TRILINOS
     use implicit_mod, only : advance_imp_nonstag
     !-----------------
-    use, intrinsic :: iso_c_binding 
+    use, intrinsic :: iso_c_binding
     !-----------------
     use derived_type_mod ,only : derived_type, initialize
 
@@ -84,13 +84,13 @@ contains
                               test_subcell_dss_fluxes_again, &
                               test_subcell_Laplace_fluxes_again  ! dont remove
 
-    
+
     implicit none
 
     integer, parameter :: facs = 4            ! starting face number to print
     integer, parameter :: face = 4            ! ending  face number to print
     type (element_t), intent(inout) :: elem(:)
-    
+
     type (EdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
     type (EdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
     type (EdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
@@ -159,7 +159,7 @@ contains
 
 
 #ifdef TRILINOS
-  interface 
+  interface
      subroutine noxinit(vectorSize, vector, comm, v_container, p_container) &
           bind(C,name='noxinit')
        use ,intrinsic :: iso_c_binding
@@ -224,13 +224,13 @@ contains
     call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
 #endif
     if (hybrid%masterthread) print *,'** running global integration-by-parts checks **'
-    call test_ibyp(elem,hybrid,nets,nete)
+    !call test_ibyp(elem,hybrid,nets,nete)
     if (hybrid%masterthread) print *,'** running element divergence/edge flux checks **'
-    call test_edge_flux(elem,hybrid,deriv,nets,nete)
+    !call test_edge_flux(elem,hybrid,deriv,nets,nete)
     if (hybrid%masterthread) print *,'** test integration in element subcells **'
-    call test_sub_integration(elem,hybrid,deriv,nets,nete)
+    !call test_sub_integration(elem,hybrid,deriv,nets,nete)
     if (hybrid%masterthread) print *,'** test element subcell flux code **'
-    call test_subcell_dss_fluxes(elem,hybrid,deriv,nets,nete)
+    !call test_subcell_dss_fluxes(elem,hybrid,deriv,nets,nete)
     call test_subcell_div_fluxes(elem,hybrid,deriv,nets,nete)
     call test_subcell_Laplace_fluxes(elem,hybrid,deriv,nets,nete)
     call test_subcell_div_fluxes_again(elem,hybrid,deriv,nets,nete)
@@ -250,43 +250,43 @@ contains
     !   original algorithm                                        better version
     !
     !  nm = u(0)                                                  nm = u(0)
-    !  n0 = u(0)                                                  n0 = u(0)           
+    !  n0 = u(0)                                                  n0 = u(0)
     !  np = undefined                                             np = undefined
-    ! 
+    !
     !  call advance (dt/2)    np = nm + 2*(dt/2)*n0               call advance(dt/4)   np = nm + 2*dt/4*n0
     !
     !  nm = u(0)                                                  nm=u(0)
-    !  n0 = u(0)                                                  n0=u(0)             
+    !  n0 = u(0)                                                  n0=u(0)
     !  np = u(dt)                                                 np = u(dt/2)
     !
     !  call timelevel_update(forward)                             call timelevel_updatate(forward)
-    ! 
-    !  nm = u(0)                                                  nm=u(0)             
-    !  n0 = u(dt)                                                 n0=u(dt/2)          
+    !
+    !  nm = u(0)                                                  nm=u(0)
+    !  n0 = u(dt)                                                 n0=u(dt/2)
     !  np = undefined                                             np = undefiend
     !
     !  call advance (dt)                                          call advance (dt/2)
     !
     !  nm = u(0)                                                  nm=u(0)
-    !  n0 = u(dt)                                                 n0=u(dt/2)          
+    !  n0 = u(dt)                                                 n0=u(dt/2)
     !  np = u(2dt)                                                np=u(dt)
     !
     !  call timelevel_updatate(leapfrog)                          call timelevel_updatate(forward)
-    !  
+    !
     !  nm = u(dt)                                                 nm=u(0)
-    !  n0 = u(2dt)                                                n0=u(dt)            
+    !  n0 = u(2dt)                                                n0=u(dt)
     !  np = undefined                                             np=undefined
     !
-    !                                                             call advance (dt) 
+    !                                                             call advance (dt)
     !
     !                                                             nm=u(0)
-    !                                                             n0=u(dt)            
+    !                                                             n0=u(dt)
     !                                                             np=u(2dt)
     !
     !                                                             call timelevel_updatate(leapfrog)
     !
     !                                                             nm=u(dt)
-    !                                                             n0=u(2dt)           
+    !                                                             n0=u(2dt)
     !                                                             np=undefined
     !
 
@@ -298,7 +298,7 @@ contains
     ! =================================================================
 
     if (topology == "cube") then
-       if (runtype .eq. 1) then 
+       if (runtype .eq. 1) then
           if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
           end if
@@ -343,17 +343,17 @@ contains
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
           !============================
-          ! Read in the restarted state 
+          ! Read in the restarted state
           !============================
           call ReadRestart(elem,ithr,nete,nets,tl)
           !================================================
-          ! Print out the state variables 
+          ! Print out the state variables
           !================================================
           !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
 
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
-       else 
+       else
           if (hybrid%masterthread) then
              print *,'runtype: INITIAL of Shallow Water equations'
           end if
@@ -393,7 +393,7 @@ contains
 
           ! ==============================================
           ! Output initial picture of geopotential...
-          ! ============================================== 
+          ! ==============================================
           ! I/O routines are not thread safe
           ! we need to stop threads and restart after I/O
           if (hthreads>1) then
@@ -443,14 +443,14 @@ contains
 
           endif  ! if time step taken
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
-       endif  ! if initial run 
+       endif  ! if initial run
     end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise
     ! times will all be off by tstep. Also, full_imp is just starting.
 
-    tl%nstep=0 
+    tl%nstep=0
 
     ! =========================================
     ! Set up for leapfrog time integration...
@@ -469,7 +469,7 @@ contains
        call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &
         hybrid, deriv, dt, tl, nets, nete)
 
-    
+
        pc_elem=elem
        jac_elem=elem
 
@@ -496,7 +496,7 @@ contains
 #endif
 
     end if
-    
+
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -510,7 +510,7 @@ contains
     ! ===================================
     ! Main timestepping loop
     ! ===================================
-    tot_iter=0.0       
+    tot_iter=0.0
     do while(tl%nstep<nmax)
 
        ! =================================
@@ -540,7 +540,7 @@ contains
            elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
 
            utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0) 
+           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
            elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
 
@@ -552,9 +552,9 @@ contains
 ! need  to  convert  xstate  to  latlon
 
            end do !nv
-          end do !nv 
-         end do !nlev 
-        end do !ie 
+          end do !nv
+         end do !nlev
+        end do !ie
 
 
 
@@ -571,7 +571,7 @@ contains
                 elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
                 elem(ie)%state%v(:,:,:,k,n0)=elem(ie)%state%v(:,:,:,k,np1)
                 elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,nm1)
-             end do 
+             end do
          else
          do k=1,nlev
           do i=1,np
@@ -593,10 +593,10 @@ contains
 
            elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
-! need ! to ! convert ! xstate ! to ! contravariant 
-           end do !np 
-          end do !np 
-         end do !nlev 
+! need ! to ! convert ! xstate ! to ! contravariant
+           end do !np
+          end do !np
+         end do !nlev
         end if
         end do !ie
 
@@ -614,17 +614,17 @@ contains
         if (integration == "full_imp") then
            if (tstep_type == 13) then
               call TimeLevel_update(tl,"leapfrog") ! for BDF2
-           else     
+           else
               call TimeLevel_update(tl,"forward") ! second order Crank Nicolson
            end if
         else
            if (tl%nstep==0) then
               call TimeLevel_update(tl,"forward")
-              dt=dt*2    
+              dt=dt*2
            else
               call TimeLevel_update(tl,"leapfrog")
            endif
-        end if 
+        end if
 
        ! ============================================================
        ! Instrumentation alley:
@@ -633,7 +633,7 @@ contains
        ! ============================================================
 #ifdef PIO_INTERP
         call interp_movie_output(elem,tl, par, pmean)
-#else     
+#else
         call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif
        ! ==================================================
@@ -673,7 +673,7 @@ contains
           ! ===============================================================
           ! Shallow Water Test Case 5: Rossby Haurwitz Waves
           ! L1,L2,Linf error norms every model day (compared to real soln)
-          ! 
+          !
           ! detect day rollover
           ! ===============================================================
 
@@ -695,7 +695,7 @@ contains
           ! ===============================================================
           ! Shallow Water Test Case 6: Rossby Haurwitz Waves
           ! L1,L2,Linf error norms every model day (compared to real soln)
-          ! 
+          !
           ! detect day rollover
           ! ===============================================================
 
@@ -732,7 +732,7 @@ contains
           ! ===============================================================
           ! Shallow Water Test Case SJ:
           ! L1,L2,Linf error norms every model day (compared to real soln)
-          ! 
+          !
           ! detect day rollover
           ! ===============================================================
 
@@ -747,7 +747,7 @@ contains
        !$OMP BARRIER
 #endif
        if(Debug) print *,'homme: point #17'
-       if (MODULO(tl%nstep,statefreq)==0 ) then 
+       if (MODULO(tl%nstep,statefreq)==0 ) then
           if(hybrid%masterthread) then
              print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
           end if
@@ -823,7 +823,7 @@ contains
 
 #else
     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
-    
+
 
 
 #endif
@@ -852,7 +852,7 @@ contains
 
     use rk_mod, only     : RkInit
     use types_mod, only : rk_t
-    
+
     implicit none
 
     integer, parameter :: facs = 4            ! starting face number to print
@@ -885,7 +885,7 @@ contains
 
 
     type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
-    
+
     real (kind=real_kind) :: mindx,dt_gv
 
     integer  :: simday
@@ -920,14 +920,14 @@ contains
 
     ! Find time-step to gravity wave speed
     ! 2012: broken because mindx=0.  also, should be updated to use true eigenvalue,
-    ! not mindx.  
-    dt_gv = (mindx/dd_pi)/300.0D0    
+    ! not mindx.
+    dt_gv = (mindx/dd_pi)/300.0D0
     dt = tstep ! this is the "user" time-step
     if (hybrid%masterthread) then
        print *,"dt grv = ", dt_gv
        print *,"dt user= ", dt
     endif
-  
+
     if(Debug) print *,'homme: point #2'
     ! ==================================
     ! Initialize derivative structure
@@ -950,7 +950,7 @@ contains
     ! =================================================================
 
     if (topology == "cube") then
-       if (runtype .eq. 1) then 
+       if (runtype .eq. 1) then
           if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
           end if
@@ -1001,22 +1001,22 @@ contains
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
           !============================
-          ! Read in the restarted state 
+          ! Read in the restarted state
           !============================
           call ReadRestart(elem,ithr,nete,nets,tl)
           !================================================
-          ! Print out the state variables 
+          ! Print out the state variables
           !================================================
           !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
 
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,kmass)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
-       else 
+       else
           if (hybrid%masterthread) then
              print *,'runtype: INITIAL of Shallow Water equations'
           end if
-          
+
           if (test_case(1:5) == "swtc1") then
              if (hybrid%masterthread) print *,"initializing swtc1..."
              call tc1_init_state(elem,nets,nete,pmean)
@@ -1051,7 +1051,7 @@ contains
 
           ! ==============================================
           ! Output initial picture of geopotential...
-          ! ============================================== 
+          ! ==============================================
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,par,tl=tl)
           call interp_movie_output(elem,tl, par, pmean )
@@ -1088,13 +1088,13 @@ contains
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,kmass)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
-       endif  ! if initial run 
+       endif  ! if initial run
     end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise
-    ! times will all be off by tstep. 
-    tl%nstep=0 
+    ! times will all be off by tstep.
+    tl%nstep=0
 
 
     if(Debug) print *,'homme: point #11'
@@ -1112,8 +1112,8 @@ contains
     ! ===================================
     ! Main timestepping loop
     ! ===================================
-    
-    do while(tl%nstep<nmax)  
+
+    do while(tl%nstep<nmax)
 
        ! =================================
        ! Call advance
@@ -1121,7 +1121,7 @@ contains
        if (rk_stage_user > 0) then
           ! user specified number of stages.  has to be >= 2
           cfl = max(2,rk_stage_user)
-          cfl = cfl - 1  
+          cfl = cfl - 1
        else
           cfl = ceiling(dt/dt_gv + 1.0D0)
        endif
@@ -1132,8 +1132,8 @@ contains
        if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt_rk)
        call advance_nonstag_rk(RungeKutta, elem,  edge2, edge3, deriv,  hybrid, &
             dt_rk   , pmean, tl   , nets, nete)
-       
-       call TimeLevel_update(tl,"leapfrog")       
+
+       call TimeLevel_update(tl,"leapfrog")
        ! ============================================================
        ! Instrumentation alley:
        !
@@ -1141,7 +1141,7 @@ contains
        ! ============================================================
 #ifdef PIO_INTERP
        call interp_movie_output(elem, tl, par, pmean)
-#else       
+#else
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif
        ! ==================================================
@@ -1181,7 +1181,7 @@ contains
           ! ===============================================================
           ! Shallow Water Test Case 5: Rossby Haurwitz Waves
           ! L1,L2,Linf error norms every model day (compared to real soln)
-          ! 
+          !
           ! detect day rollover
           ! ===============================================================
 
@@ -1202,7 +1202,7 @@ contains
           ! ===============================================================
           ! Shallow Water Test Case 6: Rossby Haurwitz Waves
           ! L1,L2,Linf error norms every model day (compared to real soln)
-          ! 
+          !
           ! detect day rollover
           ! ===============================================================
 
@@ -1241,7 +1241,7 @@ contains
           ! ==================================================
           ! Shallow Water Test Case:  swsj1
           ! L1,L2,Linf error norms every model day (compared to real soln)
-          ! 
+          !
           ! detect day rollover
           ! ==================================================
           if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
@@ -1256,7 +1256,7 @@ contains
        !$OMP BARRIER
 #endif
        if(Debug) print *,'homme: point #17'
-       if (MODULO(tl%nstep,statefreq)==0 ) then 
+       if (MODULO(tl%nstep,statefreq)==0 ) then
           if(hybrid%masterthread) then
              print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
           !   print *,"Integrating at ",dt/dt_gv," times gravity wave restriction"
@@ -1296,9 +1296,7 @@ contains
     call t_stopf('sweq')
   end subroutine sweq_rk
 
-  
+
 
 
 end module sweq_mod
-
-

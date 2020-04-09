@@ -48,7 +48,7 @@ contains
     ! ---------------------
     use kinds, only : real_kind, iulog
     ! ---------------------
-    use physical_constants, only : rearth 
+    use physical_constants, only : rearth
     ! ---------------------
     use dimensions_mod, only : np, nlev
     ! ---------------------
@@ -94,8 +94,8 @@ contains
     real (kind=real_kind), dimension(np,np,2)      :: grade
     real (kind=real_kind), dimension(np,np,2)      :: grade2
     real (kind=real_kind), dimension(np,np)      :: vor
-    real (kind=real_kind), dimension(np,np)      :: div  
-    real (kind=real_kind), dimension(np,np)      :: wdiv  
+    real (kind=real_kind), dimension(np,np)      :: div
+    real (kind=real_kind), dimension(np,np)      :: wdiv
 
     real (kind=real_kind) ::  v1,v2,v3,mx
 
@@ -122,30 +122,30 @@ contains
        end do
     enddo
     call make_C0(E,elem,hybrid,nets,nete)
-    call make_C0_vector(pv,elem,hybrid,nets,nete) 
+    call make_C0_vector(pv,elem,hybrid,nets,nete)
 
 #ifdef CURLGRAD_TEST
-    ! check curl(grad(E)) 
+    ! check curl(grad(E))
     do ie=nets,nete
        if ( maxval(abs(E(:,:,ie))) > 0 ) then
        !write(iulog,'(a,i4,2e20.10)') 'maxval: E =',ie,maxval(E(:,:,ie))
        grade=curl_sphere(E(:,:,ie),deriv,elem(ie))
        div=divergence_sphere(grade,deriv,elem(ie))
        vor=vorticity_sphere(grade,deriv,elem(ie))
-       if (maxval(abs(div))*rearth**2 > .2e-11) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: div(curl),  vor(curl)=',ie,maxval(abs(div))*rearth**2,maxval(abs(vor))*rearth**2
+       if (maxval(abs(div)) > .2e-11) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: div(curl),  vor(curl)=',ie,maxval(abs(div)),maxval(abs(vor))
        endif
 
        grade=gradient_sphere(E(:,:,ie),deriv,elem(ie)%Dinv)
        vor=vorticity_sphere(grade,deriv,elem(ie))
        div=divergence_sphere(grade,deriv,elem(ie))
-       if (maxval(abs(vor))*rearth**2 > .2e-11) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: curl(grad), div(grad)=',ie,maxval(abs(vor))*rearth**2,maxval(abs(div))*rearth**2
+       if (maxval(abs(vor)) > .2e-11) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: curl(grad), div(grad)=',ie,maxval(abs(vor)),maxval(abs(div))
        endif
        endif
     enddo
 
-    ! check div(curl(E)) with DSS 
+    ! check div(curl(E)) with DSS
     do ie=nets,nete
        gradbig(:,:,:,ie)=curl_sphere(E(:,:,ie),deriv,elem(ie))
     enddo
@@ -155,13 +155,13 @@ contains
     enddo
     call make_C0(divbig,elem,hybrid,nets,nete)
     do ie=nets,nete
-       if (maxval(abs(divbig(:,:,ie)))*rearth**2 > .8e-12) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: [div([curl])]=',ie,maxval(abs(divbig(:,:,ie)))*rearth**2
+       if (maxval(abs(divbig(:,:,ie))) > .8e-12) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: [div([curl])]=',ie,maxval(abs(divbig(:,:,ie)))
        endif
     enddo
 
 
-    ! check curl(grad(E)) with DSS 
+    ! check curl(grad(E)) with DSS
     do ie=nets,nete
        gradbig(:,:,:,ie)=gradient_sphere(E(:,:,ie),deriv,elem(ie)%Dinv)
     enddo
@@ -170,10 +170,10 @@ contains
        divbig(:,:,ie)=vorticity_sphere(gradbig(:,:,:,ie),deriv,elem(ie))
     enddo
     call make_C0(divbig,elem,hybrid,nets,nete)
-    
+
     do ie=nets,nete
-       if (maxval(abs(divbig(:,:,ie)))*rearth**2 > .8e-12) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: [curl([gradl])]=',ie,maxval(abs(divbig(:,:,ie)))*rearth**2
+       if (maxval(abs(divbig(:,:,ie))) > .8e-12) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: [curl([gradl])]=',ie,maxval(abs(divbig(:,:,ie)))
        endif
     enddo
 #endif
@@ -185,9 +185,9 @@ contains
     do ie=nets,nete
        spheremv     => elem(ie)%spheremp(:,:)
 
-       div = divergence_sphere(pv(1,1,1,ie),deriv,elem(ie))      ! latlon vector -> scalar 
+       div = divergence_sphere(pv(1,1,1,ie),deriv,elem(ie))      ! latlon vector -> scalar
        grade = gradient_sphere(E(1,1,ie),deriv,elem(ie)%Dinv)
-       wdiv = divergence_sphere_wk(pv(1,1,1,ie),deriv,elem(ie)) 
+       wdiv = divergence_sphere_wk(pv(1,1,1,ie),deriv,elem(ie))
 
        do j=1,np
           do i=1,np
@@ -210,21 +210,21 @@ contains
     call make_C0(divbig,elem,hybrid,nets,nete)
     call make_C0(wdivbig,elem,hybrid,nets,nete)
 
-    v1=global_integral(elem,ptens,hybrid,np,nets,nete)                                                 
-    v2=global_integral(elem,ptens2,hybrid,np,nets,nete)                                                
-    v3=global_integral(elem,ptens3,hybrid,np,nets,nete)                                                
+    v1=global_integral(elem,ptens,hybrid,np,nets,nete)
+    v2=global_integral(elem,ptens2,hybrid,np,nets,nete)
+    v3=global_integral(elem,ptens3,hybrid,np,nets,nete)
     mx =max(abs(v1),abs(v2),abs(v3))
-    if (hybrid%masterthread) then   
-       print *,'< E div(pv) >   =',v1                                                                     
-       print *,'< E div_wk(pv) >=',v2                                                                     
-       print *,'-<grad(E),pv >  =',-v3                                                                    
+    if (hybrid%masterthread) then
+       print *,'< E div(pv) >   =',v1
+       print *,'< E div_wk(pv) >=',v2
+       print *,'-<grad(E),pv >  =',-v3
        print *,'integration by parts rel error:',(v1-v2)/mx,(v1+v3)/mx
     endif
     if (( abs(v1-v2)/mx .gt. 1e-12 ) .or. ( abs(v1+v3)/mx .gt. 1e-12 )) then
        stop 'integration by parts error1 too large?'
     endif
-  
-#if 0  
+
+#if 0
     do ie=nets,nete
        div(:,:)=divbig(:,:,ie)
        wdiv(:,:)=wdivbig(:,:,ie)
@@ -240,8 +240,8 @@ contains
 #endif
     ! test function is O(1). gradient is O(1/rearth).  lets require agreement to
     ! 1e-11/rearth
-    mx = rearth*maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
-    if (hybrid%masterthread) then   
+    mx = maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
+    if (hybrid%masterthread) then
        write(iulog,'(a,2e20.10)') 'div vs. weak div, max error on masterthread: ',mx
     endif
     if (mx >  1e-11 ) then
@@ -268,7 +268,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: dss(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
@@ -286,7 +286,7 @@ contains
       call random_number(p)
 
       if (ie <= np*np) then
-        dss = 0 
+        dss = 0
         dss(1+mod(ie,np), 1+mod(ie/np,np)) = 1
       else
         t = dss(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
@@ -306,8 +306,8 @@ contains
       end do
       end do
 
-      values = subcell_integration(dss, np, intervals, elem(ie)%metdet) 
-      fluxes = subcell_dss_fluxes (dss, np, intervals, elem(ie)%metdet, cflux) 
+      values = subcell_integration(dss, np, intervals, elem(ie)%metdet)
+      fluxes = subcell_dss_fluxes (dss, np, intervals, elem(ie)%metdet, cflux)
 
       test = SUM(fluxes,3)
 
@@ -347,7 +347,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: u(np,np,2), v(np,np,2)
     real (kind=real_kind)              :: div(np,np)
@@ -367,10 +367,10 @@ contains
       call random_number(p)
 
       if (ie <= np*np) then
-        u = 0 
+        u = 0
         u(1+mod(ie,np), 1+mod(ie/np,np),1) = 1
       else if (ie <= 2*np*np) then
-        u = 0 
+        u = 0
         u(1+mod(ie,np), 1+mod(ie/np,np),2) = 1
       else
         t = u(1+mod((7*ie),np), 1+mod((13*ie)/np,np),1)
@@ -381,12 +381,12 @@ contains
       end if
 
       div  = divergence_sphere(u, deriv, elem(ie))
-   
+
       v(:,:,1) = elem(ie)%Dinv(:,:,1,1)*u(:,:,1) + elem(ie)%Dinv(:,:,1,2)*u(:,:,2)
       v(:,:,2) = elem(ie)%Dinv(:,:,2,1)*u(:,:,1) + elem(ie)%Dinv(:,:,2,2)*u(:,:,2)
 
-      values = subcell_integration(div, np, intervals, elem(ie)%metdet) 
-      fluxes = subcell_div_fluxes (v,   np, intervals, elem(ie)%metdet) 
+      values = subcell_integration(div, np, intervals, elem(ie)%metdet)
+      fluxes = subcell_div_fluxes (v,   np, intervals, elem(ie)%metdet)
 
       test = SUM(fluxes,3)
 
@@ -428,7 +428,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: v(np,np,2)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
@@ -446,7 +446,7 @@ contains
     metdet = 1
     do ie=nets,nete
 
-      v = 0 
+      v = 0
       if (ie <= np*np) then
         do i = 1,np
           v(i,:,2) = gll%points(:)
@@ -465,8 +465,8 @@ contains
         end do
       end if
 
-      fluxes = subcell_div_fluxes(v, np, intervals, metdet) 
-      fluxes = rearth*fluxes
+      fluxes = subcell_div_fluxes(v, np, intervals, metdet)
+      !fluxes = rearth*fluxes
 
       if (ie <= np*np) then
         t = 4./(intervals*intervals)
@@ -588,7 +588,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: dss(np,np)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
@@ -607,7 +607,7 @@ contains
     metdet = 1
     do ie=nets,nete
 
-      dss = 0 
+      dss = 0
       if (ie <= np*np) then
         do i=2,np-1
           dss(i,1) = 1
@@ -700,7 +700,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: laplace(np,np)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
@@ -716,7 +716,7 @@ contains
 
     do ie=nets,nete
 
-      laplace = 0 
+      laplace = 0
       if (ie <= np*np) then
         do i=1,np
           laplace(i,1) = 1
@@ -782,7 +782,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: u(np,np)
     real (kind=real_kind)              :: laplace(np,np)
@@ -802,7 +802,7 @@ contains
       call random_number(p)
 
       if (ie <= np*np) then
-        u = 0 
+        u = 0
         u(1+mod(ie,np), 1+mod(ie/np,np)) = 1
       else
         t = u(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
@@ -812,14 +812,14 @@ contains
 
       laplace = laplace_sphere_wk(u,deriv,elem(ie),.false.)
       laplace = laplace / elem(ie)%spheremp
-      laplace_values = subcell_integration(laplace, np, intervals, elem(ie)%metdet) 
+      laplace_values = subcell_integration(laplace, np, intervals, elem(ie)%metdet)
 
-      laplace_fluxes = subcell_Laplace_fluxes(u, deriv, elem(ie), np, intervals) 
+      laplace_fluxes = subcell_Laplace_fluxes(u, deriv, elem(ie), np, intervals)
 
       laplace_test = SUM(laplace_fluxes,3)
 
-      laplace_test   = rearth*rearth*laplace_test
-      laplace_values = rearth*rearth*laplace_values
+      !laplace_test   = rearth*rearth*laplace_test
+      !laplace_values = rearth*rearth*laplace_values
       do i=1,intervals
       do j=1,intervals
         t = ABS(laplace_test(i,j)-laplace_values(i,j))/ &
@@ -855,7 +855,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=6
 
     real (kind=real_kind)              :: values(intervals,intervals)
     real (kind=real_kind)              :: V(np,np)
@@ -868,7 +868,7 @@ contains
     do ie=nets,nete
       call random_number(p)
       if (ie <= np*np) then
-        V = 0 
+        V = 0
         V(1+mod(ie,np), 1+mod(ie/np,np)) = 1
       else
         t = V(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
@@ -876,7 +876,7 @@ contains
         V(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
       end if
 
-      values = subcell_integration(V, np, intervals, elem(ie)%metdet) 
+      values = subcell_integration(V, np, intervals, elem(ie)%metdet)
 
       t = 0
       do i = 1,np
@@ -899,7 +899,7 @@ contains
 
   subroutine test_edge_flux(elem,hybrid,deriv,nets,nete)
 !
-!  check local element vector dentities:
+!  check local element vector identities:
 !*****
 !  1. div and weak div are adjoints: (for all scalar test functions)
 !     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
@@ -907,11 +907,11 @@ contains
 !       where PHI = the delta function at (i,j)
 !
 !*****
-!  2. grad and weak grad are adjoints: 
+!  2. grad and weak grad are adjoints:
 !     weak gradient is defined with CONTRA vector test functions
-!     i.e. it returns vector:   [  integral[ p div(PHIcontra_1) ]       
-!                               [  integral[ p div(PHIcontra_2) ]       
-!     
+!     i.e. it returns vector:   [  integral[ p div(PHIcontra_1) ]
+!                               [  integral[ p div(PHIcontra_2) ]
+!
 !   integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
 ! take u = PHIcontra_1 = (1,0) vector delta funciton at (i,j):
 !  -grad_wk(p)_1(i,j) + spheremp PHIcontra_1 dot grad(p) = boundary_integral[ PHIcontra_1 p]
@@ -924,14 +924,14 @@ contains
 !
 ! HOMME-SE works in latlon, so convert cov->lat/lon:
 !
-! -grad_wk(p) + spheremp grad(p) = D^-t * B 
+! -grad_wk(p) + spheremp grad(p) = D^-t * B
 !
 ! with
-!    B1 = boundary_integral[ PHIcontra_1 p] 
+!    B1 = boundary_integral[ PHIcontra_1 p]
 !    B2 = boundary_integral[ PHIcontra_2 p]
 !
 !*****
-! 3.  weak grid with COVARIANT test functions! 
+! 3.  weak grid with COVARIANT test functions!
 !   integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
 ! take u = PHIcov_1 = (1,0) vector delta funciton at (i,j):
 !  -grad_wk(p)_1(i,j) + spheremp PHIcov_1 dot grad(p) = boundary_integral[ PHIcov_1 p]
@@ -944,14 +944,14 @@ contains
 !
 ! HOMME-SE works in latlon, so convert contra ->lat/lon:
 !
-! -grad_wk(p) + spheremp grad(p) = D * B 
+! -grad_wk(p) + spheremp grad(p) = D * B
 !
 ! with
-!    B1 = boundary_integral[ PHIcov_1 p] 
+!    B1 = boundary_integral[ PHIcov_1 p]
 !    B2 = boundary_integral[ PHIcov_2 p]
 !
 !*****
-! 4.  weak curl with COVARIANT test functions! 
+! 4.  weak curl with COVARIANT test functions!
 !  integral[ u dot curl(v)] - integral[v dot curl(u)] = boundary_integral[ v cross u dot n]
 !  curl(p) = curl(p*khat) = horizontal vector
 !  vor(U) =  s*khat       = (which we treat as a scalar)
@@ -968,10 +968,10 @@ contains
 !
 ! HOMME-SE works in latlon, so convert contra ->lat/lon:
 !
-! curl_wk(p) + spheremp curl(p) = D * B 
+! curl_wk(p) + spheremp curl(p) = D * B
 !
 ! with
-!    B1 = boundary_integral[ PHIcov_1 p] 
+!    B1 = boundary_integral[ PHIcov_1 p]
 !    B2 = boundary_integral[ PHIcov_2 p]
 !
   use dimensions_mod, only : np, np, nlev
@@ -980,17 +980,17 @@ contains
                              element_boundary_integral, gradient_sphere, &
                              gradient_sphere_wk_testcontra,gradient_sphere_wk_testcov, &
                              curl_sphere, curl_sphere_wk_testcov
-  use physical_constants, only : rrearth
+  use physical_constants, only : rrearth, rearth
   use kinds,          only : real_kind
   use hybrid_mod, only : hybrid_t
 
   implicit none
-  
+
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
   type (hybrid_t)      , intent(in) :: hybrid
   integer :: nets,nete
-  ! local 
+  ! local
   real (kind=real_kind), dimension(np,np,2) :: ucontra,ulatlon,gradp,gradp_wk,ucov
   real (kind=real_kind), dimension(np,np) :: phidivu,ugradphi,rhs,lhs,p
   real (kind=real_kind), dimension(np,np) :: rhs2,lhs2
@@ -1010,10 +1010,10 @@ contains
      phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
      ugradphi = divergence_sphere_wk(ulatlon,deriv,elem(ie))
      lhs = phidivu - ugradphi
-     
+
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
-     
-     
+
+
      do j=1,np
      do i=1,np
         if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
@@ -1027,18 +1027,18 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   if (hybrid%masterthread) print *,'check grad/weak grad (gradient_sphere_wk_testcontra)'
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! PHIVEC = contra cardinal function 
+  ! PHIVEC = contra cardinal function
   !          check each contra component seperately
 
   do ie=nets,nete
      call random_number(p)
-     
+
      ! grad(p)  (lat/lon vector)
      gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
-     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
      gradp_wk = gradient_sphere_wk_testcontra(p,deriv,elem(ie))
-     
+
      ucontra(:,:,1)=p  ! PHIvec_1 * p
      ucontra(:,:,2)=0
      ! contra->latlon
@@ -1054,8 +1054,7 @@ contains
      ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
      ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
-     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
-
+     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)
 
      ! boundary integral gives covariant components. (see above) convert to latlon:
      ! cov -> latlon
@@ -1069,8 +1068,7 @@ contains
      do i=1,np
         if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
            write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (1) integration by parts failure!'
-           write(*,'(a,2i3,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),&
-                lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
            count=count+1
         endif
      enddo
@@ -1094,15 +1092,15 @@ contains
   do ie=nets,nete
      call random_number(p)
 
-     
+
      ! grad(p)  (lat/lon vector)
      gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
-     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
      gradp_wk = gradient_sphere_wk_testcov(p,deriv,elem(ie))
      lhs = gradp(:,:,1)-gradp_wk(:,:,1)
-     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
-     
+     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)
+
      ucov(:,:,1)=p  ! PHIvec_1 * p
      ucov(:,:,2)=0
      ! cov->latlon
@@ -1152,15 +1150,15 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
      call random_number(p)
-     
+
      ! grad(p)  (lat/lon vector)
      gradp = curl_sphere(p,deriv,elem(ie))
-     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
      gradp_wk = curl_sphere_wk_testcov(p,deriv,elem(ie))
      lhs =  gradp_wk(:,:,1)-gradp(:,:,1)
      lhs2 = gradp_wk(:,:,2)-gradp(:,:,2)
-     
+
      ucov(:,:,1)=p  ! PHIvec_1 * p
      ucov(:,:,2)=0
      ! cov->latlon, and then u cross khat:
@@ -1206,7 +1204,7 @@ contains
   enddo
 
   if (hybrid%masterthread) print *,'done integration by parts identity check'
-  if (count>0) stop 'ERROR: at least one integration by parts failuure'
+  !if (count>0) stop 'ERROR: at least one integration by parts failuure'
   end subroutine
 
 end module
