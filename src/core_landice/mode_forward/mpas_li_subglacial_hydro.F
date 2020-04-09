@@ -925,7 +925,7 @@ module li_subglacial_hydro
       type (block_type), pointer :: block
       real (kind=RKIND), pointer :: deltat
       integer, pointer :: nEdgesSolve
-      logical, pointer :: config_SGH_chnl_active
+      logical, pointer :: config_SGH_chnl_active, config_SGH_chnl_include_DCFL
       ! in the following variables, "Proc" indicates the value on the current processor,
       ! and "Block" indicates value on current block
       real (kind=RKIND) :: dtSGHadvecBlock, dtSGHadvecProc
@@ -1040,11 +1040,15 @@ module li_subglacial_hydro
       ! ---
       call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
       call mpas_pool_get_config(liConfigs, 'config_SGH_max_adaptive_timestep', maxDt)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_include_DCFL', config_SGH_chnl_include_DCFL)
 
       ! Find smallest of 3 or 5 limiting time steps
       proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
       if (config_SGH_chnl_active) then
-         proposedDt = min(proposedDt, deltatSGHadvecChannel, deltatSGHdiffuChannel)
+         proposedDt = min(proposedDt, deltatSGHadvecChannel)
+         if (config_SGH_chnl_include_DCFL) then
+            proposedDt = min(proposedDt, deltatSGHdiffuChannel)
+         endif
       endif
       proposedDt = proposedDt * CFLfraction
 
@@ -1101,7 +1105,7 @@ module li_subglacial_hydro
          call mpas_log_write("deltatSGH > deltatSGHadvecChannel  $r > $r", MPAS_LOG_WARN, &
             realArgs=(/deltatSGH, deltatSGHadvecChannel/))
       endif
-      if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHdiffuChannel)) then
+      if (config_SGH_chnl_active .and. config_SGH_chnl_include_DCFL .and. (deltatSGH > deltatSGHdiffuChannel)) then
          call mpas_log_write("deltatSGH > deltatSGHdiffuChannel  $r > $r", MPAS_LOG_WARN, &
             realArgs=(/deltatSGH, deltatSGHdiffuChannel/))
       endif
