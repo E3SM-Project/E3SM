@@ -35,6 +35,10 @@ class EnvMachSpecific(EnvBase):
 
         for item in items:
             nodes = machobj.get_first_child_nodes(item)
+            if item == "environment_variables":
+                if len(nodes) == 0:
+                    example_text = """This section is for the user to specify any additional machine-specific env var, or to overwite existing ones.\n  <environment_variables>\n    <env name="NAME">ARGUMENT</env>\n  </environment_variables>\n  """
+                    self.make_child_comment(text = example_text)
             if item == "run_exe" or item == "run_misc_suffix":
                 if len(nodes) == 0:
                     value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
