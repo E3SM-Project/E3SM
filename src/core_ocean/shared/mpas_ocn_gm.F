@@ -121,7 +121,7 @@ contains
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm, dTdzSmooth, dSdzSmooth
       real(kind=RKIND), dimension(:), allocatable :: BVFsmooth, BVFCol
       ! Dimensions
-      integer :: nsmooth, nCells1,  nCells, nEdges
+      integer :: nsmooth, nCells, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -236,9 +236,6 @@ contains
       enddo
       !$omp end do
 
-      nCells1 = nCellsArray(1)
-print *, 'vals = ', indMLD(40:50)
-print *, '*****************'
       if (local_config_GM_kappa_lat_depth_variable) then
 
          !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
