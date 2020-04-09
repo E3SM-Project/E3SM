@@ -110,11 +110,16 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos)
+            reread = not os.path.isfile("env_mach_specific.xml")
+            if reread:
+                case.flush()
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
+            if reread:
+                case.read_xml()
 
         # Also write out Cmake macro file
         if not os.path.isfile("Macros.cmake"):
-            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos)
+            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
