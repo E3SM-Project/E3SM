@@ -487,7 +487,7 @@ module ocn_forward_mode
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: scratchPool
-
+      type (mpas_pool_type), pointer :: tracersPool
 
       type (MPAS_timeInterval_type) :: timeStep
       character(len=StrKIND), pointer :: config_restart_timestamp_name, config_sw_absorption_type
@@ -523,6 +523,17 @@ module ocn_forward_mode
 #ifdef MPAS_DEBUG
       call mpas_log_write('Initial time ' // trim(timeStamp))
 #endif
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+           call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool)
+           block_ptr => block_ptr % next
+      end do
 
       call ocn_analysis_compute_startup(domain, err)
 
@@ -597,8 +608,12 @@ module ocn_forward_mode
            call mpas_timer_stop("land_ice_build_arrays")
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
-           
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
+
+           ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+           if (config_use_Redi.or.config_use_GM) then
+               call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, meshPool, scratchPool, timeLevelIn=1)
+           end if
 
            block_ptr => block_ptr % next
          end do
