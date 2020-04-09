@@ -1884,10 +1884,10 @@ module ocn_time_integration_split
         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
-        if (config_use_GM.or.config_use_Redi) then
-           call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
-              meshPool, scratchPool, timeLevelIn=2)
-        end if
+ !       if (config_use_GM.or.config_use_Redi) then
+ !          call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+ !             meshPool, scratchPool, timeLevelIn=2)
+ !       end if
         call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
 
         block => block % next
@@ -1982,11 +1982,11 @@ module ocn_time_integration_split
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
 
-         ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
-         if (config_use_GM.or.config_use_Redi) then
-            call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
-               meshPool, scratchPool, timeLevelIn=2)
-         end if
+!         ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
+!         if (config_use_GM.or.config_use_Redi) then
+!            call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+!               meshPool, scratchPool, timeLevelIn=2)
+!         end if
 
          call mpas_timer_start('se final mpas reconstruct', .false.)
 
