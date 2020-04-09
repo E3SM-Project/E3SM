@@ -81,7 +81,6 @@ def assert_test_status(test_obj, test_name, test_status_obj, test_phase, expecte
 def verify_perms(test_obj, root_dir):
 ###############################################################################
     for root, dirs, files in os.walk(root_dir):
-
         for filename in files:
             full_path = os.path.join(root, filename)
             st = os.stat(full_path)
@@ -1640,10 +1639,15 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         if CIME.utils.get_model() == "e3sm":
             genargs = ["-g", "-o", "-b", self._baseline_name] + test_names
+            genargs.append("--wait")
             compargs = ["-c", "-b", self._baseline_name] + test_names
+            compargs.append("--wait")
         else:
             genargs = ["-g", self._baseline_name, "-o"] + test_names + ["--baseline-root ", self._baseline_area]
+            genargs.append("--wait")
             compargs = ["-c", self._baseline_name] + test_names + ["--baseline-root ", self._baseline_area]
+            compargs.append("--wait")
+
         self._create_test(genargs)
 
         # Hist compare should pass
@@ -1666,7 +1670,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
             the_match = expected_pattern.search(output)
             self.assertNotEqual(the_match, None,
-                                msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
+                                msg="Cmd \n '%s' \n failed to display failed test in output:\n\n%s\n\n%s" % (cpr_cmd, output, test_name))
 
         # Bless
         run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
@@ -2469,11 +2473,10 @@ class L_TestSaveTimings(TestCreateTestCommon):
 
         if manual_timing:
             run_cmd_assert_result(self, "cd %s && %s/save_provenance postrun" % (casedir, TOOLS_DIR))
-
         if CIME.utils.get_model() == "e3sm":
             provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
             self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
-            verify_perms(self, timing_dir)
+            verify_perms(self, ''.join(provenance_dirs))
 
     ###########################################################################
     def test_save_timings(self):

@@ -203,6 +203,11 @@ TESTRUNDIFF       Produces a canned hist file. Env var TESTRUNDIFF_ALTERNATE can
                   be used to cause a DIFF. Used to check that baseline diffs are
                   detected and reported correctly.
 
+TESTRUNDIFF       Produces a canned hist file. Env var TESTRUNDIFF_ALTERNATE can
+\RESUBMIT         be used to cause a DIFF. Used to check that baseline diffs are
+                  detected and reported correctly. Sets Resubmit equal to three.
+
+
 TESTTESTDIFF      Simulates internal test diff (non baseline). Used to check that
                   internal comparison failures are detected and reported correctly.
 
