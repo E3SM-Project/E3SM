@@ -4,6 +4,7 @@ set(ATM_SRC
   dead_mct_mod.F90
   dead_data_mod.F90
   dead_mod.F90
+  examplePio.f90
 )
 
 if (USE_ESMF_LIB)
