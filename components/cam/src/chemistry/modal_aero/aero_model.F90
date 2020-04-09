@@ -1889,7 +1889,12 @@ lphase_jnmw_conditional: &
                    qqcw_in(1:ncol,:) = state%q(1:ncol,:,mm_cw) 
                    !Guangxing Lin, end      
                 endif
+                !Guangxing Lin debug
 
+                if(trim(cnst_name(mm))=='bc_a1') then
+                        write(*,*)'gxlin-debug mm = ', m, ' mm_cw= ', mm_cw 
+                        write(*,*)'gxlin-debug optcc = ', mam_prevap_resusp_optcc
+                end if 
                 call wetdepa_v2( &
                      ncol, dt, &
                      state%t, state%pmid, state%q(:,:,1), state%pdel, &
