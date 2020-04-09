@@ -2005,9 +2005,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp)
    
+#ifdef FIVE
    !only now does one know the third dimension of rndst_five and nacon_five
    allocate(rndst_five(pcols,pver_five,size(rndst,3)))    
    allocate(nacon_five(pcols,pver_five,size(nacon,3)))   
+#endif
    
    call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp)
@@ -4290,8 +4292,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call physics_state_dealloc(state_loc)
    call t_stopf('micro_mg_cam_tend_fini')
 
+#ifdef FIVE
    deallocate (rndst_five)
    deallocate (nacon_five)
+#endif
 !   Write(*,*)"Leaving function: micro_mg_tend_cam"
 end subroutine micro_mg_cam_tend
 
