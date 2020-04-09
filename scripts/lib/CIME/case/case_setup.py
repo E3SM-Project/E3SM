@@ -111,6 +111,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
             reread = not os.path.isfile("env_mach_specific.xml")
+            if reread:
+                case.flush()
             configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
             if reread:
                 case.read_xml()
