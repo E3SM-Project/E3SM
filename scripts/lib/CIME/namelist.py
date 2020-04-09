@@ -1131,8 +1131,8 @@ class Namelist(object):
             group_variables[name] = value
         return group_variables
 
-    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True, 
-              skip_comps=None, skip_mediator=None):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
+
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1217,10 +1217,10 @@ class Namelist(object):
             logger.debug("Writing nuopc config file to: {}".format(out_file))
             flag = 'w'
             with open(out_file, flag) as file_obj:
-                self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups) 
+                self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing nuopc config data to file object")
-            self._write_nuopc(out_file, groups, sorted_groups=sorted_groups) 
+            self._write_nuopc(out_file, groups, sorted_groups=sorted_groups)
 
 
     def _write_nuopc(self, out_file,  groups, sorted_groups):
