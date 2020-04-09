@@ -767,6 +767,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxAdvec', waterFluxAdvec)
       call mpas_pool_get_array(hydroPool, 'waterFluxDiffu', waterFluxDiffu)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
 
       do iEdge = 1, nEdges
@@ -787,6 +788,30 @@ module li_subglacial_hydro
          waterPressureSlopeNormal(iEdge) = (waterPressure(cell2) - waterPressure(cell1)) / dcEdge(iEdge)
       end do
 
+      ! Disallow flow from ocean to glacier, or land to glacier,
+      ! which can occur under some circumstances
+      ! For ocean this is invalid because ocean water has a different density!
+      ! For land this would only happen if there is a supply of water, which is not currently handled.
+      ! Do this by simply zeroing the hydropotential gradient in those cases.
+      do iEdge = 1, nEdges
+         ! Find edges along GL to check for 'backwarrds' flow
+         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+            ! Now check if flow is backwards
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (hydropotentialBaseSlopeNormal(iEdge) > 0.0_RKIND) then
+               ! flow is from cell2 to cell1
+               if (.not. li_mask_is_grounded_ice(cellMask(cell2))) then
+                  hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+               endif
+            else ! phi<=0
+               ! flow is from cell1 to cell2
+               if (.not. li_mask_is_grounded_ice(cellMask(cell1))) then
+                  hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+               endif
+            endif
+         endif ! GL edge
+      end do
 
       ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
 
