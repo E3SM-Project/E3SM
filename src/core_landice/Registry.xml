@@ -100,6 +100,10 @@
 		            description="Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value."
 		            possible_values="Any positive, real number."
 		/>
+		<nml_option name="config_nonconvergence_error" type="logical" default_value=".true." units="unitless"
+		            description="If true, nonconvergence of the velocity solver results in a fatal error.  If false, it is a warning."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 

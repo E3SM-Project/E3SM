@@ -450,6 +450,7 @@ contains
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
       logical, pointer :: config_output_external_velocity_solver_data
+      logical, pointer :: config_nonconvergence_error
       real (kind=RKIND), pointer :: config_ice_density
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
@@ -472,6 +473,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
       call mpas_pool_get_config(liConfigs, 'config_output_external_velocity_solver_data', &
          config_output_external_velocity_solver_data)
+      call mpas_pool_get_config(liConfigs, 'config_nonconvergence_error', config_nonconvergence_error)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       ! Mesh variables
@@ -580,9 +582,15 @@ contains
                 deltat, err_albany)  ! return values
           call mpas_timer_stop("velocity_solver_solve_FO")
 
-          if (err_tmp > 0) then
-             call mpas_log_write("Albany velocity solve encountered an error!  " // &
-                "Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
+          if (err_tmp == 1) then
+             if (config_nonconvergence_error) then
+                call mpas_log_write("Albany velocity solve failed to converge!  " // &
+                   "Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
+             else
+                call mpas_log_write("Albany velocity solve failed to converge!  " // &
+                   "Check log.albany.0000.out for more information.", MPAS_LOG_WARN)
+                err_tmp = 0
+             endif
           endif
           err = ior(err,err_tmp)
 
