@@ -672,18 +672,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          normalTransportVelocity(:, iEdge) = normalVelocity(:, iEdge)
       end do
 
-
-      ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
-      if (config_use_Redi.or.config_use_GM) then
-         call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
-            meshPool, scratchPool, timeLevelIn=1)
-      end if
-      if (config_use_GM) then
-         do iEdge = 1, nEdges
-            normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
-         end do
-       end if
-
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
@@ -702,10 +690,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                        velocityZonal,        &
                        velocityMeridional    &
                       )
-
-      if (config_use_GM) then
-         call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
-      end if
 
       call mpas_pool_initialize_time_levels(statePool)
 
