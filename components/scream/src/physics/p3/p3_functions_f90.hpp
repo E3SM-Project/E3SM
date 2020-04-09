@@ -997,6 +997,33 @@ void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
 }
 
+struct LatentHeatData
+{
+  static constexpr size_t NUM_ARRAYS = 3;
+
+  // Inputs
+  Int its, ite, kts, kte;
+
+  // Outputs
+  Real* v, *s, *f;
+
+  LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
+  LatentHeatData(const LatentHeatData& rhs);
+  LatentHeatData& operator=(const LatentHeatData& rhs);
+
+  void transpose();
+  void init_ptrs();
+
+  // Internals
+  Int m_ni, m_nk, m_total;
+  std::vector<Real> m_data;
+};
+void get_latent_heat(LatentHeatData& d);
+
+extern "C" {
+void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f);
+}
+
 struct CheckValuesData
 {
   static constexpr size_t NUM_ARRAYS = 2;

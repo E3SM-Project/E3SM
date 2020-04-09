@@ -53,6 +53,7 @@ if (NOT CUDA_BUILD)
     p3_functions_droplet_activation.cpp
     p3_functions_ice_nucleation.cpp
     p3_functions_ice_cldliq_wet_growth.cpp
+    p3_functions_get_latent_heat.cpp
     p3_functions_check_values.cpp
     p3_functions_incloud_mixingratios.cpp)
 endif()

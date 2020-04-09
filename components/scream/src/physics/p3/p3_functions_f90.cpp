@@ -82,9 +82,9 @@ void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* 
 void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
 
 void impose_max_total_ni_c(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
-  
+
 void ice_melting_c(Real rho,Real t,Real pres,Real rhofaci,Real f1pr05,Real f1pr14,Real xxlv,Real xlf,Real dv,Real sc,Real mu,Real kap,Real qv,Real qitot_incld, Real nitot_incld,Real* qimlt,Real* nimlt);
-  
+
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
@@ -178,6 +178,8 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real kap, Real mu, Real sc, Real qv, Real qc_incld,
                              Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
                              Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
+
+void get_latent_heat_c(Int its, Int ite, Int kts, Int kte, Real* s, Real* v, Real* f);
 
 void check_values_c(Real* qv, Real* temp, Int kts, Int kte, Int timestepcount,
                     Int force_abort, Int source_ind, Real* col_loc);
@@ -328,6 +330,68 @@ void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
   p3_init(true);
   cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld,
                               &d.qcheti, &d.ncheti);
+}
+
+LatentHeatData::LatentHeatData(Int kts_, Int kte_, Int its_, Int ite_) :
+  its(its_), ite(ite_), kts(kts_), kte(kte_),
+  m_ni((ite_ - its_) + 1), m_nk((kte_ - kts_) + 1), m_total(m_ni*m_nk),
+  m_data( NUM_ARRAYS * m_total, 0.0)
+{
+  init_ptrs();
+}
+
+LatentHeatData::LatentHeatData(const LatentHeatData& rhs) :
+  its(rhs.its), ite(rhs.ite), kts(rhs.kts), kte(rhs.kte),
+  m_ni(rhs.m_ni), m_nk(rhs.m_nk), m_total(rhs.m_total),
+  m_data(rhs.m_data)
+{
+  init_ptrs();
+}
+
+LatentHeatData& LatentHeatData::operator=(const LatentHeatData& rhs) 
+{
+  its     = rhs.its;
+  ite     = rhs.ite;
+  kts     = rhs.kts;
+  kte     = rhs.kte;
+  m_ni    = rhs.m_ni;
+  m_nk    = rhs.m_nk;
+  m_total = rhs.m_total;
+  m_data  = rhs.m_data; // copy
+
+  init_ptrs();
+
+  return *this;
+}
+
+void LatentHeatData::transpose()
+{
+  LatentHeatData d_trans(*this);
+  util::transpose<util::TransposeDirection::f2c>(v, d_trans.v, m_ni, m_nk);
+  util::transpose<util::TransposeDirection::f2c>(s, d_trans.s, m_ni, m_nk);
+  util::transpose<util::TransposeDirection::f2c>(f, d_trans.f, m_ni, m_nk);
+
+  *this = d_trans;
+}
+
+void LatentHeatData::init_ptrs()
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  std::array<Real**, NUM_ARRAYS> ptrs = {&v, &s, &f};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+}
+
+void get_latent_heat(LatentHeatData& d)
+{
+  p3_init(true);
+  get_latent_heat_c(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
+  d.transpose();
 }
 
 void droplet_self_collection(DropletSelfCollectionData& d)
@@ -1674,7 +1738,7 @@ void rain_sedimentation_f(
   // Set up views
   Kokkos::Array<view_1d, RainSedData::NUM_ARRAYS> temp_d;
   Kokkos::Array<size_t, RainSedData::NUM_ARRAYS> sizes;
-  for (int i = 0; i < RainSedData::NUM_ARRAYS; ++i) sizes[i] = nk;
+  for (size_t i = 0; i < RainSedData::NUM_ARRAYS; ++i) sizes[i] = nk;
   sizes[RainSedData::NUM_ARRAYS - 1] = nk+1;
 
   pack::host_to_device({qr_incld, rho, inv_rho, rhofacr, rcldm, inv_dzq, qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx},
@@ -2083,41 +2147,41 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nrs
 
   void ice_melting_f(Real rho_,Real t_,Real pres_,Real rhofaci_,Real f1pr05_,Real f1pr14_,Real xxlv_,Real xlf_,Real dv_,Real sc_,Real mu_,Real kap_,Real qv_,Real qitot_incld_,Real nitot_incld_,Real* qimlt_,Real* nimlt_){
   using P3F = Functions<Real, DefaultDevice>;
-  
+
   typename P3F::view_1d<Real> t_d("t_h", 2);
   auto t_h = Kokkos::create_mirror_view(t_d);
   Real local_qimlt = *qimlt_;
   Real local_nimlt = *nimlt_;
-  
+
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       typename P3F::Spack rho(rho_), t(t_), pres(pres_), rhofaci(rhofaci_),f1pr05(f1pr05_), f1pr14(f1pr14_), xxlv(xxlv_), xlf(xlf_),dv(dv_), sc(sc_), mu(mu_), kap(kap_),qv(qv_), qitot_incld(qitot_incld_), nitot_incld(nitot_incld_), qimlt(local_qimlt), nimlt(local_nimlt);
       P3F::ice_melting(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt);
 
       t_d(0) = qimlt[0];
       t_d(1) = nimlt[0];
-      
+
     });
   Kokkos::deep_copy(t_h, t_d);
-  
+
   *qimlt_ = t_h(0);
   *nimlt_ = t_h(1);
 }
 
 void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_local_)
 {
-  using P3F = Functions<Real, DefaultDevice>; 
+  using P3F = Functions<Real, DefaultDevice>;
   using Spack   = typename P3F::Spack;
   using view_1d = typename P3F::view_1d<Real>;
 
 
-  view_1d t_d("t_h", 1); 
-  auto t_h = Kokkos::create_mirror_view(t_d); 
-  
-  Real local_nitot_local = *nitot_local_; 
+  view_1d t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_nitot_local = *nitot_local_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack nitot_local(local_nitot_local); 
-    Spack max_total_Ni(max_total_Ni_); 
+    Spack nitot_local(local_nitot_local);
+    Spack max_total_Ni(max_total_Ni_);
     Spack inv_rho_local(inv_rho_local_);
 
     P3F::impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local);
@@ -2126,7 +2190,7 @@ void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_
 
   Kokkos::deep_copy(t_h, t_d);
 
-  *nitot_local_ = t_h(0); 
+  *nitot_local_ = t_h(0);
 }
 
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)
@@ -2442,7 +2506,6 @@ void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack        = typename P3F::Spack;
-  using Smask        = typename P3F::Smask;
   using view_1d      = typename P3F::view_1d<Real>;
 
   view_1d t_d("t_d", 2);
@@ -2474,9 +2537,7 @@ void droplet_activation_f(Real temp_, Real pres_, Real qv_, Real qc_,
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack        = typename P3F::Spack;
-  using Smask        = typename P3F::Smask;
   using view_1d      = typename P3F::view_1d<Real>;
-  using bool_view_1d = typename P3F::view_1d<bool>;
 
   view_1d t_d("t_d", 2);
   const auto t_h = Kokkos::create_mirror_view(t_d);
@@ -2557,6 +2618,57 @@ void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, R
   *qcshd_         = t_h(4);
 }
 
+void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f)
+{
+  using P3F        = Functions<Real, DefaultDevice>;
+  using Spack      = typename P3F::Spack;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+  using view_2d    = typename P3F::view_2d<Spack>;
+
+  scream_require_msg(kte >= kts,
+                     "kte must be >= kts, kts=" << kts << " kte=" << kte);
+
+  scream_require_msg(ite >= its,
+                     "ite must be >= its, its=" << its << " ite=" << ite);
+
+  kts -= 1;
+  kte -= 1;
+  its -= 1;
+  ite -= 1;
+
+  Int nk = (kte - kts) + 1;
+  Int ni = (ite - its) + 1;
+  Int total = ni*nk;
+
+  // Set up views
+  view_2d v_d("v_d", ni, nk),
+    s_d("s_d", ni, nk),
+    f_d("f_d", ni, nk);
+
+  P3F::get_latent_heat(ni, nk, v_d, s_d, f_d);
+
+  // Transform to 1d
+  uview_1d v_h(v_d.data(), total),
+    s_h(s_d.data(), total),
+    f_h(f_d.data(), total);
+
+  // Sync to host
+  Kokkos::Array<uview_1d, 3> out_views = {v_h, s_h, f_h};
+  pack::device_to_host({v, s, f}, total, out_views);
+
+  // Transpose
+  LatentHeatData temp(its, ite, kts, kte);
+  std::copy(v, v+total, temp.v);
+  std::copy(s, s+total, temp.s);
+  std::copy(f, f+total, temp.f);
+
+  temp.transpose();
+
+  std::copy(temp.v, temp.v+total, v);
+  std::copy(temp.s, temp.s+total, s);
+  std::copy(temp.f, temp.f+total, f);
+}
+
 void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
                     Int timestepcount, bool force_abort, Int source_ind, Real* col_loc)
 {
@@ -2565,7 +2677,6 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   using uview_1d   = typename P3F::uview_1d<Spack>;
   using view_1d    = typename P3F::view_1d<Spack>;
   using suview_1d  = typename P3F::uview_1d<Real>;
-  using sview_1d   = typename P3F::view_1d<Real>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
@@ -2601,7 +2712,6 @@ void calculate_incloud_mixingratios_f(Real qc_, Real qr_, Real qitot_, Real qiri
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack        = typename P3F::Spack;
-  using Smask        = typename P3F::Smask;
   using view_1d      = typename P3F::view_1d<Real>;
 
   view_1d t_d("t_d", 8);
@@ -2779,7 +2889,7 @@ void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg
 {
     using P3F = Functions<Real, HostDevice>;
     using Spack   = typename P3F::Spack;
-    
+
     Spack qitot(qitot_), qidep(qidep_), qinuc(qinuc_), qiberg(qiberg_), qrcol(qrcol_), qccol(qccol_);
     Spack qrheti(qrheti_), qcheti(qcheti_), qisub(*qisub_), qimlt(*qimlt_);
 

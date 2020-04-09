@@ -28,6 +28,7 @@ set(P3_TESTS_SRCS
   p3_ice_melting_unit_tests.cpp
   p3_droplet_activation_unit_tests.cpp
   p3_ice_cldliq_wet_growth_unit_tests.cpp
+  p3_get_latent_heat_unit_tests.cpp
   p3_check_values_unit_tests.cpp
   p3_incloud_mixingratios_unit_tests.cpp
 )

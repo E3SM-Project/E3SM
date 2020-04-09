@@ -487,6 +487,14 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    real(kind=c_real), intent(inout) :: qrcol, qccol, qwgrth, nrshdr, qcshd
  end subroutine ice_cldliq_wet_growth_f
 
+ subroutine get_latent_heat_f(its, ite, kts, kte, v, s, f) bind(C)
+   use iso_c_binding
+
+   ! arguments
+   integer(kind=c_int), value, intent(in) :: its, ite, kts, kte
+   real(kind=c_real), dimension(its:ite, kts:kte), intent(out) :: v, s, f
+ end subroutine get_latent_heat_f
+
  subroutine check_values_f(qv, temp, kts, kte, timestepcount, force_abort, source_ind, col_loc) bind(C)
    use iso_c_binding
 
@@ -509,6 +517,7 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    real(kind=c_real), value, intent(in) :: qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm
    real(kind=c_real), intent(out) :: qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
  end subroutine calculate_incloud_mixingratios_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

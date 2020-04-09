@@ -762,9 +762,9 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real), intent(out) :: qimlt,nimlt
 
     call ice_melting(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt)
-    
+
   end subroutine ice_melting_c
-  
+
  subroutine droplet_activation_c(temp,pres,qv,qc,inv_rho,sup,xxlv,npccn, log_predictNc,odt, &
                                  qcnuc,ncnuc) bind(C)
    use micro_p3, only: droplet_activation
@@ -796,8 +796,18 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                               log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
  end subroutine ice_cldliq_wet_growth_c
 
- subroutine  check_values_c(qv, temp, kts, kte, timestepcount, &
-                            force_abort, source_ind, col_loc) bind(C)
+ subroutine get_latent_heat_c(its,ite,kts,kte,v,s,f) bind(C)
+   use micro_p3, only: get_latent_heat
+
+   ! arguments
+   integer(kind=c_int), intent(in), value :: its, ite, kts, kte
+   real(kind=c_real), dimension(its:ite, kts:kte), intent(out) :: v, s, f
+
+   call get_latent_heat(its,ite,kts,kte,v,s,f)
+ end subroutine get_latent_heat_c
+
+ subroutine check_values_c(qv, temp, kts, kte, timestepcount, &
+                           force_abort, source_ind, col_loc) bind(C)
    use micro_p3, only: check_values
 
    ! argmens
@@ -821,7 +831,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    call calculate_incloud_mixingratios(qc, qr, qitot, qirim, nc, nr, nitot, birim,   &
                                        inv_lcldm, inv_icldm, inv_rcldm,              &
                                        qc_incld, qr_incld, qitot_incld, qirim_incld, &
-                                       nc_incld, nr_incld, nitot_incld, birim_incld) 
+                                       nc_incld, nr_incld, nitot_incld, birim_incld)
  end subroutine calculate_incloud_mixingratios_c
- 
+
 end module micro_p3_iso_c

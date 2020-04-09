@@ -54,26 +54,26 @@ module micro_p3_utils
     real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
     real(rtype), parameter, public :: dropmass = 5.2e-7_rtype
 
-! particle mass-diameter relationship
-! currently we assume spherical particles for cloud ice/snow
-! m = cD^d
-! exponent
-real(rtype), parameter :: dsph = 3._rtype
+    logical, public :: use_cxx = .true.
 
-! Bounds for mean diameter for different constituents.
-! real(rtype), parameter :: lam_bnd_rain(2) = 1._rtype/[500.e-6_rtype, 20.e-6_rtype]
-! real(rtype), parameter :: lam_bnd_snow(2) = 1._rtype/[2000.e-6_rtype, 10.e-6_rtype]
+    ! particle mass-diameter relationship
+    ! currently we assume spherical particles for cloud ice/snow
+    ! m = cD^d
+    ! exponent
+    real(rtype), parameter :: dsph = 3._rtype
 
-! Minimum average mass of particles.
-real(rtype), parameter :: min_mean_mass_liq = 1.e-20_rtype
-real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
+    ! Bounds for mean diameter for different constituents.
+    ! real(rtype), parameter :: lam_bnd_rain(2) = 1._rtype/[500.e-6_rtype, 20.e-6_rtype]
+    ! real(rtype), parameter :: lam_bnd_snow(2) = 1._rtype/[2000.e-6_rtype, 10.e-6_rtype]
 
-! in-cloud values
-REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
-real(rtype), parameter :: incloud_limit = 5.1E-3
-real(rtype), parameter :: precip_limit  = 1.0E-2
+    ! Minimum average mass of particles.
+    real(rtype), parameter :: min_mean_mass_liq = 1.e-20_rtype
+    real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 
-logical, public :: use_cxx = .true.
+    ! in-cloud values
+    REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
+    real(rtype), parameter :: incloud_limit = 5.1E-3
+    real(rtype), parameter :: precip_limit  = 1.0E-2
 
     contains
 !__________________________________________________________________________________________!
@@ -211,9 +211,19 @@ logical, public :: use_cxx = .true.
 !                                                                                          !
 !__________________________________________________________________________________________!
     subroutine get_latent_heat(its,ite,kts,kte,v,s,f)
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: get_latent_heat_f
+#endif
 
        integer,intent(in) :: its,ite,kts,kte
        real(rtype),dimension(its:ite,kts:kte),intent(out) :: v,s,f
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call get_latent_heat_f(its,ite,kts,kte,v,s,f)
+       return
+    endif
+#endif
 
 !       integer i,k
 

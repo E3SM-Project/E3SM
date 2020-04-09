@@ -85,6 +85,8 @@ struct Functions
 
   template <typename S>
   using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+  template <typename S>
+  using uview_2d = typename ko::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
@@ -503,7 +505,7 @@ struct Functions
                                   const Spack& qitot_incld, const Spack& nitot_incld,
                                   const Spack& qr_incld,
                                   Spack& qrcol, Spack& nrcol);
-  
+
   // TODO (comments)
   KOKKOS_FUNCTION
   static void ice_self_collection(const Spack& rho, const Spack& rhofaci,
@@ -521,11 +523,11 @@ struct Functions
   //get number and mass tendencies due to melting ice
   KOKKOS_FUNCTION
   static void ice_melting(const Spack& rho, const Spack& t, const Spack& pres, const Spack& rhofaci,
-			  const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, 
-			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap, 
+			  const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf,
+			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
 			  const Spack& qv, const Spack& qitot_incld, const Spack& nitot_incld,
 			  Spack& qimlt, Spack& nimlt);
-  
+
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
@@ -575,6 +577,9 @@ struct Functions
                                     const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
                                     const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
                                     Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd);
+
+  // Note: not a kernel function
+  static void get_latent_heat(const Int& ni, const Int& nk, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);
 
   KOKKOS_FUNCTION
   static void check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
@@ -636,6 +641,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_droplet_activation_impl.hpp"
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
+# include "p3_functions_get_latent_heat_impl.hpp"
 # include "p3_functions_check_values_impl.hpp"
 # include "p3_functions_incloud_mixingratios_impl.hpp"
 #endif
