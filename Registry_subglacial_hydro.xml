@@ -74,6 +74,10 @@
 		            description="activate channels in subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
+                <nml_option name="config_SGH_chnl_include_DCFL" type="logical" default_value=".false." units="unitless"
+		            description="If true, diffusivity of the channel is included in the CFL calculation for determining the time step.  This can require very small time steps (subsecond).  It is unclear if it is necessary and many runs have been stable without it."
+		            possible_values=".true. or .false."
+		/>
                 <nml_option name="config_SGH_chnl_alpha" type="real" default_value="1.25" units="unitless"
 		            description="power of alpha parameter in subglacial water flux formula (in channels)"
 		            possible_values="positive real number"
