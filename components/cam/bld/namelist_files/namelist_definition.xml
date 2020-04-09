@@ -494,7 +494,7 @@ Default: FALSE
 
 <!-- Coupler between Physics and Dynamics -->
 
-<entry id="phys_chunk_fdim" type="integer"  category="perf_dp_coup"
+<entry id="phys_chnk_fdim" type="integer"  category="perf_dp_coup"
        group="cam_inparm" valid_values="">
 The basic data structure for fields in the physics is the chunk. The
 horizontal (column) dimension is factored between the first chunk dimension

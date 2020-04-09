@@ -211,7 +211,7 @@ Maximum number of sub-columns in a column (physics data structure).
 </entry>
 <entry id="ppcols" value="FALSE">
 Whether pcols is a compile time parameter. Otherwise it is the default value
-for the runtime parameter phys_chunk_fdim.
+for the runtime parameter phys_chnk_fdim.
 </entry>
 <entry id="cam_exe" value="cam">
 Name of CAM executable.
