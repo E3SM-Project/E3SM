@@ -1,5 +1,5 @@
 Comments
-     "Modified by Juno Hsu and Qi Tang - 4/8/2020"
+     "Modified by Juno Hsu and Qi Tang - 4/9/2020"
      "chemUCI + MAM4 for E3SM"
      "last touch 20200331 - MJP"
 End Comments
@@ -119,7 +119,7 @@ End Solution Classes
 CHEMISTRY
 
  Photolysis
-  [jo1d->,jo3_a]   O3 + hv -> O3
+  [jo1dU->,jo3_a]   O3 + hv -> O3
 * Production rate of O(1D), this rate is null so as to not lose O3.
   [jo2]       O2 + hv -> 2*O3
   [jh2o2]     H2O2 + hv -> 2*OH
@@ -224,13 +224,13 @@ CHEMISTRY
 [ucih2]  NO3   -> HNO3                            ; 0.03E+00
 [ucih3]  HO2   ->                                 ; 0.10E+00
 
-[usr_e90]  e90 ->                                 ; 1.286E-7, 0.
+[usr_e90]  e90 ->                                ; 1.286E-7, 0.
 
 * MAM4 chemistry below
               DMS + OH -> SO2                     ; 9.600E-12, -234
 [usr_DMS_OH]  DMS + OH ->  .5 * SO2 + .5 * HO2
 [usr_SO2_OH]  SO2 + OH -> H2SO4
-
+              DMS + NO3 -> SO2 + HNO3             ; 1.9e-13,  520.
  End Reactions
 
  Ext Forcing
@@ -239,10 +239,12 @@ CHEMISTRY
       SO2 <- dataset
       so4_a1 <- dataset
       so4_a2 <- dataset
-      pom_a1 <- dataset
-      bc_a1 <- dataset
+      pom_a4 <- dataset
+      bc_a4 <- dataset
       num_a1 <- dataset
       num_a2 <- dataset
+      num_a4 <- dataset
+      SOAG <- dataset
  End Ext Forcing
 
 END CHEMISTRY

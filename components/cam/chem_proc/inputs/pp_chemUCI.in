@@ -74,7 +74,7 @@ End Solution Classes
 CHEMISTRY
 
  Photolysis
-  [jo1d->,jo3_a]   O3 + hv -> O3
+  [jo1dU->,jo3_a]   O3 + hv -> O3
 * Production rate of O(1D), this rate is null so as to not lose O3.
   [jo2]       O2 + hv -> 2*O3
   [jh2o2]     H2O2 + hv -> 2*OH
