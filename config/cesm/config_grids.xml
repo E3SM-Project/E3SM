@@ -580,6 +580,14 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="f19_g17_r05">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="rof">r05</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="f19_g16_gl4" compset="_CISM">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
