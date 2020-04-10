@@ -1770,7 +1770,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
       outfile.close();
     }
     else {
-       std::cout << "Failed to open tempertature ascii file!"<< std::endl;
+       std::cout << "Failed to open temperature ascii file!"<< std::endl;
     }
 
     std::cout << "Writing surface_velocity.ascii." << std::endl;
@@ -1781,6 +1781,27 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
          outfile << observedVeloXData[i] << "\n";
        for(int i = 0; i<nVertices; ++i)
          outfile << observedVeloYData[i] << "\n";
+       outfile.close();
+    }
+    else {
+       std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
+    }
+
+    //here we save the surface velocity as an extruded field,
+    //having two levels at sigma coords 0 and 1
+    //this enables Albany to prescribe surface velocity as Dirichlet BC
+    std::cout << "Writing extruded_surface_velocity.ascii." << std::endl;
+    outfile.open ("extruded_surface_velocity.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << " " << 2 << " " << 2 << "\n";  //number of vertices, number of levels, number of components per vertex
+       outfile << 0.0 << "\n";
+       outfile << 1.0 << "\n";  // sigma coordinates for velocity
+       for(int il=0; il<2; ++il) {
+         for(int i = 0; i<nVertices; ++i)
+           outfile << observedVeloXData[i] << "\n";
+         for(int i = 0; i<nVertices; ++i)
+           outfile << observedVeloYData[i] << "\n";
+       }
        outfile.close();
     }
     else {
