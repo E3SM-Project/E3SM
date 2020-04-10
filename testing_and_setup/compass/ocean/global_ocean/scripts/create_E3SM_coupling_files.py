@@ -21,9 +21,10 @@ from geometric_features import GeometricFeatures, FeatureCollection
 from mpas_tools.ocean.moc import make_moc_basins_and_transects
 from mpas_tools.io import write_netcdf
 import mpas_tools.conversion
+import pyproj
 from pyremap import MpasMeshDescriptor, ProjectionGridDescriptor, Remapper, \
     get_lat_lon_descriptor, get_polar_descriptor
-import pyproj
+from mpas_tools.scrip.from_mpas import scrip_from_mpas
 # }}}
 
 
@@ -248,25 +249,19 @@ def scrip(config):  # {{{
         nomaskStr = ''
 
     # create links
-    make_link('../mesh.nc', '{}.nc'.format(mesh_name))
+    mesh_file = '{}.nc'.format(mesh_name)
+    make_link('../mesh.nc', mesh_file)
 
     # command line execution
     scrip_file = 'ocean.{}{}.scrip.{}.nc'.format(mesh_name, nomaskStr,
                                                  date_string)
 
-    args = ['create_SCRIP_file_from_MPAS_mesh.py',
-            '-m', '{}.nc'.format(mesh_name),
-            '-s', scrip_file]
-    run_command(args)
+    scrip_from_mpas(mesh_file, scrip_file)
 
     if ice_shelf_cavities:
         scrip_file_mask = 'ocean.{}.mask.scrip.{}.nc'.format(mesh_name,
                                                              date_string)
-        args = ['create_SCRIP_file_from_MPAS_mesh.py',
-                '-m', mesh_name + '.nc',
-                '-s', scrip_file_mask,
-                '--landice']
-        run_command(args)
+        scrip_from_mpas(mesh_file, scrip_file, useLandIceMask=True)
 
     # make links to output directories
     os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
@@ -391,30 +386,38 @@ def mapping(config, atm_scrip_tag):  # {{{
     atm_scrip_file = '{}.nc'.format(atm_scrip_tag)
     make_link('{}/{}'.format(atm_scrip_path, atm_scrip_file), atm_scrip_file)
 
+    if 'CONDA_PREFIX' not in os.environ:
+        raise ValueError('A COMPASS conda environment needs to be loaded.')
+    mpirun_path = '{}/bin/mpirun'.format(os.environ['CONDA_PREFIX'])
+    if os.path.exists(mpirun_path):
+        prefix = [mpirun_path, '-n', nprocs]
+    else:
+        prefix = list()
+
     for method, short in [['conserve', 'aave'], ['bilinear', 'blin'],
                           ['patch', 'patc']]:
 
         # Ocean to atmosphere
         mapping_file = 'map_{}{}_TO_{}_{}.{}.nc'.format(
             mesh_name, nomaskStr, atm_scrip_tag, short, date_string)
-        args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+        args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', ocn_scrip_file,
                 '--destination', atm_scrip_file,
                 '--weight', mapping_file,
                 '--ignore_unmapped']
-        run_command(args)
+        run_command(prefix + args)
 
         # Atmosphere to ocean
         mapping_file = 'map_{}_TO_{}{}_{}.{}.nc'.format(
             atm_scrip_tag, mesh_name, nomaskStr, short, date_string)
-        args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+        args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', atm_scrip_file,
                 '--destination', ocn_scrip_file,
                 '--weight', mapping_file,
                 '--ignore_unmapped']
-        run_command(args)
+        run_command(prefix + args)
 
     if ice_shelf_cavities:
         print("\n Mapping files with masks for ice shelf cavities")
@@ -429,24 +432,25 @@ def mapping(config, atm_scrip_tag):  # {{{
             # Ocean to atmosphere
             mapping_file = 'map_{}.mask_TO_{}_{}.{}.nc'.format(
                 mesh_name, atm_scrip_tag, short, date_string)
-            args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+            args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', ocn_scrip_file,
                     '--destination', atm_scrip_file,
                     '--weight', mapping_file,
                     '--ignore_unmapped']
-            run_command(args)
+            run_command(prefix + args)
 
             # Atmosphere to ocean
             mapping_file = 'map_{}_TO_{}.mask_{}.{}.nc'.format(
                 atm_scrip_tag, mesh_name, short, date_string)
-            args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+            args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', atm_scrip_file,
                     '--destination', ocn_scrip_file,
                     '--weight', mapping_file,
                     '--ignore_unmapped']
-            run_command(args)
+            run_command(prefix + args)
+
 # }}}
 
 
@@ -603,6 +607,14 @@ def salinity_restoring(config):  # {{{
                                                      date_string)
     make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
 
+    if 'CONDA_PREFIX' not in os.environ:
+        raise ValueError('A COMPASS conda environment needs to be loaded.')
+    mpirun_path = '{}/bin/mpirun'.format(os.environ['CONDA_PREFIX'])
+    if os.path.exists(mpirun_path):
+        prefix = [mpirun_path, '-n', nprocs]
+    else:
+        prefix = list()
+
     # execute commands
     salinity_restoring_output_file = \
         'sss.PHC2_monthlyClimatology.{}.{}.nc'.format(mesh_name, date_string)
@@ -612,13 +624,13 @@ def salinity_restoring(config):  # {{{
         # mapping file, 1x1 to ocean mesh
         map_Levitus_file = 'map_Levitus_1x1_TO_{}_{}.{}.nc'.format(
             mesh_name, short, date_string)
-        args = ['mpirun', '-n', nprocs, 'ESMF_RegridWeightGen',
+        args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', 'grid_Levitus_1x1_scrip_file.nc',
                 '--destination', ocn_scrip_file,
                 '--weight', map_Levitus_file,
                 '--ignore_unmapped']
-        run_command(args)
+        run_command(prefix + args)
 
     # remap from 1x1 to model grid
     args = ['ncremap',
@@ -1001,7 +1013,8 @@ def make_analysis_lat_lon_map(config, mesh_name):
     remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
 
     mpiTasks = config.getint('main', 'nprocs')
-    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks,
+                                tempdir='.')
     # }}}
 
 
@@ -1033,7 +1046,8 @@ def make_analysis_polar_map(config, mesh_name, projection):
     remapper = Remapper(inDescriptor, outDescriptor, mappingFileName)
 
     mpiTasks = config.getint('main', 'nprocs')
-    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks)
+    remapper.build_mapping_file(method='bilinear', mpiTasks=mpiTasks,
+                                tempdir='.')
     # }}}
 
 

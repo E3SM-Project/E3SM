@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <config case="build_1km_mesh">
 	<run_script name="run.py">
-		<step executable="planar_hex">
+		<step executable="planar_hex" conda_mpi="true">
 			<argument flag="--nx">6</argument>
 			<argument flag="--ny">28</argument>
 			<argument flag="--dc">1000.0</argument>

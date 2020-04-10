@@ -41,7 +41,7 @@
 		</stream>
 	</streams>
 	<run_script name="run.py">
-		<step executable="planar_hex">
+		<step executable="planar_hex" conda_mpi="true">
 			<argument flag="--nx">108</argument>
 			<argument flag="--ny">232</argument>
 			<argument flag="--dc">0.12</argument>
