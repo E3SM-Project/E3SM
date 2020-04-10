@@ -280,6 +280,11 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    real(r8) :: sflxec(pcols,pcnst)
    real(r8) :: sflxed(pcols,pcnst)
    real(r8) :: tmpa, tmpb, tmpg
+   !Guangxing Lin, debug
+   real(r8) :: sflxec1(pcols,pcnst)
+   real(r8) :: sflxec2(pcols,pcnst)
+   real(r8) :: sflxec3(pcols,pcnst)
+   !Guangxing Lin, debug, end
 
    logical  :: dotend(pcnst)
 
@@ -308,10 +313,16 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    sflxid(:,:) = 0.0_r8
    sflxec(:,:) = 0.0_r8
    sflxed(:,:) = 0.0_r8
+   !Guangxing Lin, debug
+   sflxec1(:,:) = 0.0_r8
+   sflxec2(:,:) = 0.0_r8
+   sflxec3(:,:) = 0.0_r8
+   !Guangxing Lin, debug, end
    do l = 1, pcnst
       if ( (species_class(l) == spec_class_aerosol) .and. ptend%lq(l) ) then
          sflxec(1:ncol,l) = qsrflx_mzaer2cnvpr(1:ncol,l,1) 
          sflxed(1:ncol,l) = qsrflx_mzaer2cnvpr(1:ncol,l,2) 
+         sflxec1(1:ncol,l) = qsrflx_mzaer2cnvpr(1:ncol,l,1) !Guangxing Lin, debug 
       end if
    end do
 
@@ -393,6 +404,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         sflxid(1:ncol,l) = sflxid(1:ncol,l) + qsrflx(1:ncol,l,4) 
         sflxec(1:ncol,l) = sflxec(1:ncol,l) + qsrflx(1:ncol,l,6) ! REASTER 08/05/2015
         sflxed(1:ncol,l) = sflxed(1:ncol,l) + qsrflx(1:ncol,l,6) ! REASTER 08/05/2015
+        sflxec2(1:ncol,l) =  qsrflx(1:ncol,l,6) ! Guangxing Lin, debug
      end if
 
      if (species_class(l) == spec_class_aerosol) then
@@ -447,6 +459,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
          (species_class(l) == spec_class_gas    )) then
         sflxic(1:ncol,l) = sflxic(1:ncol,l) + qsrflx(1:ncol,l,4) 
         sflxec(1:ncol,l) = sflxec(1:ncol,l) + qsrflx(1:ncol,l,6) ! REASTER 08/05/2015
+        sflxec3(1:ncol,l) =  qsrflx(1:ncol,l,6) ! Guangxing Lin, debug 
      end if
 
      if (species_class(l) == spec_class_aerosol) then
@@ -477,6 +490,14 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         call outfld( trim(cnst_name(l))//'SFSIC', sflxic(:,l), pcols, lchnk )
         if ( history_aero_prevap_resusp ) &
         call outfld( trim(cnst_name(l))//'SFSEC', sflxec(:,l), pcols, lchnk )
+     
+        if(trim(cnst_name(l))=='bc_a1') then
+        !Guangxing Lin, debug   
+           call outfld( 'SFSEC1', sflxec1(:,l), pcols, lchnk )
+           call outfld( 'SFSEC2', sflxec2(:,l), pcols, lchnk )
+           call outfld( 'SFSEC3', sflxec3(:,l), pcols, lchnk )
+        end if
+        !Guangxing Lin, debug,end  
 
         if ( deepconv_wetdep_history ) then
            call outfld( trim(cnst_name(l))//'SFSID', sflxid(:,l), pcols, lchnk )
@@ -3140,7 +3161,14 @@ end subroutine ma_convproc_tend
 
          m2 = mod( m-1, pcnst ) + 1 ! for interstitial m2=m;  for activated m2=m-pcnst
          mmtoo = mmtoo_prevap_resusp(m2)
-
+         
+         !Guangxing Lin debug
+         !if(m==19) then 
+         !   write(lun,*) 'gxlin-debug,mmtoo =  ', mmtoo, 'species_calss =', species_class(m2) 
+         !end if
+         !if(m==(32+pcnst)) then 
+         !   write(lun,*) 'gxlin-debug2,mmtoo =  ', mmtoo, 'species_calss =', species_class(m2) 
+         !end if
          if ( species_class(m2) == spec_class_aerosol ) then
             if (mmtoo > 0) then
                ! current species is an aerosol mass species 

@@ -565,6 +565,14 @@ contains
           if (convproc_do_aer .and. deepconv_wetdep_history) then
           call addfld (trim(wetdep_list(m))//'SFSED', &
                horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, deep convective) at surface')  !RCE
+         !Guangxing Lin, debug 
+         call addfld ('SFSEC1', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
+         call addfld ('SFSEC2', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
+         call addfld ('SFSEC3', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
+       !Guangxing Lin, debug, end 
           endif
        endif
        if (convproc_do_aer .and. deepconv_wetdep_history) then
@@ -1891,10 +1899,12 @@ lphase_jnmw_conditional: &
                 endif
                 !Guangxing Lin debug
 
-                if(trim(cnst_name(mm))=='bc_a1') then
-                        write(*,*)'gxlin-debug mm = ', m, ' mm_cw= ', mm_cw 
-                        write(*,*)'gxlin-debug optcc = ', mam_prevap_resusp_optcc
-                end if 
+                !if(trim(cnst_name(mm))=='bc_a1') then
+                !        write(*,*)'gxlin-debug mm = ', mm, ' mm_cw= ', mm_cw 
+                !        write(*,*)'gxlin-debug optcc = ', mam_prevap_resusp_optcc
+                !        write(*,*)'gxlin-debug convproc_do_aer = ', convproc_do_aer 
+                !end if 
+                !Guangxing Lin debug, end
                 call wetdepa_v2( &
                      ncol, dt, &
                      state%t, state%pmid, state%q(:,:,1), state%pdel, &
