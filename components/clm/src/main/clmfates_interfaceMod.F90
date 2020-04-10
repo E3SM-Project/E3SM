@@ -122,7 +122,7 @@ module CLMFatesInterfaceMod
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
-   use EDTypesMod            , only : num_elements
+   use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
    use FatesInterfaceMod     , only : hlm_numlevgrnd
    use EDMainMod             , only : ed_ecosystem_dynamics
