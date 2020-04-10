@@ -1219,23 +1219,26 @@ def parse_mesh_metadata(config):  # {{{
         print("- number of vertical levels in the ocean in config file: "
               "{}".format(levels))
 
-    # determine mesh name.  We do this last because other config options may
-    # be part of the mesh name
-    mesh_name = config.get('mesh', 'long_name')
-    currentDir = os.getcwd()
-    if mesh_name == 'autodetect':
-        path = currentDir.split('/')
-        if 'global_ocean' in path:
-            index = path.index('global_ocean') + 1
-            mesh_name = 'o{}'.format(path[index])
-            print("- mesh name autodetected from path: {}".format(mesh_name))
-            config.set('mesh', 'long_name', mesh_name)
+    # determine mesh long and short name.  We do this last because other config
+    # options may be part of the mesh name
+    for prefix in ['long', 'short']:
+        name = config.get('mesh', '{}_name'.format(prefix))
+        currentDir = os.getcwd()
+        if name == 'autodetect':
+            path = currentDir.split('/')
+            if 'global_ocean' in path:
+                index = path.index('global_ocean') + 1
+                name = 'o{}'.format(path[index])
+                print("- mesh {} name autodetected from path: {}".format(
+                    prefix, name))
+                config.set('mesh', '{}_name'.format(prefix), name)
+            else:
+                raise ValueError(
+                    "mesh name not found in path. Please specify the {}_name "
+                    "in config_E3SM_coupling_files.ini.".format(prefix))
         else:
-            raise ValueError("mesh name not found in path. Please specify "
-                             "the mesh_name in config_E3SM_coupling_files.ini.")
-    else:
-        print("- mesh name specified in config file: ", mesh_name)
-
+            print("- mesh {} name specified in config file: {}".format(
+                prefix, name))
     # }}}
 
 
