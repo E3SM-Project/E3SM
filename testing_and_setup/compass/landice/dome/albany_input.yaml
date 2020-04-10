@@ -2,6 +2,7 @@
 ---
 ANONYMOUS:
   Problem: 
+    Use MDField Memoization: true
     Solution Method: Steady
     Parameters: 
       Number: 1
