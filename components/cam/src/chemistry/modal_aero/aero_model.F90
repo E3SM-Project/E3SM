@@ -535,6 +535,14 @@ contains
        endif
 
     enddo
+         !Guangxing Lin, debug 
+         call addfld ('SFSEC1', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
+         call addfld ('SFSEC2', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
+         call addfld ('SFSEC3', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
+       !Guangxing Lin, debug, end 
 
     do m = 1,nwetdep
        if ( masterproc ) write(iulog,'(a,i3,2x,a)') 'm, wetdep_list', m, trim(wetdep_list(m)) ! REASTER 08/04/2015
@@ -565,14 +573,6 @@ contains
           if (convproc_do_aer .and. deepconv_wetdep_history) then
           call addfld (trim(wetdep_list(m))//'SFSED', &
                horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, deep convective) at surface')  !RCE
-         !Guangxing Lin, debug 
-         call addfld ('SFSEC1', &
-               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
-         call addfld ('SFSEC2', &
-               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
-         call addfld ('SFSEC3', &
-               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  
-       !Guangxing Lin, debug, end 
           endif
        endif
        if (convproc_do_aer .and. deepconv_wetdep_history) then
