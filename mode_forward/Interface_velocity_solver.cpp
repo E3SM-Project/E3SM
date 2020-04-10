@@ -1087,7 +1087,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> grdMarineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void importFields(std::map<int, int>& floatBdyExtensionMap, std::map<int, int>& grdMarineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
@@ -1205,7 +1205,6 @@ void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> gr
             grdMarineBdyExtensionMap[iV] = c; // Save this map for use in other areas
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
             elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surfacea
-            betaData[iV] = minBeta; // floating so no friction
           }
         } // if below sea level
       }  // floating or not
@@ -1232,8 +1231,8 @@ void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> gr
 
 }
 
-void import2DFieldsObservations(std::map<int, int> floatBdyExtensionMap,
-            std::map<int, int> grdMarineBdyExtensionMap,
+void import2DFieldsObservations(std::map<int, int>& floatBdyExtensionMap,
+            std::map<int, int>& grdMarineBdyExtensionMap,
             double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
             double const * bmb_F, double const * bmbUncertainty_F,
@@ -1282,6 +1281,8 @@ void import2DFieldsObservations(std::map<int, int> floatBdyExtensionMap,
     indexToCellIDData[index] = indexToCellID_F[iCell];
   }
 
+  /* for now disable the extension, it is not clear whether it is useful
+
   //extend to the border for floating vertices (using map created by importFields above)
   for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
       it != floatBdyExtensionMap.end(); ++it) {
@@ -1302,7 +1303,6 @@ void import2DFieldsObservations(std::map<int, int> floatBdyExtensionMap,
 
     surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
     basalHeatFluxData[iv] = basalHeatFlux_F[ic];
-
   }
 
   //extend to the border for grounded marine vertices (using map created by importFields above)
@@ -1327,6 +1327,7 @@ void import2DFieldsObservations(std::map<int, int> floatBdyExtensionMap,
     surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
     basalHeatFluxData[iv] = 0.0; // no geothermal under floating ice
   }
+  */
 }
 
 void exportDissipationHeat(double * dissipationHeat_F) {

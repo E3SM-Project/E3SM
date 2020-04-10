@@ -202,12 +202,12 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
-void importFields(std::map<int, int> floatBdyExtensionMap, std::map<int, int> grdMarineBdyExtensionMap, 
+void importFields(std::map<int, int>& floatBdyExtensionMap, std::map<int, int>& grdMarineBdyExtensionMap, 
                 double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
     double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
-void import2DFieldsObservations(std::map<int, int> floatBdyExtensionMap,
-            std::map<int, int> grdMarineBdyExtensionMap, 
+void import2DFieldsObservations(std::map<int, int>& floatBdyExtensionMap,
+            std::map<int, int>& grdMarineBdyExtensionMap, 
             double const * lowerSurface_F, 
             double const * thickness_F, double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
