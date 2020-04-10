@@ -296,7 +296,8 @@ subroutine convect_deep_tend( &
   ! If we added this, set it.
   if (ttend_dp_idx > 0) then
      call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
-     if ( allocated(ptend%s) ) then
+     !if ( allocated(ptend%s) ) then
+     if ( ptend%ls ) then
         ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
      else
         ttend_dp(:state%ncol,:pver) = 0.0_r8
