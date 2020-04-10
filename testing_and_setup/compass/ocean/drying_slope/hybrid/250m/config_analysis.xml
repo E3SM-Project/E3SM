@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config case="analysis">
-  <add_link source="../../../analysis/comparison.py" dest="comparison.py"/>
-  <add_link source="../../../analysis/movie.py" dest="movie.py"/>
-  <add_link source="../../../analysis/data" dest="data"/>
+  <add_link source_path="script_configuration_dir" source="analysis/comparison.py" dest="comparison.py"/>
+  <add_link source_path="script_configuration_dir" source="analysis/movie.py" dest="movie.py"/>
+  <add_link source_path="script_configuration_dir" source="analysis/data" dest="data"/>
 	<add_link source="../forward1/output.nc" dest="output1.nc"/>
 	<add_link source="../forward2/output.nc" dest="output2.nc"/>
 
