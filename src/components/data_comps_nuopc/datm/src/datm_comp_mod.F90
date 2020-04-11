@@ -13,7 +13,7 @@ module datm_comp_mod
   use shr_precip_mod        , only : shr_precip_partition_rain_snow_ramp
   use shr_const_mod         , only : shr_const_spval, shr_const_tkfrz, shr_const_pi
   use shr_const_mod         , only : shr_const_pstd, shr_const_stebol, shr_const_rdair
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
+  use dshr_strdata_mod      , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize

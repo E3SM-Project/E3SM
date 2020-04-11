@@ -11,7 +11,7 @@ module dice_comp_mod
   use shr_const_mod         , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
   use shr_frz_mod           , only : shr_frz_freezetemp
   use shr_cal_mod           , only : shr_cal_ymd2julian
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
+  use dshr_strdata_mod      , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize

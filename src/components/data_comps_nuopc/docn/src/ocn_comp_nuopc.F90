@@ -16,8 +16,8 @@ module ocn_comp_nuopc
   use shr_kind_mod     , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
-  use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_readnml
   use shr_mpi_mod      , only : shr_mpi_bcast
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
   use dshr_methods_mod , only : chkerr, state_setscalar, state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
   use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock

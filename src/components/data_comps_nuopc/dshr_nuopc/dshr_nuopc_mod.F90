@@ -5,7 +5,7 @@ module dshr_nuopc_mod
   use ESMF
   use mct_mod          , only : mct_avect_init, mct_avect_lsize, mct_avect_indexra
   use dshr_methods_mod , only : chkerr, state_getfldptr, get_component_instance
-  use shr_strdata_mod  , only : shr_strdata_type
+  use dshr_strdata_mod , only : shr_strdata_type
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_string_mod   , only : shr_string_listGetIndex
   use shr_sys_mod      , only : shr_sys_abort
@@ -245,13 +245,13 @@ contains
     ! Initialize sdat
     ! ----------------------------------------------
 
-    use shr_strdata_mod , only : shr_strdata_pioinit
-    use shr_strdata_mod , only : shr_strdata_init_model_domain
-    use shr_strdata_mod , only : shr_strdata_init_streams
-    use shr_strdata_mod , only : shr_strdata_init_mapping
-    use shr_strdata_mod , only : shr_strdata_print
-    use shr_cal_mod     , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
-    use mct_mod         , only : mct_gsmap_init
+    use dshr_strdata_mod , only : shr_strdata_pioinit
+    use dshr_strdata_mod , only : shr_strdata_init_model_domain
+    use dshr_strdata_mod , only : shr_strdata_init_streams
+    use dshr_strdata_mod , only : shr_strdata_init_mapping
+    use dshr_strdata_mod , only : shr_strdata_print
+    use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
+    use mct_mod          , only : mct_gsmap_init
 
     ! input/output variables
     integer                    , intent(in)    :: mpicom   ! mpi communicator
@@ -909,9 +909,9 @@ contains
   subroutine dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
        logunit, my_task, master_task, mpicom, sdat, fld, fldname)
 
-    use shr_pcdf_mod    , only : shr_pcdf_readwrite
-    use shr_strdata_mod , only : shr_strdata_restRead, shr_strdata_type
-    use shr_mpi_mod     , only : shr_mpi_bcast
+    use shr_pcdf_mod     , only : shr_pcdf_readwrite
+    use dshr_strdata_mod , only : shr_strdata_restRead, shr_strdata_type
+    use shr_mpi_mod      , only : shr_mpi_bcast
 
     ! input/output arguments
     character(len=*)            , intent(inout) :: rest_file
@@ -977,7 +977,7 @@ contains
 
     use shr_pcdf_mod    , only : shr_pcdf_readwrite
     use shr_cal_mod     , only : shr_cal_datetod2string
-    use shr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_type
+    use dshr_strdata_mod, only : shr_strdata_restWrite, shr_strdata_type
 
     ! input/output variables
     character(len=*)            , intent(in)    :: rpfile
@@ -1024,11 +1024,11 @@ contains
   subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
        mpicom, compid, masterproc, logunit, sdat) 
 
-    use shr_dmodel_mod , only : shr_dmodel_mapset
+    use dshr_dmodel_mod , only : shr_dmodel_mapset
     use shr_map_mod    , only : shr_map_fs_remap, shr_map_fs_bilinear
     use shr_map_mod    , only : shr_map_fs_srcmask, shr_map_fs_scalar
     use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
-    use shr_strdata_mod, only : shr_strdata_type
+    use dshr_strdata_mod, only : shr_strdata_type
     use shr_const_mod  , only : shr_const_spval
     use shr_mpi_mod    , only : shr_mpi_bcast
     use mct_mod        , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp

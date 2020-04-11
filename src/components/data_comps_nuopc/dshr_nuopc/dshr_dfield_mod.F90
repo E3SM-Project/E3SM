@@ -3,7 +3,7 @@ module dshr_dfield_mod
   use ESMF             , only : ESMF_State, ESMF_SUCCESS
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
-  use shr_strdata_mod  , only : shr_strdata_type
+  use dshr_strdata_mod , only : shr_strdata_type
   use dshr_methods_mod , only : chkerr, state_getfldptr
   use mct_mod          , only : mct_avect_lsize, mct_avect_indexra
 
