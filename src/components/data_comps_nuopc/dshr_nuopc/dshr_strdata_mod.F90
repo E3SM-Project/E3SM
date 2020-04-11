@@ -182,23 +182,24 @@ contains
     character(CS)  :: lname        ! local name
     character(CL)  :: filePath     ! generic file path
     character(CL)  :: fileName     ! generic file name
+    character(CL)  :: domainfile   ! full pathname of domain file to read
     character(CS)  :: timeName     ! domain file: time variable name
     character(CS)  :: lonName      ! domain file: lon  variable name
     character(CS)  :: latName      ! domain file: lat  variable name
     character(CS)  :: hgtName      ! domain file: hgt  variable name
     character(CS)  :: maskName     ! domain file: mask variable name
+    character(CS)  :: fracName     ! domain file: frac variable name
     character(CS)  :: areaName     ! domain file: area variable name
-    character(CXX) :: fldList      ! list of fields
-    integer(IN)    :: lsize
-    integer(IN)    :: nfiles
-    integer(IN)    :: ierr
     logical        :: readfrac     ! whether to read fraction from the first stream file
+    integer(IN)    :: lsize
     integer        :: kmask, kfrac
     logical        :: lscmmode
     integer(IN)      ,parameter :: master_task = 0
     character(*)     ,parameter :: F00 = "('(shr_strdata_init) ',8a)"
     character(len=*) ,parameter :: subname = "(shr_strdata_init) "
     !-------------------------------------------------------------------------------
+
+    ! error checks
 
     lscmmode = .false.
     if (present(scmmode)) then
@@ -215,48 +216,52 @@ contains
        write(logunit,*) 'from the domain of the first stream'
        write(logunit,*) '(i.e., when the domain file is null).'
        call shr_sys_abort(subname//' ERROR: dmodel_domain_fracname_from_stream not expected')
+       ! TODO: check that sdat%nstreams > 0
     end if
 
+    ! If model domainfile is 'null' (or shr_strdata_nullstr),
+    ! then set the model domain to the domain of the first stream
+
     if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
-
-       ! If model domainfile is 'null' (or shr_strdata_nullstr),
-       ! then set the model domain to the domain of the first stream
-
-       if (SDAT%nstreams > 0) then
-          if (my_task == master_task) then
-             call shr_stream_getDomainInfo(SDAT%stream(1),filePath,fileName,timeName,lonName, &
-                  latName,hgtName,maskName,areaName)
-             call shr_stream_getFile(filePath,fileName)
-          endif
-          call shr_mpi_bcast(fileName,mpicom)
-          call shr_mpi_bcast(lonName,mpicom)
-          call shr_mpi_bcast(latName,mpicom)
-          call shr_mpi_bcast(hgtName,mpicom)
-          call shr_mpi_bcast(maskName,mpicom)
-          call shr_mpi_bcast(areaName,mpicom)
-          if (present(dmodel_domain_fracname_from_stream)) then
-             readfrac = .true.
-          else
-             readfrac = .false.
-          end if
-
-          call shr_dmodel_readgrid_model(SDAT%grid, SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
-               fileName, compid, mpicom, &
-               lonName=lonName, latName=latName, hgtName=hgtName, &
-               maskName=maskName, areaName=areaName, &
-               fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac, &
-               scmmode=lscmmode, scmlon=scmlon, scmlat=scmlat)
+       if (my_task == master_task) then
+          call shr_stream_getDomainInfo(SDAT%stream(1), &
+               filePath, filename, timeName, lonName, latName, hgtName, maskName, areaName)
+          domainfile = trim(filepath)//adjustl(filename)
        endif
-
+       call shr_mpi_bcast(domainfile ,mpicom)
+       call shr_mpi_bcast(lonName    ,mpicom)
+       call shr_mpi_bcast(latName    ,mpicom)
+       call shr_mpi_bcast(hgtName    ,mpicom)
+       call shr_mpi_bcast(maskName   ,mpicom)
+       call shr_mpi_bcast(areaName   ,mpicom)
+       if (present(dmodel_domain_fracname_from_stream)) then
+          readfrac = .true.
+          fracname = dmodel_domain_fracname_from_stream
+       else
+          readfrac = .false.
+          fracname = shr_strdata_nullstr
+       end if
     else
+       domainfile = SDAT%domainfile
+       lonname  = "xc"  ! default values / standard data model domain file format
+       latname  = "yc"
+       hgtname  = "hgt"
+       maskname = "mask"
+       areaname = "area"
+       fracname = "frac"
+       readfrac = .true.
+    end if
 
-       ! TODO: here need to just set ggrid from the ESMF mesh
+    ! Initialize model domain
 
-       ! Set the model domain by reading in the SDAT%domainfile
-       call shr_dmodel_readgrid_model(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
-            SDAT%domainfile, compid, mpicom, &
-            readfrac=.true., scmmode=lscmmode, scmlon=scmlon, scmlat=scmlat)
-
+    if (scmmode) then
+       call shr_dmodel_set_model_domain_scol(&
+            domainfile, compid, mpicom, scmlon, scmlat, SDAT%grid, SDAT%nxg,SDAT%nyg,SDAT%nzg)
+    else
+       call shr_dmodel_set_model_domain_mesh( &
+            domainfile, compid, mpicom, readfrac,  &
+            lonName, latName, hgtName, maskName, areaName, fracname, &
+            SDAT%gsmap, SDAT%grid, SDAT%nxg, SDAT%nyg, SDAT%nzg)
     endif
 
     if (present(reset_domain_mask)) then
@@ -286,14 +291,6 @@ contains
 
     ! local variables
     integer(IN)          :: n,m,k    ! generic index
-    character(CL)        :: filePath ! generic file path
-    character(CL)        :: fileName ! generic file name
-    character(CS)        :: timeName ! domain file: time variable name
-    character(CS)        :: lonName  ! domain file: lon  variable name
-    character(CS)        :: latName  ! domain file: lat  variable name
-    character(CS)        :: hgtName  ! domain file: hgt  variable name
-    character(CS)        :: maskName ! domain file: mask variable name
-    character(CS)        :: areaName ! domain file: area variable name
     integer(IN)          :: nfiles
     integer(IN), pointer :: dof(:)
     integer(IN)     , parameter :: master_task = 0
@@ -304,12 +301,12 @@ contains
     if (my_task == master_task) then
        do n=1,nStrMax
 
-          !--- check if a streams string is defined in strdata
+          ! check if a streams string is defined in strdata
           if (trim(SDAT%streams(n)) /= trim(shr_strdata_nullstr)) then
              SDAT%nstreams = max(SDAT%nstreams,n)
           end if
 
-          !--- check if a filename is defined in the stream
+          ! check if a filename is defined in the stream
           call shr_stream_getNFiles(SDAT%stream(n),nfiles)
           if (nfiles > 0) then
              SDAT%nstreams = max(SDAT%nstreams,n)
@@ -318,47 +315,25 @@ contains
              SDAT%dtlimit(n) = 1.0e30
           end if
        end do
+
+       ! Determine vector size for stream n
        SDAT%nvectors = 0
-       do n=1,nVecMax
+       do n = 1,nVecMax
           if (trim(SDAT%vectors(n)) /= trim(shr_strdata_nullstr)) then
              SDAT%nvectors = n
           end if
        end do
     endif
-    call shr_mpi_bcast(SDAT%nstreams  ,mpicom,'nstreams')
-    call shr_mpi_bcast(SDAT%nvectors  ,mpicom,'nvectors')
-    call shr_mpi_bcast(SDAT%dtlimit   ,mpicom,'dtlimit')
+    call shr_mpi_bcast(SDAT%nstreams  ,mpicom, 'nstreams')
+    call shr_mpi_bcast(SDAT%nvectors  ,mpicom, 'nvectors')
+    call shr_mpi_bcast(SDAT%dtlimit   ,mpicom, 'dtlimit')
 
-    ! Initialize stream domains and gsmap
-
+    ! Initialize domain, pio and calendar for each stream
     do n = 1,SDAT%nstreams
 
-       if (my_task == master_task) then
-          call shr_stream_getDomainInfo(SDAT%stream(n), filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
-          call shr_stream_getFile(filePath,fileName)
-          write(logunit,*) subname,' stream ',n
-          write(logunit,*) subname,' filePath = ',n,trim(filePath)
-          write(logunit,*) subname,' fileName = ',n,trim(fileName)
-          write(logunit,*) subname,' timeName = ',n,trim(timeName)
-          write(logunit,*) subname,' lonName  = ',n,trim(lonName)
-          write(logunit,*) subname,' latName  = ',n,trim(latName)
-          write(logunit,*) subname,' hgtName  = ',n,trim(hgtName)
-          write(logunit,*) subname,' maskName = ',n,trim(maskName)
-          write(logunit,*) subname,' areaName = ',n,trim(areaName)
-       endif
-       call shr_mpi_bcast(fileName,mpicom)
-       call shr_mpi_bcast(lonName,mpicom)
-       call shr_mpi_bcast(latName,mpicom)
-       call shr_mpi_bcast(hgtName,mpicom)
-       call shr_mpi_bcast(maskName,mpicom)
-       call shr_mpi_bcast(areaName,mpicom)
-
        ! Initialize stream domain info for stream n
-       call shr_dmodel_readgrid_stream(&
-            SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), &
-            fileName, compid, mpicom, lonName, latName, hgtName, maskName, areaName)
-
-       SDAT%lsizeR(n) = mct_gsmap_lsize(SDAT%gsmapR(n), mpicom)
+       call shr_dmodel_set_stream_domain(SDAT%stream(n), compid, mpicom, &
+            SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), SDAT%lsizeR(n))
 
        ! Initialize pio settings for stream n
        call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
@@ -371,6 +346,7 @@ contains
        endif
        deallocate(dof)
 
+       ! Initialize calendar for stream n
        call shr_mpi_bcast(SDAT%stream(n)%calendar, mpicom)
     enddo
 
@@ -620,7 +596,6 @@ contains
     real(R8),pointer           :: tavCosz(:)           ! cosz, time avg over [LB,UB]
     real(R8),pointer           :: xlon(:),ylon(:)
     real(R8),parameter         :: solZenMin = 0.001_R8 ! minimum solar zenith angle
-
     type(ESMF_Time)            :: timeLB, timeUB       ! lb and ub times
     type(ESMF_TimeInterval)    :: timeint              ! delta time
     integer(IN)                :: dday                 ! delta days
@@ -631,12 +606,7 @@ contains
     integer(IN)                :: year,month,day       ! date year month day
     character(len=*),parameter :: timname = "_strd_adv"
     integer(IN),parameter      :: tadj = 2
-
-    !----- formats -----
     character(*),parameter :: subname = "(shr_strdata_advance) "
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     if (SDAT%nstreams < 1) return
