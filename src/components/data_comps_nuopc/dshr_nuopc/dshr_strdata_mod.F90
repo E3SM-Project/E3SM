@@ -144,6 +144,23 @@ contains
        gsmap, ggrid, nxg, nyg, nzg, scmmode, scmlon, scmlat, &
        reset_domain_mask, dmodel_domain_fracname_from_stream)
 
+    ! Note: for the variable dmodel_domain_fracname_from_stream:
+    ! This variable is applicable for data models that read the model domain from the
+    ! domain of the first stream; it is an error to provide this variable in other
+    ! situations. If present, then we read the data model's domain fraction from the
+    ! first stream file, and this variable provides the name of the frac field on this
+    ! file. If absent, then (if we are taking the model domain from the domain of the
+    ! first stream) we do not read a frac field, and instead we set frac to 1 wherever
+    ! mask is 1, and set frac to 0 wherever mask is 0.
+    ! BUG(wjs, 2018-05-01, ESMCI/cime#2515) Ideally we'd like to get this frac variable
+    ! name in a more general and robust way; see comments in that issue for more details.
+
+    ! Note: for single column mode, the mesh returned to the mediator is a single point,
+    ! so the gsmap is for a single point. However, the value of the lat and lon of that point
+    ! is found by obtaining the nearest neighbor of the datm model domain file
+    ! this is the ONLY time that the model domain file actually needs to be read in
+    ! otherwise the mct ggrid can be obtained directly from the esmf mesh that is read in
+
     ! input/output variables
     type(shr_strdata_type),intent(inout)       :: SDAT
     integer(IN)           ,intent(in)          :: mpicom
@@ -160,17 +177,6 @@ contains
     logical               ,intent(in),optional :: reset_domain_mask
     character(len=*)      ,intent(in),optional :: dmodel_domain_fracname_from_stream
 
-    ! Note: for the variable dmodel_domain_fracname_from_stream:
-    ! This variable is applicable for data models that read the model domain from the
-    ! domain of the first stream; it is an error to provide this variable in other
-    ! situations. If present, then we read the data model's domain fraction from the
-    ! first stream file, and this variable provides the name of the frac field on this
-    ! file. If absent, then (if we are taking the model domain from the domain of the
-    ! first stream) we do not read a frac field, and instead we set frac to 1 wherever
-    ! mask is 1, and set frac to 0 wherever mask is 0.
-    ! BUG(wjs, 2018-05-01, ESMCI/cime#2515) Ideally we'd like to get this frac variable
-    ! name in a more general and robust way; see comments in that issue for more details.
-
     ! local variables
     integer(IN)    :: n,m,k        ! generic index
     character(CS)  :: lname        ! local name
@@ -182,7 +188,6 @@ contains
     character(CS)  :: hgtName      ! domain file: hgt  variable name
     character(CS)  :: maskName     ! domain file: mask variable name
     character(CS)  :: areaName     ! domain file: area variable name
-    character(CS)  :: decomp
     character(CXX) :: fldList      ! list of fields
     integer(IN)    :: lsize
     integer(IN)    :: nfiles
@@ -198,112 +203,74 @@ contains
     lscmmode = .false.
     if (present(scmmode)) then
        lscmmode = scmmode
-       if (lscmmode) then
-          if (.not.present(scmlon) .or. .not.present(scmlat)) then
-             write(logunit,*) subname,' ERROR: scmmode requires scmlon and scmlat'
-             call shr_sys_abort(subname//' ERROR: scmmode1 lon lat')
-          endif
+       if (scmmode .and. (.not.present(scmlon) .or. .not.present(scmlat))) then
+          write(logunit,*) subname,' ERROR: scmmode requires scmlon and scmlat'
+          call shr_sys_abort(subname//' ERROR: scmmode1 lon lat')
        endif
     endif
 
-    if (present(gsmap) .and. present(ggrid) .and. present(nxg) .and. present(nyg) .and. present(nzg)) then
+    if (trim(SDAT%domainfile) /= trim(shr_strdata_nullstr) .and. (present(dmodel_domain_fracname_from_stream))) then
+       write(logunit,*) subname,' ERROR: dmodel_domain_fracname_from_stream'
+       write(logunit,*) 'can only be provided when taking the data model domain'
+       write(logunit,*) 'from the domain of the first stream'
+       write(logunit,*) '(i.e., when the domain file is null).'
+       call shr_sys_abort(subname//' ERROR: dmodel_domain_fracname_from_stream not expected')
+    end if
 
-       if (present(dmodel_domain_fracname_from_stream)) then
-          call shr_sys_abort(subname// &
-               ' ERROR: dmodel_domain_fracname_from_stream is irrelevant if gsmap is provided')
-       end if
+    if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
 
-       SDAT%nxg = nxg
-       SDAT%nyg = nyg
-       SDAT%nzg = nzg
-       lsize = mct_gsmap_lsize(gsmap,mpicom)
-       call mct_gsmap_Copy(gsmap,SDAT%gsmap)
-       call mct_ggrid_init(SDAT%grid, ggrid, lsize)
-       call mct_aVect_copy(ggrid%data, SDAT%grid%data)
+       ! If model domainfile is 'null' (or shr_strdata_nullstr),
+       ! then set the model domain to the domain of the first stream
+
+       if (SDAT%nstreams > 0) then
+          if (my_task == master_task) then
+             call shr_stream_getDomainInfo(SDAT%stream(1),filePath,fileName,timeName,lonName, &
+                  latName,hgtName,maskName,areaName)
+             call shr_stream_getFile(filePath,fileName)
+          endif
+          call shr_mpi_bcast(fileName,mpicom)
+          call shr_mpi_bcast(lonName,mpicom)
+          call shr_mpi_bcast(latName,mpicom)
+          call shr_mpi_bcast(hgtName,mpicom)
+          call shr_mpi_bcast(maskName,mpicom)
+          call shr_mpi_bcast(areaName,mpicom)
+          if (present(dmodel_domain_fracname_from_stream)) then
+             readfrac = .true.
+          else
+             readfrac = .false.
+          end if
+
+          call shr_dmodel_readgrid_model(SDAT%grid, SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
+               fileName, compid, mpicom, &
+               lonName=lonName, latName=latName, hgtName=hgtName, &
+               maskName=maskName, areaName=areaName, &
+               fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac, &
+               scmmode=lscmmode, scmlon=scmlon, scmlat=scmlat)
+       endif
 
     else
 
-       if (present(gsmap)) then
-          decomp = 'use_input_gsmap'
-       else
-          decomp = '2d1d'
-       end if
+       ! TODO: here need to just set ggrid from the ESMF mesh
 
-       if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
-
-          ! Since the model domainfile is 'null' (or shr_strdata_nullstr),
-          ! then set the model domain to the domain of the first stream
-
-          if (SDAT%nstreams > 0) then
-             if (my_task == master_task) then
-                call shr_stream_getDomainInfo(SDAT%stream(1),filePath,fileName,timeName,lonName, &
-                     latName,hgtName,maskName,areaName)
-                call shr_stream_getFile(filePath,fileName)
-             endif
-             call shr_mpi_bcast(fileName,mpicom)
-             call shr_mpi_bcast(lonName,mpicom)
-             call shr_mpi_bcast(latName,mpicom)
-             call shr_mpi_bcast(hgtName,mpicom)
-             call shr_mpi_bcast(maskName,mpicom)
-             call shr_mpi_bcast(areaName,mpicom)
-             if (present(dmodel_domain_fracname_from_stream)) then
-                readfrac = .true.
-             else
-                readfrac = .false.
-             end if
-             if (lscmmode) then
-                call shr_dmodel_readgrid(SDAT%grid, SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
-                     fileName, compid, mpicom, &
-                     decomp=decomp, lonName=lonName, latName=latName, hgtName=hgtName, &
-                     maskName=maskName, areaName=areaName, &
-                     fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac, &
-                     scmmode=lscmmode, scmlon=scmlon, scmlat=scmlat)
-             else
-                call shr_dmodel_readgrid(SDAT%grid,SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
-                     fileName, compid, mpicom, &
-                     decomp=decomp, lonName=lonName, latName=latName, hgtName=hgtName, &
-                     maskName=maskName, areaName=areaName, &
-                     fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac)
-             endif
-          endif
-
-       else
-
-          ! Set the model domain by reading in the SDAT%domainfile
-
-          if (present(dmodel_domain_fracname_from_stream)) then
-             write(logunit,*) subname,' ERROR: dmodel_domain_fracname_from_stream'
-             write(logunit,*) 'can only be provided when taking the data model domain'
-             write(logunit,*) 'from the domain of the first stream'
-             write(logunit,*) '(i.e., when the domain file is null).'
-             call shr_sys_abort(subname//' ERROR: dmodel_domain_fracname_from_stream not expected')
-          end if
-
-          if (lscmmode) then
-             call shr_dmodel_readgrid(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
-                  SDAT%domainfile, compid, mpicom, &
-                  decomp=decomp, readfrac=.true., scmmode=lscmmode, scmlon=scmlon, scmlat=scmlat)
-          else
-             call shr_dmodel_readgrid(SDAT%grid, SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
-                  SDAT%domainfile, compid, mpicom, &
-                  decomp=decomp, readfrac=.true.)
-          endif
-
-       endif
-
-       if (present(reset_domain_mask)) then
-          if (reset_domain_mask) then
-             if (my_task == master_task) write(logunit,F00) ' Resetting the component domain mask and frac to 1'
-             kmask = mct_aVect_indexRA(SDAT%grid%data,'mask')
-             SDAT%grid%data%rattr(kmask,:) = 1
-
-             kfrac = mct_aVect_indexRA(SDAT%grid%data,'frac')
-             SDAT%grid%data%rattr(kfrac,:) = 1.0_r8
-          end if
-       end if
+       ! Set the model domain by reading in the SDAT%domainfile
+       call shr_dmodel_readgrid_model(SDAT%grid,SDAT%gsmap,SDAT%nxg,SDAT%nyg,SDAT%nzg, &
+            SDAT%domainfile, compid, mpicom, &
+            readfrac=.true., scmmode=lscmmode, scmlon=scmlon, scmlat=scmlat)
 
     endif
-    SDAT%lsize = mct_gsmap_lsize(SDAT%gsmap,mpicom)
+
+    if (present(reset_domain_mask)) then
+       if (reset_domain_mask) then
+          if (my_task == master_task) write(logunit,F00) ' Resetting the component domain mask and frac to 1'
+          kmask = mct_aVect_indexRA(SDAT%grid%data,'mask')
+          SDAT%grid%data%rattr(kmask,:) = 1
+
+          kfrac = mct_aVect_indexRA(SDAT%grid%data,'frac')
+          SDAT%grid%data%rattr(kfrac,:) = 1.0_r8
+       end if
+    end if
+
+    SDAT%lsize = mct_gsmap_lsize(SDAT%gsmap, mpicom)
 
   end subroutine shr_strdata_init_model_domain
 
@@ -365,20 +332,17 @@ contains
     ! Initialize stream domains and gsmap
 
     do n = 1,SDAT%nstreams
+
        if (my_task == master_task) then
-          call shr_stream_getDomainInfo(SDAT%stream(n),&
-               filePath,fileName,timeName,lonName, &
-               latName,hgtName,maskName,areaName)
-
+          call shr_stream_getDomainInfo(SDAT%stream(n), filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
           call shr_stream_getFile(filePath,fileName)
-
           write(logunit,*) subname,' stream ',n
           write(logunit,*) subname,' filePath = ',n,trim(filePath)
           write(logunit,*) subname,' fileName = ',n,trim(fileName)
           write(logunit,*) subname,' timeName = ',n,trim(timeName)
-          write(logunit,*) subname,'  lonName = ',n,trim(lonName)
-          write(logunit,*) subname,'  latName = ',n,trim(latName)
-          write(logunit,*) subname,'  hgtName = ',n,trim(hgtName)
+          write(logunit,*) subname,' lonName  = ',n,trim(lonName)
+          write(logunit,*) subname,' latName  = ',n,trim(latName)
+          write(logunit,*) subname,' hgtName  = ',n,trim(hgtName)
           write(logunit,*) subname,' maskName = ',n,trim(maskName)
           write(logunit,*) subname,' areaName = ',n,trim(areaName)
        endif
@@ -389,12 +353,14 @@ contains
        call shr_mpi_bcast(maskName,mpicom)
        call shr_mpi_bcast(areaName,mpicom)
 
-       call shr_dmodel_readgrid(&
-            SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n), &
-            fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName)
+       ! Initialize stream domain info for stream n
+       call shr_dmodel_readgrid_stream(&
+            SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), &
+            fileName, compid, mpicom, lonName, latName, hgtName, maskName, areaName)
 
-       SDAT%lsizeR(n) = mct_gsmap_lsize(SDAT%gsmapR(n),mpicom)
+       SDAT%lsizeR(n) = mct_gsmap_lsize(SDAT%gsmapR(n), mpicom)
 
+       ! Initialize pio settings for stream n
        call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
        if (SDAT%strnzg(n) <= 0) then
           call pio_initdecomp(SDAT%pio_subsystem, pio_double, &
@@ -1356,7 +1322,7 @@ contains
     SDAT%io_type       =  shr_pio_getiotype(compid)
     SDAT%io_format     =  shr_pio_getioformat(compid)
 
-  end subroutine shr_strdata_pioinit_newway
+  end subroutine shr_strdata_pioinit
 
   !===============================================================================
 

@@ -333,7 +333,7 @@ contains
     end if
     sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
-    ! initialize sdat domain (sdat%grid)
+    ! initialize sdat model domain (sdat%grid)
     if (my_task == master_task) then
        write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
        if (present(reset_domain_mask)) then
@@ -349,8 +349,10 @@ contains
          dmodel_domain_fracname_from_stream=dmodel_domain_fracname_from_stream, &
          reset_domain_mask=reset_domain_mask)
 
-    ! initialize sdat attributes for streams and mapping of streams to model domain
+    ! initialize sdat stream domains
     call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
+
+    ! initialize sdat attributes mapping of streams to model domain
     call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
 
     if (my_task == master_task) then
