@@ -398,6 +398,7 @@
 <seasalt_emis_scale chem="trop_mam4_resus_soag">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus_mom">1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam4">   1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="trop_strat_mam4_resus_mom">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam3">        1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus">  1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_soag"> 1.35 </seasalt_emis_scale>
