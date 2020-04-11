@@ -49,8 +49,8 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   ad.initialize(atm_comm,ad_params,time);
 
   // Have to wait till now to get homme's parameters, cause it only gets init-ed during the driver initialization
-  const auto& sp = Homme::Context::singleton().get_simulation_params();
-  const int nmax = get_homme_param_value<int>("nmax");
+  // const auto& sp = Homme::Context::singleton().get_simulation_params();
+  // const int nmax = get_homme_param_value<int>("nmax");
   const int num_dyn_iters = 10; //nmax / (sp.qsplit*sp.rsplit);
   const double dt = get_homme_param_value<Real>("dt");
 

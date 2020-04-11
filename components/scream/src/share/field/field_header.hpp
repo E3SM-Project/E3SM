@@ -54,7 +54,6 @@ public:
   const FieldTracking& get_tracking () const { return m_tracking; }
         FieldTracking& get_tracking ()       { return m_tracking; }
 
-
   // Get the allocation properties
   const FieldAllocProp& get_alloc_properties () const { return m_alloc_prop; }
         FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
