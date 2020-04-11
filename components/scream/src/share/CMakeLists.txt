@@ -1,5 +1,6 @@
 set(SHARE_SRC
   atm_process/atmosphere_process_group.cpp
+  atm_process/atmosphere_process_dag.cpp
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
