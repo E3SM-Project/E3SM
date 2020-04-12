@@ -12,10 +12,12 @@ Step 5. Create vtk file for visualization
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-import os
 import xarray
 import argparse
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
 
 from mpas_tools.conversion import convert
 from mpas_tools.io import write_netcdf
@@ -29,6 +31,7 @@ from jigsaw_to_MPAS.inject_preserve_floodplain import \
     inject_preserve_floodplain
 
 import define_base_mesh
+
 
 def build_mesh(
         preserve_floodplain=False,
@@ -53,17 +56,14 @@ def build_mesh(
         da.to_netcdf(cw_filename)
         plot_cellWidth=True
         if plot_cellWidth:
-            import matplotlib
-            from cartopy import config
-            import cartopy.crs as ccrs
-            matplotlib.use('Agg')
             fig = plt.figure()
             fig.set_size_inches(16.0, 8.0)
             plt.clf()
             ax = plt.axes(projection=ccrs.PlateCarree())
             ax.set_global()
-            im = ax.imshow(cellWidth, origin='lower', transform=ccrs.PlateCarree(
-            ), extent=[-180, 180, -90, 90], cmap='jet')
+            im = ax.imshow(cellWidth, origin='lower',
+                           transform=ccrs.PlateCarree(),
+                           extent=[-180, 180, -90, 90], cmap='viridis_r')
             ax.coastlines()
             gl = ax.gridlines(
                 crs=ccrs.PlateCarree(),
@@ -76,6 +76,8 @@ def build_mesh(
             gl.ylabels_right = False
             plt.title('Grid cell size, km')
             plt.colorbar(im, shrink=.60)
+            fig.canvas.draw()
+            plt.tight_layout()
             plt.savefig('cellWidthGlobal.png')
 
     else:
