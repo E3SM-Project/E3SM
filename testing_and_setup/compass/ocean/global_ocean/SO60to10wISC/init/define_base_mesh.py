@@ -3,9 +3,6 @@ import jigsaw_to_MPAS.mesh_definition_tools as mdt
 from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
     compute_cell_width
 from geometric_features import read_feature_collection
-import xarray
-
-# Uncomment to plot the cell size distribution.
 # import matplotlib
 # matplotlib.use('Agg')
 # import matplotlib.pyplot as plt
@@ -32,7 +29,10 @@ def cellWidthVsLatLon():
     lon = np.linspace(-180., 180., nlon)
     lat = np.linspace(-90., 90., nlat)
 
-    cellWidthSouth = 30. * np.ones((len(lat)))
+    cellWidthSouth = mdt.EC_CellWidthVsLat(lat, cellWidthEq=30.,
+                                           cellWidthMidLat=45.,
+                                           cellWidthPole=30.)
+    # cellWidthSouth = 30. * np.ones((len(lat)))
 
     # Transition at Equator
     cellWidthNorth = mdt.EC_CellWidthVsLat(lat)
@@ -53,36 +53,37 @@ def cellWidthVsLatLon():
     signed_distance = signed_distance_from_geojson(fc, lon, lat,
                                                    max_length=0.25)
 
-    da = xarray.DataArray(signed_distance,
-                          dims=['y', 'x'],
-                          coords={'y': lat, 'x': lon},
-                          name='signed_distance')
-    cw_filename = 'signed_distance.nc'
-    da.to_netcdf(cw_filename)
+    # da = xarray.DataArray(signed_distance,
+    #                       dims=['y', 'x'],
+    #                       coords={'y': lat, 'x': lon},
+    #                       name='signed_distance')
+    # filename = 'signed_distance.nc'
+    # da.to_netcdf(filename)
 
-    # multiply by 5 because transition_width gets multiplied by 0.2 in
-    # compute_cell_width
     # Equivalent to 10 degrees latitude
-    trans_width = 5*1100e3
-    # The last term compensates for the offset in compute_cell_width.
-    # The middle of the transition is ~2.5 degrees (300 km) south of the
-    # region boundary to best match previous transition at 48 S. (The mean lat
-    # of the boundary is 45.5 S.)
-    trans_start = -300e3 - 0.5 * trans_width
+    trans_width = 1100e3
+    trans_start = 0.
     dx_min = 10.
 
-    cellWidth = compute_cell_width(signed_distance, cellWidth, lon,
-                                   lat, dx_min, trans_start, trans_width,
-                                   restrict_box={'include': [], 'exclude': []})
+    weights = 0.5 * (1 + np.tanh((signed_distance - trans_start) / trans_width))
 
-    # Uncomment to plot the cell size distribution.
-    # Lon, Lat = np.meshgrid(lon, lat)
-    # ax = plt.subplot(111)
-    # plt.pcolormesh(Lon, Lat, cellWidth)
-    # plt.colorbar()
-    # ax.set_aspect('equal')
-    # ax.autoscale(tight=True)
+    cellWidth = dx_min * (1 - weights) + cellWidth * weights
+
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=[12, 4.5])
+    # index = np.argmin(np.abs(lon - (-30.5)))
+    # ax1.plot(lat, cellWidth[:, index])
+    # ax1.set_title('lon = {}'.format(lon[index]))
+    # index = np.argmin(np.abs(lon - (179.5)))
+    # ax2.plot(lat, cellWidth[:, index])
+    # ax2.set_title('lon = {}'.format(lon[index]))
     # plt.tight_layout()
-    # plt.savefig('cellWidthVsLat.png', dpi=200)
+    # plt.savefig('res_vs_lat.png', dpi=200)
+    #
+    # fig, ax1 = plt.subplots(1, 1, figsize=[6, 4.5])
+    # index = np.argmin(np.abs(lon - (-62.5)))
+    # ax1.plot(lat, cellWidth[:, index])
+    # ax1.set_title('Drake Passage lon = {}'.format(lon[index]))
+    # plt.tight_layout()
+    # plt.savefig('drake_res_vs_lat.png', dpi=200)
 
     return cellWidth, lon, lat
