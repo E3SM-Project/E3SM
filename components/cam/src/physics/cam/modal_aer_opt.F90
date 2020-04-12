@@ -290,6 +290,7 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('trop_mam4_resus_soag').or.cam_chempkg_is('trop_mam7').or. &
        cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7').or. &
        cam_chempkg_is('trop_strat_mam4_resus_mom').or. &
+       cam_chempkg_is('trop_mozart_mam4_linoz_resus_mom_soag').or. &
        cam_chempkg_is('linoz_mam4_resus').or.cam_chempkg_is('linoz_mam4_resus_soag').or.&
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
        cam_chempkg_is('linoz_mam4_resus_mom_soag')) then
