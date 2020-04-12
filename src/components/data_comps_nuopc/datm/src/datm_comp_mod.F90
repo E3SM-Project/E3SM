@@ -565,9 +565,8 @@ contains
     lsize = size(Sa_z)
 
     if (first_time) then
-       ! overwrite mask and frac
+       ! overwrite mask
        call dshr_set_griddata(sdat, 'mask', rvalue=1.0_r8)
-       call dshr_set_griddata(sdat, 'frac', rvalue=1.0_r8)
 
        ! allocate module arrays
        allocate(windFactor(lsize))

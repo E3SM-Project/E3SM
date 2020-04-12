@@ -266,8 +266,8 @@ contains
     type(ESMF_Mesh)            , intent(in)    :: mesh
     character(len=*)           , intent(in)    :: model_name
     type(shr_strdata_type)     , intent(inout) :: sdat
-    character(len=*), optional , intent(in)    :: dmodel_domain_fracname_from_stream
     logical         , optional , intent(in)    :: reset_domain_mask
+    character(len=*), optional , intent(in)    :: dmodel_domain_fracname_from_stream
     integer                    , intent(out)   :: rc
 
     ! local varaibles
@@ -344,10 +344,8 @@ contains
                ' from the domain of the first stream'
        end if
     end if
-    call shr_strdata_init_model_domain(sdat, mpicom, compid, my_task, &
-         scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=sdat%gsmap, &
-         dmodel_domain_fracname_from_stream=dmodel_domain_fracname_from_stream, &
-         reset_domain_mask=reset_domain_mask)
+    call shr_strdata_init_model_domain(sdat, mesh, mpicom, my_task, &
+         scmmode, scmlon, scmlat, reset_domain_mask, dmodel_domain_fracname_from_stream)
 
     ! initialize sdat stream domains
     call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
@@ -1026,17 +1024,17 @@ contains
   subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
        mpicom, compid, masterproc, logunit, sdat) 
 
-    use dshr_dmodel_mod , only : shr_dmodel_mapset
-    use shr_map_mod    , only : shr_map_fs_remap, shr_map_fs_bilinear
-    use shr_map_mod    , only : shr_map_fs_srcmask, shr_map_fs_scalar
-    use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
-    use dshr_strdata_mod, only : shr_strdata_type
-    use shr_const_mod  , only : shr_const_spval
-    use shr_mpi_mod    , only : shr_mpi_bcast
-    use mct_mod        , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp
-    use mct_mod        , only : mct_avect_importrattr, mct_avect_exportrattr, mct_avect_clean   
-    use mct_mod        , only : mct_ggrid, mct_ggrid_init,  mct_ggrid_importrattr, mct_ggrid_gather, mct_ggrid_clean   
-    use mct_mod        , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize, mct_gsmap_clean  
+    use dshr_dmodel_mod  , only : shr_dmodel_mapset
+    use shr_map_mod      , only : shr_map_fs_remap, shr_map_fs_bilinear
+    use shr_map_mod      , only : shr_map_fs_srcmask, shr_map_fs_scalar
+    use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
+    use dshr_strdata_mod , only : shr_strdata_type
+    use shr_const_mod    , only : shr_const_spval
+    use shr_mpi_mod      , only : shr_mpi_bcast
+    use mct_mod          , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp
+    use mct_mod          , only : mct_avect_importrattr, mct_avect_exportrattr, mct_avect_clean   
+    use mct_mod          , only : mct_ggrid, mct_ggrid_init,  mct_ggrid_importrattr, mct_ggrid_gather, mct_ggrid_clean   
+    use mct_mod          , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize, mct_gsmap_clean  
 
     ! input/output variables
     character(*)           , intent(in)    :: fileName   ! file name string
@@ -1117,7 +1115,7 @@ contains
     deallocate(start, length)
     lsizei = mct_gsmap_lsize(gsmapi    , mpicom)
     lsizeo = mct_gsmap_lsize(sdat%gsmap, mpicom)
-    call mct_gGrid_init(GGrid=gGridi, CoordChars='lat:lon:hgt', OtherChars='area:aream:mask:frac', lsize=lsizei )
+    call mct_gGrid_init(GGrid=gGridi, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsizei )
     call mct_aVect_init(avi, rList="wind:windd:qsat", lsize=lsizei)
     avi%rAttr = shr_const_spval
 

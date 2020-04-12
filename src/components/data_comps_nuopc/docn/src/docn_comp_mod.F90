@@ -196,7 +196,7 @@ contains
     ! Set pointers to exportState fields that have no corresponding stream field
     call state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_get_griddata(sdat, 'frac', So_omask)
+    call dshr_get_griddata(sdat, 'mask', So_omask)
 
     call state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
