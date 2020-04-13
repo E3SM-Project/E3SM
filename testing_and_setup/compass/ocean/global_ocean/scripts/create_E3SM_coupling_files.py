@@ -25,6 +25,7 @@ import pyproj
 from pyremap import MpasMeshDescriptor, ProjectionGridDescriptor, Remapper, \
     get_lat_lon_descriptor, get_polar_descriptor
 from mpas_tools.scrip.from_mpas import scrip_from_mpas
+from netCDF4 import Dataset
 # }}}
 
 
@@ -32,8 +33,14 @@ def main():  # {{{
 
     print("****** Creating E3SM coupling files ******")
     # obtain configuration settings
-    config = configparser.ConfigParser()
-    config.read("config_E3SM_coupling_files.ini")
+    config = configparser.ConfigParser(
+        interpolation=configparser.ExtendedInterpolation())
+    # first, read in the default config options
+    config.read("defaults.ini")
+    if os.path.exists('config_E3SM_coupling_files.ini'):
+        # there are custom config options, too, so we'll read those in next so
+        # they override the defaults where necessary
+        config.read("config_E3SM_coupling_files.ini")
 
     function_list = [initial_condition_ocean,
                      graph_partition_ocean,
@@ -51,11 +58,18 @@ def main():  # {{{
                      salinity_restoring,
                      prescribed_ismf]
 
-# clean: Delete all directories
     parser = argparse.ArgumentParser()
     parser.add_argument('--clean', action='store_true')
     parser.add_argument('--ice_shelf_cavities', action='store_true')
+    parser.add_argument('--author', dest='author', required=False,
+                        help='name of the author of the mesh version to include'
+                             ' in metadata')
+    parser.add_argument('--email', dest='email', required=False,
+                        help='email address of the author to include in '
+                             'metadata')
     args = parser.parse_args()
+
+    # clean: Delete all directories
     if args.clean:
         print('****** clean out directories ******')
         for function in function_list:
@@ -69,35 +83,22 @@ def main():  # {{{
     else:
         config.set('main', 'ice_shelf_cavities', 'False')
 
+    if args.author is not None:
+        config.set('mesh', 'author', args.author)
+
+    if args.email is not None:
+        config.set('mesh', 'email', args.email)
+
     print("- ice_shelf_cavities set to {}".format(
         config.get('main', 'ice_shelf_cavities')))
 
-    # determine mesh name
-    mesh_name = config.get('main', 'mesh_name')
-    currentDir = os.getcwd()
-    if mesh_name == 'autodetect':
-        path = currentDir.split('/')
-        if 'global_ocean' in path:
-            index = path.index('global_ocean') + 1
-            mesh_name = 'o{}'.format(path[index])
-            print("- mesh name autodetected from path: {}".format(mesh_name))
-            config.set('main', 'mesh_name', mesh_name)
-        else:
-            raise ValueError("mesh name not found in path. Please specify "
-                             "the mesh_name in config_E3SM_coupling_files.ini.")
-    else:
-        print("- mesh name specified in config file: ", mesh_name)
+    parse_mesh_metadata(config)
+    mesh_name = config.get('mesh', 'long_name')
 
-    # determine date string
-    date_string = config.get('main', 'date_string')
+    shutil.copyfile('mesh_before_metadata.nc', 'mesh.nc')
+    append_mesh_metadata(config, 'mesh.nc')
+
     currentDir = os.getcwd()
-    if date_string == 'autodetect':
-        now = datetime.now()
-        date_string = now.strftime("%y%m%d")
-        print("- date string autodetected from today's date:", date_string)
-        config.set('main', 'date_string', date_string)
-    else:
-        print("- date string specified in config file:", date_string)
 
     # create inputdata directories
     make_dir('assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
@@ -141,7 +142,7 @@ def main():  # {{{
 
 def initial_condition_ocean(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     # create links
     init_filename = config.get('main', 'initial_condition')
@@ -158,6 +159,8 @@ def initial_condition_ocean(config):  # {{{
             filename]
     run_command(args)
 
+    append_mesh_metadata(config, filename)
+
     # create link to output directory
     os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
         mesh_name))
@@ -168,7 +171,7 @@ def initial_condition_ocean(config):  # {{{
 
 def graph_partition_ocean(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
 
     # create links
@@ -205,7 +208,7 @@ def graph_partition_ocean(config):  # {{{
 
 def initial_condition_seaice(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     init_filename = config.get('main', 'initial_condition')
     base_path = os.path.dirname(os.getcwd())
@@ -229,6 +232,8 @@ def initial_condition_seaice(config):  # {{{
             filename]
     run_command(args)
 
+    append_mesh_metadata(config, filename)
+
     # make links to output directory
     os.chdir('../assembled_files_for_upload/inputdata/ice/mpas-cice/{}'.format(
         mesh_name))
@@ -239,7 +244,7 @@ def initial_condition_seaice(config):  # {{{
 
 def scrip(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -275,7 +280,7 @@ def scrip(config):  # {{{
 
 def transects_and_regions(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
     make_moc_masks(mesh_name)
@@ -311,7 +316,7 @@ def transects_and_regions(config):  # {{{
 
 def mapping_analysis(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
 
     make_analysis_lat_lon_map(config, mesh_name)
     make_analysis_polar_map(config, mesh_name, projection='antarctic')
@@ -367,7 +372,7 @@ def mapping_ne30(config):  # {{{
 
 def mapping(config, atm_scrip_tag):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    short_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -381,7 +386,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
     # make links
     ocn_scrip_file = 'ocean.{}{}.scrip.{}.nc'.format(
-        mesh_name, nomaskStr, date_string)
+        short_name, nomaskStr, date_string)
     make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
     atm_scrip_file = '{}.nc'.format(atm_scrip_tag)
     make_link('{}/{}'.format(atm_scrip_path, atm_scrip_file), atm_scrip_file)
@@ -399,7 +404,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
         # Ocean to atmosphere
         mapping_file = 'map_{}{}_TO_{}_{}.{}.nc'.format(
-            mesh_name, nomaskStr, atm_scrip_tag, short, date_string)
+            short_name, nomaskStr, atm_scrip_tag, short, date_string)
         args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', ocn_scrip_file,
@@ -410,7 +415,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
         # Atmosphere to ocean
         mapping_file = 'map_{}_TO_{}{}_{}.{}.nc'.format(
-            atm_scrip_tag, mesh_name, nomaskStr, short, date_string)
+            atm_scrip_tag, short_name, nomaskStr, short, date_string)
         args = ['ESMF_RegridWeightGen',
                 '--method', method,
                 '--source', atm_scrip_file,
@@ -422,7 +427,7 @@ def mapping(config, atm_scrip_tag):  # {{{
     if ice_shelf_cavities:
         print("\n Mapping files with masks for ice shelf cavities")
         # make links
-        ocn_scrip_file = 'ocean.{}.mask.scrip.{}.nc'.format(mesh_name,
+        ocn_scrip_file = 'ocean.{}.mask.scrip.{}.nc'.format(short_name,
                                                             date_string)
         make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
 
@@ -431,7 +436,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
             # Ocean to atmosphere
             mapping_file = 'map_{}.mask_TO_{}_{}.{}.nc'.format(
-                mesh_name, atm_scrip_tag, short, date_string)
+                short_name, atm_scrip_tag, short, date_string)
             args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', ocn_scrip_file,
@@ -442,7 +447,7 @@ def mapping(config, atm_scrip_tag):  # {{{
 
             # Atmosphere to ocean
             mapping_file = 'map_{}_TO_{}.mask_{}.{}.nc'.format(
-                atm_scrip_tag, mesh_name, short, date_string)
+                atm_scrip_tag, short_name, short, date_string)
             args = ['ESMF_RegridWeightGen',
                     '--method', method,
                     '--source', atm_scrip_file,
@@ -471,7 +476,7 @@ def domain_ne30(config):  # {{{
 
 def make_domain_files(config, mapping_suffix):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    short_name = config.get('mesh', 'short_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -487,12 +492,12 @@ def make_domain_files(config, mapping_suffix):  # {{{
     # make links
     make_link(domain_exe, 'domain_exe')
     mapping_file = 'map_{}{}_TO_{}_aave.{}.nc'.format(
-        mesh_name, nomaskStr, atm_scrip_tag, date_string)
+        short_name, nomaskStr, atm_scrip_tag, date_string)
     make_link('../mapping_{}/{}'.format(mapping_suffix, mapping_file),
               mapping_file)
 
     # execute commands
-    args = ['./domain_exe', '-m', mapping_file, '-o', mesh_name, '-l', 'T62']
+    args = ['./domain_exe', '-m', mapping_file, '-o', short_name, '-l', 'T62']
     run_command(args)
 
     # make links in output directories
@@ -505,7 +510,7 @@ def make_domain_files(config, mapping_suffix):  # {{{
 
 def mapping_runoff(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    short_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -526,7 +531,7 @@ def mapping_runoff(config):  # {{{
     make_link(runoff_map_exe, 'runoff_map_exe')
     make_link(runoff_map_lnd_file, 'runoff.daitren.annual.nc')
     ocn_scrip_file = 'ocean.{}{}.scrip.{}.nc'.format(
-        mesh_name, nomaskStr, date_string)
+        short_name, nomaskStr, date_string)
     make_link('../scrip/{}'.format(ocn_scrip_file), ocn_scrip_file)
 
     # write namelist file
@@ -538,13 +543,13 @@ def mapping_runoff(config):  # {{{
     f.write("   file_roff    = 'runoff.daitren.annual.nc'\n")
     f.write("   file_ocn     = '{}'\n".format(ocn_scrip_file))
     f.write("   file_nn      = 'map_rx1_to_{}_coast_nearestdtos_{}.nc'\n"
-            "".format(mesh_name, date_string))
+            "".format(short_name, date_string))
     f.write("   file_smooth  = 'map_{}_coast_to_{}_sm_e1000r300_{}.nc'\n"
-            "".format(mesh_name, mesh_name, date_string))
+            "".format(short_name, short_name, date_string))
     f.write("   file_new     = 'map_rx1_to__nnsm_e1000r300_{}.nc'\n".format(
-        mesh_name, date_string))
+        short_name, date_string))
     f.write("   title        = 'runoff map: rx1 -> {}, nearest neighbor and "
-            "smoothed'\n".format(mesh_name))
+            "smoothed'\n".format(short_name))
     f.write("   eFold        = 1000000.0\n")
     f.write("   rMax         =  300000.0\n")
     f.write("   restrict_smooth_src_to_nn_dest = .true.\n")
@@ -583,7 +588,7 @@ def mapping_runoff(config):  # {{{
 
 def salinity_restoring(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -668,7 +673,7 @@ def salinity_restoring(config):  # {{{
 
 def prescribed_ismf(config):  # {{{
 
-    mesh_name = config.get('main', 'mesh_name')
+    mesh_name = config.get('mesh', 'long_name')
     date_string = config.get('main', 'date_string')
     ice_shelf_cavities = config.getboolean('main', 'ice_shelf_cavities')
 
@@ -1140,6 +1145,165 @@ def remap_rignot(inFileName, meshFileName, meshName, outFileName,
 
     dsRemap.attrs['history'] = ' '.join(sys.argv)
     write_netcdf(dsRemap, outFileName)  # }}}
+
+
+def parse_mesh_metadata(config):  # {{{
+
+    if config.get('mesh', 'author') == 'autodetect':
+        author = subprocess.check_output(['git', 'config', 'user.name']).decode(
+            "utf-8").strip()
+        print("- author's name autodetected from git config: {}".format(
+            author))
+        config.set('mesh', 'author', author)
+    else:
+        print("- author's name specified in config file: {}".format(
+            config.get('mesh', 'author')))
+
+    if config.get('mesh', 'email') == 'autodetect':
+        email = subprocess.check_output(['git', 'config', 'user.email']).decode(
+            "utf-8").strip()
+        print("- author's email autodetected from git config: {}".format(
+            email))
+        config.set('mesh', 'email', email)
+    else:
+        print("- author's name specified in config file: {}".format(
+            config.get('mesh', 'email')))
+
+    # determine date string
+    date_string = config.get('main', 'date_string')
+    if date_string == 'autodetect':
+        now = datetime.now()
+        date_string = now.strftime("%y%m%d")
+        print("- date string autodetected from today's date: {}".format(
+            date_string))
+        config.set('main', 'date_string', date_string)
+    else:
+        print("- date string specified in config file: {}".format(date_string))
+
+    # determine creation date
+    date_string = config.get('mesh', 'creation_date')
+    if date_string == 'autodetect':
+        now = datetime.now()
+        date_string = now.strftime("%m/%d/%Y %H:%M:%S")
+        print("- creation date autodetected from today's date: {}".format(
+            date_string))
+        config.set('mesh', 'creation_date', date_string)
+    else:
+        print("- creation date specified in config file: {}".format(
+            date_string))
+
+    # determine the maximum depth of the ocean
+    if config.get('mesh', 'max_depth') == 'autodetect':
+        with xr.open_dataset('mesh_before_metadata.nc') as dsMesh:
+            max_depth = dsMesh.refBottomDepth.isel(nVertLevels=-1).values
+            # round to the nearest 0.1 m
+            max_depth = np.round(max_depth, 1)
+
+        print("- maximum ocean depth autodetected mesh file: {}".format(
+            max_depth))
+        config.set('mesh', 'max_depth', '{}'.format(max_depth))
+    else:
+        max_depth = config.getfloat('mesh', 'max_depth')
+        print("- maximum ocean depth in config file: {}".format(max_depth))
+
+    # determine the number of vertical levels in the ocean
+    if config.get('mesh', 'levels') == 'autodetect':
+        with xr.open_dataset('mesh_before_metadata.nc') as dsMesh:
+            levels = dsMesh.sizes['nVertLevels']
+
+        print("- number of vertical levels in the ocean autodetected mesh file:"
+              " {}".format(levels))
+        config.set('mesh', 'levels', '{}'.format(levels))
+    else:
+        levels = config.getfloat('mesh', 'levels')
+        print("- number of vertical levels in the ocean in config file: "
+              "{}".format(levels))
+
+    # determine mesh long and short name.  We do this last because other config
+    # options may be part of the mesh name
+    for prefix in ['long', 'short']:
+        name = config.get('mesh', '{}_name'.format(prefix))
+        currentDir = os.getcwd()
+        if name == 'autodetect':
+            path = currentDir.split('/')
+            if 'global_ocean' in path:
+                index = path.index('global_ocean') + 1
+                name = 'o{}'.format(path[index])
+                print("- mesh {} name autodetected from path: {}".format(
+                    prefix, name))
+                config.set('mesh', '{}_name'.format(prefix), name)
+            else:
+                raise ValueError(
+                    "mesh name not found in path. Please specify the {}_name "
+                    "in config_E3SM_coupling_files.ini.".format(prefix))
+        else:
+            print("- mesh {} name specified in config file: {}".format(
+                prefix, name))
+    # }}}
+
+
+def append_mesh_metadata(config, filename):  # {{{
+    ds = Dataset(filename, "r+")
+
+    prefix = config.get('mesh', 'prefix')
+
+    if config.getboolean('main', 'ice_shelf_cavities'):
+        ice_shelf_cavities = 'ON'
+    else:
+        ice_shelf_cavities = 'OFF'
+
+    attrdict = {'MPAS_Mesh_Short_Name': config.get('mesh', 'short_name'),
+                'MPAS_Mesh_Long_Name': config.get('mesh', 'long_name'),
+                'MPAS_Mesh_Description':
+                    config.get('mesh', 'description').replace('\n', ' '),
+                'MPAS_Mesh_E3SM_Version': config.getint('mesh', 'e3sm_version'),
+                'MPAS_Mesh_{}_Version'.format(prefix):
+                    config.get('mesh', 'mesh_version'),
+                'MPAS_Mesh_{}_Version_Author'.format(prefix):
+                    config.get('mesh', 'author'),
+                'MPAS_Mesh_{}_Version_Author_E-mail'.format(prefix):
+                    config.get('mesh', 'email'),
+                'MPAS_Mesh_{}_Version_Creation_Date'.format(prefix):
+                    config.get('mesh', 'creation_date'),
+                'MPAS_Mesh_{}_Minimum_Resolution_km'.format(prefix):
+                    config.getfloat('mesh', 'min_res'),
+                'MPAS_Mesh_{}_Maximum_Resolution_km'.format(prefix):
+                    config.getfloat('mesh', 'max_res'),
+                'MPAS_Mesh_{}_Maximum_Depth_m'.format(prefix):
+                    config.getfloat('mesh', 'max_depth'),
+                'MPAS_Mesh_{}_Number_of_Levels'.format(prefix):
+                    config.getfloat('mesh', 'levels'),
+                'MPAS_Mesh_Ice_Shelf_Cavities': ice_shelf_cavities,
+                'MPAS_Mesh_Runoff_Description': config.get(
+                    'mesh', 'runoff_description')}
+
+    packages = {'COMPASS': 'compass', 'JIGSAW': 'jigsaw',
+                'JIGSAW-Python': 'jigsawpy', 'MPAS-Tools': 'mpas_tools',
+                'NCO': 'nco', 'ESMF': 'esmf',
+                'geometric_features': 'geometric_features',
+                'Metis': 'metis', 'pyremap': 'pyremap'}
+
+    for name in packages:
+        package = packages[name]
+        attrdict['MPAS_Mesh_{}_Version'.format(name)] = \
+            get_conda_package_version(package)
+
+    ds.setncatts(attrdict)
+
+    # }}}
+
+
+def get_conda_package_version(package):  # {{{
+    conda = subprocess.check_output(['conda', 'list', package]).decode("utf-8")
+    lines = conda.split('\n')
+    for line in lines:
+        parts = line.split()
+        if parts[0] == package:
+            return parts[1]
+
+    raise ValueError('Package {} not found in the conda environment'.format(
+        package))
+    # }}}
 
 
 if __name__ == '__main__':
