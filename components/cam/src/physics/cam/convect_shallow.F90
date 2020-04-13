@@ -442,10 +442,7 @@ end subroutine convect_shallow_init_cnst
    use constituents,    only : pcnst, cnst_get_ind, cnst_get_type_byind
    use hk_conv,         only : cmfmca
    use uwshcu,          only : compute_uwshcu_inv
-!pw   use unicon_cam,      only : unicon_out_t, unicon_cam_tend
-!pw++
    use unicon_cam,      only : unicon_out_t, unicon_cam_tend, unicon_cam_tend_free
-!pw--
 
    use time_manager,    only : get_nstep, is_first_step
    use wv_saturation,   only : qsat
@@ -766,9 +763,8 @@ end subroutine convect_shallow_init_cnst
       cmflq(:ncol,:) = unicon_out%qtflx(:ncol,:) * latvap
 
       call outfld( 'PRECSH' , precc  , pcols, lchnk )
-!pw++
+
       call unicon_cam_tend_free(unicon_out)
-!pw--
 
    end select
 
