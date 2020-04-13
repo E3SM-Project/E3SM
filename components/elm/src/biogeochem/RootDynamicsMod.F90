@@ -148,7 +148,7 @@ contains
                end if
             else
                ! this can be changed to any depth (i.e. the maximum soil depth)
-               root_depth(p) = min(altmax_lastyear(c), min(zi(c,nlevsoi), root_dmx(ivt(p))))
+               root_depth(p) = min(altmax_lastyear(c), min(zi(c,nlevbed(c)), root_dmx(ivt(p))))
             end if
          else
             root_depth(p) = 0._r8
