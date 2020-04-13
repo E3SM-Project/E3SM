@@ -21,7 +21,7 @@ module ocn_comp_nuopc
   use dshr_methods_mod , only : chkerr, state_setscalar, state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
   use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_sdat_init
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use docn_comp_mod    , only : docn_comp_advertise, docn_comp_realize, docn_comp_run
   use docn_comp_mod    , only : somtp  ! for restart
@@ -132,7 +132,6 @@ contains
     character(len=CL) :: fileName           ! generic file name
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
-    character(CL)     :: decomp             ! decomp strategy - not used for NUOPC - but still needed in namelist for now
     character(CL)     :: restfilm = nullstr ! model restart file namelist
     character(CL)     :: restfils = nullstr ! stream restart file namelist
     logical           :: ocn_prognostic     ! true => ocn expects import data
@@ -140,7 +139,7 @@ contains
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / docn_nml / decomp, restfilm, restfils, force_prognostic_true, sst_constant_value
+    namelist / docn_nml / restfilm, restfils, force_prognostic_true, sst_constant_value
 
     rc = ESMF_SUCCESS
 
@@ -300,15 +299,12 @@ contains
 
     ! Initialize sdat
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, reset_domain_mask=reset_domain_mask, rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, reset_domain_mask=reset_domain_mask, &
+         use_new=.true., rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (my_task == master_task) write(logunit,*) ' initialized sdat'
     call t_stopf('docn_strdata_init')
-
-    ! Check that mesh lats and lons correspond to those on the input domain file
-    call dshr_check_mesh(mesh, sdat, 'docn', tolerance=1.e-4_r8, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)

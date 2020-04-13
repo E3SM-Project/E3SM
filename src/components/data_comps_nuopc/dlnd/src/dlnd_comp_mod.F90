@@ -1,7 +1,7 @@
 module dlnd_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_Mesh
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_Mesh, ESMF_MeshGet
   use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
@@ -11,6 +11,7 @@ module dlnd_comp_mod
   use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use dshr_nuopc_mod        , only : dshr_get_griddata
+  use dshr_strdata_mod      , only : shr_strdata_getfrac_from_stream
   use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
 
   ! !PUBLIC TYPES:
@@ -106,7 +107,7 @@ contains
   !===============================================================================
 
   subroutine dlnd_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
-       logunit, masterproc, rc)
+       logunit, masterproc, domain_fracname, mpicom, my_task, rc)
 
     ! input/output variables
     type(shr_strdata_type) , intent(inout) :: sdat
@@ -117,13 +118,16 @@ contains
     type(ESMF_Mesh)        , intent(in)    :: mesh
     integer                , intent(in)    :: logunit
     logical                , intent(in)    :: masterproc
+    character(len=*)       , intent(in)    :: domain_fracname
+    integer                , intent(in)    :: mpicom
+    integer                , intent(in)    :: my_task 
     integer                , intent(out)   :: rc
 
     ! local variables
     integer                    :: n, lsize
     character(len=2)           :: nec_str
     character(CS), allocatable :: strm_flds(:)
-    character(*), parameter    :: subName = "(drof_comp_realize) "
+    character(*), parameter    :: subName = "(dlnd_comp_realize) "
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -134,18 +138,17 @@ contains
     ! -------------------------------------
 
     call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  mesh, &
-         subname//':drofExport', rc=rc)
+         subname//':dlndExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Set lfrac in export state - this is not dependent on any streams
-
+    ! Set fractional land in export state
     call state_getfldptr(exportState, fldname='Sl_lfrin', fldptr1=lfrac, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    lsize = size(lfrac)
-    call dshr_get_griddata(sdat, 'frac', lfrac)
+
+    ! Obtain fractional land from first stream
+    call shr_strdata_getfrac_from_stream(sdat, mpicom, my_task, domain_fracname, lfrac)
 
     ! Create stream-> export state mapping
-
     allocate(strm_flds(0:glc_nec))
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)

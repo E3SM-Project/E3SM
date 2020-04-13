@@ -178,7 +178,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
-    files = Files()
+    files = Files(comp_interface="nuopc")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component":"datm"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_datm.xml")

@@ -56,6 +56,7 @@ module dshr_stream_mod
   public :: shr_stream_getFilePath       ! return file path
   public :: shr_stream_getDataSource     ! return the stream's meta data
   public :: shr_stream_getDomainInfo     ! return the stream's domain info data
+  public :: shr_stream_getDomainFile     ! return the stream's domain file
   public :: shr_stream_getFile           ! acquire file, return name of file to open
   public :: shr_stream_getNFiles         ! get the number of files in a stream
   public :: shr_stream_getCalendar       ! get the stream calendar
@@ -2106,22 +2107,11 @@ contains
   end subroutine shr_stream_setCurrFile
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getDomainInfo -- return domain information
-  !
-  ! !DESCRIPTION:
-  !    Returns domain information data.
-  !
-  ! !REVISION HISTORY:
-  !     2005-Mar-13 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName)
 
-  subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
+    ! return stream domain information
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output variabes
     type(shr_stream_streamType),intent(in)  :: strm     ! data stream
     character(*)               ,intent(out) :: filePath ! domain file path
     character(*)               ,intent(out) :: fileName ! domain file name
@@ -2130,12 +2120,6 @@ contains
     character(*)               ,intent(out) ::  latName ! domain lat  var name
     character(*)               ,intent(out) ::  hgtName ! domain hgt  var name
     character(*)               ,intent(out) :: maskName ! domain mask var name
-    character(*)               ,intent(out) :: areaName ! domain area var name
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     filePath = strm%domFilePath
@@ -2145,9 +2129,22 @@ contains
     latName = strm%domYvarName
     hgtName = strm%domZvarName
     maskName = strm%domMaskName
-    areaName = strm%domAreaName
 
   end subroutine shr_stream_getDomainInfo
+
+  !===============================================================================
+  subroutine shr_stream_getDomainFile(strm,domainfile)
+
+    ! return stream domain file
+
+    ! input/output variabes
+    type(shr_stream_streamType),intent(in)  :: strm     ! data stream
+    character(len=*), intent(out) :: domainfile
+    !-------------------------------------------------------------------------------
+
+    domainfile = trim(strm%domFilePath) // adjustl(strm%domFileName)
+
+  end subroutine shr_stream_getDomainFile
 
   !===============================================================================
   !BOP ===========================================================================

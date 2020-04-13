@@ -390,6 +390,30 @@
     </values>
   </entry>
 
+  <entry id="nx_global" modify_via_xml="ROF_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$ROF_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="ROF_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$ROF_NY</value>
+    </values>
+  </entry>
+
   <entry id="fillalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
@@ -641,21 +665,6 @@
   <!-- =========================================  -->
   <!--- drof_nml                -->
   <!-- =========================================  -->
-
-  <entry id="decomp">
-    <type>char</type>
-    <category>drof</category>
-    <group>drof_nml</group>
-    <valid_values>1d,root</valid_values>
-    <desc>
-      DROF Decomposition strategy
-      1d   = Vector decomposition
-      root = run only on the master task
-    </desc>
-    <values>
-      <value>1d</value>
-    </values>
-  </entry>
 
   <entry id="force_prognostic_true">
     <type>logical</type>

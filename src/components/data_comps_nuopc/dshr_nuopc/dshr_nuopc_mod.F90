@@ -3,7 +3,7 @@ module dshr_nuopc_mod
   use NUOPC
   use NUOPC_Model
   use ESMF
-  use mct_mod          , only : mct_avect_init, mct_avect_lsize, mct_avect_indexra
+  use mct_mod          , only : mct_avect_init, mct_avect_lsize, mct_avect_indexra, mct_gsmap_lsize
   use dshr_methods_mod , only : chkerr, state_getfldptr, get_component_instance
   use dshr_strdata_mod , only : shr_strdata_type
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
@@ -15,7 +15,6 @@ module dshr_nuopc_mod
 
   public :: dshr_advertise
   public :: dshr_model_initphase
-  public :: dshr_check_mesh
   public :: dshr_create_mesh_from_grid
   public :: dshr_set_runclock
   public :: dshr_sdat_init
@@ -239,7 +238,7 @@ contains
 
   subroutine dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
        scmmode, scmlon, scmlat, clock, mesh,  model_name, sdat, &
-       dmodel_domain_fracname_from_stream, reset_domain_mask, rc)
+       reset_domain_mask, use_new, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat
@@ -247,6 +246,7 @@ contains
 
     use dshr_strdata_mod , only : shr_strdata_pioinit
     use dshr_strdata_mod , only : shr_strdata_init_model_domain
+    use dshr_strdata_mod , only : shr_strdata_set_model_domain_mesh
     use dshr_strdata_mod , only : shr_strdata_init_streams
     use dshr_strdata_mod , only : shr_strdata_init_mapping
     use dshr_strdata_mod , only : shr_strdata_print
@@ -267,7 +267,7 @@ contains
     character(len=*)           , intent(in)    :: model_name
     type(shr_strdata_type)     , intent(inout) :: sdat
     logical         , optional , intent(in)    :: reset_domain_mask
-    character(len=*), optional , intent(in)    :: dmodel_domain_fracname_from_stream
+    logical         , optional , intent(in)    :: use_new
     integer                    , intent(out)   :: rc
 
     ! local varaibles
@@ -336,16 +336,16 @@ contains
     ! initialize sdat model domain (sdat%grid)
     if (my_task == master_task) then
        write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
-       if (present(reset_domain_mask)) then
-          write(logunit,*) ' resetting domain mask'
-       end if
-       if (present(dmodel_domain_fracname_from_stream)) then
-          write(logunit,*)' reading fracname ',trim(dmodel_domain_fracname_from_stream),&
-               ' from the domain of the first stream'
-       end if
+       if (present(reset_domain_mask)) write(logunit,*) ' resetting domain mask'
     end if
-    call shr_strdata_init_model_domain(sdat, mesh, mpicom, my_task, &
-         scmmode, scmlon, scmlat, reset_domain_mask, dmodel_domain_fracname_from_stream)
+    if (present(use_new)) then
+       sdat%lsize = mct_gsmap_lsize(sdat%gsmap, mpicom)
+       call shr_strdata_set_model_domain_mesh(mesh, mpicom, sdat, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call shr_strdata_init_model_domain(sdat, mesh, mpicom, my_task, &
+            scmmode, scmlon, scmlat, reset_domain_mask)
+    end if
 
     ! initialize sdat stream domains
     call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
@@ -355,91 +355,10 @@ contains
 
     if (my_task == master_task) then
        call shr_strdata_print(sdat,'SDAT data from '//trim(model_name))
+       write(logunit,*) ' successfully initialized sdat'
     endif
 
   end subroutine dshr_sdat_init
-
-!===============================================================================
-
-  subroutine dshr_check_mesh (mesh, sdat, model_name, tolerance, check_lon, rc)
-
-    type(ESMF_MESH)        , intent(in)  :: mesh
-    type(shr_strdata_type) , intent(in)  :: sdat
-    character(len=*)       , intent(in)  :: model_name
-    real(r8), optional     , intent(in)  :: tolerance 
-    logical , optional     , intent(in)  :: check_lon
-    integer                , intent(out) :: rc
-
-    ! local variables
-    integer           :: n,lsize
-    integer           :: klat, klon, kfrac  ! AV indices
-    real(r8)          :: domlon,domlat      ! domain lats and lots
-    integer           :: spatialDim         ! number of dimension in mesh
-    integer           :: numOwnedElements   ! size of mesh
-    real(r8), pointer :: ownedElemCoords(:) ! mesh lat and lons
-    real(r8), pointer :: xc(:), yc(:)       ! mesh lats and lons
-    real(r8)          :: ltolerance         ! tolerance of check
-    logical           :: lcheck_lon
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! set tolerance of comparison
-    if (present(tolerance)) then
-       ltolerance = tolerance
-    else
-       ltolerance = 1.e-10
-    end if
-
-    if (present(check_lon)) then
-       lcheck_lon = check_lon
-    else
-       lcheck_lon = .false.
-    end if
-
-    ! obtain mesh lats and lons
-    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(ownedElemCoords(spatialDim*numOwnedElements))
-    allocate(xc(numOwnedElements), yc(numOwnedElements))
-    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    do n = 1, numOwnedElements
-       xc(n) = ownedElemCoords(2*n-1)
-       yc(n) = ownedElemCoords(2*n)
-    end do
-
-    ! obtain sdat lat and lons and local size of grid attribute vectors
-    klon = mct_aVect_indexRA(sdat%grid%data,'lon')
-    klat = mct_aVect_indexRA(sdat%grid%data,'lat')
-    lsize = mct_avect_lsize(sdat%grid%data)
-
-    ! error check
-    if (numOwnedElements /= lsize) then
-       write(6,*)'lsize, numownedElements= ',lsize,numOwnedElements 
-       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
-    end if
-
-    do n = 1, lsize
-       domlat = sdat%grid%data%rattr(klat,n)
-       if (lcheck_lon) then
-          domlon = sdat%grid%data%rattr(klon,n)
-          if (abs( domlon - xc(n)) > ltolerance .and. domlon /= 0.0_r8) then
-             write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lon, mesh_lon, diff_lon = ',n, domlon, xc(n), abs(xc(n)-domlon)
-             call shr_sys_abort()
-          end if
-       end if
-       if (abs( domlat - yc(n)) > ltolerance .and. domlat /= 0.0_r8) then
-          write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lat, mesh_lat, diff_lat = ',n, domlat, yc(n), abs(yc(n)-domlat)
-          call shr_sys_abort()
-       end if
-100    format(a,i6,2(f21.13,3x),d21.5)
-       !SDAT%grid%data%rattr(klon,n) = xc(n)
-       !SDAT%grid%data%rattr(klat,n) = yc(n)
-    end do
-    deallocate(xc, yc)
-
-  end subroutine dshr_check_mesh
 
 !===============================================================================
 

@@ -46,15 +46,16 @@ module dshr_strdata_mod
   public ::  shr_strdata_restWrite
   public ::  shr_strdata_setOrbs
   public ::  shr_strdata_print
+  public ::  shr_strdata_set_model_domain_mesh 
   public ::  shr_strdata_init_model_domain
   public ::  shr_strdata_init_streams
   public ::  shr_strdata_init_mapping
+  public ::  shr_strdata_getfrac_from_stream
   public ::  shr_strdata_advance
   public ::  shr_strdata_clean
   public ::  shr_strdata_pioinit
 
   private :: shr_strdata_set_model_domain_orig
-  private :: shr_strdata_set_model_domain_mesh 
   private :: shr_strdata_set_model_domain_scol
   private :: shr_strdata_set_stream_domain
 
@@ -151,18 +152,7 @@ contains
 !===============================================================================
 
   subroutine shr_strdata_init_model_domain(sdat, mesh, mpicom, my_task, &
-       scmmode, scmlon, scmlat, reset_domain_mask, dmodel_domain_fracname_from_stream)
-
-    ! Note: for the variable dmodel_domain_fracname_from_stream:
-    ! This variable is applicable for data models that read the model domain from the
-    ! domain of the first stream; it is an error to provide this variable in other
-    ! situations. If present, then we read the data model's domain fraction from the
-    ! first stream file, and this variable provides the name of the frac field on this
-    ! file. If absent, then (if we are taking the model domain from the domain of the
-    ! first stream) we do not read a frac field, and instead we set frac to 1 wherever
-    ! mask is 1, and set frac to 0 wherever mask is 0.
-    ! BUG(wjs, 2018-05-01, ESMCI/cime#2515) Ideally we'd like to get this frac variable
-    ! name in a more general and robust way; see comments in that issue for more details.
+       scmmode, scmlon, scmlat, reset_domain_mask)
 
     ! Note: for single column mode, the mesh returned to the mediator is a single point,
     ! so the gsmap is for a single point. However, the value of the lat and lon of that point
@@ -179,7 +169,6 @@ contains
     real(R8)               ,intent(in)          :: scmlon
     real(R8)               ,intent(in)          :: scmlat
     logical                ,intent(in),optional :: reset_domain_mask
-    character(len=*)       ,intent(in),optional :: dmodel_domain_fracname_from_stream
 
     ! local variables
     integer        :: n,m,k        ! generic index
@@ -192,9 +181,6 @@ contains
     character(CS)  :: latName      ! domain file: lat  variable name
     character(CS)  :: hgtName      ! domain file: hgt  variable name
     character(CS)  :: maskName     ! domain file: mask variable name
-    character(CS)  :: fracName     ! domain file: frac variable name
-    character(CS)  :: areaName     ! domain file: area variable name
-    logical        :: readfrac     ! whether to read fraction from the first stream file
     integer        :: kmask, kfrac
     logical        :: lscmmode
     integer          ,parameter :: master_task = 0
@@ -202,22 +188,13 @@ contains
     character(len=*) ,parameter :: subname = "(shr_strdata_init) "
     !-------------------------------------------------------------------------------
 
-    if (trim(SDAT%domainfile) /= trim(shr_strdata_nullstr) .and. (present(dmodel_domain_fracname_from_stream))) then
-       write(logunit,*) subname,' ERROR: dmodel_domain_fracname_from_stream'
-       write(logunit,*) 'can only be provided when taking the data model domain'
-       write(logunit,*) 'from the domain of the first stream'
-       write(logunit,*) '(i.e., when the domain file is null).'
-       call shr_sys_abort(subname//' ERROR: dmodel_domain_fracname_from_stream not expected')
-       ! TODO: check that sdat%nstreams > 0
-    end if
-
     ! If model domainfile is 'null' (or shr_strdata_nullstr),
     ! then set the model domain to the domain of the first stream
 
     if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
        if (my_task == master_task) then
           call shr_stream_getDomainInfo(SDAT%stream(1), &
-               filePath, filename, timeName, lonName, latName, hgtName, maskName, areaName)
+               filePath, filename, timeName, lonName, latName, hgtName, maskName)
           domainfile = trim(filepath)//adjustl(filename)
        endif
        call shr_mpi_bcast(domainfile ,mpicom)
@@ -225,23 +202,12 @@ contains
        call shr_mpi_bcast(latName    ,mpicom)
        call shr_mpi_bcast(hgtName    ,mpicom)
        call shr_mpi_bcast(maskName   ,mpicom)
-       call shr_mpi_bcast(areaName   ,mpicom)
-       if (present(dmodel_domain_fracname_from_stream)) then
-          readfrac = .true.
-          fracname = dmodel_domain_fracname_from_stream
-       else
-          readfrac = .false.
-          fracname = shr_strdata_nullstr
-       end if
     else
        domainfile = SDAT%domainfile
        lonname  = "xc"  ! default values / standard data model domain file format
        latname  = "yc"
        hgtname  = "hgt"
        maskname = "mask"
-       areaname = "area"
-       fracname = "frac"
-       readfrac = .true.
     end if
 
     ! Initialize model domain
@@ -251,21 +217,17 @@ contains
     if (scmmode) then
        call shr_strdata_set_model_domain_scol(domainfile, mpicom, scmlon, scmlat, sdat)
     else
-       call shr_strdata_set_model_domain_orig(domainfile, mpicom, readfrac,  &
-            lonname, latname, hgtname, maskname, areaname, fracname, sdat)
+       call shr_strdata_set_model_domain_orig(domainfile, mpicom, &
+            lonname, latname, hgtname, maskname, sdat)
     endif
 
     if (present(reset_domain_mask)) then
        if (reset_domain_mask) then
           if (my_task == master_task) then
-             write(logunit,F00) ' Resetting the component domain mask and frac to 1'
+             write(logunit,F00) ' Resetting the component domain mask to 1'
           end if
-
           kmask = mct_avect_indexra(sdat%grid%data,'mask')
           sdat%grid%data%rattr(kmask,:) = 1
-
-          !kfrac = mct_aVect_indexRA(sdat%grid%data,'frac')
-          !sdat%grid%data%rattr(kfrac,:) = 1.0_r8
        end if
     end if
 
@@ -345,14 +307,74 @@ contains
   end subroutine shr_strdata_init_streams
 
   !===============================================================================
-  subroutine shr_strdata_set_model_domain_mesh( mesh, filename, mpicom, lonname, latname, sdat, rc)
+
+  subroutine shr_strdata_getfrac_from_stream(sdat, mpicom, my_task, fracname, fracdata)
+
+    ! The following initializes the fracname from the first stream
+    ! This is applicable for data models that read the model domain from the
+    ! domain of the first stream; we read the data model's domain fraction from the
+    ! first stream file, and this variable provides the name of the frac field on this
+    ! file. Also see ESMCI/cime#2515).
+    ! Note: this assumes that the first stream is on the same mesh as the model
+    ! Note: This also assumes that the field with fracname exists on the domain file
+
+    ! input/output arguments
+    type(shr_strdata_type) ,intent(inout) :: sdat
+    integer                ,intent(in)    :: mpicom
+    integer                ,intent(in)    :: my_task
+    character(len=*)       ,intent(in)    :: fracname
+    real(r8)               ,pointer       :: fracdata(:)
+
+    ! local variables
+    character(CXX)     :: domainfile
+    integer            :: lsize
+    integer            :: gsize
+    integer            :: fid
+    integer            :: rcode
+    real(r8), pointer  :: data2d(:,:)
+    type(mct_avect)    :: avG
+    type(mct_avect)    :: avtmp
+    integer            :: ierr
+    integer            :: nx,ny
+    integer            :: i,j
+    integer            :: master_task = 0
+    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
+    !-------------------------------------------------------------------------------
+
+    call mpi_comm_rank(mpicom, my_task, ierr)
+    master_task = 0
+
+    if (my_task == master_task) then
+       call shr_stream_getDomainFile(sdat%stream(1), domainfile)
+       call shr_ncread_varDimSizes(trim(domainfile), trim(fracname), n1=nx, n2=ny)
+       gsize = mct_gsmap_gsize(sdat%gsMap)
+       if (gsize == nx*ny) then
+          allocate(data2d(nx,ny))
+       else
+          write(logunit,*) "ERROR in nx,ny,gsize data sizes ",nx,ny,gsize
+          call shr_sys_abort(subname//"ERROR in data sizes")
+       endif
+       call shr_ncread_open(trim(domainfile), fid, rCode)
+       call shr_ncread_tField(domainfile, 1, fracname, data2d, fidi=fid, rc=rCode)
+       call mct_aVect_init(avG, rlist=trim(fracname), lsize=gsize)
+       avG%rAttr(1,:) = reshape(data2d, (/gsize/))
+       call shr_ncread_close(fid, rCode)
+       deallocate(data2d)
+    end if
+    ! The following call creates avtmp
+    call mct_aVect_scatter(avG, avtmp, sdat%gsMap, master_task, mpicom)
+    fracdata(:) = avtmp%rattr(1,:)
+    call mct_aVect_clean(avtmp)
+    if (my_task == master_task) call mct_aVect_clean(avG)
+
+  end subroutine shr_strdata_getfrac_from_stream
+
+  !===============================================================================
+  subroutine shr_strdata_set_model_domain_mesh( mesh, mpicom, sdat, rc)
 
     ! input/output variables
     type(ESMF_Mesh)        , intent(in)    :: mesh
-    character(len=*)       , intent(in)    :: filename
-    integer                , intent(in)    :: mpicom 
-    character(len=*)       , intent(in)    :: lonname
-    character(len=*)       , intent(in)    :: latname
+    integer                , intent(in)    :: mpicom
     type(shr_strdata_type) , intent(inout) :: sdat
     integer                , intent(out)   :: rc
 
@@ -372,12 +394,15 @@ contains
     real(r8), pointer    :: lat(:), lon(:)     ! mesh lats and lons
     integer              :: klon
     integer              :: klat
+    integer              :: khgt
     integer              :: kmask
     integer              :: my_task
     integer              :: master_task
     integer              :: ierr
     integer              :: nxg,nyg,nzg  ! size of input fields
     integer, pointer     :: idata(:)     ! temporary
+    type(ESMF_Array)     :: elemMaskArray
+    integer, pointer     :: elemMask(:)
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -400,27 +425,9 @@ contains
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    gsize = 0
-    do n = 1,size(elementCountPTile)
-       gsize = gsize + elementCountPTile(n)
-    end do
-    deallocate(elementCountPTile)
 
-    ! The following will set sdat%nxg, sdat%nyg and sdat%nzg upon the return
-    ! They also will then set the flds_scalar_nx and flds_scalar_ny in the export state attributes
-    if (my_task == master_task) then
-       call shr_ncread_varDimSizes(fileName, lonName, n1=nxg)
-       call shr_ncread_varDimSizes(fileName, latName, n1=nyg)
-    endif
-    call shr_mpi_bcast(nxg,mpicom)
-    call shr_mpi_bcast(nyg,mpicom)
-    call shr_mpi_bcast(nzg,mpicom)
-    sdat%nxg = nxg
-    sdat%nyg = nyg
+    ! TODO: query the mesh for a third dimension - and if its there use it
     sdat%nzg = -1  ! TODO: hard-wired for now since this will only be used in fortran interfaces
-    if (gsize /= nxg*nyg) then
-       call shr_sys_abort("ERROR: gsize is not equal to nxg*nyg")
-    end if
 
     ! determine locally owned elements
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
@@ -429,8 +436,15 @@ contains
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! TODO: create an ESMF array for the mask and extract it 
+    ! create an esmf array from a distgrid and a pointer
+    ! the following call will automatically fill in the pointer value for elemMask
+    allocate(elemMask(lsize)) 
+    elemMaskArray = ESMF_ArrayCreate(distGrid, elemMask, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! Now create the mct ggrid currently needed by the data models
     call mct_gGrid_init(GGrid=sdat%grid, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize )
     call mct_gsMap_orderedPoints(sdat%gsMap, my_task, idata)
     call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', idata, lsize)
@@ -439,20 +453,21 @@ contains
     klon  = mct_aVect_indexRA(sdat%Grid%data,'lon')
     klat  = mct_aVect_indexRA(sdat%Grid%data,'lat')
     kmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
-    !khgt  = mct_aVect_indexRA(sdat%Grid%data,'hgt')
+    khgt  = mct_aVect_indexRA(sdat%Grid%data,'hgt')
 
     do n = 1, lsize
-       sdat%Grid%data%rAttr(klat ,n) = ownedElemCoords(2*n-1)
-       sdat%Grid%data%rAttr(klon ,n) = ownedElemCoords(2*n)
-       !sdat%Grid%data%rAttr(kmask,n) = real(mask(n),R8)
-       !sdat%Grid%data%rAttr(khgt ,n) = hgt(n)
+       sdat%Grid%data%rAttr(klon ,n) = ownedElemCoords(2*n-1)
+       sdat%Grid%data%rAttr(klat ,n) = ownedElemCoords(2*n)
+       sdat%Grid%data%rAttr(kmask,n) = real(elemMask(n),r8)
+       !sdat%Grid%data%rAttr(khgt ,n) = -1 ! currently hard-wired
     end do
+    deallocate(elemMask)
 
   end subroutine shr_strdata_set_model_domain_mesh
 
   !===============================================================================
-  subroutine shr_strdata_set_model_domain_orig(filename, mpicom, readfrac, &
-       lonname, latname, hgtname, maskname, areaname, fracname, sdat)
+  subroutine shr_strdata_set_model_domain_orig(filename, mpicom, &
+       lonname, latname, hgtname, maskname, sdat)
 
     !----------------------------------------------------------------------------
     ! Create mct ggrid for model grid
@@ -465,9 +480,6 @@ contains
     character(len=*)       , intent(in)    :: latname  ! name of  lat variable in file
     character(len=*)       , intent(in)    :: hgtname  ! name of  hgt variable in file
     character(len=*)       , intent(in)    :: maskname ! name of mask variable in file
-    character(len=*)       , intent(in)    :: areaname ! name of area variable in file
-    character(len=*)       , intent(in)    :: fracname ! name of frac variable in file
-    logical                , intent(in)    :: readfrac ! T <=> also read frac  in file
     type(shr_strdata_type) , intent(inout) :: sdat
 
     ! local variables
@@ -488,8 +500,6 @@ contains
     real(R8),allocatable :: lon(:,:)     ! temp array for domain lon  info
     real(R8),allocatable :: lat(:,:)     ! temp array for domain lat  info
     integer ,allocatable :: mask(:,:)    ! temp array for domain mask info
-    real(R8),allocatable :: area(:,:)    ! temp array for domain area info
-    real(R8),allocatable :: frac(:,:)    ! temp array for domain frac info
     real(R8),allocatable :: hgt(:)       ! temp array for domain height info
     real(R8),allocatable :: a4d(:,:,:,:) ! temp array for reading generic stuff
     integer, pointer     :: idata(:)     ! temporary
@@ -737,7 +747,6 @@ contains
   end subroutine shr_strdata_set_model_domain_scol
 
   !===============================================================================
-
   subroutine shr_strdata_set_stream_domain(stream, compid, mpicom, &
        gGrid, gsMap, nxg, nyg, nzg, lsize)
 
@@ -765,7 +774,6 @@ contains
     character(CS)        :: latname      ! name of  lat variable in file
     character(CS)        :: hgtname      ! name of  hgt variable in file
     character(CS)        :: maskname     ! name of mask variable in file
-    character(CS)        :: areaname     ! name of area variable in file
     integer              :: n,k,j,i      ! indices
     integer              :: gsize        ! gsize
     integer              :: my_task
@@ -797,7 +805,7 @@ contains
 
     if (my_task == master_task) then
        call shr_stream_getDomainInfo(stream, filePath, fileName,&
-            timeName, lonName, latName, hgtName, maskName, areaName)
+            timeName, lonName, latName, hgtName, maskName)
        call shr_stream_getFile(filePath, fileName)
        write(logunit,*) subname,' stream data'
        write(logunit,*) subname,' filePath = ',trim(filePath)
@@ -807,14 +815,12 @@ contains
        write(logunit,*) subname,' latName  = ',trim(latName)
        write(logunit,*) subname,' hgtName  = ',trim(hgtName)
        write(logunit,*) subname,' maskName = ',trim(maskName)
-       write(logunit,*) subname,' areaName = ',trim(areaName)
     endif
     call shr_mpi_bcast(fileName ,mpicom)
     call shr_mpi_bcast(lonName  ,mpicom)
     call shr_mpi_bcast(latName  ,mpicom)
     call shr_mpi_bcast(hgtName  ,mpicom)
     call shr_mpi_bcast(maskName ,mpicom)
-    call shr_mpi_bcast(areaName ,mpicom)
 
     if (my_task == master_task) then
        inquire(file=trim(fileName), exist=fileExists)
@@ -1700,17 +1706,15 @@ contains
   end subroutine shr_strdata_setOrbs
 
   !===============================================================================
+  subroutine shr_strdata_readnml(SDAT, file, rc, mpicom)
 
-  subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
-
-    ! !DESCRIPTION:
-    ! Reads strdata namelists common to all data models
+    ! Reads shr_strdata_nml namelist input
 
     ! input/output arguments
     type(shr_strdata_type) ,intent(inout):: SDAT   ! strdata data data-type
     character(*) ,optional ,intent(in)   :: file   ! file to read strdata from
-    integer  ,optional ,intent(out)  :: rc     ! return code
-    integer  ,optional ,intent(in)   :: mpicom ! mpi comm
+    integer      ,optional ,intent(out)  :: rc     ! return code
+    integer      ,optional ,intent(in)   :: mpicom ! mpi comm
 
     ! local variables
     integer    :: rCode         ! return code
@@ -1720,32 +1724,36 @@ contains
     integer    :: master_task   ! master task number, 0 is default
     integer    :: ntasks        ! total number of tasks
 
-    !----- temporary/local namelist vars to read int -----
-    character(CL) :: dataMode          ! flags physics options wrt input data
-    character(CL) :: domainFile        ! file   containing domain info
-    character(CL) :: streams(nStrMax)  ! stream description file names
-    character(CL) :: taxMode(nStrMax)  ! time axis cycling mode
-    real(R8)      :: dtlimit(nStrMax)  ! delta time limiter
-    character(CL) :: vectors(nVecMax)  ! define vectors to vector map
-    character(CL) :: fillalgo(nStrMax) ! fill algorithm
-    character(CL) :: fillmask(nStrMax) ! fill mask
-    character(CL) :: fillread(nStrMax) ! fill mapping file to read
-    character(CL) :: fillwrite(nStrMax)! fill mapping file to write
-    character(CL) :: mapalgo(nStrMax)  ! scalar map algorithm
-    character(CL) :: mapmask(nStrMax)  ! scalar map mask
-    character(CL) :: mapread(nStrMax)  ! regrid mapping file to read
-    character(CL) :: mapwrite(nStrMax) ! regrid mapping file to write
-    character(CL) :: tintalgo(nStrMax) ! time interpolation algorithm
-    character(CL) :: readmode(nStrMax) ! file read mode
-    character(CL) :: fileName    ! generic file name
-    integer   :: yearFirst   ! first year to use in data stream
-    integer   :: yearLast    ! last  year to use in data stream
-    integer   :: yearAlign   ! data year that aligns with yearFirst
+    ! shr_strdata_nml namelist variables
+    character(CL) :: dataMode           ! flags physics options wrt input data
+    character(CL) :: domainFile         ! file   containing domain info
+    integer       :: nx_global          ! global size of nx
+    integer       :: ny_global          ! global size of ny
+    character(CL) :: streams(nStrMax)   ! stream description file names
+    character(CL) :: taxMode(nStrMax)   ! time axis cycling mode
+    real(R8)      :: dtlimit(nStrMax)   ! delta time limiter
+    character(CL) :: vectors(nVecMax)   ! define vectors to vector map
+    character(CL) :: fillalgo(nStrMax)  ! fill algorithm
+    character(CL) :: fillmask(nStrMax)  ! fill mask
+    character(CL) :: fillread(nStrMax)  ! fill mapping file to read
+    character(CL) :: fillwrite(nStrMax) ! fill mapping file to write
+    character(CL) :: mapalgo(nStrMax)   ! scalar map algorithm
+    character(CL) :: mapmask(nStrMax)   ! scalar map mask
+    character(CL) :: mapread(nStrMax)   ! regrid mapping file to read
+    character(CL) :: mapwrite(nStrMax)  ! regrid mapping file to write
+    character(CL) :: tintalgo(nStrMax)  ! time interpolation algorithm
+    character(CL) :: readmode(nStrMax)  ! file read mode
+    character(CL) :: fileName           ! generic file name
+    integer       :: yearFirst          ! first year to use in data stream
+    integer       :: yearLast           ! last  year to use in data stream
+    integer       :: yearAlign          ! data year that aligns with yearFirst
 
     !----- define namelist -----
     namelist / shr_strdata_nml / &
-         dataMode        &
+           dataMode        &
          , domainFile      &
+         , nx_global       &
+         , ny_global       &
          , streams         &
          , taxMode         &
          , dtlimit         &
@@ -1805,15 +1813,12 @@ contains
        tintalgo(:) = 'linear'
        readmode(:) = 'single'
 
-
        !----------------------------------------------------------------------------
        ! read input namelist
        !----------------------------------------------------------------------------
        if (present(file)) then
           write(logunit,F00) 'reading input namelist file: ',trim(file)
-          call shr_sys_flush(logunit)
-          nUnit = shr_file_getUnit() ! get unused fortran i/o unit number
-          open (nUnit,file=trim(file),status="old",action="read")
+          open (newunit=nUnit,file=trim(file),status="old",action="read")
           call shr_nl_find_group_name(nUnit, 'shr_strdata_nml', status=rCode)
           if (rCode == 0) then
              read (nUnit, nml=shr_strdata_nml, iostat=rCode)
@@ -1824,7 +1829,6 @@ contains
              end if
           end if
           close(nUnit)
-          call shr_file_freeUnit(nUnit)
        endif
 
        !----------------------------------------------------------------------------
@@ -1836,6 +1840,8 @@ contains
        enddo
        SDAT%dataMode    = dataMode
        SDAT%domainFile  = domainFile
+       SDAT%nxg         = nx_global
+       SDAT%nyg         = ny_global
        SDAT%streams(:)  = streams(:)
        SDAT%taxMode(:)  = taxMode(:)
        SDAT%dtlimit(:)  = dtlimit(:)
@@ -1851,33 +1857,53 @@ contains
        SDAT%tintalgo(:) = tintalgo(:)
        SDAT%readmode(:) = readmode(:)
        do n=1,nStrMax
-          if (trim(streams(n)) /= trim(shr_strdata_nullstr)) SDAT%nstreams = max(SDAT%nstreams,n)
-          if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) SDAT%dtlimit(n) = 1.0e30
+          if (trim(streams(n)) /= trim(shr_strdata_nullstr)) then
+             SDAT%nstreams = max(SDAT%nstreams,n)
+          end if
+          if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) then
+             SDAT%dtlimit(n) = 1.0e30
+          end if
        end do
        SDAT%nvectors = 0
        do n=1,nVecMax
-          if (trim(vectors(n)) /= trim(shr_strdata_nullstr)) SDAT%nvectors = n
+          if (trim(vectors(n)) /= trim(shr_strdata_nullstr)) then
+             SDAT%nvectors = n
+          end if
        end do
 
        do n = 1,SDAT%nstreams
           if (trim(SDAT%streams(n)) /= shr_strdata_nullstr) then
-
              ! extract fileName (stream description text file), yearAlign, yearFirst, yearLast from SDAT%streams(n)
              call shr_stream_parseInput(SDAT%streams(n), fileName, yearAlign, yearFirst, yearLast)
 
              ! initialize stream datatype, read description text file
              call shr_stream_init(SDAT%stream(n), fileName, yearFirst, yearLast, yearAlign, trim(SDAT%taxMode(n)))
-
           end if
        enddo
-
-       !   call shr_strdata_print(SDAT,trim(file)//' NML_ONLY')
-
     endif   ! master_task
-    !--master--task--
 
     if (present(mpicom)) then
-       call shr_strdata_bcastnml(SDAT,mpicom)
+       call shr_mpi_bcast(SDAT%dataMode  ,mpicom ,'dataMode')
+       call shr_mpi_bcast(SDAT%domainFile,mpicom ,'domainFile')
+       call shr_mpi_bcast(SDAT%nxg       ,mpicom ,'nxg')
+       call shr_mpi_bcast(SDAT%nyg       ,mpicom ,'nyg')
+       call shr_mpi_bcast(SDAT%calendar  ,mpicom ,'calendar')
+       call shr_mpi_bcast(SDAT%nstreams  ,mpicom ,'nstreams')
+       call shr_mpi_bcast(SDAT%nvectors  ,mpicom ,'nvectors')
+       call shr_mpi_bcast(SDAT%streams   ,mpicom ,'streams')
+       call shr_mpi_bcast(SDAT%taxMode   ,mpicom ,'taxMode')
+       call shr_mpi_bcast(SDAT%dtlimit   ,mpicom ,'dtlimit')
+       call shr_mpi_bcast(SDAT%vectors   ,mpicom ,'vectors')
+       call shr_mpi_bcast(SDAT%fillalgo  ,mpicom ,'fillalgo')
+       call shr_mpi_bcast(SDAT%fillmask  ,mpicom ,'fillmask')
+       call shr_mpi_bcast(SDAT%fillread  ,mpicom ,'fillread')
+       call shr_mpi_bcast(SDAT%fillwrit  ,mpicom ,'fillwrit')
+       call shr_mpi_bcast(SDAT%mapalgo   ,mpicom ,'mapalgo')
+       call shr_mpi_bcast(SDAT%mapmask   ,mpicom ,'mapmask')
+       call shr_mpi_bcast(SDAT%mapread   ,mpicom ,'mapread')
+       call shr_mpi_bcast(SDAT%mapwrit   ,mpicom ,'mapwrit')
+       call shr_mpi_bcast(SDAT%tintalgo  ,mpicom ,'tintalgo')
+       call shr_mpi_bcast(SDAT%readmode  ,mpicom ,'readmode')
     endif
 
     SDAT%ymdLB = -1
@@ -1886,8 +1912,6 @@ contains
     SDAT%todUB = -1
     SDAT%dtmin = 1.0e30
     SDAT%dtmax = 0.0
-    SDAT%nxg   = 0
-    SDAT%nyg   = 0
     SDAT%nzg   = 0
     SDAT%eccen  = SHR_ORB_UNDEF_REAL
     SDAT%mvelpp = SHR_ORB_UNDEF_REAL
@@ -2019,25 +2043,6 @@ contains
 
     lrc = 0
 
-    call shr_mpi_bcast(SDAT%dataMode  ,mpicom,'dataMode')
-    call shr_mpi_bcast(SDAT%domainFile,mpicom,'domainFile')
-    call shr_mpi_bcast(SDAT%calendar  ,mpicom,'calendar')
-    call shr_mpi_bcast(SDAT%nstreams  ,mpicom,'nstreams')
-    call shr_mpi_bcast(SDAT%nvectors  ,mpicom,'nvectors')
-    call shr_mpi_bcast(SDAT%streams   ,mpicom,'streams')
-    call shr_mpi_bcast(SDAT%taxMode   ,mpicom,'taxMode')
-    call shr_mpi_bcast(SDAT%dtlimit   ,mpicom,'dtlimit')
-    call shr_mpi_bcast(SDAT%vectors   ,mpicom,'vectors')
-    call shr_mpi_bcast(SDAT%fillalgo  ,mpicom,'fillalgo')
-    call shr_mpi_bcast(SDAT%fillmask  ,mpicom,'fillmask')
-    call shr_mpi_bcast(SDAT%fillread  ,mpicom,'fillread')
-    call shr_mpi_bcast(SDAT%fillwrit  ,mpicom,'fillwrit')
-    call shr_mpi_bcast(SDAT%mapalgo   ,mpicom,'mapalgo')
-    call shr_mpi_bcast(SDAT%mapmask   ,mpicom,'mapmask')
-    call shr_mpi_bcast(SDAT%mapread   ,mpicom,'mapread')
-    call shr_mpi_bcast(SDAT%mapwrit   ,mpicom,'mapwrit')
-    call shr_mpi_bcast(SDAT%tintalgo  ,mpicom,'tintalgo')
-    call shr_mpi_bcast(SDAT%readmode  ,mpicom,'readmode')
 
     if (present(rc)) then
        rc = lrc

@@ -23,7 +23,7 @@ module atm_comp_nuopc
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
   use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_sdat_init
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dshr_nuopc_mod   , only : dshr_create_mesh_from_grid
   use datm_comp_mod    , only : datm_comp_advertise, datm_comp_realize, datm_comp_run
@@ -170,7 +170,7 @@ contains
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / datm_nml / decomp, iradsw, factorFn, restfilm, restfils, &
+    namelist / datm_nml / iradsw, factorFn, restfilm, restfils, &
          presaero, bias_correct, anomaly_forcing, force_prognostic_true, wiso_datm
 
     rc = ESMF_SUCCESS
@@ -363,14 +363,9 @@ contains
     ! Initialize sdat
     call t_startf('datm_strdata_init')
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, 'datm', sdat, rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh, 'datm', sdat, use_new=.true., rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) write(logunit,*) ' initialized sdat'
     call t_stopf('datm_strdata_init')
-
-    ! Check that mesh lats and lons correspond to those on the input domain file
-    call dshr_check_mesh(mesh, sdat, 'datm', tolerance=1.e-5_r8, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)

@@ -22,7 +22,7 @@ module ice_comp_nuopc
   use dshr_methods_mod , only : chkerr, state_setscalar, state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
   use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_sdat_init
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dice_comp_mod    , only : dice_comp_advertise, dice_comp_realize, dice_comp_run
   use dice_comp_mod    , only : water  ! for restart
@@ -142,11 +142,10 @@ contains
     character(len=CL) :: fileName   ! generic file name
     integer           :: nu         ! unit number
     integer           :: ierr       ! error code
-    character(CL)     :: decomp     ! decomp strategy - not used for NUOPC - but still needed in namelist for now
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / dice_nml / decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
+    namelist / dice_nml / flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
 
     rc = ESMF_SUCCESS
 
@@ -283,15 +282,10 @@ contains
     ! Initialize sdat
     call t_startf('dice_strdata_init')
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, 'dice', sdat, rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh, 'dice', sdat, use_new=.true., rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) write(logunit,*) ' initialized SDAT'
     call t_stopf('dice_strdata_init')
-
-    ! Check that mesh lats and lons correspond to those on the input domain file
-    ! TODO: need to regenerate the mesh file so that check_lon can be set back to true
-    call dshr_check_mesh(mesh, sdat, 'dice', tolerance=1.e-5_r8, check_lon=.false., rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)

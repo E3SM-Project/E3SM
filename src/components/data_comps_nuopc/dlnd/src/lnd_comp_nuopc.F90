@@ -22,7 +22,7 @@ module lnd_comp_nuopc
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
   use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_sdat_init
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dlnd_comp_mod    , only : dlnd_comp_advertise, dlnd_comp_realize, dlnd_comp_run
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
@@ -128,14 +128,13 @@ contains
     integer       :: glc_nec                         ! number of elevation classes
     integer       :: nu                              ! unit number
     integer       :: ierr                            ! error code
-    character(CL) :: decomp                          ! decomp strategy - (Remove)
     logical       :: force_prognostic_true = .false. ! if true set prognostic true
     character(CL) :: restfilm = nullstr              ! model restart file namelist
     character(CL) :: restfils = nullstr              ! stream restart file namelist
     character(len=*), parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / dlnd_nml / decomp, restfilm, restfils, force_prognostic_true, domain_fracname
+    namelist / dlnd_nml / restfilm, restfils, force_prognostic_true, domain_fracname
 
     rc = ESMF_SUCCESS
 
@@ -261,21 +260,16 @@ contains
 
     ! Initialize sdat
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, &
-         dmodel_domain_fracname_from_stream=domain_fracname, rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, use_new=.true., rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (my_task == master_task) write(logunit,*) ' initialized dlnd sdat'
     call t_stopf('dlnd_strdata_init')
 
-    ! Check that mesh lats and lons correspond to those on the input domain file
-    call dshr_check_mesh(mesh, sdat, 'dlnd', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
     call dlnd_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
-         logunit, my_task==master_task, rc=rc)
+         logunit, my_task==master_task, trim(domain_fracname), mpicom, my_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
