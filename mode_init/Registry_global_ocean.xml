@@ -11,15 +11,15 @@
 			description="Minimum depth where column contains all water-filled cells.  The first layer with refBottomDepth greater than this value is included in whole, i.e. no partial bottom cells are used in this layer."
 			possible_values="Any positive real value greater than 0, but typically greater than 10 m."
 		/>
-		<nml_option name="config_global_ocean_depth_file" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_depth_file" type="character" default_value="vertical_grid.nc" units="unitless"
 			description="Path to the depth initial condition file."
 			possible_values="path/to/temperature/file.nc"
 		/>
-		<nml_option name="config_global_ocean_depth_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_depth_dimname" type="character" default_value="nVertLevels" units="unitless"
 			description="Name of the dimension defining the number of vertical levels in input files."
 			possible_values="Dim name from input files."
 		/>
-		<nml_option name="config_global_ocean_depth_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_depth_varname" type="character" default_value="refMidDepth" units="unitless"
 			description="Name of the variable containing mid-depth of levels in temperature and salinity initial condition files."
 			possible_values="Variable name from input files."
 		/>
@@ -345,10 +345,6 @@
 		/>
 	</nml_record>
 	<var_struct name="scratch" time_levs="1">
-		<var name="smoothedLevels" type="integer" dimensions="nCells" persistence="scratch"
-			 default_value="0" units="unitless"
-			 description="Temporary space to hold smoothed maxLevelCell to allow bit-reproducibility."
-		/>
 		<var name="cullStack" type="integer" dimensions="nCells" persistence="scratch"
 			 default_value="0" units="unitless"
 			 description="Temporary space to hold a stack for culling inland seas."

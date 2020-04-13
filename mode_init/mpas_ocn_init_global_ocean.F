@@ -214,7 +214,7 @@ contains
 
       call mpas_log_write( 'Initializing vertical coordinate with ssh = 0.')
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
-      ! based on bottomDepth and refBottomDepth and apply PBCS if requested
+      ! based on bottomDepth and refBottomDepth and apply PBCs if requested
       call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
@@ -842,19 +842,19 @@ contains
 
        type (block_type), pointer :: block_ptr
 
-       type (mpas_pool_type), pointer :: meshPool, scratchPool, verticalMeshPool, criticalPassagesPool
+       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, criticalPassagesPool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, &
             refBottomDepth, refLayerThickness, refZMid, oceanFracObserved
 
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
-       type (field1DInteger), pointer :: maxLevelCellField, smoothedLevelsField
-       type (field1DReal), pointer :: bottomDepthObservedField
+       type (field1DInteger), pointer :: maxLevelCellField
+       type (field1DReal), pointer :: bottomDepthObservedField, bottomDepthField
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
 
-       integer :: iCell, coc, j, k, maxLevel
+       integer :: iCell, coc, j, k, maxLevelNeighbors
        integer :: minimum_levels
 
        character (len=StrKIND), pointer :: config_global_ocean_topography_method
@@ -880,7 +880,6 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_has_ocean_frac', &
                                  config_global_ocean_topography_has_ocean_frac)
 
-       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -895,12 +894,10 @@ contains
           call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
+          ! Alter bathymetry for minimum depth
           do k = 1, nVertLevels
              if (refBottomDepth(k).gt.config_global_ocean_minimum_depth) then
                 minimum_levels = k
-                print '(a,f8.2,2a,i5,a,f8.2,a)', 'config_global_ocean_minimum_depth=', &
-                   config_global_ocean_minimum_depth,' m.  ', 'Setting minimum layer index to ', &
-                   minimum_levels, ' with a bottom depth of ', refBottomDepth(k), ' m.'
                 exit
              end if
           end do
@@ -998,37 +995,35 @@ contains
              call ocn_init_setup_global_ocean_deepen_critical_passages(meshPool, criticalPassagesPool, iErr)
           end if
 
-          ! Fill holes. Enforce that no cell has maxLevelCell that is more than
-          ! 1 vertical level higher than its neighbors.
+          ! Alter cells for partial bottom cells before filling in bathymetry
+          ! holes.
+          do iCell = 1, nCells
+             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+          end do
+
+          ! Fill bathymetry holes, i.e. single cells that are deeper than all neighbors.
+          ! These cells can collect tracer extrema and are not able to use
+          ! horizontal diffusion or advection to clear them out. Reduce pits to
+          ! make them level with the next deepest neighbor cell.
           if (config_global_ocean_fill_bathymetry_holes) then
-             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-
-             call mpas_pool_get_field(scratchPool, 'smoothedLevels', smoothedLevelsField)
-
              call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
              call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
-             call mpas_allocate_scratch_field(smoothedLevelsField, .true.)
-
              maxLevelCell(nCells+1) = -1
-             smoothedLevelsField % array = maxLevelCell
 
              do iCell = 1, nCellsSolve
-                maxLevel = 0
+                maxLevelNeighbors = 0
                 do j = 1, nEdgesOnCell(iCell)
                    coc = cellsOnCell(j, iCell)
-                   maxLevel = max(maxLevel, maxLevelCell(coc))
+                   maxLevelNeighbors = max(maxLevelNeighbors, maxLevelCell(coc))
                 end do
 
-                if (maxLevel < maxLevelCell(iCell) ) then
-                   smoothedLevelsField % array(iCell) = maxLevel + 1
-                   bottomDepth(iCell) = refBottomDepth(maxLevel + 1)
+                if (maxLevelCell(iCell) > maxLevelNeighbors) then
+                   maxLevelCell(iCell) = maxLevelNeighbors
+                   bottomDepth(iCell) = refBottomDepth(maxLevelNeighbors)
                 end if
              end do
 
-             maxLevelCell(:) = smoothedLevelsField % array(:)
-
-             call mpas_deallocate_scratch_field(smoothedLevelsField, .true.)
           end if
 
           block_ptr => block_ptr % next
@@ -1037,12 +1032,13 @@ contains
        call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
        call mpas_pool_get_field(meshPool, 'maxLevelCell', maxLevelCellField)
        call mpas_dmpar_exch_halo_field(maxLevelCellField)
+       call mpas_pool_get_field(meshPool, 'bottomDepth', bottomDepthField)
+       call mpas_dmpar_exch_halo_field(bottomDepthField)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
@@ -1069,7 +1065,7 @@ contains
 !> \author  Xylar Asay-Davis
 !> \date    5 April 2016
 !> \details
-!>   Deepen cirtical passages in model grid so that relevant seas are included.
+!>   Deepen critical passages in model grid so that relevant seas are included.
 !
 !-----------------------------------------------------------------------
 
@@ -2016,7 +2012,7 @@ contains
 
        character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_temperature_varname, &
                                            config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_tracer_ndepth_dimname
 
        iErr = 0
 
@@ -2027,7 +2023,7 @@ contains
                                  config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', &
                                  config_global_ocean_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_ndepth_dimname', config_global_ocean_tracer_ndepth_dimname)
 
        ! Define stream for temperature IC
        call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, &
@@ -2040,7 +2036,7 @@ contains
        tracerIC % dimSizes(3) = nDepthTracer
        tracerIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        tracerIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_tracer_ndepth_dimname)
        tracerIC % isVarArray = .false.
        tracerIC % isPersistent = .true.
        tracerIC % isActive = .true.
@@ -2078,7 +2074,7 @@ contains
 
        character (len=StrKIND), pointer :: config_global_ocean_salinity_file, config_global_ocean_salinity_varname, &
                                            config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_tracer_ndepth_dimname
 
        iErr = 0
 
@@ -2088,7 +2084,8 @@ contains
                                  config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', &
                                  config_global_ocean_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_ndepth_dimname', &
+                                 config_global_ocean_tracer_ndepth_dimname)
 
        ! Define stream for salinity IC
        call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_salinity_file, MPAS_IO_NETCDF, &
@@ -2101,7 +2098,7 @@ contains
        tracerIC % dimSizes(3) = nDepthTracer
        tracerIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        tracerIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
-       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_tracer_ndepth_dimname)
        tracerIC % isVarArray = .false.
        tracerIC % isPersistent = .true.
        tracerIC % isActive = .true.
@@ -2144,7 +2141,7 @@ contains
 
        character (len=StrKIND), pointer :: config_global_ocean_ecosys_nlon_dimname,  &
                                            config_global_ocean_ecosys_nlat_dimname, &
-                                           config_global_ocean_depth_dimname
+                                           config_global_ocean_ecosys_ndepth_dimname
 
        iErr = 0
 
@@ -2152,8 +2149,8 @@ contains
             config_global_ocean_ecosys_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_nlat_dimname', &
             config_global_ocean_ecosys_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', &
-            config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_ecosys_ndepth_dimname', &
+            config_global_ocean_ecosys_ndepth_dimname)
 
        ! Define stream for ecosys IC
        call MPAS_createStream(tracerStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
@@ -2165,7 +2162,7 @@ contains
        tracerIC % dimSizes(3) = nDepthEcosys
        tracerIC % dimNames(1) = trim(config_global_ocean_ecosys_nlon_dimname)
        tracerIC % dimNames(2) = trim(config_global_ocean_ecosys_nlat_dimname)
-       tracerIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
+       tracerIC % dimNames(3) = trim(config_global_ocean_ecosys_ndepth_dimname)
        tracerIC % isVarArray = .false.
        tracerIC % isPersistent = .true.
        tracerIC % isActive = .true.
