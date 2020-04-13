@@ -1641,12 +1641,12 @@ contains
 
 mmode_loop_aa: &
 ! REASTER 08/11/2015 BEGIN
-    do mtmp = 1, 4!ntot_amode ! main loop over aerosol modes
+    do mtmp = 1, ntot_amode ! main loop over aerosol modes
        m = mtmp
-       if (ntot_amode == 4 .or. ntot_amode == 5) then
+       if (ntot_amode == 4) then
           ! for mam4, do accum, aitken, pcarbon, then coarse 
           if (mtmp == modeptr_coarse) then
-             m = 4!ntot_amode
+             m = ntot_amode
           else if (mtmp > modeptr_coarse) then
              m = mtmp - 1
           endif

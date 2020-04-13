@@ -160,7 +160,6 @@ module dust_model
           cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 &
                * dust_emis_sclfctr(m)*soil_erod(i)/soil_erod_fact*1.15_r8
 
-          if(idst==42) cflx(i,idst) = 0.0_r8
           x_mton = 6._r8 / (pi * dust_density * (dust_dmt_vwr(m)**3._r8))                
 
           inum = dust_indices(m+dust_nbin)
