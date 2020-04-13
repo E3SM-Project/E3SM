@@ -204,6 +204,8 @@ subroutine diag_init()
    call addfld ('UbeginBC',(/ 'lev' /), 'A','m/s','AZonal wind')
    call addfld ('UendAC',(/ 'lev' /), 'A','m/s','AZonal wind')
    call addfld ('UendBC',(/ 'lev' /), 'A','m/s','AZonal wind')
+   call addfld ('Umicmac1',(/ 'lev' /), 'A','m/s','AZonal wind')
+   call addfld ('Umicmac2',(/ 'lev' /), 'A','m/s','AZonal wind')
 
    call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind')
    call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
@@ -400,6 +402,8 @@ subroutine diag_init()
       call add_default ('UbeginBC', 1, ' ')
       call add_default ('UendAC  ', 1, ' ')
       call add_default ('UendBC  ', 1, ' ')
+      call add_default ('Umicmac1', 1, ' ')
+      call add_default ('Umicmac2', 1, ' ')
 
       if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('Vbc_a1  ', 1, ' ')

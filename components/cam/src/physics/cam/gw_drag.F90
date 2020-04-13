@@ -672,6 +672,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
   logical :: do_latitude_taper
 
+print *, 'OGG use_gw_oro = ',use_gw_oro
+print *, 'OGG use_gw_convect = ',use_gw_convect
+print *, 'OGG use_gw_front = ',use_gw_front
+print *, 'OGG do_spectral_waves',do_spectral_waves
+
+
   !------------------------------------------------------------------------
 
   ! Make local copy of input state.

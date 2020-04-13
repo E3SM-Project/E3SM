@@ -172,6 +172,10 @@ subroutine phys_register
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods)
+
+print *, 'OGG cld...', cld_macmic_num_steps
+
+
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -2476,6 +2480,8 @@ end if
 !print *, 'OGG l_st_mac ', l_st_mac
 !print *, 'OGG l_st_mic ', l_st_mic
 
+call outfld('Umicmac1',state%u, pcols   ,lchnk   )
+
     if( microp_scheme == 'RK' ) then
 
 !print *, 'OGG microp_scheme == RK'
@@ -2518,7 +2524,7 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
 
-!print *, 'OGG before the loop, cld_macmic_num_steps = ', cld_macmic_num_steps
+print *, 'OGG before the loop, cld_macmic_num_steps = ', cld_macmic_num_steps
 
        do macmic_it = 1, cld_macmic_num_steps
 !print *, 'OGG doloop'
@@ -2632,7 +2638,7 @@ call outfld('Uclubb1',state%u, pcols   ,lchnk   )
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
 
-#if 0
+#if 1
                 call physics_update(state, ptend, ztodt, tend)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                       cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
@@ -2760,6 +2766,10 @@ call outfld('Uclubb2',state%u, pcols   ,lchnk   )
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
      end if !microp_scheme
+
+call outfld('Umicmac2',state%u, pcols   ,lchnk   )
+!call outfld('UendBC',state%u, pcols   ,lchnk   )
+
 
 if (l_tracer_aero) then
 
@@ -2901,7 +2911,7 @@ end if ! l_rad
     call diag_export(cam_out)
     call t_stopf('diag_export')
 
-    call outfld('UendBC',state%u, pcols   ,lchnk   )
+call outfld('UendBC',state%u, pcols   ,lchnk   )
 
 
 end subroutine tphysbc
