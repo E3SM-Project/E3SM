@@ -2117,7 +2117,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "0:10:00")
+        self.assertEqual(result, "00:10:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch")
@@ -2159,7 +2159,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "0:10:00")
+        self.assertEqual(result, "00:10:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch") # Not smart enough to select faster queue
@@ -2180,7 +2180,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "2:00:00")
+        self.assertEqual(result, "02:00:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch")
@@ -2414,7 +2414,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             self.assertEqual(case.get_value("RUN_TYPE"), "startup")
             case.set_value("RUN_TYPE", "branch")
 
-        # behind the back detection
+        # behind the back detection. disable for now
         # with self.assertRaises(CIMEError):
         #     with Case(casedir, read_only=False) as case:
         #         time.sleep(0.2)
