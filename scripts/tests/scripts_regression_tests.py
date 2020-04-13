@@ -155,47 +155,6 @@ class A_RunUnitTests(unittest.TestCase):
                         print("{} has no doctests".format(filepath))
 
 ###############################################################################
-class C_TestGridGeneration(unittest.TestCase):
-###############################################################################
-    @classmethod
-    def setUpClass(cls):
-        cls._do_teardown = []
-        cls._testroot = os.path.join(TEST_ROOT, "TestGridGeneration")
-        cls._testdirs = []
-
-    def test_gen_domain(self):
-        if CIME.utils.get_model() != "e3sm":
-            self.skipTest("Skipping gen_domain test. Depends on E3SM tools")
-        cime_root = get_cime_root()
-        inputdata = MACHINE.get_value("DIN_LOC_ROOT")
-
-        tool_name = "test_gen_domain"
-        tool_location = os.path.join(cime_root, "tools", "mapping", "gen_domain_files", "test_gen_domain.sh")
-        args = "--cime_root={} --inputdata_root={}".format(cime_root, inputdata)
-
-        cls = self.__class__
-        test_dir = os.path.join(cls._testroot, tool_name)
-        cls._testdirs.append(test_dir)
-        os.makedirs(test_dir)
-        run_cmd_assert_result(self, "{} {}".format(tool_location, args), from_dir=test_dir)
-        cls._do_teardown.append(test_dir)
-
-    @classmethod
-    def tearDownClass(cls):
-        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
-        teardown_root = True
-        for tfile in cls._testdirs:
-            if tfile not in cls._do_teardown:
-                print("Detected failed test or user request no teardown")
-                print("Leaving case directory : %s"%tfile)
-                teardown_root = False
-            elif do_teardown:
-                shutil.rmtree(tfile)
-
-        if teardown_root and do_teardown:
-            shutil.rmtree(cls._testroot)
-
-###############################################################################
 def make_fake_teststatus(path, testname, status, phase):
 ###############################################################################
     expect(phase in CORE_PHASES, "Bad phase '%s'" % phase)
@@ -1170,8 +1129,8 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
         # All stub model not supported in nuopc driver
         driver = CIME.utils.get_cime_default_driver()
-        if driver == 'nuopc':
-            extra_args.append(" ^SMS.T42_T42.S")
+        if driver == 'nuopc' and 'cime_developer' in extra_args:
+            extra_args.append(" ^SMS_Ln3.T42_T42.S ^PRE.f19_f19.ADESP_TEST ^PRE.f19_f19.ADESP")
 
         test_id = "{}-{}".format(self._baseline_name, CIME.utils.get_timestamp()) if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
@@ -2117,7 +2076,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "00:10:00")
+        self.assertEqual(result, "0:10:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch")
@@ -2159,7 +2118,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "00:10:00")
+        self.assertEqual(result, "0:10:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch") # Not smart enough to select faster queue
@@ -2180,7 +2139,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
-        self.assertEqual(result, "02:00:00")
+        self.assertEqual(result, "2:00:00")
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "batch")
@@ -2414,19 +2373,19 @@ class K_TestCimeCase(TestCreateTestCommon):
             self.assertEqual(case.get_value("RUN_TYPE"), "startup")
             case.set_value("RUN_TYPE", "branch")
 
-        # behind the back detection. disable for now
-        # with self.assertRaises(CIMEError):
-        #     with Case(casedir, read_only=False) as case:
-        #         time.sleep(0.2)
-        #         safe_copy(backup, active)
+        # behind the back detection
+        with self.assertRaises(CIMEError):
+            with Case(casedir, read_only=False) as case:
+                time.sleep(0.2)
+                safe_copy(backup, active)
 
-        # with Case(casedir, read_only=False) as case:
-        #     case.set_value("RUN_TYPE", "branch")
+        with Case(casedir, read_only=False) as case:
+            case.set_value("RUN_TYPE", "branch")
 
-        # with self.assertRaises(CIMEError):
-        #     with Case(casedir) as case:
-        #         time.sleep(0.2)
-        #         safe_copy(backup, active)
+        with self.assertRaises(CIMEError):
+            with Case(casedir) as case:
+                time.sleep(0.2)
+                safe_copy(backup, active)
 
     ###########################################################################
     def test_configure(self):
@@ -2453,7 +2412,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_self_build_cprnc(self):
     ###########################################################################
-        testname = "ERS.f19_g16_rx1.A"
+        testname = "ERS_Ln7.f19_g16.X"
         self._create_test([testname, "--no-build"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
