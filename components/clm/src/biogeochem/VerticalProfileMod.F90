@@ -74,6 +74,7 @@ contains
     real(r8) :: col_cinput_rootfr(bounds%begc:bounds%endc, 1:nlevdecomp_full)  ! col-native root fraction used for calculating inputs
     integer  :: c, j, fc, p, fp, pi
     integer  :: alt_ind
+    integer  :: nlevbed
     ! debugging temp variables
     real(r8) :: froot_prof_sum
     real(r8) :: croot_prof_sum
@@ -87,6 +88,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                               & 
+         nlev2bed             => col_pp%nlevbed                            , & ! Input: [integer (:)     ]  number of layers to bedrock
          rootfr               => soilstate_vars%rootfr_patch               , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
          
          altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer   (:)   ]  frost table depth (m)                              
@@ -163,6 +165,7 @@ contains
          do fp = 1,num_soilp
             p = filter_soilp(fp)
             c = veg_pp%column(p)
+            nlevbed = nlev2bed(c)
             ! integrate rootfr over active layer of soil column
             rootfr_tot = 0._r8
             surface_prof_tot = 0._r8
@@ -177,8 +180,10 @@ contains
                   froot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
                   croot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
                   ! set all surface processes to shallower profile
-                  leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
-                  stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                  if (j <= nlevbed) then
+                     leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                     stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                  end if
                end do
             else
                ! if fully frozen, or no roots, put everything in the top layer
@@ -220,8 +225,10 @@ contains
             if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
                do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                   nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
-                  ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
-                  pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                  if (j <= nlevbed) then
+                     ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                     pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                  end if
                end do
             else
                nfixation_prof(c,1) = 1./dzsoi_decomp(1)
