@@ -127,6 +127,7 @@ contains
           end do
           rootfr(p,ubj) = .5_r8*( exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,ubj-1))  &
                + exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,ubj-1)) )
+          totrootfr = totrootfr + rootfr(p, ubj)
 
           ! Adjust layer root fractions if nlev2bed < nlevsoi
           if (use_var_soil_thick .and. nlevbed < ubj) then
