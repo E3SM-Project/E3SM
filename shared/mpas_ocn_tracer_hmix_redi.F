@@ -188,7 +188,8 @@ contains
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
       ! mrp performance: merge term 1 into main cell loop later
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, iCellSelf) &
+      !$omp& private(r_tmp, coef, kappaRediEdgeVal, tracer_turb_flux, flux, k, iTr, flux_term2) 
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          fluxRediZTop(:,:) = 0.0_RKIND
@@ -344,6 +345,7 @@ contains
         minimumVal(:) = 0.0_RKIND
       endif
 
+      !$omp do schedule(runtime) private(k, iTr, tempTracer, iEdge)
       do iCell = 1, nCells
         do k = 1, maxLevelCell(iCell)
            do iTr=1,ntracers
@@ -364,8 +366,10 @@ contains
            enddo
         enddo
      enddo
+     !$omp end do
 
      !now go back and reapply all tendencies
+     !$omp do schedule(runtime) private(invAreaCell, k, iTr, i)
      do iCell=1,nCells
        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do k = 1, maxLevelCell(iCell)
@@ -388,6 +392,7 @@ contains
            enddo
         enddo
      enddo
+     !$omp end do
 
      deallocate(minimumVal)
      deallocate(redi_term2_edge)
@@ -471,7 +476,7 @@ contains
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
             sqrtPiInv2 = 2.0_RKIND / sqrt(pii)
-            !$omp do schedule(runtime)
+            !$omp do schedule(runtime) private(avgCellDiameter)
             do iCell = 1, nCells
                avgCellDiameter = sqrtPiInv2*sqrt(areaCell(iCell))
                if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
