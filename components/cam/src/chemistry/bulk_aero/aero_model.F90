@@ -688,6 +688,8 @@ contains
        call outfld( 'DSTSFWET', sflx_tot_dst, pcols, lchnk)
     endif
 
+    call wetdep_inputs_unset(dep_inputs)
+
   endsubroutine aero_model_wetdep
 
   !-------------------------------------------------------------------------
@@ -970,8 +972,6 @@ contains
 
        enddo col_loop
     enddo ver_loop
-
-    call wetdep_inputs_unset(dep_inputs)
 
   end subroutine aero_model_surfarea
 
