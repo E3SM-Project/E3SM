@@ -255,16 +255,19 @@ contains
          pressureAdjustedForLandIce(:,:) = pressure(:,:)
          !If landice cavity remove land ice pressure to search for ML depth
          if ( associated(landIcePressure) ) THEN
+           !$omp do schedule(runtime)
            do iCell = 1,nCells
              do k = 1,maxLevelCell(iCell)
                 pressureAdjustedForLandIce(k,iCell) = pressureAdjustedForLandIce(k,iCell)   &
                                                         - landIcePressure(iCell)
              enddo
            enddo
+           !$omp end do
          endif
 
          if(tThresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThreshMLD)
+            !$omp do schedule(runtime) private( k, refIndex, found_temp_mld, localVals, interp_local, temp_ref_lev, tempThresh)
             do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
@@ -304,11 +307,14 @@ contains
 ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
                    if(.not. found_temp_mld) tThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
                enddo !iCell
+               !$omp end do
 
                if (associated(landIceMask) ) THEN
+                  !$omp do schedule(runtime)
                   do iCell = 1, nCells
                      tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
                   enddo
+                  !$omp end do
                endif
 
           endif !end tThresh MLD search
@@ -317,6 +323,7 @@ contains
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
             call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
+            !$omp do schedule(runtime) private( k, refIndex, found_den_mld, localVals, interp_local, den_ref_lev, denThresh, dV, dVp1, mldTemp)
             do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
@@ -359,11 +366,14 @@ contains
                       indMLD(iCell) = maxLevelCell(iCell)
                     endif
              enddo !iCell
+             !$omp end do
 
              if (associated(landIceMask) ) THEN
+               !$omp do schedule(runtime)
                do iCell = 1, nCells
                   dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
                enddo
+               !$omp end do
 
 
              endif
@@ -378,6 +388,7 @@ contains
 
            allocate(temperatureGradient(nVertLevels,2))
 
+           !$omp do schedule(runtime) private( k, refLevel, found_temp_mld, localVals, interp_local, tempThresh)
            do iCell = 1,nCells
 
             temperatureGradient(:,1) = 0.0_RKIND
@@ -418,13 +429,16 @@ contains
                     tGradientMLD(iCell) = abs(zTop(refLevel(1),iCell))
                 endif
 
-         enddo !icell
+         enddo !iCell
+         !$omp end do
 
          !normalize MLD to top of ice cavity
          if (associated(landIceMask) ) THEN
+           !$omp do schedule(runtime)
            do iCell = 1, nCells
              tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
            enddo
+           !$omp end do
          endif
 
 
@@ -437,6 +451,7 @@ contains
 
              allocate(densityGradient(nVertLevels,2))
 
+           !$omp do schedule(runtime) private( k, refLevel, found_den_mld, interp_local, mldTemp, dz)
            do iCell = 1,nCells
 
             densityGradient(:,:)=0.0_RKIND
@@ -475,12 +490,15 @@ contains
                     dGradientMLD(iCell) = abs(zTop(refLevel(1),iCell))
                 endif
 
-         enddo !icell
+         enddo !iCell
+         !$omp end do
 
          if (associated(landIceMask) ) THEN
+           !$omp do schedule(runtime)
            do iCell = 1, nCells
              dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
            enddo
+           !$omp end do
          endif
 
          deallocate(densityGradient)

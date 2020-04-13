@@ -117,9 +117,7 @@ contains
       real(kind=RKIND)                 :: zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown,invAreaCell
-      real(kind=RKIND) :: verticalDisplacement, rValue, zEdge, diabaticTaperUp, diabaticTaperDown
-      real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm, dTdzSmooth, dSdzSmooth
-      real(kind=RKIND), dimension(:), allocatable :: BVFsmooth, BVFCol
+      real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
       integer, pointer :: nVertLevels
@@ -225,8 +223,6 @@ contains
       allocate(dzTop(nVertLevels+1))
       allocate(dTdzTop(nVertLevels+1))
       allocate(dSdzTop(nVertLevels+1))
-      allocate(dTdzSmooth(nVertLevels+1))
-      allocate(dSdzSmooth(nVertLevels+1))
       allocate(k33Norm(nVertLevels+1))
 
       !$omp do schedule(runtime)
@@ -274,7 +270,9 @@ contains
       endif
 
       nCells = nCellsArray( 3 )
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(invAreaCell, iEdge, cell1, cell2, k, iCellSelf) &
+      !$omp& private(dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx) &
+      !$omp& private(sfcTaper, sfcTaperUp, sfcTaperDown, sfcTaperFactor)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
@@ -394,8 +392,6 @@ contains
       deallocate(dzTop)
       deallocate(dTdzTop)
       deallocate(dSdzTop)
-      deallocate(dTdzSmooth)
-      deallocate(dSdzSmooth)
       deallocate(k33Norm)
 
       ! allow disabling of K33 for testing
@@ -416,6 +412,8 @@ contains
 
       if (config_use_GM) then
         nEdges = nEdgesArray( 3 )
+        !$omp do schedule(runtime) private(cell1, cell2, dcEdgeInv) &
+        !$omp& private(drhoDT, drhoDS, dTdx, dSdx, drhoDx)
         do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -437,6 +435,7 @@ contains
                gradDensityEdge(k,iEdge) = drhoDx * rho_sw
             enddo
          enddo
+         !$omp end do
 
          nEdges = nEdgesArray( 3 )
 
@@ -474,7 +473,8 @@ contains
       endif
 
       nEdges = nEdgesArray( 3 )
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(cell1, cell2, k,  gradDensityTopOfEdge) &
+      !$omp& private(kappaGMEdge, BruntVaisalaFreqTopEdge, N)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -702,9 +702,11 @@ contains
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
          !Impose tapering of Large et al. 1997, wrap in if statement later
+         !$omp do schedule(runtime)
          do iEdge=1,nEdges
            rediRossbyRadius(iEdge) = max(15000.0_RKIND,min(100000.0_RKIND,2.0_RKIND / abs(fEdge(iEdge))))
          enddo
+         !$omp end do
 
          if (config_Redi_use_slope_taper) then
            slopeTaperFactor = 1.0_RKIND
@@ -755,7 +757,7 @@ contains
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
             sqrtPiInv = 1.0_RKIND / sqrt(pii)
-            !$omp do schedule(runtime)
+            !$omp do schedule(runtime) private( avgCellDiameter)
             do iEdge = 1, nEdges
                avgCellDiameter = sqrtPiInv*(sqrt(areaCell(cellsOnEdge(1,iEdge))) + sqrt(areaCell(cellsOnEdge(2,iEdge))))
                if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
