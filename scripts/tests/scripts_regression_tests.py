@@ -1171,7 +1171,7 @@ class TestCreateTestCommon(unittest.TestCase):
         # All stub model not supported in nuopc driver
         driver = CIME.utils.get_cime_default_driver()
         if driver == 'nuopc' and 'cime_developer' in extra_args:
-            extra_args.append(" ^SMS_Ln3.T42_T42.S ^PRE.f19_f19.ADESP_TEST ^PRE.f19_f19.ADESP")
+            extra_args.append(" ^SMS_Ln3.T42_T42.S ^PRE.f19_f19.ADESP_TEST ^PRE.f19_f19.ADESP ^DAE.ww3a.ADWAV")
 
         test_id = "{}-{}".format(self._baseline_name, CIME.utils.get_timestamp()) if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
