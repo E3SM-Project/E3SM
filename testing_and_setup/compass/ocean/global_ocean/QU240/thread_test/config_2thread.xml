@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="4blocks_run">
+<config case="2thread_run">
 	<add_link source="../../init/initial_state/initial_state.nc" dest="init.nc"/>
 	<add_link source="../../init/initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../../init/initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
@@ -16,8 +16,9 @@
 		<stream name="input">
 			<attribute name="filename_template">init.nc</attribute>
 		</stream>
-		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 	</streams>
 
 	<run_script name="run.py">
@@ -25,6 +26,6 @@
 			<argument flag="graph.info">4</argument>
 		</step>
 
-		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="4" threads="2" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>
