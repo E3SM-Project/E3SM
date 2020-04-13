@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<template>
+	<namelist>
+		<option name="config_global_ocean_topography_smooth_iterations">0</option>
+		<option name="config_global_ocean_topography_smooth_weight">0.9</option>
+	</namelist>
+</template>

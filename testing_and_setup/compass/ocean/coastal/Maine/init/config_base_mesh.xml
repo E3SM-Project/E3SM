@@ -6,7 +6,7 @@
 
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
 	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
-	<add_link source_path="script_test_dir" source="." dest="define_base_mesh"/>
+	<copy_file source_path="script_test_dir" source="define_base_mesh.py" dest="define_base_mesh.py"/>
 
 	<run_script name="run.py">
 		<step executable="python">

@@ -1,1 +1,13 @@
-../../config_files/config_base_mesh.xml
+<?xml version="1.0"?>
+<config case="base_mesh">
+
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
+	<copy_file source_path="script_test_dir" source="define_base_mesh.py" dest="define_base_mesh.py"/>
+	<add_link source_path="script_test_dir" source="high_res_region.geojson" dest="high_res_region.geojson"/>
+
+	<run_script name="run.py">
+		<step executable="python">
+			<argument flag="-m">jigsaw_to_MPAS.build_mesh</argument>
+		</step>
+	</run_script>
+</config>

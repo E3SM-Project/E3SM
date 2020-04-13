@@ -40,3 +40,11 @@ mpas_model = FULL_PATH_TO_MPAS_MODEL_REPO
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
 initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE
 bathymetry_database = FULL_PATH_TO_BATHYMETRY_DATABASE
+
+# The options in this section relate to configuring and running with a compass
+# conda environment
+[conda]
+
+# Whether a link to load_compass_env.sh should be included with each test case
+# (can also be specified with the --link_load_compass flag)
+link_load_compass = False

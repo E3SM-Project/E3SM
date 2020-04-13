@@ -6,8 +6,8 @@
 		<option name="config_use_rx1_constraint">.true.</option>
 		<option name="config_rx1_max">5.0</option>
 		<option name="config_global_ocean_topography_file">'topography.nc'</option>
-		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
-		<option name="config_global_ocean_topography_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_topography_nlat_dimname">'lat'</option>
+		<option name="config_global_ocean_topography_nlon_dimname">'lon'</option>
 		<option name="config_global_ocean_topography_latlon_degrees">.true.</option>
 		<option name="config_global_ocean_topography_lat_varname">'lat'</option>
 		<option name="config_global_ocean_topography_lon_varname">'lon'</option>
@@ -16,12 +16,10 @@
 		<option name="config_global_ocean_topography_ocean_frac_varname">'ocean_mask'</option>
 		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_fill_bathymetry_holes">.true.</option>
-		<option name="config_global_ocean_topography_smooth_iterations">0</option>
-		<option name="config_global_ocean_topography_smooth_weight">0.9</option>
 		<option name="config_global_ocean_depress_by_land_ice">.true.</option>
 		<option name="config_global_ocean_land_ice_topo_file">'topography.nc'</option>
-		<option name="config_global_ocean_land_ice_topo_nlat_dimname">'y'</option>
-		<option name="config_global_ocean_land_ice_topo_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_land_ice_topo_nlat_dimname">'lat'</option>
+		<option name="config_global_ocean_land_ice_topo_nlon_dimname">'lon'</option>
 		<option name="config_global_ocean_land_ice_topo_latlon_degrees">.true.</option>
 		<option name="config_global_ocean_land_ice_topo_lat_varname">'lat'</option>
 		<option name="config_global_ocean_land_ice_topo_lon_varname">'lon'</option>

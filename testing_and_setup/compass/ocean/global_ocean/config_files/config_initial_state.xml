@@ -28,7 +28,9 @@
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
-	<add_link source_path="initial_condition_database" source="layer_depth.80Layer.180619.nc" dest="layer_depth.nc"/>
+	<copy_file source_path="script_test_dir" source="define_vertical_grid.py" dest="define_vertical_grid.py"/>
+	<add_link source_path="script_core_dir" source="scripts/vertical_grid/make_vertical_grid.py" dest="make_vertical_grid.py"/>
+	<add_link source_path="script_core_dir" source="scripts/plots/plot_initial_state.py" dest="plot_initial_state.py"/>
 	<add_link source_path="initial_condition_database" source="PTemp.Jan_p3.filled.mpas100levs.160127.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc" dest="salinity.nc"/>
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
@@ -38,7 +40,9 @@
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
-		<option name="config_global_ocean_depth_file">'layer_depth.nc'</option>
+		<option name="config_global_ocean_depth_file">'vertical_grid.nc'</option>
+		<option name="config_global_ocean_depth_dimname">'nVertLevels'</option>
+		<option name="config_global_ocean_depth_varname">'refMidDepth'</option>
 		<option name="config_global_ocean_minimum_depth">10</option>
 		<option name="config_global_ocean_deepen_critical_passages">.false.</option>
 	</namelist>
@@ -50,8 +54,13 @@
 
 	<run_script name="run.py">
 		<step executable="gpmetis">
-			<argument flag="graph.info">8</argument>
+			<argument flag="graph.info">4</argument>
 		</step>
-		<model_run procs="8" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
-    </run_script>
+		<step executable="./define_vertical_grid.py">
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./plot_initial_state.py">
+		</step>
+	</run_script>
+
 </config>

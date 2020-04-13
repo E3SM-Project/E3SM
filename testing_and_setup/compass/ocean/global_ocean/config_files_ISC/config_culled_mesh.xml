@@ -2,7 +2,7 @@
 <config case="culled_mesh">
 
 	<add_link source="../base_mesh/base_mesh.nc" dest="base_mesh.nc"/>
-	<add_link source_path="script_configuration_dir" source="cull_mesh.py" dest="cull_mesh.py"/>
+	<add_link source_path="script_configuration_dir" source="scripts/cull_mesh.py" dest="cull_mesh.py"/>
 
 	<run_script name="run.py">
 		<step executable="./cull_mesh.py">

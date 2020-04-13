@@ -517,6 +517,8 @@ def generate_driver_scripts(config_file, configs):  # {{{
         if not os.path.exists(init_path):
             os.makedirs(init_path)
 
+        link_load_compass_env(init_path, configs)
+
         # Create script file
         script = open('{}/{}'.format(init_path, name), 'w')
 
@@ -591,7 +593,7 @@ def generate_driver_scripts(config_file, configs):  # {{{
                     # Process <step> tags
                     if grandchild.tag == 'step':
                         process_script_step(grandchild, configs, '    ',
-                                            script)
+                                            script, conda_mpi=False)
                     # Process <define_env_var> tags
                     elif grandchild.tag == 'define_env_var':
                         process_env_define_step(grandchild, configs, '    ',
@@ -661,7 +663,8 @@ def process_env_define_step(var_tag, configs, indentation, script_file):  # {{{
 # }}}
 
 
-def process_script_step(step, configs, indentation, script_file):  # {{{
+def process_script_step(step, configs, indentation, script_file,
+                        conda_mpi=None):  # {{{
     # Determine step attributes.
     if 'executable_name' in step.attrib.keys() and 'executable' in \
             step.attrib.keys():
@@ -697,6 +700,15 @@ def process_script_step(step, configs, indentation, script_file):  # {{{
     except KeyError:
         executable = step.attrib['executable']
 
+    if 'conda_mpi' in step.attrib:
+        # This step explicitly asks says whether to use conda MPI
+        conda_mpi = step.attrib['conda_mpi'] == "true"
+    elif conda_mpi is None:
+        # if not set explicitly, we will try to use conda MPI for executables
+        # start with "python" or end with ".py"
+        basename = os.path.basename(executable)
+        conda_mpi = (basename.startswith('python') or basename.endswith('.py'))
+
     # Write step header
     script_file.write("\n")
 
@@ -708,7 +720,7 @@ def process_script_step(step, configs, indentation, script_file):  # {{{
 
     script_file.write("{}# Run command is:\n".format(indentation))
 
-    command_args = [executable]
+    command_args = add_executable_prefix(executable, configs, conda_mpi)
     # Process step arguments
     for argument in step:
         if argument.tag == 'argument':
@@ -876,6 +888,10 @@ def process_field_definition(field_tag, configs, script, file1, file2,
     # Build the base command to compare the fields
     command_args = [compare_executable, '-q', '-1', file1, '-2', file2, '-v',
                     field_name]
+
+    if configs.getboolean('conda', 'use_conda_mpi'):
+        prefix = configs.get('conda', 'python_prefix').split(' ')
+        command_args = prefix + command_args
 
     # Determine norm thresholds
     if baseline_comp:
@@ -1549,6 +1565,35 @@ def get_case_name(config_file):  # {{{
 
     return name
 # }}}
+
+
+def add_executable_prefix(executable, configs, conda_mpi):  # {{{
+    """
+    Prepend a prefix to the executable if conda MPI is requested and MPI is
+    present in the conda environment
+    """
+    command_args = [executable]
+    if conda_mpi and configs.getboolean('conda', 'use_conda_mpi'):
+        prefix = configs.get('conda', 'python_prefix').split(' ')
+        command_args = prefix + command_args
+    return command_args
+# }}}
+
+def link_load_compass_env(init_path, configs):  # {{{
+
+    if configs.getboolean('conda', 'link_load_compass'):
+        target = configs.get('conda', 'load_compass_script')
+
+        link_name = '{}/load_compass_env.sh'.format(init_path)
+        try:
+            os.symlink(target, link_name)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                os.remove(link_name)
+                os.symlink(target, link_name)
+            else:
+                raise e
+# }}}
 # }}}
 
 
@@ -1590,6 +1635,10 @@ if __name__ == "__main__":
                         help="If set, script will create case directories in "
                              "work_dir rather than the current directory.",
                         metavar="PATH")
+    parser.add_argument("--link_load_compass", dest="link_load_compass",
+                        action="store_true",
+                        help="If set, a link to load_compass_env.sh is included"
+                             " with each test case")
 
     args = parser.parse_args()
 
@@ -1677,6 +1726,29 @@ if __name__ == "__main__":
     else:
         config.set('script_input_arguments', 'model_runtime',
                    args.model_runtime)
+
+    if not config.has_section('conda'):
+        config.add_section('conda')
+
+    config.set('conda', 'use_conda_mpi', 'False')
+    if 'CONDA_PREFIX' in os.environ:
+        # We're running from a conda environment
+        mpirun_path = '{}/bin/mpirun'.format(os.environ['CONDA_PREFIX'])
+        if os.path.exists(mpirun_path):
+            # MPI is installed in that conda environment
+            config.set('conda', 'use_conda_mpi', 'True')
+            config.set('conda', 'python_prefix', '{} -np 1'.format(mpirun_path))
+
+    if not config.has_option('conda', 'link_load_compass'):
+        config.set('conda', 'link_load_compass', 'False')
+
+    if args.link_load_compass:
+        config.set('conda', 'link_load_compass', 'True')
+
+    if config.getboolean('conda', 'link_load_compass'):
+        load_script = '{}/load_compass_env.sh'.format(
+            os.path.dirname(os.path.abspath(__file__)))
+        config.set('conda', 'load_compass_script', load_script)
 
     # Build variables for history output
     old_dir = os.getcwd()

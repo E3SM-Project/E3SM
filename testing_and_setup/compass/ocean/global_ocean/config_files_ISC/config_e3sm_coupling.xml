@@ -1,13 +1,15 @@
 <?xml version="1.0"?>
 <config case="e3sm_coupling">
 
-	<add_link source="../initial_state/initial_state.nc" dest="init.nc"/>
+	<add_link source="../initial_state/initial_state.nc" dest="mesh_before_metadata.nc"/>
 	<add_link source="../initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/no_ISC_culled_mesh.nc" dest="no_ISC_culled_mesh.nc"/>
     <add_link source_path="script_configuration_dir" source="scripts/create_E3SM_coupling_files.py" dest="create_E3SM_coupling_files.py"/>
     <add_link source_path="script_configuration_dir" source="scripts/copy_cell_indices_ISC.py" dest="copy_cell_indices_ISC.py"/>
-    <copy_file source_path="script_configuration_dir" source="scripts/config_E3SM_coupling_files.ini" dest="config_E3SM_coupling_files.ini"/>
+	<add_link source_path="script_configuration_dir" source="scripts/config_E3SM_coupling_files.ini" dest="defaults.ini"/>
+    <copy_file source_path="script_test_dir" source="config_E3SM_coupling_files.ini" dest="config_E3SM_coupling_files.ini"/>
     <add_link source_path="script_configuration_dir" source="scripts/readme_E3SM_coupling_files" dest="readme"/>
+	<add_link source_path="initial_condition_database" source="MeltRatesRignot2013.nc" dest="MeltRatesRignot2013.nc"/>
 
 	<run_script name="run.py">
 		<step executable="python">

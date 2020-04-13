@@ -1,9 +1,5 @@
 <?xml version="1.0"?>
 <config case="initial_state">
-	<get_file dest_path="initial_condition_database" file_name="layer_depth.80Layer.180619.nc">
-		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
-	</get_file>
-
 	<get_file dest_path="initial_condition_database" file_name="PTemp.Jan_p3.filled.mpas100levs.160127.nc">
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
@@ -16,8 +12,8 @@
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest_path="initial_condition_database" file_name="landIceTopo_0.1deg_smooth_0.1deg.nc">
-		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	<get_file dest_path="bathymetry_database" file_name="BedMachineAntarctica_and_GEBCO_2019_0.05_degree.200128.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/bathymetry_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="chlorophyllA_monthly_averages_1deg.151201.nc">
@@ -28,20 +24,25 @@
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
+	<copy_file source_path="script_test_dir" source="define_vertical_grid.py" dest="define_vertical_grid.py"/>
 	<add_link source="../culled_mesh/land_ice_mask.nc" dest="land_ice_mask.nc"/>
-	<add_link source_path="initial_condition_database" source="layer_depth.80Layer.180619.nc" dest="layer_depth.nc"/>
+	<add_link source_path="script_core_dir" source="scripts/vertical_grid/make_vertical_grid.py" dest="make_vertical_grid.py"/>
+	<add_link source_path="script_core_dir" source="scripts/plots/plot_initial_state.py" dest="plot_initial_state.py"/>
 	<add_link source_path="initial_condition_database" source="PTemp.Jan_p3.filled.mpas100levs.160127.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc" dest="salinity.nc"/>
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
-	<add_link source_path="initial_condition_database" source="landIceTopo_0.1deg_smooth_0.1deg.nc" dest="topography.nc"/>
+	<add_link source_path="bathymetry_database" source="BedMachineAntarctica_and_GEBCO_2019_0.05_degree.200128.nc" dest="topography.nc"/>
 	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
+		<template file="template_initial_state.xml" path_base="script_resolution_dir"/>
 		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
-		<option name="config_global_ocean_depth_file">'layer_depth.nc'</option>
+		<option name="config_global_ocean_depth_file">'vertical_grid.nc'</option>
+		<option name="config_global_ocean_depth_dimname">'nVertLevels'</option>
+		<option name="config_global_ocean_depth_varname">'refMidDepth'</option>
 		<option name="config_global_ocean_minimum_depth">10</option>
 		<option name="config_global_ocean_deepen_critical_passages">.false.</option>
 	</namelist>
@@ -56,7 +57,11 @@
 		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
+		<step executable="./define_vertical_grid.py">
+		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
-    </run_script>
+		<step executable="./plot_initial_state.py">
+		</step>
+	</run_script>
 
 </config>

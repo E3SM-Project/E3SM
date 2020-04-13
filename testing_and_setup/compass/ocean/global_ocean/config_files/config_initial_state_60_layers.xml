@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="initial_state">
+<config case="initial_state_60_layer">
 	<get_file dest_path="initial_condition_database" file_name="Salinity.01.filled.60levels.PHC.151106.nc">
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
@@ -23,6 +23,7 @@
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
+	<add_link source_path="script_core_dir" source="scripts/plots/plot_initial_state.py" dest="plot_initial_state.py"/>
 	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="layer_depth.nc"/>
 	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="salinity.nc"/>
@@ -50,5 +51,7 @@
 			<argument flag="graph.info">36</argument>
 		</step>
 		<model_run procs="36" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./plot_initial_state.py">
+		</step>
 	</run_script>
 </config>

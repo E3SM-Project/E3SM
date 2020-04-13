@@ -14,7 +14,7 @@
 		<option name="config_vertical_grid">'100layerE3SMv1'</option>
 		<option name="config_eos_linear_alpha">0.25</option>
 		<option name="config_soma_density_difference">5.0</option>
-		<option name="config_soma_surface_temperature">15.0</option>
+		<option name="config_soma_surface_temperature">20.0</option>
 		<option name="config_soma_surface_salinity">34.0</option>
 		<option name="config_realistic_coriolis_parameter">.true.</option>
 	</namelist>

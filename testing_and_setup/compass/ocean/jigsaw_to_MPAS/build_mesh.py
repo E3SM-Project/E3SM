@@ -12,7 +12,6 @@ Step 5. Create vtk file for visualization
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-import subprocess
 import os
 import xarray
 import argparse
@@ -20,6 +19,7 @@ import matplotlib.pyplot as plt
 
 from mpas_tools.conversion import convert
 from mpas_tools.io import write_netcdf
+from mpas_tools.viz.paraview_extractor import extract_vtk
 
 from jigsaw_to_MPAS.jigsaw_driver import jigsaw_driver
 from jigsaw_to_MPAS.triangle_jigsaw_to_netcdf import jigsaw_to_netcdf
@@ -28,8 +28,7 @@ from jigsaw_to_MPAS.inject_meshDensity import inject_meshDensity
 from jigsaw_to_MPAS.inject_preserve_floodplain import \
     inject_preserve_floodplain
 
-from define_base_mesh import define_base_mesh
-
+import define_base_mesh
 
 def build_mesh(
         preserve_floodplain=False,
@@ -122,15 +121,9 @@ def build_mesh(
                                    floodplain_elevation=floodplain_elevation)
 
     print('Step 8. Create vtk file for visualization')
-    args = ['paraview_vtk_field_extractor.py',
-            '--ignore_time',
-            '-l',
-            '-d', 'maxEdges=0',
-            '-v', 'allOnCells',
-            '-f', 'base_mesh.nc',
-            '-o', 'base_mesh_vtk']
-    print("running", ' '.join(args))
-    subprocess.check_call(args, env=os.environ.copy())
+    extract_vtk(ignore_time=True, lonlat=True, dimension_list=['maxEdges='],
+                variable_list=['allOnCells'], filename_pattern='base_mesh.nc',
+                out_dir='base_mesh_vtk')
 
     print("***********************************************")
     print("**    The global mesh file is base_mesh.nc   **")
