@@ -40,7 +40,7 @@ idx_to_dim_list(int ndims, const int *gdimlen, PIO_Offset idx,
     /* Easiest to start from the right and move left. */
     for (int i = ndims - 1; i >= 0; --i)
     {
-        int next_idx;
+        PIO_Offset next_idx;
 
         /* This way of doing div/mod is slightly faster than using "/"
          * and "%". */
@@ -450,8 +450,9 @@ define_iodesc_datatypes(iosystem_desc_t *ios, io_desc_t *iodesc)
     int ret; /* Return value. */
 
     pioassert(ios && iodesc, "invalid input", __FILE__, __LINE__);
-    PLOG((1, "define_iodesc_datatypes ios->ioproc = %d iodesc->rtype is %sNULL, iodesc->nrecvs",
-          ios->ioproc, iodesc->rtype ? "not " : "", iodesc->nrecvs));
+    PLOG((3, "define_iodesc_datatypes ios->ioproc = %d iodesc->rtype is %sNULL, "
+          "iodesc->nrecvs %d", ios->ioproc, iodesc->rtype ? "not " : "",
+          iodesc->nrecvs));
 
     /* Set up the to transfer data to and from the IO tasks. */
     if (ios->ioproc)
@@ -1014,6 +1015,7 @@ rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 
     /* Check inputs. */
     pioassert(ios && iodesc, "invalid input", __FILE__, __LINE__);
+    PLOG((2, "rearrange_io2comp iodesc->rearranger %d", iodesc->rearranger));
 
 #ifdef TIMING
     /* Start timer if desired. */
@@ -1033,11 +1035,11 @@ rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
         mycomm = iodesc->subset_comm;
         niotasks = 1;
     }
-    PLOG((3, "niotasks = %d", niotasks));
 
     /* Get the size of this communicator. */
     if ((mpierr = MPI_Comm_size(mycomm, &ntasks)))
         return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    PLOG((3, "niotasks %d ntasks %d", niotasks, ntasks));
 
     /* Define the MPI data types that will be used for this
      * io_desc_t. */
@@ -1106,7 +1108,8 @@ rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
         }
     }
 
-    /* Data in sbuf on the ionodes is sent to rbuf on the compute nodes */
+    /* Data in sbuf on the ionodes is sent to rbuf on the compute
+     * nodes. */
     if ((ret = pio_swapm(sbuf, sendcounts, sdispls, sendtypes, rbuf, recvcounts,
                          rdispls, recvtypes, mycomm, &iodesc->rearr_opts.io2comp)))
         return pio_err(ios, NULL, ret, __FILE__, __LINE__);
@@ -1425,6 +1428,9 @@ box_rearrange_create(iosystem_desc_t *ios, int maplen, const PIO_Offset *compmap
                 PLOG((3, "start[%d] = %lld count[%d] = %lld", d, start[d], d, count[d]));
 #endif /* PIO_ENABLE_LOGGING */
 
+            /* Moved this outside of loop over maplen, for performance. */
+            PIO_Offset lcoord[ndims];
+
             /* For each element of the data array on the compute task,
              * find the IO task to send the data element to, and its
              * offset into the global data array. */
@@ -1434,7 +1440,6 @@ box_rearrange_create(iosystem_desc_t *ios, int maplen, const PIO_Offset *compmap
                 if (dest_ioproc[k] >= 0)
                     continue;
 
-                PIO_Offset lcoord[ndims];
                 bool found = true;
 
                 /* Find a destination for each entry in the compmap. */

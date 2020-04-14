@@ -16,7 +16,6 @@ import CIME.test_status
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
-from CIME.hist_utils import _get_all_hist_files
 from CIME.XML.machines import Machines
 
 
@@ -85,8 +84,10 @@ class MVK(SystemTestsCommon):
             ref_case = self._case.get_value("RUN_REFCASE")
 
             model = 'cam'
-            hists = _get_all_hist_files(model, rundir, [r'h\d*.*\.nc'], ref_case=ref_case)
+            env_archive = self._case.get_env("archive")
+            hists = env_archive.get_all_hist_files(self._case.get_value("CASE"), model, rundir, [r'h\d*.*\.nc'], ref_case=ref_case)
             logger.debug("MVK additional baseline files: {}".format(hists))
+            hists = [os.path.join(rundir,hist) for hist in hists]
             for hist in hists:
                 basename = hist[hist.rfind(model):]
                 baseline = os.path.join(basegen_dir, basename)

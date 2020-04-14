@@ -7,9 +7,9 @@
 
 #include "config.h"
 #include <stdlib.h>
-#include "ncintdispatch.h"
 #include "pio.h"
 #include "pio_internal.h"
+#include "ncintdispatch.h"
 
 /* Prototypes from nc4internal.h. */
 int nc4_file_list_add(int ncid, const char *path, int mode,
@@ -39,8 +39,6 @@ NC_Dispatch NCINT_dispatcher = {
     PIO_NCINT_abort,
     PIO_NCINT_close,
     PIO_NCINT_set_fill,
-    NC_NOTNC3_inq_base_pe,
-    NC_NOTNC3_set_base_pe,
     PIO_NCINT_inq_format,
     PIO_NCINT_inq_format_extended,
 
@@ -133,14 +131,17 @@ PIO_NCINT_initialize(void)
 {
     int ret;
 
-    NCINT_dispatch_table = &NCINT_dispatcher;
+    if (!ncint_initialized)
+    {
+        NCINT_dispatch_table = &NCINT_dispatcher;
 
-    PLOG((1, "Adding user-defined format for netCDF PIO integration"));
+        PLOG((1, "Adding user-defined format for netCDF PIO integration"));
 
-    /* Add our user defined format. */
-    if ((ret = nc_def_user_format(NC_UDF0, &NCINT_dispatcher, NULL)))
-        return ret;
-    ncint_initialized++;
+        /* Add our user defined format. */
+        if ((ret = nc_def_user_format(NC_UDF0, &NCINT_dispatcher, NULL)))
+            return ret;
+        ncint_initialized++;
+    }
 
     return NC_NOERR;
 }

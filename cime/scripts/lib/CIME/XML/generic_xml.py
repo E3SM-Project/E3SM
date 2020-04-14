@@ -241,6 +241,15 @@ class GenericXML(object):
 
         return node
 
+    def make_child_comment(self, root=None, text=None):
+        expect(not self.locked and not self.read_only, "{}: cannot make child {} in file {}".format("read_only" if self.read_only else "locked", text, self.filename))
+        root = root if root is not None else self.root
+        self.needsrewrite = True
+        et_comment = ET.Comment(text)
+        node = _Element(et_comment)
+        root.xml_element.append(node.xml_element)
+        return node
+
     def get_children(self, name=None, attributes=None, root=None):
         """
         This is the critical function, its interface and performance are crucial.
