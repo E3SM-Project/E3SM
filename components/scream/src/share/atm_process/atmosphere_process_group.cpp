@@ -29,6 +29,9 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
   }
 
   // Create the individual atmosphere processes
+  m_group_name = "Group [";
+  m_group_name += m_group_schedule_type==ScheduleType::Sequential
+                ? "Sequential]:" : "Parallel]:";
   for (int i=0; i<m_group_size; ++i) {
     // The comm to be passed to the processes construction is
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
@@ -69,6 +72,9 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {
       m_required_grids.insert(name);
     }
+
+    m_group_name += " ";
+    m_group_name += m_atm_processes.back()->name();
   }
 
 #ifdef SCREAM_DEBUG
