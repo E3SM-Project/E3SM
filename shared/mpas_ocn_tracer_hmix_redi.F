@@ -188,8 +188,8 @@ contains
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
       ! mrp performance: merge term 1 into main cell loop later
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, iCellSelf) &
-      !$omp& private(r_tmp, coef, kappaRediEdgeVal, tracer_turb_flux, flux, k, iTr, flux_term2) 
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, iCellSelf, &
+      !$omp& r_tmp, coef, kappaRediEdgeVal, tracer_turb_flux, flux, k, iTr, flux_term2, dTracerDx, flux_term3)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          fluxRediZTop(:,:) = 0.0_RKIND
@@ -369,7 +369,7 @@ contains
      !$omp end do
 
      !now go back and reapply all tendencies
-     !$omp do schedule(runtime) private(invAreaCell, k, iTr, i)
+     !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
      do iCell=1,nCells
        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do k = 1, maxLevelCell(iCell)
