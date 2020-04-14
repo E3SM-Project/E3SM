@@ -88,10 +88,10 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
-    double const* effecPress_F,
+    double const* thickness_F, double * beta_F, double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
+    double const* effecPress_F, double const* muFriction_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
-    double* u_normal_F = 0, double* dissipation_heat_F = 0,
+    double* u_normal_F = 0, double* bodyForce_F = 0, double* dissipation_heat_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0,
     int *error = 0 );
 
@@ -131,7 +131,7 @@ void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
     double const* stiffnessFactor_F,
-    double const* effecPress_F,
+    double const* effecPress_F, double const* muFriction_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -155,12 +155,14 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& levelsNormalizedThickness,
     const std::vector<double>& elevationData,
     const std::vector<double>& thicknessData,
-    const std::vector<double>& betaData,
+          std::vector<double>& betaData,
     const std::vector<double>& bedTopographyData,
     const std::vector<double>& smbData,
     const std::vector<double>& stiffnessFactorData,
     const std::vector<double>& effecPressData,
+    const std::vector<double>& muFrictionData,
     const std::vector<double>& temperatureDataOnPrisms,
+    std::vector<double>& bodyForceOnBasalCell,
     std::vector<double>& dissipationHeatOnPrisms,
     std::vector<double>& velocityOnVertices,
     int& error,
@@ -202,7 +204,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
+    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* muFriction_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
 void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
             double const * lowerSurface_F, 
@@ -221,6 +223,8 @@ void write_ascii_mesh_field_int(std::vector<int> fieldData, std::string filename
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 
 void exportDissipationHeat(double * dissipationHeat_F);
+void exportBodyForce(double * bodyForce_F);
+void exportBeta(double * beta_F);
 
 void get_prism_velocity_on_FEdges(double* uNormal,
     const std::vector<double>& velocityOnCells,
