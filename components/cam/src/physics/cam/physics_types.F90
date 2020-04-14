@@ -21,6 +21,9 @@ module physics_types
 
   logical, parameter :: adjust_te = .FALSE.
 
+  integer, save :: countu=0, countv=0, counts=0, countq=0
+
+
 ! Public types:
 
   public physics_state
@@ -139,9 +142,10 @@ module physics_types
 
   integer ::    top_level,  bot_level
 
-  real(r8), dimension(pcols,pver)::  s,u,v
-  real(r8), dimension(pcols,pver,pcnst)::  q                  ! consituent
+#define ver2
+#ifndef ver2
 
+  real(r8), dimension(pcols,pver)::  s,u,v
 ! boundary fluxes
   real(r8), dimension(pcols) :: &
           hflux_srf,     &! net heat flux at surface (W/m2)
@@ -150,9 +154,33 @@ module physics_types
           taux_top,      &! net zonal stress at top of model (Pa)
           tauy_srf,      &! net meridional stress at surface (Pa)
           tauy_top        ! net meridional stress at top of model (Pa)
+
+  real(r8), dimension(:,:,:),allocatable :: &
+          q                  ! consituent tendencies (kg/kg/s)
+  real(r8), dimension(:,:),allocatable  ::&
+          cflx_srf,      &! constituent flux at surface (kg/m2/s)
+          cflx_top        ! constituent flux top of model (kg/m2/s)
+
+#else
+
+     real(r8), dimension(:,:),allocatable   :: s,u,v
+
+! boundary fluxes
+     real(r8), dimension(:),allocatable     ::&
+          hflux_srf,     &! net heat flux at surface (W/m2)
+          hflux_top,     &! net heat flux at top of model (W/m2)
+          taux_srf,      &! net zonal stress at surface (Pa)
+          taux_top,      &! net zonal stress at top of model (Pa)
+          tauy_srf,      &! net meridional stress at surface (Pa)
+          tauy_top        ! net meridional stress at top of model (Pa)
+
+  real(r8), dimension(pcols,pver,pcnst)::  q    
   real(r8), dimension(pcols,pcnst)  ::&
           cflx_srf,      &! constituent flux at surface (kg/m2/s)
           cflx_top        ! constituent flux top of model (kg/m2/s)
+
+#endif
+
 
  end type physics_ptend
 
@@ -756,20 +784,27 @@ contains
     ptend_sum%top_level = ptend%top_level
     ptend_sum%bot_level = ptend%bot_level
 
+
 ! Update u,v fields
     if(ptend%lu) then
-       if (.not. ptend_sum%lu) then 
+       if (.not. ptend_sum%lu) then
+#ifdef ver2 
 !       if (.not. allocated(ptend_sum%u)) then 
-!          allocate(ptend_sum%u(psetcols,pver), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%u')
+          allocate(ptend_sum%u(psetcols,pver), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%u')
+#endif
           ptend_sum%u=0.0_r8
 
-!          allocate(ptend_sum%taux_srf(psetcols), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%taux_srf')
+#ifdef ver2
+          allocate(ptend_sum%taux_srf(psetcols), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%taux_srf')
+#endif
           ptend_sum%taux_srf=0.0_r8
 
-!          allocate(ptend_sum%taux_top(psetcols), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%taux_top')
+#ifdef ver2
+          allocate(ptend_sum%taux_top(psetcols), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%taux_top')
+#endif
           ptend_sum%taux_top=0.0_r8
        end if
        ptend_sum%lu = .true.
@@ -787,17 +822,23 @@ contains
 
     if(ptend%lv) then
        if (.not. ptend_sum%lv) then 
+#ifdef ver2
 !       if (.not. allocated(ptend_sum%v)) then 
-!          allocate(ptend_sum%v(psetcols,pver), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%v')
+          allocate(ptend_sum%v(psetcols,pver), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%v')
+#endif
           ptend_sum%v=0.0_r8
 
-!          allocate(ptend_sum%tauy_srf(psetcols), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%tauy_srf')
+#ifdef ver2
+          allocate(ptend_sum%tauy_srf(psetcols), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%tauy_srf')
+#endif
           ptend_sum%tauy_srf=0.0_r8
 
-!          allocate(ptend_sum%tauy_top(psetcols), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%tauy_top')
+#ifdef ver2
+          allocate(ptend_sum%tauy_top(psetcols), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%tauy_top')
+#endif
           ptend_sum%tauy_top=0.0_r8
        end if
        ptend_sum%lv = .true.
@@ -816,17 +857,23 @@ contains
 
     if(ptend%ls) then
        if (.not. ptend_sum%ls) then 
+#ifdef ver2
 !       if (.not. allocated(ptend_sum%s)) then 
-!          allocate(ptend_sum%s(psetcols,pver), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%s')
+          allocate(ptend_sum%s(psetcols,pver), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%s')
+#endif
           ptend_sum%s=0.0_r8
 
-!          allocate(ptend_sum%hflux_srf(psetcols), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%hflux_srf')
+#ifdef ver2
+          allocate(ptend_sum%hflux_srf(psetcols), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%hflux_srf')
+#endif
           ptend_sum%hflux_srf=0.0_r8
 
-!          allocate(ptend_sum%hflux_top(psetcols), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%hflux_top')
+#ifdef ver2
+          allocate(ptend_sum%hflux_top(psetcols), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%hflux_top')
+#endif
           ptend_sum%hflux_top=0.0_r8
        end if
        ptend_sum%ls = .true.
@@ -846,16 +893,22 @@ contains
 
        if (.not. any(ptend_sum%lq)) then
 !       if (.not. allocated(ptend_sum%q)) then
-!          allocate(ptend_sum%q(psetcols,pver,pcnst), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%q')
+#ifndef ver2
+          allocate(ptend_sum%q(psetcols,pver,pcnst), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%q')
+#endif
           ptend_sum%q=0.0_r8
 
-!          allocate(ptend_sum%cflx_srf(psetcols,pcnst), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%cflx_srf')
+#ifndef ver2
+          allocate(ptend_sum%cflx_srf(psetcols,pcnst), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%cflx_srf')
+#endif
           ptend_sum%cflx_srf=0.0_r8
   
-!          allocate(ptend_sum%cflx_top(psetcols,pcnst), stat=ierr)
-!          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%cflx_top')
+#ifndef ver2
+          allocate(ptend_sum%cflx_top(psetcols,pcnst), stat=ierr)
+          if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%cflx_top')
+#endif
           ptend_sum%cflx_top=0.0_r8
        end if
 
@@ -1073,24 +1126,30 @@ end subroutine physics_ptend_copy
 !pw call t_startf('physics_ptend_init')
     if (present(ls)) then
        ptend%ls = ls
+
+
+!    counts = counts+1
     else
        ptend%ls = .false.
     end if
 
     if (present(lu)) then
        ptend%lu = lu
+!    countu = countu+1
     else
        ptend%lu = .false.
     end if
 
     if (present(lv)) then
        ptend%lv = lv
+!    countv = countv+1
     else
        ptend%lv = .false.
     end if
 
     if (present(lq)) then
        ptend%lq(:) = lq(:)
+!    countq = countq+1
     else
        ptend%lq(:) = .false.
     end if
@@ -1099,6 +1158,9 @@ end subroutine physics_ptend_copy
 
     call physics_ptend_reset(ptend)
 !pw call t_stopf('physics_ptend_init')
+
+
+!print *, 'OG counters u,v,s,q', countu, countv, counts, countq 
 
     return
   end subroutine physics_ptend_init
@@ -1907,7 +1969,7 @@ subroutine physics_ptend_alloc(ptend,psetcols)
 
   ptend%psetcols = psetcols
 
-#if 0
+#ifdef ver2
   if (ptend%ls) then
      allocate(ptend%s(psetcols,pver), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%s')
@@ -1940,6 +2002,7 @@ subroutine physics_ptend_alloc(ptend,psetcols)
      allocate(ptend%tauy_top(psetcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%tauy_top')
   end if
+#else
 
   if (any(ptend%lq)) then 
      allocate(ptend%q(psetcols,pver,pcnst), stat=ierr)
@@ -1952,6 +2015,7 @@ subroutine physics_ptend_alloc(ptend,psetcols)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%cflx_top')
   end if
 #endif
+
 end subroutine physics_ptend_alloc
 
 !===============================================================================
@@ -1965,7 +2029,7 @@ subroutine physics_ptend_dealloc(ptend)
 
   ptend%psetcols = 0
 
-#if 0
+#ifdef ver2
   if (allocated(ptend%s)) deallocate(ptend%s, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_ptend_dealloc error: deallocation error for ptend%s')
 
@@ -1993,6 +2057,8 @@ subroutine physics_ptend_dealloc(ptend)
   if (allocated(ptend%tauy_top))   deallocate(ptend%tauy_top, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_ptend_dealloc error: deallocation error for ptend%tauy_top')
 
+#else
+
   if (allocated(ptend%q))  deallocate(ptend%q, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_ptend_dealloc error: deallocation error for ptend%q')
 
@@ -2002,6 +2068,7 @@ subroutine physics_ptend_dealloc(ptend)
   if(allocated(ptend%cflx_top))   deallocate(ptend%cflx_top, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_ptend_dealloc error: deallocation error for ptend%cflx_top')
 #endif
+
 end subroutine physics_ptend_dealloc
 
 end module physics_types
