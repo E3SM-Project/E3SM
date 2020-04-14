@@ -13,7 +13,7 @@ module input_data_utils
   use pio,            only : PIO_NOWRITE, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_NOERR
   use time_manager,   only : timemgr_get_calendar_cf, set_time_float_from_date, get_curr_date
   use spmd_utils,     only : masterproc
-  
+
   implicit none
 
   private
@@ -134,7 +134,7 @@ contains
        ! check the calendar attribute - must match model calendar
        model_calendar = timemgr_get_calendar_cf()
 
-       if (this%ntimes>2) then 
+       if (this%ntimes>2) then
           ! if only 2 time records then it is assumed that the input has 2 identical time records
           !  -- climatological or solar-cycle avaraged
 
@@ -155,7 +155,7 @@ contains
        day_str = time_units(20:21)
        hr_str  = time_units(23:24)
        min_str = time_units(26:27)
-       
+
        ind = index(hr_str,':')
        if( ind == 1 ) hr_str = hr_str(2:2)
        if( ind == 2 ) hr_str = hr_str(1:1)
@@ -163,7 +163,7 @@ contains
        ind = index(min_str,':')
        if( ind == 1 ) min_str = min_str(2:2)
        if( ind == 2 ) min_str = min_str(1:1)
-       
+
        read( yr_str,  * ) ref_yr
        read( mon_str, * ) ref_mon
        read( day_str, * ) ref_day
@@ -189,7 +189,7 @@ contains
        ierr =  pio_inq_varid( fileid, 'time_bnds', varid )
 
        use_time_bnds = (ierr==PIO_NOERR .and. .not.force_interp)
-       
+
        if (use_time_bnds) then
           allocate ( this%time_bnds( 2, this%ntimes ) )
           allocate ( time_bnds_file( 2, this%ntimes ) )
@@ -248,13 +248,13 @@ contains
        ! time_bnds_modl - time_bnds_file = times_modl - times_file
        ! time_bnds_modl = time_bnds_file + times_modl - times_file
        this%times(:) = times_modl(:)
-       if (use_time_bnds) then 
+       if (use_time_bnds) then
           this%time_bnds(1,:) = time_bnds_file(1,:) + times_modl(:) - times_file(:)
           this%time_bnds(2,:) = time_bnds_file(2,:) + times_modl(:) - times_file(:)
        endif
     else if (use_time) then
        this%times(:) = times_file(:)
-       if (use_time_bnds) then 
+       if (use_time_bnds) then
           this%time_bnds(1,:) = time_bnds_file(1,:)
           this%time_bnds(2,:) = time_bnds_file(2,:)
        endif
@@ -312,14 +312,14 @@ contains
   !-----------------------------------------------------------------------------
   subroutine destroy( this )
         class(time_coordinate), intent(inout) :: this
-    
+
     if (allocated(this%times)) deallocate(this%times)
     if (allocated(this%time_bnds)) deallocate(this%time_bnds)
     this%ntimes = 0
     this%filename='NONE'
 
   end subroutine destroy
-    
+
   !-----------------------------------------------------------------------------
   ! produce a duplicate time coordinate object
   !-----------------------------------------------------------------------------
@@ -360,8 +360,7 @@ contains
     integer :: index, i
     character(len=cl) :: errmsg
 
-    !if(masterproc)write(102,*)'input_data-set_weight'
-    ! set time indices and time-interpolation weights 
+    ! set time indices and time-interpolation weights
     fixed_time: if (obj%fixed) then
        yr = obj%fixed_ymd/10000
        mon = (obj%fixed_ymd-yr*10000) / 100
@@ -420,7 +419,7 @@ contains
        obj%wghts(1) = 1._r8 - obj%wghts(2)
     else
        obj%wghts(1) = 1._r8
-       obj%wghts(2) = 0._r8       
+       obj%wghts(2) = 0._r8
     endif
 
   end subroutine set_wghts_indices
@@ -469,7 +468,7 @@ contains
 
     integer :: year, month, day, sec,n ,i
 
-    n = size( dates ) 
+    n = size( dates )
 
     do i=1,n
        year = dates(i)/10000
