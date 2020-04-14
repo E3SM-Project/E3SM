@@ -1829,8 +1829,11 @@ class Z_FullSystemTest(TestCreateTestCommon):
         # Put this inside any test that's slow
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
-
-        self._create_test(["--walltime=0:15:00", "cime_developer"], test_id=self._baseline_name)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            self._create_test(["--walltime=0:15:00", "cime_developer"], test_id=self._baseline_name)
+        else:
+            self._create_test(["--walltime=0:30:00", "cime_developer"], test_id=self._baseline_name)
 
         run_cmd_assert_result(self, "%s/cs.status.%s" % (self._testroot, self._baseline_name),
                               from_dir=self._testroot)

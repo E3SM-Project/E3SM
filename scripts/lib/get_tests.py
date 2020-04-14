@@ -115,7 +115,7 @@ _CIME_TESTS = {
         },
 
     "cime_developer" : {
-        "time"  : "0:45:00",
+        "time"  : "0:15:00",
         "tests" : (
             "NCK_Ld3.f45_g37_rx1.A",
             "ERI_Ln9.f09_g16.X",
