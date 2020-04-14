@@ -11,6 +11,9 @@
 	<test name="Global Ocean 240km - SE Blocks Test" core="ocean" configuration="global_ocean" resolution="QU240" test="se_blocks_test">
 		<script name="run.py"/>
 	</test>
+	<test name="Global Ocean 240km - Thread Test" core="ocean" configuration="global_ocean" resolution="QU240" test="thread_test">
+		<script name="run.py"/>
+	</test>
 	<test name="Global Ocean 240km - RK4 Blocks Test" core="ocean" configuration="global_ocean" resolution="QU240" test="rk4_blocks_test">
 		<script name="run.py"/>
 	</test>

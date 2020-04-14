@@ -266,13 +266,13 @@ contains
              kappaRediSfcTaper(k,iCell) = abs((ssh(iCell) - zMid(k,iCell)) / (zMLD))
            enddo
          enddo
-        !omp end do
+        !$omp end do
       endif
 
       nCells = nCellsArray( 3 )
-      !$omp do schedule(runtime) private(invAreaCell, iEdge, cell1, cell2, k, iCellSelf, &
-      !$omp& dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
-      !$omp& sfcTaper, sfcTaperUp, sfcTaperDown, sfcTaperFactor, i, slopeTaperDown, slopeTaperUp)
+      !$omp do schedule(runtime) private(i, k, iEdge, cell1, cell2, iCellSelf, &
+      !$omp& invAreaCell, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
+      !$omp& sfcTaper, sfcTaperUp, sfcTaperDown, slopeTaperDown, slopeTaperUp)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
@@ -287,7 +287,6 @@ contains
                           - activeTracers(indexSalinity,k  ,iCell) ) &
                           / dzTop(k)
          end do
-         ! mrp performance: could move above cell loop later
          dzTop(1) = -1e-15_RKIND
          dTdzTop(1) = -1e-15_RKIND
          dSdzTop(1) = -1e-15_RKIND
@@ -776,7 +775,6 @@ contains
             err = 1
             call mpas_dmpar_finalize(domain % dminfo)
          end if
-
 
          block => block % next
       end do

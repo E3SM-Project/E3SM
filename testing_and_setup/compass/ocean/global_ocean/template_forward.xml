@@ -20,6 +20,7 @@
 		<option name="config_use_Redi">.true.</option>
 		<option name="config_use_GM">.true.</option>
 		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
+		<option name="config_AM_mixedLayerDepths_compute_interval">'dt'</option>
 	</namelist>
 	<streams>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
