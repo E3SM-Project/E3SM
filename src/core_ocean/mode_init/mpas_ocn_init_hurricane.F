@@ -278,15 +278,7 @@ contains
             end if
           end do
 
-          ! shift coordinates to accomodate wetting and drying
-          do k = 1, nVertLevels
-            refBottomDepth(k) = refBottomDepth(k) - globalMinBottomDepth
-          end do
-
           do iCell = 1, nCellsSolve
-
-            bottomDepth(iCell) = bottomDepth(iCell) - globalMinBottomDepth
-            ssh(iCell) = ssh(iCell) + globalMinBottomDepth
 
             ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
             ssh(iCell) = - bottomDepth(iCell) + &
