@@ -267,7 +267,7 @@ contains
 
          if(tThresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThreshMLD)
-            !$omp do schedule(runtime) private( k, refIndex, found_temp_mld, localVals, interp_local, temp_ref_lev, tempThresh)
+            !$omp do schedule(runtime) private( k, refIndex, found_temp_mld, localVals, interp_local, temp_ref_lev)
             do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
@@ -323,7 +323,7 @@ contains
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
             call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
-            !$omp do schedule(runtime) private( k, refIndex, found_den_mld, localVals, interp_local, den_ref_lev, denThresh, dV, dVp1, mldTemp)
+            !$omp do schedule(runtime) private( k, refIndex, found_den_mld, localVals, interp_local, den_ref_lev, dV, dVp1, mldTemp)
             do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
@@ -388,7 +388,7 @@ contains
 
            allocate(temperatureGradient(nVertLevels,2))
 
-           !$omp do schedule(runtime) private( k, refLevel, found_temp_mld, localVals, interp_local, tempThresh)
+           !$omp do schedule(runtime) private( k, refLevel, found_temp_mld, localVals, interp_local)
            do iCell = 1,nCells
 
             temperatureGradient(:,1) = 0.0_RKIND
