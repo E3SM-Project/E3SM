@@ -1204,7 +1204,10 @@ void importFields(std::map<int, int>& floatBdyExtensionMap, std::map<int, int>& 
           } else {
             grdMarineBdyExtensionMap[iV] = c; // Save this map for use in other areas
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
-            elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surfacea
+            //set elevation depending on whether it's floating or not (for bed_topography of the order
+            //of -eps, the ice could be grounded)
+            elevationData[iV] = std::max((1.0 - rho_ice / rho_ocean) * thicknessData[iV],
+                bedTopographyData[iV] + thicknessData[iV]);  // floating surface
           }
         } // if below sea level
       }  // floating or not
