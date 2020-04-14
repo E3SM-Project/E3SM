@@ -363,7 +363,7 @@ contains
     ! Initialize sdat
     call t_startf('datm_strdata_init')
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, 'datm', sdat, use_new=.true., rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh, 'datm', sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
 

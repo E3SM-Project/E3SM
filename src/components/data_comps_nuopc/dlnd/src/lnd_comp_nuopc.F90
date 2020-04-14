@@ -260,7 +260,7 @@ contains
 
     ! Initialize sdat
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, use_new=.true., rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat,  rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (my_task == master_task) write(logunit,*) ' initialized dlnd sdat'

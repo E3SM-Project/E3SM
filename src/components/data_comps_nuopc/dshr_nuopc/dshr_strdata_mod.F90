@@ -41,12 +41,10 @@ module dshr_strdata_mod
   public ::  shr_strdata_type
 
   public ::  shr_strdata_readnml
-  public ::  shr_strdata_bcastnml
   public ::  shr_strdata_restRead
   public ::  shr_strdata_restWrite
   public ::  shr_strdata_setOrbs
   public ::  shr_strdata_print
-  public ::  shr_strdata_set_model_domain_mesh 
   public ::  shr_strdata_init_model_domain
   public ::  shr_strdata_init_streams
   public ::  shr_strdata_init_mapping
@@ -55,9 +53,7 @@ module dshr_strdata_mod
   public ::  shr_strdata_clean
   public ::  shr_strdata_pioinit
 
-  private :: shr_strdata_set_model_domain_orig
-  private :: shr_strdata_set_model_domain_scol
-  private :: shr_strdata_set_stream_domain
+  private :: shr_strdata_init_stream_domain
 
   ! !PUBLIC DATA MEMBERS:
 
@@ -88,6 +84,15 @@ module dshr_strdata_mod
      integer                        :: io_type
      integer                        :: io_format
 
+     ! --- mpi info
+     integer                        :: mpicom
+     integer                        :: ntasks 
+     integer                        :: my_task
+     integer                        :: master_task
+
+     ! --- standard output info
+     integer                        :: logunit
+
      !--- data required by stream  cosz t-interp method, set by user ---
      real(R8)                       :: eccen
      real(R8)                       :: mvelpp
@@ -106,7 +111,6 @@ module dshr_strdata_mod
      type(mct_avect)                :: avs(nStrMax)      ! model grid stream attribute vectors
                                                          ! stream attribute vectors that are time and spatially
                                                          ! interpolated to model grid
-
      ! --- stream info, internal ---
      type(shr_stream_streamType)    :: stream(nStrMax)
      type(iosystem_desc_t), pointer :: pio_subsystem => null()
@@ -141,6 +145,11 @@ module dshr_strdata_mod
      character(CL)                  :: allocstring
   end type shr_strdata_type
 
+  interface shr_strdata_init_model_domain
+     module procedure :: shr_strdata_init_model_domain_mesh
+     module procedure :: shr_strdata_init_model_domain_scol
+  end interface shr_strdata_init_model_domain
+
   real(R8),parameter,private :: deg2rad = SHR_CONST_PI/180.0_R8
   character(len=*),parameter :: allocstring_value = 'strdata_allocated'
 
@@ -150,90 +159,6 @@ module dshr_strdata_mod
 !===============================================================================
 contains
 !===============================================================================
-
-  subroutine shr_strdata_init_model_domain(sdat, mesh, mpicom, my_task, &
-       scmmode, scmlon, scmlat, reset_domain_mask)
-
-    ! Note: for single column mode, the mesh returned to the mediator is a single point,
-    ! so the gsmap is for a single point. However, the value of the lat and lon of that point
-    ! is found by obtaining the nearest neighbor of the datm model domain file
-    ! this is the ONLY time that the model domain file actually needs to be read in
-    ! otherwise the mct ggrid can be obtained directly from the esmf mesh that is read in
-
-    ! input/output variables
-    type(shr_strdata_type) ,intent(inout)       :: sdat
-    type(ESMF_Mesh)        ,intent(in)          :: mesh
-    integer                ,intent(in)          :: mpicom
-    integer                ,intent(in)          :: my_task
-    logical                ,intent(in)          :: scmmode
-    real(R8)               ,intent(in)          :: scmlon
-    real(R8)               ,intent(in)          :: scmlat
-    logical                ,intent(in),optional :: reset_domain_mask
-
-    ! local variables
-    integer        :: n,m,k        ! generic index
-    character(CS)  :: lname        ! local name
-    character(CL)  :: filePath     ! generic file path
-    character(CL)  :: fileName     ! generic file name
-    character(CL)  :: domainfile   ! full pathname of domain file to read
-    character(CS)  :: timeName     ! domain file: time variable name
-    character(CS)  :: lonName      ! domain file: lon  variable name
-    character(CS)  :: latName      ! domain file: lat  variable name
-    character(CS)  :: hgtName      ! domain file: hgt  variable name
-    character(CS)  :: maskName     ! domain file: mask variable name
-    integer        :: kmask, kfrac
-    logical        :: lscmmode
-    integer          ,parameter :: master_task = 0
-    character(*)     ,parameter :: F00 = "('(shr_strdata_init) ',8a)"
-    character(len=*) ,parameter :: subname = "(shr_strdata_init) "
-    !-------------------------------------------------------------------------------
-
-    ! If model domainfile is 'null' (or shr_strdata_nullstr),
-    ! then set the model domain to the domain of the first stream
-
-    if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
-       if (my_task == master_task) then
-          call shr_stream_getDomainInfo(SDAT%stream(1), &
-               filePath, filename, timeName, lonName, latName, hgtName, maskName)
-          domainfile = trim(filepath)//adjustl(filename)
-       endif
-       call shr_mpi_bcast(domainfile ,mpicom)
-       call shr_mpi_bcast(lonName    ,mpicom)
-       call shr_mpi_bcast(latName    ,mpicom)
-       call shr_mpi_bcast(hgtName    ,mpicom)
-       call shr_mpi_bcast(maskName   ,mpicom)
-    else
-       domainfile = SDAT%domainfile
-       lonname  = "xc"  ! default values / standard data model domain file format
-       latname  = "yc"
-       hgtname  = "hgt"
-       maskname = "mask"
-    end if
-
-    ! Initialize model domain
-
-    sdat%lsize = mct_gsmap_lsize(sdat%gsmap, mpicom)
-
-    if (scmmode) then
-       call shr_strdata_set_model_domain_scol(domainfile, mpicom, scmlon, scmlat, sdat)
-    else
-       call shr_strdata_set_model_domain_orig(domainfile, mpicom, &
-            lonname, latname, hgtname, maskname, sdat)
-    endif
-
-    if (present(reset_domain_mask)) then
-       if (reset_domain_mask) then
-          if (my_task == master_task) then
-             write(logunit,F00) ' Resetting the component domain mask to 1'
-          end if
-          kmask = mct_avect_indexra(sdat%grid%data,'mask')
-          sdat%grid%data%rattr(kmask,:) = 1
-       end if
-    end if
-
-  end subroutine shr_strdata_init_model_domain
-
-  !===============================================================================
 
   subroutine shr_strdata_init_streams(SDAT, compid, mpicom, my_task)
 
@@ -286,7 +211,7 @@ contains
     do n = 1,SDAT%nstreams
 
        ! Initialize stream domain info for stream n
-       call shr_strdata_set_stream_domain(SDAT%stream(n), compid, mpicom, &
+       call shr_strdata_init_stream_domain(SDAT%stream(n), compid, mpicom, &
             SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), SDAT%lsizeR(n))
 
        ! Initialize pio settings for stream n
@@ -370,7 +295,7 @@ contains
   end subroutine shr_strdata_getfrac_from_stream
 
   !===============================================================================
-  subroutine shr_strdata_set_model_domain_mesh( mesh, mpicom, sdat, rc)
+  subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, sdat, rc)
 
     ! input/output variables
     type(ESMF_Mesh)        , intent(in)    :: mesh
@@ -463,161 +388,10 @@ contains
     end do
     deallocate(elemMask)
 
-  end subroutine shr_strdata_set_model_domain_mesh
+  end subroutine shr_strdata_init_model_domain_mesh
 
   !===============================================================================
-  subroutine shr_strdata_set_model_domain_orig(filename, mpicom, &
-       lonname, latname, hgtname, maskname, sdat)
-
-    !----------------------------------------------------------------------------
-    ! Create mct ggrid for model grid
-    !----------------------------------------------------------------------------
-
-    ! input/output variables
-    character(len=*)       , intent(in)    :: filename
-    integer                , intent(in)    :: mpicom
-    character(len=*)       , intent(in)    :: lonname  ! name of  lon variable in file
-    character(len=*)       , intent(in)    :: latname  ! name of  lat variable in file
-    character(len=*)       , intent(in)    :: hgtname  ! name of  hgt variable in file
-    character(len=*)       , intent(in)    :: maskname ! name of mask variable in file
-    type(shr_strdata_type) , intent(inout) :: sdat
-
-    ! local variables
-    integer              :: n,k,j,i      ! indices
-    integer              :: lsize        ! lsize
-    integer              :: gsize        ! gsize
-    integer              :: my_task
-    integer              :: master_task
-    integer              :: ierr         ! error code
-    logical              :: fileexists   !
-    integer              :: rCode        ! return code
-    logical              :: maskexists   ! is mask on dataset
-    integer              :: nxg,nyg,nzg  ! size of input fields
-    integer              :: ndims        ! number of dims
-    integer              :: nlon,nlat
-    integer              :: nmask
-    integer              :: nhgt
-    real(R8),allocatable :: lon(:,:)     ! temp array for domain lon  info
-    real(R8),allocatable :: lat(:,:)     ! temp array for domain lat  info
-    integer ,allocatable :: mask(:,:)    ! temp array for domain mask info
-    real(R8),allocatable :: hgt(:)       ! temp array for domain height info
-    real(R8),allocatable :: a4d(:,:,:,:) ! temp array for reading generic stuff
-    integer, pointer     :: idata(:)     ! temporary
-    type(mct_ggrid)      :: gGridRoot    ! global mct ggrid
-    character(*), parameter :: subname = '(shr_strdata_readgrid) '
-    character(*), parameter :: F00   = "('(shr_strdata_readgrid) ',8a)"
-    character(*), parameter :: F01   = "('(shr_strdata_readgrid) ',a,5i8)"
-    !-------------------------------------------------------------------------------
-
-    call mpi_comm_rank(mpicom,my_task,ierr)
-    master_task = 0
-
-    if (my_task == master_task) then
-       inquire(file=trim(fileName), exist=fileExists)
-       if (.not. fileExists) then
-          write(logunit,F00) "ERROR: file does not exist: ", trim(fileName)
-          call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
-       end if
-    endif
-
-    ! Obtain global sizes
-    if (my_task == master_task) then
-       if (shr_ncread_varexists(fileName, maskname)) then
-          maskexists = .true.
-          call shr_ncread_varDimSizes(fileName,maskname,nxg,nyg)
-       else
-          maskexists = .false.
-          call shr_ncread_varDimNum(fileName,lonName,ndims)
-          if (ndims == 1) then
-             call shr_ncread_varDimSizes(fileName,lonName,nxg)
-             call shr_ncread_varDimSizes(fileName,latName,nyg)
-          else
-             call shr_ncread_varDimSizes(fileName,lonName,nxg,nyg)
-          endif
-       endif
-       if (shr_ncread_varexists(fileName,hgtName)) then
-          call shr_ncread_varDimSizes(fileName,hgtname,nzg)
-       else
-          nzg = -1
-       endif
-    endif
-    call shr_mpi_bcast(nxg,mpicom)
-    call shr_mpi_bcast(nyg,mpicom)
-    call shr_mpi_bcast(nzg,mpicom)
-    sdat%nxg = nxg
-    sdat%nyg = nyg
-    sdat%nzg = nzg
-    gsize = abs(nxg*nyg*nzg)
-    if (gsize < 1) return
-
-    ! Create gGridRoot on master task
-    ! lat/lon in degrees,  area in radians^2, mask is 1 (ocean), 0 (non-ocean)
-
-    if (my_task == master_task) then
-       write(logunit,*)trim(subname) // ': Using input gsmap'
-    end if
-
-    lsize = mct_gsMap_lsize(sdat%gsMap, mpicom)
-    call mct_gGrid_init(ggrid=sdat%grid, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize )
-    call mct_gsMap_orderedPoints(sdat%gsMap, my_task, idata)
-    call mct_gGrid_importIAttr(sdat%grid,'GlobGridNum', idata, lsize)
-    deallocate(idata)
-    sdat%grid%data%rAttr = -9999.0_R8
-
-    if (my_task == master_task) then
-       allocate(lon(nxg,nyg))
-       allocate(lat(nxg,nyg))
-       allocate(mask(nxg,nyg))
-       allocate(hgt(abs(nzg)))
-
-       if (.not.maskexists) then
-          call shr_ncread_domain(fileName, lonName, lon, latName, lat)
-       else
-          call shr_ncread_domain(fileName, lonName, lon, latName,lat, maskName=maskName, mask=mask)
-       endif
-       if (nzg > 1) then
-          allocate(a4d(nzg,1,1,1))
-          call shr_ncread_field4dG(fileName,hgtName,rfld=a4d)
-          hgt(:) = a4d(:,1,1,1)
-          deallocate(a4d)
-       else
-          hgt = 1
-       endif
-
-       call mct_gGrid_init(gGridRoot, sdat%Grid, gsize)
-       gGridRoot%data%rAttr = -9999.0_R8
-       nlon  = mct_aVect_indexRA(gGridRoot%data,'lon')
-       nlat  = mct_aVect_indexRA(gGridRoot%data,'lat')
-       nmask = mct_aVect_indexRA(gGridRoot%data,'mask')
-       n = 0
-       do k = 1,abs(nzg)
-          do j = 1,nyg
-             do i = 1,nxg
-                n = n+1
-                gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
-                gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
-                gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
-                !TODO: add hgt
-             enddo
-          enddo
-       enddo
-
-       deallocate(lon)
-       deallocate(lat)
-       deallocate(mask)
-       deallocate(hgt)
-    endif
-
-    ! Scatter ggridroot to all processors
-    call mct_gGrid_scatter(ggridroot, sdat%grid, sdat%gsMap, master_task, mpicom)
-    if (my_task == master_task) then
-       call mct_gGrid_clean(ggridroot)
-    end if
-
-  end subroutine shr_strdata_set_model_domain_orig
-
-  !===============================================================================
-  subroutine shr_strdata_set_model_domain_scol(domainfile, mpicom, scmlon, scmlat, sdat) 
+  subroutine shr_strdata_init_model_domain_scol(scmlon, scmlat, mpicom, sdat) 
 
     !----------------------------------------------------------------------------
     ! Create mct ggrid for model grid and set model gsmap if not input
@@ -625,7 +399,6 @@ contains
     !----------------------------------------------------------------------------
 
     ! input/output variables
-    character(len=*)       , intent(in)    :: domainfile ! model domain filename 
     integer                , intent(in)    :: mpicom     ! mpi communicator
     real(R8)               , intent(in)    :: scmlon     ! single column lon
     real(R8)               , intent(in)    :: scmlat     ! single column lat
@@ -648,8 +421,8 @@ contains
     real(R8),allocatable :: lon(:,:)   ! temp array for domain lon  info
     real(R8),allocatable :: lat(:,:)   ! temp array for domain lat  info
     integer, pointer     :: idata(:)   ! temporary
-    character(*), parameter :: subname = '(shr_strdata_set_model_domain_scol) '
-    character(*), parameter :: F00   = "('(shr_strdata_set_model_domain_scol) ',8a)"
+    character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
+    character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
     !-------------------------------------------------------------------------------
 
     call mpi_comm_rank(mpicom,my_task,ierr)
@@ -669,18 +442,18 @@ contains
     ! Need to allocate the total grid size of the domain file - ane
     ! will find the nearest neighbor fot the single column
 
-    inquire(file=trim(domainfile), exist=fileExists)
+    inquire(file=trim(sdat%domainfile), exist=fileExists)
     if (.not. fileExists) then
-       write(logunit,F00) "ERROR: file does not exist: ", trim(domainfile)
-       call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(domainfile))
+       write(logunit,F00) "ERROR: file does not exist: ", trim(sdat%domainfile)
+       call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(sdat%domainfile))
     end if
     lonname  = "xc" 
     latname  = "yc"
-    call shr_ncread_varDimSizes(domainfile, lonName, n1=nxg)
-    call shr_ncread_varDimSizes(domainfile, latName, n1=nyg)
+    call shr_ncread_varDimSizes(sdat%domainfile, lonName, n1=nxg)
+    call shr_ncread_varDimSizes(sdat%domainfile, latName, n1=nyg)
     allocate(lon(nxg,nyg))
     allocate(lat(nxg,nyg))
-    call shr_ncread_domain(domainfile, lonName, lon, latName, lat)
+    call shr_ncread_domain(sdat%domainfile, lonName, lon, latName, lat)
 
     ! Find nearest neigbor of input domain for scmlon and scmlat
     ! determine whether dealing with 2D input files (typical of Eulerian
@@ -744,10 +517,10 @@ contains
     deallocate(lon)
     deallocate(lat)
 
-  end subroutine shr_strdata_set_model_domain_scol
+  end subroutine shr_strdata_init_model_domain_scol
 
   !===============================================================================
-  subroutine shr_strdata_set_stream_domain(stream, compid, mpicom, &
+  subroutine shr_strdata_init_stream_domain(stream, compid, mpicom, &
        gGrid, gsMap, nxg, nyg, nzg, lsize)
 
     !----------------------------------------------------------------------------
@@ -921,7 +694,7 @@ contains
        call mct_gGrid_clean(gGridRoot)
     end if
 
-  end subroutine shr_strdata_set_stream_domain
+  end subroutine shr_strdata_init_stream_domain
 
   !===============================================================================
 
@@ -1786,9 +1559,13 @@ contains
     master_task = 0
     ntasks = 1
     if (present(mpicom)) then
-       call MPI_COMM_RANK(mpicom,my_task,rCode)
-       call MPI_COMM_SIZE(mpicom,ntasks,rCode)
+       call mpi_comm_rank(mpicom, my_task, rCode)
+       call mpi_comm_size(mpicom, ntasks, rCode)
     endif
+
+    sdat%my_task = my_task
+    sdat%ntasks = ntasks
+    sdat%master_task = master_task
 
     !--master--task--
     if (my_task == master_task) then
@@ -2023,31 +1800,5 @@ contains
     call shr_sys_flush(logunit)
 
   end subroutine shr_strdata_print
-
-  !===============================================================================
-
-  subroutine shr_strdata_bcastnml(SDAT,mpicom,rc)
-
-    ! !DESCRIPTION:
-    !     Broadcast strdata
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    type(shr_strdata_type),intent(inout) :: SDAT  ! strdata data data-type
-    integer           ,intent(in)  :: mpicom ! mpi communicator
-    integer,optional  ,intent(out) :: rc   ! return code
-
-    !----- local -----
-    integer :: lrc
-    character(*),parameter :: subName = "(shr_strdata_bcastnml) "
-    !-------------------------------------------------------------------------------
-
-    lrc = 0
-
-
-    if (present(rc)) then
-       rc = lrc
-    endif
-
-  end subroutine shr_strdata_bcastnml
 
 end module dshr_strdata_mod

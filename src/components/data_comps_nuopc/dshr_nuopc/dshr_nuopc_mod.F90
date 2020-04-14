@@ -246,7 +246,6 @@ contains
 
     use dshr_strdata_mod , only : shr_strdata_pioinit
     use dshr_strdata_mod , only : shr_strdata_init_model_domain
-    use dshr_strdata_mod , only : shr_strdata_set_model_domain_mesh
     use dshr_strdata_mod , only : shr_strdata_init_streams
     use dshr_strdata_mod , only : shr_strdata_init_mapping
     use dshr_strdata_mod , only : shr_strdata_print
@@ -282,6 +281,7 @@ contains
     integer, allocatable         :: elementCountPTile(:)
     integer, allocatable         :: indexCountPDE(:,:)
     type(ESMF_CalKind_Flag)      :: esmf_caltype ! esmf calendar type
+    integer                      :: kmask
     character(len=CS)            :: calendar     ! calendar name
     character(len=*), parameter  :: subname='(dshr_nuopc_mod:dshr_sdat_init)'
     character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
@@ -338,13 +338,22 @@ contains
        write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
        if (present(reset_domain_mask)) write(logunit,*) ' resetting domain mask'
     end if
-    if (present(use_new)) then
-       sdat%lsize = mct_gsmap_lsize(sdat%gsmap, mpicom)
-       call shr_strdata_set_model_domain_mesh(mesh, mpicom, sdat, rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    sdat%lsize = mct_gsmap_lsize(sdat%gsmap, mpicom)
+    if (scmmode) then
+       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, sdat)
     else
-       call shr_strdata_init_model_domain(sdat, mesh, mpicom, my_task, &
-            scmmode, scmlon, scmlat, reset_domain_mask)
+       call shr_strdata_init_model_domain(mesh, mpicom, sdat, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    if (present(reset_domain_mask)) then
+       if (reset_domain_mask) then
+          if (my_task == master_task) then
+             write(logunit,*) ' Resetting the component domain mask to 1'
+          end if
+          kmask = mct_avect_indexra(sdat%grid%data,'mask')
+          sdat%grid%data%rattr(kmask,:) = 1
+       end if
     end if
 
     ! initialize sdat stream domains
