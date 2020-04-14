@@ -2456,7 +2456,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_self_build_cprnc(self):
     ###########################################################################
-        testname = "ERS_Ln7.f19_g16.X"
+        testname = "ERS_Ln7.f19_g16_rx1.A"
         self._create_test([testname, "--no-build"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
