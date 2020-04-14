@@ -123,4 +123,4 @@ protected:
   std::vector<std::pair<field_type,field_type>> m_fields;
 };
 
-} // empty namespace
+} // namespace scream
