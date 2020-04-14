@@ -270,9 +270,9 @@ contains
       endif
 
       nCells = nCellsArray( 3 )
-      !$omp do schedule(runtime) private(invAreaCell, iEdge, cell1, cell2, k, iCellSelf) &
-      !$omp& private(dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx) &
-      !$omp& private(sfcTaper, sfcTaperUp, sfcTaperDown, sfcTaperFactor)
+      !$omp do schedule(runtime) private(invAreaCell, iEdge, cell1, cell2, k, iCellSelf, &
+      !$omp& dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
+      !$omp& sfcTaper, sfcTaperUp, sfcTaperDown, sfcTaperFactor, i, slopeTaperDown, slopeTaperUp)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
@@ -376,8 +376,8 @@ contains
                slopeTriadDown(k,iCellSelf,iEdge) = &
                   slopeTaperDown * sfcTaperDown * slopeTriadDown(k,iCellSelf,iEdge)
 
-            end do
-        end do
+            end do ! maxLevelEdgeTop(iEdge)
+        end do ! nEdgesOnCell(iCell)
 
          ! Normalize k33
         do k = 2, maxLevelCell(iCell)
@@ -412,8 +412,8 @@ contains
 
       if (config_use_GM) then
         nEdges = nEdgesArray( 3 )
-        !$omp do schedule(runtime) private(cell1, cell2, dcEdgeInv) &
-        !$omp& private(drhoDT, drhoDS, dTdx, dSdx, drhoDx)
+        !$omp do schedule(runtime) private(cell1, cell2, dcEdgeInv, &
+        !$omp& drhoDT, drhoDS, dTdx, dSdx, drhoDx)
         do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -473,8 +473,8 @@ contains
       endif
 
       nEdges = nEdgesArray( 3 )
-      !$omp do schedule(runtime) private(cell1, cell2, k,  gradDensityTopOfEdge) &
-      !$omp& private(kappaGMEdge, BruntVaisalaFreqTopEdge, N)
+      !$omp do schedule(runtime) private(cell1, cell2, k,  gradDensityTopOfEdge, &
+      !$omp& kappaGMEdge, BruntVaisalaFreqTopEdge, N)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
