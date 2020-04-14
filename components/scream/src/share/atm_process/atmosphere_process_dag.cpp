@@ -98,12 +98,20 @@ void AtmProcDAG::write_dag (const std::string& fname) const {
     // Write node, with computed/required fields
     ofile << n.id
           << " [fontcolor=\"" << color
-          << "\", label=\"" << n.name
-          << "\\n Computed:";
+          << "\", label=\"" << n.name;
+    if (n.name=="Begin of atm time step") {
+      ofile << "\\n Inputs from previous time step:";
+    } else if (n.name!="End of atm time step"){
+      ofile << "\\n Computed:";
+    }
     for (const auto& fid : n.computed) {
       ofile << "\\n   " << fid;
     }
-    ofile << "\\n Required:";
+    if (n.name=="End of atm time step") {
+      ofile << "\\n Outputs for next time step:";
+    } else if (n.name!="Begin of atm time step") {
+      ofile << "\\n Required:";
+    }
     for (const auto& fid : n.required) {
       ofile << "\\n   " << fid;
     }
