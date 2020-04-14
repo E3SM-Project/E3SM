@@ -661,6 +661,7 @@
       num_a1 <- dataset
       num_a2 <- dataset
       num_a4 <- dataset
+      SOAG <- dataset
    End Ext Forcing
 
    END Chemistry

@@ -36,7 +36,7 @@ integer,           parameter :: unset_int = huge(1)
 ! Namelist variables:
 character(len=16) :: cam_physpkg          = unset_str  ! CAM physics package [cam3 | cam4 | cam5 |
                                                        !   ideal | adiabatic].
-character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
+character(len=64) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
                                                        !  waccm_ghg | trop_mozart | trop_ghg | 
                                                        !  trop_bam | trop_mam3 | trop_mam4 | 
                                                        !  trop_mam4_resus | trop_mam4_resus_soag |
@@ -359,9 +359,10 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
+                      .or. cam_chempkg_is('trop_mozart_mam4_linoz_resus_mom_soag') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
+                      .or. cam_chempkg_is('trop_strat_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('trop_strat_mam7') &
-                      .or. cam_chempkg_is('trop_strat_mam4_resus_mom') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
 end subroutine phys_ctl_readnl
 
