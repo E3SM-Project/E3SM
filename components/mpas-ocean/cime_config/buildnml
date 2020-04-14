@@ -971,6 +971,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_CaCO3_PROD"/>')
             lines.append('    <var name="ecosys_diag_CaCO3_REMIN"/>')
             lines.append('    <var name="ecosys_diag_tot_CaCO3_form"/>')
+            lines.append('    <var name="ecosys_diag_CO3"/>')
             lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
             lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
 
