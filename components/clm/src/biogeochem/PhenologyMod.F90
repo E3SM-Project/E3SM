@@ -3039,6 +3039,11 @@ contains
 
          ! only calculate these fluxes for woody types
          if (woody(ivt(p)) > 0._r8) then
+            ! These are only used for nonwoody rhizomes
+            livecrootc_to_litter(p) = 0.0_r8
+            livecrootn_to_litter(p) = 0.0_r8
+            livecrootp_to_litter(p) = 0.0_r8
+            
             if ( nu_com .eq. 'RD') then
                ! live stem to dead stem turnover
 
@@ -3093,14 +3098,20 @@ contains
 
          else  ! If not woody, do rhizome turnover
            if ( nu_com .eq. 'RD') then
-               ctovr = livecrootc(p) / (rhizome_long(ivt(p))*dayspyr*secspday)
-               ntovr = ctovr / livewdcn(ivt(p))
-               ptovr = ctovr / livewdcp(ivt(p))
-               
+               if(rhizome_long(ivt(p))>0.0_r8) then
+                 ctovr = livecrootc(p) / (rhizome_long(ivt(p))*dayspyr*secspday)
+                 ntovr = livecrootn(p) / (rhizome_long(ivt(p))*dayspyr*secspday)
+                 ptovr = livecrootp(p) / (rhizome_long(ivt(p))*dayspyr*secspday)
+               else
+                 ctovr = 0.0_r8
+                 ntovr = 0.0_r8
+                 ptovr = 0.0_r8
+               endif
+
                livecrootc_to_litter(p) = ctovr
                livecrootn_to_litter(p) = ntovr ! This assumes no retranslocation
                livecrootn_to_retransn(p)  = 0.0_r8
-
+               
                livecrootp_to_litter(p) = ptovr
                livecrootp_to_retransp(p)  = 0.0_r8
                
@@ -3247,7 +3258,8 @@ contains
                      phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
                           + livecrootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * croot_prof(p,j)
 
-                     ! fine root litter nitrogen fluxes
+
+                     ! Rhizome litter nitrogen fluxes
                      phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
                           + livecrootn_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * croot_prof(p,j)
                      phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
@@ -3255,14 +3267,13 @@ contains
                      phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
                           + livecrootn_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * croot_prof(p,j)
 
-                     ! fine root litter phosphorus fluxes
+                     ! Rhizome litter phosphorus fluxes
                      phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
                           + livecrootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * croot_prof(p,j)
                      phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
                           + livecrootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * croot_prof(p,j)
                      phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
                           + livecrootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * croot_prof(p,j)
-
 
 
                      ! agroibis puts crop stem litter together with leaf litter
