@@ -345,7 +345,6 @@ contains
        call shr_strdata_init_model_domain(mesh, mpicom, sdat, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
     if (present(reset_domain_mask)) then
        if (reset_domain_mask) then
           if (my_task == master_task) then
@@ -362,6 +361,7 @@ contains
     ! initialize sdat attributes mapping of streams to model domain
     call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
 
+    ! print sdat output
     if (my_task == master_task) then
        call shr_strdata_print(sdat,'SDAT data from '//trim(model_name))
        write(logunit,*) ' successfully initialized sdat'

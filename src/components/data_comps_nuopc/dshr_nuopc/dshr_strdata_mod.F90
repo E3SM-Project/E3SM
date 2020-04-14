@@ -160,141 +160,6 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_streams(SDAT, compid, mpicom, my_task)
-
-    ! input/output arguments
-    type(shr_strdata_type),intent(inout) :: SDAT
-    integer           ,intent(in)    :: compid
-    integer           ,intent(in)    :: mpicom
-    integer           ,intent(in)    :: my_task
-
-    ! local variables
-    integer          :: n,m,k    ! generic index
-    integer          :: nfiles
-    integer, pointer :: dof(:)
-    integer, parameter :: master_task = 0
-    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
-    !-------------------------------------------------------------------------------
-
-    ! Count streams again in case user made changes
-    if (my_task == master_task) then
-       do n=1,nStrMax
-
-          ! check if a streams string is defined in strdata
-          if (trim(SDAT%streams(n)) /= trim(shr_strdata_nullstr)) then
-             SDAT%nstreams = max(SDAT%nstreams,n)
-          end if
-
-          ! check if a filename is defined in the stream
-          call shr_stream_getNFiles(SDAT%stream(n),nfiles)
-          if (nfiles > 0) then
-             SDAT%nstreams = max(SDAT%nstreams,n)
-          end if
-          if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) then
-             SDAT%dtlimit(n) = 1.0e30
-          end if
-       end do
-
-       ! Determine vector size for stream n
-       SDAT%nvectors = 0
-       do n = 1,nVecMax
-          if (trim(SDAT%vectors(n)) /= trim(shr_strdata_nullstr)) then
-             SDAT%nvectors = n
-          end if
-       end do
-    endif
-    call shr_mpi_bcast(SDAT%nstreams  ,mpicom, 'nstreams')
-    call shr_mpi_bcast(SDAT%nvectors  ,mpicom, 'nvectors')
-    call shr_mpi_bcast(SDAT%dtlimit   ,mpicom, 'dtlimit')
-
-    ! Initialize domain, pio and calendar for each stream
-    do n = 1,SDAT%nstreams
-
-       ! Initialize stream domain info for stream n
-       call shr_strdata_init_stream_domain(SDAT%stream(n), compid, mpicom, &
-            SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), SDAT%lsizeR(n))
-
-       ! Initialize pio settings for stream n
-       call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
-       if (SDAT%strnzg(n) <= 0) then
-          call pio_initdecomp(SDAT%pio_subsystem, pio_double, &
-               (/SDAT%strnxg(n),SDAT%strnyg(n)/), dof, SDAT%pio_iodesc(n))
-       else
-          call pio_initdecomp(SDAT%pio_subsystem, pio_double, &
-               (/SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n)/), dof, SDAT%pio_iodesc(n))
-       endif
-       deallocate(dof)
-
-       ! Initialize calendar for stream n
-       call shr_mpi_bcast(SDAT%stream(n)%calendar, mpicom)
-    enddo
-
-  end subroutine shr_strdata_init_streams
-
-  !===============================================================================
-
-  subroutine shr_strdata_getfrac_from_stream(sdat, mpicom, my_task, fracname, fracdata)
-
-    ! The following initializes the fracname from the first stream
-    ! This is applicable for data models that read the model domain from the
-    ! domain of the first stream; we read the data model's domain fraction from the
-    ! first stream file, and this variable provides the name of the frac field on this
-    ! file. Also see ESMCI/cime#2515).
-    ! Note: this assumes that the first stream is on the same mesh as the model
-    ! Note: This also assumes that the field with fracname exists on the domain file
-
-    ! input/output arguments
-    type(shr_strdata_type) ,intent(inout) :: sdat
-    integer                ,intent(in)    :: mpicom
-    integer                ,intent(in)    :: my_task
-    character(len=*)       ,intent(in)    :: fracname
-    real(r8)               ,pointer       :: fracdata(:)
-
-    ! local variables
-    character(CXX)     :: domainfile
-    integer            :: lsize
-    integer            :: gsize
-    integer            :: fid
-    integer            :: rcode
-    real(r8), pointer  :: data2d(:,:)
-    type(mct_avect)    :: avG
-    type(mct_avect)    :: avtmp
-    integer            :: ierr
-    integer            :: nx,ny
-    integer            :: i,j
-    integer            :: master_task = 0
-    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
-    !-------------------------------------------------------------------------------
-
-    call mpi_comm_rank(mpicom, my_task, ierr)
-    master_task = 0
-
-    if (my_task == master_task) then
-       call shr_stream_getDomainFile(sdat%stream(1), domainfile)
-       call shr_ncread_varDimSizes(trim(domainfile), trim(fracname), n1=nx, n2=ny)
-       gsize = mct_gsmap_gsize(sdat%gsMap)
-       if (gsize == nx*ny) then
-          allocate(data2d(nx,ny))
-       else
-          write(logunit,*) "ERROR in nx,ny,gsize data sizes ",nx,ny,gsize
-          call shr_sys_abort(subname//"ERROR in data sizes")
-       endif
-       call shr_ncread_open(trim(domainfile), fid, rCode)
-       call shr_ncread_tField(domainfile, 1, fracname, data2d, fidi=fid, rc=rCode)
-       call mct_aVect_init(avG, rlist=trim(fracname), lsize=gsize)
-       avG%rAttr(1,:) = reshape(data2d, (/gsize/))
-       call shr_ncread_close(fid, rCode)
-       deallocate(data2d)
-    end if
-    ! The following call creates avtmp
-    call mct_aVect_scatter(avG, avtmp, sdat%gsMap, master_task, mpicom)
-    fracdata(:) = avtmp%rattr(1,:)
-    call mct_aVect_clean(avtmp)
-    if (my_task == master_task) call mct_aVect_clean(avG)
-
-  end subroutine shr_strdata_getfrac_from_stream
-
-  !===============================================================================
   subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, sdat, rc)
 
     ! input/output variables
@@ -520,6 +385,141 @@ contains
   end subroutine shr_strdata_init_model_domain_scol
 
   !===============================================================================
+  subroutine shr_strdata_init_streams(SDAT, compid, mpicom, my_task)
+
+    ! input/output arguments
+    type(shr_strdata_type) ,intent(inout) :: SDAT
+    integer                ,intent(in)    :: compid
+    integer                ,intent(in)    :: mpicom
+    integer                ,intent(in)    :: my_task
+
+    ! local variables
+    integer          :: n,m,k    ! generic index
+    integer          :: nfiles
+    integer, pointer :: dof(:)
+    integer, parameter :: master_task = 0
+    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
+    !-------------------------------------------------------------------------------
+
+    ! Count streams again in case user made changes
+    if (my_task == master_task) then
+       do n=1,nStrMax
+
+          ! check if a streams string is defined in strdata
+          if (trim(SDAT%streams(n)) /= trim(shr_strdata_nullstr)) then
+             SDAT%nstreams = max(SDAT%nstreams,n)
+          end if
+
+          ! check if a filename is defined in the stream
+          call shr_stream_getNFiles(SDAT%stream(n),nfiles)
+          if (nfiles > 0) then
+             SDAT%nstreams = max(SDAT%nstreams,n)
+          end if
+          if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) then
+             SDAT%dtlimit(n) = 1.0e30
+          end if
+       end do
+
+       ! Determine vector size for stream n
+       SDAT%nvectors = 0
+       do n = 1,nVecMax
+          if (trim(SDAT%vectors(n)) /= trim(shr_strdata_nullstr)) then
+             SDAT%nvectors = n
+          end if
+       end do
+    endif
+    call shr_mpi_bcast(SDAT%nstreams  ,mpicom, 'nstreams')
+    call shr_mpi_bcast(SDAT%nvectors  ,mpicom, 'nvectors')
+    call shr_mpi_bcast(SDAT%dtlimit   ,mpicom, 'dtlimit')
+
+    ! Initialize domain, pio and calendar for each stream
+    do n = 1,SDAT%nstreams
+
+       ! Initialize stream domain info for stream n
+       call shr_strdata_init_stream_domain(SDAT%stream(n), compid, mpicom, &
+            SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), SDAT%lsizeR(n))
+
+       ! Initialize pio settings for stream n
+       call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
+       if (SDAT%strnzg(n) <= 0) then
+          call pio_initdecomp(SDAT%pio_subsystem, pio_double, (/SDAT%strnxg(n),SDAT%strnyg(n)/), &
+               dof, SDAT%pio_iodesc(n))
+       else
+          call pio_initdecomp(SDAT%pio_subsystem, pio_double, (/SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n)/), &
+               dof, SDAT%pio_iodesc(n))
+       endif
+       deallocate(dof)
+
+       ! Initialize calendar for stream n
+       call shr_mpi_bcast(SDAT%stream(n)%calendar, mpicom)
+    enddo
+
+  end subroutine shr_strdata_init_streams
+
+  !===============================================================================
+
+  subroutine shr_strdata_getfrac_from_stream(sdat, mpicom, my_task, fracname, fracdata)
+
+    ! The following initializes the fracname from the first stream
+    ! This is applicable for data models that read the model domain from the
+    ! domain of the first stream; we read the data model's domain fraction from the
+    ! first stream file, and this variable provides the name of the frac field on this
+    ! file. Also see ESMCI/cime#2515).
+    ! Note: this assumes that the first stream is on the same mesh as the model
+    ! Note: This also assumes that the field with fracname exists on the domain file
+
+    ! input/output arguments
+    type(shr_strdata_type) ,intent(inout) :: sdat
+    integer                ,intent(in)    :: mpicom
+    integer                ,intent(in)    :: my_task
+    character(len=*)       ,intent(in)    :: fracname
+    real(r8)               ,pointer       :: fracdata(:)
+
+    ! local variables
+    character(CXX)     :: domainfile
+    integer            :: lsize
+    integer            :: gsize
+    integer            :: fid
+    integer            :: rcode
+    real(r8), pointer  :: data2d(:,:)
+    type(mct_avect)    :: avG
+    type(mct_avect)    :: avtmp
+    integer            :: ierr
+    integer            :: nx,ny
+    integer            :: i,j
+    integer            :: master_task = 0
+    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
+    !-------------------------------------------------------------------------------
+
+    call mpi_comm_rank(mpicom, my_task, ierr)
+    master_task = 0
+
+    if (my_task == master_task) then
+       call shr_stream_getDomainFile(sdat%stream(1), domainfile)
+       call shr_ncread_varDimSizes(trim(domainfile), trim(fracname), n1=nx, n2=ny)
+       gsize = mct_gsmap_gsize(sdat%gsMap)
+       if (gsize == nx*ny) then
+          allocate(data2d(nx,ny))
+       else
+          write(logunit,*) "ERROR in nx,ny,gsize data sizes ",nx,ny,gsize
+          call shr_sys_abort(subname//"ERROR in data sizes")
+       endif
+       call shr_ncread_open(trim(domainfile), fid, rCode)
+       call shr_ncread_tField(domainfile, 1, fracname, data2d, fidi=fid, rc=rCode)
+       call mct_aVect_init(avG, rlist=trim(fracname), lsize=gsize)
+       avG%rAttr(1,:) = reshape(data2d, (/gsize/))
+       call shr_ncread_close(fid, rCode)
+       deallocate(data2d)
+    end if
+    ! The following call creates avtmp
+    call mct_aVect_scatter(avG, avtmp, sdat%gsMap, master_task, mpicom)
+    fracdata(:) = avtmp%rattr(1,:)
+    call mct_aVect_clean(avtmp)
+    if (my_task == master_task) call mct_aVect_clean(avG)
+
+  end subroutine shr_strdata_getfrac_from_stream
+
+  !===============================================================================
   subroutine shr_strdata_init_stream_domain(stream, compid, mpicom, &
        gGrid, gsMap, nxg, nyg, nzg, lsize)
 
@@ -694,65 +694,62 @@ contains
        call mct_gGrid_clean(gGridRoot)
     end if
 
+  contains
+
+    subroutine shr_strdata_gsmapCreate(gsmap, nxg, nyg, nzg, compid, mpicom)
+
+      ! input/output variables
+      type(mct_gsMap) , intent(inout) :: gsmap
+      integer         , intent(in)    :: nxg,nyg,nzg
+      integer         , intent(in)    :: compid
+      integer         , intent(in)    :: mpicom
+
+      ! local
+      integer :: n,nz,nb,npes,ierr,gsize,dsize,ngseg,lnzg
+      integer, pointer :: start(:)     ! for gsmap initialization
+      integer, pointer :: length(:)    ! for gsmap initialization
+      integer, pointer :: pe_loc(:)    ! for gsmap initialization
+      ! ---------------------------------------------
+
+      gsize = abs(nxg*nyg*nzg)
+      dsize = nxg*nyg
+      lnzg = 1
+      if (nzg > 1) lnzg = nzg  ! check for 3d
+
+      call mpi_comm_size(mpicom,npes,ierr)
+
+      !--- 1d decomp of 2d grid plus 3rd dim if exists ---
+      ngseg = npes*lnzg
+      allocate(start(ngseg),length(ngseg),pe_loc(ngseg))
+      start = 0
+      length = 0
+      pe_loc = 0
+      do n = 1,npes
+         length(n)  = dsize/npes
+         if (n <= mod(dsize,npes)) then
+            length(n) = length(n) + 1
+         end if
+         if (n == 1) then
+            start(n) = 1
+         else
+            start(n) = start(n-1) + length(n-1)
+         endif
+         pe_loc(n) = n-1
+         do nz = 2,lnzg
+            nb = (nz-1)*npes + n
+            start(nb)  = start(n) + (nz-1)*dsize
+            length(nb) = length(n)
+            pe_loc(nb) = pe_loc(n)
+         enddo
+      enddo
+      call mct_gsmap_init( gsmap, compid, ngseg, gsize, start, length, pe_loc)
+      deallocate(start,length,pe_loc)
+
+    end subroutine shr_strdata_gsmapCreate
+
   end subroutine shr_strdata_init_stream_domain
 
   !===============================================================================
-
-  subroutine shr_strdata_gsmapCreate(gsmap,nxg,nyg,nzg,compid,mpicom)
-
-    ! input/output variables
-    type(mct_gsMap) , intent(inout) :: gsmap
-    integer         , intent(in)    :: nxg,nyg,nzg
-    integer         , intent(in)    :: compid
-    integer         , intent(in)    :: mpicom
-
-    ! local
-    integer :: n,nz,nb,npes,ierr,gsize,dsize,ngseg,lnzg
-    integer, pointer :: start(:)     ! for gsmap initialization
-    integer, pointer :: length(:)    ! for gsmap initialization
-    integer, pointer :: pe_loc(:)    ! for gsmap initialization
-    ! ---------------------------------------------
-
-    gsize = abs(nxg*nyg*nzg)
-    dsize = nxg*nyg
-    lnzg = 1
-    if (nzg > 1) lnzg = nzg  ! check for 3d
-
-    if (gsize > 0) then
-       call mpi_comm_size(mpicom,npes,ierr)
-
-       !--- 1d decomp of 2d grid plus 3rd dim if exists ---
-       ngseg = npes*lnzg
-       allocate(start(ngseg),length(ngseg),pe_loc(ngseg))
-       start = 0
-       length = 0
-       pe_loc = 0
-       do n = 1,npes
-          length(n)  = dsize/npes
-          if (n <= mod(dsize,npes)) then
-             length(n) = length(n) + 1
-          end if
-          if (n == 1) then
-             start(n) = 1
-          else
-             start(n) = start(n-1) + length(n-1)
-          endif
-          pe_loc(n) = n-1
-          do nz = 2,lnzg
-             nb = (nz-1)*npes + n
-             start(nb)  = start(n) + (nz-1)*dsize
-             length(nb) = length(n)
-             pe_loc(nb) = pe_loc(n)
-          enddo
-       enddo
-       call mct_gsmap_init( gsmap, compid, ngseg, gsize, start, length, pe_loc)
-       deallocate(start,length,pe_loc)
-    endif
-
-  end subroutine shr_strdata_gsmapCreate
-
-  !===============================================================================
-
   subroutine shr_strdata_init_mapping(SDAT, compid, mpicom, my_task)
 
     ! input/output arguments
