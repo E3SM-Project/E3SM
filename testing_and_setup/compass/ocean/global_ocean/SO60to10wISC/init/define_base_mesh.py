@@ -31,11 +31,11 @@ def cellWidthVsLatLon():
 
     cellWidthSouth = mdt.EC_CellWidthVsLat(lat, cellWidthEq=30.,
                                            cellWidthMidLat=45.,
-                                           cellWidthPole=30.)
-    # cellWidthSouth = 30. * np.ones((len(lat)))
+                                           cellWidthPole=30.,
+                                           latPosEq=7.5, latWidthEq=3.0)
 
     # Transition at Equator
-    cellWidthNorth = mdt.EC_CellWidthVsLat(lat)
+    cellWidthNorth = mdt.EC_CellWidthVsLat(lat, latPosEq=7.5, latWidthEq=3.0)
     latTransition = 0.0
     latWidthTransition = 5.0
     cellWidthVsLat = mdt.mergeCellWidthVsLat(
