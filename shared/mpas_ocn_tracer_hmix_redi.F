@@ -55,6 +55,7 @@ module ocn_tracer_hmix_Redi
    !--------------------------------------------------------------------
 
    real (kind=RKIND) :: term1TaperFactor
+   real (kind=RKIND), dimension(:,:,:), allocatable :: redi_term2_edge, redi_term3_topOfCell
 
 !***********************************************************************
 
@@ -134,18 +135,15 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
-      integer, dimension(:,:), allocatable :: boundaryMask
-
       integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnCell, maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell, cellsOnCell
 
       real (kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
-      real (kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, flux_terms12, sign_term1, dTracerDx, coef
+      real (kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
       real (kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real (kind=RKIND), dimension(:), allocatable :: minimumVal
       real (kind=RKIND), dimension(:,:), allocatable :: fluxRediZTop
-      real (kind=RKIND), dimension(:,:,:), allocatable :: redi_term2_edge, redi_term3_topOfCell
       err = 0
 
       if (.not.config_use_Redi) return
@@ -173,26 +171,26 @@ contains
       nEdges = nEdgesArray( size(nEdgesArray) )
 
       allocate(minimumVal(nTracers))
+      allocate(fluxRediZTop(nTracers,nVertLevels+1))
+      !$omp master
       allocate(redi_term2_edge(nTracers,nVertLevels,nEdges))
       allocate(redi_term3_topOfCell(nTracers,nVertLevels+1,nCells))
+      !$omp end master
+      !$omp barrier
 
       nCells = nCellsArray(1)
       nCellsP1 = nCellsArray( size(nCellsArray) ) + 1
-      redi_term2(:,:,:) = 0.0_RKIND
-      redi_term2_edge(:,:,:) = 0.0_RKIND
-      redi_term3_topOfCell(:,:,:) = 0.0_RKIND
 
-      allocate(fluxRediZTop(nTracers,nVertLevels+1))
-      redi_term3(:,:,:) = 0.0_RKIND
-      redi_term1(:,:,:) = 0.0_RKIND
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
-      ! mrp performance: merge term 1 into main cell loop later
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, iCellSelf, &
-      !$omp& r_tmp, coef, kappaRediEdgeVal, tracer_turb_flux, flux, k, iTr, flux_term2, dTracerDx, flux_term3)
+      !$omp do schedule(runtime) private(invAreaCell, i, k, iTr, iEdge, cell1, cell2, iCellSelf, &
+      !$omp& r_tmp, coef, kappaRediEdgeVal, tracer_turb_flux, flux, flux_term2, flux_term3, dTracerDx)
       do iCell = 1, nCells
-         invAreaCell = 1.0_RKIND / areaCell(iCell)
+         redi_term1(:,:,iCell) = 0.0_RKIND
+         redi_term2(:,:,iCell) = 0.0_RKIND
+         redi_term3(:,:,iCell) = 0.0_RKIND
          fluxRediZTop(:,:) = 0.0_RKIND
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
             if  (cellsOnCell(i,iCell).eq.nCellsP1) cycle
@@ -310,11 +308,12 @@ contains
                   0.5_RKIND*(slopeTriadUp(k,iCellSelf,iEdge) + slopeTriadDown(k-1,iCellSelf,iEdge)) &
                         * dTracerDx * invAreaCell
            end do
-         end do !loop over edges
+         end do ! nEdgesOnCell(iCell)
 
          ! impose no-flux boundary conditions at top and bottom of column
          fluxRediZTop(:,1) = 0.0_RKIND
          fluxRediZTop(:,maxLevelCell(iCell)+1) = 0.0_RKIND
+         redi_term3_topOfCell(:,1,iCell) = 0.0_RKIND
          do k = 2, maxLevelCell(iCell)
             redi_term3_topOfCell(:,k,iCell) = fluxRediZTop(:,k)
          enddo
@@ -332,15 +331,19 @@ contains
                redi_term3(iTr,k,iCell) = redi_term3(iTr,k,iCell) + flux_term3
             end do
          end do
-      end do !loop over cells
+      end do ! iCell
       !$omp end do
-      deallocate(fluxRediZTop)
+      !$omp barrier
 
       !loop over cells and check for out of bounds
-      if(isActiveTracer) then
+      if (isActiveTracer) then
         minimumVal(1) = -2.0_RKIND
         minimumVal(2:nTracers) = 0.0_RKIND
-        rediLimiterCount(:,:) = 0
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+          rediLimiterCount(:,iCell) = 0
+        enddo
+        !$omp end do
       else
         minimumVal(:) = 0.0_RKIND
       endif
@@ -352,7 +355,7 @@ contains
               tempTracer = tracers(iTr,k,iCell) + dt*(redi_term1(iTr,k,iCell) + redi_term2(iTr,k,iCell) + &
                               redi_term3(iTr,k,iCell))/layerThickness(k,iCell)
 
-              if(tempTracer < minimumVal(iTr)) then
+              if (tempTracer < minimumVal(iTr)) then
 
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
@@ -361,12 +364,15 @@ contains
 
                   redi_term3_topOfCell(iTr,k,iCell) = 0.0_RKIND
                   redi_term3_topOfCell(iTr,k+1,iCell) = 0.0_RKIND
-                  rediLimiterCount(k,iCell) = 1.0_RKIND
+                  if (isActiveTracer) then
+                     rediLimiterCount(k,iCell) = rediLimiterCount(k,iCell) + 1
+                  endif
               endif
            enddo
         enddo
-     enddo
+     enddo ! iCell
      !$omp end do
+     !$omp barrier
 
      !now go back and reapply all tendencies
      !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
@@ -391,12 +397,16 @@ contains
             enddo
            enddo
         enddo
-     enddo
+     enddo ! iCell
      !$omp end do
 
+     deallocate(fluxRediZTop)
      deallocate(minimumVal)
+     !$omp master
      deallocate(redi_term2_edge)
      deallocate(redi_term3_topOfCell)
+     !$omp end master
+     !$omp barrier
 
      call mpas_timer_stop("tracer redi")
 
@@ -488,13 +498,14 @@ contains
                      *(avgCellDiameter - config_eddying_resolution_ramp_min) & 
                      /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
                end if
-            end do
+            end do ! iCell
             !$omp end do
          else
             call mpas_log_write( 'Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain % dminfo)
          end if
+
          block => block % next
       end do
 
