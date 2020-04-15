@@ -231,7 +231,7 @@ contains
 
                redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2 * invAreaCell
                redi_term2_edge(iTr,k,iEdge) = -flux_term2
-            enddo
+            end do
 
             do k = 2, maxLevelEdgeTop(iEdge) - 1
 
@@ -316,7 +316,7 @@ contains
          redi_term3_topOfCell(:,1,iCell) = 0.0_RKIND
          do k = 2, maxLevelCell(iCell)
             redi_term3_topOfCell(:,k,iCell) = fluxRediZTop(:,k)
-         enddo
+         end do
          redi_term3_topOfCell(:,maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
 
          do k = 1, maxLevelCell(iCell)
@@ -342,7 +342,7 @@ contains
         !$omp do schedule(runtime)
         do iCell = 1, nCells
           rediLimiterCount(:,iCell) = 0
-        enddo
+        end do
         !$omp end do
       else
         minimumVal(:) = 0.0_RKIND
@@ -360,7 +360,7 @@ contains
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
                      redi_term2_edge(iTr,k,iEdge) = 0.0_RKIND
-                  enddo
+                  end do
 
                   redi_term3_topOfCell(iTr,k,iCell) = 0.0_RKIND
                   redi_term3_topOfCell(iTr,k+1,iCell) = 0.0_RKIND
@@ -368,9 +368,9 @@ contains
                      rediLimiterCount(k,iCell) = rediLimiterCount(k,iCell) + 1
                   endif
               endif
-           enddo
-        enddo
-     enddo ! iCell
+           end do
+        end do
+     end do ! iCell
      !$omp end do
      !$omp barrier
 
@@ -385,8 +385,8 @@ contains
                       (kappaRediSfcTaper(k,iCell)*kappaGMcell(k,iCell)* &
                       redi_term3_topOfCell(iTr,k,iCell) - kappaRediSfcTaper(k+1,iCell) &
                       *kappaGMcell(k+1,iCell)*redi_term3_topOfCell(iTr,k+1,iCell))
-          enddo
-        enddo
+          end do
+        end do
 
         do i = 1, nEdgesOnCell(iCell)
           if  (cellsOnCell(i,iCell).eq.nCellsP1) cycle
@@ -394,10 +394,10 @@ contains
            do k = 1,maxLevelEdgeTop(iEdge)
              do iTr = 1,ntracers
               tend(iTr,k,iCell) = tend(iTr,k,iCell) + edgeSignOnCell(i, iCell) * invAreaCell * redi_term2_edge(iTr,k,iEdge)
-            enddo
-           enddo
-        enddo
-     enddo ! iCell
+            end do
+           end do
+        end do
+     end do ! iCell
      !$omp end do
 
      deallocate(fluxRediZTop)

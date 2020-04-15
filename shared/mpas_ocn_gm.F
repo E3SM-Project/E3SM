@@ -110,7 +110,7 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
-      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation 
+      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: kappaGMEdge, sumN2, countN2, maxN, kappaSum, ltSum
       real(kind=RKIND)                 :: zMLD, sshEdge, sfcTaper
@@ -196,7 +196,7 @@ contains
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
-            gradDensityEdge(k, iEdge) = 0.0_RKIND 
+            gradDensityEdge(k, iEdge) = 0.0_RKIND
             normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
          end do
       end do
@@ -204,7 +204,7 @@ contains
 
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
-         do k = 1, nVertLevels 
+         do k = 1, nVertLevels
             slopeTriadUp(k,:,iEdge) = 0.0_RKIND
             slopeTriadDown(k,:,iEdge) = 0.0_RKIND
          end do
@@ -227,7 +227,7 @@ contains
       do iCell=1,nCells
          kappaGMCell(:,iCell) = 1.0_RKIND
          kappaRediSfcTaper(:,iCell) = 1.0_RKIND
-      enddo
+      end do
       !$omp end do
 
       if (local_config_GM_kappa_lat_depth_variable) then
@@ -240,19 +240,19 @@ contains
             do while (BruntVaisalaFreqTop(k+1,iCell) > maxN .and. k < maxLevelCell(iCell)-1)
               k = k + 1
               maxN = max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
-            enddo
+            end do
 
-            maxLocation = k 
+            maxLocation = k
             do k=maxLocation,maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k,iCell), 0.0_RKIND)
 
                kappaGMCell(k,iCell) = min(max(config_GM_min_stratification_ratio, &
                                           BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND)), &
                                           1.0_RKIND)
-            enddo
-         enddo
+            end do
+         end do
          !$omp end do
-      endif
+      end if
 
       if (config_Redi_use_surface_taper) then
         !$omp do schedule (runtime) private(zMLD, k)
@@ -262,10 +262,10 @@ contains
 
           do k = 1, indMLD(iCell)
              kappaRediSfcTaper(k,iCell) = abs((ssh(iCell) - zMid(k,iCell)) / (zMLD))
-           enddo
-         enddo
+           end do
+         end do
         !$omp end do
-      endif
+      end if
 
       nCells = nCellsArray( 3 )
       !$omp do schedule(runtime) private(i, k, iEdge, cell1, cell2, iCellSelf, &
@@ -303,7 +303,7 @@ contains
                 iCellSelf = 2
             else
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
-            endif
+            end if
             dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
             areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
 
@@ -331,24 +331,24 @@ contains
                    + drhoDS * dSdzTop(k+1) + 1E-15_RKIND)
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
-               if (abs(slopeTriadDown(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) THEN
+               if (abs(slopeTriadDown(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) then
                   slopeTaperDown = 0.0_RKIND
-               else if (abs(slopeTriadDown(k,iCellSelf,iEdge)) < 0.2_RKIND*config_redi_maximum_slope) THEN
+               else if (abs(slopeTriadDown(k,iCellSelf,iEdge)) < 0.2_RKIND*config_redi_maximum_slope) then
                   slopeTaperDown = 1.0_RKIND
                else
                   slopeTaperDown = 0.5_RKIND*(1.0_RKIND - ((2.5_RKIND*abs(slopeTriadDown(k,iCellSelf,iEdge))) / &
                     config_Redi_maximum_slope - 1.0_RKIND)*(4.0_RKIND - abs(10.0_RKIND* &
                     abs(slopeTriadDown(k,iCellSelf,iEdge)) / config_Redi_maximum_slope - 4.0_RKIND)))
-               endif
-               if (abs(slopeTriadUp(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) THEN
+               end if
+               if (abs(slopeTriadUp(k,iCellSelf,iEdge)) > 0.6_RKIND*config_redi_maximum_slope) then
                   slopeTaperUp = 0.0_RKIND
-               else if (abs(slopeTriadUp(k,iCellSelf,iEdge)) < 0.2_RKIND*config_redi_maximum_slope) THEN
+               else if (abs(slopeTriadUp(k,iCellSelf,iEdge)) < 0.2_RKIND*config_redi_maximum_slope) then
                   slopeTaperUp = 1.0_RKIND
                else
                   slopeTaperUp = 0.5_RKIND*(1.0_RKIND - ((2.5_RKIND*abs(slopeTriadUp(k,iCellSelf,iEdge))) / &
                     config_Redi_maximum_slope - 1.0_RKIND)*(4.0_RKIND - abs(10.0_RKIND* &
                     abs(slopeTriadUp(k,iCellSelf,iEdge)) / config_Redi_maximum_slope - 4.0_RKIND)))
-               endif
+               end if
 
                slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
@@ -362,7 +362,7 @@ contains
                   k33(k  ,iCell) = k33(k  ,iCell) + slopeTaperUp * sfcTaperUp * &
                               areaEdge*dzTop(k)*slopeTriadUp(k,iCellSelf,iEdge)**2
                   k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
-               endif
+               end if
 
                k33(k+1,iCell) = k33(k+1,iCell) + slopeTaperDown * sfcTaperDown * &
                           areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
@@ -430,8 +430,8 @@ contains
                drhoDx = drhoDT * dTdx + drhoDS * dSdx
 
                gradDensityEdge(k,iEdge) = drhoDx * rho_sw
-            enddo
-         enddo
+            end do
+         end do
          !$omp end do
 
          nEdges = nEdgesArray( 3 )
@@ -454,20 +454,20 @@ contains
                ltSum = ltSum + layerThicknessEdge(k,iEdge)
                countN2 = countN2 +1
 
-            enddo
+            end do
 
             if(countN2 > 0) cGMphaseSpeed(iEdge) = max(local_config_GM_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
 
-         enddo
+         end do
          !$omp end do
 
       else
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
             cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
-         enddo
+         end do
          !$omp end do
-      endif
+      end if
 
       nEdges = nEdgesArray( 3 )
       !$omp do schedule(runtime) private(cell1, cell2, k,  gradDensityTopOfEdge, &
@@ -582,7 +582,7 @@ contains
       deallocate(tridiagB)
       deallocate(tridiagC)
 
-    endif !end config_use_GM
+    end if !end config_use_GM
 
       ! Deallocate scratch variables
       call mpas_deallocate_scratch_field(gradDensityEdgeField, .true.)
@@ -701,20 +701,20 @@ contains
            slopeTaperFactor = 1.0_RKIND
          else
            slopeTaperFactor = 0.0_RKIND
-         endif
+         end if
 
          if (config_Redi_use_surface_taper) then
-           if(config_AM_mixedLayerDepths_enable .and. config_AM_mixedLayerDepths_Dthreshold) THEN
+           if(config_AM_mixedLayerDepths_enable .and. config_AM_mixedLayerDepths_Dthreshold) then
               sfcTaperFactor = 1.0_RKIND
            else
               call mpas_log_write('Redi Surface tapering requires MLD AM enabled with dThresh option selected.', &
                 MPAS_LOG_CRIT)
               err=1
               call mpas_dmpar_finalize(domain % dminfo)
-           endif
+           end if
          else
            sfcTaperFactor = 0.0_RKIND
-         endif
+         end if
 
          RediGMinitValue = 1.0_RKIND
          if (config_GM_closure == 'constant') then
@@ -727,7 +727,7 @@ contains
          else if (config_GM_closure == 'N2_dependent') then
             local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .true.
- 
+
             RediGMinitValue = 0.0_RKIND
             ! for N2 dependence, we still assign Kappa as a constant.
             !$omp do schedule(runtime)
