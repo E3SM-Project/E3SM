@@ -243,11 +243,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                                       cdash_build_group=cdash_build_group,
                                                       update_success=update_success)
 
-
-    logging.info("TEST ARCHIVER: Waiting for archiver thread")
-    archiver_thread.join()
-    logging.info("TEST ARCHIVER: Waiting for archiver finished")
-
     logging.info("TEST ARCHIVER: Waiting for archiver thread")
     archiver_thread.join()
     logging.info("TEST ARCHIVER: Waiting for archiver finished")

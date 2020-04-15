@@ -4821,13 +4821,8 @@
        Surface albedo for direct radiation
     </desc>
     <values>
-<<<<<<< HEAD
-      <value>0.06</value>
-      <value aqua_planet_sst_type="sst_aquap11">0.07</value>
-=======
       <value>0.06D0</value>
       <value aqua_planet_sst_type="sst_aquap_constant">0.07D0</value>
->>>>>>> 22aab810ee3bd6f0a2a7fceb245d455f9c58ae83
     </values>
   </entry>
 
