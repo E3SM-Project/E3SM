@@ -247,7 +247,6 @@ contains
     use dshr_strdata_mod , only : shr_strdata_init_mapping
     use dshr_strdata_mod , only : shr_strdata_print
     use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
-    use mct_mod          , only : mct_gsmap_init
 
     ! input/output variables
     type(ESMF_GridComp), intent(inout)         :: gcomp
@@ -273,16 +272,6 @@ contains
     logical                      :: scmMode
     real(r8)                     :: scmlat
     real(r8)                     :: scmlon
-    integer                      :: n,k          ! generic counters
-    integer                      :: lsize        ! local size
-    integer                      :: gsize
-    type(ESMF_DistGrid)          :: distGrid
-    integer, allocatable, target :: gindex(:)
-    integer                      :: dimCount
-    integer                      :: tileCount
-    integer                      :: deCount
-    integer, allocatable         :: elementCountPTile(:)
-    integer, allocatable         :: indexCountPDE(:,:)
     integer                      :: kmask
     character(len=CL)            :: cvalue
     character(len=*), parameter  :: subname='(dshr_nuopc_mod:dshr_sdat_init)'
@@ -318,7 +307,10 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
-    ! Create the data model mesh
+    ! initialize sdat  pio
+    call shr_strdata_pioinit(sdat, compid)
+
+    ! Obtain the data model mesh
     call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=filename, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (trim(filename) == 'create_mesh') then
@@ -335,37 +327,31 @@ contains
        write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(filename)
     end if
 
-    ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! initialize sdat model domain info
+    if (scmmode) then
+       if (my_task == master_task) then
+          write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
+       end if
+       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, sdat)
+    else
+       call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (present(reset_domain_mask)) then
+          if (reset_domain_mask) then
+             if (my_task == master_task) then
+                write(logunit,*) ' Resetting the component domain mask to 1'
+             end if
+             kmask = mct_avect_indexra(sdat%grid%data,'mask')
+             sdat%grid%data%rattr(kmask,:) = 1
+          end if
+       end if
+    end if
 
-    ! determine local size on my processor
-    call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! initialize sdat stream domains
+    call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
 
-    ! determine global index space for my processor
-    allocate(gindex(lsize))
-    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global size of distgrid
-    call ESMF_DistGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(elementCountPTile(tileCount))
-    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    gsize = 0
-    do n = 1,size(elementCountPTile)
-       gsize = gsize + elementCountPTile(n)
-    end do
-    deallocate(elementCountPTile)
-
-    ! initialize sdat%gsmap (the data mdel gsmap)
-    call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, lsize, gsize)
-    deallocate(gindex)
-
-    ! initialize sdat  pio
-    call shr_strdata_pioinit(sdat, compid)
+    ! initialize sdat attributes mapping of streams to model domain
+    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
 
     ! initialize sdat calendar
     call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
@@ -378,34 +364,6 @@ contains
        call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
     end if
     sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
-
-    ! initialize sdat model domain (sdat%grid)
-    if (my_task == master_task) then
-       write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
-       if (present(reset_domain_mask)) write(logunit,*) ' resetting domain mask'
-    end if
-    sdat%lsize = mct_gsmap_lsize(sdat%gsmap, mpicom)
-    if (scmmode) then
-       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, sdat)
-    else
-       call shr_strdata_init_model_domain(mesh, mpicom, sdat, rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-    if (present(reset_domain_mask)) then
-       if (reset_domain_mask) then
-          if (my_task == master_task) then
-             write(logunit,*) ' Resetting the component domain mask to 1'
-          end if
-          kmask = mct_avect_indexra(sdat%grid%data,'mask')
-          sdat%grid%data%rattr(kmask,:) = 1
-       end if
-    end if
-
-    ! initialize sdat stream domains
-    call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
-
-    ! initialize sdat attributes mapping of streams to model domain
-    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
 
     ! print sdat output
     if (my_task == master_task) then
@@ -1239,19 +1197,6 @@ contains
   end subroutine dshr_get_atm_adjustment_factors
 
   !===============================================================================
-
-  subroutine dshr_set_griddata(sdat, fldname, rvalue) 
-    ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(in)    :: rvalue
-
-    ! local variables
-    integer :: kf
-
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    sdat%grid%data%rAttr(kf,:) = rvalue
-  end subroutine dshr_set_griddata
 
   subroutine dshr_get_griddata(sdat, fldname, data) 
     ! input/output variables

@@ -160,11 +160,18 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, sdat, rc)
+  subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, compid, sdat, rc)
+
+    ! ---------------------------------------------------------------------
+    ! Initialize sdat%lsize, sdat%gsmap and sdat%grid
+    ! sdat%nxg, sdat%nyg and sdat%nzg are initialized in shr_strdata_readnl
+    ! sdat%avs(:) is initialized in shr_strdata_init_mapping
+    ! ---------------------------------------------------------------------
 
     ! input/output variables
     type(ESMF_Mesh)        , intent(in)    :: mesh
     integer                , intent(in)    :: mpicom
+    integer                , intent(in)    :: compid
     type(shr_strdata_type) , intent(inout) :: sdat
     integer                , intent(out)   :: rc
 
@@ -187,64 +194,63 @@ contains
     integer              :: khgt
     integer              :: kmask
     integer              :: my_task
-    integer              :: master_task
     integer              :: ierr
     integer              :: nxg,nyg,nzg  ! size of input fields
     integer, pointer     :: idata(:)     ! temporary
     type(ESMF_Array)     :: elemMaskArray
     integer, pointer     :: elemMask(:)
+    integer, allocatable, target :: gindex(:)
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    call mpi_comm_rank(mpicom, my_task, ierr)
-    master_task = 0
-
-    ! Check that nxg and nyg are same as global size of mesh
-    ! obtain the distgrid from the mesh that was read in
+    ! initialize sdat%lsize and sdat%gsmap (the data model gsmap)
     call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine local size on my processor
     call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global size of distgrid
+    sdat%lsize = lsize
+    allocate(gindex(sdat%lsize))
+    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_DistGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    gsize = 0
+    do n = 1,size(elementCountPTile)
+       gsize = gsize + elementCountPTile(n)
+    end do
+    gsize = gsize
+    deallocate(elementCountPTile)
+    call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, lsize, gsize)
+    deallocate(gindex)
 
-    ! TODO: query the mesh for a third dimension - and if its there use it
-    sdat%nzg = -1  ! TODO: hard-wired for now since this will only be used in fortran interfaces
-
-    ! determine locally owned elements
+    ! initialize sdat%ggrid
+    ! to obtain the mask, create an esmf array from a distgrid and a pointer
+    ! the following call will automatically fill in the pointer value for elemMask
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! create an esmf array from a distgrid and a pointer
-    ! the following call will automatically fill in the pointer value for elemMask
     allocate(elemMask(lsize)) 
     elemMaskArray = ESMF_ArrayCreate(distGrid, elemMask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Now create the mct ggrid currently needed by the data models
+    ! Create the model ggrid currently
+    call mpi_comm_rank(mpicom, my_task, ierr)
     call mct_gGrid_init(GGrid=sdat%grid, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize )
     call mct_gsMap_orderedPoints(sdat%gsMap, my_task, idata)
     call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', idata, lsize)
     deallocate(idata)
-
     klon  = mct_aVect_indexRA(sdat%Grid%data,'lon')
     klat  = mct_aVect_indexRA(sdat%Grid%data,'lat')
     kmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
     khgt  = mct_aVect_indexRA(sdat%Grid%data,'hgt')
-
     do n = 1, lsize
        sdat%Grid%data%rAttr(klon ,n) = ownedElemCoords(2*n-1)
        sdat%Grid%data%rAttr(klat ,n) = ownedElemCoords(2*n)
@@ -256,7 +262,7 @@ contains
   end subroutine shr_strdata_init_model_domain_mesh
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain_scol(scmlon, scmlat, mpicom, sdat) 
+  subroutine shr_strdata_init_model_domain_scol(scmlon, scmlat, mpicom, compid, sdat) 
 
     !----------------------------------------------------------------------------
     ! Create mct ggrid for model grid and set model gsmap if not input
@@ -264,9 +270,10 @@ contains
     !----------------------------------------------------------------------------
 
     ! input/output variables
-    integer                , intent(in)    :: mpicom     ! mpi communicator
     real(R8)               , intent(in)    :: scmlon     ! single column lon
     real(R8)               , intent(in)    :: scmlat     ! single column lat
+    integer                , intent(in)    :: mpicom     ! mpi communicator
+    integer                , intent(in)    :: compid
     type(shr_strdata_type) , intent(inout) :: sdat
 
     !----- local -----
@@ -286,23 +293,32 @@ contains
     real(R8),allocatable :: lon(:,:)   ! temp array for domain lon  info
     real(R8),allocatable :: lat(:,:)   ! temp array for domain lat  info
     integer, pointer     :: idata(:)   ! temporary
+    integer              :: gsize 
+    integer, allocatable, target :: gindex(:)
     character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
     character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
     !-------------------------------------------------------------------------------
 
+    ! error check
     call mpi_comm_rank(mpicom,my_task,ierr)
     if (my_task > 0) then
        write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
        call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
     endif
 
-    ! Note the sdat%grid is for a single point - but the input model domain from the namelist
-    ! is for the total grid-  since will be finding the nearest neighbor
-
+    ! reset sdat%nxg, sdat%nyg and sdat%nzg
     sdat%nxg  =  1
     sdat%nyg  =  1
     sdat%nzg  = -1
 
+    ! initialize sdat%lsize and sdat%gsmap
+    sdat%lsize = 1
+    gsize = 1
+    allocate(gindex(1)); gindex(1) = 1
+    call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, sdat%lsize, gsize)
+
+    ! sdat%grid is for a single point - but the input model domain from the namelist
+    ! is for the total grid-  since will be finding the nearest neighbor
     ! Read full model domain as specified in namelist
     ! Need to allocate the total grid size of the domain file - ane
     ! will find the nearest neighbor fot the single column
@@ -378,7 +394,6 @@ contains
     sdat%Grid%data%rAttr(nlat ,1) = lat(i,j)
     sdat%Grid%data%rAttr(nlon ,1) = lon(i,j)
     sdat%Grid%data%rAttr(nmask,1) = 1
-
     deallocate(lon)
     deallocate(lat)
 
