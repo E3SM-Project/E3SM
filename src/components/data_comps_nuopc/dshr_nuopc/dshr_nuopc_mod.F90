@@ -1198,6 +1198,19 @@ contains
 
   !===============================================================================
 
+  subroutine dshr_set_griddata(sdat, fldname, rvalue) 
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat
+    character(len=*)       , intent(in)    :: fldname
+    real(r8)               , intent(in)    :: rvalue
+
+    ! local variables
+    integer :: kf
+
+    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
+    sdat%grid%data%rAttr(kf,:) = rvalue
+  end subroutine dshr_set_griddata
+
   subroutine dshr_get_griddata(sdat, fldname, data) 
     ! input/output variables
     type(shr_strdata_type) , intent(inout) :: sdat

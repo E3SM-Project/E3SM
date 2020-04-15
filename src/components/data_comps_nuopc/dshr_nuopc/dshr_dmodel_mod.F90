@@ -9,18 +9,10 @@ module dshr_dmodel_mod
 
   use ESMF
   use shr_sys_mod
-  use shr_kind_mod  , only : R8=>SHR_KIND_R8
-  use shr_kind_mod  , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod  , only : CX=>SHR_KIND_CX, CXX=>SHR_KIND_CXX
+  use shr_kind_mod  , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_log_mod   , only : logunit => shr_log_Unit
   use shr_mpi_mod   , only : shr_mpi_bcast
   use shr_const_mod , only : shr_const_cDay
-  use shr_ncread_mod, only : shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, shr_ncread_tField
-  use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes
-  use shr_ncread_mod, only : shr_ncread_varexists, shr_ncread_vardimnum,  shr_ncread_field4dG
-  use shr_ncread_mod, only : shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes
-  use shr_ncread_mod, only : shr_ncread_tField
-  use dshr_methods_mod , only : chkerr
   use shr_map_mod
   use dshr_stream_mod
   use mct_mod
@@ -137,12 +129,6 @@ contains
        endif
        call t_stopf(trim(lstr)//'_fbound')
        call t_startf(trim(lstr)//'_bcast')
-
-       !    --- change 4 bcasts to a single bcast and copy for performance ---
-       !     call shr_mpi_bcast(mDateLB,mpicom)
-       !     call shr_mpi_bcast(mSecLB,mpicom)
-       !     call shr_mpi_bcast(mDateUB,mpicom)
-       !     call shr_mpi_bcast(mSecUB,mpicom)
        call shr_mpi_bcast(stream%calendar,mpicom)
        call shr_mpi_bcast(ivals,mpicom)
        mDateLB = ivals(1)
@@ -272,10 +258,8 @@ contains
 
     call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
     call t_startf(trim(lstr)//'_setup')
-    call MPI_COMM_RANK(mpicom,my_task,ierr)
+    call mpi_comm_rank(mpicom,my_task,ierr)
     master_task = 0
-
-    gsize = mct_gsmap_gsize(gsMap)
 
     if (my_task == master_task) then
        fileName = trim(path)//trim(fn)
@@ -292,111 +276,60 @@ contains
 
     call t_stopf(trim(lstr)//'_setup')
 
-    if (pio_iotype == iotype_std_netcdf) then
+    call t_startf(trim(lstr)//'_readpio')
+    call shr_mpi_bcast(sfldName,mpicom,'sfldName')
+    call shr_mpi_bcast(filename,mpicom,'filename')
 
-       call t_startf(trim(lstr)//'_readcdf')
-       if (my_task == master_task) then
-          call shr_ncread_varDimSizes(trim(fileName),trim(sfldName),nx,ny,nz)
-          if (gsize == nx*ny) then
-             d3dflag = .false.
-             allocate(data2d(nx,ny))
-          elseif (gsize == nx*ny*nz) then
-             d3dflag = .true.
-             allocate(data3d(nx,ny,nz))
-          else
-             write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
-             call shr_sys_abort(subname//"ERROR in data sizes")
-          endif
-          call mct_aVect_init(avG,av,gsize)
-          call shr_ncread_open(trim(fileName),fid,rCode)
-          do k = 1,mct_aVect_nRAttr(av)
-             call shr_stream_getFileFieldName(stream,k,sfldName)
-             if (d3dflag) then
-                call shr_ncread_tField(fileName,nt,sfldName,data3d,fidi=fid,rc=rCode)
-                avG%rAttr(k,:) = reshape(data3d, (/gsize/))
-             else
-                call shr_ncread_tField(fileName,nt,sfldName,data2d,fidi=fid,rc=rCode)
-                avG%rAttr(k,:) = reshape(data2d, (/gsize/))
-             endif
-          enddo
-          call shr_ncread_close(fid,rCode)
-          if (d3dflag) then
-             deallocate(data3d)
-          else
-             deallocate(data2d)
-          endif
-       endif
-       call t_stopf(trim(lstr)//'_readcdf')
-       call t_barrierf(trim(lstr)//'_scatter'//'_BARRIER',mpicom)
-       call t_startf(trim(lstr)//'_scatter')
-       call mct_aVect_scatter(avG,avtmp,gsMap,master_task,mpicom)
-       call mct_aVect_copy(avtmp,av)
-       if (my_task == master_task) call mct_aVect_clean(avG)
-       call mct_aVect_clean(avtmp)
-       call t_stopf(trim(lstr)//'_scatter')
+    call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
 
+    if (fileopen .and. currfile==filename) then
+       ! don't reopen file, all good
     else
-
-       call t_startf(trim(lstr)//'_readpio')
-       call shr_mpi_bcast(sfldName,mpicom,'sfldName')
-       call shr_mpi_bcast(filename,mpicom,'filename')
-
-       call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
-
-       if (fileopen .and. currfile==filename) then
-          ! don't reopen file, all good
-       else
-          ! otherwise close the old file if open and open new file
-          if (fileopen) then
-             if (my_task == master_task) then
-                write(logunit,F00) 'close  : ',trim(currfile)
-                call shr_sys_flush(logunit)
-             endif
-             call pio_closefile(pioid)
-          endif
+       ! otherwise close the old file if open and open new file
+       if (fileopen) then
           if (my_task == master_task) then
-             write(logunit,F00) 'open   : ',trim(filename)
-             call shr_sys_flush(logunit)
+             write(logunit,F00) 'close  : ',trim(currfile)
           endif
-
-          rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
-          call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
+          call pio_closefile(pioid)
        endif
-
        if (my_task == master_task) then
-          write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),nt
-          call shr_sys_flush(logunit)
+          write(logunit,F00) 'open   : ',trim(filename)
        endif
-
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-
-       rcode = pio_inq_varid(pioid,trim(sfldName),varid)
-       rcode = pio_inq_varndims(pioid, varid, ndims)
-       allocate(dimid(ndims))
-       rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
-       if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
-       if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
-       if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
-       deallocate(dimid)
-       if (gsize /= nx*ny .and. gsize /= nx*ny*nz) then
-          write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
-          call shr_sys_abort(subname//"ERROR in data sizes")
-       endif
-
-       do k = 1,mct_aVect_nRAttr(av)
-          if (my_task == master_task) then
-             call shr_stream_getFileFieldName(stream,k,sfldName)
-          endif
-          call shr_mpi_bcast(sfldName,mpicom,'sfldName')
-          rcode = pio_inq_varid(pioid,trim(sfldName),varid)
-          frame = nt
-          call pio_setframe(pioid,varid,frame)
-          call pio_read_darray(pioid,varid,pio_iodesc,av%rattr(k,:),rcode)
-       enddo
-
-       call t_stopf(trim(lstr)//'_readpio')
-
+       rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+       call shr_stream_setCurrFile(stream, fileopen=.true., currfile=trim(filename), currpioid=pioid)
     endif
+    if (my_task == master_task) then
+       write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),nt
+    endif
+
+    call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+
+    rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+    rcode = pio_inq_varndims(pioid, varid, ndims)
+    allocate(dimid(ndims))
+    rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+    if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
+    if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
+    if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
+    deallocate(dimid)
+    gsize = mct_gsmap_gsize(gsMap)
+    if (gsize /= nx*ny .and. gsize /= nx*ny*nz) then
+       write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
+       call shr_sys_abort(subname//"ERROR in data sizes")
+    endif
+
+    do k = 1,mct_aVect_nRAttr(av)
+       if (my_task == master_task) then
+          call shr_stream_getFileFieldName(stream,k,sfldName)
+       endif
+       call shr_mpi_bcast(sfldName,mpicom,'sfldName')
+       rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+       frame = nt
+       call pio_setframe(pioid,varid,frame)
+       call pio_read_darray(pioid,varid,pio_iodesc,av%rattr(k,:),rcode)
+    enddo
+
+    call t_stopf(trim(lstr)//'_readpio')
 
   end subroutine shr_dmodel_readstrm
 
@@ -463,7 +396,7 @@ contains
 
     call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
     call t_startf(trim(lstr)//'_setup')
-    call MPI_COMM_RANK(mpicom,my_task,ierr)
+    call mpi_comm_rank(mpicom,my_task,ierr)
     master_task = 0
 
     gsize = mct_gsmap_gsize(gsMap)
@@ -484,125 +417,98 @@ contains
 
     call t_stopf(trim(lstr)//'_setup')
 
-    if (pio_iotype == iotype_std_netcdf) then
+    call t_startf(trim(lstr)//'_readpio')
+    call shr_mpi_bcast(sfldName,mpicom,'sfldName')
+    call shr_mpi_bcast(filename,mpicom,'filename')
 
-       write(logunit,F01) "shr_dmodel_readstrm_fullfile: not supported for iotype_std_netcdf"
-       call shr_sys_abort(subname//"ERROR extend shr_dmodel_readstrm_fullfile")
+    call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
 
+    if (fileopen .and. currfile==filename) then
+       ! don't reopen file, all good
     else
-
-       call t_startf(trim(lstr)//'_readpio')
-       call shr_mpi_bcast(sfldName,mpicom,'sfldName')
-       call shr_mpi_bcast(filename,mpicom,'filename')
-
-       call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
-
-       if (fileopen .and. currfile==filename) then
-          ! don't reopen file, all good
-       else
-          ! otherwise close the old file if open, open the new file,
-          ! and read all time slices of a temporal dataset within the new file.
-          if (fileopen) then
-             if (my_task == master_task) then
-                write(logunit,F00) 'close  : ',trim(currfile)
-                call shr_sys_flush(logunit)
-             endif
-             call pio_closefile(pioid)
-          endif
+       ! otherwise close the old file if open, open the new file,
+       ! and read all time slices of a temporal dataset within the new file.
+       if (fileopen) then
           if (my_task == master_task) then
-             write(logunit,F00) 'open   : ',trim(filename)
-             call shr_sys_flush(logunit)
+             write(logunit,F00) 'close  : ',trim(currfile)
           endif
-          rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
-          call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
+          call pio_closefile(pioid)
+       endif
+       if (my_task == master_task) then
+          write(logunit,F00) 'open   : ',trim(filename)
+       endif
+       rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+       call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
 
-          call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
 
-          rcode = pio_inq_varid(pioid,trim(sfldName),varid)
-          rcode = pio_inq_varndims(pioid, varid, ndims)
-          allocate(dimid(ndims))
+       rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+       rcode = pio_inq_varndims(pioid, varid, ndims)
+       allocate(dimid(ndims))
 
-          rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+       rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
 
-          nx = 1
-          ny = 1
-          nz = 1
-          if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
-          if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
-          if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
-          deallocate(dimid)
+       nx = 1
+       ny = 1
+       nz = 1
+       if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
+       if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
+       if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
+       deallocate(dimid)
 
-          if (gsize /= nx*ny) then
-             write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
-             call shr_sys_abort(subname//"ERROR in data sizes")
-          endif
-
-          if (my_task == master_task) then
-             call shr_stream_getModelFieldList(stream,fldList)
-          endif
-          call shr_mpi_bcast(fldList,mpicom)
-
-          call mct_avect_clean(avFile)
-          call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
-
-          call mct_gsmap_orderedPoints(gsMap,my_task,gsmOP)
-
-          allocate(count(3))
-          allocate(compDOF(lsize*nz),stat=rcode)
-          if (rcode /= 0) call shr_sys_abort(subname//"ERROR insufficient memory")
-
-          count(1) = nx
-          count(2) = ny
-          count(3) = nz
-
-          if (my_task == master_task) then
-             write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),1,nz
-             call shr_sys_flush(logunit)
-          endif
-
-          ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
-          cnt = 0
-          do n = 1,nz
-             do m = 1,lsize
-                cnt = cnt + 1
-                compDOF(cnt) = (n-1)*gsize + gsmOP(m)
-             enddo
-          enddo
-
-          ! Initialize the decomposition
-          call pio_initdecomp(pio_subsystem, pio_double, count, compDOF, pio_iodesc_local)
-
-          ! For each attribute, read all frames in one go
-          frame = 1
-          do k = 1, mct_aVect_nRAttr(avFile)
-             if (my_task == master_task) then
-                call shr_stream_getFileFieldName(stream,k,sfldName)
-             endif
-             call shr_mpi_bcast(sfldName,mpicom,'sfldName')
-             rcode = pio_inq_varid(pioid,trim(sfldName),varid)
-
-             call pio_setframe(pioid,varid,frame)
-
-             call pio_read_darray(pioid, varid, pio_iodesc_local, avFile%rattr(k,:), rcode)
-          enddo
-
-          call pio_freedecomp(pio_subsystem, pio_iodesc_local)
-
-          deallocate(count)
-          deallocate(compDOF)
-
+       if (gsize /= nx*ny) then
+          write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
+          call shr_sys_abort(subname//"ERROR in data sizes")
        endif
 
-       ! Copy the `nt` time slice data from avFile into av
-       avFile_beg = lsize*(nt-1) + 1
-       avFile_end = lsize*nt
-       do k = 1, mct_aVect_nRAttr(avFile)
-          av%rattr(k,1:lsize) = avFile%rattr(k,avFile_beg:avFile_end)
-       enddo
+       if (my_task == master_task) then
+          call shr_stream_getModelFieldList(stream,fldList)
+       endif
+       call shr_mpi_bcast(fldList,mpicom)
+       call mct_avect_clean(avFile)
+       call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
 
-       call t_stopf(trim(lstr)//'_readpio')
+       ! Initialize the decomposition
+       ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
+       allocate(compDOF(lsize*nz), stat=rcode)
+       if (rcode /= 0) call shr_sys_abort(subname//"ERROR insufficient memory")
+       if (my_task == master_task) then
+          write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),1,nz
+       endif
+       call mct_gsmap_orderedPoints(gsMap,my_task,gsmOP)
+       cnt = 0
+       do n = 1,nz
+          do m = 1,lsize
+             cnt = cnt + 1
+             compDOF(cnt) = (n-1)*gsize + gsmOP(m)
+          enddo
+       enddo
+       call pio_initdecomp(pio_subsystem, pio_double, (/nx,ny,nz/), compDOF, pio_iodesc_local)
+       deallocate(compDOF)
+
+       ! For each attribute, read all frames in one go
+       frame = 1
+       do k = 1, mct_aVect_nRAttr(avFile)
+          if (my_task == master_task) then
+             call shr_stream_getFileFieldName(stream,k,sfldName)
+          endif
+          call shr_mpi_bcast(sfldName,mpicom,'sfldName')
+          rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+          call pio_setframe(pioid,varid,frame)
+          call pio_read_darray(pioid, varid, pio_iodesc_local, avFile%rattr(k,:), rcode)
+       enddo
+       call pio_freedecomp(pio_subsystem, pio_iodesc_local)
 
     endif
+
+    ! Copy the `nt` time slice data from avFile into av
+    avFile_beg = lsize*(nt-1) + 1
+    avFile_end = lsize*nt
+    do k = 1, mct_aVect_nRAttr(avFile)
+       av%rattr(k,1:lsize) = avFile%rattr(k,avFile_beg:avFile_end)
+    enddo
+
+    call t_stopf(trim(lstr)//'_readpio')
 
   end subroutine shr_dmodel_readstrm_fullfile
 

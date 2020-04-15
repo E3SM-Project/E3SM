@@ -456,6 +456,7 @@ contains
 
        ! Initialize pio settings for stream n
        call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
+
        if (SDAT%strnzg(n) <= 0) then
           call pio_initdecomp(SDAT%pio_subsystem, pio_double, (/SDAT%strnxg(n),SDAT%strnyg(n)/), &
                dof, SDAT%pio_iodesc(n))
