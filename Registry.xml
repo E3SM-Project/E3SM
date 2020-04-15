@@ -289,6 +289,27 @@
 		            description="The fraction of the deepest grounding line depths over which the grounding line depth is averaged to obtain a reference grounding line depth for the 'temperature_profile' melt parameterization."
 		            possible_values="any positive real value"
 		/>
+                <!-- Options related to grounded glacier front submarine melt param. -->
+                <nml_option name="config_front_mass_bal_grounded" type="character" default_value="none" units="unitless"
+                            description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the frontMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant' uses a prescribed constant melt rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
+                            possible_values="'none', 'file', 'constant', 'ismip6'"
+                />
+                <nml_option name="config_beta_ocean_thermal_forcing" type="real" default_value="1.18" units="unitless"
+			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_alpha_subglacial_discharge" type="real" default_value="0.39" units="unitless"
+                            description="Exponent of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_subglacial_discharge_coefficient" type="real" default_value="3.0e-4" units="unitless"
+                            description="Coefficient of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_subglacial_discharge_intercept" type="real" default_value="0.15" units="unitless"
+                            description="Added value B in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
         </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
