@@ -223,25 +223,22 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_TimeInterval) :: TimeStep
-    type(ESMF_Time)         :: currTime
-    type(ESMF_Calendar)     :: esmf_calendar ! esmf calendar
-    type(ESMF_CalKind_Flag) :: esmf_caltype  ! esmf calendar type
-    integer                 :: current_ymd   ! model date
-    integer                 :: current_year  ! model year
-    integer                 :: current_mon   ! model month
-    integer                 :: current_day   ! model day
-    integer                 :: current_tod   ! model sec into model date
-    real(R8)                :: cosarg        ! for setting ice temp pattern
-    real(R8)                :: jday, jday0   ! elapsed day counters
-    character(CL)           :: cvalue        ! temporary
-    integer                 :: shrlogunit    ! original log unit
-    integer                 :: n,k           ! generic counters
-    logical                 :: scmMode       ! single column mode
-    real(R8)                :: scmLat        ! single column lat
-    real(R8)                :: scmLon        ! single column lon
-    integer                 :: model_dt      ! integer model timestep
-    integer, allocatable, target :: gindex(:)
+    type(ESMF_TimeInterval)     :: TimeStep
+    type(ESMF_Time)             :: currTime
+    type(ESMF_Calendar)         :: esmf_calendar ! esmf calendar
+    type(ESMF_CalKind_Flag)     :: esmf_caltype  ! esmf calendar type
+    integer                     :: current_ymd   ! model date
+    integer                     :: current_year  ! model year
+    integer                     :: current_mon   ! model month
+    integer                     :: current_day   ! model day
+    integer                     :: current_tod   ! model sec into model date
+    real(R8)                    :: cosarg        ! for setting ice temp pattern
+    real(R8)                    :: jday, jday0   ! elapsed day counters
+    character(CL)               :: cvalue        ! temporary
+    integer                     :: shrlogunit    ! original log unit
+    integer                     :: n,k           ! generic counters
+    integer                     :: model_dt      ! integer model timestep
+    character(CS)               :: compname
     character(len=*), parameter :: F00   = "('ice_comp_nuopc: ')',8a)"
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
@@ -254,37 +251,11 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Create the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_ice', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       write(logunit,*) ' obtaining mesh_ice from '//trim(cvalue)
-    end if
-    mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Get compid (for mct)
-    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid
-
-    ! Set single column values
-    call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlon
-    call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlat
-    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmMode
-
     ! Initialize sdat
     call t_startf('dice_strdata_init')
-    call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, 'dice', sdat, rc=rc)
+    compname = 'ice'
+    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) write(logunit,*) ' initialized SDAT'
     call t_stopf('dice_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -294,51 +265,39 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat, fld=water, fldname='water')
     end if
 
-    ! get the time to interpolate the stream data to
+    ! Get the time to interpolate the stream data to
     call ESMF_ClockGet(clock, currTime=currTime, timeStep=timeStep, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
-    ! get model timestep
+    ! Get model timestep
     call ESMF_TimeIntervalGet( timeStep, s=model_dt, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     dt = model_dt * 1.0_r8
 
-    ! get cosarg
-    call ESMF_ClockGet( clock, calkindflag=esmf_caltype, rc=rc )
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
-       calendar = shr_cal_noleap
-    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
-       calendar = shr_cal_gregorian
-    else
-       call shr_sys_abort(" ERROR bad ESMF calendar name "//trim(calendar))
-    end if
-    call shr_cal_ymd2julian(0, current_mon, current_day, current_tod, jDay , calendar) ! julian day for model
-    call shr_cal_ymd2julian(0, 9,           1,           0,           jDay0, calendar) ! julian day for Sept 1
+    ! Get cosarg
+    call shr_cal_ymd2julian(0, current_mon, current_day, current_tod, jDay , sdat%calendar) ! julian day for model
+    call shr_cal_ymd2julian(0, 9,           1,           0,           jDay0, sdat%calendar) ! julian day for Sept 1
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
-    ! run dice
+    ! Run dice
     call dice_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, sdat, &
          mesh, cosarg, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, dt, read_restart, rc)
 
-    ! add scalars to export state
+    ! Add scalars to export state
     call State_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call State_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! diagnostics
+    ! Diagnostics
     call State_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -401,8 +360,8 @@ contains
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
 
     ! Get cosarg
-    call shr_cal_ymd2julian(0, mon, day, next_tod, jDay , calendar)    ! julian day for model
-    call shr_cal_ymd2julian(0, 9,   1,   0,        jDay0, calendar)    ! julian day for Sept 1
+    call shr_cal_ymd2julian(0, mon, day, next_tod, jDay , sdat%calendar)    ! julian day for model
+    call shr_cal_ymd2julian(0, 9,   1,   0,        jDay0, sdat%calendar)    ! julian day for Sept 1
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
     ! Run dice

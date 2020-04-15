@@ -211,14 +211,12 @@ contains
     integer         :: current_tod  ! model sec into model date
     character(CL)   :: cvalue       ! temporary
     integer         :: shrlogunit   ! original log unit
-    logical         :: scmMode      ! single column mode
-    real(R8)        :: scmLat       ! single column lat
-    real(R8)        :: scmLon       ! single column lon
     logical         :: read_restart
-    character(CS)   :: model_name
-    character(len=*), parameter :: F00   = "('wav_comp_nuopc: ')',8a)"
+    character(CS)   :: compname
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
+
+    if (sdat%datamode == 'NULL') RETURN
 
     rc = ESMF_SUCCESS
 
@@ -226,32 +224,10 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Create the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_wav', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       write(logunit,*) ' obtaining mesh_wav from '//trim(cvalue)
-    end if
-    mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Get mct id
-    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid
-
-    ! Set single column values
-    scmmode = .false.
-    scmlon = shr_const_spval
-    scmlat = shr_const_spval
-
-    ! Determine the model name
-    model_name = 'dwav'
-
     ! Initialize sdat
     call t_startf('dwav_strdata_init')
-    call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, rc=rc)
+    compname = 'wav'
+    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dwav_strdata_init')
 
@@ -262,9 +238,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat)
@@ -320,8 +293,11 @@ contains
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
+    if (sdat%datamode == 'NULL') RETURN
+
     rc = ESMF_SUCCESS
 
+    call t_startf(subname)
     call memcheck(subname, 5, my_task == master_task)
 
     ! Reset shr logging to my log file
@@ -372,6 +348,7 @@ contains
     endif
 
     call shr_file_setLogUnit (shrlogunit)
+    call t_stopf(subname)
 
   end subroutine ModelAdvance
 

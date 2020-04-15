@@ -243,14 +243,10 @@ contains
     character(CL)           :: cvalue       ! temporary
     integer                 :: shrlogunit   ! original log unit
     integer                 :: n,k          ! generic counters
-    logical                 :: scmMode      ! single column mode
-    real(R8)                :: scmLat       ! single column lat
-    real(R8)                :: scmLon       ! single column lon
-    character(CS)           :: model_name
     integer                 :: model_dt     ! integer model timestep
     real(R8)                :: dt           ! real model timestep
     logical                 :: reset_domain_mask ! true => reset the domain mask for aquaplanet
-    integer, allocatable, target :: gindex(:)
+    character(CS)           :: compname
     character(len=*), parameter :: F00   = "('ocn_comp_nuopc: ')',8a)"
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
@@ -261,49 +257,19 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Create the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_ocn', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       write(logunit,*) ' obtaining mesh_ocn from '//trim(cvalue)
-    end if
-    mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! get mct id
-    call t_startf('docn_strdata_init')
-    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid
-
-    ! set single column values
-    call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlon
-    call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlat
-    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmMode
-
-    ! for aquaplanet mode - need to reset the domain
+    ! For aquaplanet mode - need to reset the domain
     if (sdat%datamode == 'SST_AQUAPANAL' .or. sdat%datamode == 'SST_AQUAPFILE' .or. sdat%datamode == 'SOM_AQUAP') then
        reset_domain_mask = .true.
     else
        reset_domain_mask= .false.
     end if
 
-    ! determine the model name
-    model_name = 'docn'
-
     ! Initialize sdat
-    call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, reset_domain_mask=reset_domain_mask, &
-         use_new=.true., rc=rc)
+    call t_startf('docn_strdata_init')
+    compname = 'ocn'
+    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, &
+         reset_domain_mask=reset_domain_mask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (my_task == master_task) write(logunit,*) ' initialized sdat'
     call t_stopf('docn_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -313,9 +279,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat, fld=somtp, fldname='somtp')

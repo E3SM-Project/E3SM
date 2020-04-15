@@ -211,48 +211,24 @@ contains
     character(CL)   :: cvalue       ! temporary
     integer         :: shrlogunit   ! original log unit
     integer         :: n,k          ! generic counters
-    logical         :: scmMode      ! single column mode
-    real(R8)        :: scmLat       ! single column lat
-    real(R8)        :: scmLon       ! single column lon
     logical         :: read_restart
-    character(CS)   :: model_name
-    integer, allocatable, target :: gindex(:)
+    character(CS)   :: compname
     character(len=*), parameter :: F00   = "('rof_comp_nuopc: ')',8a)"
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
+    if (sdat%datamode == 'NULL') RETURN
+
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Create the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_rof', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       write(logunit,*) ' obtaining mesh_rof from '//trim(cvalue)
-    end if
-    mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Get mct id
-    call t_startf('drof_strdata_init')
-    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid
-
-    ! Set single column values
-    scmmode = .false.
-    scmlon = shr_const_spval
-    scmlat = shr_const_spval
-
-    ! Determine the model name
-    model_name = 'drof'
-
     ! Initialize sdat
-    call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, rc=rc)
+    call t_startf('drof_strdata_init')
+    compname = 'rof'
+    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('drof_strdata_init')
 
@@ -263,9 +239,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat)

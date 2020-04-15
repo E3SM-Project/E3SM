@@ -50,7 +50,6 @@ module dshr_nuopc_mod
        optDate           = "date"      , &
        optIfdays0        = "ifdays0"   
 
-
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
 
   integer                 :: iunset = -999
@@ -236,9 +235,7 @@ contains
 
 !===============================================================================
 
-  subroutine dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-       scmmode, scmlon, scmlat, clock, mesh,  model_name, sdat, &
-       reset_domain_mask, use_new, rc)
+  subroutine dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, reset_domain_mask, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat
@@ -253,23 +250,29 @@ contains
     use mct_mod          , only : mct_gsmap_init
 
     ! input/output variables
-    integer                    , intent(in)    :: mpicom   ! mpi communicator
-    integer                    , intent(in)    :: compid
-    integer                    , intent(in)    :: my_task
-    integer                    , intent(in)    :: master_task
-    integer                    , intent(in)    :: logunit
-    logical                    , intent(in)    :: scmMode
-    real(r8)                   , intent(in)    :: scmlat
-    real(r8)                   , intent(in)    :: scmlon
+    type(ESMF_GridComp), intent(inout)         :: gcomp
     type(ESMF_Clock)           , intent(in)    :: clock
-    type(ESMF_Mesh)            , intent(in)    :: mesh
-    character(len=*)           , intent(in)    :: model_name
+    integer                    , intent(in)    :: logunit
+    character(len=*)           , intent(in)    :: compname
+    integer                    , intent(out)   :: compid
+    type(ESMF_Mesh)            , intent(out)   :: mesh
+    logical                    , intent(out)   :: read_restart
     type(shr_strdata_type)     , intent(inout) :: sdat
     logical         , optional , intent(in)    :: reset_domain_mask
-    logical         , optional , intent(in)    :: use_new
     integer                    , intent(out)   :: rc
 
     ! local varaibles
+    type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
+    type(ESMF_CalKind_Flag)      :: esmf_caltype  ! esmf calendar type
+    character(CS)                :: calendar      ! calendar name
+    type(ESMF_VM)                :: vm
+    integer                      :: mpicom
+    integer                      :: my_task
+    integer                      :: master_task = 0
+    character(CL)                :: filename
+    logical                      :: scmMode
+    real(r8)                     :: scmlat
+    real(r8)                     :: scmlon
     integer                      :: n,k          ! generic counters
     integer                      :: lsize        ! local size
     integer                      :: gsize
@@ -280,14 +283,57 @@ contains
     integer                      :: deCount
     integer, allocatable         :: elementCountPTile(:)
     integer, allocatable         :: indexCountPDE(:,:)
-    type(ESMF_CalKind_Flag)      :: esmf_caltype ! esmf calendar type
     integer                      :: kmask
-    character(len=CS)            :: calendar     ! calendar name
+    character(len=CL)            :: cvalue
     character(len=*), parameter  :: subname='(dshr_nuopc_mod:dshr_sdat_init)'
     character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    ! generate local mpi comm
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Get compid (for mct)
+    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) compid
+
+    ! Set single column values
+    call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) scmlon
+    call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) scmlat
+    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) scmMode
+
+    ! Set restart flag
+    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) read_restart
+
+    ! Create the data model mesh
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=filename, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (trim(filename) == 'create_mesh') then
+       ! get the data model grid from the domain file
+       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=filename, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_create_mesh_from_grid(trim(filename), mesh, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       mesh = ESMF_MeshCreate(trim(filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+    if (my_task == master_task) then
+       write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(filename)
+    end if
 
     ! obtain the distgrid from the mesh that was read in
     call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
@@ -318,7 +364,7 @@ contains
     call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, lsize, gsize)
     deallocate(gindex)
 
-    ! initialize shr_strdata pio
+    ! initialize sdat  pio
     call shr_strdata_pioinit(sdat, compid)
 
     ! initialize sdat calendar
@@ -363,14 +409,13 @@ contains
 
     ! print sdat output
     if (my_task == master_task) then
-       call shr_strdata_print(sdat,'SDAT data from '//trim(model_name))
+       call shr_strdata_print(sdat,'SDAT data ')
        write(logunit,*) ' successfully initialized sdat'
     endif
 
   end subroutine dshr_sdat_init
 
 !===============================================================================
-
   subroutine dshr_model_initphase(gcomp, importState, exportState, clock, rc)
 
     ! input/output variables
@@ -389,7 +434,6 @@ contains
   end subroutine dshr_model_initphase
 
 !===============================================================================
-
   subroutine dshr_set_runclock(gcomp, rc)
 
     ! input/output variables

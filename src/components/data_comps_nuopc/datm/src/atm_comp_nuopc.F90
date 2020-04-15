@@ -68,7 +68,7 @@ module atm_comp_nuopc
   character(*)     , parameter :: modName = "(atm_comp_nuopc)"
 
   integer                      :: iradsw          ! radiation interval (input namelist)
-  integer                      :: idt             ! integer model timestep
+  integer                      :: model_dt        ! integer model timestep
   character(len=CL)            :: orb_mode        ! attribute - orbital mode (nuopc attribute)
   integer                      :: orb_iyear       ! attribute - orbital year (nuopc attribute)
   integer                      :: orb_iyear_align ! attribute - associated with model year (nuopc attribute)
@@ -289,11 +289,8 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(CL)           :: filename
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_TIME)         :: currTime
-    type(ESMF_Calendar)     :: esmf_calendar ! esmf calendar
-    type(ESMF_CalKind_Flag) :: esmf_caltype  ! esmf calendar type
     integer                 :: current_ymd   ! model date
     integer                 :: current_year  ! model year
     integer                 :: current_mon   ! model month
@@ -301,24 +298,19 @@ contains
     integer                 :: current_tod   ! model sec into model date
     integer(i8)             :: stepno        ! step number
     real(r8)                :: nextsw_cday   ! calendar of next atm sw
-    character(len=256)      :: cvalue        ! character string for input config
+    character(CL)           :: cvalue        ! character string for input config
     integer                 :: shrlogunit    ! original log unit
     logical                 :: read_restart  ! start from restart
-    logical                 :: scmMode       ! single column mode
-    real(R8)                :: scmLat        ! single column lat
-    real(R8)                :: scmLon        ! single column lon
     real(R8)                :: orbEccen      ! orb eccentricity (unit-less)
     real(R8)                :: orbMvelpp     ! orb moving vernal eq (radians)
     real(R8)                :: orbLambm0     ! orb mean long of perhelion (radians)
     real(R8)                :: orbObliqr     ! orb obliquity (radians)
     logical                 :: isPresent, isSet
+    character(CS)           :: compname
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     if (sdat%datamode == 'NULL') RETURN
-
-    ! TODO: read_restart, scmlat, scmlon, orbeccen, orbmvelpp, orblambm0, orbobliqr needs to be obtained
-    ! from the config attributes of the gridded component
 
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
@@ -327,43 +319,10 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Create the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_atm', value=filename, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(filename) == 'create_mesh') then
-       ! get the datm grid from the domain file
-       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=filename, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_create_mesh_from_grid(trim(filename), mesh, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       mesh = ESMF_MeshCreate(trim(filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-    if (my_task == master_task) then
-       write(logunit,*) trim(subname)// " obtaining datm mesh from " // trim(filename)
-    end if
-
-    ! Get compid (for mct)
-    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid
-
-    ! Set single column values
-    call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlon
-    call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlat
-    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmMode
-
     ! Initialize sdat
     call t_startf('datm_strdata_init')
-    call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, 'datm', sdat, rc=rc)
+    compname = 'atm'
+    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
 
@@ -374,9 +333,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat)
@@ -390,7 +346,7 @@ contains
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! Get model timestep
-    call ESMF_TimeIntervalGet( timeStep, s=idt, rc=rc )
+    call ESMF_TimeIntervalGet( timeStep, s=model_dt, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize and update orbital values
@@ -401,13 +357,13 @@ contains
 
     ! Run datm
     call datm_comp_run(mpicom, compid, my_task==master_task, logunit, current_ymd, current_tod, sdat, &
-         mesh, current_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, idt, rc=rc)
+         mesh, current_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, model_dt, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
     call State_SetScalar(dble(sdat%nxg), flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call State_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState,  flds_scalar_name, flds_scalar_num, rc)
+    call State_SetScalar(dble(sdat%nyg), flds_scalar_index_ny, exportState,  flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxNextSwCday", value=cvalue, &
@@ -418,7 +374,7 @@ contains
     else
        call shr_sys_abort(subname//'Need to set attribute ScalarFieldIdxNextSwCday')
     endif
-    nextsw_cday = getNextRadCDay( current_ymd, current_tod, stepno, idt, iradsw, sdat%calendar )
+    nextsw_cday = getNextRadCDay( current_ymd, current_tod, stepno, model_dt, iradsw, sdat%calendar )
     call State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -497,12 +453,12 @@ contains
     ! Run datm
     call t_startf('datm_run')
     call datm_comp_run(mpicom, compid, my_task==master_task, logunit, next_ymd, next_tod, sdat, &
-         mesh, mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, idt, rc)
+         mesh, mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, model_dt, rc)
     call t_stopf('datm_run')
 
     ! Update nextsw_cday for scalar data
     ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
-    nextsw_cday = getNextRadCDay( next_ymd, next_tod, stepno, idt, iradsw, sdat%calendar )
+    nextsw_cday = getNextRadCDay( next_ymd, next_tod, stepno, model_dt, iradsw, sdat%calendar )
     call State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 

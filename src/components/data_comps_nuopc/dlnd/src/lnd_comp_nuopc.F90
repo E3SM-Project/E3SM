@@ -218,52 +218,24 @@ contains
     integer         :: current_tod  ! model sec into model date
     character(CL)   :: cvalue       ! temporary
     integer         :: shrlogunit   ! original log unit
-    integer         :: n,k          ! generic counters
-    logical         :: scmMode      ! single column mode
-    real(R8)        :: scmLat       ! single column lat
-    real(R8)        :: scmLon       ! single column lon
     logical         :: read_restart
-    character(CS)   :: model_name
-    character(CL)   :: filename
-    integer, allocatable, target :: gindex(:)
+    character(CS)   :: compname
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
+    if (sdat%datamode == 'NULL') RETURN
+
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Create the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_lnd', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       write(logunit,*) ' obtaining mesh_lnd from '//trim(cvalue)
-    end if
-    mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! get mct id
-    call t_startf('dlnd_strdata_init')
-    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) compid
-
-    ! set single column values
-    scmmode = .false.
-    scmlon = shr_const_spval
-    scmlat = shr_const_spval
-
-    ! determine the model name
-    model_name = 'dlnd'
-
     ! Initialize sdat
-    call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat,  rc=rc)
+    call t_startf('dlnd_strdata_init')
+    compname = 'lnd'
+    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (my_task == master_task) write(logunit,*) ' initialized dlnd sdat'
     call t_stopf('dlnd_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -273,9 +245,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
-    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat)
