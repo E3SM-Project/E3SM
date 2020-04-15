@@ -2699,14 +2699,10 @@
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
-       />
-    <var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
-      description="index of model where mixed layer depth occurs (always one past)"
-      />
-    <var name="rediRossbyRadius" type="real" dimensions="nEdges Time" units="m"
-       description="Rossby radius of deformation used to compute Redi limiting near surface"
-       packages="forwardMode;analysisMode"
-    />
+		/>
+		<var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
+			description="index of model where mixed layer depth occurs (always one past)"
+		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
@@ -2714,7 +2710,7 @@
 		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
-    />
+		/>
 		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion. Defined at the top of cell k"
 			 packages="forwardMode;analysisMode"
