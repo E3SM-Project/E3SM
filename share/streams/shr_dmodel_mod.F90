@@ -38,7 +38,7 @@ module shr_dmodel_mod
   end interface shr_dmodel_gsmapCreate
 
   interface shr_dmodel_mapSet; module procedure &
-       !shr_dmodel_mapSet_dest!, &
+       !shr_dmodel_mapSet_dest, &
        shr_dmodel_mapSet_global
   end interface shr_dmodel_mapSet
 
