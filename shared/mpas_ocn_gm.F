@@ -107,7 +107,6 @@ contains
 
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed, ssh
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
-      real(kind=RKIND), dimension(:), pointer :: rediRossbyRadius
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -167,7 +166,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-      call mpas_pool_get_array(diagnosticsPool, 'rediRossbyRadius', rediRossbyRadius)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop',  maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell',  maxLevelCell)
@@ -681,7 +679,7 @@ contains
       integer :: iEdge
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
-      real(kind=RKIND), dimension(:), pointer   :: fEdge, gmBolusKappa, rediRossbyRadius
+      real(kind=RKIND), dimension(:), pointer   :: fEdge, gmBolusKappa
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell
 
       err = 0
@@ -697,15 +695,7 @@ contains
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-         call mpas_pool_get_array(diagnosticsPool, 'rediRossbyRadius', rediRossbyRadius)
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-
-         !Impose tapering of Large et al. 1997, wrap in if statement later
-         !$omp do schedule(runtime)
-         do iEdge=1,nEdges
-           rediRossbyRadius(iEdge) = max(15000.0_RKIND,min(100000.0_RKIND,2.0_RKIND / abs(fEdge(iEdge))))
-         enddo
-         !$omp end do
 
          if (config_Redi_use_slope_taper) then
            slopeTaperFactor = 1.0_RKIND
