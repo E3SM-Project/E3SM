@@ -114,6 +114,10 @@ module li_iceshelf_melt
       character(len=StrKIND), pointer :: &
            config_basal_mass_bal_float ! option for basal mass balance of floating ice
 
+      character(len=StrKIND), pointer :: &
+           config_front_mass_bal_grounded ! option for submarine mass balance
+                                          ! at grounded glacier front
+
       real(kind=RKIND), pointer :: &
            config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
            config_sea_level,         & ! sea level (m) relative to z = 0
@@ -224,6 +228,12 @@ module li_iceshelf_melt
          err = ior(err, err_tmp)
 
          return ! do not enter block loop below - we are done here
+      endif
+    
+      if (trim(config_front_mass_bal_grounded) == 'ismip6') then
+         call grounded_face_melt_ismip6(domain, err_tmp)
+         err = ior(err, err_tmp)
+        
       endif
 
       ! block loop
@@ -1126,6 +1136,50 @@ module li_iceshelf_melt
       deallocate(IS_area)
 
     end subroutine iceshelf_melt_ismip6
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine grounded_face_melt_ismip6
+!
+!> \brief Calculate grounded glacier submarine melt rate using parameterization from ISMIP6
+!> \author Trevor Hillebrand
+!> \date   April 2020
+!> \details
+!> http://www.climate-cryosphere.org/wiki/index.php?title=ISMIP6-Projections-Greenland
+!> https://www.the-cryosphere.net/14/985/2020/tc-14-985-2020.pdf
+!> https://agupubs-onlinelibrary-wiley-com.lanl.idm.oclc.org/doi/full/10.1002/2016GL068784
+!> Melt parameterization of the form:
+!> melt_rate = (A * h * q_sg^alpha + B) * TF^beta
+!> where TF is local thermal forcing at each grid cell, h is water depth at ice front  
+!> q_sg is subglacial water glux in m/day. Default values A = 3e-4, alpha = 0.39, B = 0.15
+!> beta=1.18
+!-----------------------------------------------------------------------
+
+
+    subroutine grounded_face_melt_ismip6(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+ 
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      
+    end subroutine grounded_face_melt_ismip6
+!-----------------------------------------------------------------------
+
 !-----------------------------------------------------------------------
 
   !***********************************************************************
