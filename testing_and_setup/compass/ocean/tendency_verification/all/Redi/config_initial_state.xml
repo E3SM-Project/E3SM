@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<config case="initial_state">
+
+	<add_link source="../base_mesh/base_mesh_res1.nc" dest="base_mesh_res1.nc"/>
+	<add_link source="../base_mesh/base_mesh_res2.nc" dest="base_mesh_res2.nc"/>
+	<add_link source="../base_mesh/base_mesh_res3.nc" dest="base_mesh_res3.nc"/>
+	<add_link source="../base_mesh/base_mesh_res4.nc" dest="base_mesh_res4.nc"/>
+    <add_link source_path="script_test_dir" source="add_initial_state.py" dest="add_initial_state.py"/>
+    <add_link source_path="script_test_dir" source="polynomial_validation.py" dest="polynomial_validation.py"/>
+
+	<run_script name="run.py">
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res1.nc</argument>
+			<argument flag="-o">init_test1_res1.nc</argument>
+			<argument flag="-t">1</argument>
+			<argument flag="-H">10</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res1.nc</argument>
+			<argument flag="-o">init_test2_res1.nc</argument>
+			<argument flag="-t">2</argument>
+			<argument flag="-H">10</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res1.nc</argument>
+			<argument flag="-o">init_test3_res1.nc</argument>
+			<argument flag="-t">3</argument>
+			<argument flag="-H">10</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res2.nc</argument>
+			<argument flag="-o">init_test1_res2.nc</argument>
+			<argument flag="-t">1</argument>
+			<argument flag="-H">20</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res2.nc</argument>
+			<argument flag="-o">init_test2_res2.nc</argument>
+			<argument flag="-t">2</argument>
+			<argument flag="-H">20</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res2.nc</argument>
+			<argument flag="-o">init_test3_res2.nc</argument>
+			<argument flag="-t">3</argument>
+			<argument flag="-H">20</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res3.nc</argument>
+			<argument flag="-o">init_test1_res3.nc</argument>
+			<argument flag="-t">1</argument>
+			<argument flag="-H">50</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res3.nc</argument>
+			<argument flag="-o">init_test2_res3.nc</argument>
+			<argument flag="-t">2</argument>
+			<argument flag="-H">50</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res3.nc</argument>
+			<argument flag="-o">init_test3_res3.nc</argument>
+			<argument flag="-t">3</argument>
+			<argument flag="-H">50</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res4.nc</argument>
+			<argument flag="-o">init_test1_res4.nc</argument>
+			<argument flag="-t">1</argument>
+			<argument flag="-H">100</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res4.nc</argument>
+			<argument flag="-o">init_test2_res4.nc</argument>
+			<argument flag="-t">2</argument>
+			<argument flag="-H">100</argument>
+		</step>
+		<step executable="python">
+			<argument flag="add_initial_state.py"></argument>
+			<argument flag="-i">base_mesh_res4.nc</argument>
+			<argument flag="-o">init_test3_res4.nc</argument>
+			<argument flag="-t">3</argument>
+			<argument flag="-H">100</argument>
+		</step>
+	</run_script>
+
+</config>
+

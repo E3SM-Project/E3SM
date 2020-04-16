@@ -1,0 +1,29 @@
+<template>
+	<namelist>
+		<option name="config_run_duration">'00-00-00_00:00:01'</option>
+		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_use_debugTracers">.true.</option>
+		<option name="config_n_ts_iter">1</option>
+	</namelist>
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="output">
+			<attribute name="output_interval">00-00-00_00:00:01</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<add_contents>
+				<member type="var_struct" name="tracersTend"/>
+			</add_contents>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">none</attribute>
+			<attribute name="filename_template">restart.nc</attribute>
+		</stream>
+
+	</streams>
+</template>

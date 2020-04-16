@@ -1,0 +1,47 @@
+<driver_script name="run.py">
+	<case name="base_mesh">
+		<step executable="./run.py" quiet="true" pre_message=" * Creating 2D base mesh ..." post_message="     complete!  Created file:  base_mesh/base_mesh.nc"/>
+	</case>
+	<case name="initial_state">
+		<step executable="./run.py" quiet="true" pre_message=" * Initializing ocean state with bathymetry and tracers..." post_message="     complete!  Created file:  initial_state/initial_state.nc"/>
+	</case>
+	<case name="test1_res1">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test2_res1">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test3_res1">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test1_res2">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test2_res2">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test3_res2">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test1_res3">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test2_res3">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test3_res3">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test1_res4">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test2_res4">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="test3_res4">
+		<step executable="./run.py" quiet="true" pre_message=" * running mpas-ocean test..." post_message="     complete!  created file:  test*/output.nc"/>
+	</case>
+	<case name="visualize">
+		<step executable="./run.py" quiet="true" pre_message=" * Visualize..." post_message="     complete!  Created files:  visualize/convergence.png and visualize/*sections.png"/>
+	</case>
+</driver_script>

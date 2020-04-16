@@ -231,7 +231,7 @@ module ocn_forward_mode
 
       call ocn_tracer_hmix_init(err_tmp)
       ierr = ior(ierr, err_tmp)
-      call ocn_tracer_hmix_redi_init(err_tmp)
+      call ocn_tracer_hmix_redi_init(domain,err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_tracer_surface_flux_init(err_tmp)
       ierr = ior(ierr, err_tmp)
@@ -488,7 +488,6 @@ module ocn_forward_mode
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: scratchPool
 
-
       type (MPAS_timeInterval_type) :: timeStep
       character(len=StrKIND), pointer :: config_restart_timestamp_name, config_sw_absorption_type
 
@@ -523,7 +522,6 @@ module ocn_forward_mode
 #ifdef MPAS_DEBUG
       call mpas_log_write('Initial time ' // trim(timeStamp))
 #endif
-
       call ocn_analysis_compute_startup(domain, err)
 
       if (config_write_output_on_startup) then
@@ -597,8 +595,12 @@ module ocn_forward_mode
            call mpas_timer_stop("land_ice_build_arrays")
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
-           
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
+
+           ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+           if (config_use_Redi.or.config_use_GM) then
+               call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, meshPool, scratchPool, timeLevelIn=1)
+           end if
 
            block_ptr => block_ptr % next
          end do

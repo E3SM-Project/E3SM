@@ -39,11 +39,11 @@
 			description="reference pressure for threshold computation"
 			possible_values="any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5"
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_Tgradient" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_mixedLayerDepths_Tgradient" type="logical" default_value=".false." units="unitless"
 			description="Logical flag controlling whether or not to compute MLDs via the temperature gradient"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_Dgradient" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_mixedLayerDepths_Dgradient" type="logical" default_value=".false." units="unitless"
 			description="Logical flag controlling whether or not to compute MLDs via the density gradient"
 			possible_values=".true. or .false."
 		/>
@@ -69,7 +69,7 @@
 		/>
 		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
 			 description="mixed layer depth based on density threshold"
-		/>
+    />
 		<var name="tGradMLD" type="real" dimensions="nCells Time" units="m"
 			 description="mixed layer depth based on gradient of temperature"
 		/>
@@ -91,7 +91,7 @@
 				mode="forward;analysis"
 				filename_template="analysis_members/mixedLayerDepths.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
-				output_interval="00-00-01_00:00:00"
+				output_interval="00-00-00_00:00:01"
 				reference_time="0001-01-01_00:00:00"
 				packages="mixedLayerDepthsAMPKG"
 				clobber_mode="truncate"

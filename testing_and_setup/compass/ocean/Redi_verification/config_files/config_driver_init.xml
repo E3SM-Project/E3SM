@@ -1,0 +1,14 @@
+<driver_script name="run.py">
+	<case name="base_mesh">
+		<step executable="./run.py" quiet="true" pre_message=" * Creating 2D base mesh ..." post_message="     complete!  Created file:  base_mesh/base_mesh.nc"/>
+	</case>
+	<case name="initial_state">
+		<step executable="./run.py" quiet="true" pre_message=" * Initializing ocean state with bathymetry and tracers..." post_message="     complete!  Created file:  initial_state/initial_state.nc"/>
+	</case>
+	<case name="simulation">
+		<step executable="./run.py" quiet="true" pre_message=" * Running MPAS-Ocean simulation..." post_message="     complete!  Created file:  simulation/output.nc"/>
+	</case>
+	<case name="visualize">
+		<step executable="./run.py" quiet="true" pre_message=" * Visualize..." post_message="     complete!  Created file:  visualize/output.png"/>
+	</case>
+</driver_script>

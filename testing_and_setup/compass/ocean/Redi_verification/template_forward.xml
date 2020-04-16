@@ -1,0 +1,38 @@
+<template>
+	<namelist>
+		<option name="config_run_duration">'01-00-00_00:00:00'</option>
+		<option name="config_use_cvmix">.false.</option>
+		<option name="config_use_Redi">.true.</option>
+		<option name="config_Redi_kappa">600.0</option>
+		<option name="config_Redi_closure">'constant'</option>
+		<option name="config_Redi_use_slope_taper">.true.</option>
+		<option name="config_Redi_use_surface_taper">.false.</option>
+		<option name="config_Redi_N2_limit_term1">.true.</option>
+		<option name="config_use_GM">.false.</option>
+		<option name="config_GM_closure">'constant'</option>
+		<option name="config_use_debugTracers">.true.</option>
+		<option name="config_disable_thick_all_tend">.true.</option>
+		<option name="config_disable_vel_all_tend">.true.</option>
+		<option name="config_disable_tr_adv">.true.</option>
+		<option name="config_disable_tr_sflux">.true.</option>
+        <template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</namelist>
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="output">
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+			<attribute name="filename_interval">10-00-00_00:00:00</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">01-00-00_00:00:00</attribute>
+		</stream>
+        <template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+	</streams>
+</template>
