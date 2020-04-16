@@ -1626,8 +1626,8 @@
 				mode="forward;analysis">
 
 			<stream name="mesh"/>
-      <var_struct name="tracers"/>
-      <var name="indMLD"/>
+			<var_struct name="tracers"/>
+			<var name="indMLD"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -2605,11 +2605,11 @@
 		<var name="kappaRediSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying Redi kappa"
 			packages="forwardMode;analysisMode"
-      />
-    <var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="NA"
-      description="count of times redi limiter is invoked on a timestep"
-      packages="forwardMode;analysisMode"
-      />
+		/>
+		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="NA"
+			description="count of times redi limiter is invoked on a timestep"
+			packages="forwardMode;analysisMode"
+		/>
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 			 packages="forwardMode;analysisMode"

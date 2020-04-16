@@ -196,14 +196,10 @@ contains
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-
-            ! mrp performance note: Replace with a logical array on init later
             if (cell1 == iCell) then
                iCellSelf = 1
-            elseif (cell2 == iCell) then
+            else  ! cell2 == iCell
                iCellSelf = 2
-            else
-               print *, 'iCellSelf, something went wrong', cell1, cell2, iCell, nCells
             endif
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
@@ -211,9 +207,9 @@ contains
 
             k = 1
             kappaRediEdgeVal = 0.25_RKIND*(kappaGMCell(k, cell1) + kappaGMCell(k, cell2) + &
-                                           kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))*0.25_RKIND* &
-                               (kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
-                                kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
+                                           kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))* &
+                               0.25_RKIND*(kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
+                                           kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -271,9 +267,9 @@ contains
 
             k = maxLevelEdgeTop(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(kappaGMCell(k, cell1) + kappaGMCell(k, cell2) + &
-                                           kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))*0.25_RKIND* &
-                               (kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
-                                kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
+                                           kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))* &
+                               0.25_RKIND*(kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
+                                           kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
