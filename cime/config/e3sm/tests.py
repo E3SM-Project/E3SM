@@ -1,4 +1,4 @@
-# Here are the tests belonging to e3sm suites. Format is
+# Here are the tests belonging to e3sm suites. Format  is
 # <test>.<grid>.<compset>[.<testmod>]
 #
 # suite_name : {
