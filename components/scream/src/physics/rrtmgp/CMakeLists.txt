@@ -1,3 +1,5 @@
+# Add RRTMGP source files. Right now, this builds the Fortran source for RRTMGP.
+# Once the C++ port of RRTMGP is complete we should switch over to that.
 set(RRTMGP_SRCS
   rrtmgp.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/rrtmgp/external/rrtmgp/kernels/mo_gas_optics_kernels.F90

@@ -2,11 +2,11 @@
 #define SCREAM_RRTMGP_HPP
 
 namespace scream {
-namespace rrtmgp {
+    namespace rrtmgp {
 
-int rrtmgp_stub();
+        int rrtmgp_stub();
 
-}  // namespace rrtmgp
+    }  // namespace rrtmgp
 }  // namespace scream
 
 #endif
