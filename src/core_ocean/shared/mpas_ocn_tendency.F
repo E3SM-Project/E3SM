@@ -424,7 +424,7 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, & !{{{
+   subroutine ocn_tend_tracer(tendPool, rediPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, & !{{{
                               dt, activeTracersOnlyIn, timeLevelIn )
       implicit none
 
@@ -432,6 +432,7 @@ contains
       ! intent in/out
       !
       type (mpas_pool_type), intent(inout) :: tendPool        !< Input/Output: Tendency structure
+      type (mpas_pool_type), intent(inout) :: rediPool        !< Input/Output: Tendency structure
       type (mpas_pool_type), intent(in)    :: statePool       !< Input: State information
       type (mpas_pool_type), intent(inout) :: forcingPool     !< Input: Forcing information
       type (mpas_pool_type), intent(inout)    :: diagnosticsPool !< Input: Diagnostic information
@@ -446,6 +447,7 @@ contains
       ! additional pools
       !
       type (mpas_pool_type), pointer :: tracersPool, tracersTendPool            ! tracers and their tendency
+      type (mpas_pool_type), pointer :: redi1Pool, redi2Pool, redi3Pool
       type (mpas_pool_type), pointer :: tracersSurfaceFluxPool                  ! surface fluxes
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool       ! surface restoring
       type (mpas_pool_type), pointer :: tracersInteriorRestoringFieldsPool      ! interior restoring
@@ -464,7 +466,8 @@ contains
 
       logical, pointer :: config_compute_active_tracer_budgets, &
                           config_cvmix_kpp_nonlocal_with_implicit_mix
-     real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
+      real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
+      integer, dimension(:,:), pointer :: rediLimiterCount
 
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
@@ -475,6 +478,7 @@ contains
       !
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate, latCell
+      real (kind=RKIND), dimension(:), pointer :: RediKappa
       integer, dimension(:), pointer :: maxLevelCell
 
       !
@@ -485,15 +489,16 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
-        normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
-        relativeSlopeTapering, relativeSlopeTaperingCell, fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux
+        normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
+        fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaGMCell, kappaRediSfcTaper
 
       !
       ! three dimensional pointers
       !
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        tracerGroup, tracerGroupTend, vertNonLocalFlux
+        tracerGroup, tracerGroupTend, redi_term1, redi_term2, redi_term3, &
+        vertNonLocalFlux
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         activeTracers, &  !  need T, S for ecosys
@@ -502,8 +507,10 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
+        slopeTriadUp, slopeTriadDown, &
         activeTracerSurfaceFluxTendency,              &
-        activeTracerNonLocalTendency
+        activeTracerNonLocalTendency,    &
+        kappaRediEdge
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         temperatureShortWaveTendency
@@ -517,7 +524,7 @@ contains
       ! local integers/reals/logicals
       !
       integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
-      logical :: activeTracersOnly    ! if true, only compute for active tracers
+      logical :: activeTracersOnly, isActiveTracer    ! if true, only compute for active tracers
 
       !
       ! set time level of optional argument is present
@@ -539,6 +546,9 @@ contains
       !
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
+      call mpas_pool_get_subpool(rediPool, 'tracers_redi_term1', redi1Pool)
+      call mpas_pool_get_subpool(rediPool, 'tracers_redi_term2', redi2Pool)
+      call mpas_pool_get_subpool(rediPool, 'tracers_redi_term3', redi3Pool)
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
 
       !
@@ -568,10 +578,13 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTapering', relativeSlopeTapering)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTaperingCell', relativeSlopeTaperingCell)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaRediSfcTaper', kappaRediSfcTaper)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
+      call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', rediLimiterCount)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
@@ -648,6 +661,15 @@ contains
                modifiedGroupName = trim(groupItr % memberName) // "Tend"
                call mpas_pool_get_array(tracersTendPool, trim(modifiedGroupName), tracerGroupTend)
 
+               modifiedGroupName = trim(groupItr % memberName) // "_redi_term1"
+               call mpas_pool_get_array(redi1Pool, trim(modifiedGroupName), redi_term1)
+
+               modifiedGroupName = trim(groupItr % memberName) // "_redi_term2"
+               call mpas_pool_get_array(redi2Pool, trim(modifiedGroupName), redi_term2)
+
+               modifiedGroupName = trim(groupItr % memberName) // "_redi_term3"
+               call mpas_pool_get_array(redi3Pool, trim(modifiedGroupName), redi_term3)
+
                ! Get surface flux array
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFlux"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFlux)
@@ -672,6 +694,9 @@ contains
                do iCell = 1, nCells
                  tracerGroupTend(:,:, iCell) = 0.0_RKIND
                  tracerGroupSurfaceFlux(:, iCell) = 0.0_RKIND
+                 redi_term1(:,:,iCell) = 0.0_RKIND
+                 redi_term2(:,:,iCell) = 0.0_RKIND
+                 redi_term3(:,:,iCell) = 0.0_RKIND
                end do
                !$omp end do
 
@@ -857,7 +882,6 @@ contains
                ! Monotonoic Advection, or standard advection
                ! Tendency for tracer budget is stored within the tracer adv
                ! routine
-
                call ocn_tracer_advection_tend(tracerGroup, normalThicknessFlux, vertAleTransportTop, layerThickness, &
                                               dt, meshPool, scratchPool, diagnosticsPool, tracerGroupTend, &
                                               trim(groupItr % memberName))
@@ -865,9 +889,13 @@ contains
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
-               call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracerGroup, &
-                                         relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, &
-                                         tracerGroupTend, err)
+
+               isActiveTracer = .false.
+               if(trim(groupItr % memberName)=='activeTracers') isActiveTracer = .true.
+               call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
+                                         redi_term1, redi_term2, redi_term3, &
+                                         RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
+                                         kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tracerGroupTend, err)
 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number

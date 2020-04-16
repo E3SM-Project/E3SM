@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<config case="test2_res4">
+	<add_link source="../initial_state/init_test2_res4.nc" dest="init.nc"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_test_dir"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_test_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

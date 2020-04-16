@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<config case="base_mesh">
+
+	<run_script name="run.py">
+		<step executable="planar_hex">
+			<argument flag="--nx">10</argument>
+			<argument flag="--ny">10</argument>
+			<argument flag="--dc">10e3</argument>
+			<argument flag="-o">planar_hex_mesh_res1.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">planar_hex_mesh_res1.nc</argument>
+			<argument flag="">base_mesh_res1.nc</argument>
+		</step>
+		<step executable="planar_hex">
+			<argument flag="--nx">10</argument>
+			<argument flag="--ny">10</argument>
+			<argument flag="--dc">20e3</argument>
+			<argument flag="-o">planar_hex_mesh_res2.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">planar_hex_mesh_res2.nc</argument>
+			<argument flag="">base_mesh_res2.nc</argument>
+		</step>
+		<step executable="planar_hex">
+			<argument flag="--nx">10</argument>
+			<argument flag="--ny">10</argument>
+			<argument flag="--dc">50e3</argument>
+			<argument flag="-o">planar_hex_mesh_res3.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">planar_hex_mesh_res3.nc</argument>
+			<argument flag="">base_mesh_res3.nc</argument>
+		</step>
+		<step executable="planar_hex">
+			<argument flag="--nx">10</argument>
+			<argument flag="--ny">10</argument>
+			<argument flag="--dc">100e3</argument>
+			<argument flag="-o">planar_hex_mesh_res4.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">planar_hex_mesh_res4.nc</argument>
+			<argument flag="">base_mesh_res4.nc</argument>
+		</step>
+	</run_script>
+
+</config>

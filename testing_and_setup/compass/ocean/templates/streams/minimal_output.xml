@@ -7,7 +7,6 @@
 			<attribute name="clobber_mode">truncate</attribute>
 			<add_contents>
 				<member name="tracers" type="var_struct"/>
-				<member name="mesh" type="stream"/>
 				<member name="xtime" type="var"/>
 				<member name="normalVelocity" type="var"/>
 				<member name="layerThickness" type="var"/>

@@ -1,0 +1,22 @@
+<template>
+	<namelist>
+		<option name="config_use_Redi">.true.</option>
+		<option name="config_Redi_maximum_slope">1e10</option>
+		<option name="config_Redi_closure">'constant'</option>
+		<option name="config_Redi_use_slope_taper">.false.</option>
+		<option name="config_Redi_use_surface_taper">.false.</option>
+		<option name="config_Redi_N2_limit_term1">.false.</option>
+		<option name="config_use_GM">.false.</option>
+		<option name="config_GM_closure">'constant'</option>
+		<option name="config_eddying_resolution_taper">'none'</option>
+		<option name="config_use_cvmix">.false.</option>
+		<option name="config_disable_thick_all_tend">.true.</option>
+		<option name="config_disable_vel_all_tend">.true.</option>
+		<option name="config_disable_tr_adv">.true.</option>
+		<option name="config_disable_tr_sflux">.true.</option>
+	</namelist>
+
+	<streams>
+	</streams>
+
+</template>
