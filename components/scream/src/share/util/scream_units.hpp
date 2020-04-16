@@ -3,6 +3,7 @@
 
 #include "share/util/scream_rational_constant.hpp"
 #include "share/util/scream_scaling_factor.hpp"
+#include "share/util/string_utils.hpp"
 
 namespace scream
 {
@@ -257,18 +258,20 @@ inline std::string to_string(const Units& x) {
       continue;
     }
     ++num_non_trivial;
-    s += " ";
     s += BASIC_UNITS_SYMBOLS[i];
     if (x.m_units[i]!=RationalConstant::one()) {
       s += "^" + to_string(x.m_units[i],x.m_exp_format);
     }
+    s += " ";
   }
 
   // Prepend the scaling only if it's not one, or if this is a dimensionless unit
   if (x.m_scaling!=ScalingFactor::one() || num_non_trivial==0) {
-    s = to_string(x.m_scaling,x.m_exp_format) + s;
+    s = to_string(x.m_scaling,x.m_exp_format) + " " + s;
   }
-  return s;
+
+  // Remove leading/trailing whitespaces
+  return util::trim(s);
 }
 
 inline std::ostream& operator<< (std::ostream& out, const Units& x) {
