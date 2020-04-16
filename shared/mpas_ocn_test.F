@@ -283,7 +283,7 @@ contains
 
       real(kind=RKIND) :: zTop, config_gm_analytic_temperature2, config_gm_analytic_temperature3, config_gm_analytic_ymax, &
          config_gm_analytic_bottom_depth, L, R, c1, c2, zMax, zBot
-      real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc, config_standardGM_tracer_kappa, config_eos_linear_alpha
+      real (kind=RKIND), pointer :: config_GM_constant_gravWaveSpeed, config_GM_kappa, config_eos_linear_alpha
 
       real(kind=RKIND), dimension(:), pointer   :: bottomDepth, refBottomDepthTopOfCell, yCell, yEdge
       real(kind=RKIND), dimension(:,:), pointer :: yRelativeSlopeSolution, yGMStreamFuncSolution, yGMBolusVelocitySolution, zMid
@@ -291,8 +291,8 @@ contains
       type (field2DReal), pointer :: yRelativeSlopeSolutionField, yGMStreamFuncSolutionField, yGMBolusVelocitySolutionField
 
       call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', config_eos_linear_alpha)
-      call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
-      call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
+      call mpas_pool_get_config(ocnConfigs, 'config_GM_constant_gravWaveSpeed',config_GM_constant_gravWaveSpeed)
+      call mpas_pool_get_config(ocnConfigs, 'config_GM_kappa',config_GM_kappa)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -323,8 +323,8 @@ contains
       ! zBot is location we apply boundary conditions on the ODE for stream function.
       zBot = zMax
 
-      L = config_gravWaveSpeed_trunc * sqrt(rho_sw * zMax / gravity / config_eos_linear_alpha / config_gm_analytic_temperature3)
-      R = - config_standardGM_tracer_kappa * config_gm_analytic_temperature2 * zMax / config_gm_analytic_temperature3 &
+      L = config_GM_constant_gravWaveSpeed * sqrt(rho_sw * zMax / gravity / config_eos_linear_alpha / config_gm_analytic_temperature3)
+      R = - config_GM_kappa * config_gm_analytic_temperature2 * zMax / config_gm_analytic_temperature3 &
         / config_gm_analytic_ymax
       c1 = R*(1-exp(-zBot/L))/(exp(zBot/L) - exp(-zBot/L))
       c2 = R-c1

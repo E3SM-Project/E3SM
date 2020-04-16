@@ -828,6 +828,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_disable_vel_vmix, config_disable_tr_vmix
+      logical, pointer :: config_disable_vel_all_tend, config_disable_tr_all_tend
       logical, pointer :: config_use_implicit_bottom_drag
       real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
       logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction, &
@@ -838,6 +839,8 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_vmix', config_disable_vel_vmix)
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_vmix', config_disable_tr_vmix)
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
       call mpas_pool_get_config(ocnConfigs, 'config_use_implicit_bottom_drag', config_use_implicit_bottom_drag)
       call mpas_pool_get_config(ocnConfigs, 'config_implicit_bottom_drag_coeff', config_implicit_bottom_drag_coeff)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', &
@@ -871,8 +874,8 @@ contains
       velVmixOn = .true.
       tracerVmixOn = .true.
 
-      if(config_disable_vel_vmix) velVmixOn = .false.
-      if(config_disable_tr_vmix) tracerVmixOn = .false.
+      if(config_disable_vel_vmix.or.config_disable_vel_all_tend) velVmixOn = .false.
+      if(config_disable_tr_vmix.or.config_disable_tr_all_tend) tracerVmixOn = .false.
 
       implicitBottomDragCoef = 0.0_RKIND
 

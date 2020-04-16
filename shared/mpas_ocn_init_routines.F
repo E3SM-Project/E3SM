@@ -554,7 +554,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       integer :: i, iEdge, iCell, k
       integer :: err1
 
-      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell
+      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell, indMLD
       integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
       real (kind=RKIND), dimension(:), pointer :: areaCell, boundaryLayerDepth
@@ -570,7 +570,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, pointer :: config_horiz_tracer_adv_order
       logical, pointer :: config_hmix_scaleWithMesh, config_do_restart
-      logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_GM
+      logical, pointer :: config_use_Redi
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
       type (mpas_pool_iterator_type) :: groupItr
@@ -602,6 +603,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
+      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
@@ -617,7 +619,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
+      call mpas_pool_get_config(block % configs, 'config_use_Redi', config_use_Redi)
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
 
       call ocn_init_routines_setup_sign_and_index_fields(meshPool)
@@ -632,6 +635,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       if (.not. config_do_restart) then
          do iCell=1,nCells
             boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5_RKIND
+            indMLD(iCell) = 1
          end do
       end if
 
@@ -668,18 +672,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          normalTransportVelocity(:, iEdge) = normalVelocity(:, iEdge)
       end do
 
-
-      ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
-      if (config_use_standardGM) then
-          call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
-      end if
-
-      if (config_use_standardGM) then
-         do iEdge = 1, nEdges
-            normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
-         end do
-       end if
-
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
@@ -698,10 +690,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                        velocityZonal,        &
                        velocityMeridional    &
                       )
-
-      if (config_use_standardGM) then
-         call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
-      end if
 
       call mpas_pool_initialize_time_levels(statePool)
 

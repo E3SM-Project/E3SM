@@ -103,6 +103,7 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: swForcingPool
+      type (mpas_pool_type), pointer :: rediPool
 
       integer :: rk_step
 
@@ -120,7 +121,7 @@ module ocn_time_integration_rk4
       ! Config options
       logical, pointer :: config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_filter_btr_mode, config_use_freq_filtered_thickness
-      logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_GM
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
       logical, pointer :: config_disable_thick_all_tend
@@ -204,7 +205,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
       call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
-      call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
       call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
@@ -726,12 +727,13 @@ module ocn_time_integration_rk4
          !$omp end do
 
          ! Compute normalGMBolusVelocity and the tracer transport velocity
-         if (config_use_standardGM) then
-             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+         if (config_use_GM) then
+             call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+                meshPool, scratchPool, timeLevelIn=2)
          end if
          call mpas_threading_barrier()
 
-         if (config_use_standardGM) then
+         if (config_use_GM) then
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
@@ -765,7 +767,7 @@ module ocn_time_integration_rk4
 
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
-         if (config_use_standardGM) then
+         if (config_use_GM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
          end if
          call mpas_threading_barrier()
@@ -937,7 +939,7 @@ module ocn_time_integration_rk4
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, diagnosticsPool, forcingPool
-      type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
+      type (mpas_pool_type), pointer :: scratchPool, rediPool, tendPool, provisStatePool
       type (mpas_pool_type), pointer :: swForcingPool, tracersPool
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
@@ -959,6 +961,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+      call mpas_pool_get_subpool(block % structs, 'redi', rediPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
 
@@ -994,7 +997,7 @@ module ocn_time_integration_rk4
       endif
       call mpas_threading_barrier()
 
-      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+      call ocn_tend_tracer(tendPool, rediPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
       call mpas_threading_barrier()
 
@@ -1008,7 +1011,7 @@ module ocn_time_integration_rk4
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, diagnosticsPool, forcingPool
-      type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
+      type (mpas_pool_type), pointer :: rediPool, scratchPool, tendPool, provisStatePool
       type (mpas_pool_type), pointer :: swForcingPool, tracersPool
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
@@ -1030,6 +1033,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+      call mpas_pool_get_subpool(block % structs, 'redi', rediPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
 
@@ -1083,7 +1087,7 @@ module ocn_time_integration_rk4
       endif
       call mpas_threading_barrier()
 
-      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+      call ocn_tend_tracer(tendPool, rediPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
       call mpas_threading_barrier()
 
@@ -1095,7 +1099,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
-      logical, pointer :: config_prescribe_velocity, config_prescribe_thickness, config_use_standardGM
+      logical, pointer :: config_prescribe_velocity, config_prescribe_thickness, config_use_GM
 
       integer, pointer :: nCells, nEdges
       integer :: iCell, iEdge, k
@@ -1123,7 +1127,7 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_config(block % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(block % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1249,12 +1253,13 @@ module ocn_time_integration_rk4
       !$omp end do
 
       ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
-      if (config_use_standardGM) then
-         call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+      if (config_use_GM) then
+         call ocn_gm_compute_Bolus_velocity(provisStatePool, diagnosticsPool, &
+            meshPool, scratchPool, timeLevelIn=1)
       end if
       call mpas_threading_barrier()
 
-      if (config_use_standardGM) then
+      if (config_use_GM) then
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
             normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:,iEdge)
@@ -1406,11 +1411,11 @@ module ocn_time_integration_rk4
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
 
-      logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_GM
 
       err = 0
 
-      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
