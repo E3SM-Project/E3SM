@@ -1,0 +1,61 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "SO60to10 northern mid res region",
+        "component": "ocean",
+        "object": "region",
+        "author": "Xylar Asay-Davis"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -158.90625,
+              65
+            ],
+            [
+              -115.6640625,
+              56.559482483762245
+            ],
+            [
+              -62.22656249999999,
+              45.089035564831036
+            ],
+            [
+              16.875,
+              50.51342652633956
+            ],
+            [
+              180,
+              65
+            ],
+            [
+              180,
+              90
+            ],
+            [
+              0,
+              90
+            ],
+            [
+              -180,
+              90
+            ],
+            [
+              -180,
+              65
+            ],
+            [
+              -158.90625,
+              65
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

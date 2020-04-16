@@ -4,6 +4,8 @@
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
 	<copy_file source_path="script_test_dir" source="define_base_mesh.py" dest="define_base_mesh.py"/>
 	<add_link source_path="script_test_dir" source="high_res_region.geojson" dest="high_res_region.geojson"/>
+	<add_link source_path="script_test_dir" source="north_mid_res_region.geojson" dest="north_mid_res_region.geojson"/>
+	<add_link source_path="script_test_dir" source="greenland.geojson" dest="greenland.geojson"/>
 
 	<run_script name="run.py">
 		<step executable="python">
