@@ -294,13 +294,10 @@ contains
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-            ! mrp Performance Note: Replace with a logical array on init later
             if (cell1 == iCell) then
                iCellSelf = 1
-            elseif (cell2 == iCell) then
+            else  ! cell2 == iCell
                iCellSelf = 2
-            else
-               print *, 'iCellSelf, something went wrong', cell1, cell2, iCell, nCells
             end if
             dcEdgeInv = 1.0_RKIND/dcEdge(iEdge)
             areaEdge = dcEdge(iEdge)*dvEdge(iEdge)
