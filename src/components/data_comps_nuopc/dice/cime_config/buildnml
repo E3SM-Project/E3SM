@@ -97,13 +97,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # set variables that are not per-stream
-    if ice_domain_file != "UNSET":
-        full_domain_path = os.path.join(ice_domain_path, ice_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
-    else:
-        nmlgen.add_default("domainfile", value='null')
-
     #----------------------------------------------------
     # Finally, write out all the namelists.
     #----------------------------------------------------

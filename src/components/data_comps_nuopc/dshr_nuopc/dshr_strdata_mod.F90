@@ -102,7 +102,6 @@ module dshr_strdata_mod
      integer                        :: modeldt           ! model dt in seconds
 
      ! --- model domain info, internal, public ---
-     character(CL)                  :: domainFile        ! file containing domain info (set my input)
      integer                        :: nxg               ! model grid lon size
      integer                        :: nyg               ! model grid lat size
      integer                        :: nzg               ! model grid vertical size
@@ -1455,7 +1454,6 @@ contains
 
     ! shr_strdata_nml namelist variables
     character(CL) :: dataMode           ! flags physics options wrt input data
-    character(CL) :: domainFile         ! file   containing domain info
     integer       :: nx_global          ! global size of nx
     integer       :: ny_global          ! global size of ny
     character(CL) :: streams(nStrMax)   ! stream description file names
@@ -1480,7 +1478,6 @@ contains
     !----- define namelist -----
     namelist / shr_strdata_nml / &
            dataMode        &
-         , domainFile      &
          , nx_global       &
          , ny_global       &
          , streams         &
@@ -1530,7 +1527,6 @@ contains
        ! set default values for namelist vars
        !----------------------------------------------------------------------------
        dataMode    = 'NULL'
-       domainFile  = trim(shr_strdata_nullstr)
        streams(:)  = trim(shr_strdata_nullstr)
        taxMode(:)  = trim(shr_stream_taxis_cycle)
        dtlimit(:)  = dtlimit_default
@@ -1572,7 +1568,6 @@ contains
           call shr_stream_default(SDAT%stream(n))
        enddo
        SDAT%dataMode    = dataMode
-       SDAT%domainFile  = domainFile
        SDAT%nxg         = nx_global
        SDAT%nyg         = ny_global
        SDAT%streams(:)  = streams(:)
@@ -1617,7 +1612,6 @@ contains
 
     if (present(mpicom)) then
        call shr_mpi_bcast(SDAT%dataMode  ,mpicom ,'dataMode')
-       call shr_mpi_bcast(SDAT%domainFile,mpicom ,'domainFile')
        call shr_mpi_bcast(SDAT%nxg       ,mpicom ,'nxg')
        call shr_mpi_bcast(SDAT%nyg       ,mpicom ,'nyg')
        call shr_mpi_bcast(SDAT%calendar  ,mpicom ,'calendar')
@@ -1714,7 +1708,6 @@ contains
     write(logunit,F90)
     write(logunit,F00) "name        = ",trim(lname)
     write(logunit,F00) "dataMode    = ",trim(SDAT%dataMode)
-    write(logunit,F00) "domainFile  = ",trim(SDAT%domainFile)
     write(logunit,F01) "nxg         = ",SDAT%nxg
     write(logunit,F01) "nyg         = ",SDAT%nyg
     write(logunit,F01) "nzg         = ",SDAT%nzg

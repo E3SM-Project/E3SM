@@ -319,23 +319,6 @@
     </values>
   </entry>
 
-  <entry id="domainfile">
-    <type>char</type>
-    <category>streams</category>
-    <input_pathname>abs</input_pathname>
-    <group>shr_strdata_nml</group>
-    <desc>
-      spatial gridfile associated with the strdata.  grid information will
-      be read from this file and that grid will serve as the target grid
-      for all input data for this strdata input.
-    </desc>
-    <values>
-      <value>$ICE_DOMAIN_PATH/$ICE_DOMAIN_FILE</value>
-      <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
-      <value stream="ww3">$SSTICE_GRID_FILENAME</value>
-    </values>
-  </entry>
-
   <entry id="nx_global" modify_via_xml="ICE_NX">
     <type>integer</type>
     <category>streams</category>
