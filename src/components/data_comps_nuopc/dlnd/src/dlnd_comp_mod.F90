@@ -1,20 +1,16 @@
 module dlnd_comp_mod
 
-  use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_Mesh, ESMF_MeshGet
-  use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO
-  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
-  use shr_sys_mod           , only : shr_sys_abort
-  use dshr_strdata_mod      , only : shr_strdata_type, shr_strdata_advance
-  use dshr_methods_mod      , only : chkerr, state_getfldptr
-  use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
-  use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
-  use dshr_nuopc_mod        , only : dshr_get_griddata
-  use dshr_strdata_mod      , only : shr_strdata_getfrac_from_stream
-  use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
+  use NUOPC             , only : NUOPC_Advertise
+  use ESMF              , only : ESMF_State, ESMF_Mesh
+  use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS 
+  use perf_mod          , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use shr_kind_mod      , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
+  use dshr_methods_mod  , only : chkerr, state_getfldptr
+  use dshr_dfield_mod   , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod  , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use glc_elevclass_mod , only : glc_elevclass_as_string, glc_elevclass_init
 
-  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
@@ -40,7 +36,6 @@ module dlnd_comp_mod
 
   ! module constants
   integer                     :: glc_nec
-
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
 
@@ -124,9 +119,10 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    integer                    :: n, lsize
+    integer                    :: n
     character(len=2)           :: nec_str
     character(CS), allocatable :: strm_flds(:)
+    integer                    :: stream_index
     character(*), parameter    :: subName = "(dlnd_comp_realize) "
     ! ----------------------------------------------
 
@@ -141,12 +137,13 @@ contains
          subname//':dlndExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Set fractional land in export state
+    ! Set fractional land pointer in export state
     call state_getfldptr(exportState, fldname='Sl_lfrin', fldptr1=lfrac, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain fractional land from first stream
-    call shr_strdata_getfrac_from_stream(sdat, mpicom, my_task, domain_fracname, lfrac)
+    stream_index = 1
+    call shr_strdata_get_stream_domain(sdat, stream_index, mpicom, my_task, domain_fracname, lfrac) 
 
     ! Create stream-> export state mapping
     allocate(strm_flds(0:glc_nec))

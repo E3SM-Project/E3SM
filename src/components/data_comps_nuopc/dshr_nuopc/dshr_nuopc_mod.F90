@@ -332,7 +332,11 @@ contains
        if (my_task == master_task) then
           write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
        end if
-       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, sdat)
+       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, mesh, sdat, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! ***TODO: Now need to initialize mesh that will send back to mediator given the lat and lon
+       !    of the original mesh that was selected ***
     else
        call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1162,7 +1166,9 @@ contains
     call shr_mpi_bcast(domap,mpicom,subname//' domap')
 
     if (domap) then
-       call shr_dmodel_mapSet(smatp, ggridi, gsmapi, ni0 ,nj0, sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &            
+       call shr_dmodel_mapSet(smatp, &
+            ggridi, gsmapi, ni0 ,nj0, &
+            sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &            
             'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, shr_map_fs_srcmask, shr_map_fs_scalar, &
             compid, mpicom, 'Xonly')
 

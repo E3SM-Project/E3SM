@@ -147,10 +147,10 @@ contains
           avLB%rAttr(:,:) = avUB%rAttr(:,:)
           call t_stopf(trim(lstr)//'_LB_copy')
        else
-
           select case(readMode)
           case ('single')
-             call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avLB, mpicom, &
+             call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, &
+                  gsMap, avLB, mpicom, &
                   path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
           case ('full_file')
              call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
@@ -165,7 +165,6 @@ contains
 
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
-
        select case(readMode)
        case ('single')
           call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avUB, mpicom, &
@@ -178,7 +177,6 @@ contains
           write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
           call shr_sys_abort(subName//"ERROR: Unsupported readmode: "//trim(readMode))
        end select
-
     endif
 
     call t_startf(trim(lstr)//'_filemgt')
@@ -219,15 +217,10 @@ contains
     integer              :: my_task
     integer              :: master_task
     integer              :: ierr
-    logical              :: localCopy,fileexists
-    type(mct_avect)      :: avG
+    logical              :: fileexists
     integer              :: gsize,nx,ny,nz
     integer              :: k
-    integer              :: fid
     integer              :: rCode      ! return code
-    real(R8),allocatable :: data2d(:,:)
-    real(R8),allocatable :: data3d(:,:,:)
-    logical              :: d3dflag
     character(CL)        :: fileName
     character(CL)        :: sfldName
     type(mct_avect)      :: avtmp
@@ -250,7 +243,6 @@ contains
     if (present(istr)) then
        lstr = trim(istr)
     endif
-
     bstr = ''
     if (present(boundstr)) then
        bstr = trim(boundstr)
@@ -287,20 +279,14 @@ contains
     else
        ! otherwise close the old file if open and open new file
        if (fileopen) then
-          if (my_task == master_task) then
-             write(logunit,F00) 'close  : ',trim(currfile)
-          endif
+          if (my_task == master_task) write(logunit,F00) 'close  : ',trim(currfile)
           call pio_closefile(pioid)
        endif
-       if (my_task == master_task) then
-          write(logunit,F00) 'open   : ',trim(filename)
-       endif
+       if (my_task == master_task) write(logunit,F00) 'open   : ',trim(filename)
        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
        call shr_stream_setCurrFile(stream, fileopen=.true., currfile=trim(filename), currpioid=pioid)
     endif
-    if (my_task == master_task) then
-       write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),nt
-    endif
+    if (my_task == master_task) write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),nt
 
     call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
 
@@ -340,18 +326,18 @@ contains
        path, fn, nt, istr, boundstr)
 
     !----- arguments -----
-    type      (shr_stream_streamType) ,intent(inout)         :: stream
-    type      (iosystem_desc_t)       ,intent(inout), target :: pio_subsystem
-    integer                       ,intent(in)            :: pio_iotype
-    type      (mct_gsMap)             ,intent(in)            :: gsMap
-    type      (mct_aVect)             ,intent(inout)         :: av
-    type      (mct_aVect)             ,intent(inout)         :: avFile
-    integer                       ,intent(in)            :: mpicom
-    character (len=*)                 ,intent(in)            :: path
-    character (len=*)                 ,intent(in)            :: fn
-    integer                       ,intent(in)            :: nt
-    character (len=*)                 ,intent(in) ,optional  :: istr
-    character(len=*)                  ,intent(in) ,optional  :: boundstr
+    type(shr_stream_streamType) ,intent(inout)         :: stream
+    type(iosystem_desc_t)       ,intent(inout), target :: pio_subsystem
+    integer                     ,intent(in)            :: pio_iotype
+    type(mct_gsMap)             ,intent(in)            :: gsMap
+    type(mct_aVect)             ,intent(inout)         :: av
+    type(mct_aVect)             ,intent(inout)         :: avFile
+    integer                     ,intent(in)            :: mpicom
+    character(len=*)            ,intent(in)            :: path
+    character(len=*)            ,intent(in)            :: fn
+    integer                     ,intent(in)            :: nt
+    character(len=*)            ,intent(in) ,optional  :: istr
+    character(len=*)            ,intent(in) ,optional  :: boundstr
 
     !----- local -----
     integer                       :: my_task
@@ -399,9 +385,6 @@ contains
     call mpi_comm_rank(mpicom,my_task,ierr)
     master_task = 0
 
-    gsize = mct_gsmap_gsize(gsMap)
-    lsize = mct_gsmap_lsize(gsMap,mpicom)
-
     if (my_task == master_task) then
        fileName = trim(path) // trim(fn)
        inquire(file=trim(fileName),exist=fileExists)
@@ -410,17 +393,14 @@ contains
           call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
        end if
     endif
-
     if (my_task == master_task) then
        call shr_stream_getFileFieldName(stream,1,sfldName)
     endif
-
     call t_stopf(trim(lstr)//'_setup')
 
     call t_startf(trim(lstr)//'_readpio')
     call shr_mpi_bcast(sfldName,mpicom,'sfldName')
     call shr_mpi_bcast(filename,mpicom,'filename')
-
     call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
 
     if (fileopen .and. currfile==filename) then
@@ -429,25 +409,18 @@ contains
        ! otherwise close the old file if open, open the new file,
        ! and read all time slices of a temporal dataset within the new file.
        if (fileopen) then
-          if (my_task == master_task) then
-             write(logunit,F00) 'close  : ',trim(currfile)
-          endif
+          if (my_task == master_task) write(logunit,F00) 'close  : ',trim(currfile)
           call pio_closefile(pioid)
        endif
-       if (my_task == master_task) then
-          write(logunit,F00) 'open   : ',trim(filename)
-       endif
+       if (my_task == master_task) write(logunit,F00) 'open   : ',trim(filename)
        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
        call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
-
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-
        rcode = pio_inq_varid(pioid,trim(sfldName),varid)
        rcode = pio_inq_varndims(pioid, varid, ndims)
+
        allocate(dimid(ndims))
-
        rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
-
        nx = 1
        ny = 1
        nz = 1
@@ -456,6 +429,7 @@ contains
        if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
        deallocate(dimid)
 
+       gsize = mct_gsmap_gsize(gsMap)
        if (gsize /= nx*ny) then
           write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
           call shr_sys_abort(subname//"ERROR in data sizes")
@@ -466,10 +440,11 @@ contains
        endif
        call shr_mpi_bcast(fldList,mpicom)
        call mct_avect_clean(avFile)
-       call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
 
        ! Initialize the decomposition
        ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
+       lsize = mct_gsmap_lsize(gsMap,mpicom)
+       call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
        allocate(compDOF(lsize*nz), stat=rcode)
        if (rcode /= 0) call shr_sys_abort(subname//"ERROR insufficient memory")
        if (my_task == master_task) then
@@ -736,32 +711,29 @@ contains
     character(len=*) , intent(in),optional :: strategy
 
     !----- local -----
-
-    integer :: n,i,j
-    integer :: lsizeS,gsizeS,lsizeD,gsizeD
-    integer :: nlon,nlat,nmsk
-    integer :: my_task,master_task,ierr
-
-    real(R8)   , pointer :: Xsrc(:,:)
-    real(R8)   , pointer :: Ysrc(:,:)
-    integer, pointer :: Msrc(:,:)
-    real(R8)   , pointer :: Xdst(:,:)
-    real(R8)   , pointer :: Ydst(:,:)
-    integer, pointer :: Mdst(:,:)
+    integer               :: n,i,j
+    integer               :: lsizeS,gsizeS,lsizeD,gsizeD
+    integer               :: nlon,nlat,nmsk
+    integer               :: my_task,master_task,ierr
+    real(R8) , pointer    :: Xsrc(:,:)
+    real(R8) , pointer    :: Ysrc(:,:)
+    integer  , pointer    :: Msrc(:,:)
+    real(R8) , pointer    :: Xdst(:,:)
+    real(R8) , pointer    :: Ydst(:,:)
+    integer  , pointer    :: Mdst(:,:)
     type(shr_map_mapType) :: shrmap
-    type(mct_aVect) :: AVl
-    type(mct_aVect) :: AVg
-
-    character(len=32) :: lstrategy
-    integer :: nsrc,ndst,nwts
-    integer, pointer :: isrc(:)
-    integer, pointer :: idst(:)
-    real(R8)   , pointer :: wgts(:)
-    type(mct_sMat) :: sMat0
-
+    type(mct_aVect)       :: AVl
+    type(mct_aVect)       :: AVg
+    character(len=32)     :: lstrategy
+    integer               :: nsrc,ndst,nwts
+    integer  , pointer    :: isrc(:)
+    integer  , pointer    :: idst(:)
+    real(R8) , pointer    :: wgts(:)
+    type(mct_sMat)        :: sMat0
     character(*), parameter :: subname = '(shr_dmodel_mapSet) '
     character(*), parameter :: F00   = "('(shr_dmodel_mapSet) ',8a)"
     character(*), parameter :: F01   = "('(shr_dmodel_mapSet) ',a,5i8)"
+    !-------------------------------------------------------------------------------
 
     !-------------------------------------------------------------------------------
     ! PURPOSE:  Initialize sMatP from mct gGrid

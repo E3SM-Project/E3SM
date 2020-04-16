@@ -3,36 +3,37 @@ module dshr_strdata_mod
   ! holds data and methods to advance data models
 
   use ESMF
-  use shr_const_mod , only : SHR_CONST_PI
-  use shr_kind_mod  , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
-  use shr_kind_mod  , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod  , only : CXX=>SHR_KIND_CXX
-  use shr_sys_mod   , only : shr_sys_abort, shr_sys_flush
-  use shr_mpi_mod   , only : shr_mpi_bcast
-  use shr_file_mod  , only : shr_file_getunit, shr_file_freeunit
-  use shr_log_mod   , only : loglev  => shr_log_Level
-  use shr_log_mod   , only : logunit => shr_log_Unit
-  use shr_cal_mod   , only : shr_cal_calendarname, shr_cal_timeSet
-  use shr_cal_mod   , only : shr_cal_noleap, shr_cal_gregorian
-  use shr_cal_mod   , only : shr_cal_date2ymd, shr_cal_ymd2date
-  use shr_orb_mod   , only : shr_orb_decl, shr_orb_cosz, shr_orb_undef_real
-  use shr_nl_mod    , only : shr_nl_find_group_name
-  use shr_pio_mod   , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-  use shr_mpi_mod   , only : shr_mpi_bcast
-  use shr_ncread_mod, only : shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, shr_ncread_tField
-  use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes
-  use shr_ncread_mod, only : shr_ncread_varexists, shr_ncread_vardimnum,  shr_ncread_field4dG
-  use shr_ncread_mod, only : shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes
-  use shr_ncread_mod, only : shr_ncread_tField
-  use shr_string_mod
+  use shr_const_mod    , only : SHR_CONST_PI
+  use shr_kind_mod     , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
+  use shr_kind_mod     , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod     , only : CXX=>SHR_KIND_CXX
+  use shr_sys_mod      , only : shr_sys_abort, shr_sys_flush
+  use shr_mpi_mod      , only : shr_mpi_bcast
+  use shr_file_mod     , only : shr_file_getunit, shr_file_freeunit
+  use shr_log_mod      , only : loglev  => shr_log_Level
+  use shr_log_mod      , only : logunit => shr_log_Unit
+  use shr_cal_mod      , only : shr_cal_calendarname, shr_cal_timeSet
+  use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian
+  use shr_cal_mod      , only : shr_cal_date2ymd, shr_cal_ymd2date
+  use shr_orb_mod      , only : shr_orb_decl, shr_orb_cosz, shr_orb_undef_real
+  use shr_nl_mod       , only : shr_nl_find_group_name
+  use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
+  use shr_mpi_mod      , only : shr_mpi_bcast
+  use shr_ncread_mod   , only : shr_ncread_domain, shr_ncread_varDimSizes
+  use shr_ncread_mod   , only : shr_ncread_varexists, shr_ncread_vardimnum, shr_ncread_field4dG
+  use shr_string_mod   , only : shr_string_listgetname, shr_string_listisvalid, shr_string_listgetnum
   use dshr_methods_mod , only : chkerr
-  use dshr_stream_mod ! stream data type and methods
-  use dshr_dmodel_mod ! shr data model stuff
+  use pio              , only : file_desc_t, iosystem_desc_t, io_desc_t, var_desc_t
+  use pio              , only : pio_openfile, pio_closefile, pio_nowrite
+  use pio              , only : pio_seterrorhandling, pio_initdecomp, pio_freedecomp
+  use pio              , only : pio_inq_varid, pio_read_darray, pio_double
+  use pio              , only : PIO_BCAST_ERROR
+  use dshr_stream_mod
+  use dshr_dmodel_mod
   use dshr_tinterp_mod
   use shr_mct_mod
-  use mct_mod        ! mct
-  use perf_mod       ! timing
-  use pio            ! pio
+  use mct_mod
+  use perf_mod
 
   implicit none
   private
@@ -48,10 +49,10 @@ module dshr_strdata_mod
   public ::  shr_strdata_init_model_domain
   public ::  shr_strdata_init_streams
   public ::  shr_strdata_init_mapping
-  public ::  shr_strdata_getfrac_from_stream
   public ::  shr_strdata_advance
   public ::  shr_strdata_clean
   public ::  shr_strdata_pioinit
+  public ::  shr_strdata_get_stream_domain
 
   private :: shr_strdata_init_stream_domain
 
@@ -86,7 +87,7 @@ module dshr_strdata_mod
 
      ! --- mpi info
      integer                        :: mpicom
-     integer                        :: ntasks 
+     integer                        :: ntasks
      integer                        :: my_task
      integer                        :: master_task
 
@@ -182,7 +183,6 @@ contains
     type(ESMF_DistGrid)  :: distGrid
     integer              :: dimCount
     integer              :: tileCount
-    integer              :: deCount
     integer, allocatable :: elementCountPTile(:)
     integer, allocatable :: indexCountPDE(:,:)
     integer              :: spatialDim         ! number of dimension in mesh
@@ -213,7 +213,7 @@ contains
     allocate(gindex(sdat%lsize))
     call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_DistGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
+    call ESMF_DistGridGet(distGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
@@ -235,7 +235,7 @@ contains
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(elemMask(lsize)) 
+    allocate(elemMask(lsize))
     elemMaskArray = ESMF_ArrayCreate(distGrid, elemMask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
@@ -262,7 +262,7 @@ contains
   end subroutine shr_strdata_init_model_domain_mesh
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain_scol(scmlon, scmlat, mpicom, compid, sdat) 
+  subroutine shr_strdata_init_model_domain_scol(scmlon, scmlat, mpicom, compid, mesh, sdat, rc)
 
     !----------------------------------------------------------------------------
     ! Create mct ggrid for model grid and set model gsmap if not input
@@ -274,30 +274,32 @@ contains
     real(R8)               , intent(in)    :: scmlat     ! single column lat
     integer                , intent(in)    :: mpicom     ! mpi communicator
     integer                , intent(in)    :: compid
+    type(ESMF_MESH)        , intent(in)    :: mesh 
     type(shr_strdata_type) , intent(inout) :: sdat
+    integer                , intent(out)   :: rc 
 
     !----- local -----
-    integer              :: n,k,j,i    ! indices
+    integer              :: n,k,i              ! indices
     integer              :: my_task
-    integer              :: ierr       ! error code
-    logical              :: fileexists ! true if input domain file exists
-    character(CS)        :: lonname    ! name of  lon variable
-    character(CS)        :: latname    ! name of  lat variable
-    integer              :: nlon
-    integer              :: nlat
-    integer              :: nmask
-    integer              :: nxg, nyg 
-    real(R8)             :: dist,mind  ! scmmode point search
-    integer              :: ni,nj      ! scmmode point search
-    real(R8)             :: lscmlon    ! local copy of scmlon
-    real(R8),allocatable :: lon(:,:)   ! temp array for domain lon  info
-    real(R8),allocatable :: lat(:,:)   ! temp array for domain lat  info
-    integer, pointer     :: idata(:)   ! temporary
-    integer              :: gsize 
+    integer              :: ierr               ! error code
+    integer, allocatable :: elementCountPTile(:)
+    integer, allocatable :: indexCountPDE(:,:)
+    integer              :: spatialDim         ! number of dimension in mesh
+    integer              :: numOwnedElements   ! size of mesh
+    real(r8), pointer    :: ownedElemCoords(:) ! mesh lat and lons
+    real(r8), pointer    :: lat(:), lon(:)     ! mesh lats and lons
+    real(R8)             :: dist,mind          ! scmmode point search
+    integer              :: ni                 ! scmmode point search
+    real(R8)             :: lscmlon            ! local copy of scmlon
+    integer              :: nlon,nlat,nmask
+    integer              :: gsize
+    integer, pointer     :: idata(:)           ! temporary
     integer, allocatable, target :: gindex(:)
     character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
     character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
     !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
 
     ! error check
     call mpi_comm_rank(mpicom,my_task,ierr)
@@ -305,6 +307,39 @@ contains
        write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
        call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
     endif
+
+    ! sdat%grid is for a single point - but the input model mesh from the namelist
+    ! is for the total grid
+    ! Below use scmlon and scmlat to find the nearest neighbor of the input mesh that
+    ! will be used for the single column calculation
+
+    ! Read in mesh (this is the global or regional atm mesh)
+    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(ownedElemCoords(spatialDim*numOwnedElements))
+    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(lon(numOwnedElements))
+    allocate(lat(numOwnedElements))
+    do n = 1, numOwnedElements
+       lon(n) = ownedElemCoords(2*n-1)
+       lat(n) = ownedElemCoords(2*n)
+    end do
+
+    ! Find nearest neigbor of input domain for scmlon and scmlat
+    ! want lon values between 0 and 360, assume 1440 is enough (start with wraparound)
+
+    lscmlon = mod(scmlon+1440.0_r8,360.0_r8)
+    lon     = mod(lon   +1440.0_r8,360.0_r8)
+    ! lat and lon are on 1D arrays (e.g. spectral element grids)
+    mind = 1.0e20
+    do i = 1,numOwnedElements
+       dist=abs(lscmlon - lon(i)) + abs(scmlat - lat(i))
+       if (dist < mind) then
+          mind = dist
+          ni = i
+       endif
+    enddo
 
     ! reset sdat%nxg, sdat%nyg and sdat%nzg
     sdat%nxg  =  1
@@ -316,68 +351,6 @@ contains
     gsize = 1
     allocate(gindex(1)); gindex(1) = 1
     call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, sdat%lsize, gsize)
-
-    ! sdat%grid is for a single point - but the input model domain from the namelist
-    ! is for the total grid-  since will be finding the nearest neighbor
-    ! Read full model domain as specified in namelist
-    ! Need to allocate the total grid size of the domain file - ane
-    ! will find the nearest neighbor fot the single column
-
-    inquire(file=trim(sdat%domainfile), exist=fileExists)
-    if (.not. fileExists) then
-       write(logunit,F00) "ERROR: file does not exist: ", trim(sdat%domainfile)
-       call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(sdat%domainfile))
-    end if
-    lonname  = "xc" 
-    latname  = "yc"
-    call shr_ncread_varDimSizes(sdat%domainfile, lonName, n1=nxg)
-    call shr_ncread_varDimSizes(sdat%domainfile, latName, n1=nyg)
-    allocate(lon(nxg,nyg))
-    allocate(lat(nxg,nyg))
-    call shr_ncread_domain(sdat%domainfile, lonName, lon, latName, lat)
-
-    ! Find nearest neigbor of input domain for scmlon and scmlat
-    ! determine whether dealing with 2D input files (typical of Eulerian
-    ! want lon values between 0 and 360, assume 1440 is enough (start with wraparound)
-
-    lscmlon = mod(scmlon+1440.0_r8,360.0_r8)
-    lon     = mod(lon   +1440.0_r8,360.0_r8)
-    if (nyg .ne. 1) then
-       ! lat and lon are on 2D logically rectanular arrays
-       ! assumes regular 2d grid for compatability with shr_scam_getCloseLatLon ---
-       ni = 1
-       mind = abs(lscmlon - (lon(1,1)+360.0_r8))
-       do i=1,nxg
-          dist = abs(lscmlon - lon(i,1))
-          if (dist < mind) then
-             mind = dist
-             ni = i
-          endif
-       enddo
-       nj = -1
-       mind = 1.0e20
-       do j=1,nyg
-          dist = abs(scmlat - lat(1,j))
-          if (dist < mind) then
-             mind = dist
-             nj = j
-          endif
-       enddo
-       j = nj
-    else 
-       ! lat and lon are on 1D arrays (e.g. spectral element grids)
-       mind = 1.0e20
-       do i=1,nxg
-          dist=abs(lscmlon - lon(i,1)) + abs(scmlat - lat(i,1))
-          if (dist < mind) then
-             mind = dist
-             ni = i
-          endif
-       enddo
-       j = 1
-    endif
-    n = 1
-    i = ni
 
     ! Initialize model ggrid for single column
     ! This will be used to interpolate the stream(s) to the single column value
@@ -391,9 +364,11 @@ contains
     nlat  = mct_aVect_indexRA(sdat%Grid%data,'lat')
     nmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
 
-    sdat%Grid%data%rAttr(nlat ,1) = lat(i,j)
-    sdat%Grid%data%rAttr(nlon ,1) = lon(i,j)
+    sdat%Grid%data%rAttr(nlat ,1) = lat(ni)
+    sdat%Grid%data%rAttr(nlon ,1) = lon(ni)
     sdat%Grid%data%rAttr(nmask,1) = 1
+
+    deallocate(ownedElemCoords)
     deallocate(lon)
     deallocate(lat)
 
@@ -454,9 +429,10 @@ contains
        call shr_strdata_init_stream_domain(SDAT%stream(n), compid, mpicom, &
             SDAT%gridR(n), SDAT%gsmapR(n), SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), SDAT%lsizeR(n))
 
-       ! Initialize pio settings for stream n
+       ! Initialize dof
        call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
 
+       ! Initialize pio settings for stream n
        if (SDAT%strnzg(n) <= 0) then
           call pio_initdecomp(SDAT%pio_subsystem, pio_double, (/SDAT%strnxg(n),SDAT%strnyg(n)/), &
                dof, SDAT%pio_iodesc(n))
@@ -471,69 +447,6 @@ contains
     enddo
 
   end subroutine shr_strdata_init_streams
-
-  !===============================================================================
-
-  subroutine shr_strdata_getfrac_from_stream(sdat, mpicom, my_task, fracname, fracdata)
-
-    ! The following initializes the fracname from the first stream
-    ! This is applicable for data models that read the model domain from the
-    ! domain of the first stream; we read the data model's domain fraction from the
-    ! first stream file, and this variable provides the name of the frac field on this
-    ! file. Also see ESMCI/cime#2515).
-    ! Note: this assumes that the first stream is on the same mesh as the model
-    ! Note: This also assumes that the field with fracname exists on the domain file
-
-    ! input/output arguments
-    type(shr_strdata_type) ,intent(inout) :: sdat
-    integer                ,intent(in)    :: mpicom
-    integer                ,intent(in)    :: my_task
-    character(len=*)       ,intent(in)    :: fracname
-    real(r8)               ,pointer       :: fracdata(:)
-
-    ! local variables
-    character(CXX)     :: domainfile
-    integer            :: lsize
-    integer            :: gsize
-    integer            :: fid
-    integer            :: rcode
-    real(r8), pointer  :: data2d(:,:)
-    type(mct_avect)    :: avG
-    type(mct_avect)    :: avtmp
-    integer            :: ierr
-    integer            :: nx,ny
-    integer            :: i,j
-    integer            :: master_task = 0
-    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
-    !-------------------------------------------------------------------------------
-
-    call mpi_comm_rank(mpicom, my_task, ierr)
-    master_task = 0
-
-    if (my_task == master_task) then
-       call shr_stream_getDomainFile(sdat%stream(1), domainfile)
-       call shr_ncread_varDimSizes(trim(domainfile), trim(fracname), n1=nx, n2=ny)
-       gsize = mct_gsmap_gsize(sdat%gsMap)
-       if (gsize == nx*ny) then
-          allocate(data2d(nx,ny))
-       else
-          write(logunit,*) "ERROR in nx,ny,gsize data sizes ",nx,ny,gsize
-          call shr_sys_abort(subname//"ERROR in data sizes")
-       endif
-       call shr_ncread_open(trim(domainfile), fid, rCode)
-       call shr_ncread_tField(domainfile, 1, fracname, data2d, fidi=fid, rc=rCode)
-       call mct_aVect_init(avG, rlist=trim(fracname), lsize=gsize)
-       avG%rAttr(1,:) = reshape(data2d, (/gsize/))
-       call shr_ncread_close(fid, rCode)
-       deallocate(data2d)
-    end if
-    ! The following call creates avtmp
-    call mct_aVect_scatter(avG, avtmp, sdat%gsMap, master_task, mpicom)
-    fracdata(:) = avtmp%rattr(1,:)
-    call mct_aVect_clean(avtmp)
-    if (my_task == master_task) call mct_aVect_clean(avG)
-
-  end subroutine shr_strdata_getfrac_from_stream
 
   !===============================================================================
   subroutine shr_strdata_init_stream_domain(stream, compid, mpicom, &
@@ -575,7 +488,6 @@ contains
     integer              :: nlat
     integer              :: nmask
     integer              :: nhgt
-    integer              :: ni,nj        ! scmmode point search
     real(R8),allocatable :: lon(:,:)     ! temp array for domain lon  info
     real(R8),allocatable :: lat(:,:)     ! temp array for domain lat  info
     integer,allocatable  :: mask(:,:)    ! temp array for domain mask info
@@ -811,7 +723,10 @@ contains
           SDAT%domaps(n) = .true.
        endif
 
+       ! ---------------------
        ! Set up fills
+       ! ---------------------
+
        if (SDAT%dofill(n)) then
           if (SDAT%strnzg(n) > 1) then
              write(logunit,*) trim(subname),' do fill called with 3d data, not allowed'
@@ -821,10 +736,8 @@ contains
           if (trim(SDAT%fillread(n)) == trim(shr_strdata_unset)) then
              if (my_task == master_task) then
                 write(logunit,F00) ' calling shr_dmodel_mapSet for fill'
-                call shr_sys_flush(logunit)
              endif
 
-             ! Set up fill
              call shr_dmodel_mapSet(SDAT%sMatPf(n), &
                   SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n), &
                   SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n), &
@@ -839,7 +752,6 @@ contains
              if (trim(SDAT%fillwrit(n)) /= trim(shr_strdata_unset)) then
                 if (my_task == master_task) then
                    write(logunit,F00) ' writing ',trim(SDAT%fillwrit(n))
-                   call shr_sys_flush(logunit)
                 endif
 
                 call shr_mct_sMatWritednc(&
@@ -854,7 +766,6 @@ contains
           else
              if (my_task == master_task) then
                 write(logunit,F00) ' reading ',trim(SDAT%fillread(n))
-                call shr_sys_flush(logunit)
              endif
              call shr_mct_sMatReaddnc(sMati,SDAT%gsmapR(n),SDAT%gsmapR(n),'src', &
                   filename=trim(SDAT%fillread(n)),mytask=my_task,mpicom=mpicom)
@@ -866,7 +777,10 @@ contains
           endif
        endif
 
+       ! ---------------------
        ! Set up maps
+       ! ---------------------
+
        if (SDAT%domaps(n)) then
           if (SDAT%strnzg(n) > 1) then
              write(logunit,*) trim(subname),' do maps called with 3d data, not allowed'
@@ -876,7 +790,6 @@ contains
           if (trim(SDAT%mapread(n)) == trim(shr_strdata_unset)) then
              if (my_task == master_task) then
                 write(logunit,F00) ' calling shr_dmodel_mapSet for remap'
-                call shr_sys_flush(logunit)
              endif
 
              call shr_dmodel_mapSet(SDAT%sMatPs(n), &
@@ -893,7 +806,6 @@ contains
              if (trim(SDAT%mapwrit(n)) /= trim(shr_strdata_unset)) then
                 if (my_task == master_task) then
                    write(logunit,F00) ' writing ',trim(SDAT%mapwrit(n))
-                   call shr_sys_flush(logunit)
                 endif
                 call shr_mct_sMatWritednc(&
                      SDAT%sMatPs(n)%Matrix,&
@@ -907,7 +819,6 @@ contains
           else
              if (my_task == master_task) then
                 write(logunit,F00) ' reading ',trim(SDAT%mapread(n))
-                call shr_sys_flush(logunit)
              endif
              call shr_mct_sMatReaddnc(sMati,SDAT%gsmapR(n),SDAT%gsmap,'src', &
                   filename=trim(SDAT%mapread(n)),mytask=my_task,mpicom=mpicom)
@@ -978,7 +889,39 @@ contains
   end subroutine shr_strdata_init_mapping
 
   !===============================================================================
+  subroutine shr_strdata_get_stream_domain(sdat, stream_index, mpicom, my_task, fldname, flddata)
 
+    ! Obtain the data for fldname from the stream domain data
+
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat
+    integer                , intent(in)    :: stream_index
+    integer                , intent(in)    :: mpicom
+    integer                , intent(in)    :: my_task
+    character(len=*)       , intent(in)    :: fldname
+    real(r8)               , pointer       :: flddata(:)
+
+    ! local variables
+    type(var_desc_t)  :: varid
+    type(file_desc_t) :: pioid
+    integer           :: rcode
+    integer           :: master_task = 0
+    character(CL)     :: filename
+    ! ----------------------------------------------
+
+    if (my_task == master_task) then
+       call shr_stream_getDomainFile(sdat%stream(stream_index), filename)
+    end if
+    call shr_mpi_bcast(filename, mpicom, 'streamfile')
+    rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(filename), pio_nowrite)
+    call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+    rcode = pio_inq_varid(pioid, trim(fldname), varid)
+    call pio_read_darray(pioid, varid, sdat%pio_iodesc(stream_index), flddata, rcode)
+    call pio_closefile(pioid)
+
+  end subroutine shr_strdata_get_stream_domain
+
+  !===============================================================================
   subroutine shr_strdata_advance(SDAT,ymd,tod,mpicom,istr,timers)
 
     type(shr_strdata_type) ,intent(inout)       :: SDAT
@@ -1810,7 +1753,6 @@ contains
        write(logunit,F04) "  vectors (",n,") = ",trim(SDAT%vectors(n))
     end do
     write(logunit,F90)
-    call shr_sys_flush(logunit)
 
   end subroutine shr_strdata_print
 
