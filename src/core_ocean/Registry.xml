@@ -1636,8 +1636,6 @@
 			<var name="vertCoordMovementWeights"/>
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
-			<var name="boundaryLayerDepth"/>
-			<var name="indexBoundaryLayerDepth"/>
 			<var name="landIcePressure"/>
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
