@@ -1,15 +1,11 @@
 <template>
 	<namelist>
 		<option name="config_use_Redi">.true.</option>
-		<option name="config_Redi_kappa">600.0</option>
-		<option name="config_Redi_half_slope">10</option>
-		<option name="config_Redi_half_width">0.001</option>
+		<option name="config_Redi_maximum_slope">1e10</option>
 		<option name="config_Redi_closure">'constant'</option>
-		<option name="config_Redi_diabatic_limit">1e12</option>
 		<option name="config_Redi_use_slope_taper">.false.</option>
 		<option name="config_Redi_use_surface_taper">.false.</option>
 		<option name="config_Redi_N2_limit_term1">.false.</option>
-		<option name="config_Redi_num_smooth_loops">0</option>
 		<option name="config_use_GM">.false.</option>
 		<option name="config_GM_closure">'constant'</option>
 		<option name="config_eddying_resolution_taper">'none'</option>

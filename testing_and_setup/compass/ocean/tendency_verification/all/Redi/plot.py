@@ -27,27 +27,25 @@ errL2 = np.zeros([nTests, nGrids, nTracers])
 for i in range(nTests):
     test = tests[i]
 
-    for j in range(nGrids):
-        grid = grids[j]
-        ncfileIC = Dataset('../' + test + '_' + grid + '/init.nc', 'r')
-        ncfile = Dataset('../' + test + '_' + grid + '/output.nc', 'r')
+    for k in range(nTracers):
         fig = plt.gcf()
         plt.clf()
-        fig.set_size_inches(20.0, 15.0)
+        fig.set_size_inches(20.0, 20.0)
 
-        for k in range(nTracers):
+        for j in range(nGrids):
+            grid = grids[j]
+            ncfileIC = Dataset('../' + test + '_' + grid + '/init.nc', 'r')
+            ncfile = Dataset('../' + test + '_' + grid + '/output.nc', 'r')
             tracer = tracers[k]
             sol = np.reshape(
                 ncfileIC.variables[tracer + 'Tend'][0, :, iz], [ny, nx])
             var = np.reshape(
                 ncfile.variables[tracer + 'Tend'][0, :, iz], [ny, nx])
-            dif = abs(var[1:ny - 1, 1:nx - 1] - sol[1:ny - 1, 1:nx - 1])
-            err = abs((var[1:ny - 1, 1:nx - 1] - sol[1:ny - \
-                      1, 1:nx - 1]) / sol[1:ny - 1, 1:nx - 1])
-            print(i,j,k,np.size(difL2))
+            dif = abs(var[1:ny - 1, 1:nx - 2] - sol[1:ny - 1, 1:nx - 2])
+            err = abs((var[1:ny - 1, 1:nx - 2] - sol[1:ny - \
+                      1, 1:nx - 2]) / sol[1:ny - 1, 1:nx - 2])
             difL2[i, j, k] = np.sqrt(np.mean(dif[:]**2))
             errL2[i, j, k] = np.sqrt(np.mean(err[:]**2))
-            #errL2[i,j,k] = np.max(err[:])
 
             # --- Every other row in y needs to average two neighbors in x on planar hex mesh
             var_avg = var
@@ -57,25 +55,26 @@ for i in range(nTests):
                     var_avg[iy, ix] = (var[iy, ix + 1] + var[iy, ix]) / 2.0
                     sol_avg[iy, ix] = (sol[iy, ix + 1] + sol[iy, ix]) / 2.0
 
-            ax1 = plt.subplot(nTracers, 3, 3 * k + 1)
-            plt.imshow(var_avg[1:ny - 1, 1:nx - 1])
+            ax1 = plt.subplot(nGrids, 3, 3 * j + 1)
+            plt.imshow(var_avg[1:ny - 1, 1:nx - 2])
             plt.colorbar()
-            plt.title(test + ' ' + grid + ' computed')
+            plt.title(test + ' ' + tracer + ' ' + grid + ' computed')
             
-            ax2 = plt.subplot(nTracers, 3, 3 * k + 2)
-            plt.imshow(sol_avg[1:ny - 1, 1:nx - 1])
+            ax2 = plt.subplot(nGrids, 3, 3 * j + 2)
+            plt.imshow(sol_avg[1:ny - 1, 1:nx - 2])
             plt.colorbar()
-            plt.title(test + ' ' + grid + ' solution')
+            plt.title(test + ' ' + tracer + ' ' + grid + ' solution')
 
-            ax3 = plt.subplot(nTracers, 3, 3 * k + 3)
-            plt.imshow(var_avg[1:ny - 1, 1:nx - 1] - sol_avg[1:ny - 1, 1:nx - 1])
+            ax3 = plt.subplot(nGrids, 3, 3 * j + 3)
+            plt.imshow(var_avg[1:ny - 1, 1:nx - 2] - sol_avg[1:ny - 1, 1:nx - 2])
             plt.colorbar()
-            plt.title('error')
+            plt.title(test + ' ' + tracer + ' ' + grid + ' error')
 
-        plt.savefig(test + '_' + grid + '_sections.png')
+            ncfileIC.close()
+            ncfile.close()
 
-        ncfileIC.close()
-        ncfile.close()
+        plt.savefig(test + '_' + tracer + '_sections.png')
+
 
 fig = plt.gcf()
 plt.clf()

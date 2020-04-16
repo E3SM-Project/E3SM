@@ -130,8 +130,8 @@ def vertical_init(ds, thicknessAllLayers, nVertLevels):
 def tracer_init(ds, thicknessAllLayers, test):
     K = 600.0  # kappa for Redi
     # tracers
-    x0 = 100.0e3
-    P0 = 3.0e-2
+    x0 = 1e2
+    P0 = 3.0e-3
     Tx = 5 / 1.0e10
     Ty = 0
     Tz = 10.0 / 1000
@@ -189,7 +189,7 @@ def tracer_init(ds, thicknessAllLayers, test):
                 tracer1[0,iCell,k] = P0*z*(x + x0)   
                 tracer2[0,iCell,k] = P0*z*(x + x0)**2
                 tracer3[0,iCell,k] = P0*z**2*(x + x0)
-                                           #  term 1  term 2                                              term 3
+                                           #  term 1     term 2                      term 3
                 tracer1Tend[0,iCell,k] = h*K*(0          -P0*Tx/Tz                   -P0*Tx/Tz)
                 tracer2Tend[0,iCell,k] = h*K*(2*P0*z     -P0*Tx*(2*x + 2*x0)/Tz      -P0*Tx*(2*x + 2*x0)/Tz)
                 tracer3Tend[0,iCell,k] = h*K*(0          -2*P0*Tx*z/Tz               -2*P0*Tx*z/Tz)
@@ -203,7 +203,7 @@ def tracer_init(ds, thicknessAllLayers, test):
                 tracer1[0,iCell,k] = P0*z*(x + x0)   
                 tracer2[0,iCell,k] = P0*z*(x + x0)**2
                 tracer3[0,iCell,k] = P0*z**2*(x + x0)
-                                           #  term 1  term 2                                              term 3
+                                           #  term 1  term 2                                               term 3
                 tracer1Tend[0,iCell,k] = h*K*(0       -2*P0*Tx*(x + x0)/Tz - P0*Tx*(2*x + 2*x0)/Tz         -P0*Tx*(2*x + 2*x0)/Tz)
                 tracer2Tend[0,iCell,k] = h*K*(2*P0*z  -2*P0*Tx*(x + x0)**2/Tz - P0*Tx*(2*x + 2*x0)**2/Tz   -P0*Tx*(2*x + 2*x0)**2/Tz)
                 tracer3Tend[0,iCell,k] = h*K*(0       -4*P0*Tx*z*(x + x0)/Tz - 2*P0*Tx*z*(2*x + 2*x0)/Tz   -2*P0*Tx*z*(2*x + 2*x0)/Tz)
@@ -224,6 +224,10 @@ def tracer_init(ds, thicknessAllLayers, test):
 
     # set min T to -1.8
     temperature[:] += -1.8 - np.min(temperature[:])
+    # set all tracers to be positive, because of Redi limiter for negative tracers.
+    tracer1[:] += - np.min(tracer1[:])
+    tracer2[:] += - np.min(tracer2[:])
+    tracer3[:] += - np.min(tracer3[:])
 
 
 def velocity_init(ds):
