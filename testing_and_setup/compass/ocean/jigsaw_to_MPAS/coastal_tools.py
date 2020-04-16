@@ -633,7 +633,10 @@ def mask_from_geojson(fc, lon_grd, lat_grd):  # {{{
     shapes = []
     for feature in fc.features:
         # a list of feature geometries and mask values (always 1.0)
-        shapes.append((feature['geometry'], 1.0))
+        shape = shapely.geometry.shape(feature['geometry'])
+        # expand a bit to make sure we hit the edges of the domain
+        shape = shape.buffer(dlat)
+        shapes.append((shapely.geometry.mapping(shape), 1.0))
 
     mask = rasterize(shapes, out_shape=(nlat, nlon), transform=transform)
     if np.abs(lon_grd[0] - (-180.)) < 1e-3 and \
