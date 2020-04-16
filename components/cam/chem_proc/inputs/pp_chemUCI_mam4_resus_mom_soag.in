@@ -1,12 +1,3 @@
-BEGSIM
-output_unit_number = 7
-output_file        = chemUCI_mam4.doc
-procout_path       = ../output/
-src_path           = ../bkend/
-procfiles_path     = ../procfiles/cam/
-sim_dat_path       = ../output/
-sim_dat_filename   = chemUCI_mam4.dat
-
 Comments
      "Modified by Juno Hsu and Qi Tang - 4/9/2020"
      "chemUCI + MAM4 for E3SM"
@@ -162,8 +153,8 @@ CHEMISTRY
 *  effectively k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
 *     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2])
 *  and rxt[uci1] = k[uci1]*[O3]*[H2O]
-   CO + OH -> CO2 + H                             ; 1.440E-13,  0
-   CO + OH + M -> CO2 + HO2 + M                   ; 2.670E-33,  0
+   CO + OH -> H                                   ; 1.440E-13,  0
+   CO + OH + M -> HO2 + M                         ; 2.670E-33,  0
    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
    CH4 + OH -> CH3O2 + H2O                        ; 2.450E-12, -1775
    C2H6 + OH -> C2H5O2                            ; 7.660E-12, -1020
