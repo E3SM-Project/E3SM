@@ -219,6 +219,7 @@ set (SCREAM_F90_MODULES ${CMAKE_CURRENT_BINARY_DIR}/modules)
 file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
 add_custom_target(baseline)
+add_custom_target(baseline_cxx)
 
 add_subdirectory(src)
 if (NOT SCREAM_LIB_ONLY)
