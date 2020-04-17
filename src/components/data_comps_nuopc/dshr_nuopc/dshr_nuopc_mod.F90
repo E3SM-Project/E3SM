@@ -958,11 +958,10 @@ contains
   subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
        mpicom, compid, masterproc, logunit, sdat) 
 
-    use dshr_dmodel_mod  , only : shr_dmodel_mapset
     use shr_map_mod      , only : shr_map_fs_remap, shr_map_fs_bilinear
     use shr_map_mod      , only : shr_map_fs_srcmask, shr_map_fs_scalar
     use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
-    use dshr_strdata_mod , only : shr_strdata_type
+    use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_mapset
     use shr_const_mod    , only : shr_const_spval
     use shr_mpi_mod      , only : shr_mpi_bcast
     use mct_mod          , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp
@@ -1166,7 +1165,7 @@ contains
     call shr_mpi_bcast(domap,mpicom,subname//' domap')
 
     if (domap) then
-       call shr_dmodel_mapSet(smatp, &
+       call shr_strdata_mapSet(smatp, &
             ggridi, gsmapi, ni0 ,nj0, &
             sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &            
             'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, shr_map_fs_srcmask, shr_map_fs_scalar, &
