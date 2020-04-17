@@ -776,7 +776,12 @@ contains
                ! In that case, it will take until the next winter solstice
                ! before the growing degree-day summation starts again.
 
-               if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
+               !if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
+               ! F.-M. Yuan (2020-02-25): heavy-snowing winter could cause
+               ! spring snow-melting pass summer solstice. So better let
+               ! 'onset_gddflag' on until 'offset' starts.
+               if (onset_gddflag(p) == 1._r8 .and. &
+                   (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) ) then
                   onset_gddflag(p) = 0._r8
                   onset_gdd(p) = 0._r8
                end if
