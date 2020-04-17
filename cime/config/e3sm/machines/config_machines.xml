@@ -2081,14 +2081,13 @@
       <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
       <GMAKE_J>4</GMAKE_J>
       <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-      <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-      <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+      <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+      <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
       <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
       <mpirun mpilib="openmpi" compiler="gnu">
         <executable>mpirun</executable>
         <arguments>
           <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-          <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
         </arguments>
       </mpirun>
         <mpirun mpilib = "mpi-serial">
@@ -2110,8 +2109,8 @@
           <command name="load">PE-gnu</command>
         </modules>
         <modules>
-          <command name="load">mkl/2017</command>
-          <command name="load">cmake/3.11.0</command>
+          <command name="load">mkl/2018.1.163</command>
+          <command name="load">cmake/3.12.0</command>
           <command name="load">python/2.7.13</command>
           <command name="load">nco/4.6.9</command>
           <command name="load">hdf5-parallel/1.8.17</command>
@@ -2147,7 +2146,9 @@
           <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_PATH}/include</env>
           <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_PATH}/lib -lpetsc -lparmetis -lmetis</env> -->
       </environment_variables>
-
+    <environment_variables>
+      <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
+    </environment_variables>
       
 </machine>
 

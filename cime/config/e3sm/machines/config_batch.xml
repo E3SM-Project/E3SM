@@ -468,11 +468,12 @@
          </queues>
    </batch_system>
 
-   <batch_system MACH="cades" type="pbs" >
-         <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-                 <directive>-W group_list=cades-ccsi</directive>
-         </directives>
+   <batch_system MACH="cades" type="slurm" >
+         <submit_args>
+           <arg flag="-A ccsi"/>
+           <arg flag="--mem=125G"/>
+           <arg flag="--ntasks-per-node 32"/>
+         </submit_args>
          <queues>
            <queue default="true">batch</queue>
          </queues>
