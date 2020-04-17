@@ -141,16 +141,19 @@ void AtmosphereDriver::inspect_atm_dag () {
   AtmProcDAG dag;
   dag.create_dag(*m_atm_process_group);
 
-  if (dag.get_unmet_dependencies().size()>0) {
-    dag.write_dag("scream_atm_dag.dot");
+  auto& deb_pl = m_atm_params.sublist("Debug");
+  if (dag.has_unmet_dependencies()) {
+    const int err_verb_lev = deb_pl.get<int>("Atmosphere DAG Verbosity Level",int(AtmProcDAG::VERB_MAX));
+    dag.write_dag("error_atm_dag.dot",err_verb_lev);
     scream_error_msg("Error! There are unmet dependencies in the atmosphere internal dag.\n"
-                     "       Use the graphviz package to inspect the 'scream_atm_dag.dot' dependency graph.\n"
-                     "       Note: you can process that file with 'dot -Tjpg -O scream_atm_dag.dot'\n");
+                     "       Use the graphviz package to inspect the 'error_atm_dag.dot' dependency graph.\n"
+                     "       Note: you can process that file with 'dot -Tjpg -O error_atm_dag.dot'\n");
   }
 
   // If requested, write a dot file for visualization
-  if (m_atm_params.sublist("Debug").get<bool>("Write Atmosphere DAG",false)) {
-    dag.write_dag("scream_atm_dag.dot");
+  const int verb_lev = deb_pl.get<int>("Atmosphere DAG Verbosity Level",0);
+  if (verb_lev>0) {
+    dag.write_dag("scream_atm_dag.dot",verb_lev);
   }
 
   // Check that inputs have an initializer

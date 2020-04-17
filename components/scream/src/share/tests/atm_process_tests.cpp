@@ -203,6 +203,29 @@ public:
   }
 };
 
+std::shared_ptr<UserProvidedGridsManager>
+setup_upgm (const int ne) {
+  // Greate a grids manager
+  auto upgm = std::make_shared<UserProvidedGridsManager>();
+  auto dummy_dyn_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_CellBased);
+  auto dummy_phys_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_NodeBased);
+  upgm->set_grid(dummy_dyn_grid);
+  upgm->set_grid(dummy_phys_grid);
+  upgm->set_reference_grid(dummy_phys_grid->name());
+
+  using dummy_remapper = DummySEGridRemapper<Real,DefaultDevice>;
+  using inverse_remapper = InverseRemapper<Real,DefaultDevice>;
+  auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
+  auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
+  auto dummy_dyn_phys_remapper = std::make_shared<inverse_remapper>(dummy_phys_dyn_remapper2);
+  upgm->set_remapper(dummy_phys_dyn_remapper);
+  upgm->set_remapper(dummy_dyn_phys_remapper);
+
+  return upgm;
+}
+
+// ================================ TESTS ============================== //
+
 TEST_CASE("process_factory", "") {
   using namespace scream;
 
@@ -299,35 +322,42 @@ TEST_CASE("atm_proc_dag", "") {
   factory.register_product("mYdynAmics",&create_atmosphere_process<MyDynamics>);
   factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
 
-  // Create the processes
-  std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
+  // Test a case where the dag has no unmet deps
+  SECTION ("working") {
+    // Create the processes
+    std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
-  // Greate a grids manager
-  auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_CellBased);
-  auto dummy_phys_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_NodeBased);
-  upgm->set_grid(dummy_dyn_grid);
-  upgm->set_grid(dummy_phys_grid);
-  upgm->set_reference_grid(dummy_phys_grid->name());
+    // Greate a grids manager
+    auto upgm = setup_upgm (ne);
 
-  using dummy_remapper = DummySEGridRemapper<Real,DefaultDevice>;
-  using inverse_remapper = InverseRemapper<Real,DefaultDevice>;
-  auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
-  auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
-  auto dummy_dyn_phys_remapper = std::make_shared<inverse_remapper>(dummy_phys_dyn_remapper2);
-  upgm->set_remapper(dummy_phys_dyn_remapper);
-  upgm->set_remapper(dummy_dyn_phys_remapper);
+    // Set the grids, so the remappers in the group are not empty
+    atm_process->set_grids(upgm);
 
-  // Set the grids, so the remappers in the group are not empty
-  atm_process->set_grids(upgm);
+    // Create the dag
+    AtmProcDAG dag;
+    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process));
+    dag.write_dag("working_atm_proc_dag.dot",0);
 
-  // Create the dag
-  AtmProcDAG dag;
-  dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process));
+    // Clean up
+    upgm->clean_up();
+  }
 
-  dag.write_dag("atm_proc_dag.dot");
+  SECTION ("broken") {
+    auto upgm = setup_upgm(ne);
 
-  upgm->clean_up();
+    // Make it look like we forgot to request MyPhysicsA
+    p1.set("Number of Entries", 1);
+    p1_0.set<std::string>("Process Name", "MyPhysicsB");
+    std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
+    broken_atm_group->set_grids(upgm);
+
+    // Create the dag
+    AtmProcDAG dag;
+    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group));
+    dag.write_dag("broken_atm_proc_dag.dot",1);
+
+    upgm->clean_up();
+  }
 }
 
 } // empty namespace

@@ -10,52 +10,43 @@ class AtmProcDAG {
 public:
 
   using group_type = AtmosphereProcessGroup;
+  static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs);
 
-  void write_dag (const std::string& fname) const;
+  void write_dag (const std::string& fname, const int verbosity = VERB_MAX) const;
 
-  const std::set<std::string>& get_prev_time_step_dependencies () const {
-    return m_deps_on_prev_ts_set;
-  }
-
-  const std::set<std::string>& get_unmet_dependencies () const {
-    return m_unmet_deps_set;
-  }
-
+  bool has_unmet_dependencies () const { return m_has_unmet_deps; }
 protected:
 
   void cleanup ();
 
   void add_nodes (const group_type& atm_procs);
 
+  // Add fid to list of fields in the dag, and return its position.
+  // If already stored, simply return its position
+  int add_fid (const FieldIdentifier& fid);
+
   struct Node {
-    std::vector<int>          parents;
-    std::vector<int>          children;
-    std::string               name;
-    int                       id;
-    std::vector<std::string>  computed;
-    std::vector<std::string>  required;
+    std::vector<int>  children;
+    std::string       name;
+    int               id;
+    std::vector<int>  computed;
+    std::vector<int>  required;
   };
 
+  // Assign an id to each field identifier
+  std::vector<FieldIdentifier>    m_fids;
+
   // Map each field id to its last provider
-  std::map<std::string,int>               m_fid_to_last_provider;
+  std::map<int,int>               m_fid_to_last_provider;
 
-  // Map a node id to a vector of unmet dependencies
-  std::map<int,std::vector<std::string>>  m_unmet_deps;
+  // Map a node id to a set of unmet field dependencies
+  std::map<int,std::set<int>>     m_unmet_deps;
+  bool                            m_has_unmet_deps;
 
-  // A lumped set version of the above, which can be queried to do checks on the AD side.
-  std::set<std::string>                   m_unmet_deps_set;
-
-  // Map a node id to a vector of deps met from previous time-step
-  std::map<int,std::vector<std::string>>  m_deps_on_prev_ts;
-
-  // A lumped set version of the above, which can be queried to do checks on the AD side.
-  std::set<std::string>                   m_deps_on_prev_ts_set;
-
-  using Edge = std::pair<int,int>;
-
-  std::vector<Node>   m_nodes;
+  // The nodes in the atm DAG
+  std::vector<Node>               m_nodes;
 };
 
 } // namespace scream

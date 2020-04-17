@@ -9,113 +9,156 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
 
   cleanup ();
 
-  // begin is a placeholder for the beginning of an atm time step.
-  // It comes handy when representing the input from prev. time step.
-  Node begin_ts;
-  begin_ts.name = "Begin of atm time step";
-  begin_ts.id = 0;
-  m_nodes.push_back(begin_ts);
-  m_unmet_deps[0].resize(0);
-
   // Create the nodes
   add_nodes(atm_procs);
 
-  // Add the end node. Just like begin, it is a placeholder, this time
-  // for the 'next' time step.
+  // Add a 'begin' and 'end' placeholders. While they are not actual
+  // nodes of the graph, they come handy when representing inputs
+  // coming from previous time step, or output that will be fed to
+  // the next time step
+  m_nodes.reserve(m_nodes.size()+2);
+
+  m_nodes.push_back(Node());
+  Node& begin_ts = m_nodes.back();
+  begin_ts.name = "Begin of atm time step";
+  begin_ts.id = m_nodes.size()-1;
+  m_unmet_deps[begin_ts.id].clear();
+
   m_nodes.push_back(Node());
   Node& end_ts = m_nodes.back();
   end_ts.name = "End of atm time step";
   end_ts.id = m_nodes.size()-1;
-  m_unmet_deps[end_ts.id].resize(0);
+  m_unmet_deps[end_ts.id].clear();
 
   // Next, check if some unmet deps are simply coming from previous time step.
+  m_has_unmet_deps = false;
   for (auto& it : m_unmet_deps) {
     int id = it.first;
     auto& unmet = it.second;
-    for (size_t k=0; k<unmet.size();) {
-      const std::string& fid = unmet[k];
+    std::set<int> to_be_erased;
+    for (auto fid : unmet) {
       auto check = m_fid_to_last_provider.find(fid);
       if (check!=m_fid_to_last_provider.end()) {
         // We found this 'unmet' dependency. So a process, which appears
         // later in the time-step dag, will compute it. It's not a 'real'
         // unmet dependency, but rather a dependency on the prev. time step.
-        m_nodes[0].computed.push_back(fid);
-        m_nodes[0].children.push_back(id);
-        m_nodes[id].parents.push_back(0);
+        begin_ts.computed.push_back(fid);
+        begin_ts.children.push_back(id);
 
         end_ts.required.push_back(check->first);
-        end_ts.parents.push_back(check->second);
         m_nodes[check->second].children.push_back(end_ts.id);
 
-        // Erase this field from the unmet deps of this node
-        unmet.erase(unmet.begin()+k);
-      } else {
-        // Modify the name of the 'required' entry, adding ' *** MISSING *** '
-        Node& n = m_nodes[id];
-        auto req_it = std::find(n.required.begin(),n.required.end(),fid);
-        scream_require_msg(req_it!=n.required.end(),
-                           "[AtmProcDAG] Internal error! Please, contact developers.\n");
-        *req_it += "  *** MISSING ***";
-
-        // Note: we update the iterator only in this branch of the if,
-        //       cause in the other case, erasing an entry already makes
-        //       fid_it point to the 'next' element.
-        ++k;
+        // This fid is not really an unmet dep. Mark it to be erased from unmet.
+        to_be_erased.insert(fid);
       }
     }
-  }
 
-  // Fill the set m_deps_on_prev_ts_set.
-  for (const auto& it : m_deps_on_prev_ts) {
-    const auto& deps = it.second;
-    for (const auto& fid : deps) {
-      m_deps_on_prev_ts_set.insert(fid);
+    for (auto fid : to_be_erased) {
+      util::erase(unmet,fid);
     }
-  }
 
-  // Fill the set m_unmet_deps_set
-  for (const auto& it : m_unmet_deps) {
-    const auto& deps = it.second;
-    for (const auto& fid : deps) {
-      m_unmet_deps_set.insert(fid);
-    }
+    m_has_unmet_deps |= (unmet.size()>0);
   }
 }
 
-void AtmProcDAG::write_dag (const std::string& fname) const {
+void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const {
+
+  // Handy lambda to print a fid with different degrees of verbosity
+  auto print_fid = [] (const FieldIdentifier& fid, const int verbosity) -> std::string {
+    // Print will always print the name
+    std::string s = fid.name();
+
+    // If verbosity is >= 1, add layout info
+    if (verbosity>0) {
+      // If verbosity is >= 2, add grid name
+      if (verbosity>1) {
+        s += " [" + fid.get_grid_name() + "]";
+      }
+      s += " <";
+      for (auto t : fid.get_layout().tags()) {
+        s += tag2string(t);
+        s += ",";
+      }
+      // Remove last ',' and add '>'.
+      s.back() = '>';
+      s += "(";
+      for (auto dim : fid.get_layout().dims()) {
+        s += std::to_string(dim);
+        s += ",";
+      }
+      // Remove last ',' and add ')'.
+      s.back() = ')';
+
+      if (verbosity>2) {
+        s += " [" + fid.get_units().get_string() + "]";
+      }
+    }
+    return s;
+  };
+
+  auto html_fix = [] (const std::string& s) -> std::string {
+    std::string out(s);
+    auto pos = out.find('<');
+    while (pos!=std::string::npos) {
+      out.replace(pos,1,"&lt;");
+      pos = out.find('<');
+    }
+    pos = out.find('>');
+    while (pos!=std::string::npos) {
+      out.replace(pos,1,"&gt;");
+      pos = out.find('>');
+    }
+    return out;
+  };
+
   std::ofstream ofile;
   ofile.open (fname.c_str());
 
-  ofile << "digraph G {\n";
+  ofile << "strict digraph G {\n";
 
   for (const auto& n : m_nodes) {
-    std::string color = "";
-    // Check if all deps of this node are satisfied.
-    if (m_unmet_deps.at(n.id).size()>0) {
-      color = "red";
-    }
+    const auto& unmet = m_unmet_deps.at(n.id);
 
     // Write node, with computed/required fields
     ofile << n.id
-          << " [fontcolor=\"" << color
-          << "\", label=\"" << n.name;
-    if (n.name=="Begin of atm time step") {
-      ofile << "\\n Inputs from previous time step:";
-    } else if (n.name!="End of atm time step"){
-      ofile << "\\n Computed:";
+          << " [\n"
+          << "  shape=box\n"
+          << "  label=<\n"
+          << "    <table border=\"0\">\n"
+          << "      <tr><td><b>" << html_fix(n.name) << "</b></td></tr>";
+    if (verbosity>0) {
+      // FieldIntentifier prints bare min with verb 0.
+      // DAG starts printing fids with verb 2, so fid verb is verb-2;
+      int fid_verb = verbosity-2;
+      ofile << "<hr/>\n";
+      if (n.name=="Begin of atm time step") {
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Inputs from previous time step:</font></td></tr>\n";
+      } else if (n.name!="End of atm time step"){
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Computed:</font></td></tr>\n";
+      }
+      for (const auto& fid : n.computed) {
+        ofile << "      <tr><td align=\"left\">  " << html_fix(print_fid(m_fids[fid],fid_verb)) << "</td></tr>\n";
+      }
+      if (n.name=="End of atm time step") {
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Outputs for next time step:</font></td></tr>\n";
+      } else if (n.name!="Begin of atm time step") {
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Required:</font></td></tr>\n";
+      }
+      for (const auto& fid : n.required) {
+        std::string fc = "<font color=\"";
+        fc += (util::contains(unmet,fid) ? "red" : "black");
+        fc += "\">  ";
+        ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid],fid_verb));
+        if (util::contains(m_unmet_deps.at(n.id),fid)) {
+          ofile << "<b>  *** MISSING ***</b>";
+        }
+        ofile << "</font></td></tr>\n";
+      }
+    } else {
+      ofile << "\n";
     }
-    for (const auto& fid : n.computed) {
-      ofile << "\\n   " << fid;
-    }
-    if (n.name=="End of atm time step") {
-      ofile << "\\n Outputs for next time step:";
-    } else if (n.name!="Begin of atm time step") {
-      ofile << "\\n Required:";
-    }
-    for (const auto& fid : n.required) {
-      ofile << "\\n   " << fid;
-    }
-    ofile << "\"]\n";
+    ofile << "    </table>\n"
+          << "  >\n];\n";
 
     // Write all outgoing edges
     for (const auto c : n.children) {
@@ -132,8 +175,7 @@ void AtmProcDAG::cleanup () {
   m_nodes.clear();
   m_fid_to_last_provider.clear();
   m_unmet_deps.clear();
-  m_deps_on_prev_ts.clear();
-  m_deps_on_prev_ts_set.clear();
+  m_has_unmet_deps = false;
 }
 
 void AtmProcDAG::add_nodes (const group_type& atm_procs) {
@@ -166,22 +208,24 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
           Node& node = m_nodes.back();;
           node.id = id;
           node.name = proc->name()+" (remap in [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
-          m_unmet_deps[id].resize(0);
+          m_unmet_deps[id].clear();
           for (int k=0; k<rem.get_num_fields(); ++k) {
-            const auto& fid_in = rem.get_src_field_id(k).get_id_string();
-            node.required.push_back(fid_in);
-            auto it = m_fid_to_last_provider.find(fid_in);
+            const auto& fid_in = rem.get_src_field_id(k);
+            const int fid_in_id = add_fid(fid_in);
+            node.required.push_back(fid_in_id);
+            auto it = m_fid_to_last_provider.find(fid_in_id);
             if (it==m_fid_to_last_provider.end()) {
-              m_unmet_deps[id].push_back(fid_in);
+              m_unmet_deps[id].insert(fid_in_id);
             } else {
               // Establish parent-child relationship
               Node& parent = m_nodes[it->second];
-              node.parents.push_back(parent.id);
               parent.children.push_back(node.id);
             }
-            const auto& fid_out = rem.get_tgt_field_id(k).get_id_string();
-            node.computed.push_back(fid_out);
-            m_fid_to_last_provider[fid_out] = id;
+
+            const auto& fid_out = rem.get_tgt_field_id(k);
+            const int fid_out_id = add_fid(fid_out);
+            node.computed.push_back(fid_out_id);
+            m_fid_to_last_provider[fid_out_id] = id;
           }
           ++id;
         }
@@ -196,26 +240,24 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
         Node& node = m_nodes.back();;
         node.id = id;
         node.name = proc->name();
-        m_unmet_deps[id].resize(0);
-        // node.parents.push_back(m_current_head);
+        m_unmet_deps[id].clear();
         // m_current_head->children.push_back(&node);
-        for (auto f : proc->get_required_fields()) {
-          const auto& fid = f.get_id_string();
-          node.required.push_back(fid);
-          auto it = m_fid_to_last_provider.find(fid);
+        for (auto fid : proc->get_required_fields()) {
+          const int fid_id = add_fid(fid);
+          node.required.push_back(fid_id);
+          auto it = m_fid_to_last_provider.find(fid_id);
           if (it==m_fid_to_last_provider.end()) {
-            m_unmet_deps[id].push_back(fid);
+            m_unmet_deps[id].insert(fid_id);
           } else {
             // Establish parent-child relationship
             Node& parent = m_nodes[it->second];
-            node.parents.push_back(parent.id);
             parent.children.push_back(node.id);
           }
         }
-        for (auto f : proc->get_computed_fields()) {
-          const auto& fid = f.get_id_string();
-          node.computed.push_back(fid);
-          m_fid_to_last_provider[fid] = id;
+        for (auto fid : proc->get_computed_fields()) {
+          const int fid_id = add_fid(fid);
+          node.computed.push_back(fid_id);
+          m_fid_to_last_provider[fid_id] = id;
         }
         ++id;
       }
@@ -228,29 +270,40 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
           Node& node = m_nodes.back();
           node.id = id;
           node.name = proc->name()+" (remap out [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
-          m_unmet_deps[id].resize(0);
+          m_unmet_deps[id].clear();
           for (int k=0; k<rem.get_num_fields(); ++k) {
-            const auto& fid_in = rem.get_src_field_id(k).get_id_string();
-            node.required.push_back(fid_in);
+            const auto& fid_in = rem.get_src_field_id(k);
+            const int fid_in_id = add_fid(fid_in);
+            node.required.push_back(fid_in_id);
             // A remapper for outputs of proc should *not* have unmet dependencies.
-            auto it = m_fid_to_last_provider.find(fid_in);
+            auto it = m_fid_to_last_provider.find(fid_in_id);
             scream_require_msg (it!=m_fid_to_last_provider.end(),
                                 "Internal error! Something is off with outputs remapper for atm proc '" + proc->name() + "'.\n"
                                 "   Please, contact developers.\n");
 
             // Establish parent-child relationship
             Node& parent = m_nodes[it->second];
-            node.parents.push_back(parent.id);
             parent.children.push_back(node.id);
 
-            const auto& fid_out = rem.get_tgt_field_id(k).get_id_string();
-            node.computed.push_back(fid_out);
-            m_fid_to_last_provider[fid_out] = id;
+            const auto& fid_out = rem.get_tgt_field_id(k);
+            const int fid_out_id = add_fid(fid_out);
+            node.computed.push_back(fid_out_id);
+            m_fid_to_last_provider[fid_out_id] = id;
           }
           ++id;
         }
       }
     }
+  }
+}
+
+int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
+  auto it = util::find(m_fids,fid);
+  if (it==m_fids.end()) {
+    m_fids.push_back(fid);
+    return m_fids.size()-1;
+  } else {
+    return std::distance(m_fids.cbegin(),it);
   }
 }
 
