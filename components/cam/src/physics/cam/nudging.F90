@@ -1076,10 +1076,10 @@ contains
    if(Nudge_ON) then
      lchnk=phys_state%lchnk
      ncol =phys_state%ncol
-     phys_tend%u(:ncol,:pver)     =Nudge_Ustep(:ncol,:pver,lchnk)
-     phys_tend%v(:ncol,:pver)     =Nudge_Vstep(:ncol,:pver,lchnk)
-     phys_tend%s(:ncol,:pver)     =Nudge_Tstep(:ncol,:pver,lchnk)
-     phys_tend%q(:ncol,:pver,indw)=Nudge_Qstep(:ncol,:pver,lchnk)
+     phys_tend%u(:ncol,:pver-2)     =Nudge_Ustep(:ncol,:pver-2,lchnk)
+     phys_tend%v(:ncol,:pver-2)     =Nudge_Vstep(:ncol,:pver-2,lchnk)
+     phys_tend%s(:ncol,:pver-2)     =Nudge_Tstep(:ncol,:pver-2,lchnk)
+     phys_tend%q(:ncol,:pver-2,indw)=Nudge_Qstep(:ncol,:pver-2,lchnk)
 
      call outfld('Nudge_U',phys_tend%u          ,pcols,lchnk)
      call outfld('Nudge_V',phys_tend%v          ,pcols,lchnk)

@@ -68,7 +68,7 @@
 <effgw_beres>        0.4    </effgw_beres>
 <do_tms>             .false.</do_tms>
 <so4_sz_thresh_icenuc>0.075e-6</so4_sz_thresh_icenuc>
-<n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
+<n_so4_monolayers_pcage>3.0D0 </n_so4_monolayers_pcage>
 <micro_mg_accre_enhan_fac>1.5D0</micro_mg_accre_enhan_fac>
 <zmconv_tiedke_add       >0.8D0</zmconv_tiedke_add>
 <zmconv_cape_cin         >1</zmconv_cape_cin>

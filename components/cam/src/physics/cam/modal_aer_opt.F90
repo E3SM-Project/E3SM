@@ -35,6 +35,11 @@ use cam_abortutils,        only: endrun
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag
 
+!======LSJ=====
+use cloud_cover_diags,                 only: cltot_pub
+!======LSJ=====
+
+
 implicit none
 private
 save
@@ -177,6 +182,9 @@ subroutine modal_aer_opt_init()
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+   call addfld ('AODVIS2',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+   call addfld ('REGIONALCLOUD',horiz_only,    'A','  ','Aerosol optical depth count',flag_xyfill=.true.)
+   call addfld ('CLOUDFREECLOUD',horiz_only,    'A','  ','Aerosol optical depth count', flag_xyfill=.true.)
    call addfld ('AODUV',horiz_only,    'A','  ','Aerosol optical depth 350 nm', flag_xyfill=.true.)  
    call addfld ('AODNIR',horiz_only,    'A','  ','Aerosol optical depth 850 nm', flag_xyfill=.true.) 
    call addfld ('AODABS',horiz_only,    'A','  ','Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
@@ -223,6 +231,9 @@ subroutine modal_aer_opt_init()
       call add_default ('AODDUST1'     , 1, ' ')
       call add_default ('AODDUST3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
+      call add_default ('AODVIS2'       , 1, ' ')
+      call add_default ('REGIONALCLOUD'       , 1, ' ')
+      call add_default ('CLOUDFREECLOUD'       , 1, ' ')
       call add_default ('BURDEN1'      , 1, ' ')
       call add_default ('BURDEN2'      , 1, ' ')
       call add_default ('BURDEN3'      , 1, ' ')
@@ -249,6 +260,9 @@ subroutine modal_aer_opt_init()
       call add_default ('AODMODE2'     , 1, ' ')
       call add_default ('AODMODE3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
+      call add_default ('AODVIS2'       , 1, ' ')
+      call add_default ('REGIONALCLOUD'       , 1, ' ')
+      call add_default ('CLOUDFREECLOUD'       , 1, ' ')
       call add_default ('AODUV'        , 1, ' ')
       call add_default ('AODNIR'       , 1, ' ')
       call add_default ('AODABS'       , 1, ' ')
@@ -341,12 +355,21 @@ subroutine modal_aer_opt_init()
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         call addfld ('AODVIS2'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         call addfld ('REGIONALCLOUD'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol optical depth count', flag_xyfill=.true.)
+         call addfld ('CLOUDFREECLOUD'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol optical depth count', flag_xyfill=.true.)
          call addfld ('AODABS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
          
          call add_default ('EXTINCT'//diag(ilist), 1, ' ')
          call add_default ('ABSORB'//diag(ilist),  1, ' ')
          call add_default ('AODVIS'//diag(ilist),  1, ' ')
+         call add_default ('AODVIS2'//diag(ilist),  1, ' ')
+         call add_default ('REGIONALCLOUD'//diag(ilist),  1, ' ')
+         call add_default ('CLOUDFREECLOUD'//diag(ilist),  1, ' ')
          call add_default ('AODABS'//diag(ilist),  1, ' ')
          
       end if
@@ -431,6 +454,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    real(r8) :: extinct(pcols,pver)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
+   real(r8) :: aodvis2(pcols)
+   real(r8) :: regionalcloud(pcols)
+   real(r8) :: cloudfreecloud(pcols)
    real(r8) :: aodabs(pcols)               ! absorption optical depth
 
    real(r8) :: aodabsbc(pcols)             ! absorption optical depth of BC
@@ -526,6 +552,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    extinct(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
+   aodvis2(1:ncol)       = 0.0_r8
+   regionalcloud(1:ncol) = 0.0_r8
+   cloudfreecloud(1:ncol)       = 0.0_r8
    aodabs(1:ncol)        = 0.0_r8
    burdendust(:ncol)     = 0.0_r8
    burdenso4(:ncol)      = 0.0_r8
@@ -844,8 +873,17 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
                ! aerosol extinction (/m)
                do i = 1, ncol
                   extinct(i,k) = extinct(i,k) + dopaer(i)*air_density(i,k)/mass(i,k)
-                  absorb(i,k)  = absorb(i,k) + pabs(i)*air_density(i,k)
+                  absorb(i,k)  = absorb(i,k) + pabs(i)*air_density(i,k)                 
+!===================LSJ=========
                   aodvis(i)    = aodvis(i) + dopaer(i)
+                  regionalcloud(i) = regionalcloud(i) + 1
+                  if (cltot_pub(i) < 0.95) then
+                  aodvis2(i)    = aodvis2(i) + dopaer(i)
+                  cloudfreecloud (i) = cloudfreecloud(i) + 1
+                  else
+                  aodvis2 (i)   = fillvalue
+                  endif
+!===================LSJ=========
                   aodabs(i)    = aodabs(i) + pabs(i)*mass(i,k)
                   aodmode(i)   = aodmode(i) + dopaer(i)
                   ssavis(i)    = ssavis(i) + dopaer(i)*palb(i)
@@ -1050,12 +1088,20 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
       extinct(idxnite(i),:) = fillvalue
       absorb(idxnite(i),:)  = fillvalue
       aodvis(idxnite(i))    = fillvalue
+      aodvis2(idxnite(i))    = fillvalue
+      regionalcloud(idxnite(i))    = fillvalue
+      cloudfreecloud(idxnite(i))    = fillvalue
+      regionalcloud(idxnite(i))    = fillvalue
+      cloudfreecloud(idxnite(i))    = fillvalue
       aodabs(idxnite(i))    = fillvalue
    end do
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
+   call outfld('AODVIS2'//diag(list_idx),   aodvis2,  pcols, lchnk)
+   call outfld('REGIONALCLOUD'//diag(list_idx),   regionalcloud,  pcols, lchnk)
+   call outfld('CLOUDFREECLOUD'//diag(list_idx),   cloudfreecloud,  pcols, lchnk)
    call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
 
    ! These diagnostics are output only for climate list
