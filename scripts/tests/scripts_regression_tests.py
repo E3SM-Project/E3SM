@@ -314,9 +314,7 @@ class N_TestUnitTest(unittest.TestCase):
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
         args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
         args += " --machine {}".format(MACHINE.get_machine_name())
-        wesout = run_cmd_no_fail("{} {}".format(unit_test_tool, args))
-        logging.info("wpc1b. scripts_regression_tests.py. wesoutx = %s\n" % wesout)
-        print("wpc1c. wesout = " + wesout)
+        run_cmd_no_fail("{} {}".format(unit_test_tool, args))
         cls._do_teardown.append(test_dir)
 
     @classmethod
@@ -328,7 +326,6 @@ class N_TestUnitTest(unittest.TestCase):
             if tfile not in cls._do_teardown:
                 print("Detected failed test or user request no teardown")
                 print("Leaving case directory : %s"%tfile)
-                print("wpc1d. wesout test.\n")
                 teardown_root = False
             elif do_teardown:
                 shutil.rmtree(tfile)
@@ -3415,7 +3412,6 @@ def write_provenance_info():
         logging.info("Testing mpilib = %s"% TEST_MPILIB)
     logging.info("Test root: %s" % TEST_ROOT)
     logging.info("Test driver: %s\n" % CIME.utils.get_cime_default_driver())
-    logging.info("wpc1. Using os.environ = %s\n" % os.environ)
 
 def cleanup():
     # if the TEST_ROOT directory exists and is empty, remove it
