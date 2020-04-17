@@ -81,7 +81,7 @@ Not enabled by default because it creates in-source output, and because it
 requires genf90.pl to be in the user's path."""
                         )
 
-    parser.add_argument("--make-j", type=int, default=8,
+    parser.add_argument("--make-j", type=int, default=10,
                         help="""Number of processes to use for build."""
                         )
 
@@ -205,7 +205,9 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
         if cmake_args is not None:
             cmake_command.extend(cmake_args.split(" "))
 
-        run_cmd_no_fail(" ".join(cmake_command), combine_output=True)
+        wout = run_cmd_no_fail(" ".join(cmake_command), combine_output=True)
+        logging.info("wpc8b. scripts_regression_tests.py. wout = %s\n" % wout)
+        print("wpc8c. wout = " + wout)
 
 def make_stage(name, output, make_j, clean=False, verbose=True):
     """Run make in the current working directory.
@@ -215,7 +217,11 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
     make_j (int) - number of processes to use for make
     """
     output.print_header("Running make for "+name+".")
-
+    #logger.info("rt6. Using os.environ = %s\n" % os.environ)
+    print("\nrt6.\n")
+    for a in os.environ:
+        print('Var: ', a, 'Value: ', os.getenv(a))
+    print("\nrt6.========================================================\n\n")
     if clean:
         run_cmd_no_fail("make clean")
 
@@ -305,6 +311,11 @@ def _main():
     #=================================================
     # Functions to perform various stages of build.
     #=================================================
+    #logger.info("rt1. Using os.environ = %s\n" % os.environ)
+    print("\nrt1.\n")
+    for a in os.environ:
+        print('Var: ', a, 'Value: ', os.getenv(a))
+    print("\nrt1.========================================================\n\n")
 
     if not use_mpi:
         mpilib = "mpi-serial"
@@ -326,6 +337,12 @@ def _main():
     # Create the environment, and the Macros.cmake file
     #
     #
+    #logger.info("rt2. Using os.environ = %s\n" % os.environ)
+    print("\nrt2.\n")
+    for a in os.environ:
+        print('Var: ', a, 'Value: ', os.getenv(a))
+    print("\nrt2.========================================================\n\n")
+
     configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug,
               comp_interface, os_, unit_testing=True)
     machspecific = EnvMachSpecific(build_dir, unit_testing=True)
@@ -334,13 +351,24 @@ def _main():
     machspecific.load_env(fake_case)
     cmake_args = "{}-DOS={} -DCOMPILER={} -DDEBUG={} -DMPILIB={} -Dcompile_threaded={}".format(
         "" if not cmake_args else " ", os_, compiler, stringify_bool(debug), mpilib, stringify_bool(use_openmp))
-
+    #logger.info("rt3. Using os.environ = %s\n" % os.environ)
+    print("\nrt3.\n")
+    for a in os.environ:
+        print('Var: ', a, 'Value: ', os.getenv(a))
+    print("\nrt3.========================================================\n\n")
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
+
     if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:
         # The CMake Netcdf find utility that we use (from pio2) seems to key off
         # of the environment variable NETCDF, but not NETCDF_PATH
         logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDF_PATH"]))
         os.environ["NETCDF"] = os.environ["NETCDF_PATH"]
+
+    if "NETCDFROOT" in os.environ and not "NETCDF" in os.environ:
+        # The CMake Netcdf find utility that we use (from pio2) seems to key off
+        # of the environment variable NETCDF, but not NETCDFROOT
+        logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDFROOT"]))
+        os.environ["NETCDF"] = os.environ["NETCDFROOT"]
 
     if not use_mpi:
         mpirun_command = ""
@@ -363,6 +391,12 @@ def _main():
 #=================================================
 
     for spec in suite_specs:
+        #logger.info("rt4. Using os.environ = %s\n" % os.environ)
+        print("\nrt4.\n")
+        for a in os.environ:
+            print('Var: ', a, 'Value: ', os.getenv(a))
+        print("\nrt4.========================================================\n\n")
+        
         os.chdir(build_dir)
         if os.path.isdir(spec.name):
             if clean:
@@ -372,6 +406,11 @@ def _main():
             os.mkdir(spec.name)
 
         for label, directory in spec:
+            #logger.info("rt5. Using os.environ = %s\n" % os.environ)
+            print("\nrt5.\n")
+            for a in os.environ:
+                print('Var: ', a, 'Value: ', os.getenv(a))
+            print("\nrt5.========================================================\n\n")
             os.chdir(os.path.join(build_dir,spec.name))
             if not os.path.isdir(label):
                 os.mkdir(label)
