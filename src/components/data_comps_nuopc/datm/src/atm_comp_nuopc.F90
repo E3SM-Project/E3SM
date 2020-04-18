@@ -22,10 +22,10 @@ module atm_comp_nuopc
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init
-  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
-  use dshr_nuopc_mod   , only : dshr_create_mesh_from_grid
+  use dshr_mod         , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
+  use dshr_mod         , only : dshr_sdat_init
+  use dshr_mod         , only : dshr_restart_read, dshr_restart_write
+  use dshr_mod         , only : dshr_create_mesh_from_grid
   use datm_comp_mod    , only : datm_comp_advertise, datm_comp_realize, datm_comp_run
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 

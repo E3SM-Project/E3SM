@@ -1,15 +1,15 @@
 module drof_comp_mod
 
-  use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_LOGMSG_INFO, ESMF_LogWrite, ESMF_Mesh
-  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
-  use shr_sys_mod           , only : shr_sys_abort
-  use dshr_strdata_mod      , only : shr_strdata_type, shr_strdata_advance
-  use dshr_methods_mod      , only : chkerr, state_getfldptr
-  use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
-  use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
-  use dshr_nuopc_mod        , only : dshr_get_griddata
+  use NUOPC            , only : NUOPC_Advertise
+  use ESMF             , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_LOGMSG_INFO, ESMF_LogWrite, ESMF_Mesh
+  use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use shr_kind_mod     , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use shr_sys_mod      , only : shr_sys_abort
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
+  use dshr_methods_mod , only : chkerr, state_getfldptr
+  use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use dshr_mod         , only : dshr_get_griddata
 
   ! !PUBLIC TYPES:
   implicit none

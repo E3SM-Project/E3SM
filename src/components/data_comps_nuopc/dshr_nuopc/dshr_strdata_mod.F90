@@ -2156,16 +2156,17 @@ contains
        endif
        call shr_mpi_bcast(fldList,mpicom)
        call mct_avect_clean(avFile)
-
-       ! Initialize the decomposition
-       ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
-       lsize = mct_gsmap_lsize(gsMap,mpicom)
        call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
-       allocate(compDOF(lsize*nz), stat=rcode)
+
+       lsize = mct_gsmap_lsize(gsMap,mpicom)
+       allocate(compDOF(lsize*nz),stat=rcode)
        if (rcode /= 0) call shr_sys_abort(subname//"ERROR insufficient memory")
        if (my_task == master_task) then
           write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),1,nz
+          call shr_sys_flush(logunit)
        endif
+
+       ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
        call mct_gsmap_orderedPoints(gsMap,my_task,gsmOP)
        cnt = 0
        do n = 1,nz
@@ -2174,7 +2175,14 @@ contains
              compDOF(cnt) = (n-1)*gsize + gsmOP(m)
           enddo
        enddo
-       call pio_initdecomp(pio_subsystem, pio_double, (/nx,ny,nz/), compDOF, pio_iodesc_local)
+       
+       ! Initialize the decomposition
+       allocate(count(3))
+       count(1) = nx
+       count(2) = ny
+       count(3) = nz
+       call pio_initdecomp(pio_subsystem, pio_double, count, compDOF, pio_iodesc_local)
+       deallocate(count)
        deallocate(compDOF)
 
        ! For each attribute, read all frames in one go

@@ -10,7 +10,7 @@ module dwav_comp_mod
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
-  use dshr_nuopc_mod        , only : dshr_get_griddata
+  use dshr_mod              , only : dshr_get_griddata
 
   ! !PUBLIC TYPES:
   implicit none
