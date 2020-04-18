@@ -1291,10 +1291,12 @@ contains
        lmassptr_amode, lspectype_amode, &
        modeptr_coarse, &
        nspec_amode, ntot_amode, numptr_amode, &
+       lmassptrcw_amode, numptrcw_amode,& !Guangxing Lin
        mam_prevap_resusp_optaa, mmtoo_prevap_resusp, ntoo_prevap_resusp
     use phys_control,    only: phys_getopts
 
     integer :: lspec, lspec2
+    integer :: lphase !Guangxing Lin 
     integer :: mm, mmtoo, mm2
     integer :: n, ntoo, nch
     character(len=100) :: msg
@@ -1324,10 +1326,16 @@ contains
 #endif
 
        do n = 1, ntot_amode   ! loop over aerosol modes that was wet-removed
-
+   
+          do lphase = 1, 2 ! interstial and cloud-borne phase !Guangxing Lin
           do lspec = 1, nspec_amode(n)   ! loop over chem constituents that was wet-removed
-             mm = lmassptr_amode(lspec,n)  ! q-array index of the species that was wet-removed
+             if(lphase ==1) then !Guangxing Lin
+                mm = lmassptr_amode(lspec,n)  ! q-array index of the species that was wet-removed
              nch = len( trim( cnst_name(mm) ) ) - 1
+             else !Guangxing Lin  
+                mm = lmassptrcw_amode(lspec,n)  ! Guangxing Lin
+             nch = len( trim( cnst_name(mm) ) ) - 2 !Guangxing Lin
+             endif !Guangxing Lin
              if (n >=  10) nch = nch - 1
              if (n >= 100) nch = nch - 1
 !            lspectype = lspectype_amode(lspec,n)
@@ -1354,11 +1362,15 @@ contains
 
              mmtoo_prevap_resusp(mm) = mmtoo
              ntoo_prevap_resusp(mm)  = ntoo
+          end do! lphase !Guangxing Lin
           end do ! lspec
 
           mm = numptr_amode(n)
           mmtoo_prevap_resusp(mm) = -2
           ntoo_prevap_resusp(mm)  = ntoo
+          mm = numptrcw_amode(n) !Guangxing Lin
+          mmtoo_prevap_resusp(mm) = -2 !Guangxing Lin
+          ntoo_prevap_resusp(mm)  = ntoo !Guangxing Lin
        end do ! n
 
     end if
@@ -2222,7 +2234,7 @@ do_lphase2_conditional: &
                   !Guangxing Lin 
                    call outfld( trim(cnst_name_cw(mm))//'SFWET', sflx, pcols, lchnk)
                    !Guangxing Lin
-                   call outfld( 'so4_test2', state%pdel(:,:), pcols, lchnk)
+                 !  call outfld( 'so4_test2', state%pdel(:,:), pcols, lchnk)
                    aerdepwetcw(:ncol,mm) = sflx(:ncol)
                    
                    sflx(:)=0._r8

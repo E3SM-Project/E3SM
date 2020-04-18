@@ -284,6 +284,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    real(r8) :: sflxec1(pcols,pcnst)
    real(r8) :: sflxec2(pcols,pcnst)
    real(r8) :: sflxec3(pcols,pcnst)
+   real(r8) :: sflx_tmp(pcols,pcnst)
    !Guangxing Lin, debug, end
 
    logical  :: dotend(pcnst)
@@ -397,6 +398,14 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         ptend%lq(l) = .true.
      end if
 
+     !Guangxing Lin debug
+        sflx_tmp(:,:)=0._r8
+        do k=1,pver
+           do i=1,ncol
+              sflx_tmp(i,l)=sflx_tmp(i,l)+ dqdt(i,k,l)*state%pdel(i,k)/gravit
+           enddo
+        enddo
+     !Guangxing Lin, debug end
      if ((species_class(l) == spec_class_aerosol) .or. &
          (species_class(l) == spec_class_gas    )) then
         ! these used for history file wetdep diagnostics
@@ -409,8 +418,11 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
 
      if (species_class(l) == spec_class_aerosol) then
         ! this used for surface coupling
+           !Guangxing Lin, debug     
         aerdepwetis(1:ncol,l) = aerdepwetis(1:ncol,l) &
-           + qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
+           !+ qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
+           + sflx_tmp(1:ncol,l) 
+           !Guangxing Lin, debug, end     
      end if
 
   end do ! l
@@ -448,12 +460,20 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
 !    ! adjust dqdt when qa < 0.0
 !    dqdt(1:ncol,:,l) = dqdt(1:ncol,:,l) &
 !       + ( qb(1:ncol,:,l) - qa(1:ncol,:,l) )/dt
-
      if ( apply_convproc_tend_to_ptend ) then
         ! add dqdt onto ptend%q and set ptend%lq
         ptend%q(1:ncol,:,l) = ptend%q(1:ncol,:,l) + dqdt(1:ncol,:,l)
         ptend%lq(l) = .true.
      end if
+
+     !Guangxing Lin debug
+        sflx_tmp(:,:)=0._r8
+        do k=1,pver
+           do i=1,ncol
+              sflx_tmp(i,l)=sflx_tmp(i,l)+ dqdt(i,k,l)*state%pdel(i,k)/gravit
+           enddo
+        enddo
+     !Guangxing Lin, debug end
 
      if ((species_class(l) == spec_class_aerosol) .or. &
          (species_class(l) == spec_class_gas    )) then
@@ -463,8 +483,11 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
      end if
 
      if (species_class(l) == spec_class_aerosol) then
+        !Guangxing Lin, debug     
         aerdepwetis(1:ncol,l) = aerdepwetis(1:ncol,l) &
-           + qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
+           !+ qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
+           + sflx_tmp(1:ncol,l) 
+           !Guangxing Lin, debug, end     
      end if
 
   end do ! l
@@ -491,11 +514,12 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         if ( history_aero_prevap_resusp ) &
         call outfld( trim(cnst_name(l))//'SFSEC', sflxec(:,l), pcols, lchnk )
      
-        if(trim(cnst_name(l))=='bc_a1') then
+        if(trim(cnst_name(l))=='soa_a1') then
         !Guangxing Lin, debug   
            call outfld( 'SFSEC1', sflxec1(:,l), pcols, lchnk )
            call outfld( 'SFSEC2', sflxec2(:,l), pcols, lchnk )
            call outfld( 'SFSEC3', sflxec3(:,l), pcols, lchnk )
+           call outfld( 'so4_test1', ptend%q(:,:,l), pcols, lchnk )
         end if
         !Guangxing Lin, debug,end  
 
@@ -1771,10 +1795,16 @@ subroutine ma_convproc_tend(                                           &
       do ll = 0, nspec_amode(n)
          if (ll == 0) then
             la = numptr_amode(n)
-            lc = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+            !lc = numptrcw_amode(n) + pcnst
+            lc = numptr_amode(n) + pcnst
+            !Guangxing Lin, end
          else
             la = lmassptr_amode(ll,n)
-            lc = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !lc = lmassptrcw_amode(ll,n) + pcnst
+            lc = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin,end
          end if
          if ( doconvproc(la) ) then
             doconvproc_extd(lc) = .true.
@@ -2571,10 +2601,21 @@ k_loop_main_cc: &
          do ll = 0, nspec_amode(n)
             if (ll == 0) then
                la = numptr_amode(n)
-               lc = numptrcw_amode(n) + pcnst
+               !Guangxing Lin 
+               !lc = numptrcw_amode(n) + pcnst
+               lc = numptr_amode(n) + pcnst
+               !Guangxing Lin, end 
             else
                la = lmassptr_amode(ll,n)
-               lc = lmassptrcw_amode(ll,n) + pcnst
+               !Guangxing Lin 
+               !lc = lmassptrcw_amode(ll,n) + pcnst
+               lc = lmassptr_amode(ll,n) + pcnst 
+               !Guangxing Lin, end 
+               !Guangxing Lin debug
+               !if (la ==19) then
+               !        write(*,*)'gxlin-debug lc =', lc
+               !end if
+               !Guangxing Lin debug,end
             end if
             if (doconvproc(la)) then
                sumactiva(la) = sumactiva(la) + sumactiva(lc)
@@ -2785,7 +2826,10 @@ end subroutine ma_convproc_tend
    use physconst, only: spec_class_aerosol ! REASTER 08/05/2015
 
    use modal_aero_data, only:  &
-      lmassptrcw_amode, nspec_amode, numptrcw_amode, &
+      !Guangxing Lin
+      !lmassptrcw_amode, nspec_amode, numptrcw_amode, &
+      lmassptr_amode, nspec_amode, numptr_amode, &
+      !Guangxing Lin, end
       mmtoo_prevap_resusp ! REASTER 08/05/2015
 
    implicit none
@@ -2936,13 +2980,19 @@ end subroutine ma_convproc_tend
 
       if (idiag_prevap > 0) then
          n = 1
-         l = numptrcw_amode(n) + pcnst
+         !Guangxing Lin
+         !l = numptrcw_amode(n) + pcnst
+         l = numptr_amode(n) + pcnst
+         !Guangxing Lin, end
          tmpa = dcondt_wetdep(l,k)
          tmpb = dcondt_prevap(l,k)
          tmpc = 0.0_r8
          tmpd = 0.0_r8
          do ll = 1, nspec_amode(n)
-            l = lmassptrcw_amode(ll,n) + pcnst
+         !Guangxing Lin
+            !l = lmassptrcw_amode(ll,n) + pcnst
+            l = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin, end
             tmpc = tmpc + dcondt_wetdep(l,k)
             tmpd = tmpd + dcondt_prevap(l,k)
          end do
@@ -3195,13 +3245,19 @@ end subroutine ma_convproc_tend
 
       if (idiag_prevap > 0) then
          n = 1
-         l = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+         !l = numptrcw_amode(n) + pcnst
+         l = numptr_amode(n) + pcnst
+            !Guangxing Lin, end
          tmpa = dcondt_wetdep(l,k)
          tmpb = dcondt_prevap(l,k)
          tmpc = 0.0_r8
          tmpd = 0.0_r8
          do ll = 1, nspec_amode(n)
-            l = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !l = lmassptrcw_amode(ll,n) + pcnst
+            l = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin, end
             tmpc = tmpc + dcondt_wetdep(l,k)
             tmpd = tmpd + dcondt_prevap(l,k)
          end do
@@ -3345,10 +3401,16 @@ end subroutine ma_convproc_tend
       do ll = 0, nspec_amode(n)
          if (ll == 0) then
             la = numptr_amode(n)
-            lc = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+            !lc = numptrcw_amode(n) + pcnst
+            lc = numptr_amode(n) + pcnst
+            !Guangxing Lin,end
          else
             la = lmassptr_amode(ll,n)
-            lc = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !lc = lmassptrcw_amode(ll,n) + pcnst
+            lc = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin,end
          end if
 
          delact = dconudt(lc)*dt_u * factor_reduce_actfrac
@@ -3376,7 +3438,10 @@ end subroutine ma_convproc_tend
       do ll = 1, nspec_amode(n)
          tmpc = max( conent(lmassptr_amode(ll,n)), 0.0_r8 )
          if ( use_cwaer_for_activate_maxsat ) &
-         tmpc = tmpc + max( conent(lmassptrcw_amode(ll,n)+pcnst), 0.0_r8 )
+         !Guangxing Lin
+         !tmpc = tmpc + max( conent(lmassptrcw_amode(ll,n)+pcnst), 0.0_r8 )
+         tmpc = tmpc + max( conent(lmassptr_amode(ll,n)+pcnst), 0.0_r8 )
+         !Guangxing Lin, end
          tmpc = tmpc / specdens_amode(lspectype_amode(ll,n))
          tmpa = tmpa + tmpc
          tmpb = tmpb + tmpc * spechygro(lspectype_amode(ll,n))
@@ -3476,11 +3541,17 @@ end subroutine ma_convproc_tend
       do ll = 0, nspec_amode(n)
          if (ll == 0) then
             la = numptr_amode(n)
-            lc = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+            !lc = numptrcw_amode(n) + pcnst
+            lc = numptr_amode(n) + pcnst
+            !Guangxing Lin, end
             tmp_fact = fn(n)
          else
             la = lmassptr_amode(ll,n)
-            lc = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !lc = lmassptrcw_amode(ll,n) + pcnst
+            lc = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin, end 
             tmp_fact = fm(n)
          end if
 
@@ -3625,10 +3696,16 @@ end subroutine ma_convproc_tend
       do ll = 0, nspec_amode(n)
          if (ll == 0) then
             la = numptr_amode(n)
-            lc = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+            !lc = numptrcw_amode(n) + pcnst
+            lc = numptr_amode(n) + pcnst
+            !Guangxing Lin,end 
          else
             la = lmassptr_amode(ll,n)
-            lc = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !lc = lmassptrcw_amode(ll,n) + pcnst
+            lc = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin, end
          end if
 
          delact = dconudt(lc)*dt_u * factor_reduce_actfrac
@@ -3656,7 +3733,10 @@ end subroutine ma_convproc_tend
       do ll = 1, nspec_amode(n)
          tmpc = max( conu(lmassptr_amode(ll,n)), 0.0_r8 )
          if ( use_cwaer_for_activate_maxsat ) &
-         tmpc = tmpc + max( conu(lmassptrcw_amode(ll,n)+pcnst), 0.0_r8 )
+         !Guangxing Lin
+         !tmpc = tmpc + max( conu(lmassptrcw_amode(ll,n)+pcnst), 0.0_r8 )
+         tmpc = tmpc + max( conu(lmassptr_amode(ll,n)+pcnst), 0.0_r8 )
+         !Guangxing lin, end
          tmpc = tmpc / specdens_amode(lspectype_amode(ll,n))
          tmpa = tmpa + tmpc
          tmpb = tmpb + tmpc * spechygro(lspectype_amode(ll,n))
@@ -3768,11 +3848,17 @@ end subroutine ma_convproc_tend
       do ll = 0, nspec_amode(n)
          if (ll == 0) then
             la = numptr_amode(n)
-            lc = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+            !lc = numptrcw_amode(n) + pcnst
+            lc = numptr_amode(n) + pcnst
+            !Guangxing Lin, end 
             tmp_fact = fn(n)
          else
             la = lmassptr_amode(ll,n)
-            lc = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !lc = lmassptrcw_amode(ll,n) + pcnst
+            lc = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin, end
             tmp_fact = fm(n)
          end if
 
@@ -3865,10 +3951,16 @@ end subroutine ma_convproc_tend
       do ll = 0, nspec_amode(n)
          if (ll == 0) then
             la = numptr_amode(n)
-            lc = numptrcw_amode(n) + pcnst
+            !Guangxing Lin
+            !lc = numptrcw_amode(n) + pcnst
+            lc = numptr_amode(n) + pcnst
+            !Guangxing Lin,end
          else
             la = lmassptr_amode(ll,n)
-            lc = lmassptrcw_amode(ll,n) + pcnst
+            !Guangxing Lin
+            !lc = lmassptrcw_amode(ll,n) + pcnst
+            lc = lmassptr_amode(ll,n) + pcnst
+            !Guangxing Lin,end
          end if
 
 ! apply adjustments to dcondt for pairs of unactivated (la) and 
