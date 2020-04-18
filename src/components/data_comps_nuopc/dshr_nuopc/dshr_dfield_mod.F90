@@ -4,7 +4,8 @@ module dshr_dfield_mod
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
   use dshr_strdata_mod , only : shr_strdata_type
-  use dshr_methods_mod , only : chkerr, state_getfldptr
+  use dshr_mod         , only : dshr_state_getfldptr
+  use dshr_util_mod    , only : chkerr 
   use mct_mod          , only : mct_avect_lsize, mct_avect_indexra
 
   implicit none
@@ -171,7 +172,7 @@ contains
     end do
 
     ! Set export state array pointer
-    call state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfield_new%state_data1d, rc=rc)
+    call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfield_new%state_data1d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data1d = 0.0_r8
     if (present(logunit) .and. present(masterproc)) then
@@ -247,7 +248,7 @@ contains
     end do
 
     ! Set export state array pointer
-    call state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfield_new%state_data2d, rc=rc)
+    call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfield_new%state_data2d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data2d(nflds,lsize) = 0._r8
 

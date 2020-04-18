@@ -50,6 +50,7 @@ module dshr_mod
   use dshr_strdata_mod , only : shr_strdata_init_mapping, shr_strdata_mapset
   use dshr_strdata_mod , only : shr_strdata_print
   use dshr_stream_mod  , only : shr_stream_set, shr_stream_taxis_extend
+  use dshr_util_mod    , only : memcheck, chkerr
   use perf_mod         , only : t_startf, t_stopf 
   use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
   use mct_mod
@@ -85,8 +86,6 @@ module dshr_mod
   public :: dshr_fldbun_getFldPtr
   public :: dshr_fldbun_diagnose
   public :: dshr_fldbun_fldchk
-  public :: chkerr
-  public :: memcheck
 
   private :: dshr_field_getfldptr
   private :: dshr_alarm_init
@@ -123,11 +122,10 @@ module dshr_mod
   type(ESMF_FieldStatus_Flag) :: status
 
   ! Module data
-  integer, parameter      :: memdebug_level=1
   integer                 :: iunset = -999
   integer     , parameter :: SecPerDay = 86400 ! Seconds per day
   integer     , parameter :: dbug = 10
-  character(*), parameter :: modName =  "(dhsr_nuopc_mod)"
+  character(*), parameter :: modName =  "(dshr_mod)"
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -2117,38 +2115,5 @@ contains
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
 
   end subroutine dshr_fldbun_Field_diagnose
-
-  !===============================================================================
-  subroutine memcheck(string, level, mastertask)
-
-    ! input/output variables
-    character(len=*) , intent(in) :: string
-    integer          , intent(in) :: level
-    logical          , intent(in) :: mastertask
-
-    ! local variables
-    integer :: ierr
-    integer, external :: GPTLprint_memusage
-    !-----------------------------------------------------------------------
-
-    if ((mastertask .and. memdebug_level > level) .or. memdebug_level > level+1) then
-       ierr = GPTLprint_memusage(string)
-    endif
-
-  end subroutine memcheck
-
-  !===============================================================================
-  logical function chkerr(rc, line, file)
-    integer, intent(in) :: rc
-    integer, intent(in) :: line
-    character(len=*), intent(in) :: file
-    integer :: lrc
-    !-----------------------------------------------------------------------
-    chkerr = .false.
-    lrc = rc
-    if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=line, file=file)) then
-       chkerr = .true.
-    endif
-  end function chkerr
 
 end module dshr_mod

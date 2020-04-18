@@ -253,84 +253,6 @@
   <!--- shr_strmdata_nml       -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
-    <type>char</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
-    <desc>
-      General method that operates on the data. This is generally
-      implemented in the data models but is set in the strdata method for
-      convenience.
-
-      datamode = "NULL"
-      NULL is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.  The
-      ice_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      dataMode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      dataMode = "SSTDATA"
-      SSTDATA mode assumes the only field in the input stream is SST.
-      It also assumes the SST is in Celsius and must be converted to Kelvin.
-      All other fields are set to zero except for ocean salinity, which
-      is set to a constant reference salinity value.
-      Normally the ice fraction data is found in the same data files that
-      provide SST data to the data ocean model. They are normally found in
-      the same file because the SST and ice fraction data are derived from
-      the same observational data sets and are consistent with each other.
-      to the data ocean model. They are normally found in the same file
-      because the SST and ice fraction data are derived from the same
-      observational data sets and are consistent with each other.
-      dataMode = "IAF"
-      IAF is the interannually varying version of SSTDATA
-      dataMode = "SOM"
-      SOM ("slab ocean model") mode is a prognostic mode.  This mode
-      computes a prognostic sea surface temperature and a freeze/melt
-      potential (surface Q-flux) used by the sea ice model.  This
-      calculation requires an external SOM forcing data file that includes
-      ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
-      Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
-      ocean resolution dependent and are derived from the ocean model output
-      of a fully coupled CCSM run.  Note that while this mode runs out of
-      the box, the default SOM forcing file is not scientifically
-      appropriate and is provided for testing and development purposes only.
-      Users must create scientifically appropriate data for their particular
-      application.  A tool is available to derive valid SOM forcing.
-
-      Set by the xml variable DOCN_MODE in env_run.xml
-      Currently, DOCN_MODE can be [prescribed,som,interannual,null]
-      If DOCN_MODE is prescribed, datamode will be set to SSTDATA
-      If DOCN_MODE is interannual, datamode will be set to IAF
-      If DOCN_MODE is som , datamode will be set to SOM
-      If DOCN_MODE is sst_aqup[n], datamode will be set to SST_AQUAP
-      If DOCN_MODE is som_aqup[n], datamode will be set to SOM_AQUAP
-      If DOCN_MODE is null, datamode will be set to NULL
-
-      default: SSTDATA (prescribed setting for DOCN_MODE)'
-    </desc>
-    <values>
-      <value docn_mode="null">NULL</value>
-      <value docn_mode="prescribed">SSTDATA</value>
-      <value docn_mode="sst_aquap1$">SST_AQUAP1</value>
-      <value docn_mode="sst_aquap2$">SST_AQUAP2</value>
-      <value docn_mode="sst_aquap3$">SST_AQUAP3</value>
-      <value docn_mode="sst_aquap4$">SST_AQUAP4</value>
-      <value docn_mode="sst_aquap5$">SST_AQUAP5</value>
-      <value docn_mode="sst_aquap6$">SST_AQUAP6</value>
-      <value docn_mode="sst_aquap7$">SST_AQUAP7</value>
-      <value docn_mode="sst_aquap8$">SST_AQUAP8</value>
-      <value docn_mode="sst_aquap9$">SST_AQUAP9</value>
-      <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
-      <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
-      <value docn_mode="sst_aquap_constant$">SST_AQUAP_CONSTANT</value>
-      <value docn_mode="som$">SOM</value>
-      <value docn_mode="som_aquap">SOM_AQUAP</value>
-      <value docn_mode="interannual">IAF</value>
-    </values>
-  </entry>
-
   <entry id="nx_global" modify_via_xml="OCN_NX">
     <type>integer</type>
     <category>streams</category>
@@ -603,6 +525,84 @@
   <!-- =========================================  -->
   <!--- docn_nml                -->
   <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
+    <desc>
+      General method that operates on the data. This is generally
+      implemented in the data models but is set in the strdata method for
+      convenience.
+
+      datamode = "NULL"
+      NULL is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.  The
+      ice_present flag will be set to false and the coupler will assume no
+      exchange of data to or from the data model.
+      dataMode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      dataMode = "SSTDATA"
+      SSTDATA mode assumes the only field in the input stream is SST.
+      It also assumes the SST is in Celsius and must be converted to Kelvin.
+      All other fields are set to zero except for ocean salinity, which
+      is set to a constant reference salinity value.
+      Normally the ice fraction data is found in the same data files that
+      provide SST data to the data ocean model. They are normally found in
+      the same file because the SST and ice fraction data are derived from
+      the same observational data sets and are consistent with each other.
+      to the data ocean model. They are normally found in the same file
+      because the SST and ice fraction data are derived from the same
+      observational data sets and are consistent with each other.
+      dataMode = "IAF"
+      IAF is the interannually varying version of SSTDATA
+      dataMode = "SOM"
+      SOM ("slab ocean model") mode is a prognostic mode.  This mode
+      computes a prognostic sea surface temperature and a freeze/melt
+      potential (surface Q-flux) used by the sea ice model.  This
+      calculation requires an external SOM forcing data file that includes
+      ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
+      Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
+      ocean resolution dependent and are derived from the ocean model output
+      of a fully coupled CCSM run.  Note that while this mode runs out of
+      the box, the default SOM forcing file is not scientifically
+      appropriate and is provided for testing and development purposes only.
+      Users must create scientifically appropriate data for their particular
+      application.  A tool is available to derive valid SOM forcing.
+
+      Set by the xml variable DOCN_MODE in env_run.xml
+      Currently, DOCN_MODE can be [prescribed,som,interannual,null]
+      If DOCN_MODE is prescribed, datamode will be set to SSTDATA
+      If DOCN_MODE is interannual, datamode will be set to IAF
+      If DOCN_MODE is som , datamode will be set to SOM
+      If DOCN_MODE is sst_aqup[n], datamode will be set to SST_AQUAP
+      If DOCN_MODE is som_aqup[n], datamode will be set to SOM_AQUAP
+      If DOCN_MODE is null, datamode will be set to NULL
+
+      default: SSTDATA (prescribed setting for DOCN_MODE)'
+    </desc>
+    <values>
+      <value docn_mode="null">NULL</value>
+      <value docn_mode="prescribed">SSTDATA</value>
+      <value docn_mode="sst_aquap1$">SST_AQUAP1</value>
+      <value docn_mode="sst_aquap2$">SST_AQUAP2</value>
+      <value docn_mode="sst_aquap3$">SST_AQUAP3</value>
+      <value docn_mode="sst_aquap4$">SST_AQUAP4</value>
+      <value docn_mode="sst_aquap5$">SST_AQUAP5</value>
+      <value docn_mode="sst_aquap6$">SST_AQUAP6</value>
+      <value docn_mode="sst_aquap7$">SST_AQUAP7</value>
+      <value docn_mode="sst_aquap8$">SST_AQUAP8</value>
+      <value docn_mode="sst_aquap9$">SST_AQUAP9</value>
+      <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
+      <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
+      <value docn_mode="sst_aquap_constant$">SST_AQUAP_CONSTANT</value>
+      <value docn_mode="som$">SOM</value>
+      <value docn_mode="som_aquap">SOM_AQUAP</value>
+      <value docn_mode="interannual">IAF</value>
+    </values>
+  </entry>
 
   <entry id="restfilm">
     <type>char</type>

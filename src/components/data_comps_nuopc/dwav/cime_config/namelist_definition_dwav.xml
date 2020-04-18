@@ -172,29 +172,6 @@
   <!--- shr_strmdata_nml -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
-    <type>char</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
-    <desc>
-      The wave data is associated with the wave model
-      and is normally on a different grid than the ocean data.
-      datamode = "NULL"
-      Is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.
-      datamode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      Set by the following xml variables in env_run.xml DWAV_MODE
-      specifies values for wav mode: copyall,null
-    </desc>
-    <values>
-      <value>COPYALL</value>
-      <value dwav_mode="NULL">NULL</value>
-    </values>
-  </entry>
-
   <entry id="nx_global" modify_via_xml="WAV_NX">
     <type>integer</type>
     <category>streams</category>
@@ -466,6 +443,29 @@
   <!-- =========================================  -->
   <!--- dwav_nml -->
   <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>dwav</category>
+    <group>dwav_nml</group>
+    <valid_values>NULL,COPYALL</valid_values>
+    <desc>
+      The wave data is associated with the wave model
+      and is normally on a different grid than the ocean data.
+      datamode = "NULL"
+      Is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.
+      datamode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      Set by the following xml variables in env_run.xml DWAV_MODE
+      specifies values for wav mode: copyall,null
+    </desc>
+    <values>
+      <value>COPYALL</value>
+      <value dwav_mode="NULL">NULL</value>
+    </values>
+  </entry>
 
   <entry id="restfilm">
     <type>char</type>

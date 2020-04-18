@@ -18,13 +18,16 @@ module rof_comp_nuopc
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_mpi_mod      , only : shr_mpi_bcast
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
-  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
-  use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use dshr_mod         , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
   use dshr_mod         , only : dshr_sdat_init
+  use dshr_mod         , only : dshr_state_setscalar,  dshr_state_diagnose
+  use dshr_mod         , only : dshr_set_component_logging, dshr_log_clock_advance
+  use dshr_mod         , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
-  use drof_comp_mod    , only : drof_comp_advertise, drof_comp_realize, drof_comp_run
+  use dshr_mod         , only : dshr_state_getfldptr, dshr_get_griddata
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml, shr_strdata_advance
+  use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use dshr_util_mod    , only : chkerr, memcheck
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
   implicit none
@@ -36,36 +39,51 @@ module rof_comp_nuopc
   private :: InitializeRealize
   private :: ModelAdvance
   private :: ModelFinalize
+  private :: drof_comp_advertise
+  private :: drof_comp_realize
+  private :: drof_comp_run
 
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type)   :: sdat
-  character(len=CS)        :: flds_scalar_name = ''
-  integer                  :: flds_scalar_num = 0
-  integer                  :: flds_scalar_index_nx = 0
-  integer                  :: flds_scalar_index_ny = 0
-  integer                  :: compid                    ! mct comp id
-  integer                  :: mpicom                    ! mpi communicator
-  integer                  :: my_task                   ! my task in mpi communicator mpicom
-  character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer                  :: logunit                   ! logging unit number
-  character(*) , parameter :: nullstr = 'undefined'
-  integer      , parameter :: master_task=0             ! task number of master task
-  character(*) , parameter :: rpfile = 'rpointer.rof'
-  character(*) , parameter :: modName =  "(rof_comp_nuopc)"
-  character(*) , parameter :: u_FILE_u = &
+  type(shr_strdata_type)       :: sdat
+  type(ESMF_Mesh)              :: mesh                            ! model mesh
+  character(len=CS)            :: flds_scalar_name = ''
+  integer                      :: flds_scalar_num = 0
+  integer                      :: flds_scalar_index_nx = 0
+  integer                      :: flds_scalar_index_ny = 0
+  integer                      :: compid                          ! mct comp id
+  integer                      :: mpicom                          ! mpi communicator
+  integer                      :: my_task                         ! my task in mpi communicator mpicom
+  logical                      :: masterproc                      ! true of my_task == master_task
+  character(len=16)            :: inst_suffix = ""                ! char string associated with instance (ie. "_0001" or "")
+  integer                      :: logunit                         ! logging unit number
+  logical                      :: read_restart
+  character(*) , parameter     :: nullstr = 'undefined'
+
+  ! drof_in namelist input
+  character(CL)                :: dataMode                        ! flags physics options wrt input data
+  logical                      :: force_prognostic_true = .false. ! if true set prognostic true
+  character(CL)                :: restfilm = nullstr              ! model restart file namelist
+  character(CL)                :: restfils = nullstr              ! stream restart file namelist
+
+  ! constants
+  integer      , parameter     :: master_task=0                   ! task number of master task
+  character(*) , parameter     :: rpfile = 'rpointer.rof'
+  character(*) , parameter     :: modName =  "(rof_comp_nuopc)"
+
+  ! linked lists
+  type(fldList_type) , pointer :: fldsImport => null()
+  type(fldList_type) , pointer :: fldsExport => null()
+  type(dfield_type)  , pointer :: dfields    => null()
+
+  ! module pointer arrays
+  real(r8), pointer            :: Forr_rofl(:) => null()
+  real(r8), pointer            :: Forr_rofi(:) => null()
+
+  character(*) , parameter     :: u_FILE_u = &
        __FILE__
-
-  logical       :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL) :: restfilm = nullstr              ! model restart file namelist
-  character(CL) :: restfils = nullstr              ! stream restart file namelist
-  character(CL) :: rest_file                       ! restart filename
-  character(CL) :: rest_file_strm                  ! restart filename for streams
-
-  integer      , parameter :: debug_import = 0          ! if > 0 will diagnose import fields
-  integer      , parameter :: debug_export = 0          ! if > 0 will diagnose export fields
 
 !===============================================================================
 contains
@@ -135,7 +153,7 @@ contains
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / drof_nml / restfilm, restfils, force_prognostic_true
+    namelist / drof_nml / datamode, restfilm, restfils, force_prognostic_true
 
     rc = ESMF_SUCCESS
 
@@ -143,15 +161,16 @@ contains
     call dshr_advertise(gcomp, mpicom, my_task,  inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, rc)
 
+    ! determine logical masterproc
+    masterproc = (my_task == master_task)
+
     ! set logunit and set shr logging to my log file
-    call set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
+    call dshr_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! set input namelist filename
-    filename = "drof_in"//trim(inst_suffix)
-
     ! Read drof_nml from filename
-    if (my_task == master_task) then
+    filename = "drof_in"//trim(inst_suffix)
+    if (masterproc) then
        open (newunit=nu,file=trim(filename),status="old",action="read")
        read (nu,nml=drof_nml,iostat=ierr)
        close(nu)
@@ -163,27 +182,26 @@ contains
        write(logunit,*)' restfils   = ',trim(restfils)
        write(logunit,*)' force_prognostic_true = ',force_prognostic_true
     endif
-    call shr_mpi_bcast(restfilm,mpicom,'restfilm')
-    call shr_mpi_bcast(restfils,mpicom,'restfils')
+    call shr_mpi_bcast(datamode ,mpicom, 'datamode')
+    call shr_mpi_bcast(restfilm ,mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils ,mpicom, 'restfils')
     call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
-    rest_file      = trim(restfilm)
-    rest_file_strm = trim(restfils)
+
+    ! Validate datamode
+    if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
+       if (masterproc) write(logunit,*) 'drof datamode = ',trim(datamode)
+    else
+       call shr_sys_abort(' ERROR illegal drof datamode = '//trim(datamode))
+    end if
+    if (trim(datamode) /= 'NULL') then
+       call drof_comp_advertise(importState, exportState, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     ! Read shr_strdata_nml from filename
     ! Read sdat namelist (need to do this here in order to get the datamode value - which
     ! is needed or order to do the advertise phase
     call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
-
-    ! Validate sdat%datamode
-    if (trim(sdat%dataMode) == 'NULL' .or. trim(sdat%dataMode) == 'COPYALL') then
-       if (my_task == master_task) write(logunit,*) 'drof datamode = ',trim(sdat%dataMode)
-    else
-       call shr_sys_abort(' ERROR illegal drof datamode = '//trim(sdat%dataMode))
-    end if
-    if (trim(sdat%datamode) /= 'NULL') then
-       call drof_comp_advertise(importState, exportState, flds_scalar_name, force_prognostic_true, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
@@ -201,7 +219,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Mesh) :: mesh
     type(ESMF_TIME) :: currTime
     integer         :: current_ymd  ! model date
     integer         :: current_year ! model year
@@ -211,15 +228,13 @@ contains
     character(CL)   :: cvalue       ! temporary
     integer         :: shrlogunit   ! original log unit
     integer         :: n,k          ! generic counters
-    logical         :: read_restart
-    character(CS)   :: compname
     character(len=*), parameter :: F00   = "('rof_comp_nuopc: ')',8a)"
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    if (sdat%datamode == 'NULL') RETURN
+    if (datamode == 'NULL') RETURN
 
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
@@ -227,20 +242,18 @@ contains
 
     ! Initialize sdat
     call t_startf('drof_strdata_init')
-    compname = 'rof'
-    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
+    call dshr_sdat_init(gcomp, clock, compid, logunit, 'rof', mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('drof_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
-    call drof_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
-         logunit, my_task==master_task, rc=rc)
+    call drof_comp_realize(importState, exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
+       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat)
     end if
 
@@ -252,17 +265,17 @@ contains
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! Run drof
-    call drof_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, sdat, rc=rc)
+    call drof_comp_run(current_ymd, current_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
-    call State_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_setscalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call State_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_setscalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Diagnostics
-    call State_diagnose(exportState,subname//':ES',rc=rc)
+    call dshr_state_diagnose(exportState, subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Reset shr logging to original values
@@ -296,7 +309,7 @@ contains
 
     rc = ESMF_SUCCESS
 
-    call memcheck(subname, 5, my_task == master_task)
+    call memcheck(subname, 5, masterproc)
 
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
@@ -317,7 +330,7 @@ contains
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
 
     ! run drof
-    call drof_comp_run(mpicom, my_task, master_task, logunit, next_ymd, next_tod, sdat, rc=rc)
+    call drof_comp_run(next_ymd, next_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! write_restart if alarm is ringing
@@ -338,10 +351,10 @@ contains
     endif
 
     ! write diagnostics
-    call State_diagnose(exportState,subname//':ES',rc=rc)
+    call dshr_state_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       call log_clock_advance(clock, 'drof', logunit, rc)
+    if (masterproc) then
+       call dshr_log_clock_advance(clock, 'drof', logunit, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -357,12 +370,146 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (my_task == master_task) then
+    if (masterproc) then
        write(logunit,*)
        write(logunit,*) 'drof : end of main integration loop'
        write(logunit,*)
     end if
 
   end subroutine ModelFinalize
+
+  !===============================================================================
+
+  subroutine drof_comp_advertise(importState, exportState, rc)
+
+    ! determine export and import fields to advertise to mediator
+
+    ! input/output arguments
+    type(ESMF_State) , intent(inout) :: importState
+    type(ESMF_State) , intent(inout) :: exportState
+    integer          , intent(out)   :: rc
+
+    ! local variables
+    integer :: n
+    type(fldlist_type), pointer :: fldList
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    !-------------------
+    ! Advrtise export fields
+    !-------------------
+
+    call dshr_fldList_add(fldsExport, trim(flds_scalar_name))
+    call dshr_fldlist_add(fldsExport, "Forr_rofl")
+    call dshr_fldlist_add(fldsExport, "Forr_rofi")
+
+    fldlist => fldsExport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(exportState, standardName=fldlist%stdname, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite('(drof_comp_advertise): Fr_rof '//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
+    enddo
+
+    ! currently there is no import state to drof
+
+  end subroutine drof_comp_advertise
+
+  !===============================================================================
+
+  subroutine drof_comp_realize(importState, exportState, rc)
+
+    !input/output variables
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    integer                , intent(out)   :: rc
+
+    ! local variables
+    character(*), parameter   :: subName = "(drof_comp_realize) "
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! -------------------------------------
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
+    ! -------------------------------------
+
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
+         subname//':drofExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! -------------------------------------
+    ! Set pointers to exportState fields
+    ! -------------------------------------
+
+    call dshr_dfield_add(dfields, sdat, state_fld='Forr_rofl', strm_fld='rofl', &
+         state=exportState, state_ptr=Forr_rofl, logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, state_fld='Forr_rofi', strm_fld='rofi', &
+         state=exportState, state_ptr=Forr_rofi, logunit=logunit, masterproc=masterproc, rc=rc)
+
+  end subroutine drof_comp_realize
+
+  !===============================================================================
+
+  subroutine drof_comp_run(target_ymd, target_tod, rc)
+
+    ! --------------------------
+    ! advance drof
+    ! --------------------------
+
+    ! input/output variables:
+    integer , intent(in)    :: target_ymd       ! model date
+    integer , intent(in)    :: target_tod       ! model sec into model date
+    integer , intent(out)   :: rc
+
+    ! local variables
+    integer :: n
+    character(*), parameter :: subName = "(drof_comp_run) "
+    !-------------------------------------------------------------------------------
+
+    call t_startf('DROF_RUN')
+
+    !--------------------
+    ! advance drof streams
+    !--------------------
+
+    ! time and spatially interpolate to model time and grid
+    call t_barrierf('drof_BARRIER',mpicom)
+    call t_startf('drof_strdata_advance')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'drof')
+    call t_stopf('drof_strdata_advance')
+
+    !--------------------
+    ! copy all fields from streams to export state as default
+    !--------------------
+
+    ! This automatically will update the fields in the export state
+    call t_barrierf('drof_comp_dfield_copy_BARRIER', mpicom)
+    call t_startf('drof_dfield_copy')
+    call dshr_dfield_copy(dfields,  sdat, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('drof_dfield_copy')
+
+    !-------------------------------------------------
+    ! determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('drof_datamode')
+    select case (trim(datamode))
+    case('COPYALL')
+       ! zero out "special values" of export fields
+       do n = 1, size(Forr_rofl)
+          if (abs(Forr_rofl(n)) > 1.0e28) Forr_rofl(n) = 0.0_r8
+          if (abs(Forr_rofi(n)) > 1.0e28) Forr_rofi(n) = 0.0_r8
+       enddo
+    end select
+    call t_stopf('drof_datamode')
+
+    call t_stopf('DROF_RUN')
+
+  end subroutine drof_comp_run
 
 end module rof_comp_nuopc

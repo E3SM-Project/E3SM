@@ -18,13 +18,17 @@ module wav_comp_nuopc
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_mpi_mod      , only : shr_mpi_bcast
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
-  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
-  use dshr_methods_mod , only : set_component_logging, log_clock_advance
+  use dshr_mod         , only : dshr_state_setscalar, dshr_state_diagnose 
+  use dshr_mod         , only : dshr_set_component_logging, dshr_log_clock_advance
   use dshr_mod         , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_mod         , only : dshr_sdat_init
+  use dshr_mod         , only : dshr_sdat_init, dshr_state_getfldptr, dshr_get_griddata
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
-  use dwav_comp_mod    , only : dwav_comp_advertise, dwav_comp_realize, dwav_comp_run
+  use dshr_mod         , only : dshr_get_griddata
+  use dshr_mod         , only : chkerr, memcheck
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
+  use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
   implicit none
@@ -36,28 +40,46 @@ module wav_comp_nuopc
   private :: InitializeRealize
   private :: ModelAdvance
   private :: ModelFinalize
+  private :: dwav_comp_advertise
+  private :: dwav_comp_realize
+  private :: dwav_comp_run
 
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type)   :: sdat
-  character(len=CS)        :: flds_scalar_name = ''
-  integer                  :: flds_scalar_num = 0
-  integer                  :: flds_scalar_index_nx = 0
-  integer                  :: flds_scalar_index_ny = 0
-  integer                  :: compid           ! mct comp id
-  integer                  :: mpicom           ! mpi communicator
-  integer                  :: my_task          ! my task in mpi communicator mpicom
-  character(len=16)        :: inst_suffix = "" ! char string associated with instance (ie. "_0001" or "")
-  integer                  :: logunit          ! logging unit number
-  character(*) , parameter :: nullstr = 'undefined'
-  integer      , parameter :: master_task=0    ! task number of master task
-  character(*) , parameter :: rpfile = 'rpointer.wav'
-  character(*) , parameter :: modName =  "(wav_comp_nuopc)"
-  character(CL)            :: rest_file        ! restart filename
-  character(CL)            :: rest_file_strm   ! restart filename for streams
-  character(*) , parameter :: u_FILE_u = &
+  type(shr_strdata_type)       :: sdat
+  type(ESMF_Mesh)              :: mesh
+  character(len=CS)            :: flds_scalar_name = ''
+  integer                      :: flds_scalar_num = 0
+  integer                      :: flds_scalar_index_nx = 0
+  integer                      :: flds_scalar_index_ny = 0
+  integer                      :: compid                          ! mct comp id
+  integer                      :: mpicom                          ! mpi communicator
+  integer                      :: my_task                         ! my task in mpi communicator mpicom
+  logical                      :: masterproc                      ! true of my_task == master_task
+  character(len=16)            :: inst_suffix = ""                ! char string associated with instance (ie. "_0001" or "")
+  integer                      :: logunit                         ! logging unit number
+  logical                      :: read_restart
+  character(*) , parameter     :: nullstr = 'undefined'
+
+  ! dwav_in namelist input
+  character(CL)                :: dataMode                        ! flags physics options wrt input data
+  logical                      :: force_prognostic_true = .false. ! if true set prognostic true
+  character(CL)                :: restfilm = nullstr ! model restart file namelist
+  character(CL)                :: restfils = nullstr ! stream restart file namelist
+
+  ! constants
+  integer      , parameter     :: master_task=0                   ! task number of master task
+  character(*) , parameter     :: rpfile = 'rpointer.wav'
+  character(*) , parameter     :: modName =  "(wav_comp_nuopc)"
+
+  ! linked lists
+  type(fldList_type) , pointer :: fldsImport => null()
+  type(fldList_type) , pointer :: fldsExport => null()
+  type(dfield_type)  , pointer :: dfields    => null()
+
+  character(*) , parameter     :: u_FILE_u = &
        __FILE__
 
 !===============================================================================
@@ -110,7 +132,6 @@ contains
   end subroutine SetServices
 
   !===============================================================================
-
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
 
     ! input/output variables
@@ -126,13 +147,10 @@ contains
     character(len=CL) :: fileName           ! generic file name
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
-    character(CL)     :: restfilm = nullstr ! model restart file namelist
-    character(CL)     :: restfils = nullstr ! stream restart file namelist
-    logical           :: force_prognostic_true = .false. ! if true set prognostic true
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / dwav_nml / restfilm, restfils, force_prognostic_true
+    namelist / dwav_nml / datamode, restfilm, restfils, force_prognostic_true
 
     rc = ESMF_SUCCESS
 
@@ -140,14 +158,15 @@ contains
     call dshr_advertise(gcomp, mpicom, my_task,  inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, rc)
 
+    ! determine logical masterproc
+    masterproc = (my_task == master_task)
+
     ! set logunit and set shr logging to my log file
-    call set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
+    call dshr_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! set input namelist filename
-    filename = "dwav_in"//trim(inst_suffix)
-
     ! Read dwav_nml from filename
+    filename = "dwav_in"//trim(inst_suffix)
     if (my_task == master_task) then
        open (newunit=nu,file=trim(filename),status="old",action="read")
        read (nu,nml=dwav_nml,iostat=ierr)
@@ -156,35 +175,31 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
+       write(logunit,*)' datamode   = ',datamode
        write(logunit,*)' restfilm   = ',trim(restfilm)
        write(logunit,*)' restfils   = ',trim(restfils)
        write(logunit,*)' force_prognostic_true = ',force_prognostic_true
     endif
-    call shr_mpi_bcast(restfilm,mpicom,'restfilm')
-    call shr_mpi_bcast(restfils,mpicom,'restfils')
+    call shr_mpi_bcast(datamode ,mpicom, 'datamode')
+    call shr_mpi_bcast(restfilm ,mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils ,mpicom, 'restfils')
     call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
-    rest_file      = trim(restfilm)
-    rest_file_strm = trim(restfils)
+
+    ! Validate sdat datamode
+    if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
+       if (my_task == master_task) write(logunit,*) 'dwav datamode = ',trim(datamode)
+    else
+       call shr_sys_abort(' ERROR illegal dwav datamode = '//trim(datamode))
+    end if
+    if (trim(datamode) /= 'NULL') then
+       call dwav_comp_advertise(importState, exportState, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     ! Read shr_strdata_nml from filename
     ! Read sdat namelist (need to do this here in order to get the datamode value - which
     ! is needed or order to do the advertise phase
     call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
-
-    ! Read sdat namelist (need to do this here in order to get the datamode value - which
-    ! is needed or order to do the advertise phase
-    call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
-
-    ! Validate sdat datamode
-    if (trim(sdat%dataMode) == 'NULL' .or. trim(sdat%dataMode) == 'COPYALL') then
-       if (my_task == master_task) write(logunit,*) 'dwav datamode = ',trim(sdat%dataMode)
-    else
-       call shr_sys_abort(' ERROR illegal dwav datamode = '//trim(sdat%dataMode))
-    end if
-    if (trim(sdat%datamode) /= 'NULL') then
-       call dwav_comp_advertise(importState, exportState, flds_scalar_name, force_prognostic_true, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
@@ -192,7 +207,6 @@ contains
   end subroutine InitializeAdvertise
 
   !===============================================================================
-
   subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
 
     ! input/output variables
@@ -202,7 +216,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Mesh) :: mesh
     type(ESMF_TIME) :: currTime
     integer         :: current_ymd  ! model date
     integer         :: current_year ! model year
@@ -211,12 +224,10 @@ contains
     integer         :: current_tod  ! model sec into model date
     character(CL)   :: cvalue       ! temporary
     integer         :: shrlogunit   ! original log unit
-    logical         :: read_restart
-    character(CS)   :: compname
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
-    if (sdat%datamode == 'NULL') RETURN
+    if (datamode == 'NULL') RETURN
 
     rc = ESMF_SUCCESS
 
@@ -224,22 +235,20 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Initialize sdat
+    ! Initialize sdat - create the model domain mesh and intialize the sdat clock
     call t_startf('dwav_strdata_init')
-    compname = 'wav'
-    call dshr_sdat_init(gcomp, clock, compid, logunit, compname, mesh, read_restart, sdat, rc=rc)
+    call dshr_sdat_init(gcomp, clock, compid, logunit, 'wav', mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dwav_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
-    call dwav_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
-         logunit, my_task==master_task, rc=rc)
+    call dwav_comp_realize(importState, exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
+       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
             logunit, my_task, master_task, mpicom, sdat)
     end if
 
@@ -255,13 +264,13 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
-    call State_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call State_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Diagnostics
-    call State_diagnose(exportState,subname//':ES',rc=rc)
+    call dshr_state_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Reset shr logging to original values
@@ -270,7 +279,6 @@ contains
   end subroutine InitializeRealize
 
   !===============================================================================
-
   subroutine ModelAdvance(gcomp, rc)
 
     ! input/output variables
@@ -293,7 +301,7 @@ contains
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
-    if (sdat%datamode == 'NULL') RETURN
+    if (datamode == 'NULL') RETURN
 
     rc = ESMF_SUCCESS
 
@@ -340,10 +348,10 @@ contains
     endif
 
     ! write diagnostics
-    call State_diagnose(exportState,subname//':ES',rc=rc)
+    call dshr_state_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) then
-       call log_clock_advance(clock, 'DWAV', logunit, rc)
+       call dshr_log_clock_advance(clock, 'DWAV', logunit, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -353,8 +361,8 @@ contains
   end subroutine ModelAdvance
 
   !===============================================================================
-
   subroutine ModelFinalize(gcomp, rc)
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
     !-------------------------------------------------------------------------------
@@ -367,5 +375,133 @@ contains
     end if
 
   end subroutine ModelFinalize
+
+  !===============================================================================
+  subroutine dwav_comp_advertise(importState, exportState, rc)
+
+    ! determine export and import fields to advertise to mediator
+
+    ! input/output arguments
+    type(ESMF_State) , intent(inout) :: importState
+    type(ESMF_State) , intent(inout) :: exportState
+    integer          , intent(out)   :: rc
+
+    ! local variables
+    type(fldlist_type), pointer :: fldList
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    !-------------------
+    ! Advertise export fields
+    !-------------------
+
+    call dshr_fldList_add(fldsExport, trim(flds_scalar_name))
+    call dshr_fldList_add(fldsExport, 'Sw_lamult' )
+    call dshr_fldList_add(fldsExport, 'Sw_ustokes')
+    call dshr_fldList_add(fldsExport, 'Sw_vstokes')
+
+    fldlist => fldsExport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(exportState, standardName=fldlist%stdname, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite('(dwav_comp_advertise): Fr_wav '//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
+    enddo
+
+    ! currently there is no import state to dwav
+
+  end subroutine dwav_comp_advertise
+
+  !===============================================================================
+  subroutine dwav_comp_realize(importState, exportState, rc)
+
+    ! input/output variables
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    integer                , intent(out)   :: rc
+
+    ! local variables
+    character(CS), allocatable :: strm_flds(:)
+    character(*), parameter    :: subName = "(dwav_comp_realize) "
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! -------------------------------------
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
+    ! -------------------------------------
+
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  mesh, &
+         subname//':dwavExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Create stream-> export state mapping
+
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_lamult', strm_fld='lamult', state=exportstate, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_ustokes', strm_fld='ustokes', state=exportstate, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_vstokes', strm_fld='vstokes', state=exportstate, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dwav_comp_realize
+
+  !===============================================================================
+  subroutine dwav_comp_run(mpicom, my_task, master_task, logunit, target_ymd, target_tod, sdat, rc)
+
+    ! --------------------------
+    ! advance dwav
+    ! --------------------------
+
+    ! input/output variables:
+    integer                , intent(in)    :: mpicom           ! mpi communicator
+    integer                , intent(in)    :: my_task
+    integer                , intent(in)    :: master_task
+    integer                , intent(in)    :: logunit
+    integer                , intent(in)    :: target_ymd       ! model date
+    integer                , intent(in)    :: target_tod       ! model sec into model date
+    type(shr_strdata_type) , intent(inout) :: sdat
+    integer                , intent(out)   :: rc
+    !-------------------------------------------------------------------------------
+
+    call t_startf('DWAV_RUN')
+
+    !--------------------
+    ! advance dwav streams
+    !--------------------
+
+    ! time and spatially interpolate to model time and grid
+    call t_barrierf('dwav_BARRIER',mpicom)
+    call t_startf('dwav_strdata_advance')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'dwav')
+    call t_stopf('dwav_strdata_advance')
+
+    !--------------------
+    ! copy all fields from streams to export state as default
+    !--------------------
+
+    ! This automatically will update the fields in the export state
+    call t_barrierf('dwav_comp_strdata_copy_BARRIER', mpicom)
+    call t_startf('dwav_strdata_copy')
+    call dshr_dfield_copy(dfields, sdat, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('dwav_strdata_copy')
+
+    !-------------------------------------------------
+    ! determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('dwav_datamode')
+    select case (trim(datamode))
+    case('COPYALL')
+       ! do nothing
+    end select
+    call t_stopf('dwav_datamode')
+
+    call t_stopf('DWAV_RUN')
+
+  end subroutine dwav_comp_run
 
 end module wav_comp_nuopc

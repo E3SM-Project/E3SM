@@ -191,29 +191,6 @@
   <!--- shr_strmdata_nml -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
-    <type>char</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
-    <desc>
-      datamode = "NULL"
-      NULL is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.  The
-      lnd_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      dataMode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      Set by the DLND_MODE xml variable in env_run.xml
-    </desc>
-    <values>
-      <value dlnd_mode="NULL">NULL</value>
-      <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
-      <value dlnd_mode="CPLHIST">COPYALL</value>
-    </values>
-  </entry>
-
   <entry id="nx_global" modify_via_xml="LND_NX">
     <type>integer</type>
     <category>streams</category>
@@ -484,6 +461,29 @@
   <!-- =========================================  -->
   <!--- dlnd_nml -->
   <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <valid_values>NULL,COPYALL</valid_values>
+    <desc>
+      datamode = "NULL"
+      NULL is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.  The
+      lnd_present flag will be set to false and the coupler will assume no
+      exchange of data to or from the data model.
+      dataMode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      Set by the DLND_MODE xml variable in env_run.xml
+    </desc>
+    <values>
+      <value dlnd_mode="NULL">NULL</value>
+      <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+      <value dlnd_mode="CPLHIST">COPYALL</value>
+    </values>
+  </entry>
 
   <entry id="restfilm">
     <type>char</type>

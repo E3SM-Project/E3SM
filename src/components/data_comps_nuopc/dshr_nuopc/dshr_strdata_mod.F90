@@ -22,7 +22,6 @@ module dshr_strdata_mod
   use shr_nl_mod       , only : shr_nl_find_group_name
   use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
   use shr_string_mod   , only : shr_string_listgetname, shr_string_listisvalid, shr_string_listgetnum
-  use dshr_methods_mod , only : chkerr
   use dshr_stream_mod  , only : shr_stream_streamtype, shr_stream_getModelFieldList
   use dshr_stream_mod  , only : shr_stream_taxis_cycle, shr_stream_taxis_extend, shr_stream_default
   use dshr_stream_mod  , only : shr_stream_getNFiles, shr_stream_getFile
@@ -33,6 +32,7 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_getFilePath, shr_stream_findBounds
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getfilefieldname 
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
+  use dshr_util_mod    , only : chkerr
   use pio              , only : file_desc_t, iosystem_desc_t, io_desc_t, var_desc_t
   use pio              , only : pio_openfile, pio_closefile, pio_nowrite
   use pio              , only : pio_seterrorhandling, pio_initdecomp, pio_freedecomp
@@ -81,7 +81,6 @@ module dshr_strdata_mod
 
   type shr_strdata_type
      ! --- set by input ---
-     character(CL)                  :: dataMode          ! flags physics options wrt input data
      character(CL)                  :: streams (nStrMax) ! stream description file names
      character(CL)                  :: taxMode (nStrMax) ! time axis cycling mode
      real(R8)                       :: dtlimit (nStrMax) ! dt max/min limit
@@ -1486,7 +1485,6 @@ contains
     integer    :: ntasks        ! total number of tasks
 
     ! shr_strdata_nml namelist variables
-    character(CL) :: dataMode           ! flags physics options wrt input data
     integer       :: nx_global          ! global size of nx
     integer       :: ny_global          ! global size of ny
     character(CL) :: streams(nStrMax)   ! stream description file names
@@ -1510,23 +1508,22 @@ contains
 
     !----- define namelist -----
     namelist / shr_strdata_nml / &
-           dataMode        &
-         , nx_global       &
-         , ny_global       &
-         , streams         &
-         , taxMode         &
-         , dtlimit         &
-         , vectors         &
-         , fillalgo        &
-         , fillmask        &
-         , fillread        &
-         , fillwrite       &
-         , mapalgo         &
-         , mapmask         &
-         , mapread         &
-         , mapwrite        &
-         , tintalgo        &
-         , readmode
+           nx_global ,           &
+           ny_global ,           &
+           streams   ,           &
+           taxMode   ,           &
+           dtlimit   ,           &
+           vectors   ,           &
+           fillalgo  ,           &
+           fillmask  ,           &
+           fillread  ,           &
+           fillwrite ,           &
+           mapalgo   ,           &
+           mapmask   ,           &
+           mapread   ,           &
+           mapwrite  ,           &
+           tintalgo  ,           &
+           readmode   
 
     !----- formats -----
     character(*),parameter :: subName = "(shr_strdata_readnml) "
@@ -1559,7 +1556,6 @@ contains
        !----------------------------------------------------------------------------
        ! set default values for namelist vars
        !----------------------------------------------------------------------------
-       dataMode    = 'NULL'
        streams(:)  = trim(shr_strdata_nullstr)
        taxMode(:)  = trim(shr_stream_taxis_cycle)
        dtlimit(:)  = dtlimit_default
@@ -1600,7 +1596,6 @@ contains
        do n=1,nStrMax
           call shr_stream_default(SDAT%stream(n))
        enddo
-       SDAT%dataMode    = dataMode
        SDAT%nxg         = nx_global
        SDAT%nyg         = ny_global
        SDAT%streams(:)  = streams(:)
@@ -1644,7 +1639,6 @@ contains
     endif   ! master_task
 
     if (present(mpicom)) then
-       call shr_mpi_bcast(SDAT%dataMode  ,mpicom ,'dataMode')
        call shr_mpi_bcast(SDAT%nxg       ,mpicom ,'nxg')
        call shr_mpi_bcast(SDAT%nyg       ,mpicom ,'nyg')
        call shr_mpi_bcast(SDAT%calendar  ,mpicom ,'calendar')
@@ -1722,7 +1716,6 @@ contains
     !----------------------------------------------------------------------------
     write(logunit,F90)
     write(logunit,F00) "name        = ",trim(lname)
-    write(logunit,F00) "dataMode    = ",trim(SDAT%dataMode)
     write(logunit,F01) "nxg         = ",SDAT%nxg
     write(logunit,F01) "nyg         = ",SDAT%nyg
     write(logunit,F01) "nzg         = ",SDAT%nzg
