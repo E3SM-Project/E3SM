@@ -7,6 +7,8 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<option name="config_pio_num_iotasks">4</option>
+		<option name="config_pio_stride">36</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
