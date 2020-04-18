@@ -121,17 +121,25 @@ CHEMISTRY
  Photolysis
   [jo1dU->,jo3_a]   O3 + hv -> O3
 * Production rate of O(1D), this rate is null so as to not lose O3.
-  [jo2]       O2 + hv -> 2*O3
+  [jo2_b=userdefined,]    O2 + hv -> 2*O3
+*  [jo2]       O2 + hv -> 2*O3
   [jh2o2]     H2O2 + hv -> 2*OH
   [jch2o_a]   CH2O + hv -> CO + 2*HO2
   [jch2o_b]   CH2O + hv -> CO + H2
   [jch3ooh]   CH3OOH + hv -> CH2O + HO2 + OH
-  [jc2h5ooh]  C2H5OOH + hv -> CH3CHO + HO2 + OH
+  [jc2h5ooh->,jch3ooh]   C2H5OOH + hv -> CH3CHO + HO2 + OH
+*  [jc2h5ooh]  C2H5OOH + hv -> CH3CHO + HO2 + OH
   [jno2]      NO2 + hv -> NO + O3
-  [jno3]      NO3 + hv -> 0.114*NO + 0.886*NO2 + 0.886*O3
-  [jn2o5]     N2O5 + hv -> NO2 + NO3
+  [jno3_a]    NO3 + hv -> NO2 + O3
+  [jno3_b]    NO3 + hv -> NO
+*  [jno3]      NO3 + hv -> 0.114*NO + 0.886*NO2 + 0.886*O3
+  [jn2o5_a]   N2O5 + hv -> NO2 + NO3
+  [jn2o5_b]   N2O5 + hv -> NO + O3 + NO3
+*  [jn2o5]     N2O5 + hv -> NO2 + NO3
   [jhno3]     HNO3 + hv -> NO2 + OH
-  [jho2no2]   HNO4 + hv -> 0.67*NO2 + 0.67*HO2 + 0.33*OH + 0.33*NO3
+  [jho2no2_a] HNO4 + hv -> OH + NO3
+  [jho2no2_b] HNO4 + hv -> NO2 + HO2
+*  [jho2no2]   HNO4 + hv -> 0.67*NO2 + 0.67*HO2 + 0.33*OH + 0.33*NO3
   [jch3cho]   CH3CHO + hv -> CH3O2 + HO2 + CO
   [jpan]      PAN + hv -> CH3CO3 + NO2
   [jacet]     CH3COCH3 + hv -> 0.67*CH3CO3 + 1.33*CH3O2 + 0.33*CO
