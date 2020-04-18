@@ -18,8 +18,6 @@
 		</stream>
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 	</streams>
 
 	<run_script name="run.py">

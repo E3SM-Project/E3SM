@@ -22,9 +22,8 @@
 		<stream name="output">
 			<attribute name="output_interval">0000_06:00:00</attribute>
 		</stream>
-		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">
