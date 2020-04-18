@@ -2,6 +2,7 @@
 <config case="ssh_adjustment">
 	<add_link source="../initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../initial_state/initial_state.nc" dest="init0.nc"/>
+	<add_link source="../initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/iterate_init.py" dest="iterate_init.py"/>
 	<add_link source_path="script_core_dir" source="scripts/plots/plot_globalStats.py" dest="plot_globalStats.py"/>
