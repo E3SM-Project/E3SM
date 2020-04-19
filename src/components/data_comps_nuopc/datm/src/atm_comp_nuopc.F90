@@ -22,16 +22,15 @@ module atm_comp_nuopc
   use shr_cal_mod      , only : shr_cal_ymd2julian, shr_cal_date2julian
   use shr_mpi_mod      , only : shr_mpi_bcast, shr_mpi_max
   use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
+  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
   use dshr_mod         , only : dshr_state_setscalar, dshr_state_diagnose
-  use dshr_mod         , only : dshr_set_component_logging, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_mod         , only : dshr_sdat_init, dshr_state_getfldptr
+  use dshr_mod         , only : dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
-  use dshr_mod         , only : dshr_get_griddata, dshr_set_griddata, dshr_get_atm_adjustment_factors
   use dshr_mod         , only : dshr_create_mesh_from_grid
+  use dshr_mod         , only : dshr_state_getfldptr
+  use dshr_mod         , only : dshr_get_griddata, dshr_set_griddata, dshr_get_atm_adjustment_factors
   use dshr_mod         , only : chkerr, memcheck
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
-  use dshr_strdata_mod , only : shr_strdata_advance, shr_strdata_setOrbs
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
@@ -78,6 +77,7 @@ module atm_comp_nuopc
   character(len=*) , parameter :: nullstr = 'undefined'
 
   ! datm_in namelist input
+  character(CL)                :: nlfilename            ! filename to obtain namelist info from
   character(CL)                :: dataMode              ! flags physics options wrt input data
   integer                      :: iradsw                ! radiation interval (input namelist)
   character(CL)                :: factorFn              ! file containing correction factors
@@ -293,32 +293,33 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! Obtain flds_scalar values, mpi values and multi-instance values
-    call dshr_advertise(gcomp, mpicom, my_task,  inst_index, inst_suffix, &
-         flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, rc)
-
-    ! determine logical masterproc
-    masterproc = (my_task == master_task)
-
-    ! Set logunit and set shr logging to my log file
-    call dshr_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
+    ! Obtain flds_scalar values, mpi values, multi-instance values and  
+    ! set logunit and set shr logging to my log file
+    call dshr_init(gcomp, master_task, mpicom, my_task, inst_index, inst_suffix, &
+         flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
+         logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Read atm_nml from filename
+    ! Determine namelist filename
+    nlfilename = "datm_in"//trim(inst_suffix)
+
+    ! Determine logical masterproc
+    masterproc = (my_task == master_task)
+
+    ! Read atm_nml from nlfilename
     iradsw = 0
     factorFn = 'null'
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
     presaero = .false.
     force_prognostic_true = .false.
-    filename = "datm_in"//trim(inst_suffix)
     if (my_task == master_task) then
-       open (newunit=nu,file=trim(filename),status="old",action="read")
+       open (newunit=nu,file=trim(nlfilename),status="old",action="read")
        read (nu,nml=datm_nml,iostat=ierr)
        close(nu)
        if (ierr > 0) then
-          write(logunit,*) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
-          call shr_sys_abort(subName//': namelist read error '//trim(filename))
+          write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
+          call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
        write(logunit,*)' datamode = ',datamode
        write(logunit,*)' iradsw   = ',iradsw
@@ -338,7 +339,7 @@ contains
     call shr_mpi_bcast(wiso_datm ,mpicom, 'wiso_datm')
     call shr_mpi_bcast(force_prognostic_true ,mpicom, 'force_prognostic_true')
 
-    ! Validate datamode
+    ! Call advertise phase
     if (masterproc) write(logunit,*) ' datm datamode = ',trim(datamode)
     if (trim(datamode) == 'NULL'      .or. trim(datamode) == 'CORE2_NYF'    .or. &
         trim(datamode) == 'CORE2_IAF' .or. trim(datamode) == 'CORE_IAF_JRA' .or. &
@@ -372,14 +373,7 @@ contains
        if (wiso_datm /= flds_wiso) then
           call shr_sys_abort(subName//': datm namelist wiso_datm must match nuopc attribute flds_wiso')
        end if
-    end if
 
-    ! Read shr_strdata_nml from filename
-    ! Read sdat namelist (need to do this here in order to get the datamode value - which
-    ! is needed or order to do the advertise phase
-    call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
-
-    if (datamode /= 'NULL') then
        call datm_comp_advertise(importState, exportState, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -430,7 +424,7 @@ contains
 
     ! Initialize sdat
     call t_startf('datm_strdata_init')
-    call dshr_sdat_init(gcomp, clock, compid, logunit, 'atm', mesh, read_restart, sdat, rc=rc)
+    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'atm', mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
 

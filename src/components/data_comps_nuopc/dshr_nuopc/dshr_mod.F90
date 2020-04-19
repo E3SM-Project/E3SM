@@ -63,8 +63,8 @@ module dshr_mod
      module procedure :: dshr_sdat_init_from_strtxt ! initialize sdat from stream text file
   end interface dshr_sdat_init
 
-  public :: dshr_advertise
   public :: dshr_model_initphase
+  public :: dshr_init
   public :: dshr_sdat_init          
   public :: dshr_create_mesh_from_grid
   public :: dshr_set_runclock
@@ -73,14 +73,12 @@ module dshr_mod
   public :: dshr_get_atm_adjustment_factors
   public :: dshr_get_griddata
   public :: dshr_set_griddata
-  public :: dshr_get_component_instance
-  public :: dshr_set_component_logging
   public :: dshr_log_clock_advance
   public :: dshr_state_getscalar
   public :: dshr_state_setscalar
   public :: dshr_state_diagnose
   public :: dshr_state_getfldptr
-  public :: dshr_fldbun_Regrid
+  public :: dshr_fldbun_regrid
   public :: dshr_fldbun_getFieldN
   public :: dshr_fldbun_getNameN
   public :: dshr_fldbun_getFldPtr
@@ -151,11 +149,13 @@ contains
   end subroutine dshr_model_initphase
 
   !===============================================================================
-  subroutine dshr_advertise(gcomp, mpicom, my_task,  inst_index, inst_suffix, &
-       flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, rc)
+  subroutine dshr_init(gcomp, master_task, mpicom, my_task, inst_index, inst_suffix, &
+       flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
+       logunit, shrlogunit, rc)
 
     ! input/output variables
     type(ESMF_GridComp)              :: gcomp
+    integer          , intent(in)    :: master_task
     integer          , intent(inout) :: mpicom
     integer          , intent(out)   :: my_task
     integer          , intent(out)   :: inst_index
@@ -164,13 +164,17 @@ contains
     integer          , intent(out)   :: flds_scalar_num
     integer          , intent(out)   :: flds_scalar_index_nx
     integer          , intent(out)   :: flds_scalar_index_ny
+    integer          , intent(out)   :: logunit
+    integer          , intent(out)   :: shrlogunit
     integer          , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)      :: vm
-    character(len=CL)  :: cvalue
-    character(len=CL)  :: logmsg
-    logical            :: isPresent, isSet
+    type(ESMF_VM)     :: vm
+    logical           :: isPresent, isSet
+    character(len=CL) :: cvalue
+    character(len=CL) :: logmsg
+    character(len=CL) :: diro
+    character(len=CL) :: logfile
     character(len=*),parameter  :: subname='(dshr_advertise)'
     ! ----------------------------------------------
 
@@ -180,10 +184,6 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine instance information
-    call dshr_get_component_instance(gcomp, inst_suffix, inst_index, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! get scalar attributes
@@ -222,7 +222,34 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-  end subroutine dshr_advertise
+    ! set output logging
+    shrlogunit = 6
+    if (my_task == master_task) then
+       call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       open(newunit=logunit,file=trim(diro)//"/"//trim(logfile))
+    else
+       logUnit = 6
+    endif
+    call shr_file_setLogUnit (logunit)
+
+    ! set component instance and suffix
+    call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", value=inst_suffix, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       cvalue = inst_suffix(2:)
+       read(cvalue, *) inst_index
+    else
+       inst_suffix = ""
+       inst_index=1
+    endif
+
+  end subroutine dshr_init
 
   !===============================================================================
   subroutine dshr_sdat_init_from_input( &
@@ -293,8 +320,7 @@ contains
     !-------------------------------------------------------------------------------
 
     ! The following just sets the defaults - but does not do a namelist read
-    call shr_strdata_readnml(SDAT,mpicom=mpicom)  
-
+    call shr_strdata_readnml(SDAT, mpicom=mpicom)  
     call mpi_comm_rank(mpicom, my_task, ierr)
 
     ! Assume only 1 stream
@@ -356,7 +382,7 @@ contains
   end subroutine dshr_sdat_init_from_input
 
   !===============================================================================
-  subroutine dshr_sdat_init_from_strtxt(gcomp, clock, compid, logunit, compname, &
+  subroutine dshr_sdat_init_from_strtxt(gcomp, clock, nlfilename, compid, logunit, compname, &
        mesh, read_restart, sdat, reset_domain_mask, rc)
 
     ! ----------------------------------------------
@@ -366,6 +392,7 @@ contains
     ! input/output variables
     type(ESMF_GridComp), intent(inout)         :: gcomp
     type(ESMF_Clock)           , intent(in)    :: clock
+    character(len=*)           , intent(in)    :: nlfilename ! for shr_strdata_nml namelist
     integer                    , intent(in)    :: logunit
     character(len=*)           , intent(in)    :: compname
     integer                    , intent(out)   :: compid
@@ -383,7 +410,7 @@ contains
     integer                      :: mpicom
     integer                      :: my_task
     integer                      :: master_task = 0
-    character(CL)                :: filename
+    character(CL)                :: mesh_filename
     logical                      :: scmMode
     real(r8)                     :: scmlat
     real(r8)                     :: scmlon
@@ -401,7 +428,7 @@ contains
     call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Get compid (for mct)
+    ! Set compid (for mct)
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
@@ -422,27 +449,32 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
-    ! initialize sdat  pio
+    ! Read shr_strdata_nml from nlfilename
+    ! Read sdat namelist (need to do this here in order to get the datamode value - which
+    ! is needed or order to do the advertise phase
+    call shr_strdata_readnml(sdat, trim(nlfilename), mpicom=mpicom)
+
+    ! Initialize sdat  pio
     call shr_strdata_pioinit(sdat, compid)
 
     ! Obtain the data model mesh
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=filename, rc=rc)
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=mesh_filename, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(filename) == 'create_mesh') then
+    if (trim(mesh_filename) == 'create_mesh') then
        ! get the data model grid from the domain file
-       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=filename, rc=rc)
+       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=mesh_filename, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_create_mesh_from_grid(trim(filename), mesh, rc=rc)
+       call dshr_create_mesh_from_grid(trim(mesh_filename), mesh, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       mesh = ESMF_MeshCreate(trim(filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+       mesh = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
     if (my_task == master_task) then
-       write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(filename)
+       write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
     end if
 
-    ! initialize sdat model domain info
+    ! Initialize the sdat model domain info
     if (scmmode) then
        if (my_task == master_task) then
           write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
@@ -1397,71 +1429,6 @@ contains
     kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
     data(:) = sdat%grid%data%rAttr(kf,:)
   end subroutine dshr_get_griddata
-
-  !===============================================================================
-  subroutine dshr_get_component_instance(gcomp, inst_suffix, inst_index, rc)
-
-    ! input/output variables
-    type(ESMF_GridComp)            :: gcomp
-    character(len=*) , intent(out) :: inst_suffix
-    integer          , intent(out) :: inst_index
-    integer          , intent(out) :: rc
-
-    ! local variables
-    logical          :: isPresent
-    character(len=4) :: cvalue
-    !-----------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    if (isPresent) then
-       call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", value=inst_suffix, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       cvalue = inst_suffix(2:)
-       read(cvalue, *) inst_index
-    else
-       inst_suffix = ""
-       inst_index=1
-    endif
-
-  end subroutine dshr_get_component_instance
-
-  !===============================================================================
-  subroutine dshr_set_component_logging(gcomp, mastertask, logunit, shrlogunit, rc)
-
-    ! input/output variables
-    type(ESMF_GridComp)  :: gcomp
-    logical, intent(in)  :: mastertask
-    integer, intent(out) :: logunit
-    integer, intent(out) :: shrlogunit
-    integer, intent(out) :: rc
-
-    ! local variables
-    character(len=CL) :: diro
-    character(len=CL) :: logfile
-    !-----------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    shrlogunit = 6
-
-    if (mastertask) then
-       call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       open(newunit=logunit,file=trim(diro)//"/"//trim(logfile))
-    else
-       logUnit = 6
-    endif
-
-    call shr_file_setLogUnit (logunit)
-
-  end subroutine dshr_set_component_logging
 
   !===============================================================================
   subroutine dshr_log_clock_advance(clock, component, logunit, rc)

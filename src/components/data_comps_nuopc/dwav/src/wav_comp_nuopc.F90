@@ -14,18 +14,17 @@ module wav_comp_nuopc
   use NUOPC_Model      , only : NUOPC_ModelGet
   use shr_file_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_kind_mod     , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
-  use shr_const_mod    , only : shr_const_spval
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_mpi_mod      , only : shr_mpi_bcast
-  use dshr_mod         , only : dshr_state_setscalar, dshr_state_diagnose 
-  use dshr_mod         , only : dshr_set_component_logging, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_mod         , only : dshr_sdat_init, dshr_state_getfldptr, dshr_get_griddata
+  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
+  use dshr_mod         , only : dshr_state_setscalar, dshr_state_diagnose
+  use dshr_mod         , only : dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
-  use dshr_mod         , only : dshr_get_griddata
+  use dshr_mod         , only : dshr_create_mesh_from_grid
+  use dshr_mod         , only : dshr_state_getfldptr
+  use dshr_mod         , only : dshr_get_griddata, dshr_set_griddata
   use dshr_mod         , only : chkerr, memcheck
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_readnml
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -64,10 +63,11 @@ module wav_comp_nuopc
   character(*) , parameter     :: nullstr = 'undefined'
 
   ! dwav_in namelist input
+  character(CL)                :: nlfilename                      ! filename to obtain namelist info from
   character(CL)                :: dataMode                        ! flags physics options wrt input data
   logical                      :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL)                :: restfilm = nullstr ! model restart file namelist
-  character(CL)                :: restfils = nullstr ! stream restart file namelist
+  character(CL)                :: restfilm = nullstr              ! model restart file namelist
+  character(CL)                :: restfils = nullstr              ! stream restart file namelist
 
   ! constants
   integer      , parameter     :: master_task=0                   ! task number of master task
@@ -144,7 +144,6 @@ contains
     integer           :: inst_index         ! number of current instance (ie. 1)
     character(len=CL) :: cvalue             ! temporary
     integer           :: shrlogunit         ! original log unit
-    character(len=CL) :: fileName           ! generic file name
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
@@ -154,26 +153,27 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! obtain flds_scalar values, mpi values and multi-instance values
-    call dshr_advertise(gcomp, mpicom, my_task,  inst_index, inst_suffix, &
-         flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, rc)
-
-    ! determine logical masterproc
-    masterproc = (my_task == master_task)
-
+    ! Obtain flds_scalar values, mpi values, multi-instance values and  
     ! set logunit and set shr logging to my log file
-    call dshr_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
+    call dshr_init(gcomp, master_task, mpicom, my_task, inst_index, inst_suffix, &
+         flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
+         logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Read dwav_nml from filename
-    filename = "dwav_in"//trim(inst_suffix)
+    ! Determine namelist filename
+    nlfilename = "dwav_in"//trim(inst_suffix)
+
+    ! Determine logical masterproc
+    masterproc = (my_task == master_task)
+
+    ! Read dwav_nml from nlfilename
     if (my_task == master_task) then
-       open (newunit=nu,file=trim(filename),status="old",action="read")
+       open (newunit=nu,file=trim(nlfilename),status="old",action="read")
        read (nu,nml=dwav_nml,iostat=ierr)
        close(nu)
        if (ierr > 0) then
-          write(logunit,*) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
-          call shr_sys_abort(subName//': namelist read error '//trim(filename))
+          write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
+          call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
        write(logunit,*)' datamode   = ',datamode
        write(logunit,*)' restfilm   = ',trim(restfilm)
@@ -185,7 +185,7 @@ contains
     call shr_mpi_bcast(restfils ,mpicom, 'restfils')
     call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
 
-    ! Validate sdat datamode
+    ! Call advertise phase
     if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
        if (my_task == master_task) write(logunit,*) 'dwav datamode = ',trim(datamode)
     else
@@ -195,11 +195,6 @@ contains
        call dwav_comp_advertise(importState, exportState, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
-    ! Read shr_strdata_nml from filename
-    ! Read sdat namelist (need to do this here in order to get the datamode value - which
-    ! is needed or order to do the advertise phase
-    call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
@@ -237,7 +232,7 @@ contains
 
     ! Initialize sdat - create the model domain mesh and intialize the sdat clock
     call t_startf('dwav_strdata_init')
-    call dshr_sdat_init(gcomp, clock, compid, logunit, 'wav', mesh, read_restart, sdat, rc=rc)
+    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'wav', mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dwav_strdata_init')
 
