@@ -30,13 +30,11 @@ module dshr_mod
   use ESMF             , only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
   use ESMF             , only : ESMF_Region_Flag, ESMF_REGION_TOTAL, ESMF_MAXSTR
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
-  use shr_string_mod   , only : shr_string_listGetIndex
   use shr_sys_mod      , only : shr_sys_abort
-  use shr_file_mod     , only : shr_file_setlogunit, shr_file_getLogUnit
+  use shr_file_mod     , only : shr_file_setlogunit
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
   use shr_cal_mod      , only : shr_cal_datetod2string
-  use shr_pcdf_mod     , only : shr_pcdf_readwrite
   use shr_map_mod      , only : shr_map_fs_remap, shr_map_fs_bilinear
   use shr_map_mod      , only : shr_map_fs_srcmask, shr_map_fs_scalar
   use shr_const_mod    , only : shr_const_spval
@@ -53,6 +51,7 @@ module dshr_mod
   use dshr_util_mod    , only : memcheck, chkerr
   use perf_mod         , only : t_startf, t_stopf 
   use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
+  use pio
   use mct_mod
 
   implicit none
@@ -347,7 +346,7 @@ contains
     if (present(mapmask   )) SDAT%mapmask(1)  = mapmask
 
     ! initialize sdat model domain info
-    call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc)
+    call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! initialize sdat stream domains
@@ -414,7 +413,6 @@ contains
     logical                      :: scmMode
     real(r8)                     :: scmlat
     real(r8)                     :: scmlon
-    integer                      :: kmask
     character(len=CL)            :: cvalue
     character(len=*), parameter  :: subname='(dshr_mod:dshr_sdat_init)'
     character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
@@ -479,24 +477,13 @@ contains
        if (my_task == master_task) then
           write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
        end if
-       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, mesh, sdat, rc)
+       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, mesh, sdat, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
        ! ***TODO: Now need to initialize mesh that will send back to mediator given the lat and lon
        !    of the original mesh that was selected ***
     else
-       call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc)
+       call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, reset_domain_mask=reset_domain_mask, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (present(reset_domain_mask)) then
-          if (reset_domain_mask) then
-             if (my_task == master_task) then
-                write(logunit,*) ' Resetting the component domain mask to 1'
-             end if
-             kmask = mct_avect_indexra(sdat%grid%data,'mask')
-             sdat%grid%data%rattr(kmask,:) = 1
-          end if
-       end if
     end if
 
     ! initialize sdat stream domains
@@ -1063,12 +1050,12 @@ contains
   end subroutine dshr_time_init
 
   !===============================================================================
-  subroutine dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
+  subroutine dshr_restart_read(rest_filem, rest_files, rpfile, inst_suffix, nullstr, &
        logunit, my_task, master_task, mpicom, sdat, fld, fldname)
 
     ! input/output arguments
-    character(len=*)            , intent(inout) :: rest_file
-    character(len=*)            , intent(inout) :: rest_file_strm
+    character(len=*)            , intent(inout) :: rest_filem
+    character(len=*)            , intent(inout) :: rest_files
     character(len=*)            , intent(in)    :: rpfile
     character(len=*)            , intent(in)    :: inst_suffix
     character(len=*)            , intent(in)    :: nullstr
@@ -1081,13 +1068,17 @@ contains
     character(len=*) , optional , intent(in)    :: fldname
 
     ! local variables
-    integer :: nu
-    logical :: exists  ! file existance
+    integer           :: nu
+    logical           :: exists  ! file existance
+    type(file_desc_t) :: pioid
+    type(var_desc_t)  :: varid
+    type(io_desc_t)   :: pio_iodesc
+    integer           :: rcode
     character(*), parameter :: F00   = "('(dshr_restart_read) ',8a)"
     character(*), parameter :: subName = "(dshr_restart_read) "
     !-------------------------------------------------------------------------------
 
-    if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
+    if (trim(rest_filem) == trim(nullstr) .and. trim(rest_files) == trim(nullstr)) then
        if (my_task == master_task) then
           write(logunit,F00) ' restart filenames from rpointer'
           inquire(file=trim(rpfile)//trim(inst_suffix), exist=exists)
@@ -1096,30 +1087,35 @@ contains
              call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
           endif
           open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-          read(nu, '(a)') rest_file
-          read(nu, '(a)') rest_file_strm
+          read(nu, '(a)') rest_filem
+          read(nu, '(a)') rest_files
           close(nu)
-          inquire(file=trim(rest_file_strm), exist=exists)
+          inquire(file=trim(rest_files), exist=exists)
        endif
-       call shr_mpi_bcast(rest_file, mpicom, 'rest_file')
-       call shr_mpi_bcast(rest_file_strm, mpicom, 'rest_file_strm')
+       call shr_mpi_bcast(rest_filem, mpicom, 'rest_filem')
+       call shr_mpi_bcast(rest_files, mpicom, 'rest_files')
     else
        ! use namelist already read
        if (my_task == master_task) then
           write(logunit, F00) ' restart filenames from namelist '
-          inquire(file=trim(rest_file_strm), exist=exists)
+          inquire(file=trim(rest_files), exist=exists)
        endif
     endif
     call shr_mpi_bcast(exists, mpicom, 'exists')
     if (exists) then
-       if (my_task == master_task) write(logunit, F00) ' reading ', trim(rest_file_strm)
+       if (my_task == master_task) write(logunit, F00) ' reading data mdoel restart ', trim(rest_filem)
        if (present(fld) .and. present(fldname)) then
-          call shr_pcdf_readwrite('read', sdat%pio_subsystem, sdat%io_type, trim(rest_file), &
-               mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname), io_format=sdat%io_format)
+          rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_nowrite)
+          call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+          call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%gsize/), sdat%gindex, pio_iodesc)
+          rcode = pio_inq_varid(pioid, trim(fldname), varid)
+          call pio_read_darray(pioid, varid, pio_iodesc, fld, rcode)
+          call pio_closefile(pioid)
+          call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
        end if
-       call shr_strdata_restRead(trim(rest_file_strm), sdat, mpicom)
+       call shr_strdata_restRead(trim(rest_files), sdat, mpicom)
     else
-       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_file_strm)
+       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_files)
     endif
   end subroutine dshr_restart_read
 
@@ -1143,27 +1139,41 @@ contains
     character(len=*) , optional , intent(in)    :: fldname
 
     ! local variables
-    character(len=CL) :: rest_file
-    character(len=CL) :: rest_file_strm
-    character(len=CS) :: date_str
     integer           :: nu
+    character(len=CL) :: rest_filem
+    character(len=CL) :: rest_files
+    character(len=CS) :: date_str
+    type(file_desc_t) :: pioid
+    integer           :: dimid(1)
+    type(var_desc_t)  :: varid
+    type(io_desc_t)   :: pio_iodesc
+    integer           :: rcode
     !-------------------------------------------------------------------------------
 
      call shr_cal_datetod2string(date_str, ymd, tod)
-     write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
-     write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
+     write(rest_filem,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
+     write(rest_files,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
      if (my_task == master_task) then
         open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-        write(nu,'(a)') rest_file
-        write(nu,'(a)') rest_file_strm
+        write(nu,'(a)') rest_filem
+        write(nu,'(a)') rest_files
         close(nu)
-        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
+        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_files), ymd, tod
      endif
      if (present(fld) .and. present(fldname)) then
-        call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
-             trim(rest_file), mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname))
+        rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_clobber)
+        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+        rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
+        rcode = pio_def_dim(pioid, 'gsize', sdat%gsize, dimid(1))
+        rcode = pio_def_var(pioid, trim(fldname), PIO_DOUBLE, dimid, varid)
+        rcode = pio_enddef(pioid)
+        call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%gsize/), sdat%gindex, pio_iodesc)
+        call pio_write_darray(pioid, varid, pio_iodesc, fld, rcode, fillval=shr_const_spval)
+        call pio_closefile(pioid)
+        call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
      end if
-     call shr_strdata_restWrite(trim(rest_file_strm), sdat, mpicom, trim(case_name), 'SDAT strdata from '//trim(model_name))
+     call shr_strdata_restWrite(trim(rest_files), sdat, mpicom, trim(case_name), &
+          'sdat strdata from '//trim(model_name))
 
   end subroutine dshr_restart_write
 
@@ -1209,11 +1219,9 @@ contains
     character(*) ,parameter   :: F00    = "('(dshr_atm_get_adjustment_factors) ',4a) "
     character(*) ,parameter   :: F01    = "('(dshr_atm_get_adjustment_factors) ',a,2i5)"
     character(*) ,parameter   :: F02    = "('(dshr_atm_get_adjustment_factors) ',a,6e12.3)"
-
     !-------------------------------------------------------------------------------
+
     !   Note: gsmapi is all gridcells on root pe
-    !-------------------------------------------------------------------------------
-
     ni0 = 0
     nj0 = 0
     allocate(start(1),length(1))
@@ -1370,7 +1378,8 @@ contains
        call shr_strdata_mapSet(smatp, &
             ggridi, gsmapi, ni0 ,nj0, &
             sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &            
-            'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, shr_map_fs_srcmask, shr_map_fs_scalar, &
+            'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, &
+            shr_map_fs_srcmask, shr_map_fs_scalar, &
             compid, mpicom, 'Xonly')
 
        call mct_aVect_init(avo,avi,lsizeo)

@@ -78,9 +78,10 @@ module dshr_strdata_mod
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
   real(R8)         ,parameter, private :: dtlimit_default = 1.5_R8
+  integer          ,parameter          :: master_task = 0
 
   type shr_strdata_type
-     ! --- set by input ---
+     ! stream info set by shr_strdata_nml
      character(CL)                  :: streams (nStrMax) ! stream description file names
      character(CL)                  :: taxMode (nStrMax) ! time axis cycling mode
      real(R8)                       :: dtlimit (nStrMax) ! dt max/min limit
@@ -95,40 +96,40 @@ module dshr_strdata_mod
      character(CL)                  :: mapwrit (nStrMax) ! regrid mapping file to write
      character(CL)                  :: tintalgo(nStrMax) ! time interpolation algorithm
      character(CL)                  :: readmode(nStrMax) ! file read mode
+     integer                        :: nstreams          ! number of streams set in shr_strdata_readnml
+     integer                        :: nvectors          ! number of vectors set in shr_strdata_readnml
+
+     ! pio info
      integer                        :: io_type
      integer                        :: io_format
+     type(iosystem_desc_t), pointer :: pio_subsystem => null()
+     type(io_desc_t)                :: pio_iodesc(nStrMax)
 
-     ! --- mpi info
-     integer                        :: mpicom
-     integer                        :: ntasks
-     integer                        :: my_task
-     integer                        :: master_task
-
-     ! --- standard output info
-     integer                        :: logunit
-
-     !--- data required by stream  cosz t-interp method, set by user ---
+     ! data required by stream  cosz t-interp method, set by user
      real(R8)                       :: eccen
      real(R8)                       :: mvelpp
      real(R8)                       :: lambm0
      real(R8)                       :: obliqr
      integer                        :: modeldt           ! model dt in seconds
 
-     ! --- model domain info, internal, public ---
-     integer                        :: nxg               ! model grid lon size
-     integer                        :: nyg               ! model grid lat size
-     integer                        :: nzg               ! model grid vertical size
-     integer                        :: lsize             ! model grid local size
-     type(mct_gsmap)                :: gsmap             ! model grid global seg map
-     type(mct_ggrid)                :: grid              ! model grid ggrid
+     ! model domain info - set byy mesh
+     integer                        :: nxg               ! model domain lon size
+     integer                        :: nyg               ! model domain lat size
+     integer                        :: nzg               ! model domain vertical size
+     integer                        :: lsize             ! model domain local size
+     integer                        :: gsize             ! model domain global
+     integer, pointer               :: gindex(:)         ! model domain global index spzce
+     type(mct_gsmap)                :: gsmap             ! model domain mct global seg map
+     type(mct_ggrid)                :: grid              ! model domain mct ggrid
+
+     ! stream data, time interpolated and mapped to model domain
      type(mct_avect)                :: avs(nStrMax)      ! model grid stream attribute vectors
                                                          ! stream attribute vectors that are time and spatially
                                                          ! interpolated to model grid
-     ! --- stream info, internal ---
+
+     ! TODO: make the following allocatable and allocate memory once nstreams has been calculated
+     ! stream info
      type(shr_stream_streamType)    :: stream(nStrMax)
-     type(iosystem_desc_t), pointer :: pio_subsystem => null()
-     type(io_desc_t)                :: pio_iodesc(nStrMax)
-     integer                        :: nstreams          ! number of streams
      integer                        :: strnxg(nStrMax)
      integer                        :: strnyg(nStrMax)
      integer                        :: strnzg(nStrMax)
@@ -146,15 +147,18 @@ module dshr_strdata_mod
      type(mct_avect)                :: avCoszen(nStrMax) ! data assocaited with coszen time interp
      type(mct_sMatP)                :: sMatPf(nStrMax)
      type(mct_sMatP)                :: sMatPs(nStrMax)
-     integer                        :: ymdLB(nStrMax),todLB(nStrMax)
-     integer                        :: ymdUB(nStrMax),todUB(nStrMax)
+     integer                        :: ymdLB(nStrMax)
+     integer                        :: todLB(nStrMax)
+     integer                        :: ymdUB(nStrMax)
+     integer                        :: todUB(nStrMax)
+     integer                        :: ustrm(nVecMax)
+     integer                        :: vstrm(nVecMax)
+
+     ! time invo
      real(R8)                       :: dtmin(nStrMax)
      real(R8)                       :: dtmax(nStrMax)
      integer                        :: ymd  ,tod
      character(CL)                  :: calendar          ! model calendar for ymd,tod
-     integer                        :: nvectors          ! number of vectors
-     integer                        :: ustrm (nVecMax)
-     integer                        :: vstrm (nVecMax)
      character(CL)                  :: allocstring
   end type shr_strdata_type
 
@@ -200,7 +204,7 @@ contains
   end subroutine shr_strdata_pioinit
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, compid, sdat, rc)
+  subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, compid, sdat, reset_domain_mask, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat%lsize, sdat%gsmap and sdat%grid
@@ -213,6 +217,7 @@ contains
     integer                , intent(in)    :: mpicom
     integer                , intent(in)    :: compid
     type(shr_strdata_type) , intent(inout) :: sdat
+    logical, optional      , intent(in)    :: reset_domain_mask
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -238,19 +243,18 @@ contains
     integer, pointer     :: idata(:)     ! temporary
     type(ESMF_Array)     :: elemMaskArray
     integer, pointer     :: elemMask(:)
-    integer, allocatable, target :: gindex(:)
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    ! initialize sdat%lsize and sdat%gsmap (the data model gsmap)
+    ! initialize sdat%lsize, sdat%gsize and sdat%gindex
     call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     sdat%lsize = lsize
-    allocate(gindex(sdat%lsize))
-    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    allocate(sdat%gindex(lsize))
+    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=sdat%gindex, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_DistGridGet(distGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -261,10 +265,11 @@ contains
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
     end do
-    gsize = gsize
+    sdat%gsize = gsize
     deallocate(elementCountPTile)
-    call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, lsize, gsize)
-    deallocate(gindex)
+
+    ! initialize sdat%gsmap
+    call mct_gsMap_init(sdat%gsmap, sdat%gindex, mpicom, compid, sdat%lsize, sdat%gsize)
 
     ! initialize sdat%ggrid
     ! to obtain the mask, create an esmf array from a distgrid and a pointer
@@ -297,6 +302,15 @@ contains
        !sdat%Grid%data%rAttr(khgt ,n) = -1 ! currently hard-wired
     end do
     deallocate(elemMask)
+
+    if (present(reset_domain_mask)) then
+       if (reset_domain_mask) then
+          if (my_task == master_task) then
+             write(logunit,*) ' Resetting the component domain mask to 1'
+          end if
+          sdat%grid%data%rattr(kmask,:) = 1
+       end if
+    end if
 
   end subroutine shr_strdata_init_model_domain_mesh
 
@@ -335,7 +349,6 @@ contains
     integer              :: nlon,nlat,nmask
     integer              :: gsize
     integer, pointer     :: idata(:)           ! temporary
-    integer, allocatable, target :: gindex(:)
     character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
     character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
     !-------------------------------------------
@@ -384,9 +397,8 @@ contains
        endif
     enddo
 
-    ! Determine the nodes associate with element index ni
-
-
+    ! TODO: Determine the nodes associate with element index ni
+    
     ! reset sdat%nxg, sdat%nyg and sdat%nzg
     sdat%nxg  =  1
     sdat%nyg  =  1
@@ -394,9 +406,9 @@ contains
 
     ! initialize sdat%lsize and sdat%gsmap
     sdat%lsize = 1
-    gsize = 1
-    allocate(gindex(1)); gindex(1) = 1
-    call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, sdat%lsize, gsize)
+    sdat%gsize = 1
+    allocate(sdat%gindex(1)); sdat%gindex(1) = 1
+    call mct_gsMap_init(sdat%gsmap, sdat%gindex, mpicom, compid, sdat%lsize, sdat%gsize)
 
     ! Initialize model ggrid for single column
     ! This will be used to interpolate the stream(s) to the single column value
@@ -432,7 +444,6 @@ contains
     ! local variables
     integer          :: n,m,k    ! generic index
     integer          :: nfiles
-    integer, parameter :: master_task = 0
     character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
     !-------------------------------------------------------------------------------
 
@@ -517,7 +528,6 @@ contains
     integer              :: n,k,j,i    ! indices
     integer              :: gsize      ! gsize
     integer              :: my_task
-    integer              :: master_task
     integer              :: npes
     integer              :: ierr       ! error code
     logical              :: fileexists !
@@ -537,7 +547,7 @@ contains
     type(file_desc_t)    :: pioid
     integer              :: rcode
     integer              :: ndims      ! number of dims
-    integer, pointer     :: gindex(:)
+    integer, pointer     :: gindex_stream(:)
     integer              :: my_start, my_end
     integer              :: npt
     type(mct_ggrid)      :: gGridRoot    ! global mct ggrid
@@ -547,7 +557,6 @@ contains
 
     call mpi_comm_rank(mpicom, my_task, ierr)
     call mpi_comm_size(mpicom, npes, ierr)
-    master_task = 0
 
     ! Determine stream filename and namelist of domain variables
     if (my_task == master_task) then
@@ -652,7 +661,7 @@ contains
        hgt(1) = 1
     endif
 
-    ! Create 1d decomp of grid (gindex)
+    ! Create 1d decomp of grid (gindex_stream)
     gsize = abs(nxg*nyg*nzg)
     lsize = gsize/npes
     my_start = lsize*my_task + min(my_task, mod(gsize, npes)) + 1
@@ -660,31 +669,31 @@ contains
        lsize = lsize + 1
     end if
     my_end = my_start + lsize - 1
-    allocate(gindex(lsize))
+    allocate(gindex_stream(lsize))
     npt = 0
     do n = 1,gsize
        npt = npt + 1
        if (npt >= my_start .and. npt <= my_end) then
-          gindex(npt - my_start + 1) = n
+          gindex_stream(npt - my_start + 1) = n
        end if
     end do
 
-    ! Create stream pio_iodesc using gindex
+    ! Create stream pio_iodesc using gindex_stream
     if (nzg <= 0) then
-       call pio_initdecomp(pio_subsystem, pio_double, (/nxg,nyg/), gindex, pio_iodesc)
+       call pio_initdecomp(pio_subsystem, pio_double, (/nxg,nyg/), gindex_stream, pio_iodesc)
     else
-       call pio_initdecomp(pio_subsystem, pio_double, (/nxg,nyg,nzg/), gindex, pio_iodesc)
+       call pio_initdecomp(pio_subsystem, pio_double, (/nxg,nyg,nzg/), gindex_stream, pio_iodesc)
     endif
     
-    ! Create mct stream gsmap using gindex
+    ! Create mct stream gsmap using gindex_stream
     if (my_task == master_task) write(logunit,*)trim(subname) // ': Creating gsmap for input stream'
-    call mct_gsMap_init(gsmap, gindex, mpicom, compid, lsize, gsize)
+    call mct_gsMap_init(gsmap, gindex_stream, mpicom, compid, lsize, gsize)
 
     ! Create mct stream ggrid
     if (my_task == master_task) write(logunit,*)trim(subname) // ': Creating ggrid for input stream'
     call mct_gGrid_init(gGrid=gGridRoot, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=gsize)
     call mct_gGrid_init(gGrid=Ggrid    , CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize)
-    call mct_gGrid_importIAttr(gGrid, 'GlobGridNum', gindex, lsize)
+    call mct_gGrid_importIAttr(gGrid, 'GlobGridNum', gindex_stream, lsize)
     gGridRoot%data%rAttr = -9999.0_R8 !to avoid errors when using strict compiler checks
     gGrid%data%rAttr     = -9999.0_R8
     klon  = mct_aVect_indexRA(gGrid%data, 'lon')
@@ -713,7 +722,7 @@ contains
     deallocate(lat)
     deallocate(mask)
     deallocate(hgt)
-    deallocate(gindex)
+    deallocate(gindex_stream)
     deallocate(dimid)
 
     if (my_task == master_task) write(logunit,*)trim(subname) // ': Successfully initialized stream domain'
@@ -739,7 +748,6 @@ contains
     character(CS)  :: vname   ! v vector field name
     logical        :: compare1
     logical        :: compare2
-    integer          ,parameter :: master_task = 0
     character(*)     ,parameter :: F00 = "('(shr_strdata_init_mapping) ',8a)"
     character(len=*) ,parameter :: subname = "(shr_strdata_init_mapping) "
     !-------------------------------------------------------------------------------
@@ -949,7 +957,6 @@ contains
     type(var_desc_t)  :: varid
     type(file_desc_t) :: pioid
     integer           :: rcode
-    integer           :: master_task = 0
     character(CL)     :: filename
     ! ----------------------------------------------
 
@@ -978,7 +985,6 @@ contains
     ! local variables
     integer                    :: n,m,i,kf  ! generic index
     integer                    :: my_task,npes
-    integer,parameter          :: master_task = 0
     logical                    :: mssrmlf
     logical,allocatable        :: newData(:)
     integer                    :: ierr
@@ -1481,7 +1487,6 @@ contains
     integer    :: nUnit         ! fortran i/o unit number
     integer    :: n             ! generic loop index
     integer    :: my_task       ! my task number, 0 is default
-    integer    :: master_task   ! master task number, 0 is default
     integer    :: ntasks        ! total number of tasks
 
     ! shr_strdata_nml namelist variables
@@ -1539,16 +1544,11 @@ contains
     if (present(rc)) rc = 0
 
     my_task = 0
-    master_task = 0
     ntasks = 1
     if (present(mpicom)) then
        call mpi_comm_rank(mpicom, my_task, rCode)
        call mpi_comm_size(mpicom, ntasks, rCode)
     endif
-
-    sdat%my_task = my_task
-    sdat%ntasks = ntasks
-    sdat%master_task = master_task
 
     !--master--task--
     if (my_task == master_task) then
@@ -1785,7 +1785,7 @@ contains
     character(len=*) ,optional  ,intent(in)    :: istr
 
     !----- local -----
-    integer           :: my_task, master_task
+    integer           :: my_task
     integer           :: ierr       ! error code
     integer           :: rCode      ! return code
     logical           :: localCopy,fileexists
@@ -1809,7 +1809,6 @@ contains
 
     call t_startf(trim(lstr)//'_setup')
     call MPI_COMM_RANK(mpicom,my_task,ierr)
-    master_task = 0
     spd = shr_const_cday
 
     newData = .false.
@@ -1924,7 +1923,6 @@ contains
 
     !----- local -----
     integer              :: my_task
-    integer              :: master_task
     integer              :: ierr
     logical              :: fileexists
     integer              :: gsize,nx,ny,nz
@@ -1960,7 +1958,6 @@ contains
     call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
     call t_startf(trim(lstr)//'_setup')
     call mpi_comm_rank(mpicom,my_task,ierr)
-    master_task = 0
 
     if (my_task == master_task) then
        fileName = trim(path)//trim(fn)
@@ -2050,7 +2047,6 @@ contains
 
     !----- local -----
     integer                       :: my_task
-    integer                       :: master_task
     integer                       :: ierr
     logical                       :: localCopy,fileexists
     integer                       :: gsize,nx,ny,nz
@@ -2092,7 +2088,6 @@ contains
     call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
     call t_startf(trim(lstr)//'_setup')
     call mpi_comm_rank(mpicom,my_task,ierr)
-    master_task = 0
 
     if (my_task == master_task) then
        fileName = trim(path) // trim(fn)
@@ -2222,7 +2217,7 @@ contains
     ! local variables
     real(R8)        :: leps         ! local epsilon
     integer         :: n            ! counters
-    integer         :: my_task,master_task
+    integer         :: my_task
     integer         :: gsize
     integer         :: ierr
     integer         :: nlon1, nlon2, nlat1, nlat2, nmask1, nmask2  ! av field indices
@@ -2241,7 +2236,6 @@ contains
     !-------------------------------------------------------------------------------
 
     call MPI_COMM_RANK(mpicom,my_task,ierr)
-    master_task = 0
 
     leps = 1.0e-6_R8
     if (present(eps)) leps = eps
@@ -2431,7 +2425,7 @@ contains
     integer               :: n,i,j
     integer               :: lsizeS,gsizeS,lsizeD,gsizeD
     integer               :: nlon,nlat,nmsk
-    integer               :: my_task,master_task,ierr
+    integer               :: my_task,ierr
     real(R8) , pointer    :: Xsrc(:,:)
     real(R8) , pointer    :: Ysrc(:,:)
     integer  , pointer    :: Msrc(:,:)
@@ -2457,7 +2451,6 @@ contains
     !-------------------------------------------------------------------------------
 
     call MPI_COMM_RANK(mpicom,my_task,ierr)
-    master_task = 0
 
     !--- get sizes and allocate for SRC ---
 
