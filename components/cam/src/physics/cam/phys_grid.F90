@@ -5470,14 +5470,14 @@ logical function phys_grid_initialized ()
    integer :: vsmp_proc_map(max_nproc_vsmp,0:nvsmp-1)   
                                          ! virtual smp to process id map
    integer :: cid_offset(0:nvsmp)        ! chunk id virtual smp offset
-   integer :: ntmp1_smp(0:nvsmp-1)       ! minimum number of chunks per thread
+   integer :: ntmp1_vsmp(0:nvsmp-1)      ! minimum number of chunks per thread
                                          !  in a virtual SMP
-   integer :: ntmp2_smp(0:nvsmp-1)       ! number of extra chunks to be assigned
+   integer :: ntmp2_vsmp(0:nvsmp-1)      ! number of extra chunks to be assigned
                                          !  in a virtual SMP
-   integer :: ntmp3_smp(0:nvsmp-1)       ! number of processes in a virtual
+   integer :: ntmp3_vsmp(0:nvsmp-1)      ! number of processes in a virtual
                                          !  SMP that get more extra chunks
                                          !  than the others
-   integer :: ntmp4_smp(0:nvsmp-1)       ! number of extra chunks per process
+   integer :: ntmp4_vsmp(0:nvsmp-1)      ! number of extra chunks per process
                                          !  in a virtual SMP
    integer :: ntmp1, ntmp2               ! work variables
 !  integer :: npchunks(0:npes-1)         ! number of chunks to be assigned to
@@ -5521,18 +5521,18 @@ logical function phys_grid_initialized ()
    do smp=0,nvsmp-1
 !
 ! Minimum number of chunks per thread
-      ntmp1_smp(smp) = nvsmpchunks(smp)/nvsmpthreads(smp)
+      ntmp1_vsmp(smp) = nvsmpchunks(smp)/nvsmpthreads(smp)
 
 ! Number of extra chunks to be assigned
-      ntmp2_smp(smp) = mod(nvsmpchunks(smp),nvsmpthreads(smp))
+      ntmp2_vsmp(smp) = mod(nvsmpchunks(smp),nvsmpthreads(smp))
 
 ! Number of processes that get more extra chunks than the others
-      ntmp3_smp(smp) = mod(ntmp2_smp(smp),ntsks_vsmp(smp))
+      ntmp3_vsmp(smp) = mod(ntmp2_vsmp(smp),ntsks_vsmp(smp))
 
 ! Number of extra chunks per process
-      ntmp4_smp(smp) = ntmp2_smp(smp)/ntsks_vsmp(smp)
-      if (ntmp3_smp(smp) > 0) then
-         ntmp4_smp(smp) = ntmp4_smp(smp) + 1
+      ntmp4_vsmp(smp) = ntmp2_vsmp(smp)/ntsks_vsmp(smp)
+      if (ntmp3_vsmp(smp) > 0) then
+         ntmp4_vsmp(smp) = ntmp4_vsmp(smp) + 1
       endif
    enddo
 
@@ -5540,22 +5540,22 @@ logical function phys_grid_initialized ()
       smp = proc_vsmp_map(p)
 
 ! Update number of extra chunks
-      if (ntmp2_smp(smp) > ntmp4_smp(smp)) then
-         ntmp2_smp(smp) = ntmp2_smp(smp) - ntmp4_smp(smp)
+      if (ntmp2_vsmp(smp) > ntmp4_vsmp(smp)) then
+         ntmp2_vsmp(smp) = ntmp2_vsmp(smp) - ntmp4_vsmp(smp)
       else
-         ntmp4_smp(smp) = ntmp2_smp(smp)
-         ntmp2_smp(smp) = 0
-         ntmp3_smp(smp) = 0
+         ntmp4_vsmp(smp) = ntmp2_vsmp(smp)
+         ntmp2_vsmp(smp) = 0
+         ntmp3_vsmp(smp) = 0
       endif
 
 ! Set number of chunks
-      npchunks(p) = ntmp1_smp(smp)*npthreads(p) + ntmp4_smp(smp)
+      npchunks(p) = ntmp1_vsmp(smp)*npthreads(p) + ntmp4_vsmp(smp)
 
 ! Update extra chunk increment
-      if (ntmp3_smp(smp) > 0) then
-         ntmp3_smp(smp) = ntmp3_smp(smp) - 1
-         if (ntmp3_smp(smp) .eq. 0) then
-            ntmp4_smp(smp) = ntmp4_smp(smp) - 1
+      if (ntmp3_vsmp(smp) > 0) then
+         ntmp3_vsmp(smp) = ntmp3_vsmp(smp) - 1
+         if (ntmp3_vsmp(smp) .eq. 0) then
+            ntmp4_vsmp(smp) = ntmp4_vsmp(smp) - 1
          endif
       endif
    enddo
