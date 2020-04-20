@@ -961,8 +961,8 @@
 					description="Character string to choose EOS formulation"
 					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
 		/>
-		<nml_option name="config_open_ocean_freezing_temperature_coeff_0" type="real" default_value="-1.8" units="C"
-					description="The freezing temperature at zero pressure in open ocean."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_0" type="real" default_value="0.0" units="C"
+					description="The freezing temperature at zero pressure and salinity in open ocean."
 					possible_values="Any real number"
 		/>
 		<nml_option name="config_open_ocean_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C PSU^{-1}"
@@ -970,19 +970,19 @@
 					possible_values="Any real number"
 		/>
 		<nml_option name="config_open_ocean_freezing_temperature_coeff_p" type="real" default_value="0.0" units="C Pa^{-1}"
-					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature in the open ocean."
+					description="The coefficient for the term proportional to the pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
 		<nml_option name="config_open_ocean_freezing_temperature_coeff_pS" type="real" default_value="0.0" units="C PSU^{-1} Pa^{-1}"
 					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_open_ocean_freezing_temperature_reference_pressure" type="real" default_value="0.0" units="Pa"
-					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in the open ocean."
-					possible_values="Any positive real number"
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_mushy_az1_liq" type="real" default_value="-18.48" units="PSU C^{-1}"
+					description="The coefficient for the mushy sea-ice physics term az1_liq in the open ocean."
+					possible_values="Any non-positive number"
 		/>
 		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_0" type="real" default_value="6.22e-2" units="C"
-					description="The freezing temperature at zero pressure in land-ice cavities."
+					description="The freezing temperature at zero pressure and salinity in land-ice cavities."
 					possible_values="Any real number"
 		/>
 		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_S" type="real" default_value="-5.63e-2" units="C PSU^{-1}"
@@ -990,16 +990,12 @@
 					possible_values="Any real number"
 		/>
 		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_p" type="real" default_value="-7.43e-8" units="C Pa^{-1}"
-					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature in land-ice cavities."
+					description="The coefficient for the term proportional to the pressure in the freezing temperature in land-ice cavities."
 					possible_values="Any real number"
 		/>
 		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_pS" type="real" default_value="-1.74e-10" units="C PSU^{-1} Pa^{-1}"
 					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities."
 					possible_values="Any real number"
-		/>
-		<nml_option name="config_land_ice_cavity_freezing_temperature_reference_pressure" type="real" default_value="0.0" units="Pa"
-					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in land-ice cavities."
-					possible_values="Any positive real number"
 		/>
 	</nml_record>
 	<nml_record name="eos_linear">
