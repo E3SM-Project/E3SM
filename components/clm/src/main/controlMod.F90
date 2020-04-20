@@ -403,6 +403,11 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
+          if ( use_var_soil_thick ) then
+             call endrun(msg=' ERROR: use_var_soil_thick and use_fates cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+
        end if
 
 
@@ -457,6 +462,17 @@ contains
                 ! but NOT to implement 'nitrif_denitrif'
                 use_nitrif_denitrif = .true.
             end if
+       end if
+
+       if (use_pflotran) then
+          if (use_var_soil_thick) then
+             use_var_soil_thick = .false.
+          end if
+       end if
+
+       if (use_betr .and. use_var_soil_thick ) then
+          call endrun(msg=' ERROR: use_var_soil_thick and use_betr cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
        end if
 
     endif   ! end of if-masterproc if-block
@@ -532,6 +548,11 @@ contains
     end if
 
     ! Consistency settings for vsfm settings
+    if (use_vsfm .and. use_var_soil_thick) then
+       call endrun(msg=' ERROR:: use_vsfm and use_var_soil_thick cannot both be set to true.'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
     if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
