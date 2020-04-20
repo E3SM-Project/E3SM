@@ -27,8 +27,8 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_getNFiles, shr_stream_getFile
   use dshr_stream_mod  , only : shr_stream_getCurrFile, shr_stream_setCurrFile
   use dshr_stream_mod  , only : shr_stream_getDomainFile, shr_stream_getDomainInfo
+  use dshr_stream_mod  , only : shr_stream_init_from_infiles, shr_stream_init_from_fortran
   use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
-  use dshr_stream_mod  , only : shr_stream_parseInput, shr_stream_init
   use dshr_stream_mod  , only : shr_stream_getFilePath, shr_stream_findBounds
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getfilefieldname 
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
@@ -161,6 +161,11 @@ module dshr_strdata_mod
      character(CL)                  :: calendar          ! model calendar for ymd,tod
      character(CL)                  :: allocstring
   end type shr_strdata_type
+
+  interface shr_strdata_init_streams
+     module procedure :: shr_strdata_init_streams_from_infiles
+     module procedure :: shr_strdata_init_streams_from_fortran
+  end interface shr_strdata_init_streams
 
   interface shr_strdata_init_model_domain
      module procedure :: shr_strdata_init_model_domain_mesh
@@ -433,7 +438,9 @@ contains
   end subroutine shr_strdata_init_model_domain_scol
 
   !===============================================================================
-  subroutine shr_strdata_init_streams(SDAT, compid, mpicom, my_task)
+  subroutine shr_strdata_init_streams_from_infiles(sdat, compid, mpicom, my_task)
+
+    ! Initialize streams for input stream txt files
 
     ! input/output arguments
     type(shr_strdata_type) ,intent(inout) :: SDAT
@@ -442,59 +449,94 @@ contains
     integer                ,intent(in)    :: my_task
 
     ! local variables
-    integer          :: n,m,k    ! generic index
-    integer          :: nfiles
+    integer       :: n         ! generic index
+    character(CL) :: str       ! namelist input for "streams" 
+    integer       :: i         ! index in string
+    integer       :: yearFirst ! first year to use in data stream
+    integer       :: yearLast  ! last  year to use in data stream
+    integer       :: yearAlign ! data year that aligns with yearFirst
+    character(CL) :: filename  ! stream txt filename
     character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
     !-------------------------------------------------------------------------------
 
-    ! Count streams again in case user made changes
-    if (my_task == master_task) then
-       do n=1,nStrMax
+    ! Loop over all active streams and initialize domain and calendar for each stream
+    write(6,*)'DEBUG: nstreams = ',sdat%nstreams
+    do n = 1,sdat%nstreams
+       if (trim(SDAT%streams(n)) /= shr_strdata_nullstr) then
 
-          ! check if a streams string is defined in strdata
-          if (trim(SDAT%streams(n)) /= trim(shr_strdata_nullstr)) then
-             SDAT%nstreams = max(SDAT%nstreams,n)
+          if (my_task == master_task) then
+             ! Set yearAlign, yearFirst, yearLast for sdat%streams(n)
+             str = adjustL(sdat%streams(n))  ! stream info from namelist
+             i = index(str," ")
+             fileName = str(:i)
+             write(6,*)'DEBUG: filename = ',filename
+             read(str(i:),*) yearAlign, yearFirst, yearLast
+
+             ! Initialize stream datatype by reading stream txt files
+             call shr_stream_init_from_infiles(sdat%stream(n), &
+                  fileName, yearFirst, yearLast, yearAlign, trim(sdat%taxMode(n)))
           end if
 
-          ! check if a filename is defined in the stream
-          call shr_stream_getNFiles(SDAT%stream(n),nfiles)
-          if (nfiles > 0) then
-             SDAT%nstreams = max(SDAT%nstreams,n)
-          end if
-          if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) then
-             SDAT%dtlimit(n) = 1.0e30
-          end if
-       end do
+          ! Initialize stream domain info for stream n
+          call shr_strdata_init_stream_domain( sdat%stream(n), &
+               sdat%pio_subsystem, sdat%io_type, compid, mpicom, &
+               sdat%gridR(n), sdat%gsmapR(n), sdat%pio_iodesc(n), &
+               sdat%strnxg(n), sdat%strnyg(n), sdat%strnzg(n), sdat%lsizeR(n))
 
-       ! Determine vector size for stream n
-       SDAT%nvectors = 0
-       do n = 1,nVecMax
-          if (trim(SDAT%vectors(n)) /= trim(shr_strdata_nullstr)) then
-             SDAT%nvectors = n
-          end if
-       end do
-    endif
-    call shr_mpi_bcast(SDAT%nstreams  ,mpicom, 'nstreams')
-    call shr_mpi_bcast(SDAT%nvectors  ,mpicom, 'nvectors')
-    call shr_mpi_bcast(SDAT%dtlimit   ,mpicom, 'dtlimit')
-
-    ! Initialize domain, pio and calendar for each stream
-    do n = 1,SDAT%nstreams
-
-       ! Initialize stream domain info for stream n
-       call shr_strdata_init_stream_domain(&
-            SDAT%stream(n),SDAT%pio_subsystem, SDAT%io_type, compid, mpicom, &
-            SDAT%gridR(n), SDAT%gsmapR(n), SDAT%pio_iodesc(n), &
-            SDAT%strnxg(n), SDAT%strnyg(n), SDAT%strnzg(n), SDAT%lsizeR(n))
-
-       ! Initialize calendar for stream n
-       call shr_mpi_bcast(SDAT%stream(n)%calendar, mpicom)
+          ! Initialize calendar for stream n
+          call shr_mpi_bcast(sdat%stream(n)%calendar, mpicom)
+       end if
     enddo
 
-  end subroutine shr_strdata_init_streams
+  end subroutine shr_strdata_init_streams_from_infiles
 
   !===============================================================================
-  subroutine shr_strdata_init_stream_domain(stream, pio_subsystem, pio_type, compid, mpicom, &
+  subroutine shr_strdata_init_streams_from_fortran(sdat,   &
+       yearFirst, yearLast, yearAlign, offset, taxmode,    &
+       domFilePath, domFileName,                           &
+       domTvarName, domXvarName, domYvarName, domMaskName, &
+       domZvarName, nzg, &
+       strmFldNamesInFile, strmFldNamesInModel, &
+       strmFldfilePath, strmFldFileNames)
+
+    ! -----------------------------------------------
+    ! initialize stream info from fortran interfaces 
+    ! rather than from stream text files
+    ! -----------------------------------------------
+
+    ! input/output variables
+    type(shr_strdata_type) ,intent(inout):: sdat                ! strdata data data-type
+    integer                ,intent(in)   :: yearFirst           ! first year to use
+    integer                ,intent(in)   :: yearLast            ! last  year to use
+    integer                ,intent(in)   :: yearAlign           ! align yearFirst with this model year
+    integer                ,intent(in)   :: offset              ! offset in seconds of stream data
+    character(*)           ,intent(in)   :: taxMode             ! time axis mode
+    character(*)           ,intent(in)   :: domFilePath         ! domain file path
+    character(*)           ,intent(in)   :: domFileName         ! domain file name
+    character(*)           ,intent(in)   :: domTvarName         ! domain time dim name
+    character(*)           ,intent(in)   :: domXvarName         ! domain x dim name
+    character(*)           ,intent(in)   :: domYvarName         ! domain y dim name
+    character(*)           ,intent(in)   :: domMaskName         ! domain mask name
+    character(*)           ,intent(in)   :: domZvarName         ! domain z dim name
+    integer                ,intent(in)   :: nzg                 ! domain z dim size
+    character(*)           ,intent(in)   :: strmFldNamesInFile  ! file field names, colon delim list
+    character(*)           ,intent(in)   :: strmFldNamesInModel ! model field names, colon delim list
+    character(*)           ,intent(in)   :: strmFldfilePath     ! path to filenames
+    character(*)           ,intent(in)   :: strmFldFileNames(:) ! filename for index filenumber
+    ! --------------------------------------------------------
+
+    call shr_stream_init_from_fortran(sdat%stream(1), &
+       yearFirst, yearLast, yearAlign, offset, taxmode,    &
+       domFilePath, domFileName, &
+       domTvarName, domXvarName, domYvarName, domZvarName, nzg, domMaskName, &
+       strmFldNamesInFile, strmFldNamesInModel, &
+       strmFldfilePath, strmFldFileNames)
+
+  end subroutine shr_strdata_init_streams_from_fortran
+
+  !===============================================================================
+  subroutine shr_strdata_init_stream_domain(stream, &
+       pio_subsystem, pio_type, compid, mpicom, &
        gGrid, gsMap, pio_iodesc, &
        nxg, nyg, nzg, lsize)
 
@@ -560,9 +602,11 @@ contains
 
     ! Determine stream filename and namelist of domain variables
     if (my_task == master_task) then
+       ! Obtain filename and variables names for stream domain info
        call shr_stream_getDomainInfo(stream, filePath, fileName, &
             timeName, lonName, latName, hgtName, maskName)
-       ! Determine if stream file exists and if not exit
+
+       ! Determine if stream domain file exists and if not exit
        call shr_stream_getFile(filePath, fileName)
        inquire(file=trim(filename), exist=fileExists)
        if (.not. fileExists) then
@@ -589,7 +633,7 @@ contains
     rcode = pio_openfile(pio_subsystem, pioid, pio_type, trim(filename), pio_nowrite)
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
 
-    ! Create 2d lon/lat arrays (in degrees)
+    ! Obtain stream domain lon/lat arrays (in degrees)
     call pio_seterrorhandling(pioid, PIO_RETURN_ERROR)
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     rcode = pio_inq_varid(pioid, trim(lonname), varid)
@@ -1472,14 +1516,13 @@ contains
   end subroutine shr_strdata_setOrbs
 
   !===============================================================================
-  subroutine shr_strdata_readnml(SDAT, file, rc, mpicom)
+  subroutine shr_strdata_readnml(SDAT, file, mpicom)
 
     ! Reads shr_strdata_nml namelist input
 
     ! input/output arguments
     type(shr_strdata_type) ,intent(inout):: SDAT   ! strdata data data-type
     character(*) ,optional ,intent(in)   :: file   ! file to read strdata from
-    integer      ,optional ,intent(out)  :: rc     ! return code
     integer      ,optional ,intent(in)   :: mpicom ! mpi comm
 
     ! local variables
@@ -1541,10 +1584,9 @@ contains
     character(*),parameter ::   F90 = "('(shr_strdata_readnml) ',58('-'))"
     !-------------------------------------------------------------------------------
 
-    if (present(rc)) rc = 0
-
     my_task = 0
     ntasks = 1
+
     if (present(mpicom)) then
        call mpi_comm_rank(mpicom, my_task, rCode)
        call mpi_comm_size(mpicom, ntasks, rCode)
@@ -1553,9 +1595,7 @@ contains
     !--master--task--
     if (my_task == master_task) then
 
-       !----------------------------------------------------------------------------
        ! set default values for namelist vars
-       !----------------------------------------------------------------------------
        streams(:)  = trim(shr_strdata_nullstr)
        taxMode(:)  = trim(shr_stream_taxis_cycle)
        dtlimit(:)  = dtlimit_default
@@ -1571,9 +1611,7 @@ contains
        tintalgo(:) = 'linear'
        readmode(:) = 'single'
 
-       !----------------------------------------------------------------------------
        ! read input namelist
-       !----------------------------------------------------------------------------
        if (present(file)) then
           write(logunit,F00) 'reading input namelist file: ',trim(file)
           open (newunit=nUnit,file=trim(file),status="old",action="read")
@@ -1589,9 +1627,7 @@ contains
           close(nUnit)
        endif
 
-       !----------------------------------------------------------------------------
        ! copy temporary/local namelist vars into data structure
-       !----------------------------------------------------------------------------
        SDAT%nstreams    = 0
        do n=1,nStrMax
           call shr_stream_default(SDAT%stream(n))
@@ -1626,16 +1662,6 @@ contains
              SDAT%nvectors = n
           end if
        end do
-
-       do n = 1,SDAT%nstreams
-          if (trim(SDAT%streams(n)) /= shr_strdata_nullstr) then
-             ! extract fileName (stream description text file), yearAlign, yearFirst, yearLast from SDAT%streams(n)
-             call shr_stream_parseInput(SDAT%streams(n), fileName, yearAlign, yearFirst, yearLast)
-
-             ! initialize stream datatype, read description text file
-             call shr_stream_init(SDAT%stream(n), fileName, yearFirst, yearLast, yearAlign, trim(SDAT%taxMode(n)))
-          end if
-       enddo
     endif   ! master_task
 
     if (present(mpicom)) then

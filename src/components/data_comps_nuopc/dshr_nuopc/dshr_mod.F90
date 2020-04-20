@@ -47,7 +47,7 @@ module dshr_mod
   use dshr_strdata_mod , only : shr_strdata_init_streams
   use dshr_strdata_mod , only : shr_strdata_init_mapping, shr_strdata_mapset
   use dshr_strdata_mod , only : shr_strdata_print
-  use dshr_stream_mod  , only : shr_stream_set, shr_stream_taxis_extend
+  use dshr_stream_mod  , only : shr_stream_taxis_extend
   use dshr_util_mod    , only : memcheck, chkerr
   use perf_mod         , only : t_startf, t_stopf 
   use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
@@ -58,8 +58,8 @@ module dshr_mod
   public
 
   interface dshr_sdat_init
-     module procedure :: dshr_sdat_init_from_input  ! initialize sdat from a fortran interface
-     module procedure :: dshr_sdat_init_from_strtxt ! initialize sdat from stream text file
+     module procedure :: dshr_sdat_init_from_infiles  ! initialize sdat from stream text file
+     module procedure :: dshr_sdat_init_from_fortran  ! initialize sdat from a fortran interface
   end interface dshr_sdat_init
 
   public :: dshr_model_initphase
@@ -251,60 +251,55 @@ contains
   end subroutine dshr_init
 
   !===============================================================================
-  subroutine dshr_sdat_init_from_input( &
-       SDAT, mpicom, compid, mesh, nxg, nyg, clock, &
+  subroutine dshr_sdat_init_from_fortran(                      &
+       sdat, mpicom, compid, mesh, nxg, nyg, clock,            &
        !--- streams stuff required ---
-       yearFirst, yearLast, yearAlign, offset,          &
-       domFilePath, domFileName,                        &
-       domTvarName, domXvarName, domYvarName, domMaskName, &
-       filePath, filename, fldListFile, fldListModel,   &
+       yearFirst, yearLast, yearAlign, offset,                 &
+       DomFilePath, DomFileName,                               &
+       DomTvarName, DomXvarName, DomYvarName, domMaskName,     &
+       strmFldFilePath, strmFldFilenames,                      &
+       strmFldNamesInFile, strmfldNamesInModel,                &
        !--- strdata optional ---
-       nzg, domZvarName,                                &
-       taxMode, dtlimit, tintalgo, readmode,            &
-       fillalgo, fillmask, fillread, fillwrite,         &
-       mapalgo, mapmask, mapread, mapwrite)
-
+       nzg, domZvarName,                                       &
+       taxMode, dtlimit, tintalgo, readmode,                   &
+       fillalgo, fillmask, mapalgo, mapmask) 
 
     ! Set strdata and stream info from fortran interface.
     ! Note: When this is called, previous settings are reset to defaults
-    !and then the values passed are used.
+    ! and then the values passed are used.
 
     ! input/output arguments
-    type(shr_strdata_type) ,intent(inout):: SDAT         ! strdata data data-type
-    integer                ,intent(in)   :: mpicom       ! mpi comm
+    type(shr_strdata_type) ,intent(inout):: sdat                ! strdata data data-type
+    integer                ,intent(in)   :: mpicom              ! mpi comm
     integer                ,intent(in)   :: compid
     type(ESMF_Mesh)        ,intent(in)   :: mesh
     integer                ,intent(in)   :: nxg
     integer                ,intent(in)   :: nyg
     type(ESMF_Clock)       ,intent(in)   :: clock
-    integer                ,intent(in)   :: yearFirst    ! first year to use
-    integer                ,intent(in)   :: yearLast     ! last  year to use
-    integer                ,intent(in)   :: yearAlign    ! align yearFirst with this model year
-    integer                ,intent(in)   :: offset       ! offset in seconds of stream data
-    character(*)           ,intent(in)   :: domFilePath  ! domain file path
-    character(*)           ,intent(in)   :: domFileName  ! domain file name
-    character(*)           ,intent(in)   :: domTvarName  ! domain time dim name
-    character(*)           ,intent(in)   :: domXvarName  ! domain x dim name
-    character(*)           ,intent(in)   :: domYvarName  ! domain y dim name
-    character(*)           ,intent(in)   :: domMaskName  ! domain mask name
-    character(*)           ,intent(in)   :: filePath     ! path to filenames
-    character(*)           ,intent(in)   :: filename(:)  ! filename for index filenumber
-    character(*)           ,intent(in)   :: fldListFile  ! file field names, colon delim list
-    character(*)           ,intent(in)   :: fldListModel ! model field names, colon delim list
-    integer      ,optional ,intent(in)   :: nzg
-    character(*) ,optional ,intent(in)   :: domZvarName  ! domain z dim name
-    character(*) ,optional ,intent(in)   :: taxMode
-    real(R8)     ,optional ,intent(in)   :: dtlimit
-    character(*) ,optional ,intent(in)   :: fillalgo     ! fill algorithm
-    character(*) ,optional ,intent(in)   :: fillmask     ! fill mask
-    character(*) ,optional ,intent(in)   :: fillread     ! fill mapping file to read
-    character(*) ,optional ,intent(in)   :: fillwrite    ! fill mapping file to write
-    character(*) ,optional ,intent(in)   :: mapalgo      ! scalar map algorithm
-    character(*) ,optional ,intent(in)   :: mapmask      ! scalar map mask
-    character(*) ,optional ,intent(in)   :: mapread      ! regrid mapping file to read
-    character(*) ,optional ,intent(in)   :: mapwrite     ! regrid mapping file to write
-    character(*) ,optional ,intent(in)   :: tintalgo     ! time interpolation algorithm
-    character(*) ,optional ,intent(in)   :: readmode     ! file read mode
+    integer                ,intent(in)   :: yearFirst           ! first year to use
+    integer                ,intent(in)   :: yearLast            ! last  year to use
+    integer                ,intent(in)   :: yearAlign           ! align yearFirst with this model year
+    integer                ,intent(in)   :: offset              ! offset in seconds of stream data
+    character(*)           ,intent(in)   :: domFilePath         ! domain file path
+    character(*)           ,intent(in)   :: domFileName         ! domain file name
+    character(*)           ,intent(in)   :: domTvarName         ! domain time dim name
+    character(*)           ,intent(in)   :: domXvarName         ! domain x dim name
+    character(*)           ,intent(in)   :: domYvarName         ! domain y dim name
+    character(*)           ,intent(in)   :: domMaskName         ! domain mask name
+    character(*)           ,intent(in)   :: strmFldFilePath     ! path to stream data 
+    character(*)           ,intent(in)   :: strmFldFileNames(:) ! filenames for stream data
+    character(*)           ,intent(in)   :: strmFldNamesInFile  ! file field names, colon delim list
+    character(*)           ,intent(in)   :: strmFldNamesInModel ! model field names, colon delim list
+    integer                ,intent(in)   :: nzg
+    character(*)           ,intent(in)   :: domZvarName         ! domain z dim name
+    character(*)           ,intent(in)   :: taxMode
+    real(R8)               ,intent(in)   :: dtlimit
+    character(*)           ,intent(in)   :: fillalgo            ! fill algorithm
+    character(*)           ,intent(in)   :: fillmask            ! fill mask
+    character(*)           ,intent(in)   :: mapalgo             ! scalar map algorithm
+    character(*)           ,intent(in)   :: mapmask             ! scalar map mask
+    character(*)           ,intent(in)   :: tintalgo            ! time interpolation algorithm
+    character(*)           ,intent(in)   :: readmode            ! file read mode
 
     ! local variables
     type(ESMF_Calendar)     :: esmf_calendar ! esmf calendar
@@ -318,55 +313,49 @@ contains
     character(*),parameter  :: F00 = "('(shr_strdata_create) ',8a)"
     !-------------------------------------------------------------------------------
 
-    ! The following just sets the defaults - but does not do a namelist read
-    call shr_strdata_readnml(SDAT, mpicom=mpicom)  
     call mpi_comm_rank(mpicom, my_task, ierr)
 
     ! Assume only 1 stream
-    SDAT%nstreams = 1
+    sdat%nstreams = 1
 
     ! Initialize pio
     call shr_strdata_pioinit(sdat, compid)
 
-    if (present(taxMode)) then
-       SDAT%taxMode(1) = taxMode
-       if (trim(SDAT%taxMode(1)) == trim(shr_stream_taxis_extend)) SDAT%dtlimit(1) = 1.0e30
-    endif
-    if (present(dtlimit   )) SDAT%dtlimit(1)  = dtlimit
-    if (present(fillalgo  )) SDAT%fillalgo(1) = fillalgo
-    if (present(fillmask  )) SDAT%fillmask(1) = fillmask
-    if (present(fillread  )) SDAT%fillread(1) = fillread
-    if (present(fillwrite )) SDAT%fillwrit(1) = fillwrite
-    if (present(mapalgo   )) SDAT%mapalgo(1)  = mapalgo
-    if (present(mapmask   )) SDAT%mapmask(1)  = mapmask
-    if (present(mapread   )) SDAT%mapread(1)  = mapread
-    if (present(mapwrite  )) SDAT%mapwrit(1)  = mapwrite
-    if (present(tintalgo  )) SDAT%tintalgo(1) = tintalgo
-    if (present(readmode  )) SDAT%readmode(1) = readmode
-    if (present(mapmask   )) SDAT%mapmask(1)  = mapmask
+    ! set defaults - but calling shr_strdata_readnml - but not reading int the namelist
+    call shr_strdata_readnml(sdat) 
 
-    ! initialize sdat model domain info
+    ! Reset sdat values if they appear as optional arguments
+    ! TODO: pass these values to shr_strdata routine rather than reading them here
+    sdat%taxMode(1)  = taxMode
+    sdat%dtlimit(1)  = dtlimit
+    sdat%fillalgo(1) = fillalgo
+    sdat%fillmask(1) = fillmask
+    sdat%mapalgo(1)  = mapalgo
+    sdat%mapmask(1)  = mapmask
+    sdat%tintalgo(1) = tintalgo
+    sdat%readmode(1) = readmode ! single or full_file
+    if (trim(sdat%taxMode(1)) == trim(shr_stream_taxis_extend)) then
+       ! reset dtlimit if necessary
+       sdat%dtlimit(1) = 1.0e30
+    end if
+
+    ! Initialize sdat model domain info
     call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! initialize sdat stream domains
-    if (present(domZvarName)) then
-       zname = trim(domzvarname)
-    else
-       zname = 'undefined'
-    end if
-    call shr_stream_set(SDAT%stream(1), &
-         yearFirst, yearLast, yearAlign, offset, taxMode,  &
-         fldListFile, fldListModel, domFilePath, domFileName,  &
-         domTvarName, domXvarName, domYvarName, trim(zname), domMaskName,  &
-         filePath, filename)
+    ! Initialize sdat stream domain info
+    call shr_strdata_init_streams(sdat, &
+       yearFirst, yearLast, yearAlign, offset, sdat%taxmode(1), &
+       domFilePath, domFileName, &
+       domTvarName, domXvarName, domYvarName, domMaskName, &
+       domZvarName, nzg, &
+       strmFldNamesInFile, strmFldNamesInModel, &
+       strmFldFilePath, strmFldFileNames)
 
-    !call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
-
-    ! initialize sdat attributes mapping of streams to model domain
+    ! Initialize sdat mapping of stream to model domain
     call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
 
-    ! initialize sdat calendar
+    ! Initialize sdat calendar
     call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
@@ -378,10 +367,10 @@ contains
     end if
     sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
-  end subroutine dshr_sdat_init_from_input
+  end subroutine dshr_sdat_init_from_fortran
 
   !===============================================================================
-  subroutine dshr_sdat_init_from_strtxt(gcomp, clock, nlfilename, compid, logunit, compname, &
+  subroutine dshr_sdat_init_from_infiles(gcomp, clock, nlfilename, compid, logunit, compname, &
        mesh, read_restart, sdat, reset_domain_mask, rc)
 
     ! ----------------------------------------------
@@ -506,11 +495,11 @@ contains
 
     ! print sdat output
     if (my_task == master_task) then
-       call shr_strdata_print(sdat,'SDAT data ')
+       call shr_strdata_print(sdat,'sdat data ')
        write(logunit,*) ' successfully initialized sdat'
     endif
 
-  end subroutine dshr_sdat_init_from_strtxt
+  end subroutine dshr_sdat_init_from_infiles
 
   !===============================================================================
   subroutine dshr_create_mesh_from_grid(filename, mesh, rc)
