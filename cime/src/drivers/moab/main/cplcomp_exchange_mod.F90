@@ -1084,15 +1084,19 @@ contains
 
       !  we also need to define the tags for receiving the physics data, on atm on coupler pes
       ! corresponding to 'T_ph;u_ph;v_ph';
-      tagnameProj = 'T_ph16'//CHAR(0)
-      tagtype = 1  ! dense, double
-      numco = 16 !  hard coded, 16 values per cell!
-      ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
-      ! define more tags
-      tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
-      ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
-      tagnameProj = 'v_ph16'//CHAR(0)  ! V component of velocity
-      ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+      ! we can receive those tags only on coupler pes, when mbaxid exists
+      ! we have to check that before we can define the tag
+      if (mbaxid .ge. 0 ) then
+        tagnameProj = 'T_ph16'//CHAR(0)
+        tagtype = 1  ! dense, double
+        numco = 16 !  hard coded, 16 values per cell!
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        ! define more tags
+        tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        tagnameProj = 'v_ph16'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+      endif
 
     endif
     ! ocean
