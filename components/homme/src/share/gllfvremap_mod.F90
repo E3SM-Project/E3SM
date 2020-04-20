@@ -117,7 +117,7 @@ module gllfvremap_mod
   ! For testing.
   public :: &
        gfr_test, &
-       gfr_g2f_scalar, gfr_f2g_scalar, &
+       gfr_g2f_scalar, gfr_f2g_scalar, gfr_g2f_vector, &
        gfr_f_get_area, gfr_f_get_latlon, gfr_f_get_corner_latlon, gfr_f_get_cartesian3d, &
        gfr_g_make_nonnegative, gfr_dyn_to_fv_phys_topo_elem, gfr_f2g_dss
 
@@ -303,7 +303,7 @@ contains
        wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
        T(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
 
-       call gfr_g2f_vector(gfr, ie, elem, &
+       call gfr_g2f_vector(ie, elem, &
             elem(ie)%state%v(:,:,1,:,nt), elem(ie)%state%v(:,:,2,:,nt), &
             wr1, wr2)
        uv(:ncol,1,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
@@ -1296,7 +1296,7 @@ contains
     end do
   end subroutine gfr_g2f_remapd
 
-  subroutine gfr_g2f_scalar(ie, gll_metdet, g, f) ! no gfr b/c public for testing
+  subroutine gfr_g2f_scalar(ie, gll_metdet, g, f) ! no gfr b/c public
     ! Wrapper to remapd, where g and f are densities.
 
     integer, intent(in) :: ie
@@ -1326,11 +1326,10 @@ contains
     f(:nf,:nf,:) = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
   end subroutine gfr_g2f_scalar_dp
 
-  subroutine gfr_g2f_vector(gfr, ie, elem, u_g, v_g, u_f, v_f)
+  subroutine gfr_g2f_vector(ie, elem, u_g, v_g, u_f, v_f) ! no gfr b/c public
     ! Remap a vector on the sphere by doing the actual remap on the
     ! reference element, thus avoiding steep gradients at the poles.
 
-    type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     type (element_t), intent(in) :: elem(:)
     real(kind=real_kind), intent(in) :: u_g(:,:,:), v_g(:,:,:)
@@ -1375,7 +1374,7 @@ contains
     integer :: nf
 
     nf = gfr%nphys
-    call gfr_g2f_vector(gfr, ie, elem, dp_g*u_g, dp_g*v_g, u_f, v_f)
+    call gfr_g2f_vector(ie, elem, dp_g*u_g, dp_g*v_g, u_f, v_f)
     u_f(:nf,:nf,:) = u_f(:nf,:nf,:)/dp_f(:nf,:nf,:)
     v_f(:nf,:nf,:) = v_f(:nf,:nf,:)/dp_f(:nf,:nf,:)
   end subroutine gfr_g2f_vector_dp

@@ -1501,13 +1501,9 @@ contains
   !=================================================================================================
   !
   subroutine fv_physgrid_init()
-    use derivative_mod,         only: allocate_subcell_integration_matrix
     use gllfvremap_mod,         only: gfr_init
 
     call gfr_init(par, elem, fv_nphys)
-    
-    ! allocate subcell integration matrix
-    call allocate_subcell_integration_matrix(np, fv_nphys)
   end subroutine fv_physgrid_init
   !
   !=================================================================================================
