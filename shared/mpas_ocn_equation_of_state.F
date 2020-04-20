@@ -309,34 +309,29 @@ contains
       logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
-      real (kind=RKIND), pointer :: coeff_0
-      real (kind=RKIND), pointer :: coeff_S
-      real (kind=RKIND), pointer :: coeff_p
-      real (kind=RKIND), pointer :: coeff_pS
-      real (kind=RKIND), pointer :: reference_pressure
-      real (kind=RKIND) :: pressureOffset
+      real (kind=RKIND), pointer :: coeff_0, coeff_S, coeff_p, coeff_pS, az1_liq
+      real (kind=RKIND) :: coeff_mushy
 
       if(inLandIceCavity) then
          coeff_0 => config_land_ice_cavity_freezing_temperature_coeff_0
          coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
          coeff_p => config_land_ice_cavity_freezing_temperature_coeff_p
          coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
-         reference_pressure => config_land_ice_cavity_freezing_temperature_reference_pressure
+         coeff_mushy = 0.0_RKIND
       else
          coeff_0 => config_open_ocean_freezing_temperature_coeff_0
          coeff_S => config_open_ocean_freezing_temperature_coeff_S
          coeff_p => config_open_ocean_freezing_temperature_coeff_p
          coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
-         reference_pressure => config_open_ocean_freezing_temperature_reference_pressure
+         az1_liq => config_open_ocean_freezing_temperature_coeff_mushy_az1_liq
+         coeff_mushy = 1.0_RKIND / az1_liq
       end if
-
-
-      pressureOffset = max(pressure - reference_pressure, 0.0_RKIND)
 
       ocn_freezing_temperature = coeff_0 &
          + coeff_S * salinity &
-         + coeff_p * pressureOffset &
-         + coeff_pS * pressureOffset * salinity
+         + coeff_p * pressure &
+         + coeff_pS * pressure * salinity &
+         + coeff_mushy * salinity / (1.0_RKIND - salinity / 1e3_RKIND)
 
     end function ocn_freezing_temperature!}}}
 
@@ -359,24 +354,23 @@ contains
       logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
-      real (kind=RKIND), pointer :: coeff_S
-      real (kind=RKIND), pointer :: coeff_pS
-      real (kind=RKIND), pointer :: reference_pressure
-      real (kind=RKIND) :: pressureOffset
+      real (kind=RKIND), pointer :: coeff_S, coeff_p, coeff_pS, az1_liq
+      real (kind=RKIND) :: coeff_mushy
+
 
       if(inLandIceCavity) then
          coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
          coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
-         reference_pressure => config_land_ice_cavity_freezing_temperature_reference_pressure
+         coeff_mushy = 0.0_RKIND
       else
          coeff_S => config_open_ocean_freezing_temperature_coeff_S
          coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
-         reference_pressure => config_open_ocean_freezing_temperature_reference_pressure
+         az1_liq => config_open_ocean_freezing_temperature_coeff_mushy_az1_liq
+         coeff_mushy = 1.0_RKIND / az1_liq
       end if
 
-      pressureOffset = max(pressure - reference_pressure, 0.0_RKIND)
-
-      ocn_freezing_temperature_salinity_deriv = coeff_S + coeff_pS * pressureOffset
+      ocn_freezing_temperature_salinity_deriv = coeff_S + coeff_pS * pressure &
+         + coeff_mushy / (1.0_RKIND - salinity/1e3_RKIND)**2
 
     end function ocn_freezing_temperature_salinity_deriv!}}}
 
