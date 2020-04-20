@@ -1131,7 +1131,8 @@ class Case(object):
         mach = self.get_value("MACH")
         compset = self.get_value("COMPSET")
         mpilib = self.get_value("MPILIB")
-        defaults = pioobj.get_defaults(grid=grid,compset=compset,mach=mach,compiler=compiler, mpilib=mpilib)
+
+        defaults = pioobj.get_defaults(grid=grid, compset=compset, mach=mach, compiler=compiler, mpilib=mpilib)
 
         for vid, value in defaults.items():
             self.set_value(vid,value)
