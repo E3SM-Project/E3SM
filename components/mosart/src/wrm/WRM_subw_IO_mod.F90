@@ -785,8 +785,11 @@ MODULE WRM_subw_IO_mod
      if (ctlSubwWRM%ExtractionFlag > 0) then
 
         call get_curr_date(yr, mon, day, tod)
-        !fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
-        fname = trim(ctlSubwWRM%demandPath)//'1980_'//strMonth//'.nc'   ! constant 1980 demand
+        write(iulog,'(2a,4i6)') subname,'at ',yr,mon,day,tod
+    
+        write(strYear,'(I4.4)') yr
+        write(strMonth,'(I2.2)') mon
+        fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
 
         write(iulog,*) subname, ' reading ',trim(fname)
 

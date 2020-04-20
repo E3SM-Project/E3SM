@@ -19,7 +19,6 @@ MODULE MOSART_heat_mod
     real(r8), parameter :: Hthreshold = 0.05_r8  ! threshold value of channel water depth, if lower than this, headwater temp is calculated using the simplified formula, instead of heat balance equation
     real(r8), parameter :: WaterAreaRatio = 0.8_r8  ! dimensionless coefficient for effective surface area
     real(r8), parameter :: WindSheltering = 0.8_r8  ! dimensionless coefficient for the wind shltering by riparian vegetation
-  
 
 ! !PUBLIC MEMBER FUNCTIONS:
     contains
@@ -134,10 +133,14 @@ MODULE MOSART_heat_mod
             Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
             THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)
             
-            !if(iunit == 85088) then
-            !  write(unit=2111,fmt="(i10, 6(e16.4))") iunit, THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hc_r(iunit), THeat%Hh_r(iunit), TRunoff%rarea(iunit,nt_nliq)
-            !  write(unit=2112,fmt="(i10, f10.4, 6(e14.4))") iunit, THeat%Tr(iunit), THeat%ha_lateral(iunit), THeat%Ha_rin(iunit), Ha_temp, TRunoff%erin(iunit,nt_nliq), THeat%Ha_rout(iunit), TRunoff%erout(iunit,nt_nliq)
+            
+            !if(iunit == 52744) then
+            !if(iunit == 75723) then
+            !  write(unit=1111,fmt="(i10, 7(e16.4))") iunit, THeat%Hs_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hl_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%He_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hc_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hh_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Tr(iunit), THeat%forc_t(iunit)
+            !  write(unit=1112,fmt="(i10, f10.4, 7(e14.4))") iunit, TRunoff%yr(iunit,1), THeat%ha_lateral(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rin(iunit)/TRunoff%rarea(iunit,nt_nliq), Ha_temp/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rout(iunit)/TRunoff%rarea(iunit,nt_nliq), TRunoff%erlateral(iunit, 1), TRunoff%erin(iunit, 1), TRunoff%erout(iunit,1)
             !end if
+
+
         !end if
     end subroutine mainchannelHeat
 
@@ -323,6 +326,7 @@ MODULE MOSART_heat_mod
         He_ = He_ * Aw_
         
         return
+        
     end function cr_latentheat
     
     function cr_sensibleheat(Ta_, Pbot_, U_, F_, Tw_, Aw_) result(Hh_)
