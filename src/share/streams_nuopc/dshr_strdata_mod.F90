@@ -32,7 +32,6 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_getFilePath, shr_stream_findBounds
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getfilefieldname 
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
-  use dshr_util_mod    , only : chkerr
   use pio              , only : file_desc_t, iosystem_desc_t, io_desc_t, var_desc_t
   use pio              , only : pio_openfile, pio_closefile, pio_nowrite
   use pio              , only : pio_seterrorhandling, pio_initdecomp, pio_freedecomp
@@ -2585,5 +2584,19 @@ contains
     endif
 
   end subroutine shr_strdata_mapSet
+
+  !===============================================================================
+  logical function chkerr(rc, line, file)
+    integer, intent(in) :: rc
+    integer, intent(in) :: line
+    character(len=*), intent(in) :: file
+    integer :: lrc
+    !-----------------------------------------------------------------------
+    chkerr = .false.
+    lrc = rc
+    if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=line, file=file)) then
+       chkerr = .true.
+    endif
+  end function chkerr
 
 end module dshr_strdata_mod
