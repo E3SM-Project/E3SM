@@ -5,6 +5,9 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
+
+from collections import OrderedDict
+
 logger = logging.getLogger(__name__)
 
 class PIO(EntryID):
@@ -19,7 +22,8 @@ class PIO(EntryID):
 
     def get_defaults(self, grid=None, compset=None, mach=None, compiler=None, mpilib=None): # pylint: disable=unused-argument
         # should we have a env_pio file
-        defaults = {}
+        defaults = OrderedDict()
+        save_for_last = []
 
         # Load args into attribute dict
         attributes = {}
@@ -31,6 +35,15 @@ class PIO(EntryID):
         for node in self.get_children("entry"):
             value = self.get_default_value(node, attributes)
             if value:
-                defaults[self.get(node, "id")] = value
+                myid = self.get(node, "id")
+                iscompvar = myid.split("_")[0] != "PIO"
+                if iscompvar:
+                    save_for_last.append( (myid, value) )
+                else:
+                    defaults[myid] = value
+
+        # comp-specific vars must come last so they take precedence over general settings
+        for k, v in save_for_last:
+            defaults[k] = v
 
         return defaults
