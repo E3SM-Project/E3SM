@@ -38,6 +38,8 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     Spack sat_liq_p = Functions::polysvp1(temps, false);
     Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
     Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
+    Spack qsi_exact=Functions::qvsat_exact(temps, pres, true);
+    Spack qsl_exact=Functions::qvsat_exact(temps, pres, false);
 
     //Set error tolerances
     //--------------------------------------
@@ -104,14 +106,11 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     
     // Test vapor pressure against exact symbolic implementation
     // ---------------------------------------------------------
-    Scalar qsi_exact=qvsat_exact(temperature,pressure,1);
-    Scalar qsl_exact=qvsat_exact(temperature,pressure,0);
-
-    if ( std::abs(mix_ice_r[0] - qsi_exact ) > Cond_ice_r*sym_tol_q ) {
-      printf("Diff btwn analytic qsi=%e and computed=%e is %e, bigger than tol=%e\n",qsi_exact,mix_ice_r[0],qsi_exact-mix_ice_r[0],Cond_ice_r*sym_tol_q);
+    if ( std::abs(mix_ice_r[0] - qsi_exact[0] ) > Cond_ice_r*sym_tol_q ) {
+      printf("Diff btwn analytic qsi=%e and computed=%e is %e, bigger than tol=%e\n",qsi_exact[0],mix_ice_r[0],qsi_exact[0]-mix_ice_r[0],Cond_ice_r*sym_tol_q);
       errors++;}
-    if ( std::abs(mix_liq_r[0] - qsl_exact ) > Cond_liq_r*sym_tol_q ) {
-      printf("Diff btwn analytic qsl=%e and computed=%e is %e, bigger than tol=%e\n",qsl_exact,mix_liq_r[0],qsl_exact-mix_liq_r[0],Cond_liq_r*sym_tol_q);
+    if ( std::abs(mix_liq_r[0] - qsl_exact[0] ) > Cond_liq_r*sym_tol_q ) {
+      printf("Diff btwn analytic qsl=%e and computed=%e is %e, bigger than tol=%e\n",qsl_exact[0],mix_liq_r[0],qsl_exact[0]-mix_liq_r[0],Cond_liq_r*sym_tol_q);
       errors++;}
 
     //Test mixing-ratios against Wexler approx: 
@@ -124,46 +123,6 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
       printf("qsl: abs(calc-expected)=%e %e\n",std::abs(mix_liq_r[0] -  correct_mix_liq_r),tol*Cond_liq_r);
       errors++;}
 
-  }
-
-  static Scalar qvsat_exact(const Scalar& t_atm, const Scalar& p_atm, const bool& ice)
-  {
-    // Compute saturation mixing ratio qs symbolically.
-    // dqs/dT = L*qs/(Rv*T**2.) by Clausius Clapeyron.
-    // Taking the integral between some T0 and a particular T yields:
-    // qs(T) = qs(T0)*exp{-L/Rv*(1/T - 1/T0)}.
-    // Unlike for saturation vapor pressure, this formulation *is*
-    // perfectly exact. It isn't used in numerical models just because
-    // it is computationally expensive. 
-
-    const auto tmelt = C::Tmelt;
-    const auto RV = C::RV;
-    const auto LatVap = C::LatVap;
-    const auto LatIce = C::LatIce;
-    const auto ep_2 = C::ep_2;
-
-    Scalar es_T0;
-    Scalar L;
-
-    //Below, I'm taking es_T0 as equal to the constant term in
-    //Flatau et al 1992 table 4 and turning it into qs_T0 using the
-    //exact formula for es->qs. Would be better to use exact obs
-    //value at tmelt, but Flatau is probably close enough (and provides
-    //better match to P3's implementation!
-    if ((t_atm < tmelt) && ice) {
-      es_T0=611.147274; 
-      L=LatVap+LatIce;
-    } else{
-      es_T0=611.239921;
-      L=LatVap;
-    }
-
-    Scalar qs_T0 = ep_2 * es_T0 / std::max(p_atm-es_T0, sp(1.e-3));
-    Scalar result = qs_T0*std::exp( -L/RV*(1/t_atm - 1/tmelt) );
-
-    //printf("T,is_ice,qs=%e %d %e\n",t_atm,ice,result);
-
-    return result;
   }
 
   static void run()
