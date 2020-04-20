@@ -39,31 +39,6 @@ add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
 
-##############################
-# Namelist group: init_setup #
-##############################
-
-add_default($nl, 'config_vert_levels');
-add_default($nl, 'config_init_configuration');
-add_default($nl, 'config_expand_sphere');
-add_default($nl, 'config_realistic_coriolis_parameter');
-add_default($nl, 'config_write_cull_cell_mask');
-add_default($nl, 'config_vertical_grid');
-
-################################
-# Namelist group: CVTgenerator #
-################################
-
-add_default($nl, 'config_1dCVTgenerator_stretch1');
-add_default($nl, 'config_1dCVTgenerator_stretch2');
-add_default($nl, 'config_1dCVTgenerator_dzSeed');
-
-################################################
-# Namelist group: init_ssh_and_landIcePressure #
-################################################
-
-add_default($nl, 'config_iterative_init_variable');
-
 ####################################
 # Namelist group: time_integration #
 ####################################
@@ -145,9 +120,11 @@ add_default($nl, 'config_Leith_visc2_max');
 
 add_default($nl, 'config_use_Redi');
 add_default($nl, 'config_Redi_kappa');
+add_default($nl, 'config_Redi_maximum_slope');
 add_default($nl, 'config_Redi_closure');
-add_default($nl, 'config_Redi_surface_taper_layers');
-add_default($nl, 'config_Redi_bottom_taper_height');
+add_default($nl, 'config_Redi_use_slope_taper');
+add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_N2_limit_term1');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -163,7 +140,6 @@ add_default($nl, 'config_GM_constant_gravWaveSpeed');
 # Namelist group: mesoscale_eddy_parameterizations #
 ####################################################
 
-add_default($nl, 'config_mesoscale_eddy_isopycnal_slope_limit');
 add_default($nl, 'config_eddying_resolution_taper');
 add_default($nl, 'config_eddying_resolution_ramp_min');
 add_default($nl, 'config_eddying_resolution_ramp_max');
