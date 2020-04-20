@@ -13,7 +13,8 @@ elif [[ $HOSTNAME = "cooley"* ]]; then
   base_path="/lus/theta-fs0/projects/ccsm/acme/tools/e3sm-unified/base"
 elif [[ $HOSTNAME = "compy"* ]]; then
   base_path="/share/apps/E3SM/conda_envs/base"
-elif [[ $HOSTNAME = "gr-fe"* ]] || [[ $HOSTNAME = "ba-fe"* ]]; then
+elif [[ $HOSTNAME = "gr-fe"* ]] || [[ $HOSTNAME = "ba-fe"* ]] || \
+    [[ $HOSTNAME =~ ^gr[0-9]{4}$ ]] || [[ $HOSTNAME =~ ^ba[0-9]{3}$ ]]; then
   base_path="/usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base"
 else
   echo "Unknown host name $HOSTNAME.  Add base_path for this machine to the script."
