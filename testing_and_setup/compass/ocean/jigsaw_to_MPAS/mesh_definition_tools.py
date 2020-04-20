@@ -65,74 +65,72 @@ def mergeCellWidthVsLat(
     return cellWidthOut
 
 
-def EC_CellWidthVsLat(lat):
-    '''
-    EC_CellWidthVsLat - Create Eddy Closure spacing as a function of lat.
-    This is inted as part of the workflow to make an MPAS global mesh.
+def EC_CellWidthVsLat(lat, cellWidthEq=30.0, cellWidthMidLat=60.0,
+                      cellWidthPole=35.0, latPosEq=15.0, latPosPole=73.0,
+                      latTransition=40.0, latWidthEq=6.0, latWidthPole=9.0):
+    """
+    Create Eddy Closure spacing as a function of lat. This is intended as part
+    of the workflow to make an MPAS global mesh.
 
-    Syntax: cellWidthOut = EC_CellWidthVsLat(lat, cellWidthEq, cellWidthMidLat, cellWidthPole,
-                                             latPosEq, latPosPole, latTransition,
-                                             latWidthEq, latWidthPole)
-    Inputs:
-       lat - vector of length n, with entries between -90 and 90, degrees
+    Parameters
+    ----------
+    lat : numpy.ndarray
+       vector of length n, with entries between -90 and 90, degrees
 
-    Optional inputs:
-       Default values for Cell width, km
-       cellWidthEq = 30.0 # Eq is equatorial lat
-       cellWidthMidLat = 60.0 # MidLat is mid lat
-       cellWidthPole = 35.0 # Pole is polar lat
+    cellWidthEq : float, optional
+       Cell width in km at the equator
 
-       Default values for lat positions in degrees
-       latPosEq = 15.0 # position of center of transition region
-       latPosPole = 73.0 # position of center of transition region
-       latTransition = 40 # lat to change from Eq to Pole function
-       latWidthEq = 6.0 # width of transition region
-       latWidthPole = 9.0 # width of transition region
+    cellWidthMidLat : float, optional
+       Cell width in km at mid latitudes
 
-    Outputs:
-       cellWidthOut - vector of length n, entrie are cell width as a function of lat
+    cellWidthPole : float, optional
+       Cell width in km at the poles
 
-    Example:
-       EC60to30 = EC_CellWidthVsLat(lat)
-       EC120to60 = EC_CellWidthVsLat(lat,60,120,70)
-    '''
+    latPosEq : float, optional
+       Latitude in degrees of center of the equatorial transition region
 
-    # Default values for Cell width, km
-    cellWidthEq = 30.0  # Eq is equatorial lat
-    cellWidthMidLat = 60.0  # MidLat is mid lat
-    cellWidthPole = 35.0  # Pole is polar lat
+    latPosPole : float, optional
+       Latitude in degrees of center of the polar transition region
 
-    # Default values for lat positions in degrees
-    latPosEq = 15.0  # position of center of transition region
-    latPosPole = 73.0  # position of center of transition region
-    latTransition = 40  # lat to change from Eq to Pole function
-    latWidthEq = 6.0  # width of transition region
-    latWidthPole = 9.0  # width of transition region
+    latTransition : float, optional
+       Latitude in degrees of the change from equatorial to polar function
 
-    # try
-    #  cellWidthEq =     varargin{1} #
-    #  cellWidthMidLat = varargin{2} #
-    #  cellWidthPole =   varargin{3} #
-    #  latPosEq =        varargin{4} #
-    #  latPosPole =      varargin{5} #
-    #  latTransition =   varargin{6} #
-    #  latWidthEq =      varargin{7} #
-    #  latWidthPole =    varargin{8} #
+    latWidthEq : float, optional
+       Width in degrees latitude of the equatorial transition region
+
+    latWidthPole : float, optional
+       Width in degrees latitude of the polar transition region
+
+    Returns
+    -------
+
+    cellWidthOut : numpy.ndarray
+         1D array of same length as ``lat`` with entries that are cell width as
+         a function of lat
+
+    Examples
+    --------
+    Default
+
+    >>> EC60to30 = EC_CellWidthVsLat(lat)
+
+    Half the default resolution:
+
+    >>> EC120to60 = EC_CellWidthVsLat(lat, cellWidthEq=60., cellWidthMidLat=120., cellWidthPole=70.)
+    """
 
     minCellWidth = min(cellWidthEq, min(cellWidthMidLat, cellWidthPole))
     densityEq = (minCellWidth / cellWidthEq)**4
     densityMidLat = (minCellWidth / cellWidthMidLat)**4
     densityPole = (minCellWidth / cellWidthPole)**4
-    densityEC = np.zeros(lat.shape)
-    cellWidthOut = np.zeros(lat.shape)
-    for j in range(lat.size):
-        if np.abs(lat[j]) < latTransition:
-            densityEC[j] = ((densityEq - densityMidLat) * (1.0 + np.tanh(
-                (latPosEq - np.abs(lat[j])) / latWidthEq)) / 2.0) + densityMidLat
-        else:
-            densityEC[j] = ((densityMidLat - densityPole) * (1.0 + np.tanh(
-                (latPosPole - np.abs(lat[j])) / latWidthPole)) / 2.0) + densityPole
-        cellWidthOut[j] = minCellWidth / densityEC[j]**0.25
+    densityEqToMid = ((densityEq - densityMidLat) * (1.0 + np.tanh(
+        (latPosEq - np.abs(lat)) / latWidthEq)) / 2.0) + densityMidLat
+    densityMidToPole = ((densityMidLat - densityPole) * (1.0 + np.tanh(
+        (latPosPole - np.abs(lat)) / latWidthPole)) / 2.0) + densityPole
+    mask = np.abs(lat) < latTransition
+    densityEC = np.array(densityMidToPole)
+    densityEC[mask] = densityEqToMid[mask]
+    cellWidthOut = minCellWidth / densityEC**0.25
 
     return cellWidthOut
 
