@@ -92,7 +92,8 @@ module aero_model
 
   ! Namelist variables
   integer :: mam_amicphys_optaa
-  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix  
+  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix
+  logical :: get_presc_aero_data
   character(len=16) :: wetdep_list(pcnst) = ' '
   character(len=16) :: drydep_list(pcnst) = ' '
   real(r8)          :: sol_facti_cloud_borne = 1._r8
@@ -222,6 +223,7 @@ contains
          convproc_do_aer_out = convproc_do_aer, & 
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix,       &
+         get_presc_aero_data_out = get_presc_aero_data, &
          mam_amicphys_optaa_out = mam_amicphys_optaa ) ! REASTER 08/04/2015
 
 
@@ -540,6 +542,11 @@ contains
              call add_default (trim(drydep_list(m))//'TBF', 1, ' ')
              call add_default (trim(drydep_list(m))//'GVF', 1, ' ')
           endif
+          
+          if (get_presc_aero_data .or. history_verbose) then 
+             call add_default( cnst_name_cw(n), 1, ' ' )
+          endif
+          
        endif
 
     enddo

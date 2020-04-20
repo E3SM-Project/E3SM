@@ -4024,6 +4024,15 @@ Switch for diagnostics specific to CLUBB.
 Default: .true.
 </entry>
 
+<entry id="get_presc_aero_data" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Output needed to generate input to drive a prescribed aerosol climate run. 
+Requires that history_aerosol be set to true. Note that additional
+post processing is required with output in order to generate a 
+prescribed aerosol climate run.  
+Default: .false.
+</entry>
+
 <!-- Radiation -->
 <entry id="radiation_scheme" type="char*16" category="radiation"
        group="phys_ctl_nl" valid_values="rrtmg,camrt" >

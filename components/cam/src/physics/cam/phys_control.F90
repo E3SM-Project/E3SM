@@ -74,6 +74,7 @@ logical           :: atm_dep_flux         = .true.     ! true => deposition flux
 logical           :: history_amwg         = .true.     ! output the variables used by the AMWG diag package
 logical           :: history_verbose      = .false.    ! produce verbose output by default
 logical           :: history_vdiag        = .false.    ! output the variables used by the AMWG variability diag package
+logical           :: get_presc_aero_data  = .false.    ! output MAM variables needed for prescribed run
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
 logical           :: history_eddy         = .false.    ! output the eddy variables
@@ -184,7 +185,7 @@ subroutine phys_ctl_readnl(nlfile)
       MMF_microphysics_scheme, use_MMF, use_ECPP, use_MAML, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
-      history_aerosol, history_aero_optics, &
+      get_presc_aero_data, history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
       use_mass_borrower, do_aerocom_ind3, &
@@ -213,6 +214,14 @@ subroutine phys_ctl_readnl(nlfile)
       end if
       close(unitn)
       call freeunit(unitn)
+
+      ! If generating output to drive a prescribed aerosol 
+      !   run then history_aerosol needs to also be set
+      !   to true, force it here
+      if (get_presc_aero_data) then
+        history_aerosol = .true.
+      endif
+     
    end if
 
 #ifdef SPMD
@@ -240,6 +249,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(history_verbose,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_vdiag,                   1 , mpilog,  0, mpicom)
    call mpibcast(history_eddy,                    1 , mpilog,  0, mpicom)
+   call mpibcast(get_presc_aero_data,             1 , mpilog,  0, mpicom)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
@@ -388,7 +398,16 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('trop_strat_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam7') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
-end subroutine phys_ctl_readnl
+
+   ! Checks when generating output needed to force a prescribed aerosol run		      
+   if (get_presc_aero_data) then
+     ! Make sure that a prognostic aerosol scheme is used
+     if (.not. prog_modal_aero) then
+       call endrun("Setting get_presc_aero_data requires a prognostic aerosol scheme.")
+     endif
+   endif
+
+ end subroutine phys_ctl_readnl
 
 !===============================================================================
 
@@ -429,6 +448,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         microp_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
+                        get_presc_aero_data_out, &
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
@@ -476,6 +496,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: history_verbose_out
    logical,           intent(out), optional :: history_vdiag_out
    logical,           intent(out), optional :: history_eddy_out
+   logical,           intent(out), optional :: get_presc_aero_data_out
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
    logical,           intent(out), optional :: history_budget_out
@@ -563,6 +584,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(cam_chempkg_out         ) ) cam_chempkg_out          = cam_chempkg
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
+   if ( present(get_presc_aero_data_out ) ) get_presc_aero_data_out  = get_presc_aero_data
    if ( present(use_mass_borrower_out   ) ) use_mass_borrower_out    = use_mass_borrower
    if ( present(use_qqflx_fixer_out     ) ) use_qqflx_fixer_out      = use_qqflx_fixer
    if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
