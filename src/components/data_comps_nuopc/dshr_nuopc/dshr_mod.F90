@@ -58,8 +58,6 @@ module dshr_mod
   public :: dshr_restart_read
   public :: dshr_restart_write
   public :: dshr_get_atm_adjustment_factors
-  public :: dshr_get_griddata
-  public :: dshr_set_griddata
   public :: dshr_log_clock_advance
   public :: dshr_state_getscalar
   public :: dshr_state_setscalar
@@ -1231,33 +1229,6 @@ contains
     call mct_gsmap_clean(gsmapi)
 
   end subroutine dshr_get_atm_adjustment_factors
-
-  !===============================================================================
-  subroutine dshr_set_griddata(sdat, fldname, rvalue) 
-    ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(in)    :: rvalue
-
-    ! local variables
-    integer :: kf
-
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    sdat%grid%data%rAttr(kf,:) = rvalue
-  end subroutine dshr_set_griddata
-
-  subroutine dshr_get_griddata(sdat, fldname, data) 
-    ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(out)   :: data(:)
-
-    ! local variables
-    integer :: kf
-
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    data(:) = sdat%grid%data%rAttr(kf,:)
-  end subroutine dshr_get_griddata
 
   !===============================================================================
   subroutine dshr_log_clock_advance(clock, component, logunit, rc)

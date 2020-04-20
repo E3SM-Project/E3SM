@@ -25,9 +25,8 @@ module ice_comp_nuopc
   use dshr_mod             , only : dshr_restart_read, dshr_restart_write
   use dshr_mod             , only : dshr_create_mesh_from_grid
   use dshr_mod             , only : dshr_state_getfldptr
-  use dshr_mod             , only : dshr_get_griddata, dshr_set_griddata
   use dshr_mod             , only : chkerr, memcheck
-  use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance
+  use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_griddata
   use dshr_dfield_mod      , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod     , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use dice_flux_atmice_mod , only : dice_flux_atmice
@@ -679,7 +678,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Set Si_imask
-    call dshr_get_griddata(sdat, 'mask', Si_imask)
+    call shr_strdata_get_griddata(sdat, 'mask', Si_imask)
 
     ! -------------------------------------
     ! Set pointers to importState fields
