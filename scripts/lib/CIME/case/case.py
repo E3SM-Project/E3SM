@@ -1125,7 +1125,7 @@ class Case(object):
         return batchobj.get_jobs()
 
     def _set_pio_xml(self):
-        pioobj = PIO()
+        pioobj = PIO(self._component_classes)
         grid = self.get_value("GRID")
         compiler = self.get_value("COMPILER")
         mach = self.get_value("MACH")
