@@ -38,16 +38,9 @@ module dshr_mod
   use shr_map_mod      , only : shr_map_fs_remap, shr_map_fs_bilinear
   use shr_map_mod      , only : shr_map_fs_srcmask, shr_map_fs_scalar
   use shr_const_mod    , only : shr_const_spval
-  use dshr_strdata_mod , only : shr_strdata_type
-  use dshr_strdata_mod , only : shr_strdata_readnml
-  use dshr_strdata_mod , only : shr_strdata_pioinit
-  use dshr_strdata_mod , only : shr_strdata_restWrite
-  use dshr_strdata_mod , only : shr_strdata_restRead
-  use dshr_strdata_mod , only : shr_strdata_init_model_domain
-  use dshr_strdata_mod , only : shr_strdata_init_streams
-  use dshr_strdata_mod , only : shr_strdata_init_mapping, shr_strdata_mapset
-  use dshr_strdata_mod , only : shr_strdata_print
-  use dshr_stream_mod  , only : shr_stream_taxis_extend
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_infiles
+  use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
+  use dshr_strdata_mod , only : shr_strdata_mapset
   use dshr_util_mod    , only : memcheck, chkerr
   use perf_mod         , only : t_startf, t_stopf 
   use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
@@ -56,11 +49,6 @@ module dshr_mod
 
   implicit none
   public
-
-  interface dshr_sdat_init
-     module procedure :: dshr_sdat_init_from_infiles  ! initialize sdat from stream text file
-     module procedure :: dshr_sdat_init_from_fortran  ! initialize sdat from a fortran interface
-  end interface dshr_sdat_init
 
   public :: dshr_model_initphase
   public :: dshr_init
@@ -251,126 +239,7 @@ contains
   end subroutine dshr_init
 
   !===============================================================================
-  subroutine dshr_sdat_init_from_fortran(                      &
-       sdat, mpicom, compid, mesh, nxg, nyg, clock,            &
-       !--- streams stuff required ---
-       yearFirst, yearLast, yearAlign, offset,                 &
-       DomFilePath, DomFileName,                               &
-       DomTvarName, DomXvarName, DomYvarName, domMaskName,     &
-       strmFldFilePath, strmFldFilenames,                      &
-       strmFldNamesInFile, strmfldNamesInModel,                &
-       !--- strdata optional ---
-       nzg, domZvarName,                                       &
-       taxMode, dtlimit, tintalgo, readmode,                   &
-       fillalgo, fillmask, mapalgo, mapmask) 
-
-    ! Set strdata and stream info from fortran interface.
-    ! Note: When this is called, previous settings are reset to defaults
-    ! and then the values passed are used.
-
-    ! input/output arguments
-    type(shr_strdata_type) ,intent(inout):: sdat                ! strdata data data-type
-    integer                ,intent(in)   :: mpicom              ! mpi comm
-    integer                ,intent(in)   :: compid
-    type(ESMF_Mesh)        ,intent(in)   :: mesh
-    integer                ,intent(in)   :: nxg
-    integer                ,intent(in)   :: nyg
-    type(ESMF_Clock)       ,intent(in)   :: clock
-    integer                ,intent(in)   :: yearFirst           ! first year to use
-    integer                ,intent(in)   :: yearLast            ! last  year to use
-    integer                ,intent(in)   :: yearAlign           ! align yearFirst with this model year
-    integer                ,intent(in)   :: offset              ! offset in seconds of stream data
-    character(*)           ,intent(in)   :: domFilePath         ! domain file path
-    character(*)           ,intent(in)   :: domFileName         ! domain file name
-    character(*)           ,intent(in)   :: domTvarName         ! domain time dim name
-    character(*)           ,intent(in)   :: domXvarName         ! domain x dim name
-    character(*)           ,intent(in)   :: domYvarName         ! domain y dim name
-    character(*)           ,intent(in)   :: domMaskName         ! domain mask name
-    character(*)           ,intent(in)   :: strmFldFilePath     ! path to stream data 
-    character(*)           ,intent(in)   :: strmFldFileNames(:) ! filenames for stream data
-    character(*)           ,intent(in)   :: strmFldNamesInFile  ! file field names, colon delim list
-    character(*)           ,intent(in)   :: strmFldNamesInModel ! model field names, colon delim list
-    integer                ,intent(in)   :: nzg
-    character(*)           ,intent(in)   :: domZvarName         ! domain z dim name
-    character(*)           ,intent(in)   :: taxMode
-    real(R8)               ,intent(in)   :: dtlimit
-    character(*)           ,intent(in)   :: fillalgo            ! fill algorithm
-    character(*)           ,intent(in)   :: fillmask            ! fill mask
-    character(*)           ,intent(in)   :: mapalgo             ! scalar map algorithm
-    character(*)           ,intent(in)   :: mapmask             ! scalar map mask
-    character(*)           ,intent(in)   :: tintalgo            ! time interpolation algorithm
-    character(*)           ,intent(in)   :: readmode            ! file read mode
-
-    ! local variables
-    type(ESMF_Calendar)     :: esmf_calendar ! esmf calendar
-    type(ESMF_CalKind_Flag) :: esmf_caltype  ! esmf calendar type
-    character(CS)           :: calendar      ! calendar name
-    character(CS)           :: zname
-    integer                 :: my_task
-    integer                 :: ierr
-    integer                 :: rc
-    character(*),parameter  :: subName = "(shr_strdata_create) "
-    character(*),parameter  :: F00 = "('(shr_strdata_create) ',8a)"
-    !-------------------------------------------------------------------------------
-
-    call mpi_comm_rank(mpicom, my_task, ierr)
-
-    ! Assume only 1 stream
-    sdat%nstreams = 1
-
-    ! Initialize pio
-    call shr_strdata_pioinit(sdat, compid)
-
-    ! set defaults - but calling shr_strdata_readnml - but not reading int the namelist
-    call shr_strdata_readnml(sdat) 
-
-    ! Reset sdat values if they appear as optional arguments
-    ! TODO: pass these values to shr_strdata routine rather than reading them here
-    sdat%taxMode(1)  = taxMode
-    sdat%dtlimit(1)  = dtlimit
-    sdat%fillalgo(1) = fillalgo
-    sdat%fillmask(1) = fillmask
-    sdat%mapalgo(1)  = mapalgo
-    sdat%mapmask(1)  = mapmask
-    sdat%tintalgo(1) = tintalgo
-    sdat%readmode(1) = readmode ! single or full_file
-    if (trim(sdat%taxMode(1)) == trim(shr_stream_taxis_extend)) then
-       ! reset dtlimit if necessary
-       sdat%dtlimit(1) = 1.0e30
-    end if
-
-    ! Initialize sdat model domain info
-    call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Initialize sdat stream domain info
-    call shr_strdata_init_streams(sdat, &
-       yearFirst, yearLast, yearAlign, offset, sdat%taxmode(1), &
-       domFilePath, domFileName, &
-       domTvarName, domXvarName, domYvarName, domMaskName, &
-       domZvarName, nzg, &
-       strmFldNamesInFile, strmFldNamesInModel, &
-       strmFldFilePath, strmFldFileNames)
-
-    ! Initialize sdat mapping of stream to model domain
-    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
-
-    ! Initialize sdat calendar
-    call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
-       calendar = shr_cal_noleap
-    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
-       calendar = shr_cal_gregorian
-    else
-       call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
-    end if
-    sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
-
-  end subroutine dshr_sdat_init_from_fortran
-
-  !===============================================================================
-  subroutine dshr_sdat_init_from_infiles(gcomp, clock, nlfilename, compid, logunit, compname, &
+  subroutine dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, compname, &
        mesh, read_restart, sdat, reset_domain_mask, rc)
 
     ! ----------------------------------------------
@@ -436,14 +305,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
-    ! Read shr_strdata_nml from nlfilename
-    ! Read sdat namelist (need to do this here in order to get the datamode value - which
-    ! is needed or order to do the advertise phase
-    call shr_strdata_readnml(sdat, trim(nlfilename), mpicom=mpicom)
-
-    ! Initialize sdat  pio
-    call shr_strdata_pioinit(sdat, compid)
-
     ! Obtain the data model mesh
     call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=mesh_filename, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -461,45 +322,12 @@ contains
        write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
     end if
 
-    ! Initialize the sdat model domain info
-    if (scmmode) then
-       if (my_task == master_task) then
-          write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
-       end if
-       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, mesh, sdat, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! ***TODO: Now need to initialize mesh that will send back to mediator given the lat and lon
-       !    of the original mesh that was selected ***
-    else
-       call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, reset_domain_mask=reset_domain_mask, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    ! initialize sdat stream domains
-    call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
-
-    ! initialize sdat attributes mapping of streams to model domain
-    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
-
-    ! initialize sdat calendar
-    call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
+    ! Initialize sdat from data model input files
+    call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, scmmode, scmlon, scmlat, clock, &
+         mpicom, compid, logunit, reset_domain_mask=reset_domain_mask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
-       calendar = shr_cal_noleap
-    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
-       calendar = shr_cal_gregorian
-    else
-       call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
-    end if
-    sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
-    ! print sdat output
-    if (my_task == master_task) then
-       call shr_strdata_print(sdat,'sdat data ')
-       write(logunit,*) ' successfully initialized sdat'
-    endif
-
-  end subroutine dshr_sdat_init_from_infiles
+  end subroutine dshr_sdat_init
 
   !===============================================================================
   subroutine dshr_create_mesh_from_grid(filename, mesh, rc)
@@ -1139,6 +967,7 @@ contains
     integer           :: rcode
     !-------------------------------------------------------------------------------
 
+     ! write data model restart data
      call shr_cal_datetod2string(date_str, ymd, tod)
      write(rest_filem,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
      write(rest_files,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
@@ -1161,6 +990,8 @@ contains
         call pio_closefile(pioid)
         call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
      end if
+
+     ! write stream restart data
      call shr_strdata_restWrite(trim(rest_files), sdat, mpicom, trim(case_name), &
           'sdat strdata from '//trim(model_name))
 
