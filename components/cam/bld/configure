@@ -266,6 +266,21 @@ OPTIONS
                         perl \$OSNAME variable.
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
+
+  Options for MMF:
+
+     -use_MMF           Build the MMF configuration (super-parameterized EAM)
+     -crm_nx <n>        CRM's x-grid.
+     -crm_ny <n>        CRM's y-grid.
+     -crm_nz <n>        CRM's z-grid.
+     -crm_dx <n>        CRM's horizontal grid spacing.
+     -crm_dt <n>        CRM's timestep.
+     -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
+     -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
+     -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols 
+     -crm_adv           CRM advection scheme [MPDATA | UM5]
+     -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
 }
 
@@ -326,6 +341,18 @@ GetOptions(
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
+    "use_MMF"                   => \$opts{'use_MMF'},
+    "use_ECPP"                  => \$opts{'use_ECPP'},
+    "use_MAML"                  => \$opts{'use_MAML'},
+    "crm_nx=s"                  => \$opts{'crm_nx'},
+    "crm_ny=s"                  => \$opts{'crm_ny'},
+    "crm_nz=s"                  => \$opts{'crm_nz'},
+    "crm_dx=s"                  => \$opts{'crm_dx'},
+    "crm_dt=s"                  => \$opts{'crm_dt'},
+    "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
+    "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
+    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
+    "crm_adv=s"                 => \$opts{'crm_adv'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
@@ -1279,6 +1306,31 @@ EOF
 if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Superparameterization mode (MMF)
+if (defined $opts{'use_MMF'}) {
+    if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
+    if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
+    $cfg_ref->set('use_MMF', 1);
+    $cfg_ref->set('crm_nx', $opts{'crm_nx'});
+    $cfg_ref->set('crm_ny', $opts{'crm_ny'});
+    $cfg_ref->set('crm_nz', $opts{'crm_nz'});
+    $cfg_ref->set('crm_dx', $opts{'crm_dx'});
+    $cfg_ref->set('crm_dt', $opts{'crm_dt'});
+    if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
+    if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
+    $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
+    $cfg_ref->set('crm_adv', $opts{'crm_adv'});
+    # Check that model is not using threading for the MMF 
+    if ($nthreads > 1) {
+     die <<"EOF";
+**  ERROR: MMF mode may only use single thread
+**         nthreads set to $nthreads
+**         
+EOF
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
 if (defined $opts{'hgrid'}) {
     $cfg_ref->set('hgrid', $opts{'hgrid'});
@@ -1827,6 +1879,36 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 
 # Building for perturbation growth tests
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
+
+# Building for MMF/super-parameterization
+if (defined $opts{'use_MMF'}) {
+    my $crm_nx = $cfg_ref->get('crm_nx');
+    my $crm_ny = $cfg_ref->get('crm_ny');
+    my $crm_nz = $cfg_ref->get('crm_nz');
+    my $crm_dx = $cfg_ref->get('crm_dx');
+    my $crm_dt = $cfg_ref->get('crm_dt');
+    my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
+    my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
+    my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+    my $crm_adv = $cfg_ref->get('crm_adv');
+    my $yes3Dval = 1;
+    if ($crm_ny eq 1) {$yes3Dval = 0;}
+    $cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
+    $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+    if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
+    if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
+    if (defined $opts{'crm_nx_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx " 
+    }
+    if (defined $opts{'crm_ny_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
+    }
+}
 
 # Configure CAM to produce IOP files for SCAM
 if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
@@ -2562,6 +2644,48 @@ sub write_filepath
 	print $fh "$camsrcdir/cam/src/physics/carma/models/$carma\n";
 	print $fh "$camsrcdir/cam/src/physics/carma/cam\n";
 	print $fh "$camsrcdir/cam/src/physics/carma/base\n";
+    }
+
+    # MMF/super-parameterization; this code section needs to appear before those
+    # adding the physics and chemistry packages to override versions of files
+    # that appear in both places
+    if (defined $opts{'use_MMF'}) {
+
+        # interface and base model code
+        print $fh "$camsrcdir/cam/src/physics/crm\n";
+        print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
+
+        # microphysics
+        my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+        if ($MMF_microphysics_scheme eq 'sam1mom') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
+        } elsif ($MMF_microphysics_scheme eq 'm2005') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
+        }
+
+        # turbulence closure
+        print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
+
+        if (defined $opts{'use_ECPP'}) {
+            print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
+        }
+
+        # advection scheme
+        my $crm_adv = $cfg_ref->get('crm_adv');
+        if ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
+        } else {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_MPDATA\n";
+        }
+
+        # MMF-specific radiation drivers (overrides default drivers that exist
+        # in each individual radiation package; done this way to avoid
+        # dependency on MMF-specific variables)
+        if ($rad eq 'rrtmg') {
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmg\n";
+        } elsif ($rad eq 'rrtmgp') {
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmgp\n";
+        }
     }
 
     # CAM chemistry, dynamics, physics, control and shared utilities.

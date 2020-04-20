@@ -184,6 +184,21 @@ _TESTS = {
             )
         },
 
+    #e3sm MMF tests for development
+    "e3sm_mmf" : {
+        "time" : "02:00:00",
+        "tests" : (
+            # MMF tests
+            "ERP_Ln9_P96.ne4_ne4.F-MMF1-TEST.cam-crmout",
+            "ERP_Ln9_P96.ne4pg2_ne4pg2.F-MMF2-TEST",
+            "ERP_Ln9_P96.ne4_ne4.F-MMF2-ECPP-TEST",
+            "SMS_D_Ln3_P96.ne4_ne4.F-MMF1-TEST",
+            "SMS_D_Ln3_P96.ne4pg2_ne4pg2.F-MMF2-TEST",
+            # non-MMF tests with RRTMGP
+            "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.cam-rrtmgp",
+            )
+        },
+
     #e3sm tests to mimic production runs
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
