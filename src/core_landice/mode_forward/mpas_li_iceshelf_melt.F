@@ -1175,8 +1175,101 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-
+      integer :: iCell, iEdge
+      integer, pointer :: nCellsSolve
+      integer, pointer :: nEdgesSolve
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, pointer :: neighborCell1, neighborCell2, &
+                          oceanNeighbor, iceNeighbor
+      real (kind=RKIND) :: xNeighborCell1,xNeighborCell2, &
+                           yNeighborCell1, yNeighborCell2
+      real (kind=RKIND) :: dCells, dNeighborCell1, dNeighborCell2, &
+                           interpBedTopo, waterDepth, submergedEdgeArea                    
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      real (kind=RKIND), pointer :: seaLevel
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, xEdge, yEdge
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, iceEdgeMask
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: TFocean
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND) :: iceFrontMeltRate 
+      real (kind=RKIND), dimension(:), pointer :: meltRateApplied
+      real (kind=RKIND), pointer :: aSubglacial ! param A
+      real (kind=RKIND), dimension(:), pointer :: subglacialWaterFlux
+      real (kind=RKIND), pointer :: alphaSubglacial ! param alpha
+      real (kind=RKIND), pointer :: B ! param B
+      real (kind=RKIND), pointer :: betaTF ! param beta
+      integer :: i
       
+      err = 0
+
+      meltRateApplied(:) = 0.0_RKIND ! all melt rates are zero unless specified below
+      ! Get sea level, bedTopography
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      
+      ! Get melt parameters
+      call mpas_pool_get_config(liConfigs, 'config_beta_ocean_thermal_forcing', betaTF)
+      call mpas_pool_get_config(liConfigs, 'config_alpha_subglacial_discharge', alphaSubglacial)
+      call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_coefficient', aSubglacial)
+      call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_intercept', B)
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+
+         ! Get Ocean Thermal Forcing
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean) ! NOTE: may need to change to 2D field
+       
+         ! Get cellMask
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell) 
+      ! Calculate melt rate at ice front 
+         do iEdge = 1, nEdgesSolve
+            ! Identify ice edges, and interpolate to get
+            ! bedTopography values at edges
+            if ( iceEdgeMask(iEdge) == 0 ) then
+               neighborCell1 = cellsOnEdge(1, iEdge)
+               neighborCell2 = cellsOnEdge(2, iEdge)
+               xNeighborCell1 = xCell(neighborCell1)
+               yNeighborCell1 = yCell(neighborCell1)
+               xNeighborCell2 = xCell(neighborCell2)
+               yNeighborCell2 = yCell(neighborCell2)
+               dCells = sqrt((xNeighborCell1 - xNeighborCell2)**2 + (yNeighborCell1 - yNeighborCell2)**2)! distance between neighborCells 1 and 2
+               dNeighborCell1 = sqrt((xNeighborCell1 - xEdge(iEdge))**2 + (yNeighborCell1 - yEdge(iEdge))**2)! distance between edge and neighborCell1
+               dNeighborCell2 = sqrt((xNeighborCell2 - xEdge(iEdge))**2 +(yNeighborCell2 - yEdge(iEdge))**2)! distance between edge and neighborCell2
+               interpBedTopo = (bedTopography(neighborCell1)*dNeighborCell1/dCells + bedTopography(neighborCell2))*dNeighborCell2/dCells
+               waterDepth = seaLevel - interpBedTopo
+               submergedEdgeArea = dvEdge(iEdge) * waterDepth
+
+             ! Normalize subglacial discharge by submarine ice front surface area
+             ! and convert to m/day
+             ! Calculate melt rate and convert to m/s
+               if ( thickness(neighborCell1) == 0.0 ) then
+                  oceanNeighbor = neighborCell1
+                  iceNeighbor = neighborCell2
+               else if ( thickness(neighborCell2) == 0.0 ) then
+                  oceanNeighbor = neighborCell2
+                  iceNeighbor = neighborCell1
+               endif
+
+               iceFrontMeltRate = (aSubglacial * waterDepth * &
+                         (subglacialWaterFlux(iceNeighbor) / submergedEdgeArea)**alphaSubglacial &
+                         + B) * TFocean(oceanNeighbor)**betaTF
+             ! Apply this melt rate to whichever neighboring cell contains ice 
+               meltRateApplied(iceNeighbor) = meltRateApplied(iceNeighbor) + iceFrontMeltRate
+               
+            endif
+         enddo
+        
+         block => block % next
+      enddo    ! associated(block)
     end subroutine grounded_face_melt_ismip6
 !-----------------------------------------------------------------------
 
