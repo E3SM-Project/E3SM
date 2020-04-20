@@ -135,23 +135,7 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- Redi_isopycnal_mixing -->
-<config_use_Redi ocn_grid="oQU480">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oQU240">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oQU240wLI">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oQU120">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oEC60to30">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oEC60to30v3">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oEC60to30wLI">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oEC60to30v3wLI">.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS30to10">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS30to10wLI">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS30to10v3wLI">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS18to6">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS18to6v3">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS15to5">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oARRM60to10">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oARRM60to6">.false.</config_use_Redi>
+<config_use_Redi>.false.</config_use_Redi>
 <config_Redi_kappa>1800.0</config_Redi_kappa>
 <config_Redi_kappa ocn_forcing="datm_forced_restoring">600.0</config_Redi_kappa>
 <config_Redi_maximum_slope>0.3</config_Redi_maximum_slope>
