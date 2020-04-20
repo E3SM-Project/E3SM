@@ -85,29 +85,20 @@ Functions<S,D>::qvsat_exact(const Spack& t_atm, const Spack& p_atm, const bool i
   
   Spack result;
   Spack es_T0; //saturation vapor pressure at T=tmelt
-  
+  Spack L; //latent heat of vaporization from liquid or ice
+
   Smask ice_mask = (t_atm < tmelt) && ice;
   Smask liq_mask = !ice_mask;
 
-  // -------------------------------------------
-  // Note on implementation: would be more efficient to create Spacks for es_T0 and 
-  // L which vary based on whether to calculate with respect to liquid or ice, then
-  // to perform the conversion to qs_T0 and to get result 1x?
+  es_T0.set(ice_mask, sp(611.147274) );
+  es_T0.set(liq_mask, sp(611.239921) );
 
-  if (ice_mask.any()) {
-    Scalar es_T0=sp(611.147274); //taken from Flatau polynomial fit... could do better.
-    Spack qs_T0 = ep_2 * es_T0 / pack::max(p_atm-es_T0, sp(1.e-3));
-    Spack ice_result= qs_T0*pack::exp( -(LatVap+LatIce)/RV*(1/t_atm - 1/tmelt) );
-    result.set(ice_mask, ice_result);
-  }
-  if (liq_mask.any()) {
-    Scalar es_T0=sp(611.239921); //taken from Flatau polynomial fit... could do better.
-    Spack qs_T0 = ep_2 * es_T0 / pack::max(p_atm-es_T0, sp(1.e-3));
-    Spack liq_result= qs_T0*pack::exp( -LatVap/RV*(1/t_atm - 1/tmelt) );
-    result.set(liq_mask, liq_result);
-  }
+  L.set(ice_mask, LatVap+LatIce );
+  L.set(liq_mask,LatVap);
 
-  return result;
+  Spack qs_T0 = ep_2 * es_T0 / pack::max(p_atm-es_T0, sp(1.e-3));
+  return qs_T0*pack::exp( -L/RV*(1/t_atm - 1/tmelt) );
+
 } // end qvsat_exact
 
 
