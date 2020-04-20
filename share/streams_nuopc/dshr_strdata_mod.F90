@@ -57,6 +57,8 @@ module dshr_strdata_mod
   public  :: shr_strdata_print
   public  :: shr_strdata_advance
   public  :: shr_strdata_get_stream_domain
+  public  :: shr_strdata_get_griddata
+  public  :: shr_strdata_set_griddata
   public  :: shr_strdata_mapSet
 
   private :: shr_strdata_readnml
@@ -2717,6 +2719,34 @@ contains
     endif
 
   end subroutine shr_strdata_mapSet
+
+  !===============================================================================
+  subroutine shr_strdata_set_griddata(sdat, fldname, rvalue) 
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat
+    character(len=*)       , intent(in)    :: fldname
+    real(r8)               , intent(in)    :: rvalue
+
+    ! local variables
+    integer :: kf
+
+    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
+    sdat%grid%data%rAttr(kf,:) = rvalue
+  end subroutine shr_strdata_set_griddata
+
+  !===============================================================================
+  subroutine shr_strdata_get_griddata(sdat, fldname, data) 
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat
+    character(len=*)       , intent(in)    :: fldname
+    real(r8)               , intent(out)   :: data(:)
+
+    ! local variables
+    integer :: kf
+
+    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
+    data(:) = sdat%grid%data%rAttr(kf,:)
+  end subroutine shr_strdata_get_griddata
 
   !===============================================================================
   logical function chkerr(rc, line, file)
