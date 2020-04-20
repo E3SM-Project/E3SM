@@ -57,7 +57,7 @@ def build_mesh(
                               name='cellWidth')
         cw_filename = 'cellWidthVsLatLon.nc'
         da.to_netcdf(cw_filename)
-        plot_cellWidth=True
+        plot_cellWidth = True
         if plot_cellWidth:
             map_name = '3Wbgy5'
             xmlFile = pkg_resources.resource_filename(
@@ -81,7 +81,9 @@ def build_mesh(
                 linestyle='-', zorder=2)
             gl.xlabels_top = False
             gl.ylabels_right = False
-            plt.title('Grid cell size, km')
+            plt.title(
+                'Grid cell size, km, min: {:.1f} max: {:.1f}'.format(
+                cellWidth.min(),cellWidth.max()))
             plt.colorbar(im, shrink=.60)
             fig.canvas.draw()
             plt.tight_layout()
