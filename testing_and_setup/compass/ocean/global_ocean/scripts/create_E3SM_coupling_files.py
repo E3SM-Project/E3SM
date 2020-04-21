@@ -266,7 +266,7 @@ def scrip(config):  # {{{
     if ice_shelf_cavities:
         scrip_file_mask = 'ocean.{}.mask.scrip.{}.nc'.format(mesh_name,
                                                              date_string)
-        scrip_from_mpas(mesh_file, scrip_file, useLandIceMask=True)
+        scrip_from_mpas(mesh_file, scrip_file_mask, useLandIceMask=True)
 
     # make links to output directories
     os.chdir('../assembled_files_for_upload/inputdata/ocn/mpas-o/{}'.format(
