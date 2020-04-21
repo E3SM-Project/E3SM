@@ -1877,6 +1877,10 @@ contains
                   do ix = 1,crm_nx_rad
                      do ic = 1,ncol
                         crm_qrad(ic,ix,iy,iz) = (crm_qrs(ic,ix,iy,iz) + crm_qrl(ic,ix,iy,iz)) / cpair
+                        if (conserve_energy) then
+                           ilev = pver - iz + 1
+                           crm_qrad(ic,ix,iy,iz) = crm_qrad(ic,ix,iy,iz) * state%pdel(ic,ilev)
+                        end if
                      end do
                   end do
                end do
