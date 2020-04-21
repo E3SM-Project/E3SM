@@ -1021,7 +1021,7 @@ contains
     rc = 0
 
     ! Initialize the output tendency structure.
-    call physics_ptend_init(ptend,state%psetcols,'CARMA', ls=carma_do_thermo, lq=lq_carma)
+    call physics_ptend_init(ptend,'CARMA', ls=carma_do_thermo, lq=lq_carma)
     
     if (present(prec_sed)) prec_sed(:) = 0._f
     if (present(snow_sed)) snow_sed(:) = 0._f
@@ -1894,7 +1894,7 @@ contains
     rc = 0
 
     ! Initialize the output tendency structure.
-    call physics_ptend_init(ptend,state%psetcols, 'CARMA_emission', lq=lq_carma)
+    call physics_ptend_init(ptend, 'CARMA_emission', lq=lq_carma)
 
     if (.not. carma_flag) return
     if (.not. carma_do_emission) return
@@ -2025,7 +2025,7 @@ contains
     rc = 0
     
     ! Initialize the output tendency structure.
-    call physics_ptend_init(ptend,state%psetcols, 'CARMA_wetdep', lq=lq_carma)
+    call physics_ptend_init(ptend, 'CARMA_wetdep', lq=lq_carma)
 
     if (.not. carma_flag) return
     if (.not. carma_do_wetdep) return    

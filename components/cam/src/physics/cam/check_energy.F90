@@ -279,15 +279,15 @@ end subroutine check_energy_get_integrals
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
     ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
 
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(pcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('check_energy_timestep_init: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
+!pw    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+!pw       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw       cpairv_loc(:,:,:) = cpair
+!pw    else
+!pw       call endrun('check_energy_timestep_init: cpairv is not allowed to vary when subcolumns are turned on')
+!pw    end if
 
 ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
@@ -428,15 +428,15 @@ end subroutine check_energy_get_integrals
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
     ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
 
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(pcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('check_energy_chng: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
+!pw    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+!pw       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw       cpairv_loc(:,:,:) = cpair
+!pw    else
+!pw       call endrun('check_energy_chng: cpairv is not allowed to vary when subcolumns are turned on')
+!p1    end if
 
     ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
@@ -829,7 +829,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     ncol = state%ncol
     lchnk = state%lchnk
 
-    call physics_ptend_init(ptend, state%psetcols, 'chkenergyfix', ls=.true.)
+    call physics_ptend_init(ptend, 'chkenergyfix', ls=.true.)
 
 #if ( defined OFFLINE_DYN )
     ! disable the energy fix for offline driver

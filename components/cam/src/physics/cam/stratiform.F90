@@ -556,7 +556,7 @@ subroutine stratiform_tend( &
    lq(1)        = .TRUE.
    lq(ixcldice) = .TRUE.
    lq(ixcldliq) = .TRUE.
-   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwsediment', ls=.true., lq=lq)! Initialize local ptend type
+   call physics_ptend_init(ptend_loc, 'pcwsediment', ls=.true., lq=lq)! Initialize local ptend type
 
    call cld_sediment_tend( ncol, dtime ,                                                             &
                            state1%pint, state1%pmid, state1%pdel, state1%t,                          &
@@ -581,7 +581,7 @@ subroutine stratiform_tend( &
    call outfld( 'RAINSED' ,rain                     , pcols,lchnk )
 
    ! Add tendency from this process to tend from other processes here
-   call physics_ptend_init(ptend_all, state%psetcols, 'stratiform')
+   call physics_ptend_init(ptend_all, 'stratiform')
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
 
    ! Update physics state type state1 with ptend_loc 
@@ -604,7 +604,7 @@ subroutine stratiform_tend( &
 
    lq(:)        = .FALSE.
    lq(ixcldliq) = .TRUE.
-   call physics_ptend_init( ptend_loc, state1%psetcols, 'pcwdetrain', lq=lq)
+   call physics_ptend_init( ptend_loc, 'pcwdetrain', lq=lq)
    
    do k = 1, pver
       do i = 1, state1%ncol
@@ -717,7 +717,7 @@ subroutine stratiform_tend( &
    lq(:)        = .FALSE.
    lq(ixcldice) = .true.
    lq(ixcldliq) = .true.
-   call physics_ptend_init( ptend_loc, state1%psetcols, 'cldwat-repartition', lq=lq )
+   call physics_ptend_init( ptend_loc, 'cldwat-repartition', lq=lq )
 
    totcw(:ncol,:pver)     = state1%q(:ncol,:pver,ixcldice) + state1%q(:ncol,:pver,ixcldliq)
    repartht(:ncol,:pver)  = state1%q(:ncol,:pver,ixcldice)
@@ -762,7 +762,7 @@ subroutine stratiform_tend( &
    lq(1)        = .true.
    lq(ixcldice) = .true.
    lq(ixcldliq) = .true.
-   call physics_ptend_init( ptend_loc, state1%psetcols, 'cldwat', ls=.true., lq=lq)
+   call physics_ptend_init( ptend_loc, 'cldwat', ls=.true., lq=lq)
 
    do k = 1, pver
       do i = 1, ncol

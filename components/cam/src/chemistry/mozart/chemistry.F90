@@ -1415,7 +1415,7 @@ end function chem_is_active
     end do
     if ( ghg_chem ) lq(1) = .true.
 
-    call physics_ptend_init(ptend, state%psetcols, 'chemistry', lq=lq)
+    call physics_ptend_init(ptend, 'chemistry', lq=lq)
     
     call drydep_update( state, cam_in )
 

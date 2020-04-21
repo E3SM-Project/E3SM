@@ -861,7 +861,7 @@ next_interval : &
    lchnk = state%lchnk
    ncol  = state%ncol
 
-   call physics_ptend_init(ptend, state%psetcols, 'qbo', lu=.true.)
+   call physics_ptend_init(ptend, 'qbo', lu=.true.)
 
 has_qbo_forcing : &
    if( qbo_use_forcing ) then

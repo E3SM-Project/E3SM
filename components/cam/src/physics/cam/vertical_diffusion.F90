@@ -1217,7 +1217,7 @@ contains
     ! All variables are modified by vertical diffusion
 
     lq(:) = .TRUE.
-    call physics_ptend_init(ptend,state%psetcols, "vertical diffusion", &
+    call physics_ptend_init(ptend, "vertical diffusion", &
          ls=.true., lu=.true., lv=.true., lq=lq)
 
     ptend%s(:ncol,:)       = ( s_tmp(:ncol,:) - state%s(:ncol,:) ) * rztodt

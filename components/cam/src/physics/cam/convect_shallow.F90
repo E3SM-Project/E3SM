@@ -611,7 +611,7 @@ end subroutine convect_shallow_init_cnst
    case('off', 'CLUBB_SGS') ! None
 
       lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
+      call physics_ptend_init( ptend_loc, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
 
       cmfmc2      = 0._r8
       ptend_loc%q = 0._r8
@@ -640,7 +640,7 @@ end subroutine convect_shallow_init_cnst
    case('Hack') ! Hack scheme
                                    
       lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'cmfmca', ls=.true., lq=lq  ) ! Initialize local ptend type
+      call physics_ptend_init( ptend_loc, 'cmfmca', ls=.true., lq=lq  ) ! Initialize local ptend type
 
       call pbuf_get_field(pbuf, qpert_idx, qpert)
       qpert(:ncol,2:pcnst) = 0._r8
@@ -661,7 +661,7 @@ end subroutine convect_shallow_init_cnst
 
       ! Initialize local ptend type
       lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'UWSHCU', ls=.true., lu=.true., lv=.true., lq=lq  ) 
+      call physics_ptend_init( ptend_loc, 'UWSHCU', ls=.true., lu=.true., lv=.true., lq=lq  ) 
 
       call pbuf_get_field(pbuf, cush_idx, cush  ,(/1,itim_old/),  (/pcols,1/))
       call pbuf_get_field(pbuf, tke_idx,  tke)
@@ -861,7 +861,7 @@ end subroutine convect_shallow_init_cnst
    ! Add tendency from this process to tend from other processes here !
    ! ---------------------------------------------------------------- !
 
-   call physics_ptend_init(ptend_all, state1%psetcols, 'convect_shallow')
+   call physics_ptend_init(ptend_all, 'convect_shallow')
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
 
    ! ----------------------------------------------------------------------------- !
@@ -949,7 +949,7 @@ end subroutine convect_shallow_init_cnst
 
     lq(1) = .TRUE.
     lq(2:) = .FALSE.
-    call physics_ptend_init(ptend_loc, state1%psetcols, 'shallow_hack', ls=.true., lq=lq)
+    call physics_ptend_init(ptend_loc, 'shallow_hack', ls=.true., lq=lq)
 
     call pbuf_get_field(pbuf, sh_flxprc_idx, flxprec    )
     call pbuf_get_field(pbuf, sh_flxsnw_idx, flxsnow    )

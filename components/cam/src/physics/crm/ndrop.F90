@@ -542,10 +542,10 @@ subroutine dropmixnuc( &
 
    if (prog_modal_aero) then
       ! aerosol tendencies
-      call physics_ptend_init(ptend, state%psetcols, 'ndrop_aero', lq=lq)
+      call physics_ptend_init(ptend, 'ndrop_aero', lq=lq)
    else
       ! no aerosol tendencies
-      call physics_ptend_init(ptend, state%psetcols, 'ndrop')
+      call physics_ptend_init(ptend, 'ndrop')
    end if
 
    ! overall_main_i_loop

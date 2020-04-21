@@ -1,4 +1,4 @@
-subroutine massborrow(subnam,lchnk,ncol,pcols,mbeg,mend,qmin,q,pdel) 
+subroutine massborrow(subnam,lchnk,ncol,mbeg,mend,qmin,q,pdel) 
 
 !!....................................................................... 
 !! The mass borrower borrows tracer mass from an adjacent layer. 
@@ -19,7 +19,7 @@ subroutine massborrow(subnam,lchnk,ncol,pcols,mbeg,mend,qmin,q,pdel)
 !!....................................................................... 
 
   use shr_kind_mod,    only: r8 => shr_kind_r8
-  use ppgrid,          only: pver
+  use ppgrid,          only: pcols,pver
   use spmd_utils,      only: masterproc
   use cam_logfile,     only: iulog
   use phys_control,    only: print_fixer_message
@@ -32,7 +32,6 @@ subroutine massborrow(subnam,lchnk,ncol,pcols,mbeg,mend,qmin,q,pdel)
   character*(*), intent(in) :: subnam                 ! name of calling routine
   integer, intent(in) :: lchnk                        ! chunk identifier
   integer, intent(in) :: ncol                         ! number of atmospheric columns
-  integer, intent(in) :: pcols                        ! number of dim members
   integer, intent(in) :: mbeg                         ! first index 
   integer, intent(in) :: mend                         ! last index 
   real(r8), intent(in) :: qmin(mbeg:mend)             ! smallest value

@@ -699,7 +699,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   zm = state1%zm(:ncol,:)
 
   lq = .true.
-  call physics_ptend_init(ptend, state1%psetcols, "Grav_wave_drag", &
+  call physics_ptend_init(ptend, "Grav_wave_drag", &
        ls=.true., lu=.true., lv=.true., lq=lq)
 
   ! Profiles of background state variables

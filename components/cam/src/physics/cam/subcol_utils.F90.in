@@ -454,10 +454,9 @@ contains
 
 
       if (.not. allocated(tend%dtdt)) then
-         call physics_tend_alloc(tend_sc, state_sc%psetcols)
+         call physics_tend_alloc(tend_sc)
       end if
 
-      tend_sc%psetcols   = pcols*psubcols
       call subcol_state_field_copy(tend%dtdt,       state_sc, tend_sc%dtdt)
       call subcol_state_field_copy(tend%dudt,       state_sc, tend_sc%dudt)
       call subcol_state_field_copy(tend%dvdt,       state_sc, tend_sc%dvdt)
@@ -553,11 +552,11 @@ contains
 
       !-----------------------------------------------------------------------
 
-      if (ptend%psetcols .ne. pcols) then
-         call endrun('subcol_ptend_copy: ptend must be dimensioned pcols to use this routine')
-      end if
+!pw      if (ptend%psetcols .ne. pcols) then
+!Pw         call endrun('subcol_ptend_copy: ptend must be dimensioned pcols to use this routine')
+!pw      end if
 
-      call physics_ptend_init(ptend_cp,state%psetcols, ptend%name, ls=ptend%ls, lu=ptend%lu,  &
+      call physics_ptend_init(ptend_cp, ptend%name, ls=ptend%ls, lu=ptend%lu,  &
            lv=ptend%lv, lq=ptend%lq)
 
       ptend_cp%top_level = ptend%top_level
@@ -612,7 +611,7 @@ contains
       state_sc%ngrdcol    = state%ngrdcol
       state_sc%lchnk      = state%lchnk
 
-      state_sc%psetcols   = pcols*psubcols
+!pw      state_sc%psetcols   = pcols*psubcols
       ! Set count to a too-large value. It should be correctly initialized in check_energy_timestep_init
       state_sc%count      = pcols*psubcols*2
 

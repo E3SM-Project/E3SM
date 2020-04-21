@@ -1022,7 +1022,7 @@ contains
     call outfld ('LXY     ',lxy,pcols,lchnk)
     call outfld ('LYX     ',lyx,pcols,lchnk)
 
-    call physics_ptend_init(ptend, state%psetcols, "iondrag", lu=.true., lv=.true., ls=.true.)
+    call physics_ptend_init(ptend, "iondrag", lu=.true., lv=.true., ls=.true.)
 
     !-------------------------------------------------------------------------------
     ! Calculate ion drag tendencies and apply to neutral velocities:
@@ -1094,11 +1094,11 @@ contains
     !-------------------------------------------------------------------------
 
     if (.not.doiodrg) then
-       call physics_ptend_init(ptend,state%psetcols,'iondrag_1') !Initialize an empty ptend for use with physics_update
+       call physics_ptend_init(ptend,'iondrag_1') !Initialize an empty ptend for use with physics_update
        return
     end if
 
-    call physics_ptend_init(ptend, state%psetcols, "iondrag_2", lu=.true., lv=.true.)
+    call physics_ptend_init(ptend, "iondrag_2", lu=.true., lv=.true.)
 
     call get_rlat_all_p(lchnk, pcols, clat)
 

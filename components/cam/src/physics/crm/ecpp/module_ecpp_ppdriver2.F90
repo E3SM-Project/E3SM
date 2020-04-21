@@ -734,7 +734,7 @@ module module_ecpp_ppdriver2
     ! Initialize ptend
     !------------------------------------------------------
     lq(:) = .true.
-    call physics_ptend_init(ptend, state%psetcols,'ecpp',lq=lq)
+    call physics_ptend_init(ptend,'ecpp',lq=lq)
     ptend%lq(:) = .true.
     ptend%q(:,:,:) = 0.0_r8
     !------------------------------------------------------

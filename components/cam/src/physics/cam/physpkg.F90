@@ -743,7 +743,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     !-----------------------------------------------------------------------
 
-    call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
+    call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk)
 
     do lchnk = begchunk, endchunk
        call physics_state_set_grid(lchnk, phys_state(lchnk))
@@ -2197,7 +2197,7 @@ subroutine tphysbc (ztodt,               &
       !!.................................................................
 
        do m = 1, pcnst 
-          call massborrow("PHYBC01",lchnk,ncol,state%psetcols,m,m,qmin(m),state%q(1,1,m),state%pdel)
+          call massborrow("PHYBC01",lchnk,ncol,m,m,qmin(m),state%q(1,1,m),state%pdel)
        end do
 
 !!      call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
@@ -2233,7 +2233,7 @@ subroutine tphysbc (ztodt,               &
        !! tracer borrower for mass conservation 
        !!.................................................................
        do m = 1, pcnst
-          call massborrow("PHYBC02",lchnk,ncol,state%psetcols,m,m,qmin(m),state%q(1,1,m),state%pdel)
+          call massborrow("PHYBC02",lchnk,ncol,m,m,qmin(m),state%q(1,1,m),state%pdel)
        end do
 
 !!       call qneg3('TPHYSBCc',lchnk  ,ncol    ,pcols   ,pver    , &
@@ -2319,7 +2319,7 @@ if (l_dry_adj) then
 
     lq(:) = .FALSE.
     lq(1) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'dadadj', ls=.true., lq=lq)
+    call physics_ptend_init(ptend, 'dadadj', ls=.true., lq=lq)
     ptend%s(:ncol,:pver)   = state%t(:ncol,:pver)
     ptend%q(:ncol,:pver,1) = state%q(:ncol,:pver,1)
 
@@ -2570,17 +2570,17 @@ end if
           !===================================================
         if (l_st_mic) then
 
-          if (is_subcol_on()) then
-             ! Allocate sub-column structures. 
-             call physics_state_alloc(state_sc, lchnk, psubcols*pcols)
-             call physics_tend_alloc(tend_sc, psubcols*pcols)
-
-             ! Generate sub-columns using the requested scheme
-             call subcol_gen(state, tend, state_sc, tend_sc, pbuf)
-
-             !Initialize check energy for subcolumns
-             call check_energy_timestep_init(state_sc, tend_sc, pbuf, col_type_subcol)
-          end if
+!pw          if (is_subcol_on()) then
+!pw             ! Allocate sub-column structures. 
+!pw             call physics_state_alloc(state_sc, lchnk, psubcols*pcols)
+!pw             call physics_tend_alloc(tend_sc, psubcols*pcols)
+!pw
+!pw             ! Generate sub-columns using the requested scheme
+!pw             call subcol_gen(state, tend, state_sc, tend_sc, pbuf)
+!pw
+!pw             !Initialize check energy for subcolumns
+!pw             call check_energy_timestep_init(state_sc, tend_sc, pbuf, col_type_subcol)
+!pw          end if
 
           if (.not. micro_do_icesupersat) then 
 

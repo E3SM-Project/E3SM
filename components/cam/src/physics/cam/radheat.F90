@@ -99,7 +99,7 @@ subroutine radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &
 
    ncol = state%ncol
 
-   call physics_ptend_init(ptend,state%psetcols, 'cam_radheat', ls=.true.)
+   call physics_ptend_init(ptend, 'cam_radheat', ls=.true.)
 
 #if ( defined OFFLINE_DYN )
    ptend%s(:ncol,:) = 0._r8

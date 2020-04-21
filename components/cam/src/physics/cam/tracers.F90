@@ -274,12 +274,12 @@ subroutine tracers_timestep_tend(state, ptend, cflx, landfrac, deltat)
 !-----------------------------------------------------------------------
 
   if (.not. tracers_flag) then
-       call physics_ptend_init(ptend,state%psetcols,'tracer_ts') !Initialize an empty ptend for use with physics_update
+       call physics_ptend_init(ptend,'tracer_ts') !Initialize an empty ptend for use with physics_update
        return
   else
      lq(:)      = .FALSE.
      lq(ixtrct:ixtrct+trac_ncnst-1) = .TRUE.
-     call physics_ptend_init(ptend, state%psetcols, 'tracers', lq=lq)
+     call physics_ptend_init(ptend, 'tracers', lq=lq)
  
      do  m = 1,trac_ncnst 
         if (debug) write(iulog,*)'tracers.F90 calling for tracer ',m

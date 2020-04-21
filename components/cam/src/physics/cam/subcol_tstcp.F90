@@ -117,8 +117,8 @@ contains
       !
       integer            :: i, k, ngrdcol, indx, indx1, indx2
       integer            :: nsubcol(pcols)
-      real(r8)           :: weight(state_sc%psetcols)
-      integer            :: filter(state_sc%psetcols)
+      real(r8)           :: weight(pcols)
+      integer            :: filter(pcols)
       integer, pointer   :: test_field(:,:)
       character(len=128) :: errmsg
 

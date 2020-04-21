@@ -1071,7 +1071,7 @@ contains
    call cnst_get_ind('Q',indw)
    lq(:)   =.false.
    lq(indw)=.true.
-   call physics_ptend_init(phys_tend,phys_state%psetcols,'nudging',lu=.true.,lv=.true.,ls=.true.,lq=lq)
+   call physics_ptend_init(phys_tend,'nudging',lu=.true.,lv=.true.,ls=.true.,lq=lq)
 
    if(Nudge_ON) then
      lchnk=phys_state%lchnk

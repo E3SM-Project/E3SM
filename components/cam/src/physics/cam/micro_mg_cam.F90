@@ -1109,7 +1109,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
    ! Local variables
-   integer :: lchnk, ncol, psetcols, ngrdcol
+   integer :: lchnk, ncol, ngrdcol
 
    integer :: i, k, itim_old, it
 
@@ -1143,87 +1143,87 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
    real(r8), pointer :: des(:,:)          ! Snow effective diameter (m)
 
-   real(r8) :: rho(state%psetcols,pver)
-   real(r8) :: cldmax(state%psetcols,pver)
+   real(r8) :: rho(pcols,pver)
+   real(r8) :: cldmax(pcols,pver)
 
-   real(r8), target :: rate1cld(state%psetcols,pver) ! array to hold rate1ord_cw2pr_st from microphysics
+   real(r8), target :: rate1cld(pcols,pver) ! array to hold rate1ord_cw2pr_st from microphysics
 
-   real(r8), target :: tlat(state%psetcols,pver)
-   real(r8), target :: qvlat(state%psetcols,pver)
-   real(r8), target :: qcten(state%psetcols,pver)
-   real(r8), target :: qiten(state%psetcols,pver)
-   real(r8), target :: ncten(state%psetcols,pver)
-   real(r8), target :: niten(state%psetcols,pver)
+   real(r8), target :: tlat(pcols,pver)
+   real(r8), target :: qvlat(pcols,pver)
+   real(r8), target :: qcten(pcols,pver)
+   real(r8), target :: qiten(pcols,pver)
+   real(r8), target :: ncten(pcols,pver)
+   real(r8), target :: niten(pcols,pver)
 
-   real(r8), target :: qrten(state%psetcols,pver)
-   real(r8), target :: qsten(state%psetcols,pver)
-   real(r8), target :: nrten(state%psetcols,pver)
-   real(r8), target :: nsten(state%psetcols,pver)
+   real(r8), target :: qrten(pcols,pver)
+   real(r8), target :: qsten(pcols,pver)
+   real(r8), target :: nrten(pcols,pver)
+   real(r8), target :: nsten(pcols,pver)
 
-   real(r8), target :: prect(state%psetcols)
-   real(r8), target :: preci(state%psetcols)
-   real(r8), target :: am_evp_st(state%psetcols,pver)  ! Area over which precip evaporates
-   real(r8), target :: evapsnow(state%psetcols,pver)   ! Local evaporation of snow
-   real(r8), target :: prodsnow(state%psetcols,pver)   ! Local production of snow
-   real(r8), target :: cmeice(state%psetcols,pver)     ! Rate of cond-evap of ice within the cloud
-   real(r8), target :: qsout(state%psetcols,pver)      ! Snow mixing ratio
-   real(r8), target :: cflx(state%psetcols,pverp)      ! grid-box avg liq condensate flux (kg m^-2 s^-1)
-   real(r8), target :: iflx(state%psetcols,pverp)      ! grid-box avg ice condensate flux (kg m^-2 s^-1)
-   real(r8), target :: rflx(state%psetcols,pverp)      ! grid-box average rain flux (kg m^-2 s^-1)
-   real(r8), target :: sflx(state%psetcols,pverp)      ! grid-box average snow flux (kg m^-2 s^-1)
-   real(r8), target :: qrout(state%psetcols,pver)      ! Rain mixing ratio
-   real(r8), target :: qcsevap(state%psetcols,pver)    ! Evaporation of falling cloud water
-   real(r8), target :: qisevap(state%psetcols,pver)    ! Sublimation of falling cloud ice
-   real(r8), target :: qvres(state%psetcols,pver)      ! Residual condensation term to remove excess saturation
-   real(r8), target :: cmeiout(state%psetcols,pver)    ! Deposition/sublimation rate of cloud ice
-   real(r8), target :: vtrmc(state%psetcols,pver)      ! Mass-weighted cloud water fallspeed
-   real(r8), target :: vtrmi(state%psetcols,pver)      ! Mass-weighted cloud ice fallspeed
-   real(r8), target :: umr(state%psetcols,pver)        ! Mass-weighted rain fallspeed
-   real(r8), target :: ums(state%psetcols,pver)        ! Mass-weighted snow fallspeed
-   real(r8), target :: qcsedten(state%psetcols,pver)   ! Cloud water mixing ratio tendency from sedimentation
-   real(r8), target :: qisedten(state%psetcols,pver)   ! Cloud ice mixing ratio tendency from sedimentation
-   real(r8), target :: qrsedten(state%psetcols,pver)   ! Rain mixing ratio tendency from sedimentation
-   real(r8), target :: qssedten(state%psetcols,pver)   ! Snow mixing ratio tendency from sedimentation
+   real(r8), target :: prect(pcols)
+   real(r8), target :: preci(pcols)
+   real(r8), target :: am_evp_st(pcols,pver)  ! Area over which precip evaporates
+   real(r8), target :: evapsnow(pcols,pver)   ! Local evaporation of snow
+   real(r8), target :: prodsnow(pcols,pver)   ! Local production of snow
+   real(r8), target :: cmeice(pcols,pver)     ! Rate of cond-evap of ice within the cloud
+   real(r8), target :: qsout(pcols,pver)      ! Snow mixing ratio
+   real(r8), target :: cflx(pcols,pverp)      ! grid-box avg liq condensate flux (kg m^-2 s^-1)
+   real(r8), target :: iflx(pcols,pverp)      ! grid-box avg ice condensate flux (kg m^-2 s^-1)
+   real(r8), target :: rflx(pcols,pverp)      ! grid-box average rain flux (kg m^-2 s^-1)
+   real(r8), target :: sflx(pcols,pverp)      ! grid-box average snow flux (kg m^-2 s^-1)
+   real(r8), target :: qrout(pcols,pver)      ! Rain mixing ratio
+   real(r8), target :: qcsevap(pcols,pver)    ! Evaporation of falling cloud water
+   real(r8), target :: qisevap(pcols,pver)    ! Sublimation of falling cloud ice
+   real(r8), target :: qvres(pcols,pver)      ! Residual condensation term to remove excess saturation
+   real(r8), target :: cmeiout(pcols,pver)    ! Deposition/sublimation rate of cloud ice
+   real(r8), target :: vtrmc(pcols,pver)      ! Mass-weighted cloud water fallspeed
+   real(r8), target :: vtrmi(pcols,pver)      ! Mass-weighted cloud ice fallspeed
+   real(r8), target :: umr(pcols,pver)        ! Mass-weighted rain fallspeed
+   real(r8), target :: ums(pcols,pver)        ! Mass-weighted snow fallspeed
+   real(r8), target :: qcsedten(pcols,pver)   ! Cloud water mixing ratio tendency from sedimentation
+   real(r8), target :: qisedten(pcols,pver)   ! Cloud ice mixing ratio tendency from sedimentation
+   real(r8), target :: qrsedten(pcols,pver)   ! Rain mixing ratio tendency from sedimentation
+   real(r8), target :: qssedten(pcols,pver)   ! Snow mixing ratio tendency from sedimentation
 
-   real(r8), target :: prao(state%psetcols,pver)
-   real(r8), target :: prco(state%psetcols,pver)
-   real(r8), target :: mnuccco(state%psetcols,pver)
-   real(r8), target :: mnuccto(state%psetcols,pver)
-   real(r8), target :: msacwio(state%psetcols,pver)
-   real(r8), target :: psacwso(state%psetcols,pver)
-   real(r8), target :: bergso(state%psetcols,pver)
-   real(r8), target :: bergo(state%psetcols,pver)
-   real(r8), target :: melto(state%psetcols,pver)
-   real(r8), target :: homoo(state%psetcols,pver)
-   real(r8), target :: qcreso(state%psetcols,pver)
-   real(r8), target :: prcio(state%psetcols,pver)
-   real(r8), target :: praio(state%psetcols,pver)
-   real(r8), target :: qireso(state%psetcols,pver)
-   real(r8), target :: mnuccro(state%psetcols,pver)
-   real(r8), target :: pracso (state%psetcols,pver)
-   real(r8), target :: meltsdt(state%psetcols,pver)
-   real(r8), target :: frzrdt (state%psetcols,pver)
-   real(r8), target :: mnuccdo(state%psetcols,pver)
-   real(r8), target :: nrout(state%psetcols,pver)
-   real(r8), target :: nsout(state%psetcols,pver)
-   real(r8), target :: refl(state%psetcols,pver)    ! analytic radar reflectivity
-   real(r8), target :: arefl(state%psetcols,pver)   ! average reflectivity will zero points outside valid range
-   real(r8), target :: areflz(state%psetcols,pver)  ! average reflectivity in z.
-   real(r8), target :: frefl(state%psetcols,pver)
-   real(r8), target :: csrfl(state%psetcols,pver)   ! cloudsat reflectivity
-   real(r8), target :: acsrfl(state%psetcols,pver)  ! cloudsat average
-   real(r8), target :: fcsrfl(state%psetcols,pver)
-   real(r8), target :: rercld(state%psetcols,pver)  ! effective radius calculation for rain + cloud
-   real(r8), target :: ncai(state%psetcols,pver)    ! output number conc of ice nuclei available (1/m3)
-   real(r8), target :: ncal(state%psetcols,pver)    ! output number conc of CCN (1/m3)
-   real(r8), target :: qrout2(state%psetcols,pver)
-   real(r8), target :: qsout2(state%psetcols,pver)
-   real(r8), target :: nrout2(state%psetcols,pver)
-   real(r8), target :: nsout2(state%psetcols,pver)
-   real(r8), target :: freqs(state%psetcols,pver)
-   real(r8), target :: freqr(state%psetcols,pver)
-   real(r8), target :: nfice(state%psetcols,pver)
-   real(r8), target :: qcrat(state%psetcols,pver)   ! qc limiter ratio (1=no limit)
+   real(r8), target :: prao(pcols,pver)
+   real(r8), target :: prco(pcols,pver)
+   real(r8), target :: mnuccco(pcols,pver)
+   real(r8), target :: mnuccto(pcols,pver)
+   real(r8), target :: msacwio(pcols,pver)
+   real(r8), target :: psacwso(pcols,pver)
+   real(r8), target :: bergso(pcols,pver)
+   real(r8), target :: bergo(pcols,pver)
+   real(r8), target :: melto(pcols,pver)
+   real(r8), target :: homoo(pcols,pver)
+   real(r8), target :: qcreso(pcols,pver)
+   real(r8), target :: prcio(pcols,pver)
+   real(r8), target :: praio(pcols,pver)
+   real(r8), target :: qireso(pcols,pver)
+   real(r8), target :: mnuccro(pcols,pver)
+   real(r8), target :: pracso (pcols,pver)
+   real(r8), target :: meltsdt(pcols,pver)
+   real(r8), target :: frzrdt (pcols,pver)
+   real(r8), target :: mnuccdo(pcols,pver)
+   real(r8), target :: nrout(pcols,pver)
+   real(r8), target :: nsout(pcols,pver)
+   real(r8), target :: refl(pcols,pver)    ! analytic radar reflectivity
+   real(r8), target :: arefl(pcols,pver)   ! average reflectivity will zero points outside valid range
+   real(r8), target :: areflz(pcols,pver)  ! average reflectivity in z.
+   real(r8), target :: frefl(pcols,pver)
+   real(r8), target :: csrfl(pcols,pver)   ! cloudsat reflectivity
+   real(r8), target :: acsrfl(pcols,pver)  ! cloudsat average
+   real(r8), target :: fcsrfl(pcols,pver)
+   real(r8), target :: rercld(pcols,pver)  ! effective radius calculation for rain + cloud
+   real(r8), target :: ncai(pcols,pver)    ! output number conc of ice nuclei available (1/m3)
+   real(r8), target :: ncal(pcols,pver)    ! output number conc of CCN (1/m3)
+   real(r8), target :: qrout2(pcols,pver)
+   real(r8), target :: qsout2(pcols,pver)
+   real(r8), target :: nrout2(pcols,pver)
+   real(r8), target :: nsout2(pcols,pver)
+   real(r8), target :: freqs(pcols,pver)
+   real(r8), target :: freqr(pcols,pver)
+   real(r8), target :: nfice(pcols,pver)
+   real(r8), target :: qcrat(pcols,pver)   ! qc limiter ratio (1=no limit)
 
    ! Object that packs columns with clouds/precip.
    type(MGPacker) :: packer
@@ -1370,7 +1370,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), allocatable :: reff_snow_dum(:,:)
 
    ! Heterogeneous-only version of mnuccdo.
-   real(r8) :: mnuccdohet(state%psetcols,pver)
+   real(r8) :: mnuccdohet(pcols,pver)
 
    ! physics buffer fields for COSP simulator
    real(r8), pointer :: mgflxprc(:,:)     ! MG grid-box mean flux_large_scale_cloud_rain+snow at interfaces (kg/m2/s)
@@ -1411,8 +1411,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    type(physics_state) :: state_loc
    type(physics_ptend) :: ptend_loc
 
-   real(r8) :: icecldf(state%psetcols,pver) ! Ice cloud fraction
-   real(r8) :: liqcldf(state%psetcols,pver) ! Liquid cloud fraction (combined into cloud)
+   real(r8) :: icecldf(pcols,pver) ! Ice cloud fraction
+   real(r8) :: liqcldf(pcols,pver) ! Liquid cloud fraction (combined into cloud)
 
    real(r8), pointer :: rel(:,:)          ! Liquid effective drop radius (microns)
    real(r8), pointer :: rei(:,:)          ! Ice effective drop size (microns)
@@ -1426,13 +1426,13 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: cldfsnow(:,:)     ! Cloud fraction for liquid+snow
    real(r8), pointer :: icswp(:,:)        ! In-cloud snow water path
 
-   real(r8) :: icimrst(state%psetcols,pver) ! In stratus ice mixing ratio
-   real(r8) :: icwmrst(state%psetcols,pver) ! In stratus water mixing ratio
-   real(r8) :: icinc(state%psetcols,pver)   ! In cloud ice number conc
-   real(r8) :: icwnc(state%psetcols,pver)   ! In cloud water number conc
+   real(r8) :: icimrst(pcols,pver) ! In stratus ice mixing ratio
+   real(r8) :: icwmrst(pcols,pver) ! In stratus water mixing ratio
+   real(r8) :: icinc(pcols,pver)   ! In cloud ice number conc
+   real(r8) :: icwnc(pcols,pver)   ! In cloud water number conc
 
-   real(r8) :: iclwpi(state%psetcols)       ! Vertically-integrated in-cloud Liquid WP before microphysics
-   real(r8) :: iciwpi(state%psetcols)       ! Vertically-integrated in-cloud Ice WP before microphysics
+   real(r8) :: iclwpi(pcols)       ! Vertically-integrated in-cloud Liquid WP before microphysics
+   real(r8) :: iciwpi(pcols)       ! Vertically-integrated in-cloud Ice WP before microphysics
 
    ! Averaging arrays for effective radius and number....
    real(r8) :: efiout_grid(pcols,pver)
@@ -1599,7 +1599,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    lchnk = state%lchnk
    ncol  = state%ncol
-   psetcols = state%psetcols
    ngrdcol  = state%ngrdcol
 
    itim_old = pbuf_old_tim_idx()
@@ -1623,11 +1622,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq,      col_type=col_type, copy_if_needed=use_subcol_microp)
 
-   call pbuf_get_field(pbuf, cld_idx,         cld,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
+   call pbuf_get_field(pbuf, cld_idx,         cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/), &
         col_type=col_type, copy_if_needed=use_subcol_microp)
-   call pbuf_get_field(pbuf, concld_idx,      concld,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
+   call pbuf_get_field(pbuf, concld_idx,      concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/), &
         col_type=col_type, copy_if_needed=use_subcol_microp)
-   call pbuf_get_field(pbuf, ast_idx,         ast,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
+   call pbuf_get_field(pbuf, ast_idx,         ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/), &
         col_type=col_type, copy_if_needed=use_subcol_microp)
 
    if (.not. do_cldice) then
@@ -1673,15 +1672,15 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, wsedl_idx,       wsedl,       col_type=col_type)
    call pbuf_get_field(pbuf, qme_idx,         qme,         col_type=col_type)
 
-   call pbuf_get_field(pbuf, cldo_idx,        cldo,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cldfsnow_idx,    cldfsnow, start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_t_idx,        CC_t,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_qv_idx,       CC_qv,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_ql_idx,       CC_ql,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_qi_idx,       CC_qi,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_nl_idx,       CC_nl,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_ni_idx,       CC_ni,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-   call pbuf_get_field(pbuf, cc_qlst_idx,     CC_qlst,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cldo_idx,        cldo,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cldfsnow_idx,    cldfsnow, start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_t_idx,        CC_t,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_qv_idx,       CC_qv,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_ql_idx,       CC_ql,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_qi_idx,       CC_qi,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_nl_idx,       CC_nl,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_ni_idx,       CC_ni,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
+   call pbuf_get_field(pbuf, cc_qlst_idx,     CC_qlst,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/), col_type=col_type)
 
    if (rate1_cw2pr_st_idx > 0) then
       call pbuf_get_field(pbuf, rate1_cw2pr_st_idx, rate1ord_cw2pr_st, col_type=col_type)
@@ -1813,7 +1812,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    ! the name 'cldwat' triggers special tests on cldliq
    ! and cldice in physics_update
-   call physics_ptend_init(ptend, psetcols, "cldwat_mic", ls=.true., lq=lq)
+   call physics_ptend_init(ptend, "cldwat_mic", ls=.true., lq=lq)
 
    select case (micro_mg_version)
    case (1)
@@ -1831,7 +1830,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
            mgncol, mgcols)
    end select
 
-   packer = MGPacker(psetcols, pver, mgcols, top_lev)
+   packer = MGPacker(pcols, pver, mgcols, top_lev)
    post_proc = MGPostProc(packer)
 
    allocate(packed_rate1ord_cw2pr_st(mgncol,nlev))
@@ -2251,7 +2250,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
       call handle_errmsg(errstring, subname="micro_mg_tend")
 
-      call physics_ptend_init(ptend_loc, psetcols, "micro_mg", &
+      call physics_ptend_init(ptend_loc, "micro_mg", &
                               ls=.true., lq=lq)
 
       ! Set local tendency.
@@ -3011,55 +3010,55 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call outfld( 'MPDI2P', ftem_grid, pcols, lchnk)
 
    ! Output fields which have not been averaged already, averaging if use_subcol_microp is true
-   call outfld('MPICLWPI',    iclwpi,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MPICIWPI',    iciwpi,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('REFL',        refl,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('AREFL',       arefl,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('AREFLZ',      areflz,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FREFL',       frefl,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('CSRFL',       csrfl,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('ACSRFL',      acsrfl,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FCSRFL',      fcsrfl,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('RERCLD',      rercld,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('NCAL',        ncal,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('NCAI',        ncai,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('AQRAIN',      qrout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('AQSNOW',      qsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('ANRAIN',      nrout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('ANSNOW',      nsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FREQR',       freqr,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FREQS',       freqs,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MPDT',        tlat,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MPDQ',        qvlat,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MPDLIQ',      qcten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MPDICE',      qiten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('EVAPSNOW',    evapsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('QCSEVAP',     qcsevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('QISEVAP',     qisevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('QVRES',       qvres,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('VTRMC',       vtrmc,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('VTRMI',       vtrmi,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('QCSEDTEN',    qcsedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('QISEDTEN',    qisedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPICLWPI',    iclwpi,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPICIWPI',    iciwpi,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('REFL',        refl,        pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('AREFL',       arefl,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('AREFLZ',      areflz,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FREFL',       frefl,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('CSRFL',       csrfl,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('ACSRFL',      acsrfl,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FCSRFL',      fcsrfl,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('RERCLD',      rercld,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('NCAL',        ncal,        pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('NCAI',        ncai,        pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('AQRAIN',      qrout2,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('AQSNOW',      qsout2,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('ANRAIN',      nrout2,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('ANSNOW',      nsout2,      pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FREQR',       freqr,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FREQS',       freqs,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPDT',        tlat,        pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPDQ',        qvlat,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPDLIQ',      qcten,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPDICE',      qiten,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('EVAPSNOW',    evapsnow,    pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('QCSEVAP',     qcsevap,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('QISEVAP',     qisevap,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('QVRES',       qvres,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('VTRMC',       vtrmc,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('VTRMI',       vtrmi,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('QCSEDTEN',    qcsedten,    pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('QISEDTEN',    qisedten,    pcols, lchnk, avg_subcol_field=use_subcol_microp)
    if (micro_mg_version > 1) then
-      call outfld('QRSEDTEN',    qrsedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-      call outfld('QSSEDTEN',    qssedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+      call outfld('QRSEDTEN',    qrsedten,    pcols, lchnk, avg_subcol_field=use_subcol_microp)
+      call outfld('QSSEDTEN',    qssedten,    pcols, lchnk, avg_subcol_field=use_subcol_microp)
    end if
-   call outfld('MNUCCDO',     mnuccdo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MNUCCDOhet',  mnuccdohet,  psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MNUCCRO',     mnuccro,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('PRACSO',      pracso ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MELTSDT',     meltsdt,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FRZRDT',      frzrdt ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MNUCCDO',     mnuccdo,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MNUCCDOhet',  mnuccdohet,  pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MNUCCRO',     mnuccro,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('PRACSO',      pracso ,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MELTSDT',     meltsdt,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FRZRDT',      frzrdt ,     pcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FICE',        nfice,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
 
    if (micro_mg_version > 1) then
-      call outfld('UMR',      umr,         psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-      call outfld('UMS',      ums,         psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+      call outfld('UMR',      umr,         pcols, lchnk, avg_subcol_field=use_subcol_microp)
+      call outfld('UMS',      ums,         pcols, lchnk, avg_subcol_field=use_subcol_microp)
    end if
 
    if (.not. (micro_mg_version == 1 .and. micro_mg_sub_version == 0)) then
-      call outfld('QCRAT',    qcrat,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+      call outfld('QCRAT',    qcrat,       pcols, lchnk, avg_subcol_field=use_subcol_microp)
    end if
 
    ! Example subcolumn outfld call

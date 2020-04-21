@@ -303,7 +303,7 @@ contains
     ncol  = state%ncol
     lchnk = state%lchnk
 
-    call physics_ptend_init(ptend, state%psetcols, 'radheat', ls=.true.)
+    call physics_ptend_init(ptend, 'radheat', ls=.true.)
 
 ! WACCM interactive heating rate
     if (waccm_heating) then

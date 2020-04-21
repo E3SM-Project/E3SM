@@ -60,7 +60,6 @@ module physics_types
      integer                                     :: &
           lchnk,                &! chunk index
           ngrdcol,              &! -- Grid        -- number of active columns (on the grid)
-          psetcols=0,           &! --             -- max number of columns set - if subcols = pcols*psubcols, else = pcols
           ncol=0                 ! --             -- sum of nsubcol for all ngrdcols - number of active columns
      real(r8), dimension(:), allocatable         :: &
           lat,     &! latitude (radians)
@@ -115,8 +114,6 @@ module physics_types
 !-------------------------------------------------------------------------------
   type physics_tend
 
-     integer   ::   psetcols=0 ! max number of columns set- if subcols = pcols*psubcols, else = pcols
-
      real(r8), dimension(:,:),allocatable        :: dtdt, dudt, dvdt
      real(r8), dimension(:),  allocatable        :: flx_net
      real(r8), dimension(:),  allocatable        :: &
@@ -127,8 +124,6 @@ module physics_types
 !-------------------------------------------------------------------------------
 ! This is for tendencies returned from individual parameterizations
   type physics_ptend
-
-     integer   ::   psetcols=0 ! max number of columns set- if subcols = pcols*psubcols, else = pcols
 
      character*24 :: name    ! name of parameterization which produced tendencies.
 
@@ -168,12 +163,11 @@ module physics_types
 !===============================================================================
 contains
 !===============================================================================
-  subroutine physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, psetcols)
+  subroutine physics_type_alloc(phys_state, phys_tend, begchunk, endchunk)
     implicit none
     type(physics_state), pointer :: phys_state(:)
     type(physics_tend), pointer :: phys_tend(:)
     integer, intent(in) :: begchunk, endchunk
-    integer, intent(in) :: psetcols
     
     integer :: ierr=0, lchnk
     type(physics_state), pointer :: state
@@ -186,7 +180,7 @@ contains
     end if
 
     do lchnk=begchunk,endchunk
-       call physics_state_alloc(phys_state(lchnk),lchnk,pcols)
+       call physics_state_alloc(phys_state(lchnk),lchnk)
     end do
 
     allocate(phys_tend(begchunk:endchunk), stat=ierr)
@@ -196,7 +190,7 @@ contains
     end if
 
     do lchnk=begchunk,endchunk
-       call physics_tend_alloc(phys_tend(lchnk),phys_state(lchnk)%psetcols)
+       call physics_tend_alloc(phys_tend(lchnk))
     end do
 
   end subroutine physics_type_alloc
@@ -232,7 +226,7 @@ contains
 
     integer :: ixo, ixo2, ixh, ixh2, ixn    ! indices for O, O2, H2, and N
 
-    real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
+    real(r8) :: zvirv(pcols,pver)  ! Local zvir array pointer
 
     real(r8),allocatable :: cpairv_loc(:,:,:)
     real(r8),allocatable :: rairv_loc(:,:,:)
@@ -258,47 +252,46 @@ contains
     ! If no fields are set, then return
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
        ptend%name  = "ptend_return"
-       ptend%psetcols = 0
        return
     end if
 
     !-----------------------------------------------------------------------
     ! Check that the state/tend/ptend are all dimensioned with the same number of columns
-    if (state%psetcols /= ptend%psetcols) then
-       call endrun('ERROR in physics_update_main with ptend%name='//trim(ptend%name) &
-            //': state and ptend must have the same number of psetcols.')
-    end if
+!pw    if (state%psetcols /= ptend%psetcols) then
+!pw       call endrun('ERROR in physics_update_main with ptend%name='//trim(ptend%name) &
+!pw            //': state and ptend must have the same number of psetcols.')
+!Pw    end if
 
-    if (present(tend)) then
-       if (state%psetcols /= tend%psetcols) then
-          call endrun('ERROR in physics_update_main with ptend%name='//trim(ptend%name) &
-               //': state and tend must have the same number of psetcols.')
-       end if
-    end if
+!pw    if (present(tend)) then
+!pw       if (state%psetcols /= tend%psetcols) then
+!pw          call endrun('ERROR in physics_update_main with ptend%name='//trim(ptend%name) &
+!pw               //': state and tend must have the same number of psetcols.')
+!pw       end if
+!pw    end if
 
     call t_startf ('physics_update_main')
     !-----------------------------------------------------------------------
     ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, the cpairv is the correct size and just copy
     ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(pcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('physics_update_main: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
-    if (state%psetcols == pcols) then
-       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+!pw       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw       cpairv_loc(:,:,:) = cpair
+!pw    else
+!pw       call endrun('physics_update_main: cpairv is not allowed to vary when subcolumns are turned on')
+!pw    end if
+!pw    if (state%psetcols == pcols) then
+       allocate (rairv_loc(pcols,pver,begchunk:endchunk))
        rairv_loc(:,:,:) = rairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rair
-    else
-       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
-    end if
+!pw    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
+!pw       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+!pw       rairv_loc(:,:,:) = rair
+!pw    else
+!pw       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
+!pw    end if
 
     !-----------------------------------------------------------------------
     call phys_getopts(state_debug_checks_out=state_debug_checks)
@@ -345,10 +338,10 @@ contains
              name = trim(ptend%name) // '/' // trim(cnst_name(m))
 !!== KZ_WATCON 
              if(use_mass_borrower) then 
-                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
-                call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
+                call qneg3(trim(name), state%lchnk, ncol, pcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
+                call massborrow(trim(name), state%lchnk, ncol, m, m, qmin(m), state%q(1,1,m), state%pdel)
              else
-                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
+                call qneg3(trim(name), state%lchnk, ncol, pcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
              end if 
 !!== KZ_WATCON 
           else
@@ -467,7 +460,6 @@ contains
     ptend%ls    = .false.
     ptend%lu    = .false.
     ptend%lv    = .false.
-    ptend%psetcols = 0
     call t_stopf ('physics_update_main')
 
   contains
@@ -707,36 +699,33 @@ contains
 
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
-    integer :: psetcols                            ! maximum number of columns
     integer :: ierr = 0
 
 !-----------------------------------------------------------------------
     call t_startf('physics_ptend_sum')
-    if (ptend%psetcols /= ptend_sum%psetcols) then
-       call endrun('physics_ptend_sum error: ptend and ptend_sum must have the same value for psetcols')
-    end if
+!pw    if (ptend%psetcols /= ptend_sum%psetcols) then
+!pw       call endrun('physics_ptend_sum error: ptend and ptend_sum must have the same value for psetcols')
+!pw    end if
       
-    if (ncol > ptend_sum%psetcols) then
-       call endrun('physics_ptend_sum error: ncol must be less than or equal to psetcols')
+    if (ncol > pcols) then
+       call endrun('physics_ptend_sum error: ncol must be less than or equal to pcols')
     end if
     
-    psetcols = ptend_sum%psetcols
-      
     ptend_sum%top_level = ptend%top_level
     ptend_sum%bot_level = ptend%bot_level
 
 ! Update u,v fields
     if(ptend%lu) then
        if (.not. allocated(ptend_sum%u)) then 
-          allocate(ptend_sum%u(psetcols,pver), stat=ierr)
+          allocate(ptend_sum%u(pcols,pver), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%u')
           ptend_sum%u=0.0_r8
 
-          allocate(ptend_sum%taux_srf(psetcols), stat=ierr)
+          allocate(ptend_sum%taux_srf(pcols), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%taux_srf')
           ptend_sum%taux_srf=0.0_r8
 
-          allocate(ptend_sum%taux_top(psetcols), stat=ierr)
+          allocate(ptend_sum%taux_top(pcols), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%taux_top')
           ptend_sum%taux_top=0.0_r8
        end if
@@ -755,15 +744,15 @@ contains
 
     if(ptend%lv) then
        if (.not. allocated(ptend_sum%v)) then 
-          allocate(ptend_sum%v(psetcols,pver), stat=ierr)
+          allocate(ptend_sum%v(pcols,pver), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%v')
           ptend_sum%v=0.0_r8
 
-          allocate(ptend_sum%tauy_srf(psetcols), stat=ierr)
+          allocate(ptend_sum%tauy_srf(pcols), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%tauy_srf')
           ptend_sum%tauy_srf=0.0_r8
 
-          allocate(ptend_sum%tauy_top(psetcols), stat=ierr)
+          allocate(ptend_sum%tauy_top(pcols), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%tauy_top')
           ptend_sum%tauy_top=0.0_r8
        end if
@@ -783,15 +772,15 @@ contains
 
     if(ptend%ls) then
        if (.not. allocated(ptend_sum%s)) then 
-          allocate(ptend_sum%s(psetcols,pver), stat=ierr)
+          allocate(ptend_sum%s(pcols,pver), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%s')
           ptend_sum%s=0.0_r8
 
-          allocate(ptend_sum%hflux_srf(psetcols), stat=ierr)
+          allocate(ptend_sum%hflux_srf(pcols), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%hflux_srf')
           ptend_sum%hflux_srf=0.0_r8
 
-          allocate(ptend_sum%hflux_top(psetcols), stat=ierr)
+          allocate(ptend_sum%hflux_top(pcols), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%hflux_top')
           ptend_sum%hflux_top=0.0_r8
        end if
@@ -811,15 +800,15 @@ contains
     if (any(ptend%lq(:))) then
 
        if (.not. allocated(ptend_sum%q)) then
-          allocate(ptend_sum%q(psetcols,pver,pcnst), stat=ierr)
+          allocate(ptend_sum%q(pcols,pver,pcnst), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%q')
           ptend_sum%q=0.0_r8
 
-          allocate(ptend_sum%cflx_srf(psetcols,pcnst), stat=ierr)
+          allocate(ptend_sum%cflx_srf(pcols,pcnst), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%cflx_srf')
           ptend_sum%cflx_srf=0.0_r8
   
-          allocate(ptend_sum%cflx_top(psetcols,pcnst), stat=ierr)
+          allocate(ptend_sum%cflx_top(pcols,pcnst), stat=ierr)
           if ( ierr /= 0 ) call endrun('physics_ptend_sum error: allocation error for ptend_sum%cflx_top')
           ptend_sum%cflx_top=0.0_r8
        end if
@@ -928,7 +917,7 @@ subroutine physics_ptend_copy(ptend, ptend_cp)
    ptend_cp%lv = ptend%lv
    ptend_cp%lq = ptend%lq
 
-   call physics_ptend_alloc(ptend_cp, ptend%psetcols)
+   call physics_ptend_alloc(ptend_cp)
 
    ptend_cp%top_level = ptend%top_level
    ptend_cp%bot_level = ptend%bot_level
@@ -1000,7 +989,7 @@ end subroutine physics_ptend_copy
   end subroutine physics_ptend_reset
 
 !===============================================================================
-  subroutine physics_ptend_init(ptend, psetcols, name, ls, lu, lv, lq)
+  subroutine physics_ptend_init(ptend, name, ls, lu, lv, lq)
 !-----------------------------------------------------------------------
 ! Allocate the fields in the structure which are specified.
 ! Initialize the parameterization tendency structure to "empty"
@@ -1008,7 +997,6 @@ end subroutine physics_ptend_copy
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(out)    :: ptend    ! Parameterization tendencies
-    integer, intent(in)                 :: psetcols ! maximum number of columns
     character(len=*)                    :: name     ! optional name of parameterization which produced tendencies.
     logical, optional                   :: ls       ! if true, then fields to support dsdt are allocated
     logical, optional                   :: lu       ! if true, then fields to support dudt are allocated
@@ -1022,7 +1010,6 @@ end subroutine physics_ptend_copy
     end if
 
     ptend%name     = name
-    ptend%psetcols =  psetcols
 
     ! If no fields being stored, initialize all values to appropriate nulls and return
     if (.not. present(ls) .and. .not. present(lu) .and. .not. present(lv) .and. .not. present(lq) ) then
@@ -1060,7 +1047,7 @@ end subroutine physics_ptend_copy
        ptend%lq(:) = .false.
     end if
 
-    call physics_ptend_alloc(ptend, psetcols)
+    call physics_ptend_alloc(ptend)
 
     call physics_ptend_reset(ptend)
 !pw call t_stopf('physics_ptend_init')
@@ -1085,9 +1072,9 @@ end subroutine physics_ptend_copy
 
     !-----------------------------------------------------------------------
     ! get_ncols_p requires a state which does not have sub-columns
-    if (phys_state%psetcols .ne. pcols) then
-       call endrun('physics_state_set_grid: cannot pass in a state which has sub-columns')
-    end if
+!pw    if (phys_state%psetcols .ne. pcols) then
+!pw       call endrun('physics_state_set_grid: cannot pass in a state which has sub-columns')
+!pw    end if
 
     ncol = get_ncols_p(lchnk)
 
@@ -1212,9 +1199,9 @@ end subroutine physics_ptend_copy
     ! verify that the dycore is FV
     if (.not. dycore_is('LR') ) return
 
-    if (state%psetcols .ne. pcols) then
-       call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
-    end if
+!pw    if (state%psetcols .ne. pcols) then
+!pw       call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
+!pw    end if
 
     lchnk = state%lchnk
     ncol  = state%ncol
@@ -1298,11 +1285,10 @@ end subroutine physics_ptend_copy
     integer i, k, m, ncol
 
     ! Allocate state_out with same subcol dimension as state_in
-    call physics_state_alloc ( state_out, state_in%lchnk, state_in%psetcols)
+    call physics_state_alloc ( state_out, state_in%lchnk)
 
     ncol = state_in%ncol
     
-    state_out%psetcols = state_in%psetcols
     state_out%ngrdcol  = state_in%ngrdcol
     state_out%lchnk    = state_in%lchnk
     state_out%ncol     = state_in%ncol  
@@ -1383,7 +1369,7 @@ end subroutine physics_ptend_copy
     type(physics_tend), intent(out) :: tend_out
 
     ! Allocate tend_out
-    call physics_tend_alloc(tend_out,tend_in%psetcols)
+    call physics_tend_alloc(tend_out)
 
     tend_out%dtdt    (:pcols,:pver) = tend_in%dtdt    (:pcols,:pver)
     tend_out%dudt    (:pcols,:pver) = tend_in%dudt    (:pcols,:pver)
@@ -1391,7 +1377,6 @@ end subroutine physics_ptend_copy
     tend_out%te_tnd  (:pcols)       = tend_in%te_tnd  (:pcols)
     tend_out%tw_tnd  (:pcols)       = tend_in%tw_tnd  (:pcols)
     tend_out%flx_net (:pcols)       = tend_in%flx_net (:pcols)
-    tend_out%psetcols               = tend_in%psetcols
 
   end subroutine physics_tend_copy
   
@@ -1529,7 +1514,7 @@ end subroutine set_dry_to_wet
 
 !===============================================================================
 
-subroutine physics_state_alloc(state,lchnk,psetcols)
+subroutine physics_state_alloc(state,lchnk)
 
   use infnan, only : inf, assignment(=)
 
@@ -1538,12 +1523,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   type(physics_state), intent(inout) :: state
   integer,intent(in)                 :: lchnk
 
-  integer, intent(in)                :: psetcols
-
   integer :: ierr=0, i
 
   state%lchnk    = lchnk
-  state%psetcols = psetcols
   state%ngrdcol  = get_ncols_p(lchnk)  ! Number of grid columns
 
   !----------------------------------
@@ -1553,109 +1535,109 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   !----------------------------------
 
-  allocate(state%lat(psetcols), stat=ierr)
+  allocate(state%lat(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lat')
   
-  allocate(state%lon(psetcols), stat=ierr)
+  allocate(state%lon(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lon')
   
-  allocate(state%ps(psetcols), stat=ierr)
+  allocate(state%ps(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ps')
   
-  allocate(state%psdry(psetcols), stat=ierr)
+  allocate(state%psdry(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%psdry')
   
-  allocate(state%phis(psetcols), stat=ierr)
+  allocate(state%phis(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%phis')
   
-  allocate(state%ulat(psetcols), stat=ierr)
+  allocate(state%ulat(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ulat')
   
-  allocate(state%ulon(psetcols), stat=ierr)
+  allocate(state%ulon(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ulon')
   
-  allocate(state%t(psetcols,pver), stat=ierr)
+  allocate(state%t(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%t')
   
-  allocate(state%u(psetcols,pver), stat=ierr)
+  allocate(state%u(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%u')
   
-  allocate(state%v(psetcols,pver), stat=ierr)
+  allocate(state%v(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%v')
   
-  allocate(state%s(psetcols,pver), stat=ierr)
+  allocate(state%s(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%s')
   
-  allocate(state%omega(psetcols,pver), stat=ierr)
+  allocate(state%omega(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%omega')
   
-  allocate(state%pmid(psetcols,pver), stat=ierr)
+  allocate(state%pmid(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pmid')
   
-  allocate(state%pmiddry(psetcols,pver), stat=ierr)
+  allocate(state%pmiddry(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pmiddry')
   
-  allocate(state%pdel(psetcols,pver), stat=ierr)
+  allocate(state%pdel(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pdel')
   
-  allocate(state%pdeldry(psetcols,pver), stat=ierr)
+  allocate(state%pdeldry(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pdeldry')
   
-  allocate(state%rpdel(psetcols,pver), stat=ierr)
+  allocate(state%rpdel(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%rpdel')
   
-  allocate(state%rpdeldry(psetcols,pver), stat=ierr)
+  allocate(state%rpdeldry(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%rpdeldry')
   
-  allocate(state%lnpmid(psetcols,pver), stat=ierr)
+  allocate(state%lnpmid(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lnpmid')
   
-  allocate(state%lnpmiddry(psetcols,pver), stat=ierr)
+  allocate(state%lnpmiddry(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lnpmiddry')
   
-  allocate(state%exner(psetcols,pver), stat=ierr)
+  allocate(state%exner(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%exner')
   
-  allocate(state%zm(psetcols,pver), stat=ierr)
+  allocate(state%zm(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%zm')
   
-  allocate(state%q(psetcols,pver,pcnst), stat=ierr)
+  allocate(state%q(pcols,pver,pcnst), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q')
   
-  allocate(state%pint(psetcols,pver+1), stat=ierr)
+  allocate(state%pint(pcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pint')
   
-  allocate(state%pintdry(psetcols,pver+1), stat=ierr)
+  allocate(state%pintdry(pcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pintdry')
   
-  allocate(state%lnpint(psetcols,pver+1), stat=ierr)
+  allocate(state%lnpint(pcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lnpint')
   
-  allocate(state%lnpintdry(psetcols,pver+1), stat=ierr)
+  allocate(state%lnpintdry(pcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lnpintdry')
   
-  allocate(state%zi(psetcols,pver+1), stat=ierr)
+  allocate(state%zi(pcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%zi')
   
-  allocate(state%te_ini(psetcols), stat=ierr)
+  allocate(state%te_ini(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_ini')
   
-  allocate(state%te_cur(psetcols), stat=ierr)
+  allocate(state%te_cur(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
   
-  allocate(state%tw_ini(psetcols), stat=ierr)
+  allocate(state%tw_ini(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_ini')
   
-  allocate(state%tw_cur(psetcols), stat=ierr)
+  allocate(state%tw_cur(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_cur')
   
-  allocate(state%latmapback(psetcols), stat=ierr)
+  allocate(state%latmapback(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%latmapback')
   
-  allocate(state%lonmapback(psetcols), stat=ierr)
+  allocate(state%lonmapback(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lonmapback')
   
-  allocate(state%cid(psetcols), stat=ierr)
+  allocate(state%cid(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cid')
 
   state%lat(:) = inf
@@ -1813,35 +1795,31 @@ end subroutine physics_state_dealloc
 
 !===============================================================================
 
-subroutine physics_tend_alloc(tend,psetcols)
+subroutine physics_tend_alloc(tend)
 
   use infnan, only : inf, assignment(=)
 ! allocate the individual tend components
 
   type(physics_tend), intent(inout)  :: tend
 
-  integer, intent(in)                :: psetcols
-
   integer :: ierr = 0
 
-  tend%psetcols = psetcols
-
-  allocate(tend%dtdt(psetcols,pver), stat=ierr)
+  allocate(tend%dtdt(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%dtdt')
 
-  allocate(tend%dudt(psetcols,pver), stat=ierr)
+  allocate(tend%dudt(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%dudt')
 
-  allocate(tend%dvdt(psetcols,pver), stat=ierr)
+  allocate(tend%dvdt(pcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%dvdt')
 
-  allocate(tend%flx_net(psetcols), stat=ierr)
+  allocate(tend%flx_net(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%flx_net')
 
-  allocate(tend%te_tnd(psetcols), stat=ierr)
+  allocate(tend%te_tnd(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%te_tnd')
 
-  allocate(tend%tw_tnd(psetcols), stat=ierr)
+  allocate(tend%tw_tnd(pcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%tw_tnd')
 
   tend%dtdt(:,:) = inf
@@ -1860,7 +1838,6 @@ subroutine physics_tend_dealloc(tend)
 ! deallocate the individual tend components
 
   type(physics_tend), intent(inout)  :: tend
-  integer :: psetcols
   integer :: ierr = 0
 
   deallocate(tend%dtdt, stat=ierr)
@@ -1884,59 +1861,55 @@ end subroutine physics_tend_dealloc
 
 !===============================================================================
 
-subroutine physics_ptend_alloc(ptend,psetcols)
+subroutine physics_ptend_alloc(ptend)
 
 ! allocate the individual ptend components
 
   type(physics_ptend), intent(inout) :: ptend
 
-  integer, intent(in)                :: psetcols
-
   integer :: ierr = 0
 
-  ptend%psetcols = psetcols
-
   if (ptend%ls) then
-     allocate(ptend%s(psetcols,pver), stat=ierr)
+     allocate(ptend%s(pcols,pver), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%s')
 
-     allocate(ptend%hflux_srf(psetcols), stat=ierr)
+     allocate(ptend%hflux_srf(pcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%hflux_srf')
 
-     allocate(ptend%hflux_top(psetcols), stat=ierr)
+     allocate(ptend%hflux_top(pcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%hflux_top')
   end if
 
   if (ptend%lu) then 
-     allocate(ptend%u(psetcols,pver), stat=ierr)
+     allocate(ptend%u(pcols,pver), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%u')
 
-     allocate(ptend%taux_srf(psetcols), stat=ierr)
+     allocate(ptend%taux_srf(pcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%taux_srf')
 
-     allocate(ptend%taux_top(psetcols), stat=ierr)
+     allocate(ptend%taux_top(pcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%taux_top')
   end if
 
   if (ptend%lv) then 
-     allocate(ptend%v(psetcols,pver), stat=ierr)
+     allocate(ptend%v(pcols,pver), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%v')
 
-     allocate(ptend%tauy_srf(psetcols), stat=ierr)
+     allocate(ptend%tauy_srf(pcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%tauy_srf')
 
-     allocate(ptend%tauy_top(psetcols), stat=ierr)
+     allocate(ptend%tauy_top(pcols), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%tauy_top')
   end if
 
   if (any(ptend%lq)) then 
-     allocate(ptend%q(psetcols,pver,pcnst), stat=ierr)
+     allocate(ptend%q(pcols,pver,pcnst), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%q')
 
-     allocate(ptend%cflx_srf(psetcols,pcnst), stat=ierr)
+     allocate(ptend%cflx_srf(pcols,pcnst), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%cflx_srf')
 
-     allocate(ptend%cflx_top(psetcols,pcnst), stat=ierr)
+     allocate(ptend%cflx_top(pcols,pcnst), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%cflx_top')
   end if
 
@@ -1950,8 +1923,6 @@ subroutine physics_ptend_dealloc(ptend)
 
   type(physics_ptend), intent(inout) :: ptend
   integer :: ierr = 0
-
-  ptend%psetcols = 0
 
   if (allocated(ptend%s)) deallocate(ptend%s, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_ptend_dealloc error: deallocation error for ptend%s')

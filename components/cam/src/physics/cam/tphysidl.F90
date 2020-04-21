@@ -116,7 +116,7 @@ subroutine tphysidl(ztodt, state, tend)
    end do
 
    ! initialize individual parameterization tendencies
-   call physics_ptend_init(ptend, state%psetcols, 'tphysidl', ls=.true., lu=.true., lv=.true.)
+   call physics_ptend_init(ptend, 'tphysidl', ls=.true., lu=.true., lv=.true.)
 
    if (idlflag == 1) then
 !

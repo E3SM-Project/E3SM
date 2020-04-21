@@ -50,7 +50,7 @@ subroutine qbo_relax( state, pbuf, ptend )
   type(physics_ptend), intent(out)   :: ptend                ! individual parameterization tendencies
 
   ! Stub; do nothing except init unused ptend.
-  call physics_ptend_init(ptend, state%psetcols, 'qbo_stub')
+  call physics_ptend_init(ptend, 'qbo_stub')
 
 end subroutine qbo_relax
 

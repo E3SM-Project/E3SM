@@ -260,9 +260,9 @@ contains
          end if
       end if
 
-      if (state_sc%psetcols /= (pcols * psubcols)) then
-        call endrun('subcol_gen error: state_sc%psetcols must be pcols * psubcols')
-      end if
+!pw      if (state_sc%psetcols /= (pcols * psubcols)) then
+!pw        call endrun('subcol_gen error: state_sc%psetcols must be pcols * psubcols')
+!pw      end if
 
       select case(trim(subcol_scheme_gen))
          case('tstcp')
@@ -435,7 +435,7 @@ contains
 
       !-----------------------------------------------------------------------
 
-      call physics_ptend_init(ptend, pcols, name=ptend_sc%name, ls=ptend_sc%ls, lu=ptend_sc%lu,  &
+      call physics_ptend_init(ptend, name=ptend_sc%name, ls=ptend_sc%ls, lu=ptend_sc%lu,  &
            lv=ptend_sc%lv, lq=ptend_sc%lq)
 
       select case(trim(subcol_scheme_avg))

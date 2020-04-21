@@ -404,7 +404,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    lq(:) = .FALSE.
    lq(1) = .TRUE.
-   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq)! initialize local ptend type
+   call physics_ptend_init(ptend_loc, 'zm_convr', ls=.true., lq=lq)! initialize local ptend type
 
 !
 ! Associate pointers with physics buffer fields
@@ -514,7 +514,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('PCONVB  ',pconb          ,pcols   ,lchnk   )
    call outfld('MAXI  ',maxgsav          ,pcols   ,lchnk   )
 
-  call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
+  call physics_ptend_init(ptend_all, 'zm_conv_tend')
 
   ! add tendency from this process to tendencies from other processes
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
@@ -525,7 +525,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
   ! initialize ptend for next process
   lq(:) = .FALSE.
   lq(1) = .TRUE.
-  call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
+  call physics_ptend_init(ptend_loc, 'zm_conv_evap', ls=.true., lq=lq)
 
 !
 ! Determine the phase of the precipitation produced and add latent heat of fusion
@@ -583,7 +583,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
   if ( .not. cam_physpkg_is('cam3')) then
 
-     call physics_ptend_init(ptend_loc, state1%psetcols, 'momtran', ls=.true., lu=.true., lv=.true.)
+     call physics_ptend_init(ptend_loc, 'momtran', ls=.true., lu=.true., lv=.true.)
 
      winds(:ncol,:pver,1) = state1%u(:ncol,:pver)
      winds(:ncol,:pver,2) = state1%v(:ncol,:pver)
@@ -633,7 +633,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    lq(:)  = .FALSE.
    lq(2:) = cnst_is_convtran1(2:)
-   call physics_ptend_init(ptend_loc, state1%psetcols, 'convtran1', lq=lq)
+   call physics_ptend_init(ptend_loc, 'convtran1', lq=lq)
 
 
    ! dpdry is not used in this call to convtran since the cloud liquid and ice mixing
@@ -717,7 +717,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
 !
   lq(:) = .FALSE.
   lq(:) = .not. cnst_is_convtran1(:)
-  call physics_ptend_init(ptend, state%psetcols, 'convtran2', lq=lq )
+  call physics_ptend_init(ptend, 'convtran2', lq=lq )
 
 !
 ! Associate pointers with physics buffer fields

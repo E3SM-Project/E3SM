@@ -278,7 +278,7 @@ contains
 
 
     if (.not. aoa_tracers_flag) then
-       call physics_ptend_init(ptend,state%psetcols,'aoa_trc_ts') !Initialize an empty ptend for use with physics_update
+       call physics_ptend_init(ptend,'aoa_trc_ts') !Initialize an empty ptend for use with physics_update
        return
     end if
 
@@ -287,7 +287,7 @@ contains
     lq(ixaoa2) = .TRUE.
     lq(ixht)   = .TRUE.
     lq(ixvt)   = .TRUE.
-    call physics_ptend_init(ptend,state%psetcols, 'aoa_tracers', lq=lq)
+    call physics_ptend_init(ptend, 'aoa_tracers', lq=lq)
 
     nstep = get_nstep()
     lchnk = state%lchnk

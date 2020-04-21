@@ -1219,7 +1219,7 @@ subroutine unicon_cam_tend(dt, state, cam_in, sgh30, &
       
    ! Initialize output ptend
    lq(:) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'unicon', ls=.true., lu=.true., lv=.true., lq=lq)
+   call physics_ptend_init(ptend, 'unicon', ls=.true., lu=.true., lv=.true., lq=lq)
 
    ! ----------------------------------------------------- !
    ! Treatment of reserved liquid-ice water for CAM        !

@@ -410,7 +410,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    lv = .true.
    ls = .true.
    lq(:) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'crm', lu=lu, lv=lv, ls=ls, lq=lq)
+   call physics_ptend_init(ptend, 'crm', lu=lu, lv=lv, ls=ls, lq=lq)
    
    !------------------------------------------------------------------------------------------------
    ! Initialize CRM state (nullify pointers, allocate memory, etc)
@@ -1079,7 +1079,7 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    ! initialize ptend
    lq(:) = .false.
    lq(1) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'MMF_FLUX_BYPASS', &
+   call physics_ptend_init(ptend, 'MMF_FLUX_BYPASS', &
                            lu=.false., lv=.false., ls=.true., lq=lq)
 
    ! apply fluxes to bottom layer
