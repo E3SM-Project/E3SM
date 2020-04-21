@@ -1186,7 +1186,7 @@ contains
           call t_startf('betr balchk')
           call ep_betr%MassBalanceCheck(bounds_clump)
           call t_stopf('betr balchk')
-          call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
+          call ep_betr%HistRetrieval(filter(nc)%num_nolakec, filter(nc)%nolakec)
 
           if(do_betr_bgc_type('type1_bgc') .or. do_betr_bgc_type('type2_bgc'))then
 
