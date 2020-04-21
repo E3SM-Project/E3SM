@@ -30,7 +30,7 @@ module lin_strat_chem
   public :: do_lin_strat_chem
   public :: linoz_readnl   ! read linoz_nl namelist
 
-  integer :: o3lnz_ndx
+  integer :: o3_ndx, o3lnz_ndx
 
   logical :: do_lin_strat_chem
 
@@ -130,10 +130,11 @@ end subroutine linoz_readnl
     !
     ! find index of ozone
     !
+    o3_ndx =  get_spc_ndx('O3')
     o3lnz_ndx =  get_spc_ndx('O3LNZ')
 
     do_lin_strat_chem = has_linoz_data
-     if ( index_o3 <= 0 ) then
+     if ( o3_ndx <= 0 ) then
        write(iulog,*) ' No ozone in the chemical mechanism, skipping lin_strat_chem'
        do_lin_strat_chem = .false.
        return
