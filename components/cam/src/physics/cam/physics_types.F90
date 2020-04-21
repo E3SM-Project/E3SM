@@ -37,6 +37,7 @@ module physics_types
   public physics_dme_adjust  ! adjust dry mass and energy for change in water
                              ! cannot be applied to eul or sld dycores
   public physics_state_copy  ! copy a physics_state object
+  public physics_tend_copy   ! copy a physics_tend object
   public physics_ptend_copy  ! copy a physics_ptend object
   public physics_ptend_sum   ! accumulate physics_ptend objects
   public physics_ptend_scale ! Multiply physics_ptend objects by a constant factor.
@@ -1370,6 +1371,30 @@ end subroutine physics_ptend_copy
     end do
 
   end subroutine physics_state_copy
+!===============================================================================
+
+  subroutine physics_tend_copy(tend_in, tend_out)
+    use ppgrid, only: pcols, pver, pverp
+
+    implicit none
+
+    ! Interface arguments
+    type(physics_tend), intent(in)  :: tend_in
+    type(physics_tend), intent(out) :: tend_out
+
+    ! Allocate tend_out
+    call physics_tend_alloc(tend_out,tend_in%psetcols)
+
+    tend_out%dtdt    (:pcols,:pver) = tend_in%dtdt    (:pcols,:pver)
+    tend_out%dudt    (:pcols,:pver) = tend_in%dudt    (:pcols,:pver)
+    tend_out%dvdt    (:pcols,:pver) = tend_in%dvdt    (:pcols,:pver)
+    tend_out%te_tnd  (:pcols)       = tend_in%te_tnd  (:pcols)
+    tend_out%tw_tnd  (:pcols)       = tend_in%tw_tnd  (:pcols)
+    tend_out%flx_net (:pcols)       = tend_in%flx_net (:pcols)
+    tend_out%psetcols               = tend_in%psetcols
+
+  end subroutine physics_tend_copy
+  
 !===============================================================================
 
   subroutine physics_tend_init(tend)
