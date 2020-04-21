@@ -30,8 +30,7 @@ module lin_strat_chem
   public :: do_lin_strat_chem
   public :: linoz_readnl   ! read linoz_nl namelist
 
-  integer :: index_o3
-!  integer :: index_o3l
+  integer :: o3lnz_ndx
 
   logical :: do_lin_strat_chem
 
@@ -131,12 +130,10 @@ end subroutine linoz_readnl
     !
     ! find index of ozone
     !
-    index_o3  =  get_spc_ndx('O3')
-!    index_o3l =  get_spc_ndx('O3L') ! introduce O3L that couples to parameterized surface sink
+    o3lnz_ndx =  get_spc_ndx('O3LNZ')
 
     do_lin_strat_chem = has_linoz_data
-!    if ( index_o3 <= 0 .and. index_o3l <=0 ) then !added index_o3l
-     if ( index_o3 <= 0 ) then !added index_o3l
+     if ( index_o3 <= 0 ) then
        write(iulog,*) ' No ozone in the chemical mechanism, skipping lin_strat_chem'
        do_lin_strat_chem = .false.
        return
@@ -369,7 +366,7 @@ end subroutine linoz_readnl
     return
   end subroutine lin_strat_chem_solve
 
-  subroutine lin_strat_sfcsink( ncol, lchnk, o3l_vmr, delta_t, pdel)
+  subroutine lin_strat_sfcsink( ncol, lchnk, o3lnz_vmr, delta_t, pdel)
 
     use ppgrid,        only : pcols, pver
 
@@ -386,7 +383,7 @@ end subroutine linoz_readnl
 
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
     integer,  intent(in)                           :: lchnk               ! chunk index    
-    real(r8), intent(inout), dimension(ncol ,pver) :: o3l_vmr             ! ozone volume mixing ratio
+    real(r8), intent(inout), dimension(ncol ,pver) :: o3lnz_vmr           ! ozone volume mixing ratio
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)    
     real(r8), intent(in)                           :: pdel(ncol,pver)     ! pressure delta about midpoints (Pa)  
     
@@ -410,22 +407,18 @@ end subroutine linoz_readnl
        mass(:ncol,k) = pdel(:ncol,k) * rgrav  ! air mass in kg/m2
     enddo
     
-    efactor  = (1.d0 - exp(-delta_t/o3_tau))
+    efactor  = 1.d0 - exp(-delta_t/o3_tau)
     LOOP_COL: do i=1,ncol
 
        do3mass(i) =0._r8
 
        LOOP_SFC: do k= pver, pver-o3_lbl+1, -1
   
-          o3l_old = o3l_vmr(i,k)  !vmr
-   
+          o3l_old = o3lnz_vmr(i,k)  !vmr
           do3 =  (o3_sfc - o3l_old)* efactor !vmr
-
-          o3l_new  = o3l_old + do3     
-
+          o3l_new  = o3l_old + do3
           do3mass(i) = do3mass(i) + do3* mass(i,k) * mw_o3/mw_air  ! loss in kg/m2 summed over boundary layers within one time step   
-
-          o3l_vmr(i,k) = o3l_new
+          o3lnz_vmr(i,k) = o3l_new
 
        end do  LOOP_SFC
     End do  Loop_COL

@@ -38,8 +38,8 @@ SPECIES
   MVKMACR -> C4H6O
 * MVKMACR = sum of MVK -> CH2CHCOCH3 + MACR -> CH2CCH3CHO
   MVKO2 -> C4H7O4
-  e90 -> O3
-  O3S -> O3
+  E90 -> O3
+  O3LNZ -> O3
 
 
 * MAM4 species
@@ -94,7 +94,7 @@ Solution Classes
 
  Explicit
    CO, CH4, C2H6, C3H8, CH3COCH3
-   e90, O3S
+   E90, O3LNZ
  End Explicit
 
  Implicit
@@ -232,7 +232,7 @@ CHEMISTRY
 [ucih2]  NO3   -> HNO3                            ; 0.03E+00
 [ucih3]  HO2   ->                                 ; 0.10E+00
 
-[usr_e90]  e90 ->                                ; 1.286E-7, 0.
+[usr_e90]  E90 ->                                ; 1.286E-7, 0.
 
 * MAM4 chemistry below
               DMS + OH -> SO2                     ; 9.600E-12, -234
