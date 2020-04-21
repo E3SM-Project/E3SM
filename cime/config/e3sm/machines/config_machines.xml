@@ -798,7 +798,7 @@
         <command name="load">sems-netcdf/4.4.1/exo</command>
       </modules>
     </module_system>
-    <RUNDIR>/gscratch/$USER/acme_scratch/sandiatoss3/$CASE/run</RUNDIR>
+    <RUNDIR>/nscratch/$USER/acme_scratch/sandiatoss3/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <!-- complete path to a short term archiving directory -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
