@@ -40,7 +40,7 @@
       <tfile disposition="move">casename.pop.h.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.pop.h.1975-02-01-00000.nc</tfile>
       <tfile disposition="move">casename.pop.h0.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.pop.dd.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.pop.dd.1976-01-01-00000</tfile>
       <tfile disposition="ignore">casename.pop.r.1975-01-01-00000.nc</tfile>
       <tfile disposition="ignore">anothercasename.pop.r.1976-01-01-00000.nc</tfile>
     </test_file_names>

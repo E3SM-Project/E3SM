@@ -144,7 +144,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
                         scratch_root, parallel_jobs, walltime,
-                        machine, compiler, real_baseline_name, baseline_root):
+                        machine, compiler, real_baseline_name, baseline_root, update_success):
 ###############################################################################
     """
     Return True if all tests passed
@@ -234,13 +234,14 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus --no-wait -b {}".format(test_root, test_id, cdash_build_name))
 
     tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
-                                                 no_wait=not use_batch, # wait if using queue
-                                                 check_throughput=False, # don't check throughput
-                                                 check_memory=False, # don't check memory
-                                                 ignore_namelists=False, # don't ignore namelist diffs
-                                                 cdash_build_name=cdash_build_name,
-                                                 cdash_project=cdash_project,
-                                                 cdash_build_group=cdash_build_group)
+                                                      no_wait=not use_batch, # wait if using queue
+                                                      check_throughput=False, # don't check throughput
+                                                      check_memory=False, # don't check memory
+                                                      ignore_namelists=False, # don't ignore namelist diffs
+                                                      cdash_build_name=cdash_build_name,
+                                                      cdash_project=cdash_project,
+                                                      cdash_build_group=cdash_build_group,
+                                                      update_success=update_success)
 
     logging.info("TEST ARCHIVER: Waiting for archiver thread")
     archiver_thread.join()

@@ -67,7 +67,7 @@ def _build_usernl_files(case, model, comp):
                     safe_copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, keep=None):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -82,11 +82,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Remove batch scripts
     if reset or clean:
-        # clean batch script
+        # clean setup-generated files
         batch_script = get_batch_script_for_job(case.get_primary_job())
-        if os.path.exists(batch_script):
-            os.remove(batch_script)
-            logger.info("Successfully cleaned batch script {}".format(batch_script))
+        files_to_clean = [batch_script, "env_mach_specific.xml", "Macros.make", "Macros.cmake"]
+        for file_to_clean in files_to_clean:
+            if os.path.exists(file_to_clean) and not (keep and file_to_clean in keep):
+                os.remove(file_to_clean)
+                logger.info("Successfully cleaned {}".format(file_to_clean))
 
         if not test_mode:
             # rebuild the models (even on restart)
@@ -108,11 +110,16 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos)
+            reread = not os.path.isfile("env_mach_specific.xml")
+            if reread:
+                case.flush()
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
+            if reread:
+                case.read_xml()
 
         # Also write out Cmake macro file
         if not os.path.isfile("Macros.cmake"):
-            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos)
+            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
@@ -227,11 +234,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
 ###############################################################################
-def case_setup(self, clean=False, test_mode=False, reset=False):
+def case_setup(self, clean=False, test_mode=False, reset=False, keep=None):
 ###############################################################################
     caseroot, casebaseid = self.get_value("CASEROOT"), self.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(self, caseroot, clean, test_mode, reset)
+    functor = lambda: _case_setup_impl(self, caseroot, clean=clean, test_mode=test_mode, reset=reset, keep=keep)
 
     if self.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else self.get_value("CASE")

@@ -13,7 +13,7 @@ MERGE_TAG_PREFIX = "to-acme-"
 def setup():
 ###############################################################################
     run_cmd_no_fail("git config merge.renameLimit 999999")
-    run_cmd_no_fail("git checkout master && git pull", verbose=True)
+    run_cmd_no_fail("git checkout master && git pull && git submodule sync && git submodule update --init", verbose=True)
 
     remotes = run_cmd_no_fail("git remote")
     if ESMCI_REMOTE_NAME not in remotes:
