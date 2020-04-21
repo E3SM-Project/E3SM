@@ -2,7 +2,7 @@
 Class for config_pio files .  This class inherits from EntryID.py
 """
 from CIME.XML.standard_module_setup import *
-
+from collections import OrderedDict
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
 

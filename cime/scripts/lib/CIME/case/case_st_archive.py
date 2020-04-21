@@ -200,8 +200,7 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
         logger.info("moving {} to {}".format(srcfile, destfile))
 
 ###############################################################################
-def _archive_history_files(archive, archive_entry,
-                           compclass, compname, histfiles_savein_rundir,
+def _archive_history_files(archive, compclass, compname, histfiles_savein_rundir,
                            last_date, archive_file_fn, dout_s_root, casename, rundir):
 ###############################################################################
     """
@@ -219,9 +218,6 @@ def _archive_history_files(archive, archive_entry,
     # the compname is drv but the files are named cpl
     if compname == 'drv':
         compname = 'cpl'
-
-    if compname == 'clm':
-        compname = r'clm2?'
 
     if compname == 'nemo':
         archive_rblddir = os.path.join(dout_s_root, compclass, 'rebuild')
@@ -257,36 +253,22 @@ def _archive_history_files(archive, archive_entry,
 
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
+    histfiles = archive.get_all_hist_files(casename, compname, rundir)
 
-    for suffix in archive.get_hist_file_extensions(archive_entry):
-        if compname.find('mpas') == 0 or compname == 'mali':
-            newsuffix =                    compname + r'\d*'
-        else:
-            newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
-        newsuffix += r'\.' + suffix
-        if not suffix.endswith('$'):
-            newsuffix += r'\.'
-
-        logger.debug("short term archiving suffix is {} ".format(newsuffix))
-
-        pfile = re.compile(newsuffix)
-        histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-        logger.debug("histfiles = {} ".format(histfiles))
-
-        if histfiles:
-            for histfile in histfiles:
-                file_date = get_file_date(os.path.basename(histfile))
-                if last_date is None or file_date is None or file_date <= last_date:
-                    srcfile = join(rundir, histfile)
-                    expect(os.path.isfile(srcfile),
-                           "history file {} does not exist ".format(srcfile))
-                    destfile = join(archive_histdir, histfile)
-                    if histfile in histfiles_savein_rundir:
-                        logger.info("copying {} to {} ".format(srcfile, destfile))
-                        safe_copy(srcfile, destfile)
-                    else:
-                        logger.info("moving {} to {} ".format(srcfile, destfile))
-                        archive_file_fn(srcfile, destfile)
+    if histfiles:
+        for histfile in histfiles:
+            file_date = get_file_date(os.path.basename(histfile))
+            if last_date is None or file_date is None or file_date <= last_date:
+                srcfile = join(rundir, histfile)
+                expect(os.path.isfile(srcfile),
+                       "history file {} does not exist ".format(srcfile))
+                destfile = join(archive_histdir, histfile)
+                if histfile in histfiles_savein_rundir:
+                    logger.info("copying {} to {} ".format(srcfile, destfile))
+                    safe_copy(srcfile, destfile)
+                else:
+                    logger.info("moving {} to {} ".format(srcfile, destfile))
+                    archive_file_fn(srcfile, destfile)
 
 ###############################################################################
 def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile, testonly=False):
@@ -631,18 +613,18 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     # archive history files
 
-    for (archive_entry, compname, compclass) in _get_component_archive_entries(components, archive):
+    for (_, compname, compclass) in _get_component_archive_entries(components, archive):
         if compclass:
             logger.info('Archiving history files for {} ({})'.format(compname, compclass))
             histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
             logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-            _archive_history_files(archive, archive_entry,
+            _archive_history_files(archive,
                                    compclass, compname, histfiles_savein_rundir,
                                    last_date, archive_file_fn,
                                    dout_s_root, casename, rundir)
 
 ###############################################################################
-def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
+def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None, test=False):
 ###############################################################################
     """
     Take archived restart files and load them into current case.  Use rest_dir if provided otherwise use most recent
@@ -652,12 +634,19 @@ def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
         dout_s_root = self.get_value("DOUT_S_ROOT")
     if rundir is None:
         rundir = self.get_value("RUNDIR")
-    if rest_dir is not None:
+    if rest_dir:
         if not os.path.isabs(rest_dir):
             rest_dir = os.path.join(dout_s_root, "rest", rest_dir)
     else:
-        rest_dir = os.path.join(dout_s_root, "rest", ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+        rest_root = os.path.join(dout_s_root, "rest")
 
+        if os.path.exists(rest_root):
+            rest_dir = os.path.join(rest_root, ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+
+    if rest_dir is None and  test:
+        logger.warning("No rest_dir found for test - is this expected? DOUT_S_ROOT={}".format(dout_s_root))
+        return
+    expect(os.path.exists(rest_dir),"ERROR: No directory {} found".format(rest_dir))
     logger.info("Restoring restart from {}".format(rest_dir))
 
     for item in glob.glob("{}/*".format(rest_dir)):
@@ -764,8 +753,8 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     return True
 
 def test_st_archive(self, testdir="st_archive_test"):
-    archive = Archive()
     files = Files()
+    archive = Archive(files=files)
     components = []
 #    expect(not self.get_value("MULTI_DRIVER"),"Test not configured for multi-driver cases")
 
@@ -807,7 +796,7 @@ def test_st_archive(self, testdir="st_archive_test"):
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
 
-    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root, test=True)
 
     restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
@@ -880,10 +869,10 @@ def test_env_archive(self, testdir="env_archive_test"):
     # Now test the restore capability
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
-
-    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
-
-    restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
+    restfiles = []
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root, test=True)
+    if os.path.exists(os.path.join(testdir,"archive","rest")):
+        restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
         expect(os.path.isfile(os.path.join(testdir2,_file)), "Expected file {} to be restored from rest dir".format(_file))
 

@@ -17,7 +17,7 @@ PIO_TESTS='test_intercomm2 test_async_mpi test_spmd test_rearr test_async_simple
 'test_darray_multivar test_darray_multivar2 test_darray_multivar3 test_darray_1d '\
 'test_darray_3d test_decomp_uneven test_decomps test_darray_async_simple '\
 'test_darray_async test_darray_async_many test_darray_2sync test_async_multicomp '\
-'test_darray_fill test_darray_vard'
+'test_darray_fill test_darray_vard test_async_1d'
 
 success1=true
 success2=true
