@@ -1,5 +1,5 @@
 import cartopy.crs as ccrs
-from cartopy import config
+import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
 import jigsaw_to_MPAS.mesh_definition_tools as mdt
@@ -8,24 +8,27 @@ from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
 from geometric_features import read_feature_collection
 import xarray
 import matplotlib
+import pkg_resources
 matplotlib.use('Agg')
 
 
-def plot_cartopy(nPlot, varName, var):
+def plot_cartopy(nPlot, varName, var, map_name):
     ax = plt.subplot(4, 2, nPlot, projection=ccrs.PlateCarree())
     ax.set_global()
     im = ax.imshow(var,
                    origin='lower',
                    transform=ccrs.PlateCarree(),
-                   extent=[-180, 180, -90, 90], cmap='jet')
-    ax.coastlines()
+                   extent=[-180, 180, -90, 90], cmap=map_name,
+                   zorder=0)
+    ax.add_feature(cfeature.LAND, edgecolor='black', zorder=1)
     gl = ax.gridlines(
         crs=ccrs.PlateCarree(),
         draw_labels=True,
         linewidth=1,
         color='gray',
         alpha=0.5,
-        linestyle='-')
+        linestyle='-', zorder=2)
+    ax.coastlines()
     gl.xlabels_top = False
     gl.xlabels_bottom = False
     gl.ylabels_right = False
@@ -72,7 +75,7 @@ def cellWidthVsLatLon():
     # Signed distance of Atlantic region
     fc = read_feature_collection('Atlantic_region.geojson')
     signedDistance = signed_distance_from_geojson(fc, lon, lat,
-                                                 max_length=0.25)
+                                                  max_length=0.25)
 
     # Merge Atlantic and Pacific distrubutions smoothly
     transitionWidth = 500.0e3  # [m]
@@ -106,6 +109,11 @@ def cellWidthVsLatLon():
     plt.clf()
     fig.set_size_inches(10.0, 10.0)
 
+    map_name = '3Wbgy5'
+    xmlFile = pkg_resources.resource_filename(
+        __name__, 'jigsaw_to_MPAS/{}.xml'.format(map_name))
+    mdt.read_xml_colormap(xmlFile, map_name)
+
     ax = plt.subplot(4, 2, 1)
     ax.plot(lat, AtlVsLat, label='Atlantic')
     ax.plot(lat, PacVsLat, label='Pacific')
@@ -123,8 +131,10 @@ def cellWidthVsLatLon():
         'cellWidth']
     j = 2
     for varName in varNames:
-        plot_cartopy(j, varName, vars()[varName])
+        plot_cartopy(j, varName, vars()[varName], map_name)
         j += 1
+    fig.canvas.draw()
+    plt.tight_layout()
 
     plt.savefig('mesh_construction.png')
 

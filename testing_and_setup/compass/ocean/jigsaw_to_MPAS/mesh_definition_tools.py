@@ -11,12 +11,40 @@ from __future__ import absolute_import, division, print_function, \
 
 import numpy as np
 import matplotlib.pyplot as plt
+import xml.etree.ElementTree as ET
+from matplotlib.colors import LinearSegmentedColormap
 plt.switch_backend('agg')
 
 
 ##########################################################################
 # Functions
 ##########################################################################
+
+def read_xml_colormap(xmlFile, mapName):
+    """Read in an XML colormap"""
+
+    xml = ET.parse(xmlFile)
+
+    root = xml.getroot()
+    colormap = root.findall('ColorMap')
+    if len(colormap) > 0:
+        colormap = colormap[0]
+        colorDict = {'red': [], 'green': [], 'blue': []}
+        for point in colormap.findall('Point'):
+            x = float(point.get('x'))
+            color = [float(point.get('r')), float(point.get('g')),
+                     float(point.get('b'))]
+            colorDict['red'].append((x, color[0], color[0]))
+            colorDict['green'].append((x, color[1], color[1]))
+            colorDict['blue'].append((x, color[2], color[2]))
+        cmap = LinearSegmentedColormap(mapName, colorDict, 256)
+
+        register_colormap_and_reverse(mapName, cmap)
+
+
+def register_colormap_and_reverse(mapName, cmap):
+    plt.register_cmap(mapName, cmap)
+    plt.register_cmap('{}_r'.format(mapName), cmap.reversed())
 
 
 def mergeCellWidthVsLat(
