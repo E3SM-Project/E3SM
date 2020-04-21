@@ -19,9 +19,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy
-import xml.etree.ElementTree as ET
-import pkg_resources
-from matplotlib.colors import LinearSegmentedColormap
 
 from mpas_tools.conversion import convert
 from mpas_tools.io import write_netcdf
@@ -33,6 +30,7 @@ from jigsaw_to_MPAS.inject_bathymetry import inject_bathymetry
 from jigsaw_to_MPAS.inject_meshDensity import inject_meshDensity
 from jigsaw_to_MPAS.inject_preserve_floodplain import \
     inject_preserve_floodplain
+from jigsaw_to_MPAS.mesh_definition_tools import register_sci_viz_colormaps
 
 import define_base_mesh
 
@@ -59,17 +57,13 @@ def build_mesh(
         da.to_netcdf(cw_filename)
         plot_cellWidth = True
         if plot_cellWidth:
-            map_name = '3Wbgy5'
-            xmlFile = pkg_resources.resource_filename(
-                __name__, '{}.xml'.format(map_name))
-            _read_xml_colormap(xmlFile, map_name)
-
+            register_sci_viz_colormaps()
             fig = plt.figure(figsize=[16.0, 8.0])
             ax = plt.axes(projection=ccrs.PlateCarree())
             ax.set_global()
             im = ax.imshow(cellWidth, origin='lower',
                            transform=ccrs.PlateCarree(),
-                           extent=[-180, 180, -90, 90], cmap=map_name,
+                           extent=[-180, 180, -90, 90], cmap='3Wbgy5',
                            zorder=0)
             ax.add_feature(cartopy.feature.LAND, edgecolor='black', zorder=1)
             gl = ax.gridlines(
@@ -140,33 +134,6 @@ def build_mesh(
     print("***********************************************")
     print("**    The global mesh file is base_mesh.nc   **")
     print("***********************************************")
-
-
-def _read_xml_colormap(xmlFile, mapName):
-    """Read in an XML colormap"""
-
-    xml = ET.parse(xmlFile)
-
-    root = xml.getroot()
-    colormap = root.findall('ColorMap')
-    if len(colormap) > 0:
-        colormap = colormap[0]
-        colorDict = {'red': [], 'green': [], 'blue': []}
-        for point in colormap.findall('Point'):
-            x = float(point.get('x'))
-            color = [float(point.get('r')), float(point.get('g')),
-                     float(point.get('b'))]
-            colorDict['red'].append((x, color[0], color[0]))
-            colorDict['green'].append((x, color[1], color[1]))
-            colorDict['blue'].append((x, color[2], color[2]))
-        cmap = LinearSegmentedColormap(mapName, colorDict, 256)
-
-        _register_colormap_and_reverse(mapName, cmap)
-
-
-def _register_colormap_and_reverse(mapName, cmap):
-    plt.register_cmap(mapName, cmap)
-    plt.register_cmap('{}_r'.format(mapName), cmap.reversed())
 
 
 if __name__ == '__main__':

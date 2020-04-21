@@ -8,7 +8,6 @@ from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
 from geometric_features import read_feature_collection
 import xarray
 import matplotlib
-import pkg_resources
 matplotlib.use('Agg')
 
 
@@ -109,10 +108,7 @@ def cellWidthVsLatLon():
     plt.clf()
     fig.set_size_inches(10.0, 10.0)
 
-    map_name = '3Wbgy5'
-    xmlFile = pkg_resources.resource_filename(
-        __name__, 'jigsaw_to_MPAS/{}.xml'.format(map_name))
-    mdt.read_xml_colormap(xmlFile, map_name)
+    mdt.register_sci_viz_colormaps()
 
     ax = plt.subplot(4, 2, 1)
     ax.plot(lat, AtlVsLat, label='Atlantic')
@@ -131,7 +127,7 @@ def cellWidthVsLatLon():
         'cellWidth']
     j = 2
     for varName in varNames:
-        plot_cartopy(j, varName, vars()[varName], map_name)
+        plot_cartopy(j, varName, vars()[varName], '3Wbgy5')
         j += 1
     fig.canvas.draw()
     plt.tight_layout()
