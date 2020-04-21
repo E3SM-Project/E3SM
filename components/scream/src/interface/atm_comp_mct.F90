@@ -2,6 +2,7 @@ module atm_comp_mct
 
   ! !USES:
   use pioExample ! AaronDonahue - example PIO code, to use temporarily until a "real" PIO interface can be built
+  use scream_scorpio_interface, only: eam_h_define, eam_init_pio_subsystem, eam_h_finalize
   use esmf
   use mct_mod
   use perf_mod
@@ -163,6 +164,9 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize pio
     !----------------------------------------------------------------------------
+    call eam_init_pio_subsystem(compid)
+    call eam_h_define()
+ 
     call pioExInst%init(mpicom_atm)
     call pioExInst%createDecomp()
     call pioExInst%createFile()
@@ -265,6 +269,7 @@ CONTAINS
     ! Run pio
     !----------------------------------------------------------------------------
     call pioExInst%closeFile()
+    call eam_h_finalize()
     call pioExInst%cleanUp()
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model

@@ -5,6 +5,8 @@ set(ATM_SRC
   dead_data_mod.F90
   dead_mod.F90
   examplePio.f90
+  scream_scorpio_interface.F90
+  pio_mods.F90
 )
 
 if (USE_ESMF_LIB)

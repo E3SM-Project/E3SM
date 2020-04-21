@@ -81,7 +81,7 @@ module pioExample
         integer               :: arrIdxPerPe
 
         !> @brief The length of the dimension of the netCDF variable.
-        integer, dimension(1) :: dimLen
+        integer, dimension(2) :: dimLen
 
         !> @brief Buffer to hold sample data that is written to netCDF file.
         integer, allocatable  :: dataBuffer(:)
@@ -174,6 +174,7 @@ contains
         this%iotype        = PIO_iotype_netcdf
         this%fileName      = "examplePio_f90.nc"
         this%dimLen(1)     = LEN
+        this%dimLen(2)     = 4
 
         this%niotasks = this%ntasks ! keep things simple - 1 iotask per MPI process
 
