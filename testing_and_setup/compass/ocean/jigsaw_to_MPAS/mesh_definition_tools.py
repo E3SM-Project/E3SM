@@ -10,13 +10,33 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 import numpy as np
+import xml.etree.ElementTree as ET
+import pkg_resources
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
-plt.switch_backend('agg')
 
 
 ##########################################################################
 # Functions
 ##########################################################################
+
+
+def register_sci_viz_colormaps():
+    """Register all SciVisColor colormaps with matplotlib"""
+
+    for mapName in ['3wave-yellow-grey-blue', '3Wbgy5',
+                    '4wave-grey-red-green-mgreen', '5wave-yellow-brown-blue',
+                    'blue-1', 'blue-3', 'blue-6', 'blue-8', 'blue-orange-div',
+                    'brown-2', 'brown-5', 'brown-8', 'green-1', 'green-4',
+                    'green-7', 'green-8', 'orange-5', 'orange-6',
+                    'orange-green-blue-gray', 'purple-7', 'purple-8', 'red-1',
+                    'red-3', 'red-4', 'yellow-1', 'yellow-7']:
+
+        xmlFile = pkg_resources.resource_filename(
+            __name__, 'SciVisColorColormaps/{}.xml'.format(mapName))
+        _read_xml_colormap(xmlFile, mapName)
 
 
 def mergeCellWidthVsLat(
@@ -198,97 +218,31 @@ def AtlanticPacificGrid(lat, lon, cellWidthInAtlantic, cellWidthInPacific):
                     cellWidthOut[j, i] = cellWidthInAtlantic[j]
     return cellWidthOut
 
-#
-# def  circleOnGrid(lon, lat, centerLon, centerLat, radius, tanhWidth)
-# '''
-# circleOnGrid: combine two cell width distributions using a tanh function.
-# This is inted as part of the workflow to make an MPAS global mesh.
-#
-# Syntax: cellWidthOut = circleOnGrid(lat, lon, cellWidthInAtlantic, cellWidthInPacific)
-#
-# Inputs:
-#   lon - vector of length m, with entries between -180, 180, degrees
-#   lat - vector of length n, with entries between -90, 90, degrees
-#
-# Optional inputs:
-#
-# Outputs:
-#   cellWidthOut - m by n array, grid cell width on globe, km
-#
-# Example:
-#   RRS18to6 = circleOnGrid(lat,18,6)
-#
-# See also:
-# '''
-#
-# cellWidthOut = zeros(lon.size,lat.size))
-# for i in range(lon.size)
-#  for j in range(lat.size)
-#    [dist d2km]=lldistkm([centerLat, centerLon], [lat[j], lon[i]])
-#    cellWidthOut(i,j) = 0.5*(-tanh((dist - radius)/tanhWidth) + 1.0)
-#
-#
-#
-# def lldistkm(latlon1,latlon2)
-# '''
-# format: [d1km d2km]=lldistkm(latlon1,latlon2)
-# Distance:
-# d1km: distance in km based on Haversine formula
-# (Haversine: http://en.wikipedia.org/wiki/Haversine_formula)
-# d2km: distance in km based on Pythagoras theorem
-# (see: http://en.wikipedia.org/wiki/Pythagorean_theorem)
-# After:
-# http://www.movable-type.co.uk/scripts/latlong.html
-#
-# --Inputs:
-#  latlon1: latlon of origin point [lat lon]
-#  latlon2: latlon of destination point [lat lon]
-#
-# --Outputs:
-#  d1km: distance calculated by Haversine formula
-#  d2km: distance calculated based on Pythagoran theorem
-#
-# --Example 1, short distance:
-#  latlon1=[-43 172]
-#  latlon2=[-44  171]
-#  [d1km d2km]=distance(latlon1,latlon2)
-#  d1km =
-#          137.365669065197 (km)
-#  d2km =
-#          137.368179013869 (km)
-#  d1km approximately equal to d2km
-#
-# --Example 2, longer distance:
-#  latlon1=[-43 172]
-#  latlon2=[20  -108]
-#  [d1km d2km]=distance(latlon1,latlon2)
-#  d1km =
-#          10734.8931427602 (km)
-#  d2km =
-#          31303.4535270825 (km)
-#  d1km is significantly different from d2km (d2km is not able to work
-#  for longer distances).
-#
-# First version: 15 Jan 2012
-# Updated: 17 June 2012
-# --------------------------------------------------------------------------
-# '''
-#
-# radius=6371
-# lat1=latlon1(1)*pi/180
-# lat2=latlon2(1)*pi/180
-# lon1=latlon1(2)*pi/180
-# lon2=latlon2(2)*pi/180
-# deltaLat=lat2-lat1
-# deltaLon=lon2-lon1
-#a=sin((deltaLat)/2)^2 + cos(lat1)*cos(lat2) * sin(deltaLon/2)^2
-# c=2*atan2(sqrt(a),sqrt(1-a))
-# d1km=radius*c #    Haversine distance
-#
-# x=deltaLon*cos((lat1+lat2)/2)
-# y=deltaLat
-# d2km=radius*sqrt(x*x + y*y) # Pythagoran distance
-#
-#
+
+def _read_xml_colormap(xmlFile, mapName):
+    """Read in an XML colormap"""
+
+    xml = ET.parse(xmlFile)
+
+    root = xml.getroot()
+    colormap = root.findall('ColorMap')
+    if len(colormap) > 0:
+        colormap = colormap[0]
+        colorDict = {'red': [], 'green': [], 'blue': []}
+        for point in colormap.findall('Point'):
+            x = float(point.get('x'))
+            color = [float(point.get('r')), float(point.get('g')),
+                     float(point.get('b'))]
+            colorDict['red'].append((x, color[0], color[0]))
+            colorDict['green'].append((x, color[1], color[1]))
+            colorDict['blue'].append((x, color[2], color[2]))
+        cmap = LinearSegmentedColormap(mapName, colorDict, 256)
+
+        _register_colormap_and_reverse(mapName, cmap)
+
+
+def _register_colormap_and_reverse(mapName, cmap):
+    plt.register_cmap(mapName, cmap)
+    plt.register_cmap('{}_r'.format(mapName), cmap.reversed())
 
 ##############################################################
