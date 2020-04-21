@@ -65,7 +65,7 @@ struct UnitWrap {
     struct TestFind;
     struct TestUpwind;
     struct TestGenSed;
-    struct TestP3Func;
+    struct TestP3Saturation;
     struct TestDsd2;
     struct TestP3Conservation;
     struct TestP3CloudWaterAutoconversion;
