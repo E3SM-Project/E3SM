@@ -249,7 +249,6 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -qstrict -Q </append>
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
-    <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
