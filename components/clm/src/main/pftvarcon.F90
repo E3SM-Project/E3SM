@@ -753,8 +753,6 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('max_SH_planting_date',mxSHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-
-    print*,"HERE -1"
     
     if (nu_com .ne. 'RD') then
         call ncd_io('VMAX_MINSURF_P_vr',VMAX_MINSURF_P_vr, 'read', ncid, readvar=readv)
@@ -767,7 +765,6 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DECOMP_NO3'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_DECOMP_P',KM_DECOMP_P, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DECOMP_P'//errMsg(__FILE__, __LINE__))
-        print*,"HERE -3"
         call ncd_io('KM_NIT',KM_NIT, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NIT'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_DEN',KM_DEN, 'read', ncid, readvar=readv)  
@@ -778,16 +775,12 @@ contains
         if ( .not. readv ) ccost_nfix(:)=0._r8
         call ncd_io('pcost_nfix',pcost_nfix, 'read', ncid, readvar=readv)
         if ( .not. readv ) pcost_nfix(:)=0._r8
-        print*,"HERE 4"
         call ncd_io('VMAX_NFIX',VMAX_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
-        print*,"HERE 5"
         call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NFIX'//errMsg(__FILE__, __LINE__))
      end if
 
-     print*,"HERE -2"
-     
      if (nu_com .ne. 'RD' .and. .not.use_fates) then
 
         call ncd_io('VMAX_PLANT_NH4',VMAX_PLANT_NH4, 'read', ncid, readvar=readv)  
@@ -923,10 +916,7 @@ contains
        end do
     end if
 
-    print*,"HERE 0"
-    
     call ncd_pio_closefile(ncid)
-
 
     do i = 0, mxpft
 
