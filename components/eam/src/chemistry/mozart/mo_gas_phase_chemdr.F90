@@ -852,6 +852,8 @@ contains
     if ( do_lin_strat_chem ) then
        call lin_strat_chem_solve( ncol, lchnk, vmr(:,:,o3lnz_ndx), col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
        call lin_strat_sfcsink (ncol, lchnk,  vmr(:,:,o3lnz_ndx), delt, pdel(:ncol,:))
+
+       call lin_strat_chem_solve( ncol, lchnk, vmr(:,:,o3_ndx), col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
     end if
 
     !-----------------------------------------------------------------------      
