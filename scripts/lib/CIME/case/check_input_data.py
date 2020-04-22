@@ -37,6 +37,8 @@ def _download_checksum_file(rundir):
             server = CIME.Servers.WGET.wget_login(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
+        if not server:
+            continue
 
         if chksum_file:
             chksum_found = True
@@ -300,7 +302,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
         if not server:
-            return False
+            return None
 
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))
@@ -318,6 +320,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                 if(full_path):
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
+                    rel_path = full_path
                     if input_ic_root and input_ic_root in full_path \
                        and ic_filepath:
                         rel_path = full_path.replace(input_ic_root, ic_filepath)

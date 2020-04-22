@@ -4,6 +4,7 @@ FTP Server class.  Interact with a server using FTP protocol
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
+from CIME.utils import Timeout
 from ftplib import FTP as FTPpy
 from ftplib import all_errors as all_ftp_errors
 import socket
@@ -38,11 +39,15 @@ class FTP(GenericServer):
         ftp_server, root_address = address.split('/', 1)
         logger.info("server address {} root path {}".format(ftp_server, root_address))
         try:
-            ftp = FTPpy(ftp_server)
+            with Timeout(60):
+                ftp = FTPpy(ftp_server)
+
         except socket.error as e:
             logger.warning("ftp login timeout! {} ".format(e))
             return None
-
+        except RuntimeError:
+            logger.warning("ftp login timeout!")
+            return None
         return cls(address, user=user, passwd=passwd, server=ftp)
 
     def fileexists(self, rel_path):

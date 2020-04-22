@@ -146,7 +146,10 @@ class TestScheduler(object):
 
         self._machobj = Machines(machine=machine_name)
 
-        self._model_build_cost = 4
+        if get_model() == "e3sm":
+            self._model_build_cost = int((self._machobj.get_value("GMAKE_J") * 2) / 3) + 1
+        else:
+            self._model_build_cost = 4
 
         # If user is forcing procs or threads, re-write test names to reflect this.
         if force_procs or force_threads:
@@ -202,14 +205,12 @@ class TestScheduler(object):
         self._baseline_cmp_name = baseline_cmp_name # Implies comparison should be done if not None
         self._baseline_gen_name = baseline_gen_name # Implies generation should be done if not None
 
-        # Compute baseline_root
-        self._baseline_root = baseline_root if baseline_root is not None \
+        # Compute baseline_root. Need to set some properties on machobj in order for
+        # the baseline_root to resolve correctly.
+        self._machobj.set_value("COMPILER", self._compiler)
+        self._machobj.set_value("PROJECT", self._project)
+        self._baseline_root = os.path.abspath(baseline_root) if baseline_root is not None \
                               else self._machobj.get_value("BASELINE_ROOT")
-
-        if self._project is not None:
-            self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
-
-        self._baseline_root = os.path.abspath(self._baseline_root)
 
         if baseline_cmp_name or baseline_gen_name:
             if self._baseline_cmp_name:
@@ -644,6 +645,7 @@ class TestScheduler(object):
                         envtest.set_test_parameter("NTASKS_"+comp, "1")
                         envtest.set_test_parameter("NTHRDS_"+comp, "1")
                         envtest.set_test_parameter("ROOTPE_"+comp, "0")
+                        envtest.set_test_parameter("PIO_TYPENAME", "netcdf")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase

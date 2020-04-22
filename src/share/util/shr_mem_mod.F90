@@ -91,8 +91,8 @@ CONTAINS
     !---------------------------------------------------
 
     ierr = GPTLget_memusage (msize, mrss, mshare, mtext, mdatastack)
-    r_msize = msize*mb_blk
-    r_mrss  = mrss*mb_blk
+    r_msize = msize / 1024.0_shr_kind_r8
+    r_mrss  = mrss  / 1024.0_shr_kind_r8
 
     if (present(prt)) then
        if (prt) then

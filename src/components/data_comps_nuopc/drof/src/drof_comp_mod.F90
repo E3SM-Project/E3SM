@@ -33,8 +33,8 @@ module drof_comp_mod
   type(dfield_type)  , pointer :: dfields    => null()
 
   ! module pointer arrays
-  real(r8), pointer :: Forr_rofl(:)
-  real(r8), pointer :: Forr_rofi(:)
+  real(r8), pointer :: Forr_rofl(:) => null()
+  real(r8), pointer :: Forr_rofi(:) => null()
 
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
