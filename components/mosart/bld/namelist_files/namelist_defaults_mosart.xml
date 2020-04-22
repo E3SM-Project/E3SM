@@ -38,6 +38,7 @@ for the CLM data in the CESM distribution
 <frivinp_rtm rof_grid="r0125" >rof/mosart/MOSART_global_8th_20180211c.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_global_half_20180721a.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th_20160426.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="CLM_USRDAT" >undefined</frivinp_rtm>
 
 <!-- WRM -->
 
