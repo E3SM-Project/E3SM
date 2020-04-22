@@ -382,8 +382,11 @@ _GLOBAL_MINUMUM_TIME    = 900
 _GLOBAL_WIGGLE          = 1000
 _WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
 
+def use_smart_walltime():
+    return False # Should be False for maint branches
+
 def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
-    if baseline_root is not None:
+    if baseline_root is not None and use_smart_walltime():
         try:
             the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
             if os.path.exists(the_path):
@@ -410,7 +413,7 @@ def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
     return None
 
 def save_test_time(baseline_root, test, time_seconds):
-    if baseline_root is not None:
+    if baseline_root is not None and use_smart_walltime():
         try:
             the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
             if not os.path.exists(the_dir):
