@@ -11,18 +11,19 @@ module dshr_mod
   use ESMF             , only : ESMF_State, ESMF_StateGet
   use ESMF             , only : ESMF_Field, ESMF_FieldGet
   use ESMF             , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
+  use ESMF             , only : ESMF_DistGrid, ESMF_Array, ESMF_ArrayCreate, ESMF_ArrayDestroy
   use ESMF             , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_GridCompSet
   use ESMF             , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag
-  use ESMF             , only : ESMF_Mesh, ESMF_MeshGet, ESMF_MeshCreate
+  use ESMF             , only : ESMF_Mesh, ESMF_MeshGet, ESMF_MeshCreate, ESMF_MeshDestroy
   use ESMF             , only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER, ESMF_GRIDCREATENOPERIDIMUFRM
   use ESMF             , only : ESMF_FILEFORMAT_ESMFMESH, ESMF_Grid
   use ESMF             , only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
-  use ESMF             , only : ESMF_Clock, ESMF_ClockCreate, ESMF_ClockGet, ESMF_ClockSet 
-  use ESMF             , only : ESMF_ClockPrint, ESMF_ClockAdvance, ESMF_ClockGetAlarmList 
+  use ESMF             , only : ESMF_Clock, ESMF_ClockCreate, ESMF_ClockGet, ESMF_ClockSet
+  use ESMF             , only : ESMF_ClockPrint, ESMF_ClockAdvance, ESMF_ClockGetAlarmList
   use ESMF             , only : ESMF_Alarm, ESMF_AlarmCreate, ESMF_AlarmGet, ESMF_AlarmSet
   use ESMF             , only : ESMF_ALARMLIST_ALL
   use ESMF             , only : ESMF_Calendar
-  use ESMF             , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CALKIND_FLAG 
+  use ESMF             , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CALKIND_FLAG
   use ESMF             , only : ESMF_Time, ESMF_TimeGet, ESMF_TimeSet
   use ESMF             , only : ESMF_TimeInterval, ESMF_TimeIntervalSet, ESMF_TimeIntervalGet
   use ESMF             , only : ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast, ESMF_VMGetCurrent
@@ -41,8 +42,8 @@ module dshr_mod
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_infiles
   use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
   use dshr_strdata_mod , only : shr_strdata_mapset
-  use dshr_util_mod    , only : memcheck, chkerr
-  use perf_mod         , only : t_startf, t_stopf 
+  use dshr_methods_mod , only : memcheck, chkerr
+  use perf_mod         , only : t_startf, t_stopf
   use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
   use pio
   use mct_mod
@@ -52,8 +53,9 @@ module dshr_mod
 
   public :: dshr_model_initphase
   public :: dshr_init
-  public :: dshr_sdat_init          
+  public :: dshr_sdat_init
   public :: dshr_create_mesh_from_grid
+  public :: dshr_create_mesh_from_scol
   public :: dshr_set_runclock
   public :: dshr_restart_read
   public :: dshr_restart_write
@@ -61,16 +63,7 @@ module dshr_mod
   public :: dshr_log_clock_advance
   public :: dshr_state_getscalar
   public :: dshr_state_setscalar
-  public :: dshr_state_diagnose
-  public :: dshr_state_getfldptr
-  public :: dshr_fldbun_regrid
-  public :: dshr_fldbun_getFieldN
-  public :: dshr_fldbun_getNameN
-  public :: dshr_fldbun_getFldPtr
-  public :: dshr_fldbun_diagnose
-  public :: dshr_fldbun_fldchk
 
-  private :: dshr_field_getfldptr
   private :: dshr_alarm_init
   private :: dshr_time_init
 
@@ -95,7 +88,7 @@ module dshr_mod
        optMonthly        = "monthly"   , &
        optYearly         = "yearly"    , &
        optDate           = "date"      , &
-       optIfdays0        = "ifdays0"   
+       optIfdays0        = "ifdays0"
 
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
 
@@ -105,6 +98,7 @@ module dshr_mod
   type(ESMF_FieldStatus_Flag) :: status
 
   ! Module data
+  integer     , parameter :: master_task = 0
   integer                 :: iunset = -999
   integer     , parameter :: SecPerDay = 86400 ! Seconds per day
   integer     , parameter :: dbug = 10
@@ -134,13 +128,12 @@ contains
   end subroutine dshr_model_initphase
 
   !===============================================================================
-  subroutine dshr_init(gcomp, master_task, mpicom, my_task, inst_index, inst_suffix, &
+  subroutine dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
        flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
        logunit, shrlogunit, rc)
 
     ! input/output variables
     type(ESMF_GridComp)              :: gcomp
-    integer          , intent(in)    :: master_task
     integer          , intent(inout) :: mpicom
     integer          , intent(out)   :: my_task
     integer          , intent(out)   :: inst_index
@@ -258,14 +251,14 @@ contains
     integer                    , intent(out)   :: rc
 
     ! local varaibles
+    type(ESMF_VM)                :: vm
+    type(ESMF_Mesh)              :: mesh_global
     type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
     type(ESMF_CalKind_Flag)      :: esmf_caltype  ! esmf calendar type
     character(CS)                :: calendar      ! calendar name
-    type(ESMF_VM)                :: vm
+    character(CL)                :: mesh_filename
     integer                      :: mpicom
     integer                      :: my_task
-    integer                      :: master_task = 0
-    character(CL)                :: mesh_filename
     logical                      :: scmMode
     real(r8)                     :: scmlat
     real(r8)                     :: scmlon
@@ -313,16 +306,32 @@ contains
        call dshr_create_mesh_from_grid(trim(mesh_filename), mesh, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       mesh = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (scmMode) then
+          if (my_task > 0) then
+             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
+             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
+          endif
+          if (my_task == master_task) then
+             write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
+          end if
+          mesh_global = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call  dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_MeshDestroy(mesh_global)
+       else
+          mesh = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
     end if
+
     if (my_task == master_task) then
        write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
     end if
 
     ! Initialize sdat from data model input files
-    call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, scmmode, scmlon, scmlat, clock, &
-         mpicom, compid, logunit, reset_domain_mask=reset_domain_mask, rc=rc)
+    call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, mpicom, compid, logunit, &
+         reset_domain_mask=reset_domain_mask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine dshr_sdat_init
@@ -422,6 +431,116 @@ contains
     end subroutine nc_check_err
 
   end subroutine dshr_create_mesh_from_grid
+
+  !===============================================================================
+  subroutine dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
+
+    !-------------------------------------------
+    ! Create mct ggrid for model grid and set model gsmap if not input
+    ! assumes a very specific netCDF domain file format wrt var names, etc.
+    !-------------------------------------------
+
+    ! input/output variables
+    real(R8)        , intent(in)    :: scmlon      ! single column lon
+    real(R8)        , intent(in)    :: scmlat      ! single column lat
+    integer         , intent(in)    :: logunit     ! stdout log unit
+    type(ESMF_MESH) , intent(in)    :: mesh_global ! global or regional domain
+    type(ESMF_MESH) , intent(out)   :: mesh        ! single column mesh
+    integer         , intent(out)   :: rc          ! error code
+
+    ! local variables
+    integer              :: n,i,ni             ! indices
+    integer              :: ierr               ! error code
+    integer, allocatable :: elementCountPTile(:)
+    integer, allocatable :: indexCountPDE(:,:)
+    integer              :: spatialDim         ! number of dimension in mesh
+    integer              :: numOwnedElements   ! number of elements owned by this PET
+    integer              :: numOwnedNodes      ! number of nodes owned by this PET
+    real(r8), pointer    :: ownedElemCoords(:) ! mesh element coordinates owned by this PET
+    real(r8), pointer    :: ownedNodeCoords(:) ! mesh node coordinates owned by this PET
+    real(r8), pointer    :: lat(:), lon(:)     ! mesh lats and lons owned by this PET
+    real(r8), pointer    :: elemArea(:)        ! mesh areas owned by this PET
+    type(ESMF_Array)     :: elemAreaArray
+    type(ESMF_Grid)      :: lgrid
+    type(ESMF_DistGrid)  :: distGrid           ! mesh distGrid
+    real(R8)             :: dist,mind          ! scmmode point search
+    real(R8)             :: lscmlon            ! local copy of scmlon
+    integer              :: maxIndex(2)
+    real(r8)             :: mincornerCoord(2)
+    real(r8)             :: maxcornerCoord(2)
+    character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
+    character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
+    !-------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! The input model mesh from the namelist is for the total grid
+    ! However the single column mesh is only for a single point - and that is what is
+    ! returned from the data model cap to the mediator
+    ! Below use scmlon and scmlat to find the nearest neighbor of the input mesh that
+    ! will be used for the single column calculation
+
+    ! Read in mesh (this is the global or regional atm mesh)
+    call ESMF_MeshGet(mesh_global, spatialDim=spatialDim, &
+         numOwnedElements=numOwnedElements, numOwnedNodes=numOwnedNodes, elementdistGrid=distGrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(ownedElemCoords(spatialDim*numOwnedElements))
+    allocate(ownedNodeCoords(spatialDim*numOwnedNodes))
+    call ESMF_MeshGet(mesh_global, ownedElemCoords=ownedElemCoords)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(lon(numOwnedElements))
+    allocate(lat(numOwnedElements))
+    do n = 1, numOwnedElements
+       lon(n) = ownedElemCoords(2*n-1)
+       lat(n) = ownedElemCoords(2*n)
+    end do
+
+    allocate(elemArea(numOwnedElements))
+    elemAreaArray = ESMF_ArrayCreate(distGrid, elemArea, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_MeshGet(mesh_global, elemMaskArray=elemAreaArray, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Find nearest neigbor of input domain for scmlon and scmlat
+    ! want lon values between 0 and 360, assume 1440 is enough (start with wraparound)
+
+    lscmlon = mod(scmlon+1440.0_r8,360.0_r8)
+    lon     = mod(lon   +1440.0_r8,360.0_r8)
+    ! lat and lon are on 1D arrays (e.g. spectral element grids)
+    mind = 1.0e20
+    do i = 1,numOwnedElements
+       dist=abs(lscmlon - lon(i)) + abs(scmlat - lat(i))
+       if (dist < mind) then
+          mind = dist
+          ni = i
+       endif
+    enddo
+
+    ! create the single column grid
+    maxIndex(1)       = 1                     ! number of lons
+    maxIndex(2)       = 1                     ! number of lats
+    mincornerCoord(1) = lon(ni) - elemArea(ni)/2._r8 ! min lon
+    mincornerCoord(2) = lat(ni) - elemArea(ni)/2._r8 ! min lat
+    maxcornerCoord(1) = lon(ni) + elemArea(ni)/2._r8 ! max lon
+    maxcornerCoord(2) = lat(ni) + elemArea(ni)/2._r8 ! max lat
+    lgrid = ESMF_GridCreateNoPeriDimUfrm (maxindex=maxindex, &
+         mincornercoord=mincornercoord, maxcornercoord= maxcornercoord, &
+         staggerloclist=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! create the single column mesh from the grid
+    mesh =  ESMF_MeshCreate(lgrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! deallocate memory
+    deallocate(ownedElemCoords)
+    deallocate(ownedNodeCoords)
+    deallocate(lon)
+    deallocate(lat)
+    call ESMF_ArrayDestroy(elemAreaArray, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dshr_create_mesh_from_scol
 
   !===============================================================================
   subroutine dshr_set_runclock(gcomp, rc)
@@ -829,7 +948,7 @@ contains
   !===============================================================================
   subroutine dshr_time_init( Time, ymd, cal, tod, rc)
 
-    ! Create the ESMF_Time object corresponding to the given input time, 
+    ! Create the ESMF_Time object corresponding to the given input time,
     ! given in YMD (Year Month Day) and TOD (Time-of-day) format.
     ! Set the time by an integer as YYYYMMDD and integer seconds in the day
 
@@ -866,7 +985,7 @@ contains
 
   !===============================================================================
   subroutine dshr_restart_read(rest_filem, rest_files, rpfile, inst_suffix, nullstr, &
-       logunit, my_task, master_task, mpicom, sdat, fld, fldname)
+       logunit, my_task, mpicom, sdat, fld, fldname)
 
     ! input/output arguments
     character(len=*)            , intent(inout) :: rest_filem
@@ -876,7 +995,6 @@ contains
     character(len=*)            , intent(in)    :: nullstr
     integer                     , intent(in)    :: logunit
     integer                     , intent(in)    :: my_task
-    integer                     , intent(in)    :: master_task
     integer                     , intent(in)    :: mpicom
     type(shr_strdata_type)      , intent(inout) :: sdat
     real(r8)         , optional , pointer       :: fld(:)
@@ -936,7 +1054,7 @@ contains
 
   !===============================================================================
   subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
-       logunit, mpicom, my_task, master_task, sdat, fld, fldname)
+       logunit, mpicom, my_task, sdat, fld, fldname)
 
     ! input/output variables
     character(len=*)            , intent(in)    :: rpfile
@@ -947,7 +1065,6 @@ contains
     integer                     , intent(in)    :: tod       ! model sec into model date
     integer                     , intent(in)    :: logunit
     integer                     , intent(in)    :: my_task
-    integer                     , intent(in)    :: master_task
     integer                     , intent(in)    :: mpicom
     type(shr_strdata_type)      , intent(inout) :: sdat
     real(r8)         , optional , pointer       :: fld(:)
@@ -997,7 +1114,7 @@ contains
 
   !===============================================================================
   subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
-       mpicom, compid, masterproc, logunit, sdat) 
+       mpicom, compid, masterproc, logunit, sdat)
 
     ! input/output variables
     character(*)           , intent(in)    :: fileName   ! file name string
@@ -1195,7 +1312,7 @@ contains
     if (domap) then
        call shr_strdata_mapSet(smatp, &
             ggridi, gsmapi, ni0 ,nj0, &
-            sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &            
+            sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &
             'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, &
             shr_map_fs_srcmask, shr_map_fs_scalar, &
             compid, mpicom, 'Xonly')
@@ -1292,7 +1409,7 @@ contains
     call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (mytask == 0) then
+    if (mytask == master_task) then
       call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
       if (chkerr(rc,__LINE__,u_FILE_u)) return
       if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
@@ -1342,7 +1459,7 @@ contains
     call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=lfield, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (mytask == 0) then
+    if (mytask == master_task) then
        call ESMF_FieldGet(lfield, farrayPtr = farrayptr, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
@@ -1354,533 +1471,5 @@ contains
     endif
 
   end subroutine dshr_state_setscalar
-
-  !===============================================================================
-  subroutine dshr_state_diagnose(State, string, rc)
-
-    ! ----------------------------------------------
-    ! Diagnose status of State
-    ! ----------------------------------------------
-
-    type(ESMF_State), intent(in)  :: state
-    character(len=*), intent(in)  :: string
-    integer         , intent(out) :: rc
-
-    ! local variables
-    integer                         :: i,j,n
-    type(ESMf_Field)                :: lfield
-    integer                         :: fieldCount, lrank
-    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    real(r8), pointer               :: dataPtr1d(:)
-    real(r8), pointer               :: dataPtr2d(:,:)
-    character(len=*),parameter      :: subname='(dshr_state_diagnose)'
-    ! ----------------------------------------------
-
-    call ESMF_StateGet(state, itemCount=fieldCount, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    allocate(lfieldnamelist(fieldCount))
-
-    call ESMF_StateGet(state, itemNameList=lfieldnamelist, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    do n = 1, fieldCount
-
-       call ESMF_StateGet(state, itemName=lfieldnamelist(n), field=lfield, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_field_getfldptr(lfield, fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       if (lrank == 0) then
-          ! no local data
-       elseif (lrank == 1) then
-          if (size(dataPtr1d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(string)//': '//trim(lfieldnamelist(n)), &
-                  minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
-          else
-             write(msgString,'(A,a)') trim(string)//': '//trim(lfieldnamelist(n))," no data"
-          endif
-       elseif (lrank == 2) then
-          if (size(dataPtr2d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(string)//': '//trim(lfieldnamelist(n)), &
-                  minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
-          else
-             write(msgString,'(A,a)') trim(string)//': '//trim(lfieldnamelist(n))," no data"
-          endif
-       else
-          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
-          rc = ESMF_FAILURE
-          return
-       endif
-       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
-    enddo
-
-    deallocate(lfieldnamelist)
-
-  end subroutine dshr_state_diagnose
-
-  !===============================================================================
-  subroutine dshr_State_GetFldPtr(State, fldname, fldptr1, fldptr2, rc)
-
-    ! ----------------------------------------------
-    ! Get pointer to a state field
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_State) ,          intent(in)              :: State
-    character(len=*) ,          intent(in)              :: fldname
-    real(R8)         , pointer, intent(inout), optional :: fldptr1(:)
-    real(R8)         , pointer, intent(inout), optional :: fldptr2(:,:)
-    integer          ,          intent(out)             :: rc
-
-    ! local variables
-    type(ESMF_Field)           :: lfield
-    character(len=*), parameter :: subname='(dshr_state_getfldptr)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call ESMF_StateGet(State, itemName=trim(fldname), field=lfield, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_field_getfldptr(lfield, fldptr1=fldptr1, fldptr2=fldptr2, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine dshr_State_GetFldPtr
-
-  !===============================================================================
-  subroutine dshr_field_getfldptr(field, fldptr1, fldptr2, rank, abort, rc)
-
-    ! ----------------------------------------------
-    ! for a field, determine rank and return fldptr1 or fldptr2
-    ! abort is true by default and will abort if fldptr is not yet allocated in field
-    ! rank returns 0, 1, or 2.  0 means fldptr not allocated and abort=false
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_Field)  , intent(in)              :: field
-    real(r8), pointer , intent(inout), optional :: fldptr1(:)
-    real(r8), pointer , intent(inout), optional :: fldptr2(:,:)
-    integer           , intent(out)  , optional :: rank
-    logical           , intent(in)   , optional :: abort
-    integer           , intent(out)             :: rc
-
-    ! local variables
-    type(ESMF_GeomType_Flag)    :: geomtype
-    type(ESMF_FieldStatus_Flag) :: status
-    type(ESMF_Mesh)             :: lmesh
-    integer                     :: lrank, nnodes, nelements
-    logical                     :: labort
-    character(len=*), parameter :: subname='(field_getfldptr)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    labort = .true.
-    if (present(abort)) then
-       labort = abort
-    endif
-    lrank = -99
-
-    call ESMF_FieldGet(field, status=status, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    if (status /= ESMF_FIELDSTATUS_COMPLETE) then
-
-       lrank = 0
-       if (labort) then
-          call ESMF_LogWrite(trim(subname)//": ERROR data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
-          rc = ESMF_FAILURE
-          return
-       else
-          call ESMF_LogWrite(trim(subname)//": WARNING data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
-       endif
-
-    else
-
-       call ESMF_FieldGet(field, geomtype=geomtype, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       if (geomtype == ESMF_GEOMTYPE_GRID) then
-          call ESMF_FieldGet(field, rank=lrank, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-          call ESMF_FieldGet(field, rank=lrank, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_FieldGet(field, mesh=lmesh, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_MeshGet(lmesh, numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          if (nnodes == 0 .and. nelements == 0) lrank = 0
-       else  
-          call ESMF_LogWrite(trim(subname)//": ERROR geomtype not supported ", &
-               ESMF_LOGMSG_INFO, rc=rc)
-          rc = ESMF_FAILURE
-          return
-       endif ! geomtype
-
-       if (lrank == 0) then
-          call ESMF_LogWrite(trim(subname)//": no local nodes or elements ", &
-               ESMF_LOGMSG_INFO)
-       elseif (lrank == 1) then
-          if (.not.present(fldptr1)) then
-             call ESMF_LogWrite(trim(subname)//": ERROR missing rank=1 array ", &
-                  ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
-             rc = ESMF_FAILURE
-             return
-          endif
-          call ESMF_FieldGet(field, farrayPtr=fldptr1, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       elseif (lrank == 2) then
-          if (.not.present(fldptr2)) then
-             call ESMF_LogWrite(trim(subname)//": ERROR missing rank=2 array ", &
-                  ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
-             rc = ESMF_FAILURE
-             return
-          endif
-          call ESMF_FieldGet(field, farrayPtr=fldptr2, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       else
-          call ESMF_LogWrite(trim(subname)//": ERROR in rank ", &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
-          rc = ESMF_FAILURE
-          return
-       endif
-
-    endif  ! status
-
-    if (present(rank)) then
-       rank = lrank
-    endif
-
-  end subroutine dshr_field_getfldptr
-
-  !===============================================================================
-  subroutine dshr_fldbun_diagnose(FB, string, rc)
-
-    ! ----------------------------------------------
-    ! Diagnose status of FB
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle) , intent(inout)        :: FB
-    character(len=*)       , intent(in), optional :: string
-    integer                , intent(out)          :: rc
-
-    ! local variables
-    integer                         :: i,j,n
-    integer                         :: fieldCount, lrank
-    character(ESMF_MAXSTR), pointer :: lfieldnamelist(:)
-    character(len=CL)               :: lstring
-    real(R8), pointer               :: dataPtr1d(:)
-    real(R8), pointer               :: dataPtr2d(:,:)
-    character(len=*), parameter     :: subname='(dshr_fldbun_diagnose)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    lstring = ''
-    if (present(string)) lstring = trim(string) // ' '
-
-    ! Determine number of fields in field bundle and allocate memory for lfieldnamelist
-    call ESMF_FieldBundleGet(FB, fieldCount=fieldCount, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    allocate(lfieldnamelist(fieldCount))
-
-    ! Get the fields in the field bundle
-    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! For each field in the bundle, get its memory location and print out the field
-    do n = 1, fieldCount
-       call dshr_fldbun_GetFldPtr(FB, lfieldnamelist(n), fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       if (lrank == 0) then
-          ! no local data
-
-       elseif (lrank == 1) then
-          if (size(dataPtr1d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n))//' ', &
-                  minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
-          else
-             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), " no data"
-          endif
-
-       elseif (lrank == 2) then
-          if (size(dataPtr2d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n))//' ', &
-                  minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
-          else
-             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                  " no data"
-          endif
-
-       else
-          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
-          rc = ESMF_FAILURE
-          return
-       endif
-       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
-    enddo
-
-    ! Deallocate memory
-    deallocate(lfieldnamelist)
-
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
-
-  end subroutine dshr_fldbun_diagnose
-
-  !===============================================================================
-  subroutine dshr_fldbun_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, field, rc)
-
-    ! ----------------------------------------------
-    ! Get pointer to a field bundle field
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle) , intent(in)              :: FB
-    character(len=*)       , intent(in)              :: fldname
-    real(R8), pointer      , intent(inout), optional :: fldptr1(:)
-    real(R8), pointer      , intent(inout), optional :: fldptr2(:,:)
-    integer                , intent(out),   optional :: rank
-    type(ESMF_Field)       , intent(out),   optional :: field
-    integer                , intent(out)              :: rc
-
-    ! local variables
-    type(ESMF_Field) :: lfield
-    integer          :: lrank
-    character(len=*), parameter :: subname='(dshr_fldbun_GetFldPtr)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    if (.not. dshr_fldbun_FldChk(FB, trim(fldname), rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//": ERROR field "//trim(fldname)//" not in FB ", ESMF_LOGMSG_ERROR)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), field=lfield, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_field_getfldptr(lfield, fldptr1=fldptr1, fldptr2=fldptr2, rank=lrank, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    if (present(rank)) rank = lrank
-    if (present(field)) field = lfield
-
-  end subroutine dshr_fldbun_getfldptr
-
-  !===============================================================================
-  subroutine dshr_fldbun_Regrid(FBin, FBout, RH, zeroregion, rc)
-
-    ! ----------------------------------------------
-    ! Assumes that FBin and FBout contain fields with the same name
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle), intent(inout)        :: FBin
-    type(ESMF_FieldBundle), intent(inout)        :: FBout
-    type(ESMF_RouteHandle), intent(inout)        :: RH
-    type(ESMF_Region_Flag), intent(in), optional :: zeroregion
-    integer               , intent(out)          :: rc
-
-    ! local
-    type(ESMF_Field)           :: field_src
-    type(ESMF_Field)           :: field_dst
-    integer                    :: fieldcount
-    logical                    :: checkflag = .false.
-    character(len=8)           :: filename
-    type(ESMF_Region_Flag)     :: localzr
-    character(CS)              :: fldname
-    integer                    :: n
-    character(ESMF_MAXSTR), allocatable :: lfieldNameList(:)
-    character(len=*),parameter :: subname='(dshr_fldbun_FieldRegrid)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call t_startf(subname)
-
-    localzr = ESMF_REGION_TOTAL
-    if (present(zeroregion)) then
-       localzr = zeroregion
-    endif
-
-    call ESMF_FieldBundleGet(FBin, fieldCount=fieldCount, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    allocate(lfieldNameList(fieldCount))
-    call ESMF_FieldBundleGet(FBin, fieldNameList=lfieldNameList, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    do n = 1,fieldCount
-       fldname = trim(lfieldnamelist(n))
-       call ESMF_FieldBundleGet(FBin, fieldName=trim(fldname), field=field_src, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_FieldBundleGet(FBout, fieldName=trim(fldname), field=field_dst, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_FieldRegrid(field_src, field_dst, routehandle=RH, &
-            termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.false., zeroregion=localzr, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-    end do
-
-    call t_stopf(subname)
-
-  end subroutine dshr_fldbun_Regrid
-
-  !===============================================================================
-  subroutine dshr_fldbun_getFieldN(FB, fieldnum, field, rc)
-
-    ! ----------------------------------------------
-    ! Get field with number fieldnum in input field bundle FB
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle), intent(in)    :: FB
-    integer               , intent(in)    :: fieldnum
-    type(ESMF_Field)      , intent(inout) :: field
-    integer               , intent(out)   :: rc
-
-    ! local variables
-    character(len=ESMF_MAXSTR) :: name
-    character(len=*),parameter :: subname='(dshr_fldbun_getFieldN)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call dshr_fldbun_getNameN(FB, fieldnum, name, rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_FieldBundleGet(FB, fieldName=name, field=field, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine dshr_fldbun_getFieldN
-
-  !===============================================================================
-  subroutine dshr_fldbun_getNameN(FB, fieldnum, fieldname, rc)
-
-    ! ----------------------------------------------
-    ! Get name of field number fieldnum in input field bundle FB
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle), intent(in)    :: FB
-    integer               , intent(in)    :: fieldnum
-    character(len=*)      , intent(out)   :: fieldname
-    integer               , intent(out)   :: rc
-
-    ! local variables
-    integer                         :: fieldCount
-    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    character(len=*),parameter      :: subname='(dshr_fldbun_getNameN)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    fieldname = ' '
-    call ESMF_FieldBundleGet(FB, fieldCount=fieldCount, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    if (fieldnum > fieldCount) then
-      call ESMF_LogWrite(trim(subname)//": ERROR fieldnum > fieldCount ", ESMF_LOGMSG_ERROR)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    allocate(lfieldnamelist(fieldCount))
-    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    fieldname = lfieldnamelist(fieldnum)
-    deallocate(lfieldnamelist)
-
-  end subroutine dshr_fldbun_getNameN
-
-  !===============================================================================
-  logical function dshr_fldbun_FldChk(FB, fldname, rc)
-
-    ! ----------------------------------------------
-    ! Determine if field with fldname is in input field bundle
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle), intent(in)  :: FB
-    character(len=*)      , intent(in)  :: fldname
-    integer               , intent(out) :: rc
-
-    ! local variables
-    character(len=*), parameter :: subname='(dshr_fldbun_FldChk)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! If field bundle is created determine if fldname is present in field bundle
-    dshr_fldbun_FldChk = .false.
-
-    call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), isPresent=isPresent, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) then
-       call ESMF_LogWrite(trim(subname)//" Error checking field: "//trim(fldname), ESMF_LOGMSG_ERROR)
-       rc = ESMF_FAILURE
-       return
-    endif
-
-    if (isPresent) then
-       dshr_fldbun_FldChk = .true.
-    endif
-
-  end function dshr_fldbun_FldChk
-
-  !===============================================================================
-  subroutine dshr_fldbun_Field_diagnose(FB, fieldname, string, rc)
-
-    ! ----------------------------------------------
-    ! Diagnose status of State
-    ! ----------------------------------------------
-
-    ! input/output variables
-    type(ESMF_FieldBundle), intent(inout)  :: FB
-    character(len=*), intent(in)           :: fieldname
-    character(len=*), intent(in), optional :: string
-    integer         , intent(out)          :: rc
-
-    ! local variables
-    integer           :: lrank
-    character(len=CS) :: lstring
-    real(R8), pointer :: dataPtr1d(:)
-    real(R8), pointer :: dataPtr2d(:,:)
-    character(len=*),parameter      :: subname='(dshr_fldbun_FieldDiagnose)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    lstring = ''
-    if (present(string)) lstring = trim(string)
-
-    call dshr_fldbun_GetFldPtr(FB, fieldname, dataPtr1d, dataPtr2d, lrank, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    if (lrank == 0) then
-       ! no local data
-    elseif (lrank == 1) then
-       if (size(dataPtr1d) > 0) then
-          write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
-               minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
-       else
-          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
-       endif
-    elseif (lrank == 2) then
-       if (size(dataPtr2d) > 0) then
-          write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
-               minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
-       else
-          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
-       endif
-    else
-       call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
-       rc = ESMF_FAILURE
-       return
-    endif
-    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
-
-  end subroutine dshr_fldbun_Field_diagnose
 
 end module dshr_mod

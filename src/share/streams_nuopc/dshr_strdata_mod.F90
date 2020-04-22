@@ -9,11 +9,11 @@ module dshr_strdata_mod
   !    data back to the mediator
 
   use ESMF
-  use shr_const_mod    , only : shr_const_pi, shr_const_cDay
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_file_mod     , only : shr_file_getunit, shr_file_freeunit
+  use shr_const_mod    , only : shr_const_pi, shr_const_cDay
   use shr_log_mod      , only : logunit => shr_log_Unit
   use shr_cal_mod      , only : shr_cal_calendarname, shr_cal_timeSet
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian
@@ -30,8 +30,10 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_init_from_infiles, shr_stream_init_from_fortran
   use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
   use dshr_stream_mod  , only : shr_stream_getFilePath, shr_stream_findBounds
-  use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getfilefieldname 
+  use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename 
+  use dshr_stream_mod  , only : shr_stream_getfilefieldname 
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
+  use dshr_methods_mod , only : dshr_fldbun_getfldptr, chkerr
   use pio              , only : file_desc_t, iosystem_desc_t, io_desc_t, var_desc_t
   use pio              , only : pio_openfile, pio_closefile, pio_nowrite
   use pio              , only : pio_seterrorhandling, pio_initdecomp, pio_freedecomp
@@ -111,21 +113,21 @@ module dshr_strdata_mod
      real(R8)                       :: obliqr
      integer                        :: modeldt           ! model dt in seconds
 
-     ! model domain info - set by mesh
-     integer                        :: nxg               ! model domain lon size
-     integer                        :: nyg               ! model domain lat size
-     integer                        :: nzg               ! model domain vertical size
-     integer                        :: lsize             ! model domain local size
-     integer                        :: gsize             ! model domain global
-     integer, pointer               :: gindex(:)         ! model domain global index spzce
-     type(mct_gsmap)                :: gsmap             ! model domain mct global seg map
-     type(mct_ggrid)                :: grid              ! model domain mct ggrid
-     type(ESMF_Mesh)                :: mesh_model        ! model mesh
+     ! model info
+     integer                        :: nxg                   ! model domain lon size
+     integer                        :: nyg                   ! model domain lat size
+     integer                        :: nzg                   ! model domain vertical size
+     integer                        :: lsize                 ! model domain local size
+     integer                        :: gsize                 ! model domain global
+     integer, pointer               :: gindex(:)             ! model domain global index spzce
+     type(mct_gsmap)                :: gsmap                 ! model domain mct global seg map
+     type(mct_ggrid)                :: grid                  ! model domain mct ggrid
+     type(ESMF_Mesh)                :: mesh_model            ! model mesh
+     type(ESMF_FieldBundle)         :: fldbun_model(nStrMax) ! stream data time interpolated and mapped to model domain
+     type(mct_avect)                :: avFUB(nStrMax)        ! stream data LB mapped to model domain
+     type(mct_avect)                :: avFLB(nStrMax)        ! stream data UB mapped to model domain
+     type(mct_avect)                :: avCoszen(nStrMax)     ! data assocaited with coszen time interp
 
-     ! model stream data, time interpolated and mapped to model domain
-     type(mct_avect)                :: avs(nStrMax)      ! model grid stream attribute vectors
-
-     ! TODO: make the following allocatable and allocate memory once nstreams has been calculated
      ! stream info
      type(shr_stream_streamType)    :: stream(nStrMax)
      integer                        :: strnxg(nStrMax)
@@ -136,13 +138,10 @@ module dshr_strdata_mod
      integer                        :: lsizeR(nStrMax)
      type(mct_gsmap)                :: gsmapR(nStrMax)
      type(mct_rearr)                :: rearrR(nStrMax)
-     type(mct_ggrid)                :: gridR(nStrMax)
-     type(mct_avect)                :: avRFile(nStrMax)  ! Read attrvect for multiple time slices
-     type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect
-     type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect
-     type(mct_avect)                :: avFUB(nStrMax)    ! Final attrvect
-     type(mct_avect)                :: avFLB(nStrMax)    ! Final attrvect
-     type(mct_avect)                :: avCoszen(nStrMax) ! data assocaited with coszen time interp
+     type(mct_ggrid)                :: gridR(nStrMax)    ! stream grid
+     type(mct_avect)                :: avRFile(nStrMax)  ! Read attrvect for multiple time slices - stream grid
+     type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect - stream grid
+     type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect - stream grid
      type(mct_sMatP)                :: sMatPf(nStrMax)
      type(mct_sMatP)                :: sMatPs(nStrMax)
      integer                        :: ymdLB(nStrMax)
@@ -159,11 +158,6 @@ module dshr_strdata_mod
      character(CL)                  :: calendar          ! model calendar for ymd,tod
      character(CL)                  :: allocstring
   end type shr_strdata_type
-
-  interface shr_strdata_init_model_domain
-     module procedure :: shr_strdata_init_model_domain_mesh
-     module procedure :: shr_strdata_init_model_domain_scol
-  end interface shr_strdata_init_model_domain
 
   integer          ,parameter :: CompareXYabs      = 1   ! X,Y  relative error
   integer          ,parameter :: CompareXYrel      = 2   ! X,Y  absolute error
@@ -183,16 +177,13 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_from_infiles(sdat, nlfilename, mesh, scmmode, scmlon, scmlat, &
-       clock, mpicom, compid, logunit, reset_domain_mask, rc)
+  subroutine shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, &
+        mpicom, compid, logunit, reset_domain_mask, rc)
 
     ! input/output variables
     type(shr_strdata_type) , intent(inout) :: sdat
     character(len=*)       , intent(in)    :: nlfilename ! for shr_strdata_nml namelist
     type(ESMF_Mesh)        , intent(inout) :: mesh 
-    logical                , intent(in)    :: scmmode
-    real(r8)               , intent(in)    :: scmlon
-    real(r8)               , intent(in)    :: scmlat
     type(ESMF_Clock)       , intent(in)    :: clock
     integer                , intent(in)    :: mpicom
     integer                , intent(in)    :: compid
@@ -225,24 +216,12 @@ contains
     sdat%io_type       =  shr_pio_getiotype(compid)
     sdat%io_format     =  shr_pio_getioformat(compid)
 
+    ! Set sdat mesh_model
+    sdat%mesh_model = mesh
+
     ! Initialize the sdat model domain info
-    ! Note that the data model mesh is generated here for single column  
-    ! whereas it is obtained as input for non single-column
-    if (scmmode) then
-       if (my_task == master_task) then
-          write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
-       end if
-       call shr_strdata_init_model_domain(scmlon, scmlat, mpicom, compid, mesh, sdat, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! ***TODO: Now need to initialize mesh that will send back to mediator given the lat and lon
-       !    of the original mesh that was selected ***
-       sdat%mesh_model = mesh
-    else
-       sdat%mesh_model = mesh
-       call shr_strdata_init_model_domain(sdat%mesh_model, mpicom, compid, sdat, &
-            reset_domain_mask=reset_domain_mask, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    call shr_strdata_init_model_domain(mesh,  mpicom, compid, sdat, reset_domain_mask=reset_domain_mask, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize sdat stream domains
     call shr_strdata_init_streams_from_infiles(sdat, compid, mpicom, my_task)
@@ -361,6 +340,9 @@ contains
        sdat%dtlimit(1) = 1.0e30
     end if
 
+    ! Initialize sdat mesh
+    sdat%mesh_model = mesh
+
     ! Initialize sdat model domain info
     call shr_strdata_init_model_domain(mesh, mpicom, compid, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -392,12 +374,11 @@ contains
   end subroutine shr_strdata_init_from_fortran
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain_mesh( mesh, mpicom, compid, sdat, reset_domain_mask, rc)
+  subroutine shr_strdata_init_model_domain( mesh, mpicom, compid, sdat, reset_domain_mask, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat%lsize, sdat%gsmap and sdat%grid
     ! sdat%nxg, sdat%nyg and sdat%nzg are initialized in shr_strdata_readnl
-    ! sdat%avs(:) is initialized in shr_strdata_init_mapping
     ! ----------------------------------------------
 
     ! input/output variables
@@ -500,125 +481,7 @@ contains
        end if
     end if
 
-  end subroutine shr_strdata_init_model_domain_mesh
-
-  !===============================================================================
-  subroutine shr_strdata_init_model_domain_scol(scmlon, scmlat, mpicom, compid, mesh, sdat, rc)
-
-    !-------------------------------------------
-    ! Create mct ggrid for model grid and set model gsmap if not input
-    ! assumes a very specific netCDF domain file format wrt var names, etc.
-    !-------------------------------------------
-
-    ! input/output variables
-    real(R8)               , intent(in)    :: scmlon     ! single column lon
-    real(R8)               , intent(in)    :: scmlat     ! single column lat
-    integer                , intent(in)    :: mpicom     ! mpi communicator
-    integer                , intent(in)    :: compid
-    type(ESMF_MESH)        , intent(in)    :: mesh
-    type(shr_strdata_type) , intent(inout) :: sdat
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    integer              :: n,k,i              ! indices
-    integer              :: my_task
-    integer              :: ierr               ! error code
-    integer, allocatable :: elementCountPTile(:)
-    integer, allocatable :: indexCountPDE(:,:)
-    integer              :: spatialDim         ! number of dimension in mesh
-    integer              :: numOwnedElements   ! number of elements owned by this PET
-    integer              :: numOwnedNodes      ! number of nodes owned by this PET
-    real(r8), pointer    :: ownedElemCoords(:) ! mesh element coordinates owned by this PET
-    real(r8), pointer    :: ownedNodeCoords(:) ! mesh node coordinates owned by this PET
-    real(r8), pointer    :: lat(:), lon(:)     ! mesh lats and lons owned by this PET
-    real(R8)             :: dist,mind          ! scmmode point search
-    integer              :: ni                 ! scmmode point search
-    real(R8)             :: lscmlon            ! local copy of scmlon
-    integer              :: nlon,nlat,nmask
-    integer              :: gsize
-    integer, pointer     :: idata(:)           ! temporary
-    character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
-    character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
-    !-------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! error check
-    call mpi_comm_rank(mpicom,my_task,ierr)
-    if (my_task > 0) then
-       write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
-       call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
-    endif
-
-    ! sdat%grid is for a single point - but the input model mesh from the namelist
-    ! is for the total grid
-    ! Below use scmlon and scmlat to find the nearest neighbor of the input mesh that
-    ! will be used for the single column calculation
-
-    ! Read in mesh (this is the global or regional atm mesh)
-    call ESMF_MeshGet(mesh, spatialDim=spatialDim, &
-         numOwnedElements=numOwnedElements, numOwnedNodes=numOwnedNodes, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(ownedElemCoords(spatialDim*numOwnedElements))
-    allocate(ownedNodeCoords(spatialDim*numOwnedNodes))
-    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(lon(numOwnedElements))
-    allocate(lat(numOwnedElements))
-    do n = 1, numOwnedElements
-       lon(n) = ownedElemCoords(2*n-1)
-       lat(n) = ownedElemCoords(2*n)
-    end do
-
-    ! Find nearest neigbor of input domain for scmlon and scmlat
-    ! want lon values between 0 and 360, assume 1440 is enough (start with wraparound)
-
-    lscmlon = mod(scmlon+1440.0_r8,360.0_r8)
-    lon     = mod(lon   +1440.0_r8,360.0_r8)
-    ! lat and lon are on 1D arrays (e.g. spectral element grids)
-    mind = 1.0e20
-    do i = 1,numOwnedElements
-       dist=abs(lscmlon - lon(i)) + abs(scmlat - lat(i))
-       if (dist < mind) then
-          mind = dist
-          ni = i
-       endif
-    enddo
-
-    ! TODO: Determine the nodes associate with element index ni
-    
-    ! reset sdat%nxg, sdat%nyg and sdat%nzg
-    sdat%nxg  =  1
-    sdat%nyg  =  1
-    sdat%nzg  = -1
-
-    ! initialize sdat%lsize and sdat%gsmap
-    sdat%lsize = 1
-    sdat%gsize = 1
-    allocate(sdat%gindex(1)); sdat%gindex(1) = 1
-    call mct_gsMap_init(sdat%gsmap, sdat%gindex, mpicom, compid, sdat%lsize, sdat%gsize)
-
-    ! Initialize model ggrid for single column
-    ! This will be used to interpolate the stream(s) to the single column value
-
-    call mct_gGrid_init(ggrid=sdat%Grid, CoordChars='lat:lon', OtherChars='mask', lsize=1)
-    allocate(idata(1)); idata = 1
-    call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', idata, 1)
-    deallocate(idata)
-    sdat%Grid%data%rAttr = -9999.0_R8
-    nlon  = mct_aVect_indexRA(sdat%Grid%data,'lon')
-    nlat  = mct_aVect_indexRA(sdat%Grid%data,'lat')
-    nmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
-
-    sdat%Grid%data%rAttr(nlat ,1) = lat(ni)
-    sdat%Grid%data%rAttr(nlon ,1) = lon(ni)
-    sdat%Grid%data%rAttr(nmask,1) = 1
-
-    deallocate(ownedElemCoords)
-    deallocate(lon)
-    deallocate(lat)
-
-  end subroutine shr_strdata_init_model_domain_scol
+  end subroutine shr_strdata_init_model_domain
 
   !===============================================================================
   subroutine shr_strdata_init_streams_from_infiles(sdat, compid, mpicom, my_task)
@@ -974,8 +837,12 @@ contains
     character(CXX) :: fldList ! list of fields
     character(CS)  :: uname   ! u vector field name
     character(CS)  :: vname   ! v vector field name
+    character(CS)  :: fldname
     logical        :: compare1
     logical        :: compare2
+    integer        :: nfld
+    integer        :: rc
+    type(ESMF_Field) :: lfield
     character(*)     ,parameter :: F00 = "('(shr_strdata_init_mapping) ',8a)"
     character(len=*) ,parameter :: subname = "(shr_strdata_init_mapping) "
     !-------------------------------------------------------------------------------
@@ -1047,11 +914,10 @@ contains
              if (my_task == master_task) then
                 write(logunit,F00) ' reading ',trim(SDAT%fillread(n))
              endif
-             call shr_mct_sMatReaddnc(sMati,SDAT%gsmapR(n),SDAT%gsmapR(n),'src', &
-                  filename=trim(SDAT%fillread(n)),mytask=my_task,mpicom=mpicom)
+             call shr_mct_sMatReaddnc(sMati, SDAT%gsmapR(n), SDAT%gsmapR(n), 'src',  &
+                  filename=trim(SDAT%fillread(n)), mytask=my_task, mpicom=mpicom)
 
-             call mct_sMatP_Init(SDAT%sMatPf(n),sMati,SDAT%gsMapR(n),&
-                  SDAT%gsmapR(n),0, mpicom, compid)
+             call mct_sMatP_Init(SDAT%sMatPf(n), sMati, SDAT%gsMapR(n), SDAT%gsmapR(n), 0, mpicom, compid)
 
              call mct_sMat_Clean(sMati)
           endif
@@ -1110,22 +976,41 @@ contains
        endif
     enddo
 
-    ! --- setup datatypes ---
+    ! Create model datatypes in sdat
 
     do n = 1,SDAT%nstreams
+       ! Determine colon delimited field name string for stream fields
        if (my_task == master_task) then
           call shr_stream_getModelFieldList(SDAT%stream(n),fldList)
        endif
        call shr_mpi_bcast(fldList,mpicom)
-       call mct_aVect_init(SDAT%avs(n)  ,rlist=fldList,lsize=SDAT%lsize)
+
+       ! Create attribute vectors on model mesh
        call mct_aVect_init(SDAT%avFLB(n),rlist=fldList,lsize=SDAT%lsize)
        call mct_aVect_init(SDAT%avFUB(n),rlist=fldList,lsize=SDAT%lsize)
        call mct_aVect_init(SDAT%avRLB(n),rlist=fldList,lsize=SDAT%lsizeR(n))
        call mct_aVect_init(SDAT%avRUB(n),rlist=fldList,lsize=SDAT%lsizeR(n))
+
        if (trim(SDAT%tintalgo(n)) == 'coszen') then
-          call mct_aVect_init(SDAT%avCoszen(n),rlist="tavCosz",lsize=SDAT%lsize)
+          call mct_aVect_init(SDAT%avCoszen(n), rlist="tavCosz", lsize=SDAT%lsize)
        endif
-    enddo
+
+       ! Create field bundle on model mesh for spatially and time
+       ! interpolated streams fields to model mesh
+       sdat%fldbun_model(n) = ESMF_FieldBundleCreate(rc=rc)
+       do nfld = 1,shr_string_listGetNum(fldList)
+          ! get nth fldname in colon delimited string
+          call shr_string_listGetName(fldlist, nfld, fldname)
+
+          ! create temporary field with name fldname on model mesh
+          ! add the field to the lbound and ubound field bundle as well as the time interpolated field bundle
+          lfield = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name=trim(fldname), &
+               meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+          call ESMF_FieldBundleAdd(sdat%fldbun_model(n), (/lfield/), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+               call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       end do
+    end do
 
     ! --- check vectors and compute ustrm,vstrm ---
 
@@ -1211,28 +1096,25 @@ contains
     logical                ,intent(in),optional :: timers
 
     ! local variables
-    integer                    :: n,m,i,kf  ! generic index
+    integer                    :: n,m,i,kf,nf          ! generic index
     integer                    :: my_task,npes
     logical                    :: mssrmlf
     logical,allocatable        :: newData(:)
     integer                    :: ierr
     integer                    :: nu,nv
     integer                    :: lsize,lsizeR,lsizeF
-    integer,allocatable        :: ymdmod(:) ! modified model dates to handle Feb 29
-    integer                    :: todmod    ! modified model dates to handle Feb 29
+    integer,allocatable        :: ymdmod(:)            ! modified model dates to handle Feb 29
+    integer                    :: todmod               ! modified model dates to handle Feb 29
     type(mct_avect)            :: avRtmp
     type(mct_avect)            :: avRV,avFV
     character(len=32)          :: lstr
     logical                    :: ltimers
-    real(R8)                   :: flb,fub   ! factor for lb and ub
-
-    !--- for cosz method ---
-    real(R8),pointer           :: lonr(:)              ! lon radians
-    real(R8),pointer           :: latr(:)              ! lat radians
-    real(R8),pointer           :: cosz(:)              ! cosz
-    real(R8),pointer           :: tavCosz(:)           ! cosz, time avg over [LB,UB]
+    real(R8)                   :: flb,fub              ! factor for lb and ub
+    real(R8),pointer           :: lonr(:)              ! lon radians, cosz method
+    real(R8),pointer           :: latr(:)              ! lat radians, cosz method
+    real(R8),pointer           :: cosz(:)              ! cosz, cosz method
+    real(R8),pointer           :: tavCosz(:)           ! cosz, time avg over [LB,UB], cosz method
     real(R8),pointer           :: xlon(:),ylon(:)
-    real(R8),parameter         :: solZenMin = 0.001_R8 ! minimum solar zenith angle
     type(ESMF_Time)            :: timeLB, timeUB       ! lb and ub times
     type(ESMF_TimeInterval)    :: timeint              ! delta time
     integer                    :: dday                 ! delta days
@@ -1241,9 +1123,14 @@ contains
     character(CS)              :: uname                ! u vector field name
     character(CS)              :: vname                ! v vector field name
     integer                    :: year,month,day       ! date year month day
-    character(len=*),parameter :: timname = "_strd_adv"
-    integer,parameter          :: tadj = 2
-    character(*),parameter     :: subname = "(shr_strdata_advance) "
+    real(r8), pointer          :: dataptr(:) 
+    integer                    :: rc
+    integer                    :: fieldCount
+    character(ESMF_MAXSTR) ,pointer :: fieldnamelist(:)
+    real(R8)         ,parameter :: solZenMin = 0.001_R8 ! minimum solar zenith angle
+    character(len=*) ,parameter :: timname = "_strd_adv"
+    integer          ,parameter :: tadj = 2
+    character(*)     ,parameter :: subname = "(shr_strdata_advance) "
     !-------------------------------------------------------------------------------
 
     if (SDAT%nstreams < 1) return
@@ -1429,8 +1316,7 @@ contains
        do m = 1,SDAT%nvectors
           nu = SDAT%ustrm(m)
           nv = SDAT%vstrm(m)
-          if ((SDAT%domaps(nu) .or. SDAT%domaps(nv)) .and. &
-               (newdata(nu) .or. newdata(nv))) then
+          if ((SDAT%domaps(nu) .or. SDAT%domaps(nv)) .and. (newdata(nu) .or. newdata(nv))) then
 
              call t_startf(trim(lstr)//trim(timname)//'_vect')
              call shr_string_listGetName(SDAT%vectors(m),1,uname)
@@ -1478,14 +1364,11 @@ contains
                      +SDAT%avRUB(nv)%rAttr(vvar,i) * cos(xlon(i))
              enddo
              call mct_sMat_avMult(avRV,SDAT%sMatPs(nu),avFV)
-             ! ---   don't need to recompute uvar and vvar, should be the same
-             !       uvar = mct_aVect_indexRA(SDAT%avFUB(nu),trim(uname))
-             !       vvar = mct_aVect_indexRA(SDAT%avFUB(nv),trim(vname))
+
+             ! do not need to recompute uvar and vvar, should be the same
              do i = 1,lsizeF
-                SDAT%avFUB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i))  &
-                     +avFV%rAttr(2,i) * sin(ylon(i))
-                SDAT%avFUB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i))  &
-                     +avFV%rAttr(2,i) * cos(ylon(i))
+                SDAT%avFUB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i)) + avFV%rAttr(2,i) * sin(ylon(i))
+                SDAT%avFUB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i)) + avFV%rAttr(2,i) * cos(ylon(i))
              enddo
 
              call mct_aVect_clean(avRV)
@@ -1496,13 +1379,30 @@ contains
           endif
        enddo
 
+       ! ---------------------------------------------------------
+       ! Do time interpolation to create FB_model
+       ! ---------------------------------------------------------
+
        do n = 1,SDAT%nstreams
 
-          !--- method: coszen -------------------------------------------------------
+          ! Get field namelist
+          call ESMF_FieldBundleGet(sdat%fldbun_model(n), fieldCount=fieldCount, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+               call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          allocate(fieldnamelist(fieldCount))
+          call ESMF_FieldBundleGet(sdat%fldbun_model(n), fieldNameList=fieldnamelist, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+               call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
           if (trim(SDAT%tintalgo(n)) == 'coszen') then
+
+             ! ------------------------------------------
+             ! time interpolation method is coszen
+             ! ------------------------------------------
+
              call t_startf(trim(lstr)//trim(timname)//'_coszen')
 
-             !--- make sure orb info has been set ---
+             ! make sure orb info has been set
              if (SDAT%eccen == SHR_ORB_UNDEF_REAL) then
                 call shr_sys_abort(subname//' ERROR in orb params for coszen tinterp')
              else if (SDAT%modeldt < 1) then
@@ -1510,7 +1410,7 @@ contains
              endif
 
              !--- allocate avg cosz array ---
-             lsizeF = mct_aVect_lsize(SDAT%avFLB(n))
+             lsizeF = sdat%lsize
              allocate(tavCosz(lsizeF),cosz(lsizeF),lonr(lsizeF),latr(lsizeF))
 
              !--- get lat/lon data ---
@@ -1539,38 +1439,61 @@ contains
                 call mct_avect_exportRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz)
              endif
 
-             !--- t-interp is LB data normalized with this factor: cosz/tavCosz ---
-             do i = 1,lsizeF
-                if (cosz(i) > solZenMin) then
-                   SDAT%avs(n)%rAttr(:,i) = SDAT%avFLB(n)%rAttr(:,i)*cosz(i)/tavCosz(i)
-                else
-                   SDAT%avs(n)%rAttr(:,i) =  0._r8
-                endif
-             enddo
+             ! t-interp is LB data normalized with this factor: cosz/tavCosz
+
+             do nf = 1,fieldcount
+                call dshr_fldbun_getfldptr(sdat%fldbun_model(n), fieldnamelist(nf), dataptr, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+                     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                kf = mct_aVect_indexRA(sdat%avFLB(n), trim(fieldnamelist(nf)))
+                do i = 1,lsize
+                   if (cosz(i) > solZenMin) then
+                      dataptr(i) = SDAT%avFLB(n)%rAttr(kf,i)*cosz(i)/tavCosz(i)
+                   else
+                      dataptr(i) = 0._r8
+                   endif
+                end do
+             end do
+
              deallocate(tavCosz,cosz,lonr,latr)
              call t_stopf(trim(lstr)//trim(timname)//'_coszen')
 
-             !--- method: not coszen ---------------------------------------------------
           elseif (trim(SDAT%tintalgo(n)) /= trim(shr_strdata_nullstr)) then
+
+             ! ------------------------------------------
+             ! time interpolation method is not coszen
+             ! ------------------------------------------
 
              call t_startf(trim(lstr)//trim(timname)//'_tint')
              call shr_tInterp_getFactors(SDAT%ymdlb(n),SDAT%todlb(n),SDAT%ymdub(n),SDAT%todub(n), &
-                  ymdmod(n),todmod,flb,fub, &
-                  calendar=SDAT%stream(n)%calendar,algo=trim(SDAT%tintalgo(n)))
+                  ymdmod(n),todmod,flb,fub, calendar=SDAT%stream(n)%calendar,algo=trim(SDAT%tintalgo(n)))
              if (debug > 0) then
                 write(logunit,*) trim(subname),' interp = ',n,flb,fub
              endif
-             SDAT%avs(n)%rAttr(:,:) = SDAT%avFLB(n)%rAttr(:,:)*flb + SDAT%avFUB(n)%rAttr(:,:)*fub
+
+             do nf = 1,fieldcount
+                call dshr_fldbun_getfldptr(sdat%fldbun_model(n), fieldnamelist(nf), dataptr, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+                     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                kf = mct_aVect_indexRA(sdat%avFLB(n), trim(fieldnamelist(nf)))
+                dataptr(:) = sdat%avFLB(n)%rAttr(kf,:)*flb + sdat%avFUB(n)%rAttr(kf,:)*fub
+             end do
              call t_stopf(trim(lstr)//trim(timname)//'_tint')
 
           else
+
+             ! ------------------------------------------
+             ! zero out stream data for this field
+             ! ------------------------------------------
+
              call t_startf(trim(lstr)//trim(timname)//'_zero')
-             call mct_avect_zero(SDAT%avs(n))
+             do nf = 1,fieldcount
+                call dshr_fldbun_getfldptr(sdat%fldbun_model(n), fieldnamelist(nf), dataptr, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+                     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                dataptr(:) = 0._r8
+             end do
              call t_stopf(trim(lstr)//trim(timname)//'_zero')
-          endif
-          if (debug > 0) then
-             write(logunit,*) trim(subname),' SDAT av = ',n,minval(SDAT%avs(n)%rAttr),&
-                  maxval(SDAT%avs(n)%rAttr),sum(SDAT%avs(n)%rAttr)
           endif
 
        enddo
@@ -2566,7 +2489,7 @@ contains
     ! mct gGridS and gGridD
     !-------------------------------------------------------------------------------
 
-    !----- arguments -----
+    ! input/output variables
     type(mct_sMatP)  , intent(inout)       :: smatp
     type(mct_gGrid)  , intent(in)          :: ggridS
     type(mct_gsmap)  , intent(in)          :: gsmapS
@@ -2585,7 +2508,7 @@ contains
     integer          , intent(in)          :: mpicom
     character(len=*) , intent(in),optional :: strategy
 
-    !local variables
+    ! local variables
     integer               :: n,i,j
     integer               :: lsizeS,gsizeS,lsizeD,gsizeD
     integer               :: nlon,nlat,nmsk
@@ -2747,19 +2670,5 @@ contains
     kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
     data(:) = sdat%grid%data%rAttr(kf,:)
   end subroutine shr_strdata_get_griddata
-
-  !===============================================================================
-  logical function chkerr(rc, line, file)
-    integer, intent(in) :: rc
-    integer, intent(in) :: line
-    character(len=*), intent(in) :: file
-    integer :: lrc
-    !-----------------------------------------------------------------------
-    chkerr = .false.
-    lrc = rc
-    if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=line, file=file)) then
-       chkerr = .true.
-    endif
-  end function chkerr
 
 end module dshr_strdata_mod

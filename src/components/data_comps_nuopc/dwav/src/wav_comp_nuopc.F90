@@ -17,13 +17,13 @@ module wav_comp_nuopc
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_mpi_mod      , only : shr_mpi_bcast
+  use dshr_methods_mod , only : dshr_state_getfldptr, chkerr, memcheck, dshr_state_diagnose
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
-  use dshr_mod         , only : dshr_state_setscalar, dshr_state_diagnose
+  use dshr_mod         , only : dshr_state_setscalar
   use dshr_mod         , only : dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
   use dshr_mod         , only : dshr_create_mesh_from_grid
-  use dshr_mod         , only : dshr_state_getfldptr
-  use dshr_mod         , only : chkerr, memcheck
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -154,7 +154,7 @@ contains
 
     ! Obtain flds_scalar values, mpi values, multi-instance values and  
     ! set logunit and set shr logging to my log file
-    call dshr_init(gcomp, master_task, mpicom, my_task, inst_index, inst_suffix, &
+    call dshr_init(gcomp,  mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
          logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -243,7 +243,7 @@ contains
     ! Read restart if necessary
     if (read_restart) then
        call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
-            logunit, my_task, master_task, mpicom, sdat)
+            logunit, my_task, mpicom, sdat)
     end if
 
     ! Get the time to interpolate the stream data to
@@ -254,7 +254,7 @@ contains
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! Run dwav to create export state
-    call dwav_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, sdat, rc=rc)
+    call dwav_comp_run(mpicom, my_task, logunit, current_ymd, current_tod, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
@@ -321,7 +321,7 @@ contains
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
 
     ! run dwav
-    call dwav_comp_run(mpicom, my_task, master_task, logunit, next_ymd, next_tod, sdat, rc=rc)
+    call dwav_comp_run(mpicom, my_task, logunit, next_ymd, next_tod, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! write_restart if alarm is ringing
@@ -337,7 +337,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_restart_write(rpfile, case_name, 'dwav', inst_suffix, next_ymd, next_tod, &
-            logunit, mpicom, my_task, master_task, sdat)
+            logunit, mpicom, my_task, sdat)
        call t_stopf('dwav_restart')
     endif
 
@@ -443,7 +443,7 @@ contains
   end subroutine dwav_comp_realize
 
   !===============================================================================
-  subroutine dwav_comp_run(mpicom, my_task, master_task, logunit, target_ymd, target_tod, sdat, rc)
+  subroutine dwav_comp_run(mpicom, my_task, logunit, target_ymd, target_tod, sdat, rc)
 
     ! --------------------------
     ! advance dwav
@@ -452,7 +452,6 @@ contains
     ! input/output variables:
     integer                , intent(in)    :: mpicom           ! mpi communicator
     integer                , intent(in)    :: my_task
-    integer                , intent(in)    :: master_task
     integer                , intent(in)    :: logunit
     integer                , intent(in)    :: target_ymd       ! model date
     integer                , intent(in)    :: target_tod       ! model sec into model date

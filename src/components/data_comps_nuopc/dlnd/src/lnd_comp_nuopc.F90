@@ -17,14 +17,13 @@ module lnd_comp_nuopc
   use shr_sys_mod       , only : shr_sys_abort
   use shr_cal_mod       , only : shr_cal_ymd2date
   use shr_mpi_mod       , only : shr_mpi_bcast
+  use dshr_methods_mod  , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
+  use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
-  use dshr_mod          , only : dshr_state_setscalar, dshr_state_diagnose
+  use dshr_mod          , only : dshr_state_setscalar
   use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod          , only : dshr_restart_read, dshr_restart_write
   use dshr_mod          , only : dshr_create_mesh_from_grid
-  use dshr_mod          , only : dshr_state_getfldptr
-  use dshr_mod          , only : chkerr, memcheck
-  use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_dfield_mod   , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod  , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use glc_elevclass_mod , only : glc_elevclass_as_string, glc_elevclass_init
@@ -160,7 +159,7 @@ contains
 
     ! Obtain flds_scalar values, mpi values, multi-instance values and  
     ! set logunit and set shr logging to my log file
-    call dshr_init(gcomp, master_task, mpicom, my_task, inst_index, inst_suffix, &
+    call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
          logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -258,7 +257,7 @@ contains
     ! Read restart if necessary
     if (read_restart) then
        call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
-            logunit, my_task, master_task, mpicom, sdat)
+            logunit, my_task, mpicom, sdat)
     end if
 
     ! get the time to interpolate the stream data to
@@ -349,7 +348,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_restart_write(rpfile, case_name, 'dlnd', inst_suffix, next_ymd, next_tod, &
-            logunit, mpicom, my_task, master_task, sdat)
+            logunit, mpicom, my_task, sdat)
        call t_stopf('dlnd_restart')
     endif
 

@@ -2,9 +2,8 @@ module dshr_fldlist_mod
 
   use NUOPC
   use ESMF
-  use shr_kind_mod , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
-  use shr_sys_mod  , only : shr_sys_abort
-  use dshr_util_mod, only : chkerr
+  use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
+  use dshr_methods_mod , only : chkerr
 
   implicit none
   private
