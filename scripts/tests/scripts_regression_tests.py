@@ -786,7 +786,8 @@ class J_TestCreateNewcase(unittest.TestCase):
             if not os.path.exists(os.path.join(get_cime_root(),"src","drivers",driver)):
                 self.skipTest("Skipping driver test for {}, driver not found".format(driver))
             if ((model == 'cesm' and driver == 'moab') or
-                (model == 'e3sm' and driver == 'nuopc')):
+                (model == 'e3sm')):
+                print("\nwpc3\n")
                 continue
 
             testdir = os.path.join(cls._testroot, 'testcreatenewcase.{}'.format( driver))
@@ -811,6 +812,7 @@ class J_TestCreateNewcase(unittest.TestCase):
                 self.assertTrue(driver == comp_interface, msg="%s != %s"%(driver, comp_interface))
 
             cls._do_teardown.append(testdir)
+            print("\nwpc3\n")
 
     def test_n_createnewcase_bad_compset(self):
         cls = self.__class__
