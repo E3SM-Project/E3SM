@@ -420,8 +420,8 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         ! this used for surface coupling
            !Guangxing Lin, debug     
         aerdepwetis(1:ncol,l) = aerdepwetis(1:ncol,l) &
-           !+ qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
-           + sflx_tmp(1:ncol,l) 
+           + qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
+           !+ sflx_tmp(1:ncol,l) 
            !Guangxing Lin, debug, end     
      end if
 
@@ -485,8 +485,8 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
      if (species_class(l) == spec_class_aerosol) then
         !Guangxing Lin, debug     
         aerdepwetis(1:ncol,l) = aerdepwetis(1:ncol,l) &
-           !+ qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
-           + sflx_tmp(1:ncol,l) 
+           + qsrflx(1:ncol,l,4) + qsrflx(1:ncol,l,5) 
+           !+ sflx_tmp(1:ncol,l) 
            !Guangxing Lin, debug, end     
      end if
 
@@ -514,7 +514,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         if ( history_aero_prevap_resusp ) &
         call outfld( trim(cnst_name(l))//'SFSEC', sflxec(:,l), pcols, lchnk )
      
-        if(trim(cnst_name(l))=='soa_a1') then
+        if(trim(cnst_name(l))=='soa_c1') then
         !Guangxing Lin, debug   
            call outfld( 'SFSEC1', sflxec1(:,l), pcols, lchnk )
            call outfld( 'SFSEC2', sflxec2(:,l), pcols, lchnk )
