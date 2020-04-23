@@ -835,7 +835,6 @@ end subroutine micro_p3_readnl
     real(rtype) :: rimvol(pcols,pver)     !rime volume mixing ratio               m3/kg
     real(rtype) :: temp(pcols,pver)       !temperature copy needed for tendency   K
     real(rtype) :: th(pcols,pver)         !potential temperature                  K
-    real(rtype) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
     real(rtype) :: prt_liq(pcols)         !precipitation rate, liquid             m s-1
     real(rtype) :: prt_sol(pcols)         !precipitation rate, solid              m s-1
     real(rtype) :: diag_ze(pcols,pver)    !equivalent reflectivity                dBZ
@@ -1279,7 +1278,7 @@ end subroutine micro_p3_readnl
     ptend%q(:ncol,:pver,ixnumrain) = ( max(0._rtype,numrain(:ncol,:pver)) - state%q(:ncol,:pver,ixnumrain) )/dtime
     ptend%q(:ncol,:pver,ixcldice)  = ( max(0._rtype,ice(:ncol,:pver)    ) - state%q(:ncol,:pver,ixcldice)  )/dtime
     ptend%q(:ncol,:pver,ixnumice)  = ( max(0._rtype,numice(:ncol,:pver) ) - state%q(:ncol,:pver,ixnumice)  )/dtime
-    ptend%q(:ncol,:pver,ixcldrim)  = ( max(0._rtype,rim(:ncol,:pver)    ) - state%q(:ncol,:pver,ixcldrim)  )/dtime
+    ptend%q(:ncol,:pver,ixcldrim)  = ( max(0._rtype,qirim(:ncol,:pver)  ) - state%q(:ncol,:pver,ixcldrim)  )/dtime
     ptend%q(:ncol,:pver,ixrimvol)  = ( max(0._rtype,rimvol(:ncol,:pver) ) - state%q(:ncol,:pver,ixrimvol)  )/dtime
 
     call t_stopf('micro_p3_tend_loop')
