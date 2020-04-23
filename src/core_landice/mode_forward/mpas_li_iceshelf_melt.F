@@ -175,6 +175,7 @@ module li_iceshelf_melt
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
 
       if (config_print_thermal_info) then
@@ -223,6 +224,12 @@ module li_iceshelf_melt
          endif
       endif
 
+      if (trim(config_front_mass_bal_grounded) == 'ismip6') then
+         call grounded_face_melt_ismip6(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+      endif
+
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
          call iceshelf_melt_ismip6(domain, err_tmp)
          err = ior(err, err_tmp)
@@ -230,12 +237,6 @@ module li_iceshelf_melt
          return ! do not enter block loop below - we are done here
       endif
     
-      if (trim(config_front_mass_bal_grounded) == 'ismip6') then
-         call grounded_face_melt_ismip6(domain, err_tmp)
-         err = ior(err, err_tmp)
-        
-      endif
-
       ! block loop
       block => domain % blocklist
       do while (associated(block))
@@ -1221,7 +1222,7 @@ module li_iceshelf_melt
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
          ! Get ISMIP6 forcing fields
-         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean) 
+         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean) 
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
         
