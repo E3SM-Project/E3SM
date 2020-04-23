@@ -48,7 +48,7 @@ module physpkg
 #endif
 
   implicit none
-  public
+  private
 
   !  Physics buffer index
   integer ::  teout_idx          = 0  
@@ -1859,6 +1859,10 @@ end if ! l_gw_drag
     !---------------------------------------------------------------------------
     ! Radiation computations
     !---------------------------------------------------------------------------
+#ifdef MMF_MOVE_CRM
+    if (.not. is_first_step()) then
+#endif /* MMF_MOVE_CRM */
+
     call t_startf('radiation')
 
     call radiation_tend(state,ptend, pbuf, &
@@ -1871,20 +1875,24 @@ end if ! l_gw_drag
     do i=1,ncol
        tend%flx_net(i) = net_flx(i)
     end do
-    
+
     ! don't add radiative tendency to GCM temperature for MMF
     ! as it was added above as part of crm tendency.
     if (use_MMF) ptend%s = 0.
 
     call physics_update(state, ptend, ztodt, tend)
-    
+
     if (use_MMF) then
-      call check_energy_chng(state, tend, "spradheat", nstep, ztodt, zero, zero, zero, zero) 
-    else 
+      call check_energy_chng(state, tend, "spradheat", nstep, ztodt, zero, zero, zero, zero)
+    else
       call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
     endif
 
     call t_stopf('radiation')
+
+#ifdef MMF_MOVE_CRM
+    end if ! not is_first_step
+#endif /* MMF_MOVE_CRM */
     !---------------------------------------------------------------------------
     !---------------------------------------------------------------------------
 #endif /* MMF_MOVE_CRM */
