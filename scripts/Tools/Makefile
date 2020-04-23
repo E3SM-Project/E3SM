@@ -124,8 +124,6 @@ endif
 
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
-else
-  USE_CXX = TRUE
 endif
 
 ifeq (,$(SHAREDPATH))
