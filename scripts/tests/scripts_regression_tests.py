@@ -810,9 +810,9 @@ class J_TestCreateNewcase(unittest.TestCase):
             with Case(testdir, read_only=False) as case:
                 comp_interface = case.get_value("COMP_INTERFACE")
                 self.assertTrue(driver == comp_interface, msg="%s != %s"%(driver, comp_interface))
-
+            print("\nwpc4\n")
             cls._do_teardown.append(testdir)
-            print("\nwpc3\n")
+            print("\nwpc5\n")
 
     def test_n_createnewcase_bad_compset(self):
         cls = self.__class__
@@ -839,6 +839,7 @@ class J_TestCreateNewcase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        print("\nwpd1\n")
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
         rmtestroot = True
         for tfile in cls._testdirs:
@@ -853,7 +854,9 @@ class J_TestCreateNewcase(unittest.TestCase):
                 except BaseException:
                     print("Could not remove directory {}".format(tfile))
         if rmtestroot:
-            shutil.rmtree(cls._testroot)
+            print("\nwpd2\n")
+            if os.path.exists(cls._testroot):
+                shutil.rmtree(cls._testroot)
 
 
 
