@@ -38,7 +38,9 @@ contains
     ! Creates an object of type soil_water_retention_curve_clapp_hornberg_1978_type.
     ! For now, this is simply a place-holder.
     !-----------------------------------------------------------------------
-
+  type(soil_water_retention_curve_clapp_hornberg_1978_type), allocatable :: sws
+  allocate(sws)
+  constructor = sws
   end function constructor
 
   !-----------------------------------------------------------------------
