@@ -101,6 +101,7 @@ module li_core_interface
       ! Local variables
       character (len=StrKIND), pointer :: config_velocity_solver
       character (len=StrKIND), pointer :: config_basal_mass_bal_float
+      character (len=StrKIND), pointer :: config_front_mass_bal_grounded
       character (len=StrKIND), pointer :: config_thermal_solver
       logical, pointer :: config_SGH
       logical, pointer :: config_adaptive_timestep_include_DCFL
@@ -111,6 +112,7 @@ module li_core_interface
       logical, pointer :: hydroActive
       logical, pointer :: observationsActive
       logical, pointer :: ismip6MeltActive
+      logical, pointer :: ismip6GroundedFaceMeltActive
       logical, pointer :: thermalActive
 
       ierr = 0
@@ -119,6 +121,7 @@ module li_core_interface
       call mpas_pool_get_config(configPool, 'config_SGH', config_SGH)
       call mpas_pool_get_config(configPool, 'config_write_albany_ascii_mesh', config_write_albany_ascii_mesh)
       call mpas_pool_get_config(configPool, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+      call mpas_pool_get_config(configPool, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(configPool, 'config_thermal_solver', config_thermal_solver)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
@@ -126,6 +129,7 @@ module li_core_interface
       call mpas_pool_get_package(packagePool, 'hydroActive', hydroActive)
       call mpas_pool_get_package(packagePool, 'observationsActive', observationsActive)
       call mpas_pool_get_package(packagePool, 'ismip6MeltActive', ismip6MeltActive)
+      call mpas_pool_get_package(packagePool, 'ismip6GroundedFaceMeltActive', ismip6GroundedFaceMeltActive)
       call mpas_pool_get_package(packagePool, 'thermalActive', thermalActive)
 
       if (trim(config_velocity_solver) == 'sia') then
@@ -154,6 +158,12 @@ module li_core_interface
          call mpas_log_write("The 'ismip6Melt' package and assocated variables have been enabled because " // &
               "'config_basal_mass_bal_float' is set to 'ismip6'")
       endif
+
+      if (trim(config_front_mass_bal_grounded) == 'ismip6') then
+         ismip6GroundedFaceMeltActive=.true.
+         call mpas_log_write("The 'ismip6GroundedFaceMelt' package and assocated variables have been enabled because " // &
+               "'config_front_mass_bal_grounded' is set to 'ismip6'")
+      endif 
 
       if ((trim(config_thermal_solver) == 'temperature') .or. (trim(config_thermal_solver) == 'enthalpy')) then
          thermalActive = .true.
