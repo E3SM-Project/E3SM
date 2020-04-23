@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<config case="test">
+	<add_link source="../../init/initial_state/initial_state.nc" dest="init.nc"/>
+	<add_link source="../../init/initial_state/graph.info" dest="graph.info"/>
+	<add_link source="../../init/initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<template file="template_daily_output.xml" path_base="script_configuration_dir"/>
+		<option name="config_run_duration">'0001_00:00:00'</option>
+		<option name="config_pio_num_iotasks">1</option>
+ 		<option name="config_pio_stride">4</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="template_daily_output.xml" path_base="script_configuration_dir"/>
+		<stream name="timeSeriesStatsDailyOutput">
+			<add_contents>
+				<member name="daysSinceStartOfSim" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="daysSinceStartOfSim" type="var"/>
+				<member name="binBoundaryMerHeatTrans" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="velocityZonal" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="density" type="var"/>
+				<member name="potentialDensity" type="var"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="frazilLayerThicknessTendency" type="var"/>
+				<member name="avgValueWithinOceanRegion" type="var_array"/>
+				<member name="avgValueWithinOceanLayerRegion" type="var_array"/>
+				<member name="avgValueWithinOceanVolumeRegion" type="var_array"/>
+				<member name="meridionalHeatTransportLatZ" type="var"/>
+				<member name="meridionalHeatTransportLat" type="var"/>
+				<member name="minGlobalStats" type="var_array"/>
+				<member name="maxGlobalStats" type="var_array"/>
+				<member name="sumGlobalStats" type="var_array"/>
+				<member name="rmsGlobalStats" type="var_array"/>
+				<member name="avgGlobalStats" type="var_array"/>
+				<member name="vertSumMinGlobalStats" type="var_array"/>
+				<member name="vertSumMaxGlobalStats" type="var_array"/>
+				<member name="tThreshMLD" type="var"/>
+				<member name="dThreshMLD" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="vertVelocityTop" type="var"/>
+				<member name="normalGMBolusVelocity" type="var"/>
+				<member name="vertGMBolusVelocityTop" type="var"/>
+				<member name="GMBolusVelocityZonal" type="var"/>
+				<member name="GMBolusVelocityMeridional" type="var"/>
+				<member name="kappaGMCell" type="var"/>
+				<member name="cGMphaseSpeed" type="var"/>
+				<member name="velocityZonalTimesTemperature_GM" type="var"/>
+				<member name="velocityMeridionalTimesTemperature_GM" type="var"/>
+				<member name="tracersSurfaceFlux" type="var_struct"/>
+				<member name="penetrativeTemperatureFlux" type="var"/>
+				<member name="latentHeatFlux" type="var"/>
+				<member name="sensibleHeatFlux" type="var"/>
+				<member name="longWaveHeatFluxUp" type="var"/>
+				<member name="longWaveHeatFluxDown" type="var"/>
+				<member name="seaIceHeatFlux" type="var"/>
+				<member name="shortWaveHeatFlux" type="var"/>
+				<member name="evaporationFlux" type="var"/>
+				<member name="seaIceSalinityFlux" type="var"/>
+				<member name="seaIceFreshWaterFlux" type="var"/>
+				<member name="riverRunoffFlux" type="var"/>
+				<member name="iceRunoffFlux" type="var"/>
+				<member name="rainFlux" type="var"/>
+				<member name="snowFlux" type="var"/>
+				<member name="vertNonLocalFlux" type="var"/>
+				<member name="activeTracersTend" type="var_array"/>
+				<member name="salinitySurfaceRestoringTendency" type="var"/>
+				<member name="activeTracerHorizontalAdvectionTendency" type="var_array"/>
+				<member name="activeTracerVerticalAdvectionTendency" type="var_array"/>
+				<member name="activeTracerVertMixTendency" type="var_array"/>
+				<member name="activeTracerSurfaceFluxTendency" type="var_array"/>
+				<member name="temperatureShortWaveTendency" type="var_array"/>
+				<member name="activeTracerNonLocalTendency" type="var_array"/>
+				<member name="areaCellGlobal" type="var"/>
+				<member name="areaEdgeGlobal" type="var"/>
+				<member name="areaTriangleGlobal" type="var"/>
+				<member name="volumeCellGlobal" type="var"/>
+				<member name="volumeEdgeGlobal" type="var"/>
+				<member name="CFLNumberGlobal" type="var"/>
+				<member name="vertDiffTopOfCell" type="var"/>
+				<member name="vertViscTopOfCell" type="var"/>
+				<member name="bulkRichardsonNumber" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="columnIntegratedSpeed" type="var"/>
+				<member name="landIceFreshwaterFlux" type="var"/>
+				<member name="landIceHeatFlux" type="var"/>
+				<member name="heatFluxToLandIce" type="var"/>
+				<member name="mocStreamvalLatAndDepth" type="var"/>
+				<member name="mocStreamvalLatAndDepthRegion" type="var"/>
+				<member name="binBoundaryMocStreamfunction" type="var"/>
+				<member name="surfaceBuoyancyForcing" type="var"/>
+				<member name="tendLayerThickness" type="var"/>
+				<member name="boundaryLayerDepthSmooth" type="var"/>
+				<member name="pressureAdjustedSSH" type="var"/>
+				<member name="SSHSquared" type="var"/>
+				<member name="velocityZonalSquared" type="var"/>
+				<member name="velocityMeridionalSquared" type="var"/>
+				<member name="velocityZonalTimesTemperature" type="var"/>
+				<member name="velocityMeridionalTimesTemperature" type="var"/>
+				<member name="activeTracerVerticalAdvectionTopFlux" type="var_array"/>
+				<member name="activeTracerHorizontalAdvectionEdgeFlux" type="var_array"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>
