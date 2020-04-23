@@ -190,6 +190,15 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'ocean.ARRM60to10'
         decomp_date += '180723'
         decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
+        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'oARRM60to10_ICG':
+        ic_date += '200422'
+        ic_prefix += 'ocean.ARRM60to10.restart_grizzly'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
+        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
     elif ocn_grid == 'oARRM60to6':
         ic_date += '180803'
         ic_prefix += 'ocean.ARRM60to6'
