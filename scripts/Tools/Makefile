@@ -122,10 +122,6 @@ else
   CPPDEFS += -DHAVE_MPI
 endif
 
-ifeq ($(strip $(PIO_VERSION)),1)
-  CPPDEFS += -DPIO1
-endif
-
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
@@ -300,8 +296,13 @@ endif
 # Force PIO to use MPI_Isends instead of the default, MPI_Irsends
 ifeq ($(PIO_VERSION),2)
   EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
+  ifneq ($(COMPILER),nag)
+    # Needed by SCORPIO not default PIO, does not work with NAG compiler
+    SUPPORTS_CXX := TRUE
+  endif
 else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
+  CPPDEFS += -DPIO1
 endif
 
 ifdef LIB_PNETCDF
