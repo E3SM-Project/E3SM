@@ -227,6 +227,7 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
+         kappaRediCell(:, iCell) = 1.0_RKIND
          kappaGMCell(:, iCell) = 1.0_RKIND
          kappaRediSfcTaper(:, iCell) = 1.0_RKIND
       end do
@@ -811,7 +812,7 @@ contains
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
-              gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
+              gmBolusKappa(iEdge) = config_GM_visbeck_max_kappa
             end do
             !$omp end do
          else
