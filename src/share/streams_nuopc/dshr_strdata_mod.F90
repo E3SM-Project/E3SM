@@ -1446,7 +1446,7 @@ contains
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
                      call ESMF_Finalize(endflag=ESMF_END_ABORT)
                 kf = mct_aVect_indexRA(sdat%avFLB(n), trim(fieldnamelist(nf)))
-                do i = 1,lsize
+                do i = 1,lsizeF
                    if (cosz(i) > solZenMin) then
                       dataptr(i) = SDAT%avFLB(n)%rAttr(kf,i)*cosz(i)/tavCosz(i)
                    else
@@ -1500,6 +1500,7 @@ contains
 
        deallocate(newData)
        deallocate(ymdmod)
+       deallocate(fieldnamelist)
 
     endif    ! nstreams > 0
 

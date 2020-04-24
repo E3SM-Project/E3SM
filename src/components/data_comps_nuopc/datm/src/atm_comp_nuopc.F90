@@ -1034,21 +1034,21 @@ contains
        allocate(strm_flds(3))
        strm_flds = (/'bcphidry', 'bcphodry', 'bcphiwet'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_bcph', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_bcph, rc=rc)
+            state=exportState, state_ptr=Faxa_bcph, logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        strm_flds = (/'ocphidry', 'ocphodry', 'ocphiwet'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_ocph', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_ocph, rc=rc)
+            state=exportState, state_ptr=Faxa_ocph, logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        deallocate(strm_flds)
        allocate(strm_flds(4))
        strm_flds = (/'dstwet1', 'dstwet2', 'dstwet3', 'dstwet4'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_dstwet', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_dstwet, rc=rc)
+            state=exportState, state_ptr=Faxa_dstwet, logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        strm_flds = (/'dstdry1', 'dstdry2', 'dstdry3', 'dstdry4'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_dstdry', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_dstdry, rc=rc)
+            state=exportState, state_ptr=Faxa_dstdry, logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        deallocate(strm_flds)
     end if
@@ -1057,23 +1057,23 @@ contains
        allocate(strm_flds(3))
        strm_flds = (/'rainc_16O', 'rainc_18O', 'rainc_HDO'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_rainc_wiso', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_rainc_wiso, rc=rc)
+            state=exportState, state_ptr=Faxa_rainc_wiso, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
        strm_flds = (/'rainl_16O', 'rainl_18O', 'rainl_HDO'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_rainl_wiso', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_rainl_wiso, rc=rc)
+            state=exportState, state_ptr=Faxa_rainl_wiso, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
        strm_flds = (/'snowc_16O', 'snowc_18O', 'snowc_HDO'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_snowc_wiso', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_snowc_wiso, rc=rc)
+            state=exportState, state_ptr=Faxa_snowc_wiso, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
        strm_flds = (/'snowl_16O', 'snowl_18O', 'snowl_HDO'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Faxa_snowl_wiso', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Faxa_snowl_wiso, rc=rc)
+            state=exportState, state_ptr=Faxa_snowl_wiso, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
        strm_flds = (/'shum_16O', 'shum_18O', 'shum_HDO'/)
        call dshr_dfield_add( dfields, sdat, state_fld='Sa_shum_wiso', strm_flds=strm_flds, &
-            state=exportState, state_ptr=Sa_shum_wiso, rc=rc)
+            state=exportState, state_ptr=Sa_shum_wiso, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 

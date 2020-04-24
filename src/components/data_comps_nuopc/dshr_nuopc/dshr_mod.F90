@@ -1192,10 +1192,12 @@ contains
     call mct_gsmap_init(gsmapi, start, length, 0, mpicom, compid, gsize=gsizei, numel=numel)
     deallocate(start, length)
     lsizei = mct_gsmap_lsize(gsmapi    , mpicom)
-    lsizeo = mct_gsmap_lsize(sdat%gsmap, mpicom)
     call mct_gGrid_init(GGrid=gGridi, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsizei )
     call mct_aVect_init(avi, rList="wind:windd:qsat", lsize=lsizei)
     avi%rAttr = shr_const_spval
+
+    ! determine local size on data model grid
+    lsizeo = sdat%lsize
 
     !--- gather output grid for map logic ---
     call mct_ggrid_gather(sdat%grid, ggridoG, sdat%gsmap, 0, mpicom)
@@ -1298,8 +1300,16 @@ contains
           klon = mct_aVect_indexRA(ggridi%data   ,'lon')
           klat = mct_aVect_indexRA(sdat%grid%data,'lat')
           do n = 1,lsizei
-             if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) > 0.01_R8) domap=.true.
-             if (abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n)) > 0.01_R8) domap=.true.
+             if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) > 0.01_R8) then
+                if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) - 360._r8 > 0.01_R8) then
+                   write(6,*)'domap is true: n,londiff= ',n,abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n))
+                   domap = .true.
+                end if
+             end if
+             if (abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n)) > 0.01_R8) then
+                write(6,*)'domap is true: n,latdiff= ',n,abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n))
+                domap=.true.
+             end if
           enddo
        endif
 
@@ -1317,8 +1327,8 @@ contains
             shr_map_fs_srcmask, shr_map_fs_scalar, &
             compid, mpicom, 'Xonly')
 
-       call mct_aVect_init(avo,avi,lsizeo)
-       call mct_sMat_avMult(avi,smatp,avo)
+       call mct_aVect_init(avo, avi, lsizeo)
+       call mct_sMat_avMult(avi, smatp, avo)
        call mct_sMatP_clean(smatp)
     else
        call mct_aVect_scatter(avi, avo, sdat%gsmap, 0, mpicom)
