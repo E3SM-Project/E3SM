@@ -1448,6 +1448,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, &
     use cam_history,        only: outfld 
 
 #ifdef MMF_MOVE_CRM
+    use time_manager,       only: is_first_step
     use crm_physics,        only: crm_physics_tend
     use radiation,          only: radiation_tend
     use crm_ecpp_output_module, only: crm_ecpp_output_type

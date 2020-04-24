@@ -55,16 +55,16 @@ subroutine allocate_scalar_momentum(ncrms)
    implicit none
    integer, intent(in) :: ncrms
 
-   allocate( u_esmt(ncrms,dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm) )
-   allocate( v_esmt(ncrms,dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm) )
-   allocate( fluxb_u_esmt (nx, ny,ncrms) )
-   allocate( fluxb_v_esmt (nx, ny,ncrms) )
-   allocate( fluxt_u_esmt (nx, ny,ncrms) )
-   allocate( fluxt_v_esmt (nx, ny,ncrms) )
-   allocate( u_esmt_sgs   (nz,ncrms)  )
-   allocate( v_esmt_sgs   (nz,ncrms)  )
-   allocate( u_esmt_diff  (nz,ncrms)  )
-   allocate( v_esmt_diff  (nz,ncrms)  )
+   allocate( u_esmt(ncrms, dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm) )
+   allocate( v_esmt(ncrms, dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm) )
+   allocate( fluxb_u_esmt (ncrms, nx, ny) )
+   allocate( fluxb_v_esmt (ncrms, nx, ny) )
+   allocate( fluxt_u_esmt (ncrms, nx, ny) )
+   allocate( fluxt_v_esmt (ncrms, nx, ny) )
+   allocate( u_esmt_sgs   (ncrms, nz) )
+   allocate( v_esmt_sgs   (ncrms, nz) )
+   allocate( u_esmt_diff  (ncrms, nz) )
+   allocate( v_esmt_diff  (ncrms, nz) )
 
    call prefetch( u_esmt )
    call prefetch( v_esmt )
@@ -329,6 +329,7 @@ subroutine esmt_fft_forward(nx,nzm,dx,arr_in,k_out,arr_out)
    ! adapted from SP-WRF code provided by Stefan Tulich
    !------------------------------------------------------------------
    use fftpack51D
+   use params, only: pi
    implicit none
    integer                          , intent(in ) :: nx
    integer                          , intent(in ) :: nzm
@@ -339,12 +340,10 @@ subroutine esmt_fft_forward(nx,nzm,dx,arr_in,k_out,arr_out)
    ! local variables
    integer :: lensave, ier, nh, n1, i, j, k
    integer :: lot, jump, n, inc, lenr, lensav, lenwrk
-   real(crm_rknd) :: pi
    real(crm_rknd), dimension(nx+15)  :: wsave
    real(crm_rknd), dimension(nx,nzm) :: work
 
    ! naming convention follows fftpack5 routines
-   pi = 2.*asin(1.0)
    n = nx
    lot = 1
    lensav = n+15
