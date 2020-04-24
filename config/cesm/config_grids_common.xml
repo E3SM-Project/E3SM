@@ -255,8 +255,8 @@
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.1v2_e333r100_170619.nc</map>
     </gridmap>
     <gridmap rof_grid="JRA025v2" ocn_grid="tx0.1v3" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.1v3_e333r100_190226.nc</map>
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.1v3_e333r100_190226.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.1v3_nnsm_e333r100_190226.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.1v3_nnsm_e333r100_190226.nc</map>
     </gridmap>
     <gridmap rof_grid="JRA025" ocn_grid="tx0.1v3" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.1v3_e333r100_170830.nc</map>
