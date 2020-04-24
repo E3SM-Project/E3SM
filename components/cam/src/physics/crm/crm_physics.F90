@@ -716,6 +716,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       crm_input%ul(1:ncol,1:pver) = state%u(1:ncol,1:pver)
       crm_input%vl(1:ncol,1:pver) = state%v(1:ncol,1:pver)
       crm_input%ocnfrac(1:ncol) = cam_in%ocnfrac(1:ncol)
+#if defined( MMF_ESMT )
+      ! Set the input wind for ESMT
+      crm_input%ul_esmt(1:ncol,1:pver) = state%u(1:ncol,1:pver)
+      crm_input%vl_esmt(1:ncol,1:pver) = state%v(1:ncol,1:pver)
+#endif /* MMF_ESMT */
       do i = 1,ncol
 #ifdef MAML
          tau00_avg =0._r8
@@ -772,11 +777,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          do k = 1,pver
             crm_input%ul(i,k) = state%u(i,k) * cos( crm_angle(i) ) + state%v(i,k) * sin( crm_angle(i) )
             crm_input%vl(i,k) = state%v(i,k) * cos( crm_angle(i) ) - state%u(i,k) * sin( crm_angle(i) )
-#if defined( MMF_ESMT )
-            ! Set the input wind for ESMT
-            crm_input%ul_esmt(i,k) = state%u(i,k)
-            crm_input%vl_esmt(i,k) = state%v(i,k)
-#endif /* MMF_ESMT */
          end do ! k=1,pver
       end do ! i=1,ncol
 
