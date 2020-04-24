@@ -697,6 +697,9 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <SZIP_PATH>$ENV{SZIP_PATH}</SZIP_PATH>
+  <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
