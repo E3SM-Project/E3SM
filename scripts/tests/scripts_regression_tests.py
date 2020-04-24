@@ -3555,9 +3555,12 @@ OR
 
     # Find all python files in repo and create a pylint test for each
     if check_for_pylint():
+        cimeroot = get_cime_root()
+        print("wpc7 cimeroot is:", cimeroot)
         files_to_test = get_all_checkable_files()
 
         for file_to_test in files_to_test:
+            print("wpc8 file_to_test is:", file_to_test)
             pylint_test = make_pylint_test(file_to_test, files_to_test)
             testname = "test_pylint_%s" % file_to_test.replace("/", "_").replace(".", "_")
             expect(not hasattr(B_CheckCode, testname), "Repeat %s" % testname)
