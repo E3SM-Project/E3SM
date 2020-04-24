@@ -1,6 +1,76 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-17-2020
+Tag: cime5.8.21
+Answer Changes: None
+Tests: scripts_regression_tests 
+       CIME_MODEL=cesm; CIME_DRIVER=nuopc; ./scripts_regression_tests.py
+Dependencies:
+
+Brief Summary:
+    - Use shrmap by reference instead of copy.
+    - nuopc_updates for scripts_regression_tests, esmf on cheyenne
+    - e3sm_cime_mgmt hotfix for both-removed conflicts
+    - Allow for specification of vertical grid in ATM_GRID.
+    - Recognize when a machine listed in config_machines.xml has no entries.
+    - Fix case reset on some machines.
+    - Fix pylint issues.
+    - Bring back the setting of dlnd strm_domdir and strm_domfil to null.
+    - Bugfixes and changes that permit cmeps to run without a mediator.
+    - Some changes to cprnc's CMakeLists.txt.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+979ab8433 Merge pull request #3470 from jedwards4b/shr_map_getARptr
+4525d6a4e Merge pull request #3490 from jedwards4b/nuopc_updates
+3c9fa143f e3sm_cime_mgmt hotfix for both-removed conflicts
+22aab810e Merge pull request #3492 from jedwards4b/atm_vert_grid_fix
+37a74cf5b Merge pull request #3468 from ESMCI/wpcoomb/user_defined_env_variables
+79a8e11e6 Merge pull request #3475 from ESMCI/jgfouca/fix_case_reset
+abbf05745 fix pylint issue
+7bbbc40fa Merge pull request #3486 from billsacks/fix_dlnd_streams
+15893bcaf Merge pull request #3484 from ESMCI/mvertens/nuopc_bugfixes
+4bc65d82b Merge pull request #3483 from ESMCI/jgfouca/cprnc_improve_cmake
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids_nuopc.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	scripts/Tools/Makefile
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/pio.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps_mct/dlnd/cime_config/namelist_definition_dlnd.xml
+M	src/components/data_comps_nuopc/dice/src/dice_comp_mod.F90
+M	src/components/data_comps_nuopc/docn/src/docn_comp_mod.F90
+M	src/components/data_comps_nuopc/drof/src/drof_comp_mod.F90
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/share/nuopc/seq_drydep_mod.F90
+M	src/share/nuopc/shr_fire_emis_mod.F90
+M	src/share/nuopc/shr_megan_mod.F90
+M	src/share/nuopc/shr_ndep_mod.F90
+M	src/share/streams/shr_dmodel_mod.F90
+M	src/share/timing/perf_mod.F90
+M	src/share/util/shr_map_mod.F90
+M	src/share/util/shr_sys_mod.F90
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 4-7-2020
 Tag: cime5.8.20
 Answer Changes: None

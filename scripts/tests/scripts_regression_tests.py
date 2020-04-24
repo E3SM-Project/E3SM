@@ -1183,8 +1183,8 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
         # All stub model not supported in nuopc driver
         driver = CIME.utils.get_cime_default_driver()
-        if driver == 'nuopc':
-            extra_args.append(" ^SMS.T42_T42.S")
+        if driver == 'nuopc' and 'cime_developer' in extra_args:
+            extra_args.append(" ^SMS_Ln3.T42_T42.S ^PRE.f19_f19.ADESP_TEST ^PRE.f19_f19.ADESP ^DAE.ww3a.ADWAV")
 
         test_id = "{}-{}".format(self._baseline_name, CIME.utils.get_timestamp()) if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
@@ -1842,8 +1842,11 @@ class Z_FullSystemTest(TestCreateTestCommon):
         # Put this inside any test that's slow
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
-
-        self._create_test(["--walltime=0:15:00", "cime_developer"], test_id=self._baseline_name)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            self._create_test(["--walltime=0:15:00", "cime_developer"], test_id=self._baseline_name)
+        else:
+            self._create_test(["--walltime=0:30:00", "cime_developer"], test_id=self._baseline_name)
 
         run_cmd_assert_result(self, "%s/cs.status.%s" % (self._testroot, self._baseline_name),
                               from_dir=self._testroot)
@@ -2466,7 +2469,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_self_build_cprnc(self):
     ###########################################################################
-        testname = "ERS.f19_g16_rx1.A"
+        testname = "ERS_Ln7.f19_g16_rx1.A"
         self._create_test([testname, "--no-build"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
