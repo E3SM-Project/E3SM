@@ -184,7 +184,8 @@ module li_iceshelf_melt
       endif
 
       ! Simple options handled here
-      if (trim(config_basal_mass_bal_float) == 'none') then
+      if (trim(config_basal_mass_bal_float) == 'none' &
+                .and. config_front_mass_bal_grounded == 'none') then
 
          ! Zero entire field
 
@@ -1176,10 +1177,9 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer :: iCell, iEdge
+      integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
       real (kind=RKIND), pointer :: rhoi
-      integer, pointer :: nCellsSolve
-      integer, pointer :: nEdgesSolve
+      integer, pointer :: nCellsSolve, nEdgesSolve, maxEdges
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth, submergedFaceArea, oceanEdgeLength, iceFrontMeltRate                    
       type (block_type), pointer :: block
@@ -1220,7 +1220,7 @@ module li_iceshelf_melt
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-
+         call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
          ! Get ISMIP6 forcing fields
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean) 
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
@@ -1236,25 +1236,41 @@ module li_iceshelf_melt
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography) 
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface) 
          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
          call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
          
        ! Convert ismip6 subglacier water runoff from kg m^-2 s^-1 to m day^-1
-         subglacialWaterFlux = ismip6Runoff / rhow * secPerDay
+         !do iCell = 1,nCellsSolve
+         !    subglacialWaterFlux(iCell) = ismip6Runoff(iCell) / rhow * secPerDay
+         !enddo
         
-         where ( subglacialWaterFlux < 0.0 )
-               subglacialWaterFlux = 0.0_RKIND
-         end where
+         !where ( subglacialWaterFlux < 0.0 )
+         !      subglacialWaterFlux = 0.0_RKIND
+         !end where
         
        ! Calculate retreat rate for each cell
          do iCell = 1, nCellsSolve
             ! Define marine marginal cells as those that are (1) at the ice
             ! margin (cellMask == 8), (2) have at least one neighboring cell without ice, (3) contain
             ! grounded ice, and (4) have bed topography below sea level.
-            if ( cellMask(iCell) == 8 &
-               .and. any(thickness(cellsOnCell(:,iCell)) == 0.0_RKIND) &
-               .and. lowerSurface(iCell) == bedTopography(iCell) &
+            nEmptyNeighbors = 0
+            ! Check if neighboring cells contain ice and have bed topo below sea
+            ! level
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+                 if ( (thickness(cellsOnCell(iNeighbor, iCell)) == 0.0_RKIND) & 
+                    .and. (cellsOnCell(iNeighbor, iCell) > 0) &
+                    .and. (cellsOnCell(iNeighbor, iCell) <= nCellsSolve) &
+                    .and. bedTopography(cellsOnCell(iNeighbor, iCell)) < seaLevel ) then
+                     nEmptyNeighbors = nEmptyNeighbors + 1
+                 endif
+            enddo 
+                 
+            
+            if ( nEmptyNeighbors > 0 &
+               .and. thickness(iCell) > 0.0_RKIND &
+               .and. li_mask_is_grounded_ice(cellMask(iCell)) &
                .and. bedTopography(iCell) < seaLevel ) then
               
                 groundedMarineMarginMask(iCell) = 1
@@ -1276,7 +1292,7 @@ module li_iceshelf_melt
                 
                 ! Calculate ice front melt rate at each cell
                 iceFrontMeltRate = (aSubglacial * waterDepth * &
-                         subglacialWaterFlux(iCell)**alphaSubglacial &
+                         (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
                          + B) * TFocean(iCell)**betaTF / secPerDay
                 
                 calvingVelocity(iCell) = calvingVelocity(iCell) + iceFrontMeltRate ! m s^-1

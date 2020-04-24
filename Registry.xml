@@ -1095,7 +1095,7 @@ is the value of that variable from the *previous* time level!
                 <var name="faceMeltRateApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt"
                      description="melt rate applied at grounded marine margin, in same units as other mass balance terms (rather than calvingVelocity)"
                 />
-                <var name="subglacialWaterFlux" type="real" dimensions="nCells Time" units="m day^{-1}" packages="ismip6GroundedFaceMelt"
+                <var name="subglacialWaterFlux" type="real" dimensions="nCells Time" units="m day^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="Catchment-wide subglacial runoff normalized by modern submerged face area, in units used by ismip6 grounded marine melt parameterization, with zeros where ISMIP6 forcing file has negative runoff"
                 />
                 <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
