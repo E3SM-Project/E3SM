@@ -75,7 +75,7 @@ contains
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
-                                        kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tend, err)!{{{
+                                        kappaRediSfcTaper, kappaRediCell, rediLimiterCount, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -93,7 +93,7 @@ contains
          layerThicknessEdge, &!< Input: thickness at edge
          zMid, &!< Input: Z coordinate at the center of a cell
          kappaRediSfcTaper, &!< Input: vertical structure of GM/Redi limiter
-         kappaGMCell, &
+         kappaRediCell, &
          layerThickness
 
       real(kind=RKIND), dimension(:, :, :), intent(in) :: &
@@ -210,8 +210,8 @@ contains
             coef = dvEdge(iEdge)
 
             k = 1
-            kappaRediEdgeVal = 0.25_RKIND*(kappaGMCell(k, cell1) + kappaGMCell(k, cell2) + &
-                                           kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))* &
+            kappaRediEdgeVal = 0.25_RKIND*(kappaRediCell(k, cell1) + kappaRediCell(k, cell2) + &
+                                           kappaRediCell(k + 1, cell1) + kappaRediCell(k + 1, cell2))* &
                                0.25_RKIND*(kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
                                            kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
 
@@ -234,8 +234,8 @@ contains
 
             do k = 2, maxLevelEdgeTop(iEdge) - 1
 
-               kappaRediEdgeVal = 0.25_RKIND*(kappaGMCell(k, cell1) + kappaGMCell(k, cell2) + &
-                                              kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))*0.25_RKIND* &
+               kappaRediEdgeVal = 0.25_RKIND*(kappaRediCell(k, cell1) + kappaRediCell(k, cell2) + &
+                                              kappaRediCell(k + 1, cell1) + kappaRediCell(k + 1, cell2))*0.25_RKIND* &
                                   (kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
                                    kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
 
@@ -270,8 +270,8 @@ contains
             end do
 
             k = maxLevelEdgeTop(iEdge)
-            kappaRediEdgeVal = 0.25_RKIND*(kappaGMCell(k, cell1) + kappaGMCell(k, cell2) + &
-                                           kappaGMCell(k + 1, cell1) + kappaGMCell(k + 1, cell2))* &
+            kappaRediEdgeVal = 0.25_RKIND*(kappaRediCell(k, cell1) + kappaRediCell(k, cell2) + &
+                                           kappaRediCell(k + 1, cell1) + kappaRediCell(k + 1, cell2))* &
                                0.25_RKIND*(kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
                                            kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
 
@@ -324,9 +324,8 @@ contains
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
                flux_term3 = RediKappa(iCell)*2.0_RKIND* &
-                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k)  &
-                            * invAreaCell - kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell) &
-                            *fluxRediZTop(iTr, k + 1) * invAreaCell)
+                            (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)*fluxRediZTop(iTr, k) - &
+                             kappaRediSfcTaper(k + 1, iCell)*kappaRediCell(k + 1, iCell)*fluxRediZTop(iTr, k + 1))
 
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
             end do
@@ -382,9 +381,9 @@ contains
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappa(iCell)*2.0_RKIND* &
-                                     (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)* &
+                                     (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)* &
                                       redi_term3_topOfCell(iTr, k, iCell) - kappaRediSfcTaper(k + 1, iCell) &
-                                      *kappaGMcell(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+                                      *kappaRediCell(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
             end do
          end do
 

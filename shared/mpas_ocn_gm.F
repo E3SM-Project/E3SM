@@ -105,10 +105,10 @@ contains
                                                     layerThicknessEdge, gradDensityEdge, &
                                                     k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell, &
                                                     layerThickness, inSituThermalExpansionCoeff, &
-                                                    inSituSalineContractionCoeff, kappaGMCell, kappaRediSfcTaper, &
-                                                    zTop, RiTopOfCell, eddyLength, eddyTime
+                                                    inSituSalineContractionCoeff, kappaRediCell, kappaGMCell, kappaRediSfcTaper, &
+                                                    zTop, RiTopOfCell
 
-      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa, cGMphaseSpeed, ssh, betaEdge, fEdge
+      real(kind=RKIND), dimension(:), pointer   :: c_visbeck, gmBolusKappa, cGMphaseSpeed, ssh, eddyLength, eddyTime, betaEdge, fEdge
       real(kind=RKIND), dimension(:, :, :), pointer :: slopeTriadUp, slopeTriadDown
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
@@ -116,7 +116,7 @@ contains
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: kappaGMEdge, sumN2, countN2, maxN, kappaSum, ltSum
-      real(kind=RKIND)                 :: sumRi, c_visbeck, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
+      real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
@@ -155,7 +155,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
+     call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
       call mpas_pool_get_array(diagnosticsPool, 'kappaRediSfcTaper', kappaRediSfcTaper)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
@@ -231,7 +232,7 @@ contains
       end do
       !$omp end do
 
-      if (local_config_GM_kappa_lat_depth_variable) then
+      if ( config_Redi_use_N2_based_taper .or. local_config_GM_kappa_lat_depth_variable ) then
 
          !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1, nCells
@@ -247,12 +248,20 @@ contains
             do k = maxLocation, maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
 
-               kappaGMCell(k, iCell) = min(max(config_GM_min_stratification_ratio, &
+               kappaRediCell(k, iCell) = min(max(config_GM_min_stratification_ratio, &
                                                BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                            1.0_RKIND)
             end do
          end do
          !$omp end do
+      end if
+
+      if (local_config_GM_kappa_lat_depth_variable) then
+        !$omp do schedule(runtime)
+        do iCell=1,nCells
+          kappaGMCell(:, iCell) = kappaRediCell(:,iCell)
+        enddo
+        !$omp end do
       end if
 
       if (config_Redi_use_surface_taper) then
@@ -475,7 +484,7 @@ contains
            call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
            call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
-
+           call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
            !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, sumRi, countN2, zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge) 
            do iEdge = 1, nEdges
               k=1
@@ -486,12 +495,12 @@ contains
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
               zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-              do while(zEdge > -config_GM_visbeck_min_depth)
+              do while(zEdge > -config_GM_visbeck_min_depth .and. k < maxLevelEdgeTop(iEdge))
                 k = k+1
                 zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
               enddo
 
-              k = k - 1
+              k = max(1,k - 1)
               zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
               do while(zEdge > -config_GM_visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
@@ -508,13 +517,14 @@ contains
              end do
 
              if (countN2 > 0) then
-                c_visbeck = sqrt(sumN2*ltsum)
+                c_visbeck(iEdge) = sqrt(sumN2*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
-                eddyLength(k,iEdge) = min(c_visbeck/abs(fEdge(iEdge)), sqrt(c_visbeck / (2.0_RKIND*betaEdge(iEdge))))
-                eddyTime(k,iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_visbeck*betaEdge(iEdge))) /  &
-                                      (1.0E-11_RKIND + sqrt(sumRi)))
-                gmBolusKappa(iEdge) = config_GM_visbeck_alpha * eddyLength(k,iEdge)**2.0_RKIND * eddyTime(k,iEdge)
+                eddyLength(iEdge) = min(c_visbeck(iEdge)/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
+                                sqrt(c_visbeck(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
+                eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_visbeck(iEdge)*betaEdge(iEdge))) /  &
+                                      (1.0E-11_RKIND + sqrt(sumRi/ltsum)))
+                gmBolusKappa(iEdge) = config_GM_visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
                 gmBolusKappa(iEdge) = max(config_GM_visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_visbeck_max_kappa))
              else !for really shallow columns use min bolus kappa
                gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
@@ -741,7 +751,7 @@ contains
       block => domain%blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block%structs, 'diagnostidcs', diagnosticsPool)
+         call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
