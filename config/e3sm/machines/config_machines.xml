@@ -682,7 +682,7 @@
     <NODENAME_REGEX>compute.*mcs.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
+    <MPILIBS>mpich,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/climate1/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/home/climate1/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -696,10 +696,16 @@
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="default">
+    <mpirun mpilib="mpich">
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -l -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
@@ -722,7 +728,7 @@
       <!-- We currently don't have a soft env for netcdf serial built with gcc 8.2.0 -->
       <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-serial/gcc-8.2.0</env>
     </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
+    <environment_variables mpilib="mpich">
       <!-- We currently don't have a soft env for parallel hdf5 and szip built with gcc 8.2.0 -->
       <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <!-- We currently don't have a soft env for mpich 3.3.2 built with gcc 8.2.0 -->
@@ -733,6 +739,15 @@
       <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/mpich-3.3.2/gcc-8.2.0</env>
       <!-- We currently don't have a soft env for pnetcdf built with mpich 3.3.2 and gcc 8.2.0 -->
       <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.12.0/mpich-3.3.2/gcc-8.2.0</env>
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <!-- We currently don't have a soft env for openmpi 2.1.5, zlib, szip, hdf5, NetCDF and PnetCDF libraries -->
+      <env name="PATH">/soft/apps/packages/climate/openmpi/2.1.5/gcc-8.2.0/bin:$ENV{PATH}</env>
+      <env name="ZLIB_PATH">/soft/apps/packages/climate/zlib/1.2.11/gcc-8.2.0-static</env>
+      <env name="SZIP_PATH">/soft/apps/packages/climate/szip/2.1/gcc-8.2.0-static</env>
+      <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.12-parallel/openmpi-2.1.5/gcc-8.2.0-static</env>
+      <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.7.4c-4.3.1cxx-4.4.4f-parallel/openmpi-2.1.5/gcc-8.2.0-static-hdf5-1.8.12-pnetcdf-1.12.0</env>
+      <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.12.0/openmpi-2.1.5/gcc-8.2.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
