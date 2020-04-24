@@ -30,7 +30,7 @@ module domainMod
      real(r8),pointer :: frac(:)    ! fractional land
      real(r8),pointer :: topo(:)    ! topography this needs to be removed with the implementation of the topounit structure
 	 real(r8),pointer :: topo2(:)    ! Area weighted average topography (elevation) calculated based on the elevation o 
-     integer ,pointer :: num_tunits_per_grd(:)    ! Number of topountis per grid
+     integer ,pointer :: num_tunits_per_grd(:)    ! Number of topountis per grid to be used in subgrid decomposition
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
      real(r8),pointer :: xCell(:)   ! x-position of grid cell (m)
@@ -285,6 +285,7 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
 	write(iulog,*) '  domain_check topo2      = ',minval(domain%topo2),maxval(domain%topo2)
+    write(iulog,*) '  domain_check num_tunits_per_grd      = ',minval(domain%num_tunits_per_grd),maxval(domain%num_tunits_per_grd)
     write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
     write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
     write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)

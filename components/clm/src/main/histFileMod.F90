@@ -1199,6 +1199,11 @@ contains
                 if (.not. active(k)) valid = .false.
              end if
              if (valid) then
+               ! if (masterproc) then  ! TKT debugging
+               !    write(iulog,*) ' Field ', field
+                   !write(iulog,*) ' Field type1d ', field%type1d
+               ! end if
+                
                 if (field(k+k_offset) /= spval) then   ! add k_offset
                    if (nacs(k,1) == 0) hbuf(k,1) = 0._r8
                    hbuf(k,1) = hbuf(k,1) + field(k+k_offset)   ! add k_offset

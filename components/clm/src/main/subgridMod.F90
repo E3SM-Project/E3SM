@@ -9,6 +9,7 @@ module subgridMod
   use spmdMod     , only : masterproc
   use abortutils  , only : endrun
   use clm_varctl  , only : iulog
+  use GridcellType     , only : grc_pp
 
   implicit none
   private   
@@ -33,21 +34,19 @@ contains
        nwetland, &
        nglacier, &
        nglacier_mec,  &
-       glcmask)
+       glcmask,num_tunits_per_grd)
     !
     ! !DESCRIPTION:
     ! Obtain gridcell properties
     !
     ! !USES
-    use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use clm_varctl  , only : create_crop_landunit
-    use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use clm_varpar       , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use clm_varctl       , only : create_crop_landunit
+    use clm_varsur       , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
-    use topounit_varcon  , only : max_topounits
-    use FatesInterfaceMod, only : fates_maxElementsPerSite
-    use GridcellType     , only : grc_pp
-
+    use topounit_varcon  , only : max_topounits, has_topounit !, ntpu_per_grd, tpu_glo_ind, tpu_lnd
+    use FatesInterfaceMod, only : fates_maxElementsPerSite    
     !
     ! !ARGUMENTS
     implicit none
@@ -67,6 +66,7 @@ contains
     integer , optional, intent(out) :: nglacier   ! number of glacier pfts (columns) in glacier landunit
     integer , optional, intent(out) :: nglacier_mec  ! number of glacier_mec pfts (columns) in glacier_mec landunit
     integer , optional, intent(in)  :: glcmask  ! = 1 if glc requires surface mass balance in this gridcell
+    integer , optional, intent(in)  :: num_tunits_per_grd  ! Number of topounits per grid
     !
     ! !LOCAL VARIABLES:
     integer  :: t, m             ! loop index
@@ -78,6 +78,10 @@ contains
     integer  :: icohorts         ! number of cohorts in gridcell
     integer  :: npfts_per_lunit  ! number of pfts in landunit
     integer  :: ntopounits_per_gcell  ! number of topounits in this gridcell
+    integer  :: tmp_tpu_ind_glb
+    integer  :: tmp_tpu_lnd
+    integer  :: tmp_tpu_glb
+    
     !------------------------------------------------------------------------------
 
     ! -------------------------------------------------------------------------
@@ -112,9 +116,24 @@ contains
     ! is a simple way to make the transition to topounits. We should return to this to see
     ! if there is a smarter way to allocate space that does not preclude land area transitions
     ! of interest.
-    ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
+    !ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
                                           ! that sets the number of topounits uniquely for each gridcell.
     !ntopounits_per_gcell = grc_pp%ntopounits(gi)   ! For future improvement the number of valid topounits can be used from surface data
+    ! TKT debugging begin
+    !tmp_tpu_ind_glb = tpu_glo_ind(gi)
+    !tmp_tpu_lnd = tpu_lnd(gi)
+    !tmp_tpu_glb = ntpu_per_grd(tmp_tpu_ind_glb)
+    
+    !if (masterproc) then
+    !   write(iulog,*) 'tmp_tpu_ind_glb, tmp_tpu_glb, gi, tmp_tpu_lnd ',tmp_tpu_ind_glb, ', ',tmp_tpu_glb, ', ',gi, ', ',tmp_tpu_lnd
+    !endif
+    ! TKT debugging end
+    if(has_topounit .and. max_topounits > 1) then
+       ntopounits_per_gcell = num_tunits_per_grd                 !grc_pp%ntopounits2(gi) !tpu_lnd(gi)
+    else 
+       ntopounits_per_gcell = max_topounits
+    endif 
+    
     do t = 1, ntopounits_per_gcell
        
        itunits = itunits + 1

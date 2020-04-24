@@ -46,20 +46,21 @@ contains
     !
     ! !DESCRIPTION: 
     ! Initialize sub-grid mapping and allocates space for derived type hierarchy.
-    ! For each land gridcell determine landunit, column and pft properties.
+    ! For each land gridcell determine topounit, landunit, column and pft properties.
     !
     ! !USES
     use domainMod         , only : ldomain
     use decompMod         , only : get_proc_bounds, get_clump_bounds, get_proc_clumps
     use subgridWeightsMod , only : compute_higher_order_weights
-    use topounit_varcon   , only : max_topounits
+    use topounit_varcon   , only : max_topounits, has_topounit 
+    use clm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
     use clm_varctl        , only : create_glacier_mec_landunit
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
-    integer :: nc,ti,li,ci,pi,gdc,topounit, ntopos,topo_ind, num_topo_tmp  ! indices
+    integer :: nc,ti,li,ci,pi,gdc,topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu  ! indices
     integer :: nclumps                                                     ! number of clumps on this processor
     real(r8) :: wttopounit2gridcell, elv, slp                              ! topounit weight on gridcell, elevation and slope
     integer :: asp                                                         ! aspect
@@ -125,20 +126,29 @@ contains
        ci = bounds_clump%begc-1
        pi = bounds_clump%begp-1
        
-       ! For each gridcell in clump, create the correct number of topounits
-       ! As a preliminary implementation, every gridcell has the same number of topounits,
-       ! and each topounit on the gridcell has an equal weight.
+       ! For each gridcell in clump, create the correct number of topounits       
        do gdc = bounds_clump%begg, bounds_clump%endg
-          !ntopos = grc_pp%ntopounits(gdc) ! This is the actual or valid # of topounits per grid for future use
-          ntopos = max_topounits                     ! For now we use the maximum number to topounits per grid assuming the same # of topounits in each gridcell
-	      num_topo_tmp = grc_pp%ntopounits2(gdc)      ! Actual number of topounits per grid
+          tmp_tpu = ldomain%num_tunits_per_grd(gdc)       ! Actual number of topounits per grid
+          if(has_topounit .and. max_topounits > 1) then
+             ntopos = tmp_tpu                                
+             !! TKT debugging begin
+             !if (masterproc) then
+             !   write(iulog,*) 'grc_pp%ntopounits(gdc), grc_pp%ntopounits2(gdc), tpu_lnd(gdc), gdc  ',grc_pp%ntopounits(gdc), ', ',grc_pp%ntopounits2(gdc), ', ',tmp_tpu, ', ',gdc
+             !   write(iulog,*) 'bounds_clump%begg, bounds_clump%endg  ',bounds_clump%begg, ', ',bounds_clump%endg
+             !endif
+             !! TKT debugging end
+          else 
+             ntopos = max_topounits
+          endif
+          
           do topounit = 1, ntopos                    ! use actual/valid # of topounits per grid intead of max_topounits
              if (max_topounits == 1) then
                  wttopounit2gridcell = 1.0           ! The weight of topounit is 1 if only 1 topounit per grid
                  is_tpu_active = .true.              ! Make topounit active if only one topounit is in a grid
              else
-                 wttopounit2gridcell = grc_pp%tfrc_area(gdc,topounit) 
-                 if (topounit <= num_topo_tmp) then 
+                 wttopounit2gridcell = wt_tunit(gdc,topounit) !grc_pp%tfrc_area(gdc,topounit) 
+                 !if (topounit <= num_topo_tmp) then
+                 if (wttopounit2gridcell > 0.0) then
                      is_tpu_active = .true.
                  else
                      is_tpu_active = .false.
@@ -146,9 +156,9 @@ contains
              endif
              !write(iulog,*) ' wttopounit: ',wttopounit2gridcell !TKT
              !write(iulog,*) ' Grid ID: ', gdc !TKT
-             elv = grc_pp%televation(gdc,topounit) 
-             slp = grc_pp%tslope(gdc,topounit) 
-             asp = grc_pp%taspect(gdc,topounit) 
+             elv = elv_tunit(gdc,topounit) !grc_pp%televation(gdc,topounit) 
+             slp = slp_tunit(gdc,topounit) !grc_pp%tslope(gdc,topounit) 
+             asp = asp_tunit(gdc,topounit) !grc_pp%taspect(gdc,topounit) 
              topo_ind = topounit
              !wttopounit2gridcell = 1._r8/(max_topounits)
              call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,topo_ind=topo_ind,is_tpu_active = is_tpu_active)

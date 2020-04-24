@@ -40,6 +40,12 @@ module clm_varsur
 
   ! subgrid glacier_mec sfc elevation
   real(r8), pointer :: topo_glc_mec(:,:,:) 
+  
+  ! Topounit related poiters
+  real(r8), pointer :: wt_tunit(:,:)   ! Topounit area fraction
+  real(r8), pointer :: elv_tunit(:,:)  ! Topounit elevation 
+  real(r8), pointer :: slp_tunit(:,:)  ! Topounit slope 
+  integer, pointer :: asp_tunit(:,:)  ! Topounit aspect
   !-----------------------------------------------------------------------
 
 end module clm_varsur

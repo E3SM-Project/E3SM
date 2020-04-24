@@ -776,9 +776,6 @@ contains
           write(iulog,*) trim(subname),' ERROR: at g = ',g,'total topounit weight is ',sumwtgcell(g), &
                          'active_only = ', active_only
           write(iulog,*) trim(subname),' ERROR: at g = ',g,' ntopounits = ',grc_pp%ntopounits(g)
-          do t = 1, max_topounits
-             write(iulog,*) trim(subname),' ERROR: at g = ',g,' topounit weight = ',grc_pp%tfrc_area(g,t) 
-          end do
           error_found = .true.
        end if
     end do

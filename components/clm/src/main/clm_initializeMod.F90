@@ -14,6 +14,7 @@ module clm_initializeMod
   use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
+  use clm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
@@ -128,9 +129,8 @@ contains
 
     if (masterproc) call control_print()
 
-    call dynSubgridControl_init(NLFilename)
-    call topounit_varcon_init(fsurdat)
-
+    call dynSubgridControl_init(NLFilename)    
+    
     ! ------------------------------------------------------------------------
     ! Read in global land grid and land mask (amask)- needed to set decomposition
     ! ------------------------------------------------------------------------
@@ -149,8 +149,7 @@ contains
        noland = .true.
        return
     end if
-
-
+    
     ! ------------------------------------------------------------------------
     ! If specified, read the grid level connectivity
     ! ------------------------------------------------------------------------
@@ -192,7 +191,7 @@ contains
     ! twice and the gridcell information is just filled in twice
 
     call get_proc_bounds(begg, endg)
-
+   
     ! ------------------------------------------------------------------------
     ! Get grid and land fraction (set ldomain)
     ! ------------------------------------------------------------------------
@@ -220,7 +219,14 @@ contains
        endif
        call surfrd_get_topo(ldomain, flndtopo)  
     endif
-
+    
+    !-------------------------------------------------------------------------
+    ! Topounit
+    !-------------------------------------------------------------------------
+    call topounit_varcon_init(begg, endg,fsurdat,ldomain)  ! Topounits
+    !-------------------------------------------------------------------------
+    
+    !-------------------------------------------------------------------------
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban
@@ -241,6 +247,11 @@ contains
        allocate (wt_glc_mec  (1,1,1))
        allocate (topo_glc_mec(1,1,1))
     endif
+    
+    allocate (wt_tunit  (begg:endg,1:max_topounits  )) 
+    allocate (elv_tunit (begg:endg,1:max_topounits  ))
+    allocate (slp_tunit (begg:endg,1:max_topounits  ))
+    allocate (asp_tunit (begg:endg,1:max_topounits  ))
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
@@ -276,15 +287,27 @@ contains
     
 
     ! ------------------------------------------------------------------------
-    ! Determine decomposition of subgrid scale landunits, topounits, columns, patches
+    ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
-
-    if (create_glacier_mec_landunit) then
-       call decompInit_clumps(ldomain%glcmask)
-       call decompInit_ghosts(ldomain%glcmask)
+    if(has_topounit .and. max_topounits > 1) then    
+       if (create_glacier_mec_landunit) then
+          call decompInit_clumps(ldomain%glcmask,ldomain%num_tunits_per_grd)
+          call decompInit_ghosts(ldomain%glcmask,ldomain%num_tunits_per_grd)
+       else
+          !write(iulog,*)'TKT   begg and endg  = ',begg, ' and ', endg
+          !write(iulog,*)'TKT   ldomain%num_tunits_per_grd(begg) = ', ldomain%num_tunits_per_grd(begg)
+          !write(iulog,*)'TKT   ldomain%num_tunits_per_grd(endg) = ', ldomain%num_tunits_per_grd(endg)
+          call decompInit_clumps(ldomain%num_tunits_per_grd)
+          call decompInit_ghosts(ldomain%num_tunits_per_grd)
+       endif
     else
-       call decompInit_clumps()
-       call decompInit_ghosts()
+       if (create_glacier_mec_landunit) then
+          call decompInit_clumps(ldomain%glcmask)
+          call decompInit_ghosts(ldomain%glcmask)
+       else
+          call decompInit_clumps()
+          call decompInit_ghosts()
+       endif
     endif
 
     ! *** Get ALL processor bounds - for gridcells, landunit, columns and patches ***
@@ -330,14 +353,20 @@ contains
 
     call initGridCells()
 
-    ! Set global seg maps for gridcells, landlunits, columns and patches
-
-    if (create_glacier_mec_landunit) then
-       call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
+    ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
+    if(has_topounit .and. max_topounits > 1) then 
+       if (create_glacier_mec_landunit) then
+          call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
+       else
+          call decompInit_gtlcp(ns, ni, nj,ldomain%num_tunits_per_grd)
+       endif
     else
-       call decompInit_gtlcp(ns, ni, nj)
+       if (create_glacier_mec_landunit) then
+          call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
+       else
+          call decompInit_gtlcp(ns, ni, nj)
+       endif
     endif
-
     ! Set filters
 
     call t_startf('init_filters')
@@ -370,6 +399,7 @@ contains
     ! end of the run for error checking.
 
     deallocate (wt_lunit, wt_cft, wt_glc_mec)
+    deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit)
 
     call t_stopf('clm_init1')
 
@@ -396,7 +426,6 @@ contains
     end do
 
   end subroutine initialize1
-
 
   !-----------------------------------------------------------------------
   subroutine initialize2( )

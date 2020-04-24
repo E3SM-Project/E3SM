@@ -130,7 +130,7 @@ contains
     esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6))))))
     !-----------------------------------------------------------------------
     ! Get required inputs
-    numt_pg     = grc_pp%ntopounits2(g)	         ! Number of topounits per grid
+    numt_pg     = grc_pp%ntopounits(g)	         ! Number of topounits per grid
     grdElv      = grc_pp%elevation(g)            ! Grid level sfc elevation
     mxElv       = grc_pp%MaxElevation(g)         ! Maximum src elevation per grid obtained from the highest elevation topounit
     uovern_t    = x2l(index_x2l_Sa_uovern,i)     ! Froude Number
@@ -156,7 +156,7 @@ contains
     
       !do t = grc_pp%topi(g), grc_pp%topf(g)
        do t = 1, numt_pg                                 !loop through the valid topounits only                       
-          topoElv  = grc_pp%televation(g,t)             ! Topounit sfc elevation  
+          topoElv  = top_pp%elevation(t)             ! Topounit sfc elevation  
           
           ! Downscale precipitation
           if (mxElv == 0.) then  ! avoid dividing by 0
@@ -363,9 +363,8 @@ contains
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
-    hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
-!         hsurf_t = top_pp%elevation(t)                  ! topounit sfc elevation
-    hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
+    hsurf_g = grc_pp%elevation(g)  !ldomain%topo2(g)                       ! gridcell sfc elevation
+    hsurf_t = top_pp%elevation(t)                  ! topounit sfc elevation
     tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
     thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
     tsfc_g  = lnd2atm_vars%t_rad_grc(g)             ! sfc rad temp
@@ -463,7 +462,7 @@ contains
     nstep = get_nstep()
     
     ! Do the downscaling
-    hsurf_g = ldomain%topo(g)
+    hsurf_g = grc_pp%elevation(g) !ldomain%topo2(g)
     hsurf_t = top_pp%elevation(t)
 
     ! Here we assume that deltaLW = (dLW/dT)*(dT/dz)*deltaz

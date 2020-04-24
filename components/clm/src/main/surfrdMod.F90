@@ -609,12 +609,12 @@ contains
          dim1name=grlnd, readvar=readvar)
     endif       
         
-    ! Read the actual number of topounits per grid    
-	call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
-    if (readvar) then
-       call ncd_io(ncid=ncid, varname= 'topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
-         dim1name=grlnd, readvar=readvar)
-    endif    
+    !! Read the actual number of topounits per grid    
+	!call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
+    !if (readvar) then
+    !   call ncd_io(ncid=ncid, varname= 'topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
+    !     dim1name=grlnd, readvar=readvar)
+    !endif    
     
 	! Check if fsurdat grid is "close" to fatmlndfrc grid, exit if lats/lon > 0.001
 
@@ -1310,9 +1310,10 @@ contains
     use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
     use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
     use clm_varctl      , only: fsurdat
-    use fileutils   , only : getfil   
-	use GridcellType, only : grc_pp
-    use topounit_varcon,  only : max_topounits, has_topounit
+    use fileutils       , only : getfil   
+	use GridcellType    , only : grc_pp
+    use clm_varsur      , only : wt_tunit, elv_tunit, slp_tunit, asp_tunit
+    use topounit_varcon ,  only : max_topounits, has_topounit
     
     !
     ! !ARGUMENTS:
@@ -1330,7 +1331,7 @@ contains
     type(file_desc_t)     :: ncid         ! netcdf id
    
     real(r8),pointer :: maxTopoElv(:)            ! Maximum topounit elevation
-    real(r8),pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
+   ! real(r8),pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
     real(r8),pointer :: TopounitFracArea(:,:)    ! Topounit fractional area
     integer ,pointer :: TopounitElv(:,:)         ! Topounit elevation
     real(r8),pointer :: TopounitSlope(:,:)       ! Topounit slope 
@@ -1343,7 +1344,7 @@ contains
 
     allocate(maxTopoElv(begg:endg))
     allocate(GridElevation(begg:endg))
-    allocate(numTopoPerGrid(begg:endg))
+   ! allocate(numTopoPerGrid(begg:endg))
     allocate(TopounitFracArea(begg:endg,max_topounits))
     allocate(TopounitElv(begg:endg,max_topounits))
     allocate(TopounitSlope(begg:endg,max_topounits))
@@ -1361,11 +1362,11 @@ contains
          dim1name=grlnd, readvar=readvar)
     endif
 
-    call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
-    if (readvar) then
-       call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
-         dim1name=grlnd, readvar=readvar)
-    endif
+    !call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
+    !if (readvar) then
+    !   call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
+    !     dim1name=grlnd, readvar=readvar)
+    !endif
 
     call check_var(ncid=ncid, varname='TopounitFracArea', vardesc=vardesc, readvar=readvar)
     if (readvar) then
@@ -1397,20 +1398,18 @@ contains
          dim1name=grlnd, readvar=readvar)
     endif
     if (readvar) then
-        do n = begg,endg
-           grc_pp%ntopounits2(n) = numTopoPerGrid(n) 
+        do n = begg,endg          
            grc_pp%MaxElevation(n) = maxTopoElv(n) 	
            grc_pp%elevation(n) = GridElevation(n) 
            do t = 1, max_topounits
-              grc_pp%tfrc_area(n,t) = TopounitFracArea(n,t) 
-              grc_pp%televation(n,t) = TopounitElv(n,t) 
-              grc_pp%tslope(n,t) = TopounitSlope(n,t) 
-              grc_pp%taspect(n,t) = TopounitAspect(n,t) 
-              !grc_pp%topounit_indices(n,t) = t
+              wt_tunit(n,t) = TopounitFracArea(n,t)
+              elv_tunit(n,t) = TopounitElv(n,t)
+              slp_tunit(n,t) = TopounitSlope(n,t)
+              asp_tunit(n,t) = TopounitAspect(n,t)
            end do
         end do		
      endif	
-    deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect,GridElevation)
+    deallocate(maxTopoElv,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect,GridElevation)
     
     call ncd_pio_closefile(ncid)
     
