@@ -309,9 +309,33 @@
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant."
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="N2_dependent" units="unitless"
-					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006)."
-					possible_values="'N2_dependent', 'constant'"
-		/>
+					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997"
+					possible_values="'N2_dependent', 'constant', 'visbeck'"
+          />
+    <nml_option name="config_GM_baroclinic_mode" type="real" default_value="1.0" units="NA"
+          description="baroclinic wave mode chosen for the ferrari et al 2010 calculation"
+          possible_values="small positive numbers"
+    />
+    <nml_option name="config_GM_visbeck_alpha" type="real" default_value="0.005" units="NA"
+          description="scaling factor on the visbeck diffusivity parameterization"
+          possible_values="small positive numbers"
+          />
+    <nml_option name="config_GM_visbeck_min_depth" type="real" default_value="50.0" units="m"
+          description="minimum depth for calculation of vertical average"
+          possible_values="values between zero and bottom depth"
+          />
+    <nml_option name="config_GM_visbeck_max_depth" type="real" default_value="1000.0" units="m"
+          description="minimum depth for calculation of vertical average"
+          possible_values="values between zero and bottom depth"
+          />
+    <nml_option name="config_GM_visbeck_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
+          description="minimum value of bolus diffusivity for visbeck scheme"
+          possible_values="values around 100s"
+          />
+    <nml_option name="config_GM_visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
+          description="minimum value of bolus diffusivity for visbeck scheme"
+          possible_values="values around 100s"
+          />
 		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
 					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
 					possible_values="small positive reals"
@@ -2443,7 +2467,16 @@
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^{-1}"
 			description="phase speed for the bolus velocity calculation"
 			packages="forwardMode;analysisMode"
-			/>
+      />
+    <var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
+      description="meridional gradient of the coriolis parameter"
+      />
+    <var name="eddyLength" type="real" dimensions="nVertLevels nEdges Time" units="m"
+      description="eddy length scale in visbeck 1997 closure"
+    />
+    <var name="eddyTime" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+      description="inverse eddy time scale in visbeck 1997 closure"
+    />
 		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
