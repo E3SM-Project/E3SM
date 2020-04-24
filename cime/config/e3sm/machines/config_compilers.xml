@@ -687,7 +687,7 @@ flags should be captured within MPAS CMake files.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
