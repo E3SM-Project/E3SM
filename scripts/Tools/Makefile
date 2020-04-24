@@ -127,16 +127,12 @@ ifeq (,$(SHAREDPATH))
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
-# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
-# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
 ifeq ($(PIO_VERSION),2)
-  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
   ifneq ($(COMPILER),nag)
     # Needed by SCORPIO not default PIO, does not work with NAG compiler
     USE_CXX := TRUE
   endif
 else
-  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
   CPPDEFS += -DPIO1
 endif
 
