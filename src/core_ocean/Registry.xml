@@ -286,19 +286,23 @@
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
-		/>
-		<nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
-					description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
-					description="If true, Redi slope is tapered near sfc based on Large et al 1997"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
-					description="If true, the N2 limiting is applied to the horizontal diffusion term"
-					possible_values=".true. or .false."
-		/>
+    />
+    <nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
+      description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
+      possible_values=".true. or .false."
+    />
+    <nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
+      description="If true, Redi slope is tapered near sfc based on Large et al 1997"
+      possible_values=".true. or .false."
+    />
+    <nml_option name="config_Redi_use_N2_based_taper" type="logical" default_value=".true." units="unitless"
+      description="If true apply the N2 limiting of Danabasoglu and Marshall 2007"
+      possible_values=".true. or .false."
+    />
+    <nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
+      description="If true, the N2 limiting is applied to the horizontal diffusion term"
+      possible_values=".true. or .false."
+    />
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
@@ -2471,13 +2475,20 @@
     <var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
       description="meridional gradient of the coriolis parameter"
       />
-    <var name="eddyLength" type="real" dimensions="nVertLevels nEdges Time" units="m"
+    <var name="c_visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
+      description="baroclinic wave speed from visbeck parameterization"
+      />
+    <var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
       description="eddy length scale in visbeck 1997 closure"
     />
-    <var name="eddyTime" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+    <var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
       description="inverse eddy time scale in visbeck 1997 closure"
     />
 		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+			description="spatially and depth varying GM kappa"
+			packages="forwardMode;analysisMode"
+		/>
+    <var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
 			packages="forwardMode;analysisMode"
 		/>
@@ -2622,7 +2633,7 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gmBolusKappa" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+		<var name="gmBolusKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
 			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
 			 packages="gm"
 		/>
