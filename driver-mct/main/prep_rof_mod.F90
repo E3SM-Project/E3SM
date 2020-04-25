@@ -186,8 +186,7 @@ contains
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
 
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
-          ! that are mapped "normally". Note that the following assumes that all
-          ! x2r_fluxes are lnd2rof (as opposed to coming from some other component).
+          ! that are mapped "normally".
           !
           ! (This listDiff works even if have_irrig_field is false.)
           call shr_string_listDiff( &
