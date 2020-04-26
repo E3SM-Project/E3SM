@@ -592,6 +592,19 @@
     </values>
   </entry>
 
+  <entry id="model_maskfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dice_nml</group>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
+    <values>
+      <value>null</value>
+    </values>
+  </entry>
+
   <entry id="flux_qacc">
     <type>logical</type>
     <category>dice</category>

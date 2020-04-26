@@ -23,7 +23,7 @@ module atm_comp_nuopc
   use shr_mpi_mod      , only : shr_mpi_bcast, shr_mpi_max
   use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs, shr_strdata_set_griddata
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
@@ -422,7 +422,8 @@ contains
 
     ! Initialize sdat
     call t_startf('datm_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'atm', mesh, read_restart, sdat, rc=rc)
+    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'atm', mesh, read_restart, sdat, &
+         reset_mask=.true., rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
 
@@ -1215,9 +1216,6 @@ contains
     lsize = size(Sa_z)
 
     if (first_time) then
-       ! overwrite mask
-       call shr_strdata_set_griddata(sdat, 'mask', rvalue=1.0_r8)
-
        ! allocate module arrays
        allocate(windFactor(lsize))
        allocate(winddFactor(lsize))

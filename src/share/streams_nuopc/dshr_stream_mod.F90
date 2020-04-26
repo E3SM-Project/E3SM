@@ -34,9 +34,6 @@ module dshr_stream_mod
 
   private ! default private
 
-  interface shr_stream_init
-  end interface shr_stream_init
-
   !public types:
   public :: shr_stream_streamType        ! stream data type with private components
   public :: shr_stream_fileType

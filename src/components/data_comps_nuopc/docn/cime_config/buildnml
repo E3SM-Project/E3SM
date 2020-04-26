@@ -38,11 +38,16 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
+    caseroot = case.get_value("CASEROOT")
     ocn_domain_file = case.get_value("OCN_DOMAIN_FILE")
     ocn_domain_path = case.get_value("OCN_DOMAIN_PATH")
     docn_mode = case.get_value("DOCN_MODE")
     ocn_grid = case.get_value("OCN_GRID")
     sstice_stream = case.get_value("SSTICE_STREAM")
+    atm_nx = case.get_value("ATM_NX")
+    ocn_nx = case.get_value("OCN_NX")
+    atm_ny = case.get_value("ATM_NY")
+    ocn_ny = case.get_value("OCN_NY")
 
     #----------------------------------------------------
     # Check for incompatible options.
@@ -72,6 +77,13 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
+    # Determine if need to obtain model mask from a 
+    # separate file
+    #----------------------------------------------------
+    if (ocn_nx == atm_nx and ocn_ny == atm_ny and "aquap" not in docn_mode):
+        nmlgen.set_value("model_maskfile",os.path.join(ocn_domain_path,ocn_domain_file))
+
+    #----------------------------------------------------
     # Construct the list of streams.
     #----------------------------------------------------
     streams = nmlgen.get_streams()
@@ -89,7 +101,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         inst_stream = stream + inst_string
         logger.debug("DOCN stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "docn.streams.txt." + inst_stream)
-        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, case.get_value("CASEROOT"), stream, stream_path, data_list_path)
+        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, caseroot, 
+                                                             stream, stream_path, data_list_path)
 
     # For aquaplanet prescribed have no streams
     match = re.match(r'^sst_aquap\d+',docn_mode)
@@ -104,6 +117,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         nmlgen.set_value("streams",value)
         value = [case.get_value('DOCN_AQPCONST_VALUE')]
         nmlgen.set_value("sst_constant_value",value)
+
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------

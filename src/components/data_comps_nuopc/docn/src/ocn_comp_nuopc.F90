@@ -23,14 +23,15 @@ module ocn_comp_nuopc
   use shr_const_mod    , only : shr_const_zsrflyr, shr_const_pi
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
+  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
   use dshr_mod         , only : dshr_create_mesh_from_grid
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_griddata
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use pio
 
   implicit none
   private ! except
@@ -68,6 +69,7 @@ module ocn_comp_nuopc
   ! docn_in namelist input
   character(CL)                :: nlfilename                      ! filename to obtain namelist info from
   character(CL)                :: dataMode                        ! flags physics options wrt input data
+  character(CL)                :: model_maskfile = nullstr        ! full pathname to obtain mask from
   real(R8)                     :: sst_constant_value
   integer                      :: aquap_option
   character(CL)                :: restfilm = nullstr              ! model restart file namelist
@@ -91,17 +93,15 @@ module ocn_comp_nuopc
   integer      , parameter     :: master_task = 0                 ! task number of master task
   character(*) , parameter     :: rpfile = 'rpointer.ocn'
   character(*) , parameter     :: modName = "(ocn_comp_nuopc)"
-  
-
-  ! prognostic flag set in docn_comp_advertise
 
   ! internal fields
   real(r8),         pointer :: xc(:), yc(:) ! mesh lats and lons - needed for aquaplanet analytical
   real(R8), public, pointer :: somtp(:)     ! SOM ocean temperature needed for restart
 
   ! export fields
-  integer , pointer :: imask(:)     => null()    ! integer ocean mask
-  real(r8), pointer :: So_omask(:)  => null()
+  integer , pointer :: omask(:)     => null()    ! integer ocean mask
+  integer , pointer :: ofrac(:)     => null()    ! real ocean fraction
+  real(r8), pointer :: So_omask(:)  => null()    ! real ocean fraction sent to mediator
   real(r8), pointer :: So_t(:)      => null()
   real(r8), pointer :: So_s(:)      => null()
   real(r8), pointer :: So_u(:)      => null()
@@ -192,14 +192,16 @@ contains
     integer           :: shrlogunit         ! original log unit
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
+    logical           :: exists             ! check for file existence  
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / docn_nml / datamode, restfilm, restfils, force_prognostic_true, sst_constant_value
+    namelist / docn_nml / datamode, model_maskfile, &
+         restfilm, restfils, force_prognostic_true, sst_constant_value
 
     rc = ESMF_SUCCESS
 
-    ! Obtain flds_scalar values, mpi values, multi-instance values and  
+    ! Obtain flds_scalar values, mpi values, multi-instance values and
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
@@ -224,12 +226,25 @@ contains
        write(logunit,*)' restfilm   = ',trim(restfilm)
        write(logunit,*)' restfils   = ',trim(restfils)
        write(logunit,*)' force_prognostic_true = ',force_prognostic_true
+       if (trim(model_maskfile) == nullstr) then
+          write(logunit,*)' obtaining model mask from model mesh'
+       else
+          ! obtain model mask from model_maskfile
+          inquire(file=trim(model_maskfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist')
+          else
+             write(logunit,*)' obtaining model mask from ',trim(model_maskfile)
+          end if
+       end if
     endif
-    call shr_mpi_bcast(datamode, mpicom, 'restfilm')
-    call shr_mpi_bcast(restfilm, mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils, mpicom, 'restfils')
-    call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
-    call shr_mpi_bcast(sst_constant_value   , mpicom, 'sst_constant_value')
+    call shr_mpi_bcast(datamode              , mpicom, 'datamode')
+    call shr_mpi_bcast(model_maskfile        , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(restfilm              , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils              , mpicom, 'restfils')
+    call shr_mpi_bcast(force_prognostic_true , mpicom, 'force_prognostic_true')
+    call shr_mpi_bcast(sst_constant_value    , mpicom, 'sst_constant_value')
 
     if (trim(datamode) /= 'NULL') then
        ! determine if ocn will receive import data
@@ -295,8 +310,12 @@ contains
     character(CL)           :: cvalue       ! temporary
     integer                 :: shrlogunit   ! original log unit
     integer                 :: n,k          ! generic counters
-    logical                 :: reset_domain_mask ! true => reset the domain mask for aquaplanet
-    character(len=*), parameter :: F00   = "('ocn_comp_nuopc: ')',8a)"
+    real(r8), allocatable   :: rmask(:)
+    type(file_desc_t)       :: pioid
+    type(var_desc_t)        :: varid
+    type(io_desc_t)         :: pio_iodesc
+    integer                 :: rcode
+    logical                 :: reset_mask
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -306,17 +325,20 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! For aquaplanet mode - need to reset the domain
-    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-       reset_domain_mask = .true.
-    else
-       reset_domain_mask= .false.
-    end if
-
-    ! Initialize sdat
+    ! Initialize sdat and set the model domain mask in sdat if appropriate
+    ! TODO: need a check that the mask file has the same grid as the model mesh
     call t_startf('docn_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ocn', mesh, read_restart, sdat, &
-         reset_domain_mask=reset_domain_mask, rc=rc)
+    reset_mask = .false.
+    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+       reset_mask = .true.
+    end if
+    if (trim(model_maskfile) /= nullstr) then 
+       call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ocn', mesh, read_restart, sdat, &
+            reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
+    else
+       call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ocn', mesh, read_restart, sdat, &
+            reset_mask=reset_mask, rc=rc)
+    end if
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_init')
 
@@ -474,7 +496,7 @@ contains
     integer              , intent(out)   :: rc
 
     ! local variables
-    integer         :: n
+    integer           :: n
     type(fldlist_type), pointer :: fldList
     !-------------------------------------------------------------------------------
 
@@ -534,7 +556,15 @@ contains
 
     ! local variables
     type(ESMF_StateItem_Flag) :: itemFlag
-    integer                   :: n, lsize, kf
+    integer                   :: n
+    integer                   :: numOwnedElements   ! number of elements owned by this PET
+    type(ESMF_DistGrid)       :: distGrid           ! mesh distGrid
+    type(ESMF_Array)          :: elemMaskArray
+    integer, pointer          :: imask(:)
+    type(file_desc_t)         :: pioid
+    type(var_desc_t)          :: varid
+    type(io_desc_t)           :: pio_iodesc
+    integer                   :: rcode
     character(*), parameter   :: subName = "(docn_comp_realize) "
     real(R8)    , parameter   :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
@@ -555,13 +585,43 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! -------------------------------------
-    ! Set pointers to exportState fields
+    ! Determine ocean fraction 
     ! -------------------------------------
 
     ! Set pointers to exportState fields that have no corresponding stream field
     call dshr_state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_griddata(sdat, 'mask', So_omask)
+
+    ! Obtain So_omask (the ocean fraction)
+    if (trim(model_maskfile) /= nullstr) then 
+       ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
+       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid, 'frac', varid) 
+       call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%nxg, sdat%nyg/), sdat%gindex, pio_iodesc)
+       call pio_read_darray(pioid, varid, pio_iodesc, So_omask, rcode)
+       call pio_closefile(pioid)
+       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+    else
+       ! Obtain the ocean fraction from the mask values in the ocean mesh file
+       call ESMF_MeshGet(mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       allocate(imask(numOwnedElements))
+       elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! the following call sets the varues of imask
+       call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! now set the fraction as just the real mask
+       So_omask(:) = real(imask(:), kind=r8)
+       deallocate(imask)
+       call ESMF_ArrayDestroy(elemMaskArray, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    ! -------------------------------------
+    ! Set pointers to exportState fields
+    ! -------------------------------------
 
     call dshr_state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -591,7 +651,7 @@ contains
     call dshr_dfield_add(dfields, sdat,  strm_fld='qbot', strm_ptr=strm_qbot)
     call dshr_dfield_add(dfields, sdat,  strm_fld='h'   , strm_ptr=strm_h)
 
-    ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and 
+    ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and
     ! currently this is not implemented in cmeps
     call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -605,11 +665,8 @@ contains
     So_t(:) = TkFrz
     So_s(:) = ocnsalt
 
-    ! determine module mask array (imask)
-    lsize = size(So_omask)
-    allocate(imask(lsize))
-    imask = nint(So_omask)
-    allocate(somtp(lsize))
+    ! Allocate memory for somtp
+    allocate(somtp(sdat%lsize))
 
     ! -------------------------------------
     ! Set pointers to importState fields
@@ -690,7 +747,7 @@ contains
     ! Determine additional data model behavior based on the mode
     !-------------------------------------------------
 
-    lsize = size(So_t)
+    lsize = sdat%lsize
 
     call t_startf('docn_datamode')
     select case (trim(datamode))
@@ -751,7 +808,7 @@ contains
           allocate(tfreeze(lsize))
           tfreeze(:) = shr_frz_freezetemp(So_s(:)) + TkFrz
           do n = 1,lsize
-             if (imask(n) /= 0) then
+             if (omask(n) /= 0) then
                 ! compute new temp (last term is latent by prec and roff)
                 So_t(n) = somtp(n) +  &
                      ( Foxx_swnet(n) + Foxx_lwup(n) + Faxa_lwdn(n) + Foxx_sen(n) + Foxx_lat(n) + &

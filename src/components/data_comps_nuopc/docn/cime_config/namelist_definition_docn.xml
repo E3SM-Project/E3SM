@@ -604,6 +604,19 @@
     </values>
   </entry>
 
+  <entry id="model_maskfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>docn_nml</group>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
+    <values>
+      <value>null</value>
+    </values>
+  </entry>
+
   <entry id="restfilm">
     <type>char</type>
     <category>docn</category>

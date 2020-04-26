@@ -2,11 +2,6 @@ module dshr_strdata_mod
 
   ! holds data and methods to advance data models
   ! Obtain the model domain and the stream domain for each stream
-  ! For the model domain 
-  !  - if single column - read in the data model domain file - and find the nearest neighbor
-  !  - if not single column - will obtain it directly from the mesh input but will still need 
-  !    to read in the domain file to obtain the global nx and ny that need to be passed as scalar
-  !    data back to the mediator
 
   use ESMF
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
@@ -30,15 +25,15 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_init_from_infiles, shr_stream_init_from_fortran
   use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
   use dshr_stream_mod  , only : shr_stream_getFilePath, shr_stream_findBounds
-  use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename 
-  use dshr_stream_mod  , only : shr_stream_getfilefieldname 
+  use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename
+  use dshr_stream_mod  , only : shr_stream_getfilefieldname
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
   use dshr_methods_mod , only : dshr_fldbun_getfldptr, chkerr
   use pio              , only : file_desc_t, iosystem_desc_t, io_desc_t, var_desc_t
   use pio              , only : pio_openfile, pio_closefile, pio_nowrite
   use pio              , only : pio_seterrorhandling, pio_initdecomp, pio_freedecomp
   use pio              , only : pio_inq_varid, pio_inq_varndims, pio_inq_vardimid
-  use pio              , only : pio_inq_dimlen, pio_double, pio_offset_kind
+  use pio              , only : pio_inq_dimlen, pio_double, pio_int, pio_offset_kind
   use pio              , only : pio_read_darray, pio_get_var, pio_setframe
   use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR
   use shr_map_mod      , only : shr_map_maptype, shr_map_mapset, shr_map_get, shr_map_clean
@@ -59,8 +54,6 @@ module dshr_strdata_mod
   public  :: shr_strdata_print
   public  :: shr_strdata_advance
   public  :: shr_strdata_get_stream_domain
-  public  :: shr_strdata_get_griddata
-  public  :: shr_strdata_set_griddata
   public  :: shr_strdata_mapSet
 
   private :: shr_strdata_readnml
@@ -104,7 +97,6 @@ module dshr_strdata_mod
      integer                        :: io_type
      integer                        :: io_format
      type(iosystem_desc_t), pointer :: pio_subsystem => null()
-     type(io_desc_t)                :: pio_iodesc(nStrMax)
 
      ! data required by stream  cosz t-interp method, set by user
      real(R8)                       :: eccen
@@ -113,7 +105,7 @@ module dshr_strdata_mod
      real(R8)                       :: obliqr
      integer                        :: modeldt           ! model dt in seconds
 
-     ! model info
+     ! model domain info
      integer                        :: nxg                   ! model domain lon size
      integer                        :: nyg                   ! model domain lat size
      integer                        :: nzg                   ! model domain vertical size
@@ -124,38 +116,46 @@ module dshr_strdata_mod
      type(mct_ggrid)                :: grid                  ! model domain mct ggrid
      type(ESMF_Mesh)                :: mesh_model            ! model mesh
      type(ESMF_FieldBundle)         :: fldbun_model(nStrMax) ! stream data time interpolated and mapped to model domain
-     type(mct_avect)                :: avFUB(nStrMax)        ! stream data LB mapped to model domain
-     type(mct_avect)                :: avFLB(nStrMax)        ! stream data UB mapped to model domain
-     type(mct_avect)                :: avCoszen(nStrMax)     ! data assocaited with coszen time interp
 
-     ! stream info
+     ! model time 
+     integer                        :: ymd, tod
+     character(CL)                  :: calendar          ! model calendar for ymd,tod
+
+     ! stream domain info
+     type(io_desc_t)                :: pio_iodesc(nStrMax)
      type(shr_stream_streamType)    :: stream(nStrMax)
      integer                        :: strnxg(nStrMax)
      integer                        :: strnyg(nStrMax)
      integer                        :: strnzg(nStrMax)
      logical                        :: dofill(nStrMax)
      logical                        :: domaps(nStrMax)
-     integer                        :: lsizeR(nStrMax)
-     type(mct_gsmap)                :: gsmapR(nStrMax)
-     type(mct_rearr)                :: rearrR(nStrMax)
+     integer                        :: lsizeR(nStrMax)   ! stream local size
+     type(mct_gsmap)                :: gsmapR(nStrMax)   ! stream decomposition
      type(mct_ggrid)                :: gridR(nStrMax)    ! stream grid
-     type(mct_avect)                :: avRFile(nStrMax)  ! Read attrvect for multiple time slices - stream grid
-     type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect - stream grid
-     type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect - stream grid
+
+     ! stream-> model mapping info
+     type(mct_rearr)                :: rearrR(nStrMax)
      type(mct_sMatP)                :: sMatPf(nStrMax)
      type(mct_sMatP)                :: sMatPs(nStrMax)
+
+     ! stream time info
      integer                        :: ymdLB(nStrMax)
      integer                        :: todLB(nStrMax)
      integer                        :: ymdUB(nStrMax)
      integer                        :: todUB(nStrMax)
      integer                        :: ustrm(nVecMax)
      integer                        :: vstrm(nVecMax)
-
-     ! time invo
      real(R8)                       :: dtmin(nStrMax)
      real(R8)                       :: dtmax(nStrMax)
-     integer                        :: ymd  ,tod
-     character(CL)                  :: calendar          ! model calendar for ymd,tod
+
+     ! stream->model interpolations
+     type(mct_avect)                :: avRFile(nStrMax)  ! Read attrvect for multiple time slices - stream grid
+     type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect - stream grid
+     type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect - stream grid
+     type(mct_avect)                :: avFUB(nStrMax)    ! stream data LB mapped to model domain
+     type(mct_avect)                :: avFLB(nStrMax)    ! stream data UB mapped to model domain
+     type(mct_avect)                :: avCoszen(nStrMax) ! data associated with coszen time interp
+
      character(CL)                  :: allocstring
   end type shr_strdata_type
 
@@ -178,18 +178,19 @@ contains
 !===============================================================================
 
   subroutine shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, &
-        mpicom, compid, logunit, reset_domain_mask, rc)
+        mpicom, compid, logunit, reset_mask, model_maskfile, rc)
 
     ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: nlfilename ! for shr_strdata_nml namelist
-    type(ESMF_Mesh)        , intent(inout) :: mesh 
-    type(ESMF_Clock)       , intent(in)    :: clock
-    integer                , intent(in)    :: mpicom
-    integer                , intent(in)    :: compid
-    integer                , intent(in)    :: logunit
-    logical, optional      , intent(in)    :: reset_domain_mask
-    integer                , intent(out)   :: rc
+    type(shr_strdata_type)     , intent(inout) :: sdat
+    character(len=*)           , intent(in)    :: nlfilename ! for shr_strdata_nml namelist
+    type(ESMF_Mesh)            , intent(inout) :: mesh
+    type(ESMF_Clock)           , intent(in)    :: clock
+    integer                    , intent(in)    :: mpicom
+    integer                    , intent(in)    :: compid
+    integer                    , intent(in)    :: logunit
+    logical         , optional , intent(in)    :: reset_mask
+    character(len=*), optional , intent(in)    :: model_maskfile
+    integer                    , intent(out)   :: rc
 
     ! local varaibles
     type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
@@ -220,7 +221,8 @@ contains
     sdat%mesh_model = mesh
 
     ! Initialize the sdat model domain info
-    call shr_strdata_init_model_domain(mesh,  mpicom, compid, sdat, reset_domain_mask=reset_domain_mask, rc=rc)
+    call shr_strdata_init_model_domain(mesh,  mpicom, compid, sdat, &
+         reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize sdat stream domains
@@ -261,7 +263,7 @@ contains
        !--- strdata optional ---
        nzg, domZvarName,                                       &
        taxMode, dtlimit, tintalgo, readmode,                   &
-       fillalgo, fillmask, mapalgo, mapmask) 
+       fillalgo, fillmask, mapalgo, mapmask)
 
     ! Set strdata and stream info from fortran interface.
     ! Note: When this is called, previous settings are reset to defaults
@@ -285,7 +287,7 @@ contains
     character(*)           ,intent(in)   :: domXvarName         ! domain x dim name
     character(*)           ,intent(in)   :: domYvarName         ! domain y dim name
     character(*)           ,intent(in)   :: domMaskName         ! domain mask name
-    character(*)           ,intent(in)   :: strmFldFilePath     ! path to stream data 
+    character(*)           ,intent(in)   :: strmFldFilePath     ! path to stream data
     character(*)           ,intent(in)   :: strmFldFileNames(:) ! filenames for stream data
     character(*)           ,intent(in)   :: strmFldNamesInFile  ! file field names, colon delim list
     character(*)           ,intent(in)   :: strmFldNamesInModel ! model field names, colon delim list
@@ -323,7 +325,7 @@ contains
     sdat%io_format     =  shr_pio_getioformat(compid)
 
     ! set defaults - but calling shr_strdata_readnml - but not reading int the namelist
-    call shr_strdata_readnml(sdat) 
+    call shr_strdata_readnml(sdat)
 
     ! Reset sdat values if they appear as optional arguments
     ! TODO: pass these values to shr_strdata routine rather than reading them here
@@ -374,7 +376,7 @@ contains
   end subroutine shr_strdata_init_from_fortran
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain( mesh, mpicom, compid, sdat, reset_domain_mask, rc)
+  subroutine shr_strdata_init_model_domain( mesh, mpicom, compid, sdat, reset_mask, model_maskfile, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat%lsize, sdat%gsmap and sdat%grid
@@ -382,12 +384,13 @@ contains
     ! ----------------------------------------------
 
     ! input/output variables
-    type(ESMF_Mesh)        , intent(in)    :: mesh
-    integer                , intent(in)    :: mpicom
-    integer                , intent(in)    :: compid
-    type(shr_strdata_type) , intent(inout) :: sdat
-    logical, optional      , intent(in)    :: reset_domain_mask
-    integer                , intent(out)   :: rc
+    type(ESMF_Mesh)            , intent(in)    :: mesh
+    integer                    , intent(in)    :: mpicom
+    integer                    , intent(in)    :: compid
+    type(shr_strdata_type)     , intent(inout) :: sdat
+    logical         , optional , intent(in)    :: reset_mask
+    character(len=*), optional , intent(in)    :: model_maskfile
+    integer                    , intent(out)   :: rc
 
     ! local variables
     integer              :: n,k          ! generic counters
@@ -412,17 +415,23 @@ contains
     integer, pointer     :: idata(:)     ! temporary
     type(ESMF_Array)     :: elemMaskArray
     integer, pointer     :: elemMask(:)
+    type(file_desc_t)    :: pioid
+    type(var_desc_t)     :: varid
+    type(io_desc_t)      :: pio_iodesc
+    integer              :: rcode
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    ! initialize sdat%lsize, sdat%gsize and sdat%gindex
+    ! initialize sdat%lsize
     call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     sdat%lsize = lsize
     allocate(sdat%gindex(lsize))
+
+    ! initialize sdat%gindex
     call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=sdat%gindex, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_DistGridGet(distGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
@@ -430,6 +439,8 @@ contains
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! initialize sdat%gsize
     gsize = 0
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
@@ -440,45 +451,54 @@ contains
     ! initialize sdat%gsmap
     call mct_gsMap_init(sdat%gsmap, sdat%gindex, mpicom, compid, sdat%lsize, sdat%gsize)
 
-    ! initialize sdat%ggrid
-    ! to obtain the mask, create an esmf array from a distgrid and a pointer
-    ! the following call will automatically fill in the pointer value for elemMask
+    ! initialize the sdat%ggrid lat, lon and hgt attributes
+    call mpi_comm_rank(mpicom, my_task, ierr)
+    call mct_gGrid_init(GGrid=sdat%grid, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize)
+    call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', sdat%gindex, lsize)
+    !call mct_gsMap_orderedPoints(sdat%gsMap, my_task, idata)
+    !call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', idata, lsize)
+    !deallocate(idata)
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(elemMask(lsize))
-    elemMaskArray = ESMF_ArrayCreate(distGrid, elemMask, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Create the model ggrid currently
-    call mpi_comm_rank(mpicom, my_task, ierr)
-    call mct_gGrid_init(GGrid=sdat%grid, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize )
-    call mct_gsMap_orderedPoints(sdat%gsMap, my_task, idata)
-    call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', idata, lsize)
-    deallocate(idata)
-    klon  = mct_aVect_indexRA(sdat%Grid%data,'lon')
-    klat  = mct_aVect_indexRA(sdat%Grid%data,'lat')
-    kmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
-    khgt  = mct_aVect_indexRA(sdat%Grid%data,'hgt')
+    klon = mct_aVect_indexRA(sdat%Grid%data,'lon')
+    klat = mct_aVect_indexRA(sdat%Grid%data,'lat')
+    khgt = mct_aVect_indexRA(sdat%Grid%data,'hgt')
     do n = 1, lsize
        sdat%Grid%data%rAttr(klon ,n) = ownedElemCoords(2*n-1)
        sdat%Grid%data%rAttr(klat ,n) = ownedElemCoords(2*n)
-       sdat%Grid%data%rAttr(kmask,n) = real(elemMask(n),r8)
-       !sdat%Grid%data%rAttr(khgt ,n) = -1 ! currently hard-wired
+       !sdat%Grid%data%rAttr(khgt ,n) = -1 ! TODO: remove the hard-wiring here
     end do
-    deallocate(elemMask)
 
-    if (present(reset_domain_mask)) then
-       if (reset_domain_mask) then
-          if (my_task == master_task) then
-             write(logunit,*) ' Resetting the component domain mask to 1'
-          end if
-          sdat%grid%data%rattr(kmask,:) = 1
-       end if
+    ! initialize the sdat%ggrid mask attribute
+    kmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
+    if (present(reset_mask) .and. reset_mask) then
+       sdat%Grid%data%rAttr(kmask,:) = 1._r8
+    else if (present(model_maskfile)) then
+       ! obtain model mask from separate model_maskfile
+       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid, 'int', varid) ! assume frac name on domain file
+       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%nxg, sdat%nyg/), sdat%gindex, pio_iodesc)
+       allocate(elemMask(sdat%lsize))
+       call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
+       call pio_closefile(pioid)
+       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+       sdat%Grid%data%rAttr(kmask,:) = real(elemMask(:),r8)
+       deallocate(elemMask)
+    else
+       ! obtain the model mask from the input mesh create an esmf
+       ! array from a distgrid and a pointer and the following call
+       ! will automatically fill in the pointer value for elemMask
+       allocate(elemMask(lsize))
+       elemMaskArray = ESMF_ArrayCreate(distGrid, elemMask, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       sdat%Grid%data%rAttr(kmask,:) = real(elemMask(:),r8)
+       deallocate(elemMask)
     end if
 
   end subroutine shr_strdata_init_model_domain
@@ -496,7 +516,7 @@ contains
 
     ! local variables
     integer       :: n         ! generic index
-    character(CL) :: str       ! namelist input for "streams" 
+    character(CL) :: str       ! namelist input for "streams"
     integer       :: i         ! index in string
     integer       :: yearFirst ! first year to use in data stream
     integer       :: yearLast  ! last  year to use in data stream
@@ -544,7 +564,7 @@ contains
        strmFldfilePath, strmFldFileNames)
 
     ! -----------------------------------------------
-    ! initialize stream info from fortran interfaces 
+    ! initialize stream info from fortran interfaces
     ! rather than from stream text files
     ! -----------------------------------------------
 
@@ -681,7 +701,6 @@ contains
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
 
     ! Obtain stream domain lon/lat arrays (in degrees)
-    call pio_seterrorhandling(pioid, PIO_RETURN_ERROR)
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     rcode = pio_inq_varid(pioid, trim(lonname), varid)
     rcode = pio_inq_varndims(pioid, varid, ndims)
@@ -708,7 +727,7 @@ contains
        end do
        deallocate(lon1d); deallocate(lat1d)
     else
-       ! lon and lat in stream domain file are 2d arrays 
+       ! lon and lat in stream domain file are 2d arrays
        ! obtain both nxg and nyg from lon info
        rcode = pio_inq_varid(pioid, trim(lonname), varid)
        rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
@@ -775,7 +794,7 @@ contains
     else
        call pio_initdecomp(pio_subsystem, pio_double, (/nxg,nyg,nzg/), gindex_stream, pio_iodesc)
     endif
-    
+
     ! Create mct stream gsmap using gindex_stream
     if (my_task == master_task) write(logunit,*)trim(subname) // ': Creating gsmap for input stream'
     call mct_gsMap_init(gsmap, gindex_stream, mpicom, compid, lsize, gsize)
@@ -821,10 +840,10 @@ contains
   end subroutine shr_strdata_init_stream_domain
 
   !===============================================================================
-  subroutine shr_strdata_init_mapping(SDAT, compid, mpicom, my_task)
+  subroutine shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
 
     ! input/output arguments
-    type(shr_strdata_type) ,intent(inout) :: SDAT
+    type(shr_strdata_type) ,intent(inout) :: sdat
     integer                ,intent(in)    :: compid
     integer                ,intent(in)    :: mpicom
     integer                ,intent(in)    :: my_task
@@ -847,77 +866,79 @@ contains
     character(len=*) ,parameter :: subname = "(shr_strdata_init_mapping) "
     !-------------------------------------------------------------------------------
 
-    do n = 1,SDAT%nstreams
+    do n = 1,sdat%nstreams
 
+       ! Determine if do fills from stream to grid
        method = CompareMaskSubset
-       if ( shr_strdata_gGridCompare(SDAT%gridR(n), SDAT%gsmapR(n), &
-                                    SDAT%grid    , SDAT%gsmap    , method, mpicom) .or. &
-            trim(SDAT%fillalgo(n))=='none') then
-          SDAT%dofill(n) = .false.
+       if ( shr_strdata_gGridCompare(sdat%gridR(n), sdat%gsmapR(n), &
+                                     sdat%grid    , sdat%gsmap    , method, mpicom) .or. &
+            trim(sdat%fillalgo(n))=='none') then
+          sdat%dofill(n) = .false.
        else
-          SDAT%dofill(n) = .true.
+          sdat%dofill(n) = .true.
        endif
 
-       if (trim(SDAT%mapmask(n)) == 'dstmask') then
+       if (trim(sdat%mapmask(n)) == 'dstmask') then
           method = CompareXYabsMask
        else
           method = CompareXYabs
        endif
-       if ( shr_strdata_gGridCompare(SDAT%gridR(n),SDAT%gsmapR(n),SDAT%grid,SDAT%gsmap, method, mpicom, 0.01_r8) .or. &
-            trim(SDAT%mapalgo(n))=='none') then
-          SDAT%domaps(n) = .false.
+       if ( shr_strdata_gGridCompare(sdat%gridR(n), sdat%gsmapR(n), sdat%grid, &
+                                     sdat%gsmap, method, mpicom, 0.01_r8) .or. &
+            trim(sdat%mapalgo(n))=='none') then
+          sdat%domaps(n) = .false.
        else
-          SDAT%domaps(n) = .true.
+          sdat%domaps(n) = .true.
        endif
 
        ! ---------------------
        ! Set up fills
        ! ---------------------
 
-       if (SDAT%dofill(n)) then
-          if (SDAT%strnzg(n) > 1) then
+       if (sdat%dofill(n)) then
+          if (sdat%strnzg(n) > 1) then
              write(logunit,*) trim(subname),' do fill called with 3d data, not allowed'
              call shr_sys_abort(subname//': do fill called with 3d data, not allowed')
           endif
 
-          if (trim(SDAT%fillread(n)) == trim(shr_strdata_unset)) then
+          if (trim(sdat%fillread(n)) == trim(shr_strdata_unset)) then
              if (my_task == master_task) then
                 write(logunit,F00) ' calling shr_strdata_mapSet for fill'
              endif
 
-             call shr_strdata_mapSet(SDAT%sMatPf(n), &
-                  SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n), &
-                  SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n), &
+             call shr_strdata_mapSet(sdat%sMatPf(n), &
+                  sdat%gridR(n),sdat%gsmapR(n),sdat%strnxg(n),sdat%strnyg(n), &
+                  sdat%gridR(n),sdat%gsmapR(n),sdat%strnxg(n),sdat%strnyg(n), &
                   name='mapFill', &
                   type='cfill', &
-                  algo=trim(SDAT%fillalgo(n)),&
-                  mask=trim(SDAT%fillmask(n)),&
+                  algo=trim(sdat%fillalgo(n)),&
+                  mask=trim(sdat%fillmask(n)),&
                   vect='scalar', &
                   compid=compid,&
                   mpicom=mpicom)
 
-             if (trim(SDAT%fillwrit(n)) /= trim(shr_strdata_unset)) then
+             if (trim(sdat%fillwrit(n)) /= trim(shr_strdata_unset)) then
                 if (my_task == master_task) then
-                   write(logunit,F00) ' writing ',trim(SDAT%fillwrit(n))
+                   write(logunit,F00) ' writing ',trim(sdat%fillwrit(n))
                 endif
 
                 call shr_mct_sMatWritednc(&
-                     SDAT%sMatPf(n)%Matrix,&
-                     SDAT%pio_subsystem,&
-                     SDAT%io_type,&
-                     SDAT%io_format, &
-                     SDAT%fillwrit(n),&
+                     sdat%sMatPf(n)%Matrix,&
+                     sdat%pio_subsystem,&
+                     sdat%io_type,&
+                     sdat%io_format, &
+                     sdat%fillwrit(n),&
                      compid,&
                      mpicom)
              endif
           else
              if (my_task == master_task) then
-                write(logunit,F00) ' reading ',trim(SDAT%fillread(n))
+                write(logunit,F00) ' reading ',trim(sdat%fillread(n))
              endif
-             call shr_mct_sMatReaddnc(sMati, SDAT%gsmapR(n), SDAT%gsmapR(n), 'src',  &
-                  filename=trim(SDAT%fillread(n)), mytask=my_task, mpicom=mpicom)
+             call shr_mct_sMatReaddnc(sMati, sdat%gsmapR(n), sdat%gsmapR(n), 'src',  &
+                  filename=trim(sdat%fillread(n)), mytask=my_task, mpicom=mpicom)
 
-             call mct_sMatP_Init(SDAT%sMatPf(n), sMati, SDAT%gsMapR(n), SDAT%gsmapR(n), 0, mpicom, compid)
+             call mct_sMatP_Init(sdat%sMatPf(n), sMati, sdat%gsMapR(n), sdat%gsmapR(n), 0, mpicom, compid)
 
              call mct_sMat_Clean(sMati)
           endif
@@ -927,72 +948,72 @@ contains
        ! Set up maps
        ! ---------------------
 
-       if (SDAT%domaps(n)) then
-          if (SDAT%strnzg(n) > 1) then
+       if (sdat%domaps(n)) then
+          if (sdat%strnzg(n) > 1) then
              write(logunit,*) trim(subname),' do maps called with 3d data, not allowed'
              call shr_sys_abort(subname//': do maps called with 3d data, not allowed')
           endif
 
-          if (trim(SDAT%mapread(n)) == trim(shr_strdata_unset)) then
+          if (trim(sdat%mapread(n)) == trim(shr_strdata_unset)) then
              if (my_task == master_task) then
                 write(logunit,F00) ' calling shr_strdata_mapSet for remap'
              endif
 
-             call shr_strdata_mapSet(SDAT%sMatPs(n), &
-                  SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n), &
-                  SDAT%grid    ,SDAT%gsmap    ,SDAT%nxg      ,SDAT%nyg,       &
+             call shr_strdata_mapSet(sdat%sMatPs(n), &
+                  sdat%gridR(n),sdat%gsmapR(n),sdat%strnxg(n),sdat%strnyg(n), &
+                  sdat%grid    ,sdat%gsmap    ,sdat%nxg      ,sdat%nyg,       &
                   name='mapScalar', &
                   type='remap',                             &
-                  algo=trim(SDAT%mapalgo(n)),&
-                  mask=trim(SDAT%mapmask(n)), &
+                  algo=trim(sdat%mapalgo(n)),&
+                  mask=trim(sdat%mapmask(n)), &
                   vect='scalar', &
                   compid=compid,&
                   mpicom=mpicom)
 
-             if (trim(SDAT%mapwrit(n)) /= trim(shr_strdata_unset)) then
+             if (trim(sdat%mapwrit(n)) /= trim(shr_strdata_unset)) then
                 if (my_task == master_task) then
-                   write(logunit,F00) ' writing ',trim(SDAT%mapwrit(n))
+                   write(logunit,F00) ' writing ',trim(sdat%mapwrit(n))
                 endif
                 call shr_mct_sMatWritednc(&
-                     SDAT%sMatPs(n)%Matrix,&
+                     sdat%sMatPs(n)%Matrix,&
                      sdat%pio_subsystem,&
                      sdat%io_type,&
-                     SDAT%io_format,&
-                     SDAT%mapwrit(n),&
+                     sdat%io_format,&
+                     sdat%mapwrit(n),&
                      compid,&
                      mpicom)
              endif
           else
              if (my_task == master_task) then
-                write(logunit,F00) ' reading ',trim(SDAT%mapread(n))
+                write(logunit,F00) ' reading ',trim(sdat%mapread(n))
              endif
-             call shr_mct_sMatReaddnc(sMati,SDAT%gsmapR(n),SDAT%gsmap,'src', &
-                  filename=trim(SDAT%mapread(n)),mytask=my_task,mpicom=mpicom)
-             call mct_sMatP_Init(SDAT%sMatPs(n),sMati,SDAT%gsMapR(n),SDAT%gsmap,0, mpicom, compid)
+             call shr_mct_sMatReaddnc(sMati,sdat%gsmapR(n),sdat%gsmap,'src', &
+                  filename=trim(sdat%mapread(n)),mytask=my_task,mpicom=mpicom)
+             call mct_sMatP_Init(sdat%sMatPs(n),sMati,sdat%gsMapR(n),sdat%gsmap,0, mpicom, compid)
              call mct_sMat_Clean(sMati)
           endif
        else
-          call mct_rearr_init(SDAT%gsmapR(n), SDAT%gsmap, mpicom, SDAT%rearrR(n))
+          call mct_rearr_init(sdat%gsmapR(n), sdat%gsmap, mpicom, sdat%rearrR(n))
        endif
     enddo
 
     ! Create model datatypes in sdat
 
-    do n = 1,SDAT%nstreams
+    do n = 1,sdat%nstreams
        ! Determine colon delimited field name string for stream fields
        if (my_task == master_task) then
-          call shr_stream_getModelFieldList(SDAT%stream(n),fldList)
+          call shr_stream_getModelFieldList(sdat%stream(n),fldList)
        endif
        call shr_mpi_bcast(fldList,mpicom)
 
        ! Create attribute vectors on model mesh
-       call mct_aVect_init(SDAT%avFLB(n),rlist=fldList,lsize=SDAT%lsize)
-       call mct_aVect_init(SDAT%avFUB(n),rlist=fldList,lsize=SDAT%lsize)
-       call mct_aVect_init(SDAT%avRLB(n),rlist=fldList,lsize=SDAT%lsizeR(n))
-       call mct_aVect_init(SDAT%avRUB(n),rlist=fldList,lsize=SDAT%lsizeR(n))
+       call mct_aVect_init(sdat%avFLB(n),rlist=fldList,lsize=sdat%lsize)
+       call mct_aVect_init(sdat%avFUB(n),rlist=fldList,lsize=sdat%lsize)
+       call mct_aVect_init(sdat%avRLB(n),rlist=fldList,lsize=sdat%lsizeR(n))
+       call mct_aVect_init(sdat%avRUB(n),rlist=fldList,lsize=sdat%lsizeR(n))
 
-       if (trim(SDAT%tintalgo(n)) == 'coszen') then
-          call mct_aVect_init(SDAT%avCoszen(n), rlist="tavCosz", lsize=SDAT%lsize)
+       if (trim(sdat%tintalgo(n)) == 'coszen') then
+          call mct_aVect_init(sdat%avCoszen(n), rlist="tavCosz", lsize=sdat%lsize)
        endif
 
        ! Create field bundle on model mesh for spatially and time
@@ -1014,41 +1035,41 @@ contains
 
     ! --- check vectors and compute ustrm,vstrm ---
 
-    do m = 1,SDAT%nvectors
-       if (.not. shr_string_listIsValid(SDAT%vectors(m))) then
-          write(logunit,*) trim(subname),' vec fldlist invalid m=',m,trim(SDAT%vectors(m))
-          call shr_sys_abort(subname//': vec fldlist invalid:'//trim(SDAT%vectors(m)))
+    do m = 1,sdat%nvectors
+       if (.not. shr_string_listIsValid(sdat%vectors(m))) then
+          write(logunit,*) trim(subname),' vec fldlist invalid m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec fldlist invalid:'//trim(sdat%vectors(m)))
        endif
-       if (shr_string_listGetNum(SDAT%vectors(m)) /= 2) then
-          write(logunit,*) trim(subname),' vec fldlist ne 2 m=',m,trim(SDAT%vectors(m))
-          call shr_sys_abort(subname//': vec fldlist ne 2:'//trim(SDAT%vectors(m)))
+       if (shr_string_listGetNum(sdat%vectors(m)) /= 2) then
+          write(logunit,*) trim(subname),' vec fldlist ne 2 m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec fldlist ne 2:'//trim(sdat%vectors(m)))
        endif
-       call shr_string_listGetName(SDAT%vectors(m),1,uname)
-       call shr_string_listGetName(SDAT%vectors(m),2,vname)
+       call shr_string_listGetName(sdat%vectors(m),1,uname)
+       call shr_string_listGetName(sdat%vectors(m),2,vname)
        nu = 0
        nv = 0
-       do n = 1,SDAT%nstreams
-          k = mct_aVect_indexRA(SDAT%avRLB(n),trim(uname),perrWith='quiet')
+       do n = 1,sdat%nstreams
+          k = mct_aVect_indexRA(sdat%avRLB(n),trim(uname),perrWith='quiet')
           if (k > 0) nu = n
-          k = mct_aVect_indexRA(SDAT%avRLB(n),trim(vname),perrWith='quiet')
+          k = mct_aVect_indexRA(sdat%avRLB(n),trim(vname),perrWith='quiet')
           if (k > 0) nv = n
        enddo
        if (nu == 0  .or. nv == 0) then
-          write(logunit,*) trim(subname),' vec flds not found  m=',m,trim(SDAT%vectors(m))
-          call shr_sys_abort(subname//': vec flds not found:'//trim(SDAT%vectors(m)))
+          write(logunit,*) trim(subname),' vec flds not found  m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec flds not found:'//trim(sdat%vectors(m)))
        endif
        if (nu /= nv) then
-          compare1 = shr_strdata_gGridCompare(SDAT%gridR(nu), SDAT%gsmapR(nu), SDAT%gridR(nv),SDAT%gsmapR(nv), &
+          compare1 = shr_strdata_gGridCompare(sdat%gridR(nu), sdat%gsmapR(nu), sdat%gridR(nv),sdat%gsmapR(nv), &
                CompareXYabs, mpicom, 0.01_r8)
-          compare2 = shr_strdata_gGridCompare(SDAT%gridR(nu), SDAT%gsmapR(nu), SDAT%gridR(nv),SDAT%gsmapR(nv), &
+          compare2 = shr_strdata_gGridCompare(sdat%gridR(nu), sdat%gsmapR(nu), sdat%gridR(nv),sdat%gsmapR(nv), &
                CompareMaskZeros, mpicom)
           if ((.not. compare1) .or. (.not. compare2)) then
-             write(logunit,*) trim(subname),' vec fld doms not same m=',m,trim(SDAT%vectors(m))
-             call shr_sys_abort(subname//': vec fld doms not same:'//trim(SDAT%vectors(m)))
+             write(logunit,*) trim(subname),' vec fld doms not same m=',m,trim(sdat%vectors(m))
+             call shr_sys_abort(subname//': vec fld doms not same:'//trim(sdat%vectors(m)))
           endif
        endif
-       SDAT%ustrm(m) = nu
-       SDAT%vstrm(m) = nv
+       sdat%ustrm(m) = nu
+       sdat%vstrm(m) = nv
     enddo
 
   end subroutine shr_strdata_init_mapping
@@ -1086,9 +1107,9 @@ contains
   end subroutine shr_strdata_get_stream_domain
 
   !===============================================================================
-  subroutine shr_strdata_advance(SDAT,ymd,tod,mpicom,istr,timers)
+  subroutine shr_strdata_advance(sdat,ymd,tod,mpicom,istr,timers)
 
-    type(shr_strdata_type) ,intent(inout)       :: SDAT
+    type(shr_strdata_type) ,intent(inout)       :: sdat
     integer                ,intent(in)          :: ymd    ! current model date
     integer                ,intent(in)          :: tod    ! current model date
     integer                ,intent(in)          :: mpicom
@@ -1123,7 +1144,7 @@ contains
     character(CS)              :: uname                ! u vector field name
     character(CS)              :: vname                ! v vector field name
     integer                    :: year,month,day       ! date year month day
-    real(r8), pointer          :: dataptr(:) 
+    real(r8), pointer          :: dataptr(:)
     integer                    :: rc
     integer                    :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: fieldnamelist(:)
@@ -1133,7 +1154,7 @@ contains
     character(*)     ,parameter :: subname = "(shr_strdata_advance) "
     !-------------------------------------------------------------------------------
 
-    if (SDAT%nstreams < 1) return
+    if (sdat%nstreams < 1) return
 
     lstr = ''
     if (present(istr)) then
@@ -1155,14 +1176,14 @@ contains
 
     mssrmlf = .false.
 
-    SDAT%ymd = ymd
-    SDAT%tod = tod
+    sdat%ymd = ymd
+    sdat%tod = tod
 
-    if (SDAT%nstreams > 0) then
-       allocate(newData(SDAT%nstreams))
-       allocate(ymdmod(SDAT%nstreams))
+    if (sdat%nstreams > 0) then
+       allocate(newData(sdat%nstreams))
+       allocate(ymdmod(sdat%nstreams))
 
-       do n = 1,SDAT%nstreams
+       do n = 1,sdat%nstreams
           ! ------------------------------------------------------- !
           ! tcraig, Oct 11 2010.  Mismatching calendars: 4 cases    !
           ! ------------------------------------------------------- !
@@ -1214,21 +1235,21 @@ contains
           ! case(0)
           ymdmod(n) = ymd
           todmod    = tod
-          if (trim(SDAT%calendar) /= trim(SDAT%stream(n)%calendar)) then
-             if ((trim(SDAT%calendar) == trim(shr_cal_gregorian)) .and. &
-                  (trim(SDAT%stream(n)%calendar) == trim(shr_cal_noleap))) then
+          if (trim(sdat%calendar) /= trim(sdat%stream(n)%calendar)) then
+             if ((trim(sdat%calendar) == trim(shr_cal_gregorian)) .and. &
+                  (trim(sdat%stream(n)%calendar) == trim(shr_cal_noleap))) then
                 ! case (1), set feb 29 = feb 28
                 call shr_cal_date2ymd (ymd,year,month,day)
                 if (month == 2 .and. day == 29) then
                    call shr_cal_ymd2date(year,2,28,ymdmod(n))
                 endif
-             else if ((trim(SDAT%calendar) == trim(shr_cal_noleap)) .and. &
-                  (trim(SDAT%stream(n)%calendar) == trim(shr_cal_gregorian))) then
+             else if ((trim(sdat%calendar) == trim(shr_cal_noleap)) .and. &
+                  (trim(sdat%stream(n)%calendar) == trim(shr_cal_gregorian))) then
                 ! case (2), feb 29 input data will be skipped automatically
              else
                 ! case (3), abort
                 write(logunit,*) trim(subname),' ERROR: mismatch calendar ', &
-                     trim(SDAT%calendar),':',trim(SDAT%stream(n)%calendar)
+                     trim(sdat%calendar),':',trim(sdat%stream(n)%calendar)
                 call shr_sys_abort(trim(subname)//' ERROR: mismatch calendar ')
              endif
           endif
@@ -1236,139 +1257,139 @@ contains
           call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
           call t_startf(trim(lstr)//trim(timname)//'_readLBUB')
 
-          call shr_strdata_readLBUB(SDAT%stream(n),&
-               SDAT%pio_subsystem, SDAT%io_type, SDAT%pio_iodesc(n),  &
-               ymdmod(n), todmod, mpicom, SDAT%gsmapR(n), &
-               SDAT%avRLB(n), SDAT%ymdLB(n), SDAT%todLB(n),  &
-               SDAT%avRUB(n), SDAT%ymdUB(n), SDAT%todUB(n),  &
-               SDAT%avRFile(n),  trim(SDAT%readmode(n)),  newData(n),  &
+          call shr_strdata_readLBUB(sdat%stream(n),&
+               sdat%pio_subsystem, sdat%io_type, sdat%pio_iodesc(n),  &
+               ymdmod(n), todmod, mpicom, sdat%gsmapR(n), &
+               sdat%avRLB(n), sdat%ymdLB(n), sdat%todLB(n),  &
+               sdat%avRUB(n), sdat%ymdUB(n), sdat%todUB(n),  &
+               sdat%avRFile(n),  trim(sdat%readmode(n)),  newData(n),  &
                istr=trim(lstr)//'_readLBUB')
 
           if (debug > 0) then
              write(logunit,*) trim(subname),' newData flag = ',n,newData(n)
-             write(logunit,*) trim(subname),' LB ymd,tod = ',n,SDAT%ymdLB(n),SDAT%todLB(n)
-             write(logunit,*) trim(subname),' UB ymd,tod = ',n,SDAT%ymdUB(n),SDAT%todUB(n)
+             write(logunit,*) trim(subname),' LB ymd,tod = ',n,sdat%ymdLB(n),sdat%todLB(n)
+             write(logunit,*) trim(subname),' UB ymd,tod = ',n,sdat%ymdUB(n),sdat%todUB(n)
           endif
 
           if (newData(n)) then
              if (debug > 0) then
-                write(logunit,*) trim(subname),' newData RLB = ',n,minval(SDAT%avRLB(n)%rAttr), &
-                     maxval(SDAT%avRLB(n)%rAttr),sum(SDAT%avRLB(n)%rAttr)
-                write(logunit,*) trim(subname),' newData RUB = ',n,minval(SDAT%avRUB(n)%rAttr), &
-                     maxval(SDAT%avRUB(n)%rAttr),sum(SDAT%avRUB(n)%rAttr)
+                write(logunit,*) trim(subname),' newData RLB = ',n,minval(sdat%avRLB(n)%rAttr), &
+                     maxval(sdat%avRLB(n)%rAttr),sum(sdat%avRLB(n)%rAttr)
+                write(logunit,*) trim(subname),' newData RUB = ',n,minval(sdat%avRUB(n)%rAttr), &
+                     maxval(sdat%avRUB(n)%rAttr),sum(sdat%avRUB(n)%rAttr)
              endif
-             call shr_cal_date2ymd(SDAT%ymdLB(n),year,month,day)
-             call shr_cal_timeSet(timeLB,SDAT%ymdLB(n),0,SDAT%stream(n)%calendar)
-             call shr_cal_timeSet(timeUB,SDAT%ymdUB(n),0,SDAT%stream(n)%calendar)
+             call shr_cal_date2ymd(sdat%ymdLB(n),year,month,day)
+             call shr_cal_timeSet(timeLB,sdat%ymdLB(n),0,sdat%stream(n)%calendar)
+             call shr_cal_timeSet(timeUB,sdat%ymdUB(n),0,sdat%stream(n)%calendar)
              timeint = timeUB-timeLB
              call ESMF_TimeIntervalGet(timeint,StartTimeIn=timeLB,d=dday)
-             dtime = abs(real(dday,R8) + real(SDAT%todUB(n)-SDAT%todLB(n),R8)/shr_const_cDay)
+             dtime = abs(real(dday,R8) + real(sdat%todUB(n)-sdat%todLB(n),R8)/shr_const_cDay)
 
-             SDAT%dtmin(n) = min(SDAT%dtmin(n),dtime)
-             SDAT%dtmax(n) = max(SDAT%dtmax(n),dtime)
-             if ((SDAT%dtmax(n)/SDAT%dtmin(n)) > SDAT%dtlimit(n)) then
+             sdat%dtmin(n) = min(sdat%dtmin(n),dtime)
+             sdat%dtmax(n) = max(sdat%dtmax(n),dtime)
+             if ((sdat%dtmax(n)/sdat%dtmin(n)) > sdat%dtlimit(n)) then
                 write(logunit,*) trim(subname),' ERROR: for stream ',n
-                write(logunit,*) trim(subName),' ERROR: dt limit1 ',SDAT%dtmax(n),SDAT%dtmin(n),SDAT%dtlimit(n)
-                write(logunit,*) trim(subName),' ERROR: dt limit2 ',SDAT%ymdLB(n),SDAT%todLB(n), &
-                     SDAT%ymdUB(n),SDAT%todUB(n)
+                write(logunit,*) trim(subName),' ERROR: dt limit1 ',sdat%dtmax(n),sdat%dtmin(n),sdat%dtlimit(n)
+                write(logunit,*) trim(subName),' ERROR: dt limit2 ',sdat%ymdLB(n),sdat%todLB(n), &
+                     sdat%ymdUB(n),sdat%todUB(n)
                 call shr_sys_abort(trim(subName)//' ERROR dt limit for stream')
              endif
           endif
           call t_stopf(trim(lstr)//trim(timname)//'_readLBUB')
        enddo
 
-       do n = 1,SDAT%nstreams
+       do n = 1,sdat%nstreams
           if (newData(n)) then
 
-             if (SDAT%doFill(n)) then
+             if (sdat%doFill(n)) then
                 call t_startf(trim(lstr)//trim(timname)//'_fill')
-                lsize = mct_aVect_lsize(SDAT%avRLB(n))
-                call mct_aVect_init(avRtmp,SDAT%avRLB(n),lsize)
-                call mct_aVect_copy(SDAT%avRLB(n),avRtmp)
-                call mct_sMat_avMult(avRtmp,SDAT%sMatPf(n),SDAT%avRLB(n))
-                call mct_aVect_copy(SDAT%avRUB(n),avRtmp)
-                call mct_sMat_avMult(avRtmp,SDAT%sMatPf(n),SDAT%avRUB(n))
+                lsize = mct_aVect_lsize(sdat%avRLB(n))
+                call mct_aVect_init(avRtmp,sdat%avRLB(n),lsize)
+                call mct_aVect_copy(sdat%avRLB(n),avRtmp)
+                call mct_sMat_avMult(avRtmp,sdat%sMatPf(n),sdat%avRLB(n))
+                call mct_aVect_copy(sdat%avRUB(n),avRtmp)
+                call mct_sMat_avMult(avRtmp,sdat%sMatPf(n),sdat%avRUB(n))
                 call mct_aVect_clean(avRtmp)
                 call t_stopf(trim(lstr)//trim(timname)//'_fill')
              endif
 
-             if (SDAT%domaps(n)) then
+             if (sdat%domaps(n)) then
                 call t_startf(trim(lstr)//trim(timname)//'_map')
-                call mct_sMat_avMult(SDAT%avRLB(n),SDAT%sMatPs(n),SDAT%avFLB(n))
-                call mct_sMat_avMult(SDAT%avRUB(n),SDAT%sMatPs(n),SDAT%avFUB(n))
+                call mct_sMat_avMult(sdat%avRLB(n),sdat%sMatPs(n),sdat%avFLB(n))
+                call mct_sMat_avMult(sdat%avRUB(n),sdat%sMatPs(n),sdat%avFUB(n))
                 call t_stopf(trim(lstr)//trim(timname)//'_map')
              else
                 call t_startf(trim(lstr)//trim(timname)//'_rearr')
-                call mct_rearr_rearrange(SDAT%avRLB(n),SDAT%avFLB(n),SDAT%rearrR(n))
-                call mct_rearr_rearrange(SDAT%avRUB(n),SDAT%avFUB(n),SDAT%rearrR(n))
+                call mct_rearr_rearrange(sdat%avRLB(n),sdat%avFLB(n),sdat%rearrR(n))
+                call mct_rearr_rearrange(sdat%avRUB(n),sdat%avFUB(n),sdat%rearrR(n))
                 call t_stopf(trim(lstr)//trim(timname)//'_rearr')
              endif
 
              if (debug > 0) then
-                write(logunit,*) trim(subname),' newData FLB = ',n,minval(SDAT%avFLB(n)%rAttr), &
-                     maxval(SDAT%avFLB(n)%rAttr),sum(SDAT%avFLB(n)%rAttr)
-                write(logunit,*) trim(subname),' newData FUB = ',n,minval(SDAT%avFUB(n)%rAttr), &
-                     maxval(SDAT%avFUB(n)%rAttr),sum(SDAT%avFUB(n)%rAttr)
+                write(logunit,*) trim(subname),' newData FLB = ',n,minval(sdat%avFLB(n)%rAttr), &
+                     maxval(sdat%avFLB(n)%rAttr),sum(sdat%avFLB(n)%rAttr)
+                write(logunit,*) trim(subname),' newData FUB = ',n,minval(sdat%avFUB(n)%rAttr), &
+                     maxval(sdat%avFUB(n)%rAttr),sum(sdat%avFUB(n)%rAttr)
              endif
           endif
        enddo
 
-       do m = 1,SDAT%nvectors
-          nu = SDAT%ustrm(m)
-          nv = SDAT%vstrm(m)
-          if ((SDAT%domaps(nu) .or. SDAT%domaps(nv)) .and. (newdata(nu) .or. newdata(nv))) then
+       do m = 1,sdat%nvectors
+          nu = sdat%ustrm(m)
+          nv = sdat%vstrm(m)
+          if ((sdat%domaps(nu) .or. sdat%domaps(nv)) .and. (newdata(nu) .or. newdata(nv))) then
 
              call t_startf(trim(lstr)//trim(timname)//'_vect')
-             call shr_string_listGetName(SDAT%vectors(m),1,uname)
-             call shr_string_listGetName(SDAT%vectors(m),2,vname)
-             lsizeR = mct_aVect_lsize(SDAT%avRLB(nu))
-             lsizeF = mct_aVect_lsize(SDAT%avFLB(nu))
-             call mct_aVect_init(avRV,rlist=SDAT%vectors(m),lsize=lsizeR)
-             call mct_aVect_init(avFV,rlist=SDAT%vectors(m),lsize=lsizeF)
+             call shr_string_listGetName(sdat%vectors(m),1,uname)
+             call shr_string_listGetName(sdat%vectors(m),2,vname)
+             lsizeR = mct_aVect_lsize(sdat%avRLB(nu))
+             lsizeF = mct_aVect_lsize(sdat%avFLB(nu))
+             call mct_aVect_init(avRV,rlist=sdat%vectors(m),lsize=lsizeR)
+             call mct_aVect_init(avFV,rlist=sdat%vectors(m),lsize=lsizeF)
              allocate(xlon(lsizeR))
              allocate(ylon(lsizeF))
-             call mct_aVect_exportRattr(SDAT%gridR(nu)%data,'lon',xlon)
-             call mct_aVect_exportRattr(SDAT%grid     %data,'lon',ylon)
+             call mct_aVect_exportRattr(sdat%gridR(nu)%data,'lon',xlon)
+             call mct_aVect_exportRattr(sdat%grid     %data,'lon',ylon)
              xlon = xlon * deg2rad
              ylon = ylon * deg2rad
 
              !--- map LB ---
 
-             uvar = mct_aVect_indexRA(SDAT%avRLB(nu),trim(uname))
-             vvar = mct_aVect_indexRA(SDAT%avRLB(nv),trim(vname))
+             uvar = mct_aVect_indexRA(sdat%avRLB(nu),trim(uname))
+             vvar = mct_aVect_indexRA(sdat%avRLB(nv),trim(vname))
              do i = 1,lsizeR
-                avRV%rAttr(1,i) =  SDAT%avRLB(nu)%rAttr(uvar,i) * cos(xlon(i))  &
-                     -SDAT%avRLB(nv)%rAttr(vvar,i) * sin(xlon(i))
-                avRV%rAttr(2,i) =  SDAT%avRLB(nu)%rAttr(uvar,i) * sin(xlon(i))  &
-                     +SDAT%avRLB(nv)%rAttr(vvar,i) * cos(xlon(i))
+                avRV%rAttr(1,i) =  sdat%avRLB(nu)%rAttr(uvar,i) * cos(xlon(i))  &
+                     -sdat%avRLB(nv)%rAttr(vvar,i) * sin(xlon(i))
+                avRV%rAttr(2,i) =  sdat%avRLB(nu)%rAttr(uvar,i) * sin(xlon(i))  &
+                     +sdat%avRLB(nv)%rAttr(vvar,i) * cos(xlon(i))
              enddo
-             call mct_sMat_avMult(avRV,SDAT%sMatPs(nu),avFV)
+             call mct_sMat_avMult(avRV,sdat%sMatPs(nu),avFV)
              ! ---   don't need to recompute uvar and vvar, should be the same
-             !       uvar = mct_aVect_indexRA(SDAT%avFLB(nu),trim(uname))
-             !       vvar = mct_aVect_indexRA(SDAT%avFLB(nv),trim(vname))
+             !       uvar = mct_aVect_indexRA(sdat%avFLB(nu),trim(uname))
+             !       vvar = mct_aVect_indexRA(sdat%avFLB(nv),trim(vname))
              do i = 1,lsizeF
-                SDAT%avFLB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i))  &
+                sdat%avFLB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i))  &
                      +avFV%rAttr(2,i) * sin(ylon(i))
-                SDAT%avFLB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i))  &
+                sdat%avFLB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i))  &
                      +avFV%rAttr(2,i) * cos(ylon(i))
              enddo
 
              !--- map UB ---
 
-             uvar = mct_aVect_indexRA(SDAT%avRUB(nu),trim(uname))
-             vvar = mct_aVect_indexRA(SDAT%avRUB(nv),trim(vname))
+             uvar = mct_aVect_indexRA(sdat%avRUB(nu),trim(uname))
+             vvar = mct_aVect_indexRA(sdat%avRUB(nv),trim(vname))
              do i = 1,lsizeR
-                avRV%rAttr(1,i) =  SDAT%avRUB(nu)%rAttr(uvar,i) * cos(xlon(i))  &
-                     -SDAT%avRUB(nv)%rAttr(vvar,i) * sin(xlon(i))
-                avRV%rAttr(2,i) =  SDAT%avRUB(nu)%rAttr(uvar,i) * sin(xlon(i))  &
-                     +SDAT%avRUB(nv)%rAttr(vvar,i) * cos(xlon(i))
+                avRV%rAttr(1,i) =  sdat%avRUB(nu)%rAttr(uvar,i) * cos(xlon(i))  &
+                     -sdat%avRUB(nv)%rAttr(vvar,i) * sin(xlon(i))
+                avRV%rAttr(2,i) =  sdat%avRUB(nu)%rAttr(uvar,i) * sin(xlon(i))  &
+                     +sdat%avRUB(nv)%rAttr(vvar,i) * cos(xlon(i))
              enddo
-             call mct_sMat_avMult(avRV,SDAT%sMatPs(nu),avFV)
+             call mct_sMat_avMult(avRV,sdat%sMatPs(nu),avFV)
 
              ! do not need to recompute uvar and vvar, should be the same
              do i = 1,lsizeF
-                SDAT%avFUB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i)) + avFV%rAttr(2,i) * sin(ylon(i))
-                SDAT%avFUB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i)) + avFV%rAttr(2,i) * cos(ylon(i))
+                sdat%avFUB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i)) + avFV%rAttr(2,i) * sin(ylon(i))
+                sdat%avFUB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i)) + avFV%rAttr(2,i) * cos(ylon(i))
              enddo
 
              call mct_aVect_clean(avRV)
@@ -1383,7 +1404,7 @@ contains
        ! Do time interpolation to create FB_model
        ! ---------------------------------------------------------
 
-       do n = 1,SDAT%nstreams
+       do n = 1,sdat%nstreams
 
           ! Get field namelist
           call ESMF_FieldBundleGet(sdat%fldbun_model(n), fieldCount=fieldCount, rc=rc)
@@ -1394,7 +1415,7 @@ contains
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
                call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-          if (trim(SDAT%tintalgo(n)) == 'coszen') then
+          if (trim(sdat%tintalgo(n)) == 'coszen') then
 
              ! ------------------------------------------
              ! time interpolation method is coszen
@@ -1403,9 +1424,9 @@ contains
              call t_startf(trim(lstr)//trim(timname)//'_coszen')
 
              ! make sure orb info has been set
-             if (SDAT%eccen == SHR_ORB_UNDEF_REAL) then
+             if (sdat%eccen == SHR_ORB_UNDEF_REAL) then
                 call shr_sys_abort(subname//' ERROR in orb params for coszen tinterp')
-             else if (SDAT%modeldt < 1) then
+             else if (sdat%modeldt < 1) then
                 call shr_sys_abort(subname//' ERROR: model dt < 1 for coszen tinterp')
              endif
 
@@ -1414,29 +1435,29 @@ contains
              allocate(tavCosz(lsizeF),cosz(lsizeF),lonr(lsizeF),latr(lsizeF))
 
              !--- get lat/lon data ---
-             kf = mct_aVect_indexRA(SDAT%grid%data,'lat')
-             latr(:) = SDAT%grid%data%rAttr(kf,:) * deg2rad
-             kf = mct_aVect_indexRA(SDAT%grid%data,'lon')
-             lonr(:) = SDAT%grid%data%rAttr(kf,:) * deg2rad
+             kf = mct_aVect_indexRA(sdat%grid%data,'lat')
+             latr(:) = sdat%grid%data%rAttr(kf,:) * deg2rad
+             kf = mct_aVect_indexRA(sdat%grid%data,'lon')
+             lonr(:) = sdat%grid%data%rAttr(kf,:) * deg2rad
 
              call t_startf(trim(lstr)//trim(timname)//'_coszenC')
              cosz = 0.0_r8
              call shr_tInterp_getCosz(cosz,lonr,latr,ymdmod(n),todmod, &
-                  SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%stream(n)%calendar)
+                  sdat%eccen,sdat%mvelpp,sdat%lambm0,sdat%obliqr,sdat%stream(n)%calendar)
              call t_stopf(trim(lstr)//trim(timname)//'_coszenC')
 
              if (newdata(n)) then
                 !--- compute a new avg cosz ---
                 call t_startf(trim(lstr)//trim(timname)//'_coszenN')
                 call shr_tInterp_getAvgCosz(tavCosz,lonr,latr, &
-                     SDAT%ymdLB(n),SDAT%todLB(n), SDAT%ymdUB(n),SDAT%todUB(n), &
-                     SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%modeldt,&
-                     SDAT%stream(n)%calendar)
-                call mct_avect_importRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz,lsizeF)
+                     sdat%ymdLB(n),sdat%todLB(n), sdat%ymdUB(n),sdat%todUB(n), &
+                     sdat%eccen,sdat%mvelpp,sdat%lambm0,sdat%obliqr,sdat%modeldt,&
+                     sdat%stream(n)%calendar)
+                call mct_avect_importRAttr(sdat%avCoszen(n),'tavCosz',tavCosz,lsizeF)
                 call t_stopf(trim(lstr)//trim(timname)//'_coszenN')
              else
                 !--- reuse existing avg cosz ---
-                call mct_avect_exportRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz)
+                call mct_avect_exportRAttr(sdat%avCoszen(n),'tavCosz',tavCosz)
              endif
 
              ! t-interp is LB data normalized with this factor: cosz/tavCosz
@@ -1448,7 +1469,7 @@ contains
                 kf = mct_aVect_indexRA(sdat%avFLB(n), trim(fieldnamelist(nf)))
                 do i = 1,lsizeF
                    if (cosz(i) > solZenMin) then
-                      dataptr(i) = SDAT%avFLB(n)%rAttr(kf,i)*cosz(i)/tavCosz(i)
+                      dataptr(i) = sdat%avFLB(n)%rAttr(kf,i)*cosz(i)/tavCosz(i)
                    else
                       dataptr(i) = 0._r8
                    endif
@@ -1458,15 +1479,15 @@ contains
              deallocate(tavCosz,cosz,lonr,latr)
              call t_stopf(trim(lstr)//trim(timname)//'_coszen')
 
-          elseif (trim(SDAT%tintalgo(n)) /= trim(shr_strdata_nullstr)) then
+          elseif (trim(sdat%tintalgo(n)) /= trim(shr_strdata_nullstr)) then
 
              ! ------------------------------------------
              ! time interpolation method is not coszen
              ! ------------------------------------------
 
              call t_startf(trim(lstr)//trim(timname)//'_tint')
-             call shr_tInterp_getFactors(SDAT%ymdlb(n),SDAT%todlb(n),SDAT%ymdub(n),SDAT%todub(n), &
-                  ymdmod(n),todmod,flb,fub, calendar=SDAT%stream(n)%calendar,algo=trim(SDAT%tintalgo(n)))
+             call shr_tInterp_getFactors(sdat%ymdlb(n),sdat%todlb(n),sdat%ymdub(n),sdat%todub(n), &
+                  ymdmod(n),todmod,flb,fub, calendar=sdat%stream(n)%calendar,algo=trim(sdat%tintalgo(n)))
              if (debug > 0) then
                 write(logunit,*) trim(subname),' interp = ',n,flb,fub
              endif
@@ -1511,10 +1532,10 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_restWrite(filename,SDAT,mpicom,str1,str2)
+  subroutine shr_strdata_restWrite(filename,sdat,mpicom,str1,str2)
 
     character(len=*)       ,intent(in)    :: filename
-    type(shr_strdata_type) ,intent(inout) :: SDAT
+    type(shr_strdata_type) ,intent(inout) :: sdat
     integer                ,intent(in)    :: mpicom
     character(len=*)       ,intent(in)    :: str1
     character(len=*)       ,intent(in)    :: str2
@@ -1525,17 +1546,17 @@ contains
 
     call mpi_comm_rank(mpicom,my_task,ier)
     if (my_task == 0) then
-       call shr_stream_restWrite(SDAT%stream,trim(filename),trim(str1),trim(str2),SDAT%nstreams)
+       call shr_stream_restWrite(sdat%stream,trim(filename),trim(str1),trim(str2),sdat%nstreams)
     endif
 
   end subroutine shr_strdata_restWrite
 
   !===============================================================================
 
-  subroutine shr_strdata_restRead(filename,SDAT,mpicom)
+  subroutine shr_strdata_restRead(filename,sdat,mpicom)
 
     character(len=*)       ,intent(in)    :: filename
-    type(shr_strdata_type) ,intent(inout) :: SDAT
+    type(shr_strdata_type) ,intent(inout) :: sdat
     integer                ,intent(in)    :: mpicom
 
     !--- local ----
@@ -1544,16 +1565,16 @@ contains
 
     call mpi_comm_rank(mpicom,my_task,ier)
     if (my_task == 0) then
-       call shr_stream_restRead(SDAT%stream,trim(filename),SDAT%nstreams)
+       call shr_stream_restRead(sdat%stream,trim(filename),sdat%nstreams)
     endif
 
   end subroutine shr_strdata_restRead
 
   !===============================================================================
 
-  subroutine shr_strdata_setOrbs(SDAT,eccen,mvelpp,lambm0,obliqr,modeldt)
+  subroutine shr_strdata_setOrbs(sdat,eccen,mvelpp,lambm0,obliqr,modeldt)
 
-    type(shr_strdata_type),intent(inout) :: SDAT
+    type(shr_strdata_type),intent(inout) :: sdat
     real(R8),intent(in) :: eccen
     real(R8),intent(in) :: mvelpp
     real(R8),intent(in) :: lambm0
@@ -1564,21 +1585,21 @@ contains
     character(len=*),parameter :: subname = "(shr_strdata_setOrbs) "
     !-------------------------------------------------------------------------------
 
-    SDAT%eccen   = eccen
-    SDAT%mvelpp  = mvelpp
-    SDAT%lambm0  = lambm0
-    SDAT%obliqr  = obliqr
-    SDAT%modeldt = modeldt
+    sdat%eccen   = eccen
+    sdat%mvelpp  = mvelpp
+    sdat%lambm0  = lambm0
+    sdat%obliqr  = obliqr
+    sdat%modeldt = modeldt
 
   end subroutine shr_strdata_setOrbs
 
   !===============================================================================
-  subroutine shr_strdata_readnml(SDAT, file, mpicom)
+  subroutine shr_strdata_readnml(sdat, file, mpicom)
 
     ! Reads shr_strdata_nml namelist input
 
     ! input/output arguments
-    type(shr_strdata_type) ,intent(inout):: SDAT   ! strdata data data-type
+    type(shr_strdata_type) ,intent(inout):: sdat   ! strdata data data-type
     character(*) ,optional ,intent(in)   :: file   ! file to read strdata from
     integer      ,optional ,intent(in)   :: mpicom ! mpi comm
 
@@ -1628,7 +1649,7 @@ contains
            mapread   ,           &
            mapwrite  ,           &
            tintalgo  ,           &
-           readmode   
+           readmode
 
     !----- formats -----
     character(*),parameter :: subName = "(shr_strdata_readnml) "
@@ -1685,89 +1706,89 @@ contains
        endif
 
        ! copy temporary/local namelist vars into data structure
-       SDAT%nstreams    = 0
+       sdat%nstreams    = 0
        do n=1,nStrMax
-          call shr_stream_default(SDAT%stream(n))
+          call shr_stream_default(sdat%stream(n))
        enddo
-       SDAT%nxg         = nx_global
-       SDAT%nyg         = ny_global
-       SDAT%streams(:)  = streams(:)
-       SDAT%taxMode(:)  = taxMode(:)
-       SDAT%dtlimit(:)  = dtlimit(:)
-       SDAT%vectors(:)  = vectors(:)
-       SDAT%fillalgo(:) = fillalgo(:)
-       SDAT%fillmask(:) = fillmask(:)
-       SDAT%fillread(:) = fillread(:)
-       SDAT%fillwrit(:) = fillwrite(:)
-       SDAT%mapalgo(:)  = mapalgo(:)
-       SDAT%mapmask(:)  = mapmask(:)
-       SDAT%mapread(:)  = mapread(:)
-       SDAT%mapwrit(:)  = mapwrite(:)
-       SDAT%tintalgo(:) = tintalgo(:)
-       SDAT%readmode(:) = readmode(:)
+       sdat%nxg         = nx_global
+       sdat%nyg         = ny_global
+       sdat%streams(:)  = streams(:)
+       sdat%taxMode(:)  = taxMode(:)
+       sdat%dtlimit(:)  = dtlimit(:)
+       sdat%vectors(:)  = vectors(:)
+       sdat%fillalgo(:) = fillalgo(:)
+       sdat%fillmask(:) = fillmask(:)
+       sdat%fillread(:) = fillread(:)
+       sdat%fillwrit(:) = fillwrite(:)
+       sdat%mapalgo(:)  = mapalgo(:)
+       sdat%mapmask(:)  = mapmask(:)
+       sdat%mapread(:)  = mapread(:)
+       sdat%mapwrit(:)  = mapwrite(:)
+       sdat%tintalgo(:) = tintalgo(:)
+       sdat%readmode(:) = readmode(:)
        do n=1,nStrMax
           if (trim(streams(n)) /= trim(shr_strdata_nullstr)) then
-             SDAT%nstreams = max(SDAT%nstreams,n)
+             sdat%nstreams = max(sdat%nstreams,n)
           end if
-          if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) then
-             SDAT%dtlimit(n) = 1.0e30
+          if (trim(sdat%taxMode(n)) == trim(shr_stream_taxis_extend)) then
+             sdat%dtlimit(n) = 1.0e30
           end if
        end do
-       SDAT%nvectors = 0
+       sdat%nvectors = 0
        do n=1,nVecMax
           if (trim(vectors(n)) /= trim(shr_strdata_nullstr)) then
-             SDAT%nvectors = n
+             sdat%nvectors = n
           end if
        end do
     endif   ! master_task
 
     if (present(mpicom)) then
-       call shr_mpi_bcast(SDAT%nxg       ,mpicom ,'nxg')
-       call shr_mpi_bcast(SDAT%nyg       ,mpicom ,'nyg')
-       call shr_mpi_bcast(SDAT%calendar  ,mpicom ,'calendar')
-       call shr_mpi_bcast(SDAT%nstreams  ,mpicom ,'nstreams')
-       call shr_mpi_bcast(SDAT%nvectors  ,mpicom ,'nvectors')
-       call shr_mpi_bcast(SDAT%streams   ,mpicom ,'streams')
-       call shr_mpi_bcast(SDAT%taxMode   ,mpicom ,'taxMode')
-       call shr_mpi_bcast(SDAT%dtlimit   ,mpicom ,'dtlimit')
-       call shr_mpi_bcast(SDAT%vectors   ,mpicom ,'vectors')
-       call shr_mpi_bcast(SDAT%fillalgo  ,mpicom ,'fillalgo')
-       call shr_mpi_bcast(SDAT%fillmask  ,mpicom ,'fillmask')
-       call shr_mpi_bcast(SDAT%fillread  ,mpicom ,'fillread')
-       call shr_mpi_bcast(SDAT%fillwrit  ,mpicom ,'fillwrit')
-       call shr_mpi_bcast(SDAT%mapalgo   ,mpicom ,'mapalgo')
-       call shr_mpi_bcast(SDAT%mapmask   ,mpicom ,'mapmask')
-       call shr_mpi_bcast(SDAT%mapread   ,mpicom ,'mapread')
-       call shr_mpi_bcast(SDAT%mapwrit   ,mpicom ,'mapwrit')
-       call shr_mpi_bcast(SDAT%tintalgo  ,mpicom ,'tintalgo')
-       call shr_mpi_bcast(SDAT%readmode  ,mpicom ,'readmode')
+       call shr_mpi_bcast(sdat%nxg       ,mpicom ,'nxg')
+       call shr_mpi_bcast(sdat%nyg       ,mpicom ,'nyg')
+       call shr_mpi_bcast(sdat%calendar  ,mpicom ,'calendar')
+       call shr_mpi_bcast(sdat%nstreams  ,mpicom ,'nstreams')
+       call shr_mpi_bcast(sdat%nvectors  ,mpicom ,'nvectors')
+       call shr_mpi_bcast(sdat%streams   ,mpicom ,'streams')
+       call shr_mpi_bcast(sdat%taxMode   ,mpicom ,'taxMode')
+       call shr_mpi_bcast(sdat%dtlimit   ,mpicom ,'dtlimit')
+       call shr_mpi_bcast(sdat%vectors   ,mpicom ,'vectors')
+       call shr_mpi_bcast(sdat%fillalgo  ,mpicom ,'fillalgo')
+       call shr_mpi_bcast(sdat%fillmask  ,mpicom ,'fillmask')
+       call shr_mpi_bcast(sdat%fillread  ,mpicom ,'fillread')
+       call shr_mpi_bcast(sdat%fillwrit  ,mpicom ,'fillwrit')
+       call shr_mpi_bcast(sdat%mapalgo   ,mpicom ,'mapalgo')
+       call shr_mpi_bcast(sdat%mapmask   ,mpicom ,'mapmask')
+       call shr_mpi_bcast(sdat%mapread   ,mpicom ,'mapread')
+       call shr_mpi_bcast(sdat%mapwrit   ,mpicom ,'mapwrit')
+       call shr_mpi_bcast(sdat%tintalgo  ,mpicom ,'tintalgo')
+       call shr_mpi_bcast(sdat%readmode  ,mpicom ,'readmode')
     endif
 
-    SDAT%ymdLB = -1
-    SDAT%todLB = -1
-    SDAT%ymdUB = -1
-    SDAT%todUB = -1
-    SDAT%dtmin = 1.0e30
-    SDAT%dtmax = 0.0
-    SDAT%nzg   = 0
-    SDAT%eccen  = SHR_ORB_UNDEF_REAL
-    SDAT%mvelpp = SHR_ORB_UNDEF_REAL
-    SDAT%lambm0 = SHR_ORB_UNDEF_REAL
-    SDAT%obliqr = SHR_ORB_UNDEF_REAL
-    SDAT%modeldt = 0
-    SDAT%calendar = shr_cal_noleap
+    sdat%ymdLB = -1
+    sdat%todLB = -1
+    sdat%ymdUB = -1
+    sdat%todUB = -1
+    sdat%dtmin = 1.0e30
+    sdat%dtmax = 0.0
+    sdat%nzg   = 0
+    sdat%eccen  = SHR_ORB_UNDEF_REAL
+    sdat%mvelpp = SHR_ORB_UNDEF_REAL
+    sdat%lambm0 = SHR_ORB_UNDEF_REAL
+    sdat%obliqr = SHR_ORB_UNDEF_REAL
+    sdat%modeldt = 0
+    sdat%calendar = shr_cal_noleap
 
   end subroutine shr_strdata_readnml
 
   !===============================================================================
 
-  subroutine shr_strdata_print(SDAT,name)
+  subroutine shr_strdata_print(sdat,name)
 
     ! !DESCRIPTION:
     !  Print strdata common to all data models
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(shr_strdata_type)  ,intent(in) :: SDAT  ! strdata data data-type
+    type(shr_strdata_type)  ,intent(in) :: sdat  ! strdata data data-type
     character(len=*),optional,intent(in) :: name  ! just a name for tracking
 
     integer   :: n
@@ -1799,42 +1820,42 @@ contains
     !----------------------------------------------------------------------------
     write(logunit,F90)
     write(logunit,F00) "name        = ",trim(lname)
-    write(logunit,F01) "nxg         = ",SDAT%nxg
-    write(logunit,F01) "nyg         = ",SDAT%nyg
-    write(logunit,F01) "nzg         = ",SDAT%nzg
-    write(logunit,F00) "calendar    = ",trim(SDAT%calendar)
-    write(logunit,F01) "io_type     = ",SDAT%io_type
-    write(logunit,F02) "eccen       = ",SDAT%eccen
-    write(logunit,F02) "mvelpp      = ",SDAT%mvelpp
-    write(logunit,F02) "lambm0      = ",SDAT%lambm0
-    write(logunit,F02) "obliqr      = ",SDAT%obliqr
-    write(logunit,F01) "nstreams    = ",SDAT%nstreams
+    write(logunit,F01) "nxg         = ",sdat%nxg
+    write(logunit,F01) "nyg         = ",sdat%nyg
+    write(logunit,F01) "nzg         = ",sdat%nzg
+    write(logunit,F00) "calendar    = ",trim(sdat%calendar)
+    write(logunit,F01) "io_type     = ",sdat%io_type
+    write(logunit,F02) "eccen       = ",sdat%eccen
+    write(logunit,F02) "mvelpp      = ",sdat%mvelpp
+    write(logunit,F02) "lambm0      = ",sdat%lambm0
+    write(logunit,F02) "obliqr      = ",sdat%obliqr
+    write(logunit,F01) "nstreams    = ",sdat%nstreams
     write(logunit,F01) "pio_iotype  = ",sdat%io_type
 
-    do n=1, SDAT%nstreams
-       write(logunit,F04) "  streams (",n,") = ",trim(SDAT%streams(n))
-       write(logunit,F04) "  taxMode (",n,") = ",trim(SDAT%taxMode(n))
-       write(logunit,F07) "  dtlimit (",n,") = ",SDAT%dtlimit(n)
-       write(logunit,F05) "  strnxg  (",n,") = ",SDAT%strnxg(n)
-       write(logunit,F05) "  strnyg  (",n,") = ",SDAT%strnyg(n)
-       write(logunit,F05) "  strnzg  (",n,") = ",SDAT%strnzg(n)
-       write(logunit,F06) "  dofill  (",n,") = ",SDAT%dofill(n)
-       write(logunit,F04) "  fillalgo(",n,") = ",trim(SDAT%fillalgo(n))
-       write(logunit,F04) "  fillmask(",n,") = ",trim(SDAT%fillmask(n))
-       write(logunit,F04) "  fillread(",n,") = ",trim(SDAT%fillread(n))
-       write(logunit,F04) "  fillwrit(",n,") = ",trim(SDAT%fillwrit(n))
-       write(logunit,F06) "  domaps  (",n,") = ",SDAT%domaps(n)
-       write(logunit,F04) "  mapalgo (",n,") = ",trim(SDAT%mapalgo(n))
-       write(logunit,F04) "  mapmask (",n,") = ",trim(SDAT%mapmask(n))
-       write(logunit,F04) "  mapread (",n,") = ",trim(SDAT%mapread(n))
-       write(logunit,F04) "  mapwrit (",n,") = ",trim(SDAT%mapwrit(n))
-       write(logunit,F04) "  tintalgo(",n,") = ",trim(SDAT%tintalgo(n))
-       write(logunit,F04) "  readmode(",n,") = ",trim(SDAT%readmode(n))
+    do n=1, sdat%nstreams
+       write(logunit,F04) "  streams (",n,") = ",trim(sdat%streams(n))
+       write(logunit,F04) "  taxMode (",n,") = ",trim(sdat%taxMode(n))
+       write(logunit,F07) "  dtlimit (",n,") = ",sdat%dtlimit(n)
+       write(logunit,F05) "  strnxg  (",n,") = ",sdat%strnxg(n)
+       write(logunit,F05) "  strnyg  (",n,") = ",sdat%strnyg(n)
+       write(logunit,F05) "  strnzg  (",n,") = ",sdat%strnzg(n)
+       write(logunit,F06) "  dofill  (",n,") = ",sdat%dofill(n)
+       write(logunit,F04) "  fillalgo(",n,") = ",trim(sdat%fillalgo(n))
+       write(logunit,F04) "  fillmask(",n,") = ",trim(sdat%fillmask(n))
+       write(logunit,F04) "  fillread(",n,") = ",trim(sdat%fillread(n))
+       write(logunit,F04) "  fillwrit(",n,") = ",trim(sdat%fillwrit(n))
+       write(logunit,F06) "  domaps  (",n,") = ",sdat%domaps(n)
+       write(logunit,F04) "  mapalgo (",n,") = ",trim(sdat%mapalgo(n))
+       write(logunit,F04) "  mapmask (",n,") = ",trim(sdat%mapmask(n))
+       write(logunit,F04) "  mapread (",n,") = ",trim(sdat%mapread(n))
+       write(logunit,F04) "  mapwrit (",n,") = ",trim(sdat%mapwrit(n))
+       write(logunit,F04) "  tintalgo(",n,") = ",trim(sdat%tintalgo(n))
+       write(logunit,F04) "  readmode(",n,") = ",trim(sdat%readmode(n))
        write(logunit,F01) " "
     end do
-    write(logunit,F01) "nvectors    = ",SDAT%nvectors
-    do n=1, SDAT%nvectors
-       write(logunit,F04) "  vectors (",n,") = ",trim(SDAT%vectors(n))
+    write(logunit,F01) "nvectors    = ",sdat%nvectors
+    do n=1, sdat%nvectors
+       write(logunit,F04) "  vectors (",n,") = ",trim(sdat%vectors(n))
     end do
     write(logunit,F90)
 
@@ -2246,7 +2267,7 @@ contains
              compDOF(cnt) = (n-1)*gsize + gsmOP(m)
           enddo
        enddo
-       
+
        ! Initialize the decomposition
        allocate(count(3))
        count(1) = nx
@@ -2643,33 +2664,5 @@ contains
     endif
 
   end subroutine shr_strdata_mapSet
-
-  !===============================================================================
-  subroutine shr_strdata_set_griddata(sdat, fldname, rvalue) 
-    ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(in)    :: rvalue
-
-    ! local variables
-    integer :: kf
-
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    sdat%grid%data%rAttr(kf,:) = rvalue
-  end subroutine shr_strdata_set_griddata
-
-  !===============================================================================
-  subroutine shr_strdata_get_griddata(sdat, fldname, data) 
-    ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(out)   :: data(:)
-
-    ! local variables
-    integer :: kf
-
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    data(:) = sdat%grid%data%rAttr(kf,:)
-  end subroutine shr_strdata_get_griddata
 
 end module dshr_strdata_mod

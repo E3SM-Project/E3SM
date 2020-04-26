@@ -231,7 +231,7 @@ contains
 
   !===============================================================================
   subroutine dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, compname, &
-       mesh, read_restart, sdat, reset_domain_mask, rc)
+       mesh, read_restart, sdat, reset_mask, model_maskfile, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat
@@ -247,7 +247,8 @@ contains
     type(ESMF_Mesh)            , intent(out)   :: mesh
     logical                    , intent(out)   :: read_restart
     type(shr_strdata_type)     , intent(inout) :: sdat
-    logical         , optional , intent(in)    :: reset_domain_mask
+    logical         , optional , intent(in)    :: reset_mask
+    character(len=*), optional , intent(in)    :: model_maskfile
     integer                    , intent(out)   :: rc
 
     ! local varaibles
@@ -281,12 +282,6 @@ contains
     read(cvalue,*) compid
 
     ! Set single column values
-    call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlon
-    call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmlat
     call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) scmMode
@@ -296,9 +291,17 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
-    ! Obtain the data model mesh
+    ! Obtain the input mesh filename
     call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=mesh_filename, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Create the data model mesh
+    ! if single column
+    !   - read in the data model domain file - and find the nearest neighbor
+    ! if not single column
+    !   - obtain the mesh directly from the mesh input
+    !   - ***TODO: remove the hard-wired domain_atm name here**
+
     if (trim(mesh_filename) == 'create_mesh') then
        ! get the data model grid from the domain file
        call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=mesh_filename, rc=rc)
@@ -307,19 +310,30 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     else
        if (scmMode) then
+          ! verify that are only using 1 pe
           if (my_task > 0) then
              write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
              call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
           endif
+          ! obtain the single column lon and lat
+          call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          read(cvalue,*) scmlon
+          call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          read(cvalue,*) scmlat
           if (my_task == master_task) then
              write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
           end if
+          ! Read in the input mesh
           mesh_global = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! Now create a single column mesh using the single column lats and lons and the global mesh
           call  dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_MeshDestroy(mesh_global)
        else
+          ! Read in the input mesh
           mesh = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -331,7 +345,7 @@ contains
 
     ! Initialize sdat from data model input files
     call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, mpicom, compid, logunit, &
-         reset_domain_mask=reset_domain_mask, rc=rc)
+         reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine dshr_sdat_init

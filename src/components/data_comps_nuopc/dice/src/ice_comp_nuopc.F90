@@ -24,11 +24,12 @@ module ice_comp_nuopc
   use dshr_mod             , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod             , only : dshr_restart_read, dshr_restart_write
   use dshr_mod             , only : dshr_create_mesh_from_grid
-  use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_griddata
+  use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod      , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod     , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use dice_flux_atmice_mod , only : dice_flux_atmice
   use perf_mod             , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use pio
 
   implicit none
   private ! except
@@ -65,6 +66,7 @@ module ice_comp_nuopc
   ! dice_in namelist input
   character(CL)                :: nlfilename                  ! filename to obtain namelist info from
   character(CL)                :: dataMode                    ! flags physics options wrt input data
+  character(CL)                :: model_maskfile = nullstr    ! full pathname to obtain mask from
   real(R8)                     :: flux_swpf                   ! short-wave penatration factor
   real(R8)                     :: flux_Qmin                   ! bound on melt rate
   logical                      :: flux_Qacc                   ! activates water accumulation/melt wrt Q
@@ -228,10 +230,12 @@ contains
     integer           :: shrlogunit         ! original log unit
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
+    logical           :: exists             ! check for file existence  
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / dice_nml / datamode, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
+    namelist / dice_nml / datamode, model_maskfile, restfilm, restfils, &
+         flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0 
 
     rc = ESMF_SUCCESS
 
@@ -263,14 +267,27 @@ contains
        write(logunit,*)' flux_Qacc0 = ',flux_Qacc0
        write(logunit,*)' restfilm   = ',trim(restfilm)
        write(logunit,*)' restfils   = ',trim(restfils)
+       if (trim(model_maskfile) == nullstr) then
+          write(logunit,*)' obtaining model mask from model mesh'
+       else
+          ! obtain model mask from model_maskfile
+          inquire(file=trim(model_maskfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist')
+          else
+             write(logunit,*)' obtaining model mask from ',trim(model_maskfile)
+          end if
+       end if
     endif
-    call shr_mpi_bcast(datamode   ,mpicom,'datamode')
-    call shr_mpi_bcast(flux_swpf  ,mpicom,'flux_swpf')
-    call shr_mpi_bcast(flux_Qmin  ,mpicom,'flux_Qmin')
-    call shr_mpi_bcast(flux_Qacc  ,mpicom,'flux_Qacc')
-    call shr_mpi_bcast(flux_Qacc0 ,mpicom,'flux_Qacc0')
-    call shr_mpi_bcast(restfilm   ,mpicom,'restfilm')
-    call shr_mpi_bcast(restfils   ,mpicom,'restfils')
+    call shr_mpi_bcast(datamode       , mpicom, 'datamode')
+    call shr_mpi_bcast(model_maskfile , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(restfilm       , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils       , mpicom, 'restfils')
+    call shr_mpi_bcast(flux_swpf      , mpicom, 'flux_swpf')
+    call shr_mpi_bcast(flux_Qmin      , mpicom, 'flux_Qmin')
+    call shr_mpi_bcast(flux_Qacc      , mpicom, 'flux_Qacc')
+    call shr_mpi_bcast(flux_Qacc0     , mpicom, 'flux_Qacc0')
 
     ! Validate datamode
     if (trim(datamode) == 'NULL' .or. trim(datamode) == 'SSTDATA' .or. trim(datamode) == 'COPYALL') then
@@ -334,8 +351,14 @@ contains
 
     ! Initialize sdat
     call t_startf('dice_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', mesh, read_restart, sdat, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (trim(model_maskfile) /= nullstr) then 
+       call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', mesh, read_restart, sdat, &
+            model_maskfile=model_maskfile, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', mesh, read_restart, sdat, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
     call t_stopf('dice_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -591,8 +614,15 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    integer  :: n, lsize, kf
-    character(*), parameter   :: subName = "(dice_comp_realize) "
+    integer                 :: n, lsize, kf
+    type(file_desc_t)       :: pioid
+    type(var_desc_t)        :: varid
+    type(io_desc_t)         :: pio_iodesc
+    integer                 :: numOwnedElements   ! number of elements owned by this PET
+    type(ESMF_DistGrid)     :: distGrid           ! mesh distGrid
+    type(ESMF_Array)        :: elemMaskArray
+    integer                 :: rcode
+    character(*), parameter :: subName = "(dice_comp_realize) "
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -675,8 +705,33 @@ contains
     call dshr_state_getfldptr(exportState, fldname='Fioi_flxdst' , fldptr1=Fioi_flxdst , rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Set Si_imask
-    call shr_strdata_get_griddata(sdat, 'mask', Si_imask)
+    ! Set Si_imask (this corresponds to the ocean mask)
+    allocate(imask(sdat%lsize))
+    if (trim(model_maskfile) /= nullstr) then 
+       ! Read in the ocean fraction from the input namelist ocean mask file and assume 'mask' name on domain file
+       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid, 'mask', varid) 
+       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%nxg, sdat%nyg/), sdat%gindex, pio_iodesc)
+       call pio_read_darray(pioid, varid, pio_iodesc, imask, rcode)
+       call pio_closefile(pioid)
+       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+       ! now set the mask as just the real mask
+       Si_imask(:) = real(imask(:), kind=r8)
+    else
+       ! Obtain the ice mask in the ice mesh file
+       call ESMF_MeshGet(mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! the following call sets the varues of imask
+       call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! now set the mask as just the real mask
+       Si_imask(:) = real(imask(:), kind=r8)
+       call ESMF_ArrayDestroy(elemMaskArray, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     ! -------------------------------------
     ! Set pointers to importState fields
@@ -747,8 +802,6 @@ contains
     allocate(yc(lsize))
     allocate(water(lsize))
     allocate(tfreeze(lsize))
-    allocate(imask(lsize))
-    imask(:) = nint(Si_imask)
 
   end subroutine dice_comp_realize
 
