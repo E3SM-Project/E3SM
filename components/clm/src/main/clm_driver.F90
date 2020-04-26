@@ -1129,16 +1129,30 @@ contains
          endif  !end use_betr
 
          if (use_lch4) then
-           !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
-           call t_startf('ch4')
-           call CH4 (bounds_clump,                                                                  &
+           if(use_betr)then
+             if (do_betr_bgc_type('type0_bgc'))then
+               call t_startf('ch4')
+               call CH4 (bounds_clump,&
+                 filter(nc)%num_soilc, filter(nc)%soilc,&
+                 filter(nc)%num_lakec, filter(nc)%lakec,&
+                 filter(nc)%num_soilp, filter(nc)%soilp,&
+                 atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
+                 temperature_vars, energyflux_vars, waterstate_vars, waterflux_vars,                 &
+                 carbonstate_vars, carbonflux_vars, nitrogenflux_vars, ch4_vars, lnd2atm_vars)
+               call t_stopf('ch4')
+             endif
+           else
+             !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
+             call t_startf('ch4')
+             call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
                atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
                temperature_vars, energyflux_vars, waterstate_vars, waterflux_vars,                 &
                carbonstate_vars, carbonflux_vars, nitrogenflux_vars, ch4_vars, lnd2atm_vars)
-           call t_stopf('ch4')
+             call t_stopf('ch4')
+           endif
          end if
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
