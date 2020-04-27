@@ -216,6 +216,19 @@ def netcf4(fsntoa, fsntoac, flntoa, flntoac):
     return var
 
 
+def netcf2srf(swcf, lwcf):
+    """Surface net cloud forcing """
+    var = swcf + lwcf
+    var.long_name = "Surface net cloud forcing"
+    return var
+
+
+def netcf4srf(fsntoa, fsntoac, flntoa, flntoac):
+    """Surface net cloud forcing """
+    var = fsntoa - fsntoac + flntoa - flntoac
+    var.long_name = "Surface net cloud forcing"
+    return var
+
 def fldsc(ts, flnsc):
     """Clearsky Surf LW downwelling flux"""
     var = 5.67e-8 * ts**4 - flnsc
@@ -479,13 +492,13 @@ derived_variables = {
     ]),
     'NETCF_SRF': OrderedDict([
         (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_mon', 'sfc_net_lw_all_mon', 'sfc_net_lw_clr_mon'),
-         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4srf(sw_all, sw_clr, lw_all, lw_clr)),
         (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_t_mon', 'sfc_net_lw_all_mon', 'sfc_net_lw_clr_t_mon'),
-         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4srf(sw_all, sw_clr, lw_all, lw_clr)),
         (('sfc_cre_sw_mon', 'sfc_cre_lw_mon'),
-         lambda swcf, lwcf: netcf2(swcf, lwcf)),
+         lambda swcf, lwcf: netcf2srf(swcf, lwcf)),
         (('FSNS', 'FSNSC', 'FLNSC', 'FLNS'),
-         lambda fsns, fsnsc, flnsc, flns: netcf4(fsns, fsnsc, flnsc, flns))
+         lambda fsns, fsnsc, flnsc, flns: netcf4srf(fsns, fsnsc, flnsc, flns))
     ]),
 
     'FLNS': OrderedDict([
