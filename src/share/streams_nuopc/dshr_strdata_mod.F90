@@ -51,17 +51,15 @@ module dshr_strdata_mod
   public  :: shr_strdata_restRead
   public  :: shr_strdata_restWrite
   public  :: shr_strdata_setOrbs
-  public  :: shr_strdata_print
   public  :: shr_strdata_advance
-  public  :: shr_strdata_get_stream_domain
-  public  :: shr_strdata_mapSet
+  public  :: shr_strdata_get_stream_domain ! public since needed by dshr_mod
+  public  :: shr_strdata_mapSet ! public since needed for now by dshr_get_atm_adjustment_factors
 
   private :: shr_strdata_readnml
   private :: shr_strdata_init_model_domain
-  private :: shr_strdata_init_streams_from_infiles
-  private :: shr_strdata_init_streams_from_fortran
-  private :: shr_strdata_init_mapping
   private :: shr_strdata_init_stream_domain
+  private :: shr_strdata_init_stream_mapping
+  public  :: shr_strdata_print
   private :: shr_strdata_gGridCompare
   private :: shr_strdata_readLBUB
 
@@ -75,19 +73,12 @@ module dshr_strdata_mod
   integer          ,parameter          :: master_task = 0
 
   type shr_strdata_type
+
      ! stream info set by shr_strdata_nml
      character(CL)                  :: streams (nStrMax) ! stream description file names
      character(CL)                  :: taxMode (nStrMax) ! time axis cycling mode
      real(R8)                       :: dtlimit (nStrMax) ! dt max/min limit
      character(CL)                  :: vectors (nVecMax) ! define vectors to vector map
-     character(CL)                  :: fillalgo(nStrMax) ! fill algorithm
-     character(CL)                  :: fillmask(nStrMax) ! fill mask
-     character(CL)                  :: fillread(nStrMax) ! fill mapping file to read
-     character(CL)                  :: fillwrit(nStrMax) ! fill mapping file to write
-     character(CL)                  :: mapalgo (nStrMax) ! scalar map algorithm
-     character(CL)                  :: mapmask (nStrMax) ! scalar map mask
-     character(CL)                  :: mapread (nStrMax) ! regrid mapping file to read
-     character(CL)                  :: mapwrit (nStrMax) ! regrid mapping file to write
      character(CL)                  :: tintalgo(nStrMax) ! time interpolation algorithm
      character(CL)                  :: readmode(nStrMax) ! file read mode
      integer                        :: nstreams          ! number of streams set in shr_strdata_readnml
@@ -103,7 +94,7 @@ module dshr_strdata_mod
      real(R8)                       :: mvelpp
      real(R8)                       :: lambm0
      real(R8)                       :: obliqr
-     integer                        :: modeldt           ! model dt in seconds
+     integer                        :: modeldt               ! model dt in seconds
 
      ! model domain info
      integer                        :: nxg                   ! model domain lon size
@@ -119,7 +110,7 @@ module dshr_strdata_mod
 
      ! model time 
      integer                        :: ymd, tod
-     character(CL)                  :: calendar          ! model calendar for ymd,tod
+     character(CL)                  :: calendar              ! model calendar for ymd,tod
 
      ! stream domain info
      type(io_desc_t)                :: pio_iodesc(nStrMax)
@@ -134,9 +125,13 @@ module dshr_strdata_mod
      type(mct_ggrid)                :: gridR(nStrMax)    ! stream grid
 
      ! stream-> model mapping info
-     type(mct_rearr)                :: rearrR(nStrMax)
-     type(mct_sMatP)                :: sMatPf(nStrMax)
-     type(mct_sMatP)                :: sMatPs(nStrMax)
+     character(CL)                  :: fillalgo(nStrMax) ! fill algorithm
+     character(CL)                  :: fillmask(nStrMax) ! fill mask
+     character(CL)                  :: mapalgo (nStrMax) ! scalar map algorithm
+     character(CL)                  :: mapmask (nStrMax) ! scalar map mask
+     type(mct_sMatP)                :: sMatPf(nStrMax)   ! fill route handle
+     type(mct_sMatP)                :: sMatPs(nStrMax)   ! mapping route handle
+     type(mct_rearr)                :: rearrR(nStrMax)   ! rearranger route handle
 
      ! stream time info
      integer                        :: ymdLB(nStrMax)
@@ -156,7 +151,6 @@ module dshr_strdata_mod
      type(mct_avect)                :: avFLB(nStrMax)    ! stream data UB mapped to model domain
      type(mct_avect)                :: avCoszen(nStrMax) ! data associated with coszen time interp
 
-     character(CL)                  :: allocstring
   end type shr_strdata_type
 
   integer          ,parameter :: CompareXYabs      = 1   ! X,Y  relative error
@@ -169,7 +163,6 @@ module dshr_strdata_mod
   integer          ,parameter :: CompareXYabsMask  = 101 ! X,Y  relative error
   integer          ,parameter :: iotype_std_netcdf = -99 ! non pio option
   real(R8)         ,parameter :: deg2rad = SHR_CONST_PI/180.0_R8
-  character(len=*) ,parameter :: allocstring_value = 'strdata_allocated'
   character(*)     ,parameter :: u_FILE_u = &
        __FILE__
 
@@ -192,13 +185,27 @@ contains
     character(len=*), optional , intent(in)    :: model_maskfile
     integer                    , intent(out)   :: rc
 
-    ! local varaibles
-    type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
-    type(ESMF_CalKind_Flag)      :: esmf_caltype  ! esmf calendar type
-    character(CS)                :: calendar      ! calendar name
-    integer                      :: my_task
-    integer                      :: ierr
-    integer                      :: master_task = 0
+    ! local variables
+    type(ESMF_Calendar)     :: esmf_calendar ! esmf calendar
+    type(ESMF_CalKind_Flag) :: esmf_caltype  ! esmf calendar type
+    character(CS)           :: calendar      ! calendar name
+    integer                 :: my_task
+    integer                 :: ierr
+    logical                 :: compare1
+    logical                 :: compare2
+    integer                 :: n,i,m,k
+    integer                 :: nu,nv         ! u,v index
+    character(CS)           :: uname         ! u vector field name
+    character(CS)           :: vname         ! v vector field name
+    character(CXX)          :: fldList       ! list of fields
+    character(CS)           :: fldname
+    integer                 :: nfld
+    type(ESMF_Field)        :: lfield
+    character(CL)           :: str
+    character(CL)           :: filename
+    integer                 :: yearFirst     ! first year to use
+    integer                 :: yearLast      ! last  year to use
+    integer                 :: yearAlign     ! align yearFirst with this model year
     character(len=*), parameter  :: subname='(dshr_mod:dshr_sdat_init)'
     character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
     ! ----------------------------------------------
@@ -225,11 +232,109 @@ contains
          reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Initialize sdat stream domains
-    call shr_strdata_init_streams_from_infiles(sdat, compid, mpicom, my_task)
+    ! Loop over all active streams and initialize domain and calendar for each stream
+    do n = 1,sdat%nstreams
+       if (trim(sdat%streams(n)) /= shr_strdata_nullstr) then
 
-    ! initialize sdat attributes mapping of streams to model domain
-    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
+          if (my_task == master_task) then
+             ! Set yearAlign, yearFirst, yearLast for sdat%streams(n)
+             str = adjustL(sdat%streams(n))  ! stream info from namelist
+             i = index(str," ")
+             fileName = str(:i)
+             read(str(i:),*) yearAlign, yearFirst, yearLast
+
+             ! Initialize stream datatype by reading stream txt files
+             call shr_stream_init_from_infiles(sdat%stream(n), &
+                  fileName, yearFirst, yearLast, yearAlign, trim(sdat%taxMode(n)))
+          end if
+
+          ! Initialize stream domain info for stream n
+          call shr_strdata_init_stream_domain( sdat%stream(n), &
+               sdat%pio_subsystem, sdat%io_type, compid, mpicom, &
+               sdat%gridR(n), sdat%gsmapR(n), sdat%pio_iodesc(n), &
+               sdat%strnxg(n), sdat%strnyg(n), sdat%strnzg(n), sdat%lsizeR(n))
+
+          ! Initialize calendar for stream n
+          call shr_mpi_bcast(sdat%stream(n)%calendar, mpicom)
+
+          ! initialize sdat attributes mapping of streams to model domain
+          call shr_strdata_init_stream_mapping(compid, mpicom, my_task, &
+               sdat%gsmap, sdat%grid, sdat%nxg, sdat%nyg, sdat%nzg, &
+               sdat%gsmapR(n), sdat%gridR(n), sdat%strnxg(n), sdat%strnyg(n), sdat%strnzg(n), &
+               sdat%fillalgo(n), sdat%fillmask(n), sdat%mapalgo(n), sdat%mapmask(n), &
+               sdat%dofill(n), sdat%domaps(n), sdat%smatpf(n), sdat%smatps(n), sdat%rearrR(n))
+
+          ! Determine colon delimited field name string for stream fields
+          if (my_task == master_task) then
+             call shr_stream_getModelFieldList(sdat%stream(n), fldList)
+          endif
+          call shr_mpi_bcast(fldList,mpicom)
+
+          ! Create attribute vectors on model mesh
+          call mct_aVect_init(sdat%avFLB(n), rlist=fldList, lsize=sdat%lsize)
+          call mct_aVect_init(sdat%avFUB(n), rlist=fldList, lsize=sdat%lsize)
+          call mct_aVect_init(sdat%avRLB(n), rlist=fldList, lsize=sdat%lsizeR(n))
+          call mct_aVect_init(sdat%avRUB(n), rlist=fldList, lsize=sdat%lsizeR(n))
+          if (trim(sdat%tintalgo(n)) == 'coszen') then
+             call mct_aVect_init(sdat%avCoszen(n),  rlist="tavCosz",  lsize=sdat%lsize)
+          endif
+
+          ! Create field bundle on model mesh for spatially and time
+          ! interpolated streams fields to model mesh
+          sdat%fldbun_model(n) = ESMF_FieldBundleCreate(rc=rc)
+          do nfld = 1,shr_string_listGetNum(fldList)
+             ! get nth fldname in colon delimited string
+             call shr_string_listGetName(fldlist, nfld, fldname)
+
+             ! create temporary field with name fldname on model mesh
+             ! add the field to the lbound and ubound field bundle as well as the time interpolated field bundle
+             lfield = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name=trim(fldname), &
+                  meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+             call ESMF_FieldBundleAdd(sdat%fldbun_model(n), (/lfield/), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+                  call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          end do
+
+       end if
+    end do
+
+    ! check vectors and compute ustrm,vstrm 
+    do m = 1,sdat%nvectors
+       if (.not. shr_string_listIsValid(sdat%vectors(m))) then
+          write(logunit,*) trim(subname),' vec fldlist invalid m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec fldlist invalid:'//trim(sdat%vectors(m)))
+       endif
+       if (shr_string_listGetNum(sdat%vectors(m)) /= 2) then
+          write(logunit,*) trim(subname),' vec fldlist ne 2 m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec fldlist ne 2:'//trim(sdat%vectors(m)))
+       endif
+       call shr_string_listGetName(sdat%vectors(m),1,uname)
+       call shr_string_listGetName(sdat%vectors(m),2,vname)
+       nu = 0
+       nv = 0
+       do n = 1,sdat%nstreams
+          k = mct_aVect_indexRA(sdat%avRLB(n),trim(uname),perrWith='quiet')
+          if (k > 0) nu = n
+          k = mct_aVect_indexRA(sdat%avRLB(n),trim(vname),perrWith='quiet')
+          if (k > 0) nv = n
+       enddo
+       if (nu == 0  .or. nv == 0) then
+          write(logunit,*) trim(subname),' vec flds not found  m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec flds not found:'//trim(sdat%vectors(m)))
+       endif
+       if (nu /= nv) then
+          compare1 = shr_strdata_gGridCompare(sdat%gridR(nu), sdat%gsmapR(nu), sdat%gridR(nv),sdat%gsmapR(nv), &
+               CompareXYabs, mpicom, 0.01_r8)
+          compare2 = shr_strdata_gGridCompare(sdat%gridR(nu), sdat%gsmapR(nu), sdat%gridR(nv),sdat%gsmapR(nv), &
+               CompareMaskZeros, mpicom)
+          if ((.not. compare1) .or. (.not. compare2)) then
+             write(logunit,*) trim(subname),' vec fld doms not same m=',m,trim(sdat%vectors(m))
+             call shr_sys_abort(subname//': vec fld doms not same:'//trim(sdat%vectors(m)))
+          endif
+       endif
+       sdat%ustrm(m) = nu
+       sdat%vstrm(m) = nv
+    enddo
 
     ! initialize sdat calendar
     call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
@@ -310,6 +415,13 @@ contains
     integer                 :: my_task
     integer                 :: ierr
     integer                 :: rc
+    integer                 :: nfld
+    character(CS)           :: fldname
+    integer                 :: n,m
+    integer                 :: nu,nv         ! u,v index
+    character(CS)           :: uname         ! u vector field name
+    character(CS)           :: vname         ! v vector field name
+    type(ESMF_Field)        :: lfield
     character(*),parameter  :: subName = "(shr_strdata_create) "
     character(*),parameter  :: F00 = "('(shr_strdata_create) ',8a)"
     !-------------------------------------------------------------------------------
@@ -350,16 +462,17 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize sdat stream domain info
-    call shr_strdata_init_streams_from_fortran(sdat, &
-       yearFirst, yearLast, yearAlign, offset, sdat%taxmode(1), &
-       domFilePath, domFileName, &
-       domTvarName, domXvarName, domYvarName, domMaskName, &
-       domZvarName, nzg, &
-       strmFldNamesInFile, strmFldNamesInModel, &
-       strmFldFilePath, strmFldFileNames)
+    call shr_stream_init_from_fortran(sdat%stream(1), &
+       yearFirst, yearLast, yearAlign, offset, sdat%taxmode(1), domFilePath, domFileName, &
+       domTvarName, domXvarName, domYvarName, domMaskName, domZvarName, nzg, &
+       strmFldNamesInFile, strmFldNamesInModel, strmFldfilePath, strmFldFileNames)
 
-    ! Initialize sdat mapping of stream to model domain
-    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
+    ! initialize sdat attributes mapping of streams to model domain
+    call shr_strdata_init_stream_mapping(compid, mpicom, my_task, &
+         sdat%gsmap, sdat%grid, sdat%nxg, sdat%nyg, sdat%nzg, &
+         sdat%gsmapR(1), sdat%gridR(1), sdat%strnxg(1), sdat%strnyg(1), sdat%strnzg(1), &
+         sdat%fillalgo(1), sdat%fillmask(1), sdat%mapalgo(1), sdat%mapmask(1), &
+         sdat%dofill(1), sdat%domaps(1), sdat%smatpf(1), sdat%smatps(1), sdat%rearrR(1))
 
     ! Initialize sdat calendar
     call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
@@ -372,6 +485,53 @@ contains
        call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
     end if
     sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
+
+    ! Create attribute vectors on model mesh
+    call mct_aVect_init(sdat%avFLB(1), rlist=strmFldNamesInFile, lsize=sdat%lsize)
+    call mct_aVect_init(sdat%avFUB(1), rlist=strmFldNamesInFile, lsize=sdat%lsize)
+    call mct_aVect_init(sdat%avRLB(1), rlist=strmFldNamesInFile, lsize=sdat%lsizeR(1))
+    call mct_aVect_init(sdat%avRUB(1), rlist=strmFldNamesInFile, lsize=sdat%lsizeR(1))
+    if (trim(sdat%tintalgo(1)) == 'coszen') then
+       call mct_aVect_init(sdat%avCoszen(1),  rlist="tavCosz",  lsize=sdat%lsize)
+    endif
+
+    ! Create field bundle on model mesh for spatially and time
+    ! interpolated streams fields to model mesh
+    sdat%fldbun_model(1) = ESMF_FieldBundleCreate(rc=rc)
+    do nfld = 1,shr_string_listGetNum(strmFldNamesInFile)
+       ! get nth fldname in colon delimited string
+       call shr_string_listGetName(strmFldNamesInFile, nfld, fldname)
+
+       ! create temporary field with name fldname on model mesh
+       ! add the field to the lbound and ubound field bundle as well as the time interpolated field bundle
+       lfield = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name=trim(fldname), &
+            meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+       call ESMF_FieldBundleAdd(sdat%fldbun_model(1), (/lfield/), rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    end do
+
+    ! check vectors and compute ustrm,vstrm for 1 stream
+    do m = 1,sdat%nvectors
+       if (.not. shr_string_listIsValid(sdat%vectors(m))) then
+          write(logunit,*) trim(subname),' vec fldlist invalid m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec fldlist invalid:'//trim(sdat%vectors(m)))
+       endif
+       if (shr_string_listGetNum(sdat%vectors(m)) /= 2) then
+          write(logunit,*) trim(subname),' vec fldlist ne 2 m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec fldlist ne 2:'//trim(sdat%vectors(m)))
+       endif
+       call shr_string_listGetName(sdat%vectors(m),1,uname)
+       call shr_string_listGetName(sdat%vectors(m),2,vname)
+       nu = mct_aVect_indexRA(sdat%avRLB(1),trim(uname),perrWith='quiet')
+       nv = mct_aVect_indexRA(sdat%avRLB(1),trim(vname),perrWith='quiet')
+       if (nu == 0  .or. nv == 0) then
+          write(logunit,*) trim(subname),' vec flds not found  m=',m,trim(sdat%vectors(m))
+          call shr_sys_abort(subname//': vec flds not found:'//trim(sdat%vectors(m)))
+       endif
+       sdat%ustrm(m) = 1
+       sdat%vstrm(m) = 1
+    enddo
 
   end subroutine shr_strdata_init_from_fortran
 
@@ -502,101 +662,6 @@ contains
     end if
 
   end subroutine shr_strdata_init_model_domain
-
-  !===============================================================================
-  subroutine shr_strdata_init_streams_from_infiles(sdat, compid, mpicom, my_task)
-
-    ! Initialize streams for input stream txt files
-
-    ! input/output arguments
-    type(shr_strdata_type) ,intent(inout) :: sdat
-    integer                ,intent(in)    :: compid
-    integer                ,intent(in)    :: mpicom
-    integer                ,intent(in)    :: my_task
-
-    ! local variables
-    integer       :: n         ! generic index
-    character(CL) :: str       ! namelist input for "streams"
-    integer       :: i         ! index in string
-    integer       :: yearFirst ! first year to use in data stream
-    integer       :: yearLast  ! last  year to use in data stream
-    integer       :: yearAlign ! data year that aligns with yearFirst
-    character(CL) :: filename  ! stream txt filename
-    character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
-    !-------------------------------------------------------------------------------
-
-    ! Loop over all active streams and initialize domain and calendar for each stream
-    do n = 1,sdat%nstreams
-       if (trim(sdat%streams(n)) /= shr_strdata_nullstr) then
-
-          if (my_task == master_task) then
-             ! Set yearAlign, yearFirst, yearLast for sdat%streams(n)
-             str = adjustL(sdat%streams(n))  ! stream info from namelist
-             i = index(str," ")
-             fileName = str(:i)
-             read(str(i:),*) yearAlign, yearFirst, yearLast
-
-             ! Initialize stream datatype by reading stream txt files
-             call shr_stream_init_from_infiles(sdat%stream(n), &
-                  fileName, yearFirst, yearLast, yearAlign, trim(sdat%taxMode(n)))
-          end if
-
-          ! Initialize stream domain info for stream n
-          call shr_strdata_init_stream_domain( sdat%stream(n), &
-               sdat%pio_subsystem, sdat%io_type, compid, mpicom, &
-               sdat%gridR(n), sdat%gsmapR(n), sdat%pio_iodesc(n), &
-               sdat%strnxg(n), sdat%strnyg(n), sdat%strnzg(n), sdat%lsizeR(n))
-
-          ! Initialize calendar for stream n
-          call shr_mpi_bcast(sdat%stream(n)%calendar, mpicom)
-       end if
-    enddo
-
-  end subroutine shr_strdata_init_streams_from_infiles
-
-  !===============================================================================
-  subroutine shr_strdata_init_streams_from_fortran(sdat,   &
-       yearFirst, yearLast, yearAlign, offset, taxmode,    &
-       domFilePath, domFileName,                           &
-       domTvarName, domXvarName, domYvarName, domMaskName, &
-       domZvarName, nzg, &
-       strmFldNamesInFile, strmFldNamesInModel, &
-       strmFldfilePath, strmFldFileNames)
-
-    ! -----------------------------------------------
-    ! initialize stream info from fortran interfaces
-    ! rather than from stream text files
-    ! -----------------------------------------------
-
-    ! input/output variables
-    type(shr_strdata_type) ,intent(inout):: sdat                ! strdata data data-type
-    integer                ,intent(in)   :: yearFirst           ! first year to use
-    integer                ,intent(in)   :: yearLast            ! last  year to use
-    integer                ,intent(in)   :: yearAlign           ! align yearFirst with this model year
-    integer                ,intent(in)   :: offset              ! offset in seconds of stream data
-    character(*)           ,intent(in)   :: taxMode             ! time axis mode
-    character(*)           ,intent(in)   :: domFilePath         ! domain file path
-    character(*)           ,intent(in)   :: domFileName         ! domain file name
-    character(*)           ,intent(in)   :: domTvarName         ! domain time dim name
-    character(*)           ,intent(in)   :: domXvarName         ! domain x dim name
-    character(*)           ,intent(in)   :: domYvarName         ! domain y dim name
-    character(*)           ,intent(in)   :: domMaskName         ! domain mask name
-    character(*)           ,intent(in)   :: domZvarName         ! domain z dim name
-    integer                ,intent(in)   :: nzg                 ! domain z dim size
-    character(*)           ,intent(in)   :: strmFldNamesInFile  ! file field names, colon delim list
-    character(*)           ,intent(in)   :: strmFldNamesInModel ! model field names, colon delim list
-    character(*)           ,intent(in)   :: strmFldfilePath     ! path to filenames
-    character(*)           ,intent(in)   :: strmFldFileNames(:) ! filename for index filenumber
-    ! --------------------------------------------------------
-
-    call shr_stream_init_from_fortran(sdat%stream(1), &
-       yearFirst, yearLast, yearAlign, offset, taxmode,    &
-       domFilePath, domFileName, &
-       domTvarName, domXvarName, domYvarName, domZvarName, nzg, domMaskName, &
-       strmFldNamesInFile, strmFldNamesInModel, &
-       strmFldfilePath, strmFldFileNames)
-
-  end subroutine shr_strdata_init_streams_from_fortran
 
   !===============================================================================
   subroutine shr_strdata_init_stream_domain(stream, &
@@ -840,239 +905,96 @@ contains
   end subroutine shr_strdata_init_stream_domain
 
   !===============================================================================
-  subroutine shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
+  subroutine shr_strdata_init_stream_mapping(compid, mpicom, my_task, &
+       gsmap, grid, nxg, nyg, nzg, gsmapR, gridR, strnxg, strnyg, strnzg, &
+       fillalgo, fillmask, mapalgo, mapmask, dofill, domap, smatpf, smatps, rearrR)
 
     ! input/output arguments
-    type(shr_strdata_type) ,intent(inout) :: sdat
-    integer                ,intent(in)    :: compid
-    integer                ,intent(in)    :: mpicom
-    integer                ,intent(in)    :: my_task
+    integer         , intent(in)    :: compid
+    integer         , intent(in)    :: mpicom
+    integer         , intent(in)    :: my_task
+    type(mct_gsmap) , intent(in)    :: gsmap    ! model gsmap
+    type(mct_ggrid) , intent(in)    :: grid     ! model ggrid
+    integer         , intent(in)    :: nxg      ! model nxg
+    integer         , intent(in)    :: nyg      ! model nyg
+    integer         , intent(in)    :: nzg      ! model nzg
+    type(mct_gsmap) , intent(in)    :: gsmapR   ! stream gsmap
+    type(mct_ggrid) , intent(in)    :: gridR    ! stream ggrid
+    integer         , intent(in)    :: strnxg   ! stream number of levels
+    integer         , intent(in)    :: strnyg   ! stream global ny
+    integer         , intent(in)    :: strnzg   ! stream global nx
+    character(len=*), intent(in)    :: fillalgo ! fill algorithm
+    character(len=*), intent(in)    :: fillmask ! fill mAK 
+    character(len=*), intent(in)    :: mapalgo  ! map algorithm
+    character(len=*), intent(in)    :: mapmask  ! map fill
+    logical         , intent(out)   :: dofill   ! is fill route handle generated
+    logical         , intent(out)   :: domap    ! is mapping route handle generated
+    type(mct_sMatP) , intent(out)   :: smatpf   ! fill route handle 
+    type(mct_sMatP) , intent(out)   :: smatps   ! mapping route handle
+    type(mct_rearr) , intent(out)   :: rearrR   ! rearranger route handle
 
     ! local variables
-    type(mct_sMat) :: sMati
     integer        :: n,m,k   ! generic index
-    integer        :: nu,nv   ! u,v index
     integer        :: method  ! mapping method
-    character(CXX) :: fldList ! list of fields
-    character(CS)  :: uname   ! u vector field name
-    character(CS)  :: vname   ! v vector field name
-    character(CS)  :: fldname
-    logical        :: compare1
-    logical        :: compare2
-    integer        :: nfld
     integer        :: rc
-    type(ESMF_Field) :: lfield
-    character(*)     ,parameter :: F00 = "('(shr_strdata_init_mapping) ',8a)"
-    character(len=*) ,parameter :: subname = "(shr_strdata_init_mapping) "
+    character(*)     ,parameter :: F00 = "('(shr_strdata_init_stream_mapping) ',8a)"
+    character(len=*) ,parameter :: subname = "(shr_strdata_init_stream_mapping) "
     !-------------------------------------------------------------------------------
 
-    do n = 1,sdat%nstreams
+    ! Determine if do fills from stream to grid
+    method = CompareMaskSubset
+    if ( shr_strdata_gGridCompare(gridR, gsmapR, grid, gsmap, method, mpicom) .or. trim(fillalgo)=='none') then
+       dofill = .false.
+    else
+       dofill = .true.
+    endif
 
-       ! Determine if do fills from stream to grid
-       method = CompareMaskSubset
-       if ( shr_strdata_gGridCompare(sdat%gridR(n), sdat%gsmapR(n), &
-                                     sdat%grid    , sdat%gsmap    , method, mpicom) .or. &
-            trim(sdat%fillalgo(n))=='none') then
-          sdat%dofill(n) = .false.
-       else
-          sdat%dofill(n) = .true.
+    ! Determine if do maps from stream to grid
+    if (trim(mapmask) == 'dstmask') then
+       method = CompareXYabsMask
+    else
+       method = CompareXYabs
+    endif
+    if ( shr_strdata_gGridCompare(gridR, gsmapR, grid, gsmap, method, mpicom, 0.01_r8) .or. trim(mapalgo)=='none') then
+       domap = .false.
+    else
+       domap = .true.
+    endif
+
+    ! Create fill map
+    if (dofill) then
+       if (strnzg > 1) then
+          write(logunit,*) trim(subname),' do fill called with 3d data, not allowed'
+          call shr_sys_abort(subname//': do fill called with 3d data, not allowed')
        endif
 
-       if (trim(sdat%mapmask(n)) == 'dstmask') then
-          method = CompareXYabsMask
-       else
-          method = CompareXYabs
-       endif
-       if ( shr_strdata_gGridCompare(sdat%gridR(n), sdat%gsmapR(n), sdat%grid, &
-                                     sdat%gsmap, method, mpicom, 0.01_r8) .or. &
-            trim(sdat%mapalgo(n))=='none') then
-          sdat%domaps(n) = .false.
-       else
-          sdat%domaps(n) = .true.
-       endif
-
-       ! ---------------------
-       ! Set up fills
-       ! ---------------------
-
-       if (sdat%dofill(n)) then
-          if (sdat%strnzg(n) > 1) then
-             write(logunit,*) trim(subname),' do fill called with 3d data, not allowed'
-             call shr_sys_abort(subname//': do fill called with 3d data, not allowed')
-          endif
-
-          if (trim(sdat%fillread(n)) == trim(shr_strdata_unset)) then
-             if (my_task == master_task) then
-                write(logunit,F00) ' calling shr_strdata_mapSet for fill'
-             endif
-
-             call shr_strdata_mapSet(sdat%sMatPf(n), &
-                  sdat%gridR(n),sdat%gsmapR(n),sdat%strnxg(n),sdat%strnyg(n), &
-                  sdat%gridR(n),sdat%gsmapR(n),sdat%strnxg(n),sdat%strnyg(n), &
-                  name='mapFill', &
-                  type='cfill', &
-                  algo=trim(sdat%fillalgo(n)),&
-                  mask=trim(sdat%fillmask(n)),&
-                  vect='scalar', &
-                  compid=compid,&
-                  mpicom=mpicom)
-
-             if (trim(sdat%fillwrit(n)) /= trim(shr_strdata_unset)) then
-                if (my_task == master_task) then
-                   write(logunit,F00) ' writing ',trim(sdat%fillwrit(n))
-                endif
-
-                call shr_mct_sMatWritednc(&
-                     sdat%sMatPf(n)%Matrix,&
-                     sdat%pio_subsystem,&
-                     sdat%io_type,&
-                     sdat%io_format, &
-                     sdat%fillwrit(n),&
-                     compid,&
-                     mpicom)
-             endif
-          else
-             if (my_task == master_task) then
-                write(logunit,F00) ' reading ',trim(sdat%fillread(n))
-             endif
-             call shr_mct_sMatReaddnc(sMati, sdat%gsmapR(n), sdat%gsmapR(n), 'src',  &
-                  filename=trim(sdat%fillread(n)), mytask=my_task, mpicom=mpicom)
-
-             call mct_sMatP_Init(sdat%sMatPf(n), sMati, sdat%gsMapR(n), sdat%gsmapR(n), 0, mpicom, compid)
-
-             call mct_sMat_Clean(sMati)
-          endif
-       endif
-
-       ! ---------------------
-       ! Set up maps
-       ! ---------------------
-
-       if (sdat%domaps(n)) then
-          if (sdat%strnzg(n) > 1) then
-             write(logunit,*) trim(subname),' do maps called with 3d data, not allowed'
-             call shr_sys_abort(subname//': do maps called with 3d data, not allowed')
-          endif
-
-          if (trim(sdat%mapread(n)) == trim(shr_strdata_unset)) then
-             if (my_task == master_task) then
-                write(logunit,F00) ' calling shr_strdata_mapSet for remap'
-             endif
-
-             call shr_strdata_mapSet(sdat%sMatPs(n), &
-                  sdat%gridR(n),sdat%gsmapR(n),sdat%strnxg(n),sdat%strnyg(n), &
-                  sdat%grid    ,sdat%gsmap    ,sdat%nxg      ,sdat%nyg,       &
-                  name='mapScalar', &
-                  type='remap',                             &
-                  algo=trim(sdat%mapalgo(n)),&
-                  mask=trim(sdat%mapmask(n)), &
-                  vect='scalar', &
-                  compid=compid,&
-                  mpicom=mpicom)
-
-             if (trim(sdat%mapwrit(n)) /= trim(shr_strdata_unset)) then
-                if (my_task == master_task) then
-                   write(logunit,F00) ' writing ',trim(sdat%mapwrit(n))
-                endif
-                call shr_mct_sMatWritednc(&
-                     sdat%sMatPs(n)%Matrix,&
-                     sdat%pio_subsystem,&
-                     sdat%io_type,&
-                     sdat%io_format,&
-                     sdat%mapwrit(n),&
-                     compid,&
-                     mpicom)
-             endif
-          else
-             if (my_task == master_task) then
-                write(logunit,F00) ' reading ',trim(sdat%mapread(n))
-             endif
-             call shr_mct_sMatReaddnc(sMati,sdat%gsmapR(n),sdat%gsmap,'src', &
-                  filename=trim(sdat%mapread(n)),mytask=my_task,mpicom=mpicom)
-             call mct_sMatP_Init(sdat%sMatPs(n),sMati,sdat%gsMapR(n),sdat%gsmap,0, mpicom, compid)
-             call mct_sMat_Clean(sMati)
-          endif
-       else
-          call mct_rearr_init(sdat%gsmapR(n), sdat%gsmap, mpicom, sdat%rearrR(n))
-       endif
-    enddo
-
-    ! Create model datatypes in sdat
-
-    do n = 1,sdat%nstreams
-       ! Determine colon delimited field name string for stream fields
        if (my_task == master_task) then
-          call shr_stream_getModelFieldList(sdat%stream(n),fldList)
-       endif
-       call shr_mpi_bcast(fldList,mpicom)
-
-       ! Create attribute vectors on model mesh
-       call mct_aVect_init(sdat%avFLB(n),rlist=fldList,lsize=sdat%lsize)
-       call mct_aVect_init(sdat%avFUB(n),rlist=fldList,lsize=sdat%lsize)
-       call mct_aVect_init(sdat%avRLB(n),rlist=fldList,lsize=sdat%lsizeR(n))
-       call mct_aVect_init(sdat%avRUB(n),rlist=fldList,lsize=sdat%lsizeR(n))
-
-       if (trim(sdat%tintalgo(n)) == 'coszen') then
-          call mct_aVect_init(sdat%avCoszen(n), rlist="tavCosz", lsize=sdat%lsize)
+          write(logunit,F00) ' calling shr_strdata_mapSet for fill'
        endif
 
-       ! Create field bundle on model mesh for spatially and time
-       ! interpolated streams fields to model mesh
-       sdat%fldbun_model(n) = ESMF_FieldBundleCreate(rc=rc)
-       do nfld = 1,shr_string_listGetNum(fldList)
-          ! get nth fldname in colon delimited string
-          call shr_string_listGetName(fldlist, nfld, fldname)
+       call shr_strdata_mapSet(sMatPf, gridR, gsmapR, strnxg, strnyg, gridR, gsmapR, strnxg, strnyg, &
+            name='mapFill', type='cfill', algo=trim(fillalgo), mask=trim(fillmask), vect='scalar', &
+            compid=compid, mpicom=mpicom)
+    endif
 
-          ! create temporary field with name fldname on model mesh
-          ! add the field to the lbound and ubound field bundle as well as the time interpolated field bundle
-          lfield = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name=trim(fldname), &
-               meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-          call ESMF_FieldBundleAdd(sdat%fldbun_model(n), (/lfield/), rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
-               call ESMF_Finalize(endflag=ESMF_END_ABORT)
-       end do
-    end do
+    ! Create map from stream to model mesh
+    if (domap) then
+       if (strnzg > 1) then
+          write(logunit,*) trim(subname),' do maps called with 3d data, not allowed'
+          call shr_sys_abort(subname//': do maps called with 3d data, not allowed')
+       endif
+       if (my_task == master_task) then
+          write(logunit,F00) ' calling shr_strdata_mapSet for remap'
+       endif
 
-    ! --- check vectors and compute ustrm,vstrm ---
+       call shr_strdata_mapSet(sMatPs, gridR, gsmapR, strnxg, strnyg, grid, gsmap, nxg, nyg, &
+            name='mapScalar', type='remap', algo=trim(mapalgo), mask=trim(mapmask), vect='scalar', &
+            compid=compid, mpicom=mpicom)
+    else
+       call mct_rearr_init(gsmapR, gsmap, mpicom, rearrR)
+    endif
 
-    do m = 1,sdat%nvectors
-       if (.not. shr_string_listIsValid(sdat%vectors(m))) then
-          write(logunit,*) trim(subname),' vec fldlist invalid m=',m,trim(sdat%vectors(m))
-          call shr_sys_abort(subname//': vec fldlist invalid:'//trim(sdat%vectors(m)))
-       endif
-       if (shr_string_listGetNum(sdat%vectors(m)) /= 2) then
-          write(logunit,*) trim(subname),' vec fldlist ne 2 m=',m,trim(sdat%vectors(m))
-          call shr_sys_abort(subname//': vec fldlist ne 2:'//trim(sdat%vectors(m)))
-       endif
-       call shr_string_listGetName(sdat%vectors(m),1,uname)
-       call shr_string_listGetName(sdat%vectors(m),2,vname)
-       nu = 0
-       nv = 0
-       do n = 1,sdat%nstreams
-          k = mct_aVect_indexRA(sdat%avRLB(n),trim(uname),perrWith='quiet')
-          if (k > 0) nu = n
-          k = mct_aVect_indexRA(sdat%avRLB(n),trim(vname),perrWith='quiet')
-          if (k > 0) nv = n
-       enddo
-       if (nu == 0  .or. nv == 0) then
-          write(logunit,*) trim(subname),' vec flds not found  m=',m,trim(sdat%vectors(m))
-          call shr_sys_abort(subname//': vec flds not found:'//trim(sdat%vectors(m)))
-       endif
-       if (nu /= nv) then
-          compare1 = shr_strdata_gGridCompare(sdat%gridR(nu), sdat%gsmapR(nu), sdat%gridR(nv),sdat%gsmapR(nv), &
-               CompareXYabs, mpicom, 0.01_r8)
-          compare2 = shr_strdata_gGridCompare(sdat%gridR(nu), sdat%gsmapR(nu), sdat%gridR(nv),sdat%gsmapR(nv), &
-               CompareMaskZeros, mpicom)
-          if ((.not. compare1) .or. (.not. compare2)) then
-             write(logunit,*) trim(subname),' vec fld doms not same m=',m,trim(sdat%vectors(m))
-             call shr_sys_abort(subname//': vec fld doms not same:'//trim(sdat%vectors(m)))
-          endif
-       endif
-       sdat%ustrm(m) = nu
-       sdat%vstrm(m) = nv
-    enddo
-
-  end subroutine shr_strdata_init_mapping
+  end subroutine shr_strdata_init_stream_mapping
 
   !===============================================================================
   subroutine shr_strdata_get_stream_domain(sdat, stream_index, mpicom, my_task, fldname, flddata)
@@ -1342,10 +1264,10 @@ contains
              call t_startf(trim(lstr)//trim(timname)//'_vect')
              call shr_string_listGetName(sdat%vectors(m),1,uname)
              call shr_string_listGetName(sdat%vectors(m),2,vname)
-             lsizeR = mct_aVect_lsize(sdat%avRLB(nu))
-             lsizeF = mct_aVect_lsize(sdat%avFLB(nu))
-             call mct_aVect_init(avRV,rlist=sdat%vectors(m),lsize=lsizeR)
-             call mct_aVect_init(avFV,rlist=sdat%vectors(m),lsize=lsizeF)
+             lsizeR = sdat%lsizeR(nu)
+             lsizeF = sdat%lsize
+             call mct_aVect_init(avRV, rlist=sdat%vectors(m), lsize=lsizeR)
+             call mct_aVect_init(avFV, rlist=sdat%vectors(m), lsize=lsizeF)
              allocate(xlon(lsizeR))
              allocate(ylon(lsizeF))
              call mct_aVect_exportRattr(sdat%gridR(nu)%data,'lon',xlon)
@@ -1358,20 +1280,14 @@ contains
              uvar = mct_aVect_indexRA(sdat%avRLB(nu),trim(uname))
              vvar = mct_aVect_indexRA(sdat%avRLB(nv),trim(vname))
              do i = 1,lsizeR
-                avRV%rAttr(1,i) =  sdat%avRLB(nu)%rAttr(uvar,i) * cos(xlon(i))  &
-                     -sdat%avRLB(nv)%rAttr(vvar,i) * sin(xlon(i))
-                avRV%rAttr(2,i) =  sdat%avRLB(nu)%rAttr(uvar,i) * sin(xlon(i))  &
-                     +sdat%avRLB(nv)%rAttr(vvar,i) * cos(xlon(i))
+                avRV%rAttr(1,i) =  sdat%avRLB(nu)%rAttr(uvar,i) * cos(xlon(i)) - sdat%avRLB(nv)%rAttr(vvar,i) * sin(xlon(i))
+                avRV%rAttr(2,i) =  sdat%avRLB(nu)%rAttr(uvar,i) * sin(xlon(i)) + sdat%avRLB(nv)%rAttr(vvar,i) * cos(xlon(i))
              enddo
              call mct_sMat_avMult(avRV,sdat%sMatPs(nu),avFV)
              ! ---   don't need to recompute uvar and vvar, should be the same
-             !       uvar = mct_aVect_indexRA(sdat%avFLB(nu),trim(uname))
-             !       vvar = mct_aVect_indexRA(sdat%avFLB(nv),trim(vname))
              do i = 1,lsizeF
-                sdat%avFLB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i))  &
-                     +avFV%rAttr(2,i) * sin(ylon(i))
-                sdat%avFLB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i))  &
-                     +avFV%rAttr(2,i) * cos(ylon(i))
+                sdat%avFLB(nu)%rAttr(uvar,i) =  avFV%rAttr(1,i) * cos(ylon(i)) + avFV%rAttr(2,i) * sin(ylon(i))
+                sdat%avFLB(nv)%rAttr(vvar,i) = -avFV%rAttr(1,i) * sin(ylon(i)) + avFV%rAttr(2,i) * cos(ylon(i))
              enddo
 
              !--- map UB ---
@@ -1379,10 +1295,8 @@ contains
              uvar = mct_aVect_indexRA(sdat%avRUB(nu),trim(uname))
              vvar = mct_aVect_indexRA(sdat%avRUB(nv),trim(vname))
              do i = 1,lsizeR
-                avRV%rAttr(1,i) =  sdat%avRUB(nu)%rAttr(uvar,i) * cos(xlon(i))  &
-                     -sdat%avRUB(nv)%rAttr(vvar,i) * sin(xlon(i))
-                avRV%rAttr(2,i) =  sdat%avRUB(nu)%rAttr(uvar,i) * sin(xlon(i))  &
-                     +sdat%avRUB(nv)%rAttr(vvar,i) * cos(xlon(i))
+                avRV%rAttr(1,i) =  sdat%avRUB(nu)%rAttr(uvar,i) * cos(xlon(i)) - sdat%avRUB(nv)%rAttr(vvar,i) * sin(xlon(i))
+                avRV%rAttr(2,i) =  sdat%avRUB(nu)%rAttr(uvar,i) * sin(xlon(i)) + sdat%avRUB(nv)%rAttr(vvar,i) * cos(xlon(i))
              enddo
              call mct_sMat_avMult(avRV,sdat%sMatPs(nu),avFV)
 
@@ -1619,12 +1533,8 @@ contains
     character(CL) :: vectors(nVecMax)   ! define vectors to vector map
     character(CL) :: fillalgo(nStrMax)  ! fill algorithm
     character(CL) :: fillmask(nStrMax)  ! fill mask
-    character(CL) :: fillread(nStrMax)  ! fill mapping file to read
-    character(CL) :: fillwrite(nStrMax) ! fill mapping file to write
     character(CL) :: mapalgo(nStrMax)   ! scalar map algorithm
     character(CL) :: mapmask(nStrMax)   ! scalar map mask
-    character(CL) :: mapread(nStrMax)   ! regrid mapping file to read
-    character(CL) :: mapwrite(nStrMax)  ! regrid mapping file to write
     character(CL) :: tintalgo(nStrMax)  ! time interpolation algorithm
     character(CL) :: readmode(nStrMax)  ! file read mode
     character(CL) :: fileName           ! generic file name
@@ -1642,12 +1552,8 @@ contains
            vectors   ,           &
            fillalgo  ,           &
            fillmask  ,           &
-           fillread  ,           &
-           fillwrite ,           &
            mapalgo   ,           &
            mapmask   ,           &
-           mapread   ,           &
-           mapwrite  ,           &
            tintalgo  ,           &
            readmode
 
@@ -1680,12 +1586,8 @@ contains
        vectors(:)  = trim(shr_strdata_nullstr)
        fillalgo(:) = 'nn'
        fillmask(:) = 'nomask'
-       fillread(:) = trim(shr_strdata_unset)
-       fillwrite(:)= trim(shr_strdata_unset)
        mapalgo(:)  = 'bilinear'
        mapmask(:)  = 'dstmask'
-       mapread(:)  = trim(shr_strdata_unset)
-       mapwrite(:) = trim(shr_strdata_unset)
        tintalgo(:) = 'linear'
        readmode(:) = 'single'
 
@@ -1718,12 +1620,8 @@ contains
        sdat%vectors(:)  = vectors(:)
        sdat%fillalgo(:) = fillalgo(:)
        sdat%fillmask(:) = fillmask(:)
-       sdat%fillread(:) = fillread(:)
-       sdat%fillwrit(:) = fillwrite(:)
        sdat%mapalgo(:)  = mapalgo(:)
        sdat%mapmask(:)  = mapmask(:)
-       sdat%mapread(:)  = mapread(:)
-       sdat%mapwrit(:)  = mapwrite(:)
        sdat%tintalgo(:) = tintalgo(:)
        sdat%readmode(:) = readmode(:)
        do n=1,nStrMax
@@ -1754,12 +1652,8 @@ contains
        call shr_mpi_bcast(sdat%vectors   ,mpicom ,'vectors')
        call shr_mpi_bcast(sdat%fillalgo  ,mpicom ,'fillalgo')
        call shr_mpi_bcast(sdat%fillmask  ,mpicom ,'fillmask')
-       call shr_mpi_bcast(sdat%fillread  ,mpicom ,'fillread')
-       call shr_mpi_bcast(sdat%fillwrit  ,mpicom ,'fillwrit')
        call shr_mpi_bcast(sdat%mapalgo   ,mpicom ,'mapalgo')
        call shr_mpi_bcast(sdat%mapmask   ,mpicom ,'mapmask')
-       call shr_mpi_bcast(sdat%mapread   ,mpicom ,'mapread')
-       call shr_mpi_bcast(sdat%mapwrit   ,mpicom ,'mapwrit')
        call shr_mpi_bcast(sdat%tintalgo  ,mpicom ,'tintalgo')
        call shr_mpi_bcast(sdat%readmode  ,mpicom ,'readmode')
     endif
@@ -1781,7 +1675,6 @@ contains
   end subroutine shr_strdata_readnml
 
   !===============================================================================
-
   subroutine shr_strdata_print(sdat,name)
 
     ! !DESCRIPTION:
@@ -1842,13 +1735,9 @@ contains
        write(logunit,F06) "  dofill  (",n,") = ",sdat%dofill(n)
        write(logunit,F04) "  fillalgo(",n,") = ",trim(sdat%fillalgo(n))
        write(logunit,F04) "  fillmask(",n,") = ",trim(sdat%fillmask(n))
-       write(logunit,F04) "  fillread(",n,") = ",trim(sdat%fillread(n))
-       write(logunit,F04) "  fillwrit(",n,") = ",trim(sdat%fillwrit(n))
        write(logunit,F06) "  domaps  (",n,") = ",sdat%domaps(n)
        write(logunit,F04) "  mapalgo (",n,") = ",trim(sdat%mapalgo(n))
        write(logunit,F04) "  mapmask (",n,") = ",trim(sdat%mapmask(n))
-       write(logunit,F04) "  mapread (",n,") = ",trim(sdat%mapread(n))
-       write(logunit,F04) "  mapwrit (",n,") = ",trim(sdat%mapwrit(n))
        write(logunit,F04) "  tintalgo(",n,") = ",trim(sdat%tintalgo(n))
        write(logunit,F04) "  readmode(",n,") = ",trim(sdat%readmode(n))
        write(logunit,F01) " "
@@ -1861,6 +1750,7 @@ contains
 
   end subroutine shr_strdata_print
 
+  !===============================================================================
   subroutine shr_strdata_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,&
        mDate,mSec,mpicom,gsMap, &
        avLB,mDateLB,mSecLB,avUB,mDateUB,mSecUB,avFile,readMode, &
@@ -1912,7 +1802,7 @@ contains
     endif
 
     call t_startf(trim(lstr)//'_setup')
-    call MPI_COMM_RANK(mpicom,my_task,ierr)
+    call mpi_comm_rank(mpicom,my_task,ierr)
     spd = shr_const_cday
 
     newData = .false.
@@ -2007,7 +1897,6 @@ contains
   end subroutine shr_strdata_readLBUB
 
   !===============================================================================
-
   subroutine shr_strdata_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, av, mpicom, &
        path, fn, nt, istr, boundstr)
 
@@ -2130,10 +2019,8 @@ contains
   end subroutine shr_strdata_readstrm
 
   !===============================================================================
-
   subroutine shr_strdata_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
-       gsMap, av, avFile, mpicom, &
-       path, fn, nt, istr, boundstr)
+       gsMap, av, avFile, mpicom, path, fn, nt, istr, boundstr)
 
     !----- arguments -----
     type(shr_stream_streamType) ,intent(inout)         :: stream
@@ -2244,7 +2131,7 @@ contains
        endif
 
        if (my_task == master_task) then
-          call shr_stream_getModelFieldList(stream,fldList)
+          call shr_stream_getModelFieldList(stream, fldList)
        endif
        call shr_mpi_bcast(fldList,mpicom)
        call mct_avect_clean(avFile)
@@ -2305,7 +2192,7 @@ contains
 
   !===============================================================================
 
-  logical function shr_strdata_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpicom,eps)
+  logical function shr_strdata_gGridCompare(ggrid1, gsmap1, ggrid2, gsmap2, method, mpicom, eps)
 
     ! Returns TRUE if two domains are the the same (within tolerance).
 
@@ -2366,9 +2253,11 @@ contains
           !--- already failed the comparison test, check no futher ---
        else
           nlon1 = mct_aVect_indexRA(avG1,'lon')
-          nlat1 = mct_aVect_indexRA(avG1,'lat')
           nlon2 = mct_aVect_indexRA(avG2,'lon')
+
+          nlat1 = mct_aVect_indexRA(avG1,'lat')
           nlat2 = mct_aVect_indexRA(avG2,'lat')
+
           nmask1 = mct_aVect_indexRA(avG1,'mask')
           nmask2 = mct_aVect_indexRA(avG2,'mask')
 
@@ -2500,11 +2389,8 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_mapSet(smatp,&
-       ggridS,gsmapS,nxgS,nygS,&
-       ggridD,gsmapD,nxgD,nygD, &
-       name,type,algo,mask,vect,&
-       compid,mpicom,strategy)
+  subroutine shr_strdata_mapSet(smatp, ggridS, gsmapS, nxgS, nygS, ggridD, gsmapD, nxgD, nygD, &
+       name, type, algo, mask, vect, compid,mpicom,strategy)
 
     !-------------------------------------------------------------------------------
     ! Initialize sparse mapping routine handle, sMatP, from source and destination
@@ -2555,9 +2441,9 @@ contains
     character(*), parameter :: F01   = "('(shr_strdata_mapSet) ',a,5i8)"
     !-------------------------------------------------------------------------------
 
-    call MPI_COMM_RANK(mpicom,my_task,ierr)
+    call mpi_comm_rank(mpicom,my_task,ierr)
 
-    !--- get sizes and allocate for SRC ---
+    ! get sizes and allocate for SRC
 
     lsizeS = mct_aVect_lsize(ggridS%data)
     call mct_avect_init(AVl,rList='lon:lat:mask',lsize=lsizeS)
@@ -2591,8 +2477,7 @@ contains
     if (my_task == master_task) call mct_aVect_clean(AVg)
     call mct_aVect_clean(AVl)
 
-    !--- get sizes and allocate for DST ---
-
+    ! get sizes and allocate for DST
     lsizeD = mct_aVect_lsize(ggridD%data)
     call mct_avect_init(AVl,rList='lon:lat:mask',lsize=lsizeD)
     call mct_avect_copy(ggridD%data,AVl,rList='lon:lat:mask')
@@ -2625,8 +2510,7 @@ contains
     if (my_task == master_task) call mct_aVect_clean(AVg)
     call mct_aVect_clean(AVl)
 
-    !--- set map ---
-
+    ! set map
     if (my_task == master_task) then
        call shr_map_mapSet(shrmap,Xsrc,Ysrc,Msrc,Xdst,Ydst,Mdst, &
             trim(name),trim(type),trim(algo),trim(mask),trim(vect))
@@ -2634,8 +2518,7 @@ contains
        deallocate(Xdst,Ydst,Mdst)
     endif
 
-    !--- convert map to sMatP ---
-
+    ! convert map to sMatP
     lstrategy = 'Xonly'
     if (present(strategy)) then
        lstrategy = trim(strategy)

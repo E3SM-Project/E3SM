@@ -408,36 +408,6 @@
     </values>
   </entry>
 
-  <entry id="fillread"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to read in instead of computing the
-      weights on the fly for the fill operation.  if this is set, fillalgo
-      and fillmask are ignored.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
-  <entry id="fillwrite"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements)  of filenames associated with the array of
-      streams.  specifies the weights file to generate after weights are
-      computed on the fly for the fill operation.  this allows a user to
-      save and reuse a set of weights later.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
   <entry id="mapmask"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
@@ -469,36 +439,6 @@
     </desc>
     <values>
       <value>bilinear</value>
-    </values>
-  </entry>
-
-  <entry id="mapread"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to read instead of computing
-      weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
-  <entry id="mapwrite"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to generate after weights are
-      computed on the fly for the mapping (interpolation) operation.  this
-      allows a user to save and reuse a set of weights later.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
     </values>
   </entry>
 

@@ -1335,11 +1335,9 @@ contains
 
     if (domap) then
        call shr_strdata_mapSet(smatp, &
-            ggridi, gsmapi, ni0 ,nj0, &
-            sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &
+            ggridi, gsmapi, ni0 ,nj0, sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &
             'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, &
-            shr_map_fs_srcmask, shr_map_fs_scalar, &
-            compid, mpicom, 'Xonly')
+            shr_map_fs_srcmask, shr_map_fs_scalar, compid, mpicom, 'Xonly')
 
        call mct_aVect_init(avo, avi, lsizeo)
        call mct_sMat_avMult(avi, smatp, avo)
