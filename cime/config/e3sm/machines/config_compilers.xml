@@ -2150,18 +2150,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
-  <CFLAGS>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </CFLAGS>
-  <FFLAGS>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </LDFLAGS>
-  <FFLAGS_NOOPT>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </FFLAGS_NOOPT>
   <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_ROOT}</PNETCDF_PATH>
