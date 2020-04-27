@@ -94,6 +94,8 @@
       <!-- Only needed for compsets with active land; for other compsets, turn it off -->
       <value compset="_SLND">none</value>
       <value compset="_DLND">none</value>
+      <value compset="_DLND%QIA">observed</value>
+      <value compset="_DLND%GPCC">observed</value>
       <value compset="_DATM%CPLHIST">cplhist</value>
       <value compset="_DATM%MOSARTTEST">observed</value>
     </values>

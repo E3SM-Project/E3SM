@@ -10,8 +10,13 @@
   <!---MOSART RM compsets -->
 
   <compset>
-    <alias>RMOSARTNLDAS</alias>
-    <lname>2000_SATM_DLND%LCLMR_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <alias>RMOSQIAN</alias>
+    <lname>2000_DATM%QIA_DLND%QIA_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>RMOSGPCC</alias>
+    <lname>2000_DATM%QIA_DLND%GPCC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
 </compsets>

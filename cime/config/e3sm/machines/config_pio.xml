@@ -162,6 +162,7 @@
   <entry id="LND_PIO_TYPENAME">
     <values>
       <value mach="bebop" compset=".*CLM45.+MALI%SIA.*">netcdf</value>
+      <value mach="compy" compset=".*DLND.*">netcdf</value>
     </values>
   </entry>
 

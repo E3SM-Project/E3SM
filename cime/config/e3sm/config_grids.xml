@@ -68,7 +68,17 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="CLMMOS_USRDAT" compset="(DATM|SATM).+CLM">
+    <model_grid alias="CLMMOS_USRDAT" compset="(DATM|SATM).+CLM.+MOSART">
+      <grid name="atm">CLM_USRDAT</grid>
+      <grid name="lnd">CLM_USRDAT</grid>
+      <grid name="ocnice">CLM_USRDAT</grid>
+      <grid name="rof">CLM_USRDAT</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>reg</mask>
+    </model_grid>
+
+    <model_grid alias="MOS_USRDAT" compset="(DATM|SATM).+DLND.+MOSART">
       <grid name="atm">CLM_USRDAT</grid>
       <grid name="lnd">CLM_USRDAT</grid>
       <grid name="ocnice">CLM_USRDAT</grid>
