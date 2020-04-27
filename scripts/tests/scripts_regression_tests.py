@@ -3396,8 +3396,17 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-        #pylint: disable=unsubscriptable-object
-        result = B_CheckCode.all_results[pyfile]
+#            print(B_CheckCode.all_results)
+            #for k in B_CheckCode.all_results:
+            #    x, y = B_CheckCode.all_results[k]
+            #    print("{} : {}\n{} : {}".format(k, x, k, y))
+            for key in B_CheckCode.all_results:
+                print("{}: {}".format(key, B_CheckCode.all_results[key]))
+
+#pylint: disable=unsubscriptable-object
+        if os.path.exists(pyfile):
+            pyfileabs = (os.path.abspath(pyfile))
+        result = B_CheckCode.all_results[pyfileabs]
         self.assertTrue(result == "", msg=result)
 
     return test
