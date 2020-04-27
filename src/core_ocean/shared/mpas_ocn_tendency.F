@@ -476,7 +476,7 @@ contains
       !
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate, latCell
-      real (kind=RKIND), dimension(:), pointer :: RediKappa
+      real (kind=RKIND), dimension(:), pointer :: RediKappa 
       integer, dimension(:), pointer :: maxLevelCell
 
       !
