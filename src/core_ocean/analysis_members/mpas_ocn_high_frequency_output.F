@@ -26,6 +26,7 @@ module ocn_high_frequency_output
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -54,6 +55,20 @@ module ocn_high_frequency_output
    ! Private module variables
    !
    !--------------------------------------------------------------------
+
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+   ! normalThicknessFluxSum: Flux of thickness through an edge over full column, sum(h*u)
+   !                  units: m^{2} s^{-1}
+   real (kind=RKIND), dimension(:), allocatable :: normalThicknessFluxSum
+   ! layerThicknessSumEdge: total thickness at edge, sum(h)
+   !                 units: m
+   real (kind=RKIND), dimension(:), allocatable :: layerThicknessSumEdge
 
 !***********************************************************************
 
@@ -159,7 +174,6 @@ contains
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: highFrequencyOutputAMPool
       type (mpas_pool_type), pointer :: tracersPool
-      type (mpas_pool_type), pointer :: scratchPool
 
       integer :: iLevel, iLevelTarget, iCell, iEdge, i, cell1, cell2, k, eoe
       integer :: iLevel0100, iLevel0250, iLevel0700, iLevel2000
@@ -214,25 +228,10 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: normalBaroclinicVelocity ! baroclinic/barotropic pressume split explicit
       real (kind=RKIND), dimension(:), pointer :: normalBarotropicVelocity ! baroclinic/barotropic pressume split explicit
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-      character (len=StrKIND), pointer :: config_time_integrator
-
-      ! scratch space
-      type (field1DReal), pointer :: normalThicknessFluxSumField, layerThicknessSumEdgeField
-      real (kind=RKIND), dimension(:), pointer :: normalThicknessFluxSum, layerThicknessSumEdge
 
       err = 0
 
       dminfo = domain % dminfo
-
-      ! scratch arrays
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-      call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
-      call mpas_allocate_scratch_field(normalThicknessFluxSumField, .true.)
-      normalThicknessFluxSum => normalThicknessFluxSumField % array
-
-      call mpas_pool_get_field(scratchPool, 'layerThicknessSumEdge', layerThicknessSumEdgeField)
-      call mpas_allocate_scratch_field(layerThicknessSumEdgeField, .true.)
-      layerThicknessSumEdge => layerThicknessSumEdgeField % array
 
       block => domain % blocklist
       do while (associated(block))
@@ -240,6 +239,12 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+
+         !$omp master
+         allocate(normalThicknessFluxSum(nEdges))
+         allocate(layerThicknessSumEdge(nEdges))
+         !$omp end master
+         !$omp barrier
 
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -356,7 +361,6 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertVelSFC', vertVelSFC)
 
          ! split explicit specific arrays
-         call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
          if ( config_time_integrator == trim('split_explicit')) then
            call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, 1)
            call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
@@ -688,12 +692,15 @@ contains
 
          end do
 
+         ! scratch arrays
+         !$omp master
+         deallocate(normalThicknessFluxSum)
+         deallocate(layerThicknessSumEdge)
+         !$omp end master
+         !$omp barrier
+
          block => block % next
       end do
-
-      ! scratch arrays
-      call mpas_deallocate_scratch_field(normalThicknessFluxSumField, .true.)
-      call mpas_deallocate_scratch_field(layerThicknessSumEdgeField, .true.)
 
    end subroutine ocn_compute_high_frequency_output!}}}
 

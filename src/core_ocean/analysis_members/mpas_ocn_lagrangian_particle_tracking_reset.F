@@ -25,6 +25,7 @@ module ocn_lagrangian_particle_tracking_reset
   use mpas_pool_routines
 
   use ocn_constants
+  use ocn_config
 
   implicit none
   private
@@ -85,21 +86,9 @@ module ocn_lagrangian_particle_tracking_reset
      type (mpas_pool_type), pointer :: lagrPartTrackScalarPool, lagrPartTrackRegionsPool
      real (kind=RKIND), pointer :: globalResetTimeValue
      type (mpas_timeInterval_type) :: timeInterval
-     character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_global_timestamp
-     character (len=StrKIND), pointer :: config_AM_lagrPartTrack_region_stream
-     character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
-     type (field1DInteger), pointer :: resetInsideRegionMaskValue1Field, resetOutsideRegionMaskValue1Field
      integer, dimension(:), pointer :: resetInsideRegionMaskValue1, resetOutsideRegionMaskValue1
 
      err = 0
-
-     ! get the configuration options
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_global_timestamp', &
-        config_AM_lagrPartTrack_reset_global_timestamp)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_region_stream', &
-        config_AM_lagrPartTrack_region_stream)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', &
-        config_AM_lagrPartTrack_reset_criteria)
 
      ! load in region masks streams (masks stored in pool)
      if (trim(config_AM_lagrPartTrack_reset_criteria) == 'region' .or. &
@@ -185,22 +174,11 @@ module ocn_lagrangian_particle_tracking_reset
      integer, pointer :: resetTime
      real (kind=RKIND), pointer :: globalResetTimeValue
 
-     character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
-     logical, pointer :: config_AM_lagrPartTrack_reset_if_outside_region
-     logical, pointer :: config_AM_lagrPartTrack_reset_if_inside_region
      integer, dimension(:), pointer :: resetInsideRegionMaskValue1, resetOutsideRegionMaskValue1
 
      ! initialize outputs
      err = 0
      resetParticle = .False.
-
-     ! get config options
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', &
-        config_AM_lagrPartTrack_reset_criteria)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_if_outside_region', &
-        config_AM_lagrPartTrack_reset_if_outside_region)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_if_inside_region', &
-        config_AM_lagrPartTrack_reset_if_inside_region)
 
      ! get variables
      call mpas_pool_get_array(particle % haloDataPool, 'timeSinceReset', timeSinceReset)
