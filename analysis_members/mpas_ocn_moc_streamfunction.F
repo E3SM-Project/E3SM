@@ -25,6 +25,7 @@ module ocn_moc_streamfunction
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -116,11 +117,6 @@ contains
       ! the variable used to discriminate cells into Bins (either the y-value or the latitude)
       real (kind=RKIND), dimension(:), pointer :: binVariable, binBoundaryMocStreamfunction
 
-      !number of latitude bins specified in the config
-      integer, pointer :: config_AM_mocStreamfunction_num_bins
-      !smallest and highest latitude specified in the config
-      real (kind=RKIND), pointer :: config_AM_mocStreamfunction_min_bin, config_AM_mocStreamfunction_max_bin
-
       !determines if the simulation was run on a sphere or on a plane
       logical, pointer :: on_a_sphere
 
@@ -135,7 +131,6 @@ contains
       integer, pointer :: nRegions, nRegionGroups, maxRegionsInGroup, nCellsSolve
       real (kind=RKIND), dimension(:,:), pointer :: minMaxLatRegion
       real (kind=RKIND), dimension(:)  , pointer :: minLatRegionLocal, maxLatRegionLocal, tminLatRegionLocal, tmaxLatRegionLocal
-      character (len=STRKIND), pointer :: additionalRegion
 
       !! region preliminary variables
       integer :: regionGroupNumber, regionsInAddGroup
@@ -148,10 +143,6 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nRegionGroups', nRegionGroups)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxRegionsInGroup', maxRegionsInGroup)
 
-      !! region config for moc
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_region_group', &
-                                additionalRegion)
-
       !! get region values
       call mpas_pool_get_subpool(domain % blocklist % structs, 'regions', regionPool)
       call mpas_pool_get_array(regionPool, 'regionsInGroup', regionsInGroup)
@@ -161,7 +152,7 @@ contains
       !!! region preliminaries
       regionGroupNumber=0
       do i = 1, nRegionGroups
-         if (regionGroupNames(i) .eq. additionalRegion) then
+         if (regionGroupNames(i) .eq. config_AM_mocStreamfunction_region_group) then
             regionGroupNumber = i
          end if
       end do
@@ -189,13 +180,6 @@ contains
       maxBin = -1.0e34_RKIND
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_num_bins', &
-                                config_AM_mocStreamfunction_num_bins)
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_min_bin', &
-                                config_AM_mocStreamfunction_min_bin)
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_max_bin', &
-                                config_AM_mocStreamfunction_max_bin)
 
       call mpas_pool_get_array(mocStreamfunctionAMPool, 'minMaxLatRegion', minMaxLatRegion)
 
@@ -346,7 +330,6 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepth, mocStreamValLatAndDepthTotal
       real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
       real (kind=RKIND), dimension(:,:), pointer :: sumVertBinVelocity
-      character (len=STRKIND), pointer :: verticalVelocityArrayName, normalVelocityArrayName
 
       !!!! TRANSECT VARIABLES !!!!
       integer, pointer :: nEdgesSolve, num_tracers
@@ -362,7 +345,6 @@ contains
       character (len=STRKIND), dimension(:), pointer :: transectNames, transectGroupNames
       integer, dimension(:), pointer ::  nTransectsInGroup
       integer, pointer :: nTransects, nTransectGroups, maxTransectsInGroup
-      character (len=STRKIND), pointer :: additionalTransect
       integer :: transectGroupNumber, transectsInAddGroup
       !!!! END TRANSECT VARIABLES !!!!
 
@@ -376,7 +358,6 @@ contains
       character (len=STRKIND), dimension(:), pointer :: regionNames, regionGroupNames
       integer, dimension(:), pointer ::  nRegionsInGroup
       integer, pointer :: nRegions, nRegionGroups, maxRegionsInGroup
-      character (len=STRKIND), pointer :: additionalRegion
       integer :: regionGroupNumber, regionsInAddGroup
 
       !!!! END REGION VARIABLES
@@ -389,10 +370,6 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nRegionGroups', nRegionGroups)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxRegionsInGroup', maxRegionsInGroup)
 
-      !! region config for moc
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_region_group', &
-                                additionalRegion)
-
       !! get region values
       call mpas_pool_get_subpool(domain % blocklist % structs, 'regions', regionPool)
       call mpas_pool_get_array(regionPool, 'regionsInGroup', regionsInGroup)
@@ -402,7 +379,7 @@ contains
 
       regionGroupNumber=0
       do i = 1, nRegionGroups
-         if (regionGroupNames(i) .eq. additionalRegion) then
+         if (regionGroupNames(i) .eq. config_AM_mocStreamfunction_region_group) then
             regionGroupNumber = i
          end if
       end do
@@ -432,9 +409,6 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransectGroups', nTransectGroups)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxTransectsInGroup', maxTransectsInGroup)
 
-      !!!! Transect config for MOC
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_transect_group', &
-                                additionalTransect)
       !! get transect values
       call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
       call mpas_pool_get_array(transectPool, 'transectsInGroup', transectsInGroup)
@@ -444,7 +418,7 @@ contains
 
       transectGroupNumber=0
       do i = 1, nTransectGroups
-         if (transectGroupNames(i) .eq. additionalTransect) then
+         if (transectGroupNames(i) .eq. config_AM_mocStreamfunction_transect_group) then
             transectGroupNumber = i
          end if
       end do
@@ -486,12 +460,6 @@ contains
       mocStreamValLatAndDepthTotal = 0.0_RKIND
       sumVertBinVelocity = 0.0_RKIND
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_vertical_velocity_value', &
-                                verticalVelocityArrayName)
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_normal_velocity_value', &
-                                normalVelocityArrayName)
-
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -505,7 +473,7 @@ contains
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_array(diagnosticsPool, verticalVelocityArrayName, vertVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, config_AM_mocStreamfunction_vertical_velocity_value, vertVelocityTop)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
@@ -517,10 +485,10 @@ contains
          call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
          call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         if (trim(normalVelocityArrayName)=="normalVelocity") then
-            call mpas_pool_get_array(statePool, trim(normalVelocityArrayName), normalVelocity, timeLevel)
+         if (trim(config_AM_mocStreamfunction_normal_velocity_value)=="normalVelocity") then
+            call mpas_pool_get_array(statePool, trim(config_AM_mocStreamfunction_normal_velocity_value), normalVelocity, timeLevel)
          else
-            call mpas_pool_get_array(diagnosticsPool, trim(normalVelocityArrayName), normalVelocity, timeLevel)
+            call mpas_pool_get_array(diagnosticsPool, trim(config_AM_mocStreamfunction_normal_velocity_value), normalVelocity, timeLevel)
          end if
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
