@@ -2,16 +2,16 @@
 
 HOMME_ROOT=/home/celdred/E3SM-Base/E3SM/components/homme
 NLEVELS=1
-BASE_DIR=/home/celdred/E3SM-Test/swe_tests
+BASE_DIR=/home/celdred/E3SM/components/homme/swe_tests
 
-mkdir -p laptop-cpu     || exit -1
-cd laptop-cpu
+mkdir -p laptop-cpu-orig     || exit -1
+cd laptop-cpu-orig
 rm -rf *
  
 
 rm -rf CMakeFiles CMakeCache.txt
 cmake                                                                          \
-   -C /home/celdred/E3SM-Test/swe_tests/linuxlaptop.cmake                                \
+   -C /home/celdred/E3SM/components/homme/swe_tests/linuxlaptop.cmake                                \
   -DDEBUG_FLAGS=" "                                                            \
   -DSWEQX_NP=4                                                                 \
   -DSWEQX_PLEV=$NLEVELS                                                        \
