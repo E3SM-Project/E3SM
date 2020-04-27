@@ -1,0 +1,32 @@
+#!/bin/bash
+
+HOMME_ROOT=/home/celdred/E3SM-Base/E3SM/components/homme
+NLEVELS=1
+BASE_DIR=/home/celdred/E3SM-Test/swe_tests
+
+mkdir -p laptop-cpu     || exit -1
+cd laptop-cpu
+rm -rf *
+ 
+
+rm -rf CMakeFiles CMakeCache.txt
+cmake                                                                          \
+   -C /home/celdred/E3SM-Test/swe_tests/linuxlaptop.cmake                                \
+  -DDEBUG_FLAGS=" "                                                            \
+  -DSWEQX_NP=4                                                                 \
+  -DSWEQX_PLEV=$NLEVELS                                                        \
+  -DBUILD_HOMME_SWEQX=TRUE                                                     \
+  -DBUILD_HOMME_PREQX=FALSE                                                    \
+  -DBUILD_HOMME_THETA=FALSE                                                    \
+  -DBUILD_HOMME_PREQX_ACC=FALSE                                                \
+  -DENABLE_OPENMP=TRUE                                                         \
+  -DSWEQX_USE_PIO=FALSE                                                        \
+  $HOMME_ROOT                                               
+
+
+make clean                                                  || exit -1
+
+make -j4 sweqx                                              || exit -1
+mkdir -p $BASE_DIR/build/sweqx-orig
+cp ./src/sweqx/sweqx $BASE_DIR/build/sweqx-orig/sweqx.cpu      || exit -1
+
