@@ -1040,7 +1040,7 @@ end subroutine coriolis_init_atomic
     else
        ! find the smallest ne2 which is a power of 2 and ne2>ne
        ne2=2**ceiling( log(real(ne))/log(2d0) )
-       if (ne2<ne) call abortmp('Fatel SFC error')
+       if (ne2<ne) call abortmp('Fatal SFC error')
 
        allocate(Mesh2(ne2,ne2))
        allocate(Mesh2_map(ne2,ne2,2))
