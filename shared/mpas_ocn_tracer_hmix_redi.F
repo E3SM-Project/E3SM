@@ -442,7 +442,7 @@ contains
 
       real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
       real(kind=RKIND), dimension(:), pointer :: areaCell
-      real(kind=RKIND), dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: k, iEdge
       integer, pointer :: nVertLevels, nEdges
