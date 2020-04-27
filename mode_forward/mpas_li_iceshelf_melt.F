@@ -1193,7 +1193,6 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), pointer :: aSubglacial ! param A
-      real (kind=RKIND), dimension(:), pointer :: subglacialWaterFlux
       real (kind=RKIND), pointer :: alphaSubglacial ! param alpha
       real (kind=RKIND), pointer :: B ! param B
       real (kind=RKIND), pointer :: betaTF ! param beta
@@ -1241,15 +1240,6 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
          call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
          
-       ! Convert ismip6 subglacier water runoff from kg m^-2 s^-1 to m day^-1
-         !do iCell = 1,nCellsSolve
-         !    subglacialWaterFlux(iCell) = ismip6Runoff(iCell) / rhow * secPerDay
-         !enddo
-        
-         !where ( subglacialWaterFlux < 0.0 )
-         !      subglacialWaterFlux = 0.0_RKIND
-         !end where
-        
        ! Calculate retreat rate for each cell
          do iCell = 1, nCellsSolve
             ! Define marine marginal cells as those that are (1) at the ice
@@ -1296,7 +1286,7 @@ module li_iceshelf_melt
                          + B) * TFocean(iCell)**betaTF / secPerDay
                 
                 calvingVelocity(iCell) = calvingVelocity(iCell) + iceFrontMeltRate ! m s^-1
-                faceMeltRateApplied(iCell) = iceFrontMeltRate / rhoi ! kg m^-2 s^-1
+                faceMeltRateApplied(iCell) = iceFrontMeltRate * rhoi ! kg m^-2 s^-1
             else 
                 groundedMarineMarginMask(iCell) = 0
                 faceMeltRateApplied(iCell) = 0.0_RKIND     
