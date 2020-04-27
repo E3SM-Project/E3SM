@@ -71,6 +71,8 @@
       <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
       <value dlnd_mode="CLMNLDAS">clm.nldas</value>
       <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
+      <value dlnd_mode="QIAN">lnd.qian</value>
+      <value dlnd_mode="GPCC">lnd.gpcc</value>
     </values>
   </entry>
 
@@ -82,6 +84,8 @@
     <values>
       <value>null</value>
       <value stream="clm.nldas">$DLND_CPLHIST_DIR</value>
+      <value stream="lnd.qian">$DLND_CPLHIST_DIR</value>
+      <value stream="lnd.gpcc">$DLND_CPLHIST_DIR</value>
     </values>
   </entry>
 
@@ -93,6 +97,8 @@
     <values>
       <value>null</value>
       <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
+      <value stream="lnd.qian">QIAN.daily.1948-2004.nc</value>
+      <value stream="lnd.gpcc">GPCC.daily.nc</value>
     </values>
   </entry>
 
@@ -116,6 +122,16 @@
         area     area
         landfrac mask
       </value>
+      <value stream="lnd.qian">
+        time     time
+        lon      lon
+        lat      lat
+      </value>
+      <value stream="lnd.gpcc">
+        time     time
+        lon      lon
+        lat      lat
+      </value>
     </values>
   </entry>
 
@@ -138,6 +154,8 @@
     <values>
       <value stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
       <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
+      <value stream="lnd.qian">QIAN.daily.1948-2004.nc</value>
+      <value stream="lnd.gpcc">GPCC.daily.nc</value>
     </values>
   </entry>
 
@@ -153,6 +171,14 @@
         l2x1yr_glc_Flgl_qice%glc   qice%glc
       </value>
       <value     stream="clm.nldas">
+        QDRAI     rofsub
+        QOVER     rofsur
+      </value>
+      <value     stream="lnd.qian">
+        QDRAI     rofsub
+        QOVER     rofsur
+      </value>
+      <value     stream="lnd.gpcc">
         QDRAI     rofsub
         QOVER     rofsur
       </value>
@@ -231,6 +257,8 @@
       <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
       <value dlnd_mode="CPLHIST">COPYALL</value>
       <value dlnd_mode="CLMNLDAS">COPYALL</value>
+      <value dlnd_mode="QIAN">COPYALL</value>
+      <value dlnd_mode="GPCC">COPYALL</value>
     </values>
   </entry>
 
