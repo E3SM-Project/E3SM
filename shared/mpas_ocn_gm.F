@@ -391,7 +391,7 @@ contains
          ! Normalize k33
          do k = 2, maxLevelCell(iCell)
             k33(k, iCell) = k33(k, iCell)/k33Norm(k)*kappaRediSfcTaper(k, iCell)* &
-                            kappaGMCell(k, iCell)
+                            kappaRediCell(k, iCell)
          end do
          k33(1, iCell) = 0.0_RKIND
          k33(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
