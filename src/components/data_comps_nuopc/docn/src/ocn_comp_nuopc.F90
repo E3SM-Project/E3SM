@@ -99,8 +99,6 @@ module ocn_comp_nuopc
   real(R8), public, pointer :: somtp(:)     ! SOM ocean temperature needed for restart
 
   ! export fields
-  integer , pointer :: omask(:)     => null()    ! integer ocean mask
-  integer , pointer :: ofrac(:)     => null()    ! real ocean fraction
   real(r8), pointer :: So_omask(:)  => null()    ! real ocean fraction sent to mediator
   real(r8), pointer :: So_t(:)      => null()
   real(r8), pointer :: So_s(:)      => null()
@@ -400,7 +398,7 @@ contains
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
     character(CL)           :: case_name     ! case name
-    integer                 :: model_dt      ! integer model timestep
+    integer                 :: idt          ! integer model timestep
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -429,9 +427,9 @@ contains
     ! Get model timestep
     call ESMF_ClockGet( clock, timeStep=timeStep, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeIntervalGet( timeStep, s=model_dt, rc=rc )
+    call ESMF_TimeIntervalGet( timeStep, s=idt, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    dt = model_dt * 1.0_r8
+    dt = idt * 1.0_r8
 
     ! run docn
     call docn_comp_run(next_ymd, next_tod, rc=rc)
@@ -808,7 +806,7 @@ contains
           allocate(tfreeze(lsize))
           tfreeze(:) = shr_frz_freezetemp(So_s(:)) + TkFrz
           do n = 1,lsize
-             if (omask(n) /= 0) then
+             if (So_omask(n) /= 0._r8) then
                 ! compute new temp (last term is latent by prec and roff)
                 So_t(n) = somtp(n) +  &
                      ( Foxx_swnet(n) + Foxx_lwup(n) + Faxa_lwdn(n) + Foxx_sen(n) + Foxx_lat(n) + &

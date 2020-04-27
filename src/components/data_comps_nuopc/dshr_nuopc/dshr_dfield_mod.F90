@@ -317,8 +317,10 @@ contains
              exit ! go to the next fld
           end if
           if (present(logunit) .and. present(masterproc)) then
-             write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
-                  trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
+             if (masterproc) then
+                write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
+                     trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
+             end if
           end if
        end do
     end do
