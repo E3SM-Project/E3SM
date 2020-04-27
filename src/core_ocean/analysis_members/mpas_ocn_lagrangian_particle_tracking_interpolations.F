@@ -145,7 +145,7 @@ module ocn_lagrangian_particle_tracking_interpolations
     call mpas_pool_get_field(meshPool,'boundaryCell', boundaryCell)
 
 
-    if (filternum > 0) then
+    if (filterNum > 0) then
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! filter the cell velocity field
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
