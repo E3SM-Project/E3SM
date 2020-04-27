@@ -842,7 +842,7 @@ class J_TestCreateNewcase(unittest.TestCase):
                     shutil.rmtree(tfile)
                 except BaseException:
                     print("Could not remove directory {}".format(tfile))
-        if rmtestroot:
+        if rmtestroot and do_teardown:
             shutil.rmtree(cls._testroot)
 
 
