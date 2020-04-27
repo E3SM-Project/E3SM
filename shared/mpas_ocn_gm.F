@@ -108,7 +108,8 @@ contains
                                                     inSituSalineContractionCoeff, kappaRediCell, kappaGMCell, kappaRediSfcTaper, &
                                                     zTop, RiTopOfCell
 
-      real(kind=RKIND), dimension(:), pointer   :: c_visbeck, gmBolusKappa, cGMphaseSpeed, ssh, eddyLength, eddyTime, betaEdge, fEdge
+      real(kind=RKIND), dimension(:), pointer   :: c_visbeck, gmBolusKappa, cGMphaseSpeed, &
+                ssh, eddyLength, eddyTime, betaEdge, fEdge, gmResolutionTaper, RediKappa
       real(kind=RKIND), dimension(:, :, :), pointer :: slopeTriadUp, slopeTriadDown
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
@@ -168,6 +169,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
+      call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -372,6 +375,7 @@ contains
                   k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
                end if
 
+               !Taper Redi by tapering the slopes
                k33(k + 1, iCell) = k33(k + 1, iCell) + slopeTaperDown*sfcTaperDown* &
                                    areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
                k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
@@ -533,6 +537,15 @@ contains
            end do
            !omp end do
          end if
+
+         if(config_Redi_set_RediKappa_to_GMKappa) then
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               RediKappa(iEdge) = gmBolusKappa(iEdge)
+            end do
+            !$omp end do
+         endif
+
          nEdges = nEdgesArray(3)
          !$omp do schedule(runtime) private(cell1, cell2, k,  gradDensityTopOfEdge, &
          !$omp& kappaGMEdge, BruntVaisalaFreqTopEdge, N)
@@ -604,12 +617,12 @@ contains
          !$omp end do
 
          nEdges = nEdgesArray(3)
-         ! Compute normalGMBolusVelocity from the stream function
+         ! Compute normalGMBolusVelocity from the stream function and apply resolution taper of GM here
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
             do k = 1, maxLevelEdgeTop(iEdge)
-               normalGMBolusVelocity(k, iEdge) = (gmStreamFuncTopOfEdge(k, iEdge) - gmStreamFuncTopOfEdge(k + 1, iEdge)) &
-                                                 /layerThicknessEdge(k, iEdge)
+               normalGMBolusVelocity(k, iEdge) = gmResolutionTaper(iEdge) * (gmStreamFuncTopOfEdge(k, iEdge) &
+                      - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThicknessEdge(k, iEdge)
             end do
          end do
          !$omp end do
@@ -627,7 +640,7 @@ contains
 
                do k = 1, maxLevelEdgeTop(iEdge)
                   rtmp = 0.5_RKIND*(gmStreamFuncTopOfEdge(k, iEdge) + gmStreamFuncTopOfEdge(k + 1, iEdge))*areaEdge
-                  gmStreamFuncTopOfCell(k, iCell) = gmStreamFuncTopOfCell(k, iCell) + rtmp
+                  gmStreamFuncTopOfCell(k, iCell) = gmStreamFuncTopOfCell(k, iCell) + gmResolutionTaper(iEdge) * rtmp
                end do
             end do
          end do
@@ -742,7 +755,8 @@ contains
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real, pointer :: sphere_radius
-      real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, gmBolusKappa
+      real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
+            gmResolutionTaper, gmBolusKappa
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOncell
 
       err = 0
@@ -759,7 +773,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-
+         call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
          if (config_Redi_use_slope_taper) then
             slopeTaperFactor = 1.0_RKIND
          else
@@ -823,6 +837,11 @@ contains
 
          ! Add resolution taper
          if (config_eddying_resolution_taper == 'none') then
+            !$omp do schedule(runtime)
+            do iEdge = 1,nEdges
+               gmResolutionTaper(iEdge) = 1.0_RKIND
+            end do
+            !$omp end do
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
             sqrtPiInv = 1.0_RKIND/sqrt(pii)
@@ -830,11 +849,11 @@ contains
             do iEdge = 1, nEdges
                avgCellDiameter = sqrtPiInv*(sqrt(areaCell(cellsOnEdge(1, iEdge))) + sqrt(areaCell(cellsOnEdge(2, iEdge))))
                if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
-                  gmBolusKappa(iEdge) = 0.0_RKIND
+                  gmResolutionTaper(iEdge) = 0.0_RKIND
                else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
-                  ! do nothing, i.e. gmBolusKappa(iEdge) remains unchanged.
+                  gmResolutionTaper(iEdge) = 1.0_RKIND 
                else
-                  gmBolusKappa(iEdge) = gmBolusKappa(iEdge) &
+                  gmResolutionTaper(iEdge) = gmResolutionTaper(iEdge) &
                                         /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min) &
                                         *(avgCellDiameter - config_eddying_resolution_ramp_min)
                end if

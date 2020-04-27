@@ -278,11 +278,15 @@
 		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
-		/>
-		<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
-					description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
-					possible_values="positive real numbers, but small"
-		/>
+          />
+    <nml_option name="config_Redi_set_RediKappa_to_GMKappa" type="logical" default_value=".true." units="unitless"
+          description="If true RediKappa is forced to be equal to gmBolusKappa"
+          possible_values=".true. or .false."
+          />
+    <nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
+        description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
+        possible_values="positive real numbers, but small"
+    />
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
@@ -2637,8 +2641,13 @@
 			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
 			 packages="gm"
 		/>
-		<var name="RediKappa" type="real" dimensions="nCells" units="m^2 s^{-1}"
-			 description="Redi isopycnal mixing Kappa value.  This is constant in time, and set at init."
+		<var name="RediKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
+			 description="Redi Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 packages="gm"
+		/>
+		<var name="gmResolutionTaper" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
+			 description="resolution tapering for GM and Redi"
+			 packages="gm"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
