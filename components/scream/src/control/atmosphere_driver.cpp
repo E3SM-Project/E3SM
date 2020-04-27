@@ -119,6 +119,7 @@ void AtmosphereDriver::init_atm_inputs () {
   // Create an atm process of type 'Init', which will run just once.
   // Note: since it runs just once, we don't really need an AP. However,
   const auto& atm_inputs = m_atm_process_group->get_required_fields();
+  std::set<std::weak_ptr<FieldInitializer>> initializers;
   for (const auto& id : atm_inputs) {
     auto& f = m_device_field_repo.get_field(id);
     auto init_type = f.get_header_ptr()->get_tracking().get_init_type();
@@ -130,8 +131,10 @@ void AtmosphereDriver::init_atm_inputs () {
       scream_require_msg (!static_cast<bool>(initializer),
                           "Error! Field '" + f.get_header().get_identifier().name() + "' has initialization type '" + e2str(init_type) + "',\n" +
                           "       but its initializer pointer is not valid.\n");
-      initializer->initialize_field(f);
     }
+  }
+  for (auto it : initializers) {
+    it.lock()->initialize_fields();
   }
 }
 
