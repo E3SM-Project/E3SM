@@ -74,8 +74,6 @@ def _should_pylint_skip(filepath):
 def get_all_checkable_files():
 ###############################################################################
     cimeroot = get_cime_root()
-    print("wpc code_checker cimeroot is:", cimeroot)
-    print("wpc code_checker cime_default_driver is:", get_cime_default_driver())
     all_git_files = run_cmd_no_fail("git ls-files", from_dir=cimeroot, verbose=False).splitlines()
     if get_cime_default_driver() == "nuopc":
         nuopc_git_files = []
@@ -86,7 +84,7 @@ def get_all_checkable_files():
         all_git_files.extend([os.path.join("src","drivers","nuopc",_file) for _file in nuopc_git_files])
     files_to_test = [item for item in all_git_files
                      if ((item.endswith(".py") or is_python_executable(os.path.join(cimeroot, item))) and not _should_pylint_skip(item))]
-#    print(files_to_test)
+
     return files_to_test
 
 ###############################################################################
@@ -102,25 +100,19 @@ def check_code(files, num_procs=10, interactive=False):
     files_to_check = []
     if files:
         repo_files = get_all_checkable_files()
-        print("wpc code_checker check_code if files1a:")
-#        print(files)
         for filearg in files:
-            print("wpc code_checker check_code if files2a:", filearg)
             if os.path.exists(filearg):
                 files_to_check.append(os.path.abspath(filearg))
-                print("wpc code_checker check_code if files2b:",os.path.abspath(filearg))
             else:
                 found = False
-                print("wpc code_checker check_code if files3a:")
                 for repo_file in repo_files:
                     if repo_file.endswith(filearg):
                         found = True
                         files_to_check.append(repo_file) # could have multiple matches
-                        print("wpc code_checker check_code if files3b:")
+
                 if not found:
                     logger.warning("Could not find file matching argument '%s'" % filearg)
     else:
-        print("wpc code_checker check_code else")
         # Check every python file
         files_to_check = get_all_checkable_files()
 
