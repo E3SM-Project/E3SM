@@ -124,8 +124,7 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical :: config_AM_lagrPartTrack_reset_particles
-      character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
+      logical :: resetParticles
 
       err = 0
 
@@ -286,7 +285,7 @@ contains
       integer, dimension(:), pointer :: nCellVerticesArray
       integer, dimension(:,:), pointer :: cellsOnCell
       integer, dimension(:,:), pointer :: cellsOnVertex
-      logical :: config_AM_lagrPartTrack_reset_particles
+      logical :: resetParticles
 
       real (kind=RKIND), dimension(4) :: kWeightK, kWeightKVert
       real (kind=RKIND), dimension(3,4) :: kWeightX
@@ -300,7 +299,7 @@ contains
       real (kind=RKIND) :: zSubStep
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
-      integer, pointer :: verticalTreatment, indexLevel, filterNum, timeIntegration
+      integer, pointer :: verticalTreatment, indexLevel
       type (MPAS_timeInterval_type) :: timeStepESMF
       logical :: resetParticle, resetParticleAny
       integer :: err_tmp
@@ -366,9 +365,9 @@ contains
       call mpas_timer_start("computeLPT")
 
       if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
-        config_AM_lagrPartTrack_reset_particles = .False.
+        resetParticles = .False.
       else
-        config_AM_lagrPartTrack_reset_particles = .True.
+        resetParticles = .True.
       end if
 
       ! get the most recent velocities on the potential density surfaces
@@ -487,7 +486,7 @@ contains
         call mpas_timer_start("reconst_filter_LPT")
 #endif
         ! need to handle periodicity within functions below for vertex reconstruction
-        call ocn_vertex_reconstruction(filterNum, meshPool, lagrPartTrackScratchPool, lagrPartTrackCellsPool, &
+        call ocn_vertex_reconstruction(config_AM_lagrPartTrack_filter_number, meshPool, lagrPartTrackScratchPool, lagrPartTrackCellsPool, &
           layerThickness % array, normalVelocity % array, &
           uVertexVelocity, vVertexVelocity, wVertexVelocity)
 #ifdef MPAS_DEBUG
@@ -579,7 +578,7 @@ contains
           ! kWeightX is subStepOrder
           ! kWeightK is subStepOrder
           ! kWeightT is subStepOrder
-          select case (timeIntegration) !{{{
+          select case (config_AM_lagrPartTrack_timeIntegration) !{{{
             case(1) ! EE integration
               kWeightK(1) = 0.0_RKIND
 
@@ -1078,7 +1077,7 @@ contains
 #endif
 
           resetParticle = .False.
-          if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
+          if (resetParticles) then   ! need to link to currentBlockReset for communication
             ! determine if particles should be reset based on different criteria.  If so, reset them.
             call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, resetParticle, err)
           end if
@@ -1118,7 +1117,7 @@ contains
 #ifdef MPAS_DEBUG
       call mpas_timer_start("trans_from_block_to_blockLPT")
 #endif
-      if (config_AM_lagrPartTrack_reset_particles .and. resetParticleAny) then
+      if (resetParticles .and. resetParticleAny) then
          ! need to link to currentBlockReset for communication
          call mpas_particle_list_build_halos(domain, err, 'currentBlockReset', g_compProcNeighs)
          ! take the union of this halo with the particle computation halos to build complete computational halo
@@ -1977,7 +1976,7 @@ contains
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
       real (kind=RKIND), pointer :: sphereRadius
-      integer, pointer :: verticalTreatment, indexLevel, filterNum, iCell, currentCellGlobalID
+      integer, pointer :: verticalTreatment, indexLevel, iCell, currentCellGlobalID
 
       type (mpas_pool_type), pointer :: tracersPool
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers

@@ -583,9 +583,12 @@ contains
          call mpas_pool_get_array(am_epftPool, 'ErtelPVGradMerid', ErtelPVGradMerid)
 
          ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-                                            nCells, 1, 'absolute', potentialDensity, &
-                                            err) !, timeLevelIn=1)
+
+!!!!!!! MRP TEMPORARY, TURN BACK ON AFTER SCRATCH FIELDS ARE REMOVED IN SHARED
+!DIRECTORY !!!!!!!!!!
+!         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+!                                            nCells, 1, 'absolute', potentialDensity, &
+!                                            err) !, timeLevelIn=1)
 
          !--------------------------------------------------
          ! Get variables associated to diabatic processes
