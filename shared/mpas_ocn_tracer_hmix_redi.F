@@ -139,9 +139,9 @@ contains
 
       real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
-      real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal, rediKappaCell
+      real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real(kind=RKIND), dimension(:), allocatable :: minimumVal
+      real(kind=RKIND), dimension(:), allocatable :: minimumVal, rediKappaCell
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
       err = 0
 
@@ -170,6 +170,7 @@ contains
       nEdges = nEdgesArray(size(nEdgesArray))
 
       allocate (minimumVal(nTracers))
+      allocate (rediKappaCell(nCells))
       allocate (fluxRediZTop(nTracers, nVertLevels + 1))
       !$omp master
       allocate (redi_term1(nTracers, nVertLevels, nCells))
@@ -192,7 +193,7 @@ contains
          redi_term2(:, :, iCell) = 0.0_RKIND
          redi_term3(:, :, iCell) = 0.0_RKIND
          fluxRediZTop(:, :) = 0.0_RKIND
-         rediKappaCell = 0.0_RKIND
+         rediKappaCell(iCell) = 0.0_RKIND
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
@@ -206,7 +207,7 @@ contains
                iCellSelf = 2
             endif
 
-            rediKappaCell = rediKappaCell + RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
+            rediKappaCell(iCell) = rediKappaCell(iCell) + RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
@@ -325,7 +326,7 @@ contains
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
-               flux_term3 = rediKappaCell*2.0_RKIND* &
+               flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
                             (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)*fluxRediZTop(iTr, k) - &
                              kappaRediSfcTaper(k + 1, iCell)*kappaRediCell(k + 1, iCell)*fluxRediZTop(iTr, k + 1))
 
@@ -382,7 +383,7 @@ contains
          do k = 1, maxLevelCell(iCell)
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
-               tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell*2.0_RKIND* &
+               tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
                                      (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)* &
                                       redi_term3_topOfCell(iTr, k, iCell) - kappaRediSfcTaper(k + 1, iCell) &
                                       *kappaRediCell(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
@@ -403,6 +404,7 @@ contains
 
       deallocate (fluxRediZTop)
       deallocate (minimumVal)
+      deallocate (rediKappaCell)
       !$omp master
       deallocate (redi_term1)
       deallocate (redi_term2)
