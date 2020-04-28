@@ -169,7 +169,7 @@ contains
 
        allocate(l2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
-          call mct_avect_init(l2r_rx(eri), rList=seq_flds_x2r_fields, lsize=lsize_r)
+          call mct_avect_init(l2r_rx(eri), rList=seq_flds_l2x_fluxes_to_rof, lsize=lsize_r)
           call mct_avect_zero(l2r_rx(eri))
        end do
 
@@ -186,12 +186,11 @@ contains
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
 
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
-          ! that are mapped "normally". Note that the following assumes that all
-          ! x2r_fluxes are lnd2rof (as opposed to coming from some other component).
+          ! that are mapped "normally".
           !
           ! (This listDiff works even if have_irrig_field is false.)
           call shr_string_listDiff( &
-               list1 = seq_flds_x2r_fluxes, &
+               list1 = seq_flds_l2x_fluxes_to_rof, &
                list2 = irrig_flux_field, &
                listout = lnd2rof_normal_fluxes)
        endif
@@ -218,7 +217,7 @@ contains
 
        allocate(a2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
-          call mct_avect_init(a2r_rx(eri), rList=seq_flds_x2r_fields, lsize=lsize_r)
+          call mct_avect_init(a2r_rx(eri), rList=seq_flds_a2x_fields_to_rof, lsize=lsize_r)
           call mct_avect_zero(a2r_rx(eri))
        end do
 
@@ -718,8 +717,8 @@ contains
     do eri = 1,num_inst_rof
        eai = mod((eri-1),num_inst_atm) + 1
        r2x_rx => component_get_c2x_cx(rof(eri))
-       call seq_map_map(mapper_Sa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_states, norm=.true.)
-       call seq_map_map(mapper_Fa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_fluxes, norm=.true.)
+       call seq_map_map(mapper_Sa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_states_to_rof, norm=.true.)
+       call seq_map_map(mapper_Fa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_fluxes_to_rof, norm=.true.)
     end do
     call t_drvstopf  (trim(timer))
 
