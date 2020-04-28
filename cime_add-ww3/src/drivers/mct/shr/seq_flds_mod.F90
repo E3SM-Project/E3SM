@@ -2169,6 +2169,30 @@ contains
     attname  = 'Sw_hstokes'
     call metadata_set(attname, longname, stdname, units)
 
+    call seq_flds_add(w2x_states,'Sw_Sxx')
+    call seq_flds_add(x2o_states,'Sw_Sxx')
+    longname = 'Depth integrated wave radiation stress xx component'
+    stdname  = 'wave_model_wave_radiation_stress_xx'
+    units    = 'kg s-2'
+    attname  = 'Sw_Sxx'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_Sxy')
+    call seq_flds_add(x2o_states,'Sw_Sxy')
+    longname = 'Depth integrated wave radiation stress xy component'
+    stdname  = 'wave_model_wave_radiation_stress_xy'
+    units    = 'kg s-2'
+    attname  = 'Sw_Sxy'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_Syy')
+    call seq_flds_add(x2o_states,'Sw_Syy')
+    longname = 'Depth integrated wave radiation stress yy component'
+    stdname  = 'wave_model_wave_radiation_stress_yy'
+    units    = 'kg s-2'
+    attname  = 'Sw_Syy'
+    call metadata_set(attname, longname, stdname, units)
+
     !-----------------------------
     ! New xao_states diagnostic
     ! fields for history output only

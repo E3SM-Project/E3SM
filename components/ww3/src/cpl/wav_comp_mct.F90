@@ -178,6 +178,7 @@
       use ww3_cpl_indices  , only : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, index_x2w_So_bldepth
       use ww3_cpl_indices  , only : index_w2x_Sw_lamult, index_w2x_Sw_ustokes
       use ww3_cpl_indices  , only : index_w2x_Sw_vstokes, index_w2x_Sw_hstokes
+      use ww3_cpl_indices  , only : index_w2x_Sw_Sxx, index_w2x_Sw_Sxy, index_w2x_Sw_Syy
 
       use shr_sys_mod      , only : shr_sys_flush, shr_sys_abort
       use shr_kind_mod     , only : in=>shr_kind_in, r8=>shr_kind_r8, &
@@ -963,10 +964,16 @@ CONTAINS
              ! SB, w2x_w%rattr(index_w2x_Sw_lamult,jsea) = LAMULT(ISEA)
              w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = USSX(ISEA)
              w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = USSY(ISEA)
+             w2x_w%rattr(index_w2x_Sw_Sxx,jsea) = SXX(ISEA)
+             w2x_w%rattr(index_w2x_Sw_Sxy,jsea) = SXY(ISEA)
+             w2x_w%rattr(index_w2x_Sw_Syy,jsea) = SYY(ISEA)
           else
              !SB, w2x_w%rattr(index_w2x_Sw_lamult,jsea) = 1.
-             w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.
-             w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.
+             w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_Sxx,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_Sxy,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_Syy,jsea) = 0.0
           endif
           ! w2x_w%rattr(index_w2x_Sw_hstokes,jsea) = ??
       enddo
