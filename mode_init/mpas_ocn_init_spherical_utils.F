@@ -26,6 +26,8 @@ module ocn_init_spherical_utils
    use mpas_constants
    use mpas_stream_manager
 
+   use ocn_config
+
    implicit none
    private
 
@@ -84,7 +86,6 @@ contains
       character (len=StrKIND) :: streamID
       integer :: directionProperty
 
-      logical, pointer :: config_expand_sphere, config_realistic_coriolis_parameter
       logical, pointer :: on_a_sphere
       real (kind=RKIND), pointer :: sphere_radius
 
@@ -107,11 +108,7 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_expand_sphere', config_expand_sphere)
-
       if ( .not. config_expand_sphere ) return
-
-      call mpas_pool_get_config(domain % configs, 'config_realistic_coriolis_parameter', config_realistic_coriolis_parameter)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
