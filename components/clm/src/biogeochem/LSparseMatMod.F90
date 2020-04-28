@@ -31,9 +31,10 @@ implicit none
   contains
     procedure, public :: init
   end type sparseMat_type
-  real(r8), parameter :: tiny_val=1.e-14_r8
+  real(r8), parameter :: tiny_val=1.e-16_r8
   public :: spm_list_init, spm_list_insert, spm_list_to_mat
   public :: flux_correction
+  logical, public :: sparse_debug = .false.
 contains
 
 !---------------------------------------------------------------
@@ -281,7 +282,6 @@ contains
   end subroutine spm_list_to_mat
 
 
-
   !-------------------------------------------------------------------------------
   subroutine calc_state_pscal(this, nprimvars, dtime, ystate, p_dt,  d_dt, pscal, lneg, errinfo)
     !
@@ -306,7 +306,7 @@ contains
     ! !LOCAL VARIABLES:
     real(r8) :: yt
     integer  :: j
-    real(r8),parameter :: p_par=0.999_r8
+    real(r8),parameter :: p_par=0.99999999_r8
     real(r8) :: tmp
 
     lneg =.false.
@@ -378,7 +378,7 @@ contains
   end subroutine  apply_reaction_rscal
 
   !-------------------------------------------------------------------------------
-  subroutine flux_correction(nvars, nreactions, spm_p, spm_d, dtime, ystates, rfluxes)
+  subroutine flux_correction(nvars, nreactions, spm_p, spm_d, dtime, ystates, rfluxes, dydt, rscale)
   !
   ! DESCRIPTION
   ! correcting the fluxes to avoid negative state variables
@@ -390,22 +390,23 @@ contains
   class(sparseMat_type), intent(in) :: spm_p
   class(sparseMat_type), intent(in) :: spm_d
   real(r8), intent(in) :: dtime
-  real(r8), intent(in) :: ystates(nvars)
+  real(r8), intent(inout) :: ystates(nvars)
   real(r8), intent(inout):: rfluxes(nreactions)
-
+  real(r8), optional, intent(out) :: dydt(nvars)
+  real(r8), optional, intent(out) :: rscale(nreactions)
   integer :: it
-  real(r8) :: rscal(nreactions)
+  real(r8) :: rscal(nvars)
   real(r8) :: pscal(nvars)
   real(r8) :: d_dt(nvars)
   real(r8) :: p_dt(nvars)
-  integer :: errinfo
+  integer :: errinfo,j
   type(lom_type) :: lom
   logical :: lneg
   integer, parameter :: itmax=40
-
+  
   !initialize the iterator and adjustment scalar vector for the destruction fluxes 
   it=0
-  rscal=0._r8
+  rscal=1._r8
   do
     !obtain the destruction fluxes
     d_dt(:)=0._r8
@@ -435,6 +436,16 @@ contains
 
       call lom%apply_reaction_rscal(spm_d%szcol, rscal, rfluxes)
     else
+      do j = 1, nvars
+         ystates(j)=ystates(j) + (p_dt(j)+d_dt(j))*dtime
+      enddo
+      
+      if(present(dydt))then
+        do j = 1, nvars
+          dydt(j)=d_dt(j)
+        enddo
+      endif
+      if(present(rscale))rscale=rscal
       !terminate the loop and write a warning if maximum iteration is reached.
       if(it==itmax)write(iulog,*)'maximum iterations reached in flux_correction in LSparseMatMod'
       exit

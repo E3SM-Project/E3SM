@@ -23,7 +23,7 @@ implicit none
   integer :: s_leafc_storage
   integer :: s_frootc
   integer :: s_frootc_xfer
-  integer :: s_frootc_sotrage
+  integer :: s_frootc_storage
   integer :: s_livestemc
   integer :: s_livestemc_xfer
   integer :: s_livestemc_storage
@@ -89,7 +89,7 @@ implicit none
   integer :: s_leafn_storage
   integer :: s_frootn
   integer :: s_frootn_xfer
-  integer :: s_frootn_sotrage
+  integer :: s_frootn_storage
   integer :: s_livestemn
   integer :: s_livestemn_xfer
   integer :: s_livestemn_storage
@@ -112,22 +112,21 @@ implicit none
   integer :: f_npool_to_leafn_storage
   integer :: f_npool_to_frootn
   integer :: f_npool_to_frootn_storage
-  integer :: f_npool_to_livestemn_storage
-  integer :: f_npool_to_liverootn_storage
   integer :: f_npool_to_livestemn
+  integer :: f_npool_to_livestemn_storage
+  integer :: f_npool_to_deadstemn
+  integer :: f_npool_to_deadstemn_storage
   integer :: f_npool_to_livecrootn
   integer :: f_npool_to_livecrootn_storage
-  integer :: f_npool_to_deadstemn
   integer :: f_npool_to_deadcrootn
-  integer :: f_npool_to_deadstemn_storage
   integer :: f_npool_to_deadcrootn_storage
   integer :: f_npool_to_grainn
   integer :: f_npool_to_grainn_storage
+  integer :: f_leafn_xfer_to_leafn
+  integer :: f_frootn_xfer_to_frootn
   integer :: f_leafn_to_retransn
   integer :: f_leafn_to_litter
-  integer :: f_leafn_xfer_to_leafn
   integer :: f_leafn_storage_to_xfer
-  integer :: f_frootn_xfer_to_frootn
   integer :: f_frootn_storage_to_xfer
   integer :: f_frootn_to_retransn
   integer :: f_frootn_to_litter
@@ -145,9 +144,12 @@ implicit none
   integer :: f_deadcrootn_storage_to_xfer
   integer :: f_deadcrootn_xfer_to_deadcrootn
   integer :: f_grainn_xfer_to_grainn
+  integer :: f_grainn_storage_to_xfer
   integer :: f_grainn_to_food
   integer :: f_retransn_to_npool
   integer :: f_supplement_to_plantn
+  integer :: f_extra_to_plantn
+  integer :: f_sminn_to_plantn
   integer :: num_carbon_fluxes
   integer :: num_nutrient_fluxes
   integer :: num_carbon_states
@@ -210,7 +212,7 @@ contains
   s_leafc_storage      = ic_next(id)
   s_frootc             = ic_next(id)
   s_frootc_xfer        = ic_next(id)
-  s_frootc_sotrage     = ic_next(id)
+  s_frootc_storage     = ic_next(id)
   s_livestemc          = ic_next(id)
   s_livestemc_xfer     = ic_next(id)
   s_livestemc_storage  = ic_next(id)
@@ -280,7 +282,7 @@ contains
   s_leafn_storage       = ic_next(id)
   s_frootn              = ic_next(id)
   s_frootn_xfer         = ic_next(id)
-  s_frootn_sotrage      = ic_next(id)
+  s_frootn_storage      = ic_next(id)
   s_livestemn           = ic_next(id)
   s_livestemn_xfer      = ic_next(id)
   s_livestemn_storage   = ic_next(id)
@@ -340,6 +342,9 @@ contains
   f_grainn_to_food                = ic_next(id)
   f_retransn_to_npool             = ic_next(id)
   f_supplement_to_plantn          = ic_next(id)
+  f_extra_to_plantn               = ic_next(id)
+  f_sminn_to_plantn               = ic_next(id)
+  f_grainn_storage_to_xfer        = ic_next(id)
   num_nutrient_fluxes = id
   end subroutine init_phenofluxl_counters
   !-------------------------------------------------------------------------------
@@ -379,7 +384,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_leafc_storage_to_xfer        , s_leafc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootc_to_litter             , s_frootc, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootc_xfer_to_frootc        , s_frootc_xfer, nelms)
-  call spm_list_insert(spm_list, -1._r8, f_frootc_storage_to_xfer       , s_frootc_sotrage, nelms)
+  call spm_list_insert(spm_list, -1._r8, f_frootc_storage_to_xfer       , s_frootc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemc_to_deadstemc       , s_livestemc,nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemc_xfer_to_livestemc  , s_livestemc_xfer, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemc_storage_to_xfer    , s_livestemc_storage, nelms)
@@ -396,7 +401,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainc_storage_to_xfer       , s_grainc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_gresp_storage_to_xfer        , s_gresp_storage,nelms)
   !turn the list into sparse matrix form
-  call spm_list_to_mat(spm_list, spm_carbon_d, nelms, f_gresp_storage_to_xfer)
+  call spm_list_to_mat(spm_list, spm_carbon_d, nelms, num_carbon_fluxes)
   
   !initialize stoichiometric relationship between carbon production flux and corresponding state varaibles
   call spm_list_init(spm_list, 1._r8, f_cpool_to_leafc             , s_leafc, nelms)
@@ -406,7 +411,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_frootc            , s_frootc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootc_xfer_to_frootc      , s_frootc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootc_storage_to_xfer     , s_frootc_xfer, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_cpool_to_frootc_storage    , s_frootc_sotrage, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_cpool_to_frootc_storage    , s_frootc_storage, nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_livestemc         , s_livestemc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemc_xfer_to_livestemc, s_livestemc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemc_storage_to_xfer  , s_livestemc_xfer, nelms)
@@ -457,7 +462,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_frootn_to_litter             , s_frootn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootn_to_retransn           , s_frootn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootn_xfer_to_frootn        , s_frootn_xfer, nelms)
-  call spm_list_insert(spm_list, -1._r8, f_frootn_storage_to_xfer       , s_frootn_sotrage, nelms)
+  call spm_list_insert(spm_list, -1._r8, f_frootn_storage_to_xfer       , s_frootn_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemn_to_litter          , s_livestemn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemn_to_retransn        , s_livestemn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemn_to_deadstemn       , s_livestemn, nelms)
@@ -473,12 +478,15 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_deadcrootn_storage_to_xfer   , s_deadcrootn_storage,nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainn_to_food               , s_grainn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
+  call spm_list_insert(spm_list, -1._r8, f_grainn_storage_to_xfer       , s_grainn_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
   !turn the list into sparse matrix form  
-  call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_plantn)
+  call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, num_nutrient_fluxes)
   !initialize stoichiometry relationship between nutrient production and corresponding state variables
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
   call spm_list_insert(spm_list, 1._r8, f_supplement_to_plantn           , s_npool, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_sminn_to_plantn                , s_npool, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_extra_to_plantn                , s_npool, nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_leafn                 , s_leafn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafn_xfer_to_leafn            , s_leafn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafn_storage_to_xfer          , s_leafn_xfer, nelms)
@@ -486,7 +494,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_npool_to_frootn                , s_frootn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootn_xfer_to_frootn          , s_frootn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootn_storage_to_xfer         , s_frootn_xfer, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_npool_to_frootn_storage        , s_frootn_sotrage, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_npool_to_frootn_storage        , s_frootn_storage, nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_livestemn             , s_livestemn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_xfer_to_livestemn    , s_livestemn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_storage_to_xfer      , s_livestemn_xfer,nelms)
@@ -507,13 +515,14 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_npool_to_deadcrootn_storage    , s_deadcrootn_storage, nelms)
   call spm_list_insert(spm_list, 1._r8, f_grainn_xfer_to_grainn          , s_grainn,nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_grainn                , s_grainn, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_grainn_storage_to_xfer         , s_grainn_xfer, nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_grainn_storage        , s_grainn_storage, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafn_to_retransn              , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootn_to_retransn             , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_to_retransn          , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_retransn         , s_retransn, nelms)
   !turn the list into sparse matrix form  
-  call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, f_supplement_to_plantn)
+  call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, num_nutrient_fluxes)
   end subroutine InitPhenoFluxLimiter
 !---------------------------------------------------------------------------
   subroutine phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
@@ -629,7 +638,7 @@ contains
     ystates(s_leafc_storage)      = veg_cs%leafc_storage(p)
     ystates(s_frootc)             = veg_cs%frootc(p)
     ystates(s_frootc_xfer)        = veg_cs%frootc_xfer(p)
-    ystates(s_frootc_sotrage)     = veg_cs%frootc_storage(p)
+    ystates(s_frootc_storage)     = veg_cs%frootc_storage(p)
     if (woody(ivt(p)) == 1._r8) then
       ystates(s_livestemc)          = veg_cs%livestemc(p)
       ystates(s_livestemc_xfer)     = veg_cs%livestemc_xfer(p)
@@ -863,7 +872,7 @@ contains
     ystates(s_leafn_storage)       = veg_nf%npool_to_leafn_storage(p)
     ystates(s_frootn)              = veg_ns%frootn(p)
     ystates(s_frootn_xfer)         = veg_ns%frootn_xfer(p)
-    ystates(s_frootn_sotrage)      = veg_ns%frootn_storage(p)
+    ystates(s_frootn_storage)      = veg_ns%frootn_storage(p)
     if (woody(ivt(p)) == 1.0_r8) then
       ystates(s_livestemn)           = veg_ns%livestemn(p)
       ystates(s_livestemn_xfer)      = veg_ns%livestemn_xfer(p)
@@ -894,6 +903,8 @@ contains
     rfluxes(f_npool_to_leafn_storage)        = veg_nf%npool_to_leafn_storage(p)
     rfluxes(f_npool_to_frootn)               = veg_nf%npool_to_frootn(p)
     rfluxes(f_npool_to_frootn_storage)       = veg_nf%npool_to_frootn_storage(p)
+    rfluxes(f_sminn_to_plantn)               = veg_nf%sminn_to_npool(p)
+    rfluxes(f_extra_to_plantn)               = veg_nf%nfix_to_plantn(p)
     if (woody(ivt(p)) == 1.0_r8) then
       rfluxes(f_npool_to_livestemn)            = veg_nf%npool_to_livestemn(p)
       rfluxes(f_npool_to_livestemn_storage)    = veg_nf%npool_to_livestemn_storage(p)
@@ -925,10 +936,11 @@ contains
       rfluxes(f_frootn_to_retransn)            = veg_nf%frootn_to_retransn(p)
       rfluxes(f_livestemn_to_litter)           = veg_nf%livestemn_to_litter(p)
       rfluxes(f_livestemn_storage_to_xfer)     = veg_nf%livestemn_storage_to_xfer(p)
-      rfluxes(f_livestemn_xfer_to_livestemn)   =  veg_nf%livestemn_xfer_to_livestemn(p)
+      rfluxes(f_livestemn_xfer_to_livestemn)   = veg_nf%livestemn_xfer_to_livestemn(p)
       rfluxes(f_livestemn_to_retransn)         = veg_nf%livestemn_to_retransn(p)
       rfluxes(f_grainn_xfer_to_grainn)         = veg_nf%grainn_xfer_to_grainn(p)
       rfluxes(f_grainn_to_food)                = veg_nf%grainn_to_food(p)
+      rfluxes(f_grainn_storage_to_xfer)        = veg_nf%grainn_storage_to_xfer(p)
     endif
 
     rfluxes(f_leafn_to_litter)               = veg_nf%leafn_to_litter(p)
@@ -938,7 +950,6 @@ contains
     rfluxes(f_frootn_storage_to_xfer)        = veg_nf%frootn_storage_to_xfer(p)
     rfluxes(f_leafn_to_retransn)             = veg_nf%leafn_to_retransn(p)
     rfluxes(f_frootn_to_litter)              = veg_nf%frootn_to_litter(p)
-
     rfluxes(f_retransn_to_npool)             = veg_nf%retransn_to_npool(p)
     rfluxes(f_supplement_to_plantn)          = veg_nf%supplement_to_plantn(p)
 
@@ -981,22 +992,21 @@ contains
       call fpmax(rfluxes(f_frootn_to_retransn)            , veg_nf%frootn_to_retransn(p))
       call fpmax(rfluxes(f_livestemn_to_litter)           , veg_nf%livestemn_to_litter(p))
       call fpmax(rfluxes(f_livestemn_storage_to_xfer)     , veg_nf%livestemn_storage_to_xfer(p))
-      call fpmax(rfluxes(f_livestemn_xfer_to_livestemn)   ,  veg_nf%livestemn_xfer_to_livestemn(p))
+      call fpmax(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_nf%livestemn_xfer_to_livestemn(p))
       call fpmax(rfluxes(f_livestemn_to_retransn)         , veg_nf%livestemn_to_retransn(p))
       call fpmax(rfluxes(f_grainn_xfer_to_grainn)         , veg_nf%grainn_xfer_to_grainn(p))
       call fpmax(rfluxes(f_grainn_to_food)                , veg_nf%grainn_to_food(p))
+      call fpmax(rfluxes(f_grainn_storage_to_xfer)        , veg_nf%grainn_storage_to_xfer(p))
     endif
 
-    rfluxes(f_leafn_to_litter)               = veg_nf%leafn_to_litter(p)
-    rfluxes(f_leafn_xfer_to_leafn)           = veg_nf%leafn_xfer_to_leafn(p)
-    rfluxes(f_leafn_storage_to_xfer)         = veg_nf%leafn_storage_to_xfer(p)
-    rfluxes(f_frootn_xfer_to_frootn)         = veg_nf%frootn_xfer_to_frootn(p)
-    rfluxes(f_frootn_storage_to_xfer)        = veg_nf%frootn_storage_to_xfer(p)
-    rfluxes(f_leafn_to_retransn)             = veg_nf%leafn_to_retransn(p)
-    rfluxes(f_frootn_to_litter)              = veg_nf%frootn_to_litter(p)
-
-    rfluxes(f_retransn_to_npool)             = veg_nf%retransn_to_npool(p)
-    rfluxes(f_supplement_to_plantn)          = veg_nf%supplement_to_plantn(p)
+    call fpmax(rfluxes(f_leafn_to_litter)               , veg_nf%leafn_to_litter(p))
+    call fpmax(rfluxes(f_leafn_xfer_to_leafn)           , veg_nf%leafn_xfer_to_leafn(p))
+    call fpmax(rfluxes(f_leafn_storage_to_xfer)         , veg_nf%leafn_storage_to_xfer(p))
+    call fpmax(rfluxes(f_frootn_xfer_to_frootn)         , veg_nf%frootn_xfer_to_frootn(p))
+    call fpmax(rfluxes(f_frootn_storage_to_xfer)        , veg_nf%frootn_storage_to_xfer(p))
+    call fpmax(rfluxes(f_leafn_to_retransn)             , veg_nf%leafn_to_retransn(p))
+    call fpmax(rfluxes(f_frootn_to_litter)              , veg_nf%frootn_to_litter(p))
+    call fpmax(rfluxes(f_retransn_to_npool)             , veg_nf%retransn_to_npool(p))
 
   enddo
   end associate
@@ -1025,8 +1035,9 @@ contains
 
   integer :: fp, p
   real(r8) :: ystates(num_nutrient_states)
+  real(r8) :: dydt(num_nutrient_states)
   real(r8) :: rfluxes(num_nutrient_fluxes)
-
+  real(r8) :: rscal(num_nutrient_fluxes)
   real(r8) :: dt
 
   associate(                                                     &
@@ -1048,7 +1059,7 @@ contains
     ystates(s_leafn_storage)       = veg_ps%leafp_storage(p)
     ystates(s_frootn)              = veg_ps%frootp(p)
     ystates(s_frootn_xfer)         = veg_ps%frootp_xfer(p)
-    ystates(s_frootn_sotrage)      = veg_pf%ppool_to_frootp_storage(p)
+    ystates(s_frootn_storage)      = veg_pf%ppool_to_frootp_storage(p)
     if (woody(ivt(p)) == 1.0_r8) then
       ystates(s_livestemn)           = veg_ps%livestemp(p)
       ystates(s_livestemn_xfer)      = veg_ps%livestemp_xfer(p)
@@ -1079,6 +1090,8 @@ contains
     rfluxes(f_npool_to_leafn_storage)        = veg_pf%ppool_to_leafp_storage(p)
     rfluxes(f_npool_to_frootn)               = veg_pf%ppool_to_frootp(p)
     rfluxes(f_npool_to_frootn_storage)       = veg_pf%ppool_to_frootp_storage(p)
+    rfluxes(f_sminn_to_plantn)               = veg_pf%sminp_to_ppool(p)
+    rfluxes(f_extra_to_plantn)               = veg_pf%biochem_pmin_to_plant(p)
     if (woody(ivt(p)) == 1._r8) then
       rfluxes(f_npool_to_livestemn)            = veg_pf%ppool_to_livestemp(p)
       rfluxes(f_npool_to_livestemn_storage)    = veg_pf%ppool_to_livestemp_storage(p)
@@ -1114,6 +1127,7 @@ contains
       rfluxes(f_livestemn_to_retransn)         = veg_pf%livestemp_to_retransp(p)
       rfluxes(f_grainn_xfer_to_grainn)         = veg_pf%grainp_xfer_to_grainp(p)
       rfluxes(f_grainn_to_food)                = veg_pf%grainp_to_food(p)
+      rfluxes(f_grainn_storage_to_xfer)        = veg_pf%grainp_storage_to_xfer(p)
     endif
 
     rfluxes(f_leafn_to_litter)               = veg_pf%leafp_to_litter(p)
@@ -1126,10 +1140,9 @@ contains
     rfluxes(f_retransn_to_npool)             = veg_pf%retransp_to_ppool(p)
     rfluxes(f_supplement_to_plantn)          = veg_pf%supplement_to_plantp(p)
     !assemble stoichiometry matrix
-
     !obtain the limiting factor
     call flux_correction(spm_nutrient_d%szrow, spm_nutrient_d%szcol, spm_nutrient_p, &
-      spm_nutrient_d, dt, ystates, rfluxes)
+      spm_nutrient_d, dt, ystates, rfluxes,dydt, rscal)
     !correct the fluxes
     call fpmax(rfluxes(f_npool_to_leafn)                , veg_pf%ppool_to_leafp(p))
     call fpmax(rfluxes(f_npool_to_leafn_storage)        , veg_pf%ppool_to_leafp_storage(p))
@@ -1180,8 +1193,6 @@ contains
     call fpmax(rfluxes(f_leafn_to_retransn)             , veg_pf%leafp_to_retransp(p))
     call fpmax(rfluxes(f_frootn_to_litter)              , veg_pf%frootp_to_litter(p))
     call fpmax(rfluxes(f_retransn_to_npool)             , veg_pf%retransp_to_ppool(p))
-    call fpmax(rfluxes(f_supplement_to_plantn)          , veg_pf%supplement_to_plantp(p))
-
   enddo
   end associate
   end subroutine phosphorus_flux_limiter
