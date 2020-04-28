@@ -579,9 +579,22 @@ contains
     type(var_desc_t)     :: varid
     type(io_desc_t)      :: pio_iodesc
     integer              :: rcode
+    logical              :: lreset_mask
+    character(CL)        :: lmodel_maskfile
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    if (present(reset_mask)) then
+       lreset_mask = reset_mask
+    else
+       lreset_mask = .false.
+    end if
+    if (present(model_maskfile)) then
+       lmodel_maskfile = trim(model_maskfile)
+    else
+       lmodel_maskfile = ''
+    end if
 
     ! initialize sdat%lsize
     call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
@@ -615,9 +628,6 @@ contains
     call mpi_comm_rank(mpicom, my_task, ierr)
     call mct_gGrid_init(GGrid=sdat%grid, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsize)
     call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', sdat%gindex, lsize)
-    !call mct_gsMap_orderedPoints(sdat%gsMap, my_task, idata)
-    !call mct_gGrid_importIAttr(sdat%Grid,'GlobGridNum', idata, lsize)
-    !deallocate(idata)
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
@@ -634,20 +644,22 @@ contains
 
     ! initialize the sdat%ggrid mask attribute
     kmask = mct_aVect_indexRA(sdat%Grid%data,'mask')
-    if (present(reset_mask) .and. reset_mask) then
-       sdat%Grid%data%rAttr(kmask,:) = 1._r8
-    else if (present(model_maskfile)) then
+    if (len_trim(lmodel_maskfile) > 0) then
        ! obtain model mask from separate model_maskfile
        rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid, 'int', varid) ! assume frac name on domain file
+       rcode = pio_inq_varid(pioid, 'mask', varid) ! assume mask name on domain file
        call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%nxg, sdat%nyg/), sdat%gindex, pio_iodesc)
        allocate(elemMask(sdat%lsize))
        call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
        call pio_closefile(pioid)
        call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-       sdat%Grid%data%rAttr(kmask,:) = real(elemMask(:),r8)
+       do n = 1,sdat%lsize
+          sdat%grid%data%rAttr(kmask,n) = real(elemMask(n),r8)
+       end do
        deallocate(elemMask)
+    else if (lreset_mask) then
+       sdat%Grid%data%rAttr(kmask,:) = 1._r8
     else
        ! obtain the model mask from the input mesh create an esmf
        ! array from a distgrid and a pointer and the following call
@@ -1708,9 +1720,11 @@ contains
     if (present(name)) then
        lname = trim(name)
     endif
+
     !----------------------------------------------------------------------------
     ! document datatype settings
     !----------------------------------------------------------------------------
+
     write(logunit,F90)
     write(logunit,F00) "name        = ",trim(lname)
     write(logunit,F01) "nxg         = ",sdat%nxg
@@ -2070,7 +2084,6 @@ contains
     if (present(istr)) then
        lstr = trim(istr)
     endif
-
     bstr = ''
     if (present(boundstr)) then
        bstr = trim(boundstr)
