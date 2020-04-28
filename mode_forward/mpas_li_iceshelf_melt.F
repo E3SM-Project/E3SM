@@ -1183,10 +1183,10 @@ module li_iceshelf_melt
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth, submergedFaceArea, oceanEdgeLength, iceFrontMeltVelocity 
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, scratchPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
       real (kind=RKIND), dimension(:), pointer :: dvEdge
-      real (kind=RKIND), dimension(:), pointer :: thickness, lowerSurface
+      real (kind=RKIND), dimension(:), pointer :: thickness, lowerSurface, meltingThickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
       real (kind=RKIND), dimension(:), pointer :: areaCell
@@ -1200,7 +1200,8 @@ module li_iceshelf_melt
       real (kind=RKIND), parameter :: rhow = 1000.0 ! subglacial runoff density
       integer, dimension(:), pointer :: groundedMarineMarginMask
       real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied
-      
+      integer :: err_tmp
+
       err = 0
 
       ! Get sea level, bedTopography, ice density
@@ -1217,6 +1218,8 @@ module li_iceshelf_melt
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
          call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
@@ -1235,6 +1238,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'meltingThickness', meltingThickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface) 
          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
@@ -1282,6 +1286,17 @@ module li_iceshelf_melt
                 faceMeltRateApplied(iCell) = 0.0_RKIND     
             endif           
          enddo
+
+         ! Distribute melt among neighbors
+         call distribute_face_melt_flux(meshPool, geometryPool, scratchPool, groundedMarineMarginMask, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Apply facemelt: open the Ark
+         thickness(:) = thickness(:) - meltingThickness(:)
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
          block => block % next
       enddo    ! associated(block)
 
@@ -1297,7 +1312,8 @@ module li_iceshelf_melt
 !> \author Trevor Hillebrand, Matthew Hoffman
 !> \date   April 2020
 !> \details Applied a specific melt rate along a grounded marine margin. 
-!> This is largely a copy of distribute_calving_flux subroutine in mpas_li_calving.F. 
+!> This is based on distribute_calving_flux subroutine in mpas_li_calving.F
+!> and adapted for grounded ice.
 !> The melt rate (faceMeltRateApplied) is calculated in subroutine grounded_face_melt_ismip6.
 !> The melt volume needs to be distributed in three ways:
 !> 1. We need to first remove any "thin" ice in front of this cell
@@ -1331,7 +1347,7 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, meltingThickness, &
                                                   thickness, areaCell, cellVolume, &
-                                                  unmeltedVolume, meltingVolume                                
+                                                  unmeltedVolume, bedTopography                                
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: nEdgesOnCell, cellMask
       integer, dimension(:,:), pointer :: cellsOnCell
@@ -1350,6 +1366,7 @@ module li_iceshelf_melt
       call mpas_pool_get_array(geometryPool, 'meltingThickness', meltingThickness)
       call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
       call mpas_pool_get_array(geometryPool, 'unmeltedVolume', unmeltedVolume)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -1393,13 +1410,13 @@ module li_iceshelf_melt
             endif
 
             if (volumeLeft > 0.0_RKIND) then
-               ! Now remove ice from neighbors inward on shelf
+               ! Now remove ice from neighbors inland of margin;
                ! first count up how many there are
                inwardNeighbors = 0
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
-                  if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
-                          .and. (.not. li_mask_is_dynamic_margin(jCell))) then
+                  if  ( li_mask_is_dynamic_ice(cellMask(jCell)) .and. (.not. li_mask_is_dynamic_margin(cellMask(jCell))) &
+                        .and. bedTopography(jCell) < 0.0_RKIND ) then
                      inwardNeighbors = inwardNeighbors + 1
                   endif
                enddo
@@ -1407,8 +1424,8 @@ module li_iceshelf_melt
                ! Now distribute the flux evenly amongst the neighbors
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
-                  if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
-                          .and. (.not. li_mask_is_dynamic_margin(jCell))) then
+                  if ( li_mask_is_dynamic_ice(cellMask(jCell)) .and. (.not. li_mask_is_dynamic_margin(cellMask(jCell))) &
+                        .and. bedTopography(jCell) < 0.0_RKIND ) then
                      ! this is thick neighbor that is not itself a margin -
                      ! remove as much ice from here as we can
                      removeVolumeHere = min(volumeLeft / real(inwardNeighbors, kind=RKIND), cellVolume(jCell))
@@ -1433,7 +1450,7 @@ module li_iceshelf_melt
             endif
          endif ! if cell is melting margin
       enddo ! cell loop
-      if (maxval(meltingVolume) > 0.0_RKIND) then
+      if (maxval(unmeltedVolume) > 0.0_RKIND) then
          unmeltedTotal = sum(unmeltedVolume)
          unmeltedCount = count(unmeltedVolume > 0.0_RKIND)
          call mpas_log_write("distribute_face_melt_flux failed to distribute all required melt - " // &
@@ -1447,6 +1464,8 @@ module li_iceshelf_melt
       call mpas_deallocate_scratch_field(cellVolumeField, .true.)
 
    end subroutine distribute_face_melt_flux
+!-----------------------------------------------------------------------
+
   !***********************************************************************
   end module li_iceshelf_melt
 
