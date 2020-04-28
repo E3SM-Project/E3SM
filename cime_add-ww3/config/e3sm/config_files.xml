@@ -392,7 +392,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="ww"  >$SRCROOT/components/ww3/cime_config/config_component.xml</value>
+      <value component="ww3" >$SRCROOT/components/ww3/cime_config/config_component.xml</value>
       <value component="dwav">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dwav/cime_config/config_component.xml</value>
       <value component="swav">$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/swav/cime_config/config_component.xml</value>
       <value component="xwav">$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xwav/cime_config/config_component.xml</value>

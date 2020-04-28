@@ -3,13 +3,13 @@
 <entry_id version="3.0">
 
   <description>
-    <desc wav="WW3" >Wave Watch</desc>
+    <desc wav="WW3" >Wave Watch III</desc>
   </description>
 
   <entry id="COMP_WAV">
     <type>char</type>
-    <valid_values>ww</valid_values>
-    <default_value>ww</default_value>
+    <valid_values>ww3</valid_values>
+    <default_value>ww3</default_value>
     <group>case_comp</group>
     <file>env_case.xml</file>
     <desc>Name of wave component</desc>
@@ -17,7 +17,7 @@
 
   <help>
     =========================================
-    WW naming conventions
+    WW3 naming conventions
     =========================================
   </help>
 
