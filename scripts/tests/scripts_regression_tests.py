@@ -2469,6 +2469,19 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         self._wait_for_tests(self._baseline_name, always_wait=True)
 
+    ###########################################################################
+    def test_case_clean(self):
+    ###########################################################################
+        testname = "ERS_Ln7.f19_g16_rx1.A"
+        self._create_test([testname, "--no-build"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "{}.{}".format(CIME.utils.get_full_test_name(testname, machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        run_cmd_assert_result(self, "./case.setup --clean", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.setup --clean", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.setup", from_dir=casedir)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
