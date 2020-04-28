@@ -147,4 +147,11 @@
     <lname>20TR_DATM%IAF_SLND_MPASSI%BGC_MPASO%TOIECO_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- Waves compsets -->
+
+  <compset>
+    <alias>WMPAS-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_SICE_MPASO%COREFORCED_DROF%IAF_SGLC_WW3</lname>
+  </compset>
+
 </compsets>
