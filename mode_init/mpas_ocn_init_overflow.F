@@ -27,6 +27,7 @@ module ocn_init_overflow
    use mpas_dmpar
 
    use ocn_constants
+   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -101,42 +102,11 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
-      ! Define configs
-      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_overflow_layer_type
-      logical, pointer :: config_overflow_use_distances
-      real (kind=RKIND), pointer :: config_overflow_plug_width_dist, config_overflow_slope_center_dist, &
-                                    config_overflow_slope_width_dist, config_overflow_plug_width_frac, &
-                                    config_overflow_slope_center_frac, config_overflow_slope_width_frac, &
-                                    config_overflow_bottom_depth, config_overflow_ridge_depth, &
-                                    config_overflow_plug_temperature, config_overflow_domain_temperature, &
-                                    config_overflow_salinity, config_overflow_isopycnal_min_thickness
-
-
-     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
+      real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
       iErr = 0
 
-
-      call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
-
       if(config_init_configuration .ne. trim('overflow')) return
-
-      call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_use_distances', config_overflow_use_distances)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_plug_width_dist', config_overflow_plug_width_dist)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_slope_center_dist', config_overflow_slope_center_dist)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_slope_width_dist', config_overflow_slope_width_dist)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_plug_width_frac', config_overflow_plug_width_frac)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_slope_center_frac', config_overflow_slope_center_frac)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_slope_width_frac', config_overflow_slope_width_frac)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_bottom_depth', config_overflow_bottom_depth)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_ridge_depth', config_overflow_ridge_depth)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_plug_temperature', config_overflow_plug_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_domain_temperature', config_overflow_domain_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_salinity', config_overflow_salinity)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_layer_type', config_overflow_layer_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_overflow_isopycnal_min_thickness', config_overflow_isopycnal_min_thickness)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
