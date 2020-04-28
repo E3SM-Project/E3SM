@@ -584,11 +584,9 @@ contains
 
          ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
 
-!!!!!!! MRP TEMPORARY, TURN BACK ON AFTER SCRATCH FIELDS ARE REMOVED IN SHARED
-!DIRECTORY !!!!!!!!!!
-!         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-!                                            nCells, 1, 'absolute', potentialDensity, &
-!                                            err) !, timeLevelIn=1)
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+                                            scratchPool, nCells, 1, 'absolute', potentialDensity, &
+                                            err) !, timeLevelIn=1)
 
          !--------------------------------------------------
          ! Get variables associated to diabatic processes
