@@ -910,7 +910,7 @@ CONTAINS
          !         gindex = ix + (iy-1)*nx
 
          if (inflags1(1)) then
-            WLEV(IX,IY) = 0.0
+            WLEV(IX,IY) = x2w0%rattr(index_x2w_so_ssh,gindex)
          endif
 
          if (inflags1(2)) then
