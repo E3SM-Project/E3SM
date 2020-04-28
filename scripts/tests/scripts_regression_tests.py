@@ -775,19 +775,10 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls = self.__class__
         model = CIME.utils.get_model()
         for driver in ("nuopc", "moab"):
-            print("\nwpc1\n")
-            print(model)
-            print(driver)
-            print("\nwpc2\n")
-#            logger.info(model)
-#            logger.info(driver)
-#            logger.info("wpc2\n")
-
             if not os.path.exists(os.path.join(get_cime_root(),"src","drivers",driver)):
                 self.skipTest("Skipping driver test for {}, driver not found".format(driver))
             if ((model == 'cesm' and driver == 'moab') or
-                (model == 'e3sm')):
-                print("\nwpc3\n")
+                (model == 'e3sm' and driver == 'nuopc')):
                 continue
 
             testdir = os.path.join(cls._testroot, 'testcreatenewcase.{}'.format( driver))
@@ -810,9 +801,8 @@ class J_TestCreateNewcase(unittest.TestCase):
             with Case(testdir, read_only=False) as case:
                 comp_interface = case.get_value("COMP_INTERFACE")
                 self.assertTrue(driver == comp_interface, msg="%s != %s"%(driver, comp_interface))
-            print("\nwpc4\n")
+
             cls._do_teardown.append(testdir)
-            print("\nwpc5\n")
 
     def test_n_createnewcase_bad_compset(self):
         cls = self.__class__
@@ -839,7 +829,6 @@ class J_TestCreateNewcase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        print("\nwpd1\n")
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
         rmtestroot = True
         for tfile in cls._testdirs:
@@ -854,9 +843,7 @@ class J_TestCreateNewcase(unittest.TestCase):
                 except BaseException:
                     print("Could not remove directory {}".format(tfile))
         if rmtestroot:
-            print("\nwpd2\n")
-            if os.path.exists(cls._testroot):
-                shutil.rmtree(cls._testroot)
+            shutil.rmtree(cls._testroot)
 
 
 
@@ -3397,9 +3384,7 @@ def make_pylint_test(pyfile, all_files):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
         #pylint: disable=unsubscriptable-object
-        if os.path.exists(pyfile):
-            pyfileabs = (os.path.abspath(pyfile))
-        result = B_CheckCode.all_results[pyfileabs]
+        result = B_CheckCode.all_results[pyfile]
         self.assertTrue(result == "", msg=result)
 
     return test
@@ -3560,12 +3545,9 @@ OR
 
     # Find all python files in repo and create a pylint test for each
     if check_for_pylint():
-        cimeroot = get_cime_root()
-        print("wpc7 cimeroot is:", cimeroot)
         files_to_test = get_all_checkable_files()
 
         for file_to_test in files_to_test:
-            print("wpc8 file_to_test is:", file_to_test)
             pylint_test = make_pylint_test(file_to_test, files_to_test)
             testname = "test_pylint_%s" % file_to_test.replace("/", "_").replace(".", "_")
             expect(not hasattr(B_CheckCode, testname), "Repeat %s" % testname)
