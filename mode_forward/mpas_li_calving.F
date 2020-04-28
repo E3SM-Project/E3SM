@@ -1273,7 +1273,89 @@ module li_calving
 
    end subroutine eigencalving
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine von_Mises_calving
+!
+!> \brief Apply calving law based on von Mises stress to grounded marine margins
+!> \author Trevor Hillebrand
+!> \date   April 2020
+!> \details Uses the calving law described by Morlighem et al. (2016): 
+!> "Modeling of Store Gletscher’s calving dynamics, West Greenland, in response
+!> to ocean thermal forcing" to calculate calvingVelocity at grounded tidewater glacier margins
+!-----------------------------------------------------------------------
+   subroutine von_Mises_calving(domain, err)
 
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, &
+                                        velocityPool, scratchPool
+      real (kind=RKIND), pointer :: config_von_Mises_threshold_stress, &
+                                    config_flowLawExponent
+      real (kind=RKIND), dimension(:), pointer :: eMax, eMin, & 
+                                        stiffnessFactor, calvingVelocity, &
+                                        surfaceSpeed
+      real (kind=RKIND), pointer :: config_default_flowParamA
+      integer, pointer :: nCells
+      real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
+      real (kind=RKIND), dimension(:), pointer :: groundedMarineMarginMask
+
+      err = 0
+      
+      call mpas_pool_get_config(liConfigs, 'config_von_Mises_threshold_stress', config_von_Mises_threshold_stress)
+      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM ALBANY!!!!!
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+      block => domain % blocklist
+      do while (associated(block))
+         ! get pools
+          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+          call mpas_pool_get_subpool(block % structs, 'geometry', velocityPool)
+          call mpas_pool_get_subpool(block % structs, 'geometry', meshPool)
+
+         ! get fields
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_array(velocityPool, 'eMax', eMax)
+          call mpas_pool_get_array(velocityPool, 'eMin', eMin)
+          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
+          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
+          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity) 
+          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
+
+         ! Calculate effective von Mises stress, ASSUMING "ice viscosity
+         ! parameter" = stiffnessFactor * A**(-1/n)
+          vonMisesStress(:) = sqrt(3.0_RKIND) * stiffnessFactor(:) * &
+                              config_default_flowParamA**(-1.0_RKIND / config_flowLawExponent) * &
+                              (0.5_RKIND * (max(0.0_RKIND, eMax(:))**2 + &
+                              max(0.0_RKIND, eMin(:))**2))**(1 / (2 * config_flowLawExponent))
+          do iCell = 1, nCells
+            ! Calculate calving velocity for grounded cells at marine margin
+             if ( groundedMarineMarginMask(iCell) == 1 ) then
+                calvingVelocity(iCell) = surfaceSpeed(iCell) * vonMisesStress(iCell) / config_von_Mises_threshold_stress
+             endif
+
+          enddo
+
+         block => block % next
+      enddo ! associated(block)
+   end subroutine von_Mises_calving 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !    routine distribute_calving_flux
