@@ -1,18 +1,22 @@
 <?xml version="1.0"?>
-<config case="prep_spin_up1">
-	<add_link source="../../init/ssh_adjustment/init20.nc" dest="init.nc"/>
+<config case="prep_spin_up2">
+	<add_link source="../../init/initial_state/initial_state.nc" dest="init.nc"/>
 	<add_link source="../../init/initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../../init/initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+	<add_link source="../prep_spin_up1/Restart_timestamp" dest="Restart_timestamp"/>
+	<add_link source="../prep_spin_up1/restarts" dest="restarts"/>
 
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<option name="config_run_duration">'00-00-02_00:00:00'</option>
-		<option name="config_dt">'00:05:00'</option>
+		<option name="config_do_restart">.true.</option>
+		<option name="config_start_time">'file'</option>
+		<option name="config_run_duration">'00-00-04_00:00:00'</option>
+		<option name="config_dt">'00:07:30'</option>
 		<option name="config_btr_dt">'00:00:20'</option>
 		<option name="config_Rayleigh_friction">.true.</option>
-		<option name="config_Rayleigh_damping_coeff">1.0e-4</option>
+		<option name="config_Rayleigh_damping_coeff">4.0e-5</option>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 	</namelist>
 
