@@ -48,25 +48,25 @@ CONTAINS
     endif
 
     ierr = GPTLget_memusage (msize, mrss0, mshare, mtext, mdatastack)
-    allocate(mem_tmp(1024*1024*128))    ! 1 MWord, 1024 MB (128*8)
+    allocate(mem_tmp(1024*1024))    ! 1 MWord, 8 MB
     mem_tmp = -1.0
     ierr = GPTLget_memusage (msize, mrss1, mshare, mtext, mdatastack)
     deallocate(mem_tmp)
     ierr = GPTLget_memusage (msize, mrss2, mshare, mtext, mdatastack)
     mb_blk = 0.0_shr_kind_r8
     if (mrss1 - mrss0 > 0) then
-       mb_blk = (1024.0_shr_kind_r8)/((mrss1-mrss0)*1.0_shr_kind_r8)
+       mb_blk = (8.0_shr_kind_r8)/((mrss1-mrss0)*1.0_shr_kind_r8)
     endif
 
     if (lprt) then
-       write(s_logunit,'(A,f16.2)') '1 GB memory   alloc in MB is ',(mrss1-mrss0)*mb_blk
-       write(s_logunit,'(A,f16.2)') '1 GB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk
-       write(s_logunit,'(A,f16.2)') 'Memory block size conversion in Kbytes is ',mb_blk*1024_shr_kind_r8
+       write(s_logunit,'(A,f16.2)') '8 MB memory   alloc in MB is ',(mrss1-mrss0)*mb_blk
+       write(s_logunit,'(A,f16.2)') '8 MB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk
+       write(s_logunit,'(A,f16.2)') 'Memory block size conversion in bytes is ',mb_blk*1024_shr_kind_r8*1024.0_shr_kind_r8
     endif
     if (present(strbuf)) then
-       write(strbuf,'(3(A,f16.2))') '1 GB memory   alloc in MB is ',(mrss1-mrss0)*mb_blk, &
-                                  '\n1 GB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk, &
-                                  '\nMemory block size conversion in Kbytes is ',mb_blk*1024_shr_kind_r8
+       write(strbuf,'(3(A,f16.2))') '8 MB memory   alloc in MB is ',(mrss1-mrss0)*mb_blk, &
+            '\n8 MB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk, &
+            '\nMemory block size conversion in bytes is ',mb_blk*1024_shr_kind_r8*1024.0_shr_kind_r8
     endif
 
 
@@ -91,8 +91,8 @@ CONTAINS
     !---------------------------------------------------
 
     ierr = GPTLget_memusage (msize, mrss, mshare, mtext, mdatastack)
-    r_msize = msize / 1024_shr_kind_r8
-    r_mrss  = mrss  / 1024_shr_kind_r8
+    r_msize = msize / 1024.0_shr_kind_r8
+    r_mrss  = mrss  / 1024.0_shr_kind_r8
 
     if (present(prt)) then
        if (prt) then
