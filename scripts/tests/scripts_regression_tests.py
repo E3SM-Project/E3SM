@@ -341,6 +341,11 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs = []
         cls._do_teardown = []
         cls._testroot = os.path.join(TEST_ROOT, 'TestCreateNewcase')
+        cls._root_dir = os.getcwd()
+
+    def tearDown(self):
+        cls = self.__class__
+        os.chdir(cls._root_dir)
 
     def test_a_createnewcase(self):
         cls = self.__class__
@@ -687,7 +692,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         and make sure they are the same by comparing the namelist files in CaseDocs.
         Ignore the modelio files and clean the directory names out first.
         """
-
         cls = self.__class__
 
         testdir1 = os.path.join(cls._testroot, 'testcreatenewcase_user_compset')
@@ -756,7 +760,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._do_teardown.append(testdir1)
         cls._do_teardown.append(testdir2)
 
-
     def test_k_append_config(self):
         machlist_before = MACHINE.list_available_machines()
         self.assertEqual(len(machlist_before)>1, True, msg="Problem reading machine list")
@@ -768,7 +771,6 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         self.assertEqual(len(machlist_after)-len(machlist_before), 1, msg="Not able to append config_machines.xml {} {}".format(len(machlist_after), len(machlist_before)))
         self.assertEqual("mymachine" in machlist_after, True, msg="Not able to append config_machines.xml")
-
 
     def test_m_createnewcase_alternate_drivers(self):
         # Test that case.setup runs for nuopc and moab drivers
@@ -844,8 +846,6 @@ class J_TestCreateNewcase(unittest.TestCase):
                     print("Could not remove directory {}".format(tfile))
         if rmtestroot:
             shutil.rmtree(cls._testroot)
-
-
 
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):
@@ -1128,11 +1128,14 @@ class TestCreateTestCommon(unittest.TestCase):
         self._testroot          = TEST_ROOT
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = not NO_TEARDOWN
+        self._root_dir          = os.getcwd()
 
     ###########################################################################
     def tearDown(self):
     ###########################################################################
         kill_subprocesses()
+
+        os.chdir(self._root_dir)
 
         if (self._unset_proxy):
             del os.environ["http_proxy"]
