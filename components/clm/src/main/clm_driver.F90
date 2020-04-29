@@ -1250,8 +1250,6 @@ contains
        if (use_cn .or. use_fates) then
           
           if (.not. is_active_betr_bgc)then
-             ! FIX(SPM,032414) there are use_fates checks in this routine...be consistent 
-             ! (see comment above re: no leaching
              call EcosystemDynLeaching(bounds_clump,                &
                   filter(nc)%num_soilc, filter(nc)%soilc,               &
                   filter(nc)%num_soilp, filter(nc)%soilp,               &
