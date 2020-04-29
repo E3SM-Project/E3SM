@@ -73,6 +73,15 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
     non_local = case.get_value("NONLOCAL")
 
+    models = case.get_values("COMP_CLASSES")
+    mach = case.get_value("MACH")
+    compiler = case.get_value("COMPILER")
+    debug = case.get_value("DEBUG")
+    mpilib = case.get_value("MPILIB")
+    sysos = case.get_value("OS")
+    comp_interface = case.get_value("COMP_INTERFACE")
+    expect(mach is not None, "xml variable MACH is not set")
+
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     if not non_local:
         din_loc_root = case.get_value("DIN_LOC_ROOT")
@@ -94,19 +103,15 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
 
+        # Cannot leave case in bad state (missing env_mach_specific.xml)
+        if clean and not os.path.isfile("env_mach_specific.xml"):
+            case.flush()
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
+            case.read_xml()
+
     if not clean:
         if not non_local:
             case.load_env()
-
-        models = case.get_values("COMP_CLASSES")
-        mach = case.get_value("MACH")
-        compiler = case.get_value("COMPILER")
-        debug = case.get_value("DEBUG")
-        mpilib = case.get_value("MPILIB")
-        sysos = case.get_value("OS")
-        comp_interface = case.get_value("COMP_INTERFACE")
-        extra_machines_dir = case.get_value("EXTRA_MACHDIR")
-        expect(mach is not None, "xml variable MACH is not set")
 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
