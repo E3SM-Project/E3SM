@@ -1247,19 +1247,24 @@ module li_iceshelf_melt
        ! Calculate retreat rate for each cell
          do iCell = 1, nCellsSolve
             ! Define marine marginal cells as those that are (1) at the ice
-            ! margin (cellMask == 8), (2) have at least one neighboring cell without ice, (3) contain
+            ! margin, (2) have at least one neighboring cell without ice, (3) contain
             ! grounded ice, and (4) have bed topography below sea level.
+            ! OR is adjacent to an inactive floating margin cell
             nEmptyNeighbors = 0
             oceanEdgeLength = 0.0_RKIND
             ! Check if neighboring cells contain ice and have bed topo below sea
             ! level
-            do iNeighbor = 1, nEdgesOnCell(iCell)
-                 if ( (thickness(cellsOnCell(iNeighbor, iCell)) == 0.0_RKIND) & 
-                    .and. (cellsOnCell(iNeighbor, iCell) > 0) &
-                    .and. (cellsOnCell(iNeighbor, iCell) <= nCellsSolve) &
-                    .and. bedTopography(cellsOnCell(iNeighbor, iCell)) < seaLevel ) then
+            do iEdge = 1, nEdgesOnCell(iCell)
+               iNeighbor = cellsOnCell(iEdge, iCell)
+                 if ( ((thickness(iNeighbor) == 0.0_RKIND) & 
+                    .and. iNeighbor > 0 & ! make sure this cell exists
+                    .and. iNeighbor <= nCellsSolve & ! make sure this cell exists
+                    .and. bedTopography(iNeighbor) < seaLevel) &
+                    .or. (li_mask_is_floating_ice(cellMask(iNeighbor)) & 
+                    .and. li_mask_is_margin(cellMask(iNeighbor)) &
+                    .and. (.not. li_mask_is_albany_active(cellMask(iNeighbor)))) ) then
                      nEmptyNeighbors = nEmptyNeighbors + 1
-                     oceanEdgeLength = oceanEdgeLength + dvEdge(edgesOnCell(iNeighbor, iCell))
+                     oceanEdgeLength = oceanEdgeLength + dvEdge(edgesOnCell(iEdge, iCell))
                  endif
             enddo 
                  
@@ -1443,7 +1448,7 @@ module li_iceshelf_melt
                !fully depleted :(
             endif
 
-            ! If we didn't melt enough ice, record that to allow assessment of
+            ! If we didn't melt enough ice, record that to allow assessment of    
             ! how bad that is.
             if (volumeLeft > 0.0_RKIND) then
                unmeltedVolume(iCell) = 0.0_RKIND
