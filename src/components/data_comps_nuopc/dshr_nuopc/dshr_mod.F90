@@ -1,29 +1,68 @@
-module dshr_nuopc_mod
+module dshr_mod
 
-  use NUOPC
-  use NUOPC_Model
-  use ESMF
-  use mct_mod          , only : mct_avect_init, mct_avect_lsize, mct_avect_indexra
-  use dshr_methods_mod , only : chkerr, state_getfldptr, get_component_instance
-  use shr_strdata_mod  , only : shr_strdata_type
+  use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompFilterPhaseMap
+  use NUOPC_Model      , only : NUOPC_ModelGet
+  use ESMF             , only : operator(<), operator(/=), operator(+)
+  use ESMF             , only : operator(-), operator(*) , operator(>=)
+  use ESMF             , only : operator(<=), operator(>), operator(==)
+  use ESMF             , only : ESMF_METHOD_INITIALIZE
+  use ESMF             , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR, ESMF_MAXSTR
+  use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FAILURE
+  use ESMF             , only : ESMF_State, ESMF_StateGet
+  use ESMF             , only : ESMF_Field, ESMF_FieldGet
+  use ESMF             , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
+  use ESMF             , only : ESMF_DistGrid, ESMF_Array, ESMF_ArrayCreate, ESMF_ArrayDestroy
+  use ESMF             , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_GridCompSet
+  use ESMF             , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag
+  use ESMF             , only : ESMF_Mesh, ESMF_MeshGet, ESMF_MeshCreate, ESMF_MeshDestroy
+  use ESMF             , only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER, ESMF_GRIDCREATENOPERIDIMUFRM
+  use ESMF             , only : ESMF_FILEFORMAT_ESMFMESH, ESMF_Grid
+  use ESMF             , only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
+  use ESMF             , only : ESMF_Clock, ESMF_ClockCreate, ESMF_ClockGet, ESMF_ClockSet
+  use ESMF             , only : ESMF_ClockPrint, ESMF_ClockAdvance, ESMF_ClockGetAlarmList
+  use ESMF             , only : ESMF_Alarm, ESMF_AlarmCreate, ESMF_AlarmGet, ESMF_AlarmSet
+  use ESMF             , only : ESMF_ALARMLIST_ALL
+  use ESMF             , only : ESMF_Calendar
+  use ESMF             , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN, ESMF_CALKIND_FLAG
+  use ESMF             , only : ESMF_Time, ESMF_TimeGet, ESMF_TimeSet
+  use ESMF             , only : ESMF_TimeInterval, ESMF_TimeIntervalSet, ESMF_TimeIntervalGet
+  use ESMF             , only : ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast, ESMF_VMGetCurrent
+  use ESMF             , only : ESMF_RouteHandle, ESMF_FieldRegrid
+  use ESMF             , only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
+  use ESMF             , only : ESMF_Region_Flag, ESMF_REGION_TOTAL, ESMF_MAXSTR
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
-  use shr_string_mod   , only : shr_string_listGetIndex
   use shr_sys_mod      , only : shr_sys_abort
+  use shr_file_mod     , only : shr_file_setlogunit
+  use shr_mpi_mod      , only : shr_mpi_bcast
+  use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
+  use shr_cal_mod      , only : shr_cal_datetod2string
+  use shr_map_mod      , only : shr_map_fs_remap, shr_map_fs_bilinear
+  use shr_map_mod      , only : shr_map_fs_srcmask, shr_map_fs_scalar
+  use shr_const_mod    , only : shr_const_spval
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_infiles
+  use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
+  use dshr_strdata_mod , only : shr_strdata_mapset
+  use dshr_methods_mod , only : memcheck, chkerr
+  use perf_mod         , only : t_startf, t_stopf
+  use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
+  use pio
+  use mct_mod
 
   implicit none
   public
 
-  public :: dshr_advertise
   public :: dshr_model_initphase
-  public :: dshr_check_mesh
-  public :: dshr_create_mesh_from_grid
-  public :: dshr_set_runclock
+  public :: dshr_init
   public :: dshr_sdat_init
+  public :: dshr_create_mesh_from_grid
+  public :: dshr_create_mesh_from_scol
+  public :: dshr_set_runclock
   public :: dshr_restart_read
   public :: dshr_restart_write
   public :: dshr_get_atm_adjustment_factors
-  public :: dshr_get_griddata
-  public :: dshr_set_griddata
+  public :: dshr_log_clock_advance
+  public :: dshr_state_getscalar
+  public :: dshr_state_setscalar
 
   private :: dshr_alarm_init
   private :: dshr_time_init
@@ -49,15 +88,21 @@ module dshr_nuopc_mod
        optMonthly        = "monthly"   , &
        optYearly         = "yearly"    , &
        optDate           = "date"      , &
-       optIfdays0        = "ifdays0"   
-
+       optIfdays0        = "ifdays0"
 
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
 
+  ! used/reused in module
+  logical                     :: isPresent
+  character(len=1024)         :: msgString
+  type(ESMF_FieldStatus_Flag) :: status
+
+  ! Module data
+  integer     , parameter :: master_task = 0
   integer                 :: iunset = -999
   integer     , parameter :: SecPerDay = 86400 ! Seconds per day
   integer     , parameter :: dbug = 10
-  character(*), parameter :: modName =  "(dhsr_nuopc_mod)"
+  character(*), parameter :: modName =  "(dshr_mod)"
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -65,8 +110,27 @@ module dshr_nuopc_mod
 contains
 !===============================================================================
 
-  subroutine dshr_advertise(gcomp, mpicom, my_task,  inst_index, inst_suffix, &
-       flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, rc)
+  subroutine dshr_model_initphase(gcomp, importState, exportState, clock, rc)
+
+    ! input/output variables
+    type(ESMF_GridComp)   :: gcomp
+    type(ESMF_State)      :: importState, exportState
+    type(ESMF_Clock)      :: clock
+    integer, intent(out)  :: rc
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! Switch to IPDv01 by filtering all other phaseMap entries
+    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dshr_model_initphase
+
+  !===============================================================================
+  subroutine dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
+       flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
+       logunit, shrlogunit, rc)
 
     ! input/output variables
     type(ESMF_GridComp)              :: gcomp
@@ -78,13 +142,17 @@ contains
     integer          , intent(out)   :: flds_scalar_num
     integer          , intent(out)   :: flds_scalar_index_nx
     integer          , intent(out)   :: flds_scalar_index_ny
+    integer          , intent(out)   :: logunit
+    integer          , intent(out)   :: shrlogunit
     integer          , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)      :: vm
-    character(len=CL)  :: cvalue
-    character(len=CL)  :: logmsg
-    logical            :: isPresent, isSet
+    type(ESMF_VM)     :: vm
+    logical           :: isPresent, isSet
+    character(len=CL) :: cvalue
+    character(len=CL) :: logmsg
+    character(len=CL) :: diro
+    character(len=CL) :: logfile
     character(len=*),parameter  :: subname='(dshr_advertise)'
     ! ----------------------------------------------
 
@@ -94,10 +162,6 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine instance information
-    call get_component_instance(gcomp, inst_suffix, inst_index, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! get scalar attributes
@@ -136,10 +200,157 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-  end subroutine dshr_advertise
+    ! set output logging
+    shrlogunit = 6
+    if (my_task == master_task) then
+       call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       open(newunit=logunit,file=trim(diro)//"/"//trim(logfile))
+    else
+       logUnit = 6
+    endif
+    call shr_file_setLogUnit (logunit)
 
-!===============================================================================
+    ! set component instance and suffix
+    call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
+    if (isPresent) then
+       call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", value=inst_suffix, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       cvalue = inst_suffix(2:)
+       read(cvalue, *) inst_index
+    else
+       inst_suffix = ""
+       inst_index=1
+    endif
+
+  end subroutine dshr_init
+
+  !===============================================================================
+  subroutine dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, compname, &
+       mesh, read_restart, sdat, reset_mask, model_maskfile, rc)
+
+    ! ----------------------------------------------
+    ! Initialize sdat
+    ! ----------------------------------------------
+
+    ! input/output variables
+    type(ESMF_GridComp), intent(inout)         :: gcomp
+    type(ESMF_Clock)           , intent(in)    :: clock
+    character(len=*)           , intent(in)    :: nlfilename ! for shr_strdata_nml namelist
+    integer                    , intent(in)    :: logunit
+    character(len=*)           , intent(in)    :: compname
+    integer                    , intent(out)   :: compid
+    type(ESMF_Mesh)            , intent(out)   :: mesh
+    logical                    , intent(out)   :: read_restart
+    type(shr_strdata_type)     , intent(inout) :: sdat
+    logical         , optional , intent(in)    :: reset_mask
+    character(len=*), optional , intent(in)    :: model_maskfile
+    integer                    , intent(out)   :: rc
+
+    ! local varaibles
+    type(ESMF_VM)                :: vm
+    type(ESMF_Mesh)              :: mesh_global
+    type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
+    type(ESMF_CalKind_Flag)      :: esmf_caltype  ! esmf calendar type
+    character(CS)                :: calendar      ! calendar name
+    character(CL)                :: mesh_filename
+    integer                      :: mpicom
+    integer                      :: my_task
+    logical                      :: scmMode
+    real(r8)                     :: scmlat
+    real(r8)                     :: scmlon
+    character(len=CL)            :: cvalue
+    character(len=*), parameter  :: subname='(dshr_mod:dshr_sdat_init)'
+    character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! generate local mpi comm
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Set compid (for mct)
+    call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) compid
+
+    ! Set single column values
+    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) scmMode
+
+    ! Set restart flag
+    call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) read_restart
+
+    ! Obtain the input mesh filename
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=mesh_filename, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Create the data model mesh
+    ! if single column
+    !   - read in the data model domain file - and find the nearest neighbor
+    ! if not single column
+    !   - obtain the mesh directly from the mesh input
+    !   - ***TODO: remove the hard-wired domain_atm name here**
+
+    if (trim(mesh_filename) == 'create_mesh') then
+       ! get the data model grid from the domain file
+       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=mesh_filename, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_create_mesh_from_grid(trim(mesh_filename), mesh, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       if (scmMode) then
+          ! verify that are only using 1 pe
+          if (my_task > 0) then
+             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
+             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
+          endif
+          ! obtain the single column lon and lat
+          call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          read(cvalue,*) scmlon
+          call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          read(cvalue,*) scmlat
+          if (my_task == master_task) then
+             write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
+          end if
+          ! Read in the input mesh
+          mesh_global = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! Now create a single column mesh using the single column lats and lons and the global mesh
+          call  dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_MeshDestroy(mesh_global)
+       else
+          ! Read in the input mesh
+          mesh = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+    end if
+
+    if (my_task == master_task) then
+       write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
+    end if
+
+    ! Initialize sdat from data model input files
+    call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, mpicom, compid, logunit, &
+         reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dshr_sdat_init
+
+  !===============================================================================
   subroutine dshr_create_mesh_from_grid(filename, mesh, rc)
 
     use netcdf , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_close, nf90_strerror
@@ -235,233 +446,117 @@ contains
 
   end subroutine dshr_create_mesh_from_grid
 
-!===============================================================================
+  !===============================================================================
+  subroutine dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
 
-  subroutine dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-       scmmode, scmlon, scmlat, clock, mesh,  model_name, sdat, &
-       dmodel_domain_fracname_from_stream, reset_domain_mask, rc)
-
-    ! ----------------------------------------------
-    ! Initialize sdat
-    ! ----------------------------------------------
-
-    use shr_strdata_mod , only : shr_strdata_pioinit
-    use shr_strdata_mod , only : shr_strdata_init_model_domain
-    use shr_strdata_mod , only : shr_strdata_init_streams
-    use shr_strdata_mod , only : shr_strdata_init_mapping
-    use shr_strdata_mod , only : shr_strdata_print
-    use shr_cal_mod     , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
-    use mct_mod         , only : mct_gsmap_init
+    !-------------------------------------------
+    ! Create mct ggrid for model grid and set model gsmap if not input
+    ! assumes a very specific netCDF domain file format wrt var names, etc.
+    !-------------------------------------------
 
     ! input/output variables
-    integer                    , intent(in)    :: mpicom   ! mpi communicator
-    integer                    , intent(in)    :: compid
-    integer                    , intent(in)    :: my_task
-    integer                    , intent(in)    :: master_task
-    integer                    , intent(in)    :: logunit
-    logical                    , intent(in)    :: scmMode
-    real(r8)                   , intent(in)    :: scmlat
-    real(r8)                   , intent(in)    :: scmlon
-    type(ESMF_Clock)           , intent(in)    :: clock
-    type(ESMF_Mesh)            , intent(in)    :: mesh
-    character(len=*)           , intent(in)    :: model_name
-    type(shr_strdata_type)     , intent(inout) :: sdat
-    character(len=*), optional , intent(in)    :: dmodel_domain_fracname_from_stream
-    logical         , optional , intent(in)    :: reset_domain_mask
-    integer                    , intent(out)   :: rc
-
-    ! local varaibles
-    integer                      :: n,k          ! generic counters
-    integer                      :: lsize        ! local size
-    integer                      :: gsize
-    type(ESMF_DistGrid)          :: distGrid
-    integer, allocatable, target :: gindex(:)
-    integer                      :: dimCount
-    integer                      :: tileCount
-    integer                      :: deCount
-    integer, allocatable         :: elementCountPTile(:)
-    integer, allocatable         :: indexCountPDE(:,:)
-    type(ESMF_CalKind_Flag)      :: esmf_caltype ! esmf calendar type
-    character(len=CS)            :: calendar     ! calendar name
-    character(len=*), parameter  :: subname='(dshr_nuopc_mod:dshr_sdat_init)'
-    character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine local size on my processor
-    call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global index space for my processor
-    allocate(gindex(lsize))
-    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global size of distgrid
-    call ESMF_DistGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(elementCountPTile(tileCount))
-    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    gsize = 0
-    do n = 1,size(elementCountPTile)
-       gsize = gsize + elementCountPTile(n)
-    end do
-    deallocate(elementCountPTile)
-
-    ! initialize sdat%gsmap (the data mdel gsmap)
-    call mct_gsMap_init(sdat%gsmap, gindex, mpicom, compid, lsize, gsize)
-    deallocate(gindex)
-
-    ! initialize shr_strdata pio
-    call shr_strdata_pioinit(sdat, compid)
-
-    ! initialize sdat calendar
-    call ESMF_ClockGet(clock, calkindflag=esmf_caltype, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (esmf_caltype == ESMF_CALKIND_NOLEAP) then
-       calendar = shr_cal_noleap
-    else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
-       calendar = shr_cal_gregorian
-    else
-       call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
-    end if
-    sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
-
-    ! initialize sdat domain (sdat%grid)
-    if (my_task == master_task) then
-       write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
-       if (present(reset_domain_mask)) then
-          write(logunit,*) ' resetting domain mask'
-       end if
-       if (present(dmodel_domain_fracname_from_stream)) then
-          write(logunit,*)' reading fracname ',trim(dmodel_domain_fracname_from_stream),&
-               ' from the domain of the first stream'
-       end if
-    end if
-    call shr_strdata_init_model_domain(sdat, mpicom, compid, my_task, &
-         scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=sdat%gsmap, &
-         dmodel_domain_fracname_from_stream=dmodel_domain_fracname_from_stream, &
-         reset_domain_mask=reset_domain_mask)
-
-    ! initialize sdat attributes for streams and mapping of streams to model domain
-    call shr_strdata_init_streams(sdat, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(sdat, compid, mpicom, my_task)
-
-    if (my_task == master_task) then
-       call shr_strdata_print(sdat,'SDAT data from '//trim(model_name))
-    endif
-
-  end subroutine dshr_sdat_init
-
-!===============================================================================
-
-  subroutine dshr_check_mesh (mesh, sdat, model_name, tolerance, check_lon, rc)
-
-    type(ESMF_MESH)        , intent(in)  :: mesh
-    type(shr_strdata_type) , intent(in)  :: sdat
-    character(len=*)       , intent(in)  :: model_name
-    real(r8), optional     , intent(in)  :: tolerance 
-    logical , optional     , intent(in)  :: check_lon
-    integer                , intent(out) :: rc
+    real(R8)        , intent(in)    :: scmlon      ! single column lon
+    real(R8)        , intent(in)    :: scmlat      ! single column lat
+    integer         , intent(in)    :: logunit     ! stdout log unit
+    type(ESMF_MESH) , intent(in)    :: mesh_global ! global or regional domain
+    type(ESMF_MESH) , intent(out)   :: mesh        ! single column mesh
+    integer         , intent(out)   :: rc          ! error code
 
     ! local variables
-    integer           :: n,lsize
-    integer           :: klat, klon, kfrac  ! AV indices
-    real(r8)          :: domlon,domlat      ! domain lats and lots
-    integer           :: spatialDim         ! number of dimension in mesh
-    integer           :: numOwnedElements   ! size of mesh
-    real(r8), pointer :: ownedElemCoords(:) ! mesh lat and lons
-    real(r8), pointer :: xc(:), yc(:)       ! mesh lats and lons
-    real(r8)          :: ltolerance         ! tolerance of check
-    logical           :: lcheck_lon
-    ! ----------------------------------------------
+    integer              :: n,i,ni             ! indices
+    integer              :: ierr               ! error code
+    integer, allocatable :: elementCountPTile(:)
+    integer, allocatable :: indexCountPDE(:,:)
+    integer              :: spatialDim         ! number of dimension in mesh
+    integer              :: numOwnedElements   ! number of elements owned by this PET
+    integer              :: numOwnedNodes      ! number of nodes owned by this PET
+    real(r8), pointer    :: ownedElemCoords(:) ! mesh element coordinates owned by this PET
+    real(r8), pointer    :: ownedNodeCoords(:) ! mesh node coordinates owned by this PET
+    real(r8), pointer    :: lat(:), lon(:)     ! mesh lats and lons owned by this PET
+    real(r8), pointer    :: elemArea(:)        ! mesh areas owned by this PET
+    type(ESMF_Array)     :: elemAreaArray
+    type(ESMF_Grid)      :: lgrid
+    type(ESMF_DistGrid)  :: distGrid           ! mesh distGrid
+    real(R8)             :: dist,mind          ! scmmode point search
+    real(R8)             :: lscmlon            ! local copy of scmlon
+    integer              :: maxIndex(2)
+    real(r8)             :: mincornerCoord(2)
+    real(r8)             :: maxcornerCoord(2)
+    character(*), parameter :: subname = '(shr_strdata_init_model_domain_scol) '
+    character(*), parameter :: F00   = "('(shr_strdata_init_model_domain_scol) ',8a)"
+    !-------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    ! set tolerance of comparison
-    if (present(tolerance)) then
-       ltolerance = tolerance
-    else
-       ltolerance = 1.e-10
-    end if
+    ! The input model mesh from the namelist is for the total grid
+    ! However the single column mesh is only for a single point - and that is what is
+    ! returned from the data model cap to the mediator
+    ! Below use scmlon and scmlat to find the nearest neighbor of the input mesh that
+    ! will be used for the single column calculation
 
-    if (present(check_lon)) then
-       lcheck_lon = check_lon
-    else
-       lcheck_lon = .false.
-    end if
-
-    ! obtain mesh lats and lons
-    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    ! Read in mesh (this is the global or regional atm mesh)
+    call ESMF_MeshGet(mesh_global, spatialDim=spatialDim, &
+         numOwnedElements=numOwnedElements, numOwnedNodes=numOwnedNodes, elementdistGrid=distGrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
-    allocate(xc(numOwnedElements), yc(numOwnedElements))
-    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    allocate(ownedNodeCoords(spatialDim*numOwnedNodes))
+    call ESMF_MeshGet(mesh_global, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(lon(numOwnedElements))
+    allocate(lat(numOwnedElements))
     do n = 1, numOwnedElements
-       xc(n) = ownedElemCoords(2*n-1)
-       yc(n) = ownedElemCoords(2*n)
+       lon(n) = ownedElemCoords(2*n-1)
+       lat(n) = ownedElemCoords(2*n)
     end do
 
-    ! obtain sdat lat and lons and local size of grid attribute vectors
-    klon = mct_aVect_indexRA(sdat%grid%data,'lon')
-    klat = mct_aVect_indexRA(sdat%grid%data,'lat')
-    lsize = mct_avect_lsize(sdat%grid%data)
-
-    ! error check
-    if (numOwnedElements /= lsize) then
-       write(6,*)'lsize, numownedElements= ',lsize,numOwnedElements 
-       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
-    end if
-
-    do n = 1, lsize
-       domlat = sdat%grid%data%rattr(klat,n)
-       if (lcheck_lon) then
-          domlon = sdat%grid%data%rattr(klon,n)
-          if (abs( domlon - xc(n)) > ltolerance .and. domlon /= 0.0_r8) then
-             write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lon, mesh_lon, diff_lon = ',n, domlon, xc(n), abs(xc(n)-domlon)
-             call shr_sys_abort()
-          end if
-       end if
-       if (abs( domlat - yc(n)) > ltolerance .and. domlat /= 0.0_r8) then
-          write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lat, mesh_lat, diff_lat = ',n, domlat, yc(n), abs(yc(n)-domlat)
-          call shr_sys_abort()
-       end if
-100    format(a,i6,2(f21.13,3x),d21.5)
-       !SDAT%grid%data%rattr(klon,n) = xc(n)
-       !SDAT%grid%data%rattr(klat,n) = yc(n)
-    end do
-    deallocate(xc, yc)
-
-  end subroutine dshr_check_mesh
-
-!===============================================================================
-
-  subroutine dshr_model_initphase(gcomp, importState, exportState, clock, rc)
-
-    ! input/output variables
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
+    allocate(elemArea(numOwnedElements))
+    elemAreaArray = ESMF_ArrayCreate(distGrid, elemArea, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_MeshGet(mesh_global, elemMaskArray=elemAreaArray, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine dshr_model_initphase
+    ! Find nearest neigbor of input domain for scmlon and scmlat
+    ! want lon values between 0 and 360, assume 1440 is enough (start with wraparound)
 
-!===============================================================================
+    lscmlon = mod(scmlon+1440.0_r8,360.0_r8)
+    lon     = mod(lon   +1440.0_r8,360.0_r8)
+    ! lat and lon are on 1D arrays (e.g. spectral element grids)
+    mind = 1.0e20
+    do i = 1,numOwnedElements
+       dist=abs(lscmlon - lon(i)) + abs(scmlat - lat(i))
+       if (dist < mind) then
+          mind = dist
+          ni = i
+       endif
+    enddo
 
+    ! create the single column grid
+    maxIndex(1)       = 1                     ! number of lons
+    maxIndex(2)       = 1                     ! number of lats
+    mincornerCoord(1) = lon(ni) - elemArea(ni)/2._r8 ! min lon
+    mincornerCoord(2) = lat(ni) - elemArea(ni)/2._r8 ! min lat
+    maxcornerCoord(1) = lon(ni) + elemArea(ni)/2._r8 ! max lon
+    maxcornerCoord(2) = lat(ni) + elemArea(ni)/2._r8 ! max lat
+    lgrid = ESMF_GridCreateNoPeriDimUfrm (maxindex=maxindex, &
+         mincornercoord=mincornercoord, maxcornercoord= maxcornercoord, &
+         staggerloclist=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! create the single column mesh from the grid
+    mesh =  ESMF_MeshCreate(lgrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! deallocate memory
+    deallocate(ownedElemCoords)
+    deallocate(ownedNodeCoords)
+    deallocate(lon)
+    deallocate(lat)
+    call ESMF_ArrayDestroy(elemAreaArray, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dshr_create_mesh_from_scol
+
+  !===============================================================================
   subroutine dshr_set_runclock(gcomp, rc)
 
     ! input/output variables
@@ -480,7 +575,7 @@ contains
     type(ESMF_ALARM)         :: restart_alarm
     character(len=128)       :: name
     integer                  :: alarmcount
-    character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
+    character(len=*),parameter :: subname='dshr_mod:(ModelSetRunClock) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -551,8 +646,7 @@ contains
 
   end subroutine dshr_set_runclock
 
-!===============================================================================
-
+  !===============================================================================
   subroutine dshr_alarm_init( clock, alarm, option, &
        opt_n, opt_ymd, opt_tod, RefTime, alarmname, rc)
 
@@ -865,11 +959,10 @@ contains
 
   end subroutine dshr_alarm_init
 
-!===============================================================================
-
+  !===============================================================================
   subroutine dshr_time_init( Time, ymd, cal, tod, rc)
 
-    ! Create the ESMF_Time object corresponding to the given input time, 
+    ! Create the ESMF_Time object corresponding to the given input time,
     ! given in YMD (Year Month Day) and TOD (Time-of-day) format.
     ! Set the time by an integer as YYYYMMDD and integer seconds in the day
 
@@ -905,36 +998,34 @@ contains
   end subroutine dshr_time_init
 
   !===============================================================================
-
-  subroutine dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
-       logunit, my_task, master_task, mpicom, sdat, fld, fldname)
-
-    use shr_pcdf_mod    , only : shr_pcdf_readwrite
-    use shr_strdata_mod , only : shr_strdata_restRead, shr_strdata_type
-    use shr_mpi_mod     , only : shr_mpi_bcast
+  subroutine dshr_restart_read(rest_filem, rest_files, rpfile, inst_suffix, nullstr, &
+       logunit, my_task, mpicom, sdat, fld, fldname)
 
     ! input/output arguments
-    character(len=*)            , intent(inout) :: rest_file
-    character(len=*)            , intent(inout) :: rest_file_strm
+    character(len=*)            , intent(inout) :: rest_filem
+    character(len=*)            , intent(inout) :: rest_files
     character(len=*)            , intent(in)    :: rpfile
     character(len=*)            , intent(in)    :: inst_suffix
     character(len=*)            , intent(in)    :: nullstr
     integer                     , intent(in)    :: logunit
     integer                     , intent(in)    :: my_task
-    integer                     , intent(in)    :: master_task
     integer                     , intent(in)    :: mpicom
     type(shr_strdata_type)      , intent(inout) :: sdat
     real(r8)         , optional , pointer       :: fld(:)
     character(len=*) , optional , intent(in)    :: fldname
 
     ! local variables
-    integer :: nu
-    logical :: exists  ! file existance
+    integer           :: nu
+    logical           :: exists  ! file existance
+    type(file_desc_t) :: pioid
+    type(var_desc_t)  :: varid
+    type(io_desc_t)   :: pio_iodesc
+    integer           :: rcode
     character(*), parameter :: F00   = "('(dshr_restart_read) ',8a)"
     character(*), parameter :: subName = "(dshr_restart_read) "
     !-------------------------------------------------------------------------------
 
-    if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
+    if (trim(rest_filem) == trim(nullstr) .and. trim(rest_files) == trim(nullstr)) then
        if (my_task == master_task) then
           write(logunit,F00) ' restart filenames from rpointer'
           inquire(file=trim(rpfile)//trim(inst_suffix), exist=exists)
@@ -943,41 +1034,41 @@ contains
              call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
           endif
           open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-          read(nu, '(a)') rest_file
-          read(nu, '(a)') rest_file_strm
+          read(nu, '(a)') rest_filem
+          read(nu, '(a)') rest_files
           close(nu)
-          inquire(file=trim(rest_file_strm), exist=exists)
+          inquire(file=trim(rest_files), exist=exists)
        endif
-       call shr_mpi_bcast(rest_file, mpicom, 'rest_file')
-       call shr_mpi_bcast(rest_file_strm, mpicom, 'rest_file_strm')
+       call shr_mpi_bcast(rest_filem, mpicom, 'rest_filem')
+       call shr_mpi_bcast(rest_files, mpicom, 'rest_files')
     else
        ! use namelist already read
        if (my_task == master_task) then
           write(logunit, F00) ' restart filenames from namelist '
-          inquire(file=trim(rest_file_strm), exist=exists)
+          inquire(file=trim(rest_files), exist=exists)
        endif
     endif
     call shr_mpi_bcast(exists, mpicom, 'exists')
     if (exists) then
-       if (my_task == master_task) write(logunit, F00) ' reading ', trim(rest_file_strm)
+       if (my_task == master_task) write(logunit, F00) ' reading data mdoel restart ', trim(rest_filem)
        if (present(fld) .and. present(fldname)) then
-          call shr_pcdf_readwrite('read', sdat%pio_subsystem, sdat%io_type, trim(rest_file), &
-               mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname), io_format=sdat%io_format)
+          rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_nowrite)
+          call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+          call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%gsize/), sdat%gindex, pio_iodesc)
+          rcode = pio_inq_varid(pioid, trim(fldname), varid)
+          call pio_read_darray(pioid, varid, pio_iodesc, fld, rcode)
+          call pio_closefile(pioid)
+          call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
        end if
-       call shr_strdata_restRead(trim(rest_file_strm), sdat, mpicom)
+       call shr_strdata_restRead(trim(rest_files), sdat, mpicom)
     else
-       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_file_strm)
+       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_files)
     endif
   end subroutine dshr_restart_read
 
   !===============================================================================
-
   subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
-       logunit, mpicom, my_task, master_task, sdat, fld, fldname)
-
-    use shr_pcdf_mod    , only : shr_pcdf_readwrite
-    use shr_cal_mod     , only : shr_cal_datetod2string
-    use shr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_type
+       logunit, mpicom, my_task, sdat, fld, fldname)
 
     ! input/output variables
     character(len=*)            , intent(in)    :: rpfile
@@ -988,53 +1079,56 @@ contains
     integer                     , intent(in)    :: tod       ! model sec into model date
     integer                     , intent(in)    :: logunit
     integer                     , intent(in)    :: my_task
-    integer                     , intent(in)    :: master_task
     integer                     , intent(in)    :: mpicom
     type(shr_strdata_type)      , intent(inout) :: sdat
     real(r8)         , optional , pointer       :: fld(:)
     character(len=*) , optional , intent(in)    :: fldname
 
     ! local variables
-    character(len=CL) :: rest_file
-    character(len=CL) :: rest_file_strm
-    character(len=CS) :: date_str
     integer           :: nu
+    character(len=CL) :: rest_filem
+    character(len=CL) :: rest_files
+    character(len=CS) :: date_str
+    type(file_desc_t) :: pioid
+    integer           :: dimid(1)
+    type(var_desc_t)  :: varid
+    type(io_desc_t)   :: pio_iodesc
+    integer           :: rcode
     !-------------------------------------------------------------------------------
 
+     ! write data model restart data
      call shr_cal_datetod2string(date_str, ymd, tod)
-     write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
-     write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
+     write(rest_filem,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
+     write(rest_files,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
      if (my_task == master_task) then
         open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-        write(nu,'(a)') rest_file
-        write(nu,'(a)') rest_file_strm
+        write(nu,'(a)') rest_filem
+        write(nu,'(a)') rest_files
         close(nu)
-        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
+        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_files), ymd, tod
      endif
      if (present(fld) .and. present(fldname)) then
-        call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
-             trim(rest_file), mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname))
+        rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_clobber)
+        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+        rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
+        rcode = pio_def_dim(pioid, 'gsize', sdat%gsize, dimid(1))
+        rcode = pio_def_var(pioid, trim(fldname), PIO_DOUBLE, dimid, varid)
+        rcode = pio_enddef(pioid)
+        call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%gsize/), sdat%gindex, pio_iodesc)
+        call pio_write_darray(pioid, varid, pio_iodesc, fld, rcode, fillval=shr_const_spval)
+        call pio_closefile(pioid)
+        call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
      end if
-     call shr_strdata_restWrite(trim(rest_file_strm), sdat, mpicom, trim(case_name), 'SDAT strdata from '//trim(model_name))
+
+     ! write stream restart data
+     call shr_strdata_restWrite(trim(rest_files), sdat, mpicom, trim(case_name), &
+          'sdat strdata from '//trim(model_name))
 
   end subroutine dshr_restart_write
 
   !===============================================================================
-
   subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
-       mpicom, compid, masterproc, logunit, sdat) 
-
-    use shr_dmodel_mod , only : shr_dmodel_mapset
-    use shr_map_mod    , only : shr_map_fs_remap, shr_map_fs_bilinear
-    use shr_map_mod    , only : shr_map_fs_srcmask, shr_map_fs_scalar
-    use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
-    use shr_strdata_mod, only : shr_strdata_type
-    use shr_const_mod  , only : shr_const_spval
-    use shr_mpi_mod    , only : shr_mpi_bcast
-    use mct_mod        , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp
-    use mct_mod        , only : mct_avect_importrattr, mct_avect_exportrattr, mct_avect_clean   
-    use mct_mod        , only : mct_ggrid, mct_ggrid_init,  mct_ggrid_importrattr, mct_ggrid_gather, mct_ggrid_clean   
-    use mct_mod        , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize, mct_gsmap_clean  
+       mpicom, compid, masterproc, logunit, sdat)
 
     ! input/output variables
     character(*)           , intent(in)    :: fileName   ! file name string
@@ -1074,11 +1168,9 @@ contains
     character(*) ,parameter   :: F00    = "('(dshr_atm_get_adjustment_factors) ',4a) "
     character(*) ,parameter   :: F01    = "('(dshr_atm_get_adjustment_factors) ',a,2i5)"
     character(*) ,parameter   :: F02    = "('(dshr_atm_get_adjustment_factors) ',a,6e12.3)"
-
     !-------------------------------------------------------------------------------
+
     !   Note: gsmapi is all gridcells on root pe
-    !-------------------------------------------------------------------------------
-
     ni0 = 0
     nj0 = 0
     allocate(start(1),length(1))
@@ -1114,10 +1206,12 @@ contains
     call mct_gsmap_init(gsmapi, start, length, 0, mpicom, compid, gsize=gsizei, numel=numel)
     deallocate(start, length)
     lsizei = mct_gsmap_lsize(gsmapi    , mpicom)
-    lsizeo = mct_gsmap_lsize(sdat%gsmap, mpicom)
-    call mct_gGrid_init(GGrid=gGridi, CoordChars='lat:lon:hgt', OtherChars='area:aream:mask:frac', lsize=lsizei )
+    call mct_gGrid_init(GGrid=gGridi, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsizei )
     call mct_aVect_init(avi, rList="wind:windd:qsat", lsize=lsizei)
     avi%rAttr = shr_const_spval
+
+    ! determine local size on data model grid
+    lsizeo = sdat%lsize
 
     !--- gather output grid for map logic ---
     call mct_ggrid_gather(sdat%grid, ggridoG, sdat%gsmap, 0, mpicom)
@@ -1220,8 +1314,16 @@ contains
           klon = mct_aVect_indexRA(ggridi%data   ,'lon')
           klat = mct_aVect_indexRA(sdat%grid%data,'lat')
           do n = 1,lsizei
-             if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) > 0.01_R8) domap=.true.
-             if (abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n)) > 0.01_R8) domap=.true.
+             if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) > 0.01_R8) then
+                if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) - 360._r8 > 0.01_R8) then
+                   write(6,*)'domap is true: n,londiff= ',n,abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n))
+                   domap = .true.
+                end if
+             end if
+             if (abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n)) > 0.01_R8) then
+                write(6,*)'domap is true: n,latdiff= ',n,abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n))
+                domap=.true.
+             end if
           enddo
        endif
 
@@ -1232,12 +1334,13 @@ contains
     call shr_mpi_bcast(domap,mpicom,subname//' domap')
 
     if (domap) then
-       call shr_dmodel_mapSet(smatp, ggridi, gsmapi, ni0 ,nj0, sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &            
-            'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, shr_map_fs_srcmask, shr_map_fs_scalar, &
-            compid, mpicom, 'Xonly')
+       call shr_strdata_mapSet(smatp, &
+            ggridi, gsmapi, ni0 ,nj0, sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &
+            'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, &
+            shr_map_fs_srcmask, shr_map_fs_scalar, compid, mpicom, 'Xonly')
 
-       call mct_aVect_init(avo,avi,lsizeo)
-       call mct_sMat_avMult(avi,smatp,avo)
+       call mct_aVect_init(avo, avi, lsizeo)
+       call mct_sMat_avMult(avi, smatp, avo)
        call mct_sMatP_clean(smatp)
     else
        call mct_aVect_scatter(avi, avo, sdat%gsmap, 0, mpicom)
@@ -1267,31 +1370,128 @@ contains
   end subroutine dshr_get_atm_adjustment_factors
 
   !===============================================================================
+  subroutine dshr_log_clock_advance(clock, component, logunit, rc)
 
-  subroutine dshr_set_griddata(sdat, fldname, rvalue) 
     ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(in)    :: rvalue
+    type(ESMF_Clock)               :: clock
+    character(len=*) , intent(in)  :: component
+    integer          , intent(in)  :: logunit
+    integer          , intent(out) :: rc
 
     ! local variables
-    integer :: kf
+    character(len=CL) :: cvalue, prestring
+    !-----------------------------------------------------------------------
 
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    sdat%grid%data%rAttr(kf,:) = rvalue
-  end subroutine dshr_set_griddata
+    rc = ESMF_SUCCESS
 
-  subroutine dshr_get_griddata(sdat, fldname, data) 
+    write(prestring, *) "------>Advancing ",trim(component)," from: "
+    call ESMF_ClockPrint(clock, options="currTime", unit=cvalue, preString=trim(prestring), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    write(logunit, *) trim(cvalue)
+
+    call ESMF_ClockPrint(clock, options="stopTime", unit=cvalue, &
+         preString="--------------------------------> to: ", rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    write(logunit, *) trim(cvalue)
+
+  end subroutine dshr_log_clock_advance
+
+  !===============================================================================
+  subroutine dshr_state_getscalar(state, scalar_id, scalar_value, flds_scalar_name, flds_scalar_num, rc)
+
+    ! ----------------------------------------------
+    ! Get scalar data from State for a particular name and broadcast it to all other pets
+    ! ----------------------------------------------
+
     ! input/output variables
-    type(shr_strdata_type) , intent(inout) :: sdat
-    character(len=*)       , intent(in)    :: fldname
-    real(r8)               , intent(out)   :: data(:)
+    type(ESMF_State), intent(in)     :: state
+    integer,          intent(in)     :: scalar_id
+    real(r8),         intent(out)    :: scalar_value
+    character(len=*), intent(in)     :: flds_scalar_name
+    integer,          intent(in)     :: flds_scalar_num
+    integer,          intent(inout)  :: rc
 
     ! local variables
-    integer :: kf
+    integer           :: mytask, ierr, len
+    type(ESMF_VM)     :: vm
+    type(ESMF_Field)  :: field
+    real(r8), pointer :: farrayptr(:,:)
+    real(r8)          :: tmp(1)
+    character(len=*), parameter :: subname='(state_getscalar)'
+    ! ----------------------------------------------
 
-    kf = mct_aVect_indexRA(sdat%grid%data, trim(fldname))
-    data(:) = sdat%grid%data%rAttr(kf,:)
-  end subroutine dshr_get_griddata
+    rc = ESMF_SUCCESS
 
-end module dshr_nuopc_mod
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, localPet=mytask, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (mytask == master_task) then
+      call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
+      if (chkerr(rc,__LINE__,u_FILE_u)) return
+      if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
+        call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
+        rc = ESMF_FAILURE
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+      endif
+      tmp(:) = farrayptr(scalar_id,:)
+    endif
+    call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    scalar_value = tmp(1)
+
+  end subroutine dshr_state_getscalar
+
+  !================================================================================
+  subroutine dshr_state_setscalar(scalar_value, scalar_id, State, flds_scalar_name, flds_scalar_num,  rc)
+
+    ! ----------------------------------------------
+    ! Set scalar data from State for a particular name
+    ! ----------------------------------------------
+
+    ! input/output arguments
+    real(r8),         intent(in)     :: scalar_value
+    integer,          intent(in)     :: scalar_id
+    type(ESMF_State), intent(inout)  :: State
+    character(len=*), intent(in)     :: flds_scalar_name
+    integer,          intent(in)     :: flds_scalar_num
+    integer,          intent(inout)  :: rc
+
+    ! local variables
+    integer           :: mytask
+    type(ESMF_Field)  :: lfield
+    type(ESMF_VM)     :: vm
+    real(r8), pointer :: farrayptr(:,:)
+    character(len=*), parameter :: subname='(state_setscalar)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, localPet=mytask, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=lfield, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (mytask == master_task) then
+       call ESMF_FieldGet(lfield, farrayPtr = farrayptr, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
+          call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO)
+          rc = ESMF_FAILURE
+          return
+       endif
+       farrayptr(scalar_id,1) = scalar_value
+    endif
+
+  end subroutine dshr_state_setscalar
+
+end module dshr_mod

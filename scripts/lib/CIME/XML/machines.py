@@ -12,12 +12,17 @@ logger = logging.getLogger(__name__)
 
 class Machines(GenericXML):
 
-    def __init__(self, infile=None, files=None, machine=None):
+    def __init__(self, infile=None, files=None, machine=None, extra_machines_dir=None):
         """
         initialize an object
         if a filename is provided it will be used,
         otherwise if a files object is provided it will be used
         otherwise create a files object from default values
+
+        If extra_machines_dir is provided, it should be a string giving a path to an
+        additional directory that will be searched for a config_machines.xml file; if
+        found, the contents of this file will be appended to the standard
+        config_machines.xml. An empty string is treated the same as None.
         """
 
         self.machine_node = None
@@ -36,12 +41,21 @@ class Machines(GenericXML):
 
         GenericXML.__init__(self, infile, schema)
 
-        # Append the contents of $HOME/.cime/config_machines.xml if it exists
-        # This could cause problems if node matchs are repeated when only one is expected
+        # Append the contents of $HOME/.cime/config_machines.xml if it exists.
+        #
+        # Also append the contents of a config_machines.xml file in the directory given by
+        # extra_machines_dir, if present.
+        #
+        # This could cause problems if node matches are repeated when only one is expected.
         local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
         logger.debug("Infile: {}".format(local_infile))
         if os.path.exists(local_infile):
             GenericXML.read(self, local_infile, schema)
+        if extra_machines_dir:
+            local_infile = os.path.join(extra_machines_dir, "config_machines.xml")
+            logger.debug("Infile: {}".format(local_infile))
+            if os.path.exists(local_infile):
+                GenericXML.read(self, local_infile, schema)
 
         if machine is None:
             if "CIME_MACHINE" in os.environ:

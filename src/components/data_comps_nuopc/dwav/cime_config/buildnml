@@ -94,13 +94,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # set variables that are not per-stream
-    if wav_domain_file != "UNSET":
-        full_domain_path = os.path.join(wav_domain_path, wav_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
-    else:
-        nmlgen.add_default("domainfile", value="null")
-
     #----------------------------------------------------
     # Finally, write out all the namelists.
     #----------------------------------------------------
@@ -135,7 +128,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
-    files = Files()
+    files = Files(comp_interface="nuopc")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component":"dwav"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_dwav.xml")
