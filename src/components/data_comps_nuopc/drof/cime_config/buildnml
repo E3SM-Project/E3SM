@@ -95,21 +95,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # Determine model domain filename (in drof_in)
-    if "CPLHIST" in drof_mode:
-        drof_cplhist_domain_file = case.get_value("DROF_CPLHIST_DOMAIN_FILE")
-        if drof_cplhist_domain_file == 'null':
-            logger.info("   ....  Obtaining DROF model domain info from first stream file: {}".format(streams[0]))
-        else:
-            logger.info("   ....  Obtaining DROF model domain info from stream {}".format(streams[0]))
-        nmlgen.add_default("domainfile", value=drof_cplhist_domain_file)
-    else:
-        if rof_domain_file != "UNSET":
-            full_domain_path = os.path.join(rof_domain_path, rof_domain_file)
-            nmlgen.add_default("domainfile", value=full_domain_path)
-        else:
-            nmlgen.add_default("domainfile", value="null")
-
     #----------------------------------------------------
     # Finally, write out all the namelists.
     #----------------------------------------------------
@@ -142,7 +127,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
-    files = Files()
+    files = Files(comp_interface="nuopc")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component":"drof"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_drof.xml")
