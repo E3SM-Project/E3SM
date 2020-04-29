@@ -853,6 +853,16 @@
       <mask>oEC60to30v3wLI</mask>
     </model_grid>
 
+    <model_grid alias="ne30_oARRM60to10_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">oARRM60to10_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oARRM60to10</mask>
+    </model_grid>
+
     <model_grid alias="ne120_oRRS18v3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne120np4</grid>
       <grid name="lnd">ne120np4</grid>
@@ -1169,6 +1179,16 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oEC60to30v3wLI</mask>
+    </model_grid>
+
+    <model_grid alias="ne30_oARRM60to10">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">oARRM60to10</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oARRM60to10</mask>
     </model_grid>
 
     <model_grid alias="ne30_oRRS30">
@@ -1504,6 +1524,7 @@
       <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oEC60to30v3.161222.nc</file>
       <file grid="atm|lnd" mask="oEC60to30wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oEC60to30wLI_mask.160915.nc</file>
       <file grid="atm" mask="oEC60to30v3wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oEC60to30v3wLI_mask.170802.nc</file>
+      <file grid="atm|lnd" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_ARRM60to10.200413.nc</file>
       <file grid="atm|lnd" mask="oRRS30to10">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oRRS30to10.160419.nc</file>
       <file grid="atm|lnd" mask="oRRS30to10wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oRRS30to10wLI.160930.nc</file>
       <file grid="atm|lnd" mask="oRRS30to10v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oRRS30to10v3.171101.nc</file>
@@ -1514,6 +1535,7 @@
       <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oEC60to30v3.161222.nc</file>
       <file grid="ice|ocn" mask="oEC60to30wLI">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oEC60to30wLI_mask.160915.nc</file>
       <file grid="ice|ocn" mask="oEC60to30v3wLI">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oEC60to30v3wLI_mask.160915.nc</file>
+      <file grid="ice|ocn" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_ARRM60to10.200413.nc</file>
       <file grid="ice|ocn" mask="oRRS30to10">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oRRS30to10.160419.nc</file>
       <file grid="ice|ocn" mask="oRRS30to10wLI">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oRRS30to10wLI.160930.nc</file>
       <file grid="ice|ocn" mask="oRRS30to10v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oRRS30to10v3.171101.nc</file>
@@ -1686,6 +1708,13 @@
       <nx>619264</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oARRM60to10.180716.nc</file>
+      <desc>oARRM60to10 is an Arctic-Region-Refined MPAS ocean grid with 30 km gridcells at -90 deg latitude, 60 km gridcells at -40 deg latitude, 30 km gridcells at the equator, and 10 km gridcells at 90 deg latitude; North Atlantic and North Pacific have different resolution between 0 and 60 deg latitudes:</desc>
+    </domain>
+
+    <domain name="oARRM60to10_ICG">
+      <nx>619264</nx>
+      <ny>1</ny>
+      <file grid="ice|ocn" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.ocn.oARRM60to10.180716.nc</file>
       <desc>oARRM60to10 is an Arctic-Region-Refined MPAS ocean grid with 30 km gridcells at -90 deg latitude, 60 km gridcells at -40 deg latitude, 30 km gridcells at the equator, and 10 km gridcells at 90 deg latitude; North Atlantic and North Pacific have different resolution between 0 and 60 deg latitudes:</desc>
     </domain>
 
@@ -2020,6 +2049,22 @@
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_oEC60to30v3wLI_nomask_bilin.170802.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ne30np4_aave.180906.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ne30np4_aave.180906.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4" ocn_grid="oARRM60to10">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_ARRM60to10_aave.200413.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_ARRM60to10_aave.200413.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_ARRM60to10_bilin.200413.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oARRM60to10/map_ARRM60to10_to_ne30np4_aave.200413.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oARRM60to10/map_ARRM60to10_to_ne30np4_aave.200413.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4" ocn_grid="oARRM60to10_ICG">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_ARRM60to10_aave.200413.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_ARRM60to10_aave.200413.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_ARRM60to10_bilin.200413.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oARRM60to10/map_ARRM60to10_to_ne30np4_aave.200413.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oARRM60to10/map_ARRM60to10_to_ne30np4_aave.200413.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4" ocn_grid="oRRS30to10wLI">
@@ -2701,6 +2746,16 @@
     <gridmap ocn_grid="oEC60to30v3_ICG" rof_grid="r05">
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_oEC60to30v3_smoothed.r300e600.161222.nc</map>
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_oEC60to30v3_smoothed.r300e600.161222.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="oARRM60to10" rof_grid="r05">
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_ARRM60to10_smoothed.r150e300.200413.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_ARRM60to10_smoothed.r150e300.200413.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="oARRM60to10_ICG" rof_grid="r05">
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_ARRM60to10_smoothed.r150e300.200413.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_ARRM60to10_smoothed.r150e300.200413.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oEC60to30wLI" rof_grid="r05">
