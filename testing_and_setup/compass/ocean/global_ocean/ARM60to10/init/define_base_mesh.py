@@ -11,31 +11,6 @@ import matplotlib
 matplotlib.use('Agg')
 
 
-def plot_cartopy(nPlot, varName, var, map_name):
-    ax = plt.subplot(4, 2, nPlot, projection=ccrs.PlateCarree())
-    ax.set_global()
-    im = ax.imshow(var,
-                   origin='lower',
-                   transform=ccrs.PlateCarree(),
-                   extent=[-180, 180, -90, 90], cmap=map_name,
-                   zorder=0)
-    ax.add_feature(cfeature.LAND, edgecolor='black', zorder=1)
-    gl = ax.gridlines(
-        crs=ccrs.PlateCarree(),
-        draw_labels=True,
-        linewidth=1,
-        color='gray',
-        alpha=0.5,
-        linestyle='-', zorder=2)
-    ax.coastlines()
-    gl.xlabels_top = False
-    gl.xlabels_bottom = False
-    gl.ylabels_right = False
-    gl.ylabels_left = False
-    plt.colorbar(im, shrink=.9)
-    plt.title(varName)
-
-
 def cellWidthVsLatLon():
     """
     Create cell width array for this mesh on a regular latitude-longitude grid.
@@ -53,10 +28,19 @@ def cellWidthVsLatLon():
     # To speed up for testing, set following line to 1.0 degrees
     dlon = 1.0
     dlat = dlon
+    print('\nCreating cellWidth on a lat-lon grid of: {0:.2f} x {0:.2f} degrees'.format(dlon,dlat))
+    print('This can be set higher for faster test generation\n')
     nlon = int(360. / dlon) + 1
     nlat = int(180. / dlat) + 1
     lon = np.linspace(-180., 180., nlon)
     lat = np.linspace(-90., 90., nlat)
+    km = 1.0e3
+
+    print('plotting ...')
+    fig = plt.figure()
+    plt.clf()
+    fig.set_size_inches(10.0, 10.0)
+    mdt.register_sci_viz_colormaps()
 
     # Create cell width vs latitude for Atlantic and Pacific basins
     QU1 = np.ones(lat.size)
@@ -77,7 +61,7 @@ def cellWidthVsLatLon():
                                                   max_length=0.25)
 
     # Merge Atlantic and Pacific distrubutions smoothly
-    transitionWidth = 500.0e3  # [m]
+    transitionWidth = 500.0*km
     maskSmooth = 0.5 * (1 + np.tanh(signedDistance / transitionWidth))
     cellWidthSmooth = PacGrid * maskSmooth + AtlGrid * (1 - maskSmooth)
 
@@ -102,13 +86,6 @@ def cellWidthVsLatLon():
     #                      name='signedDistance')
     #cw_filename = 'signedDistance.nc'
     # da.to_netcdf(cw_filename)
-
-    print('plotting ...')
-    fig = plt.figure()
-    plt.clf()
-    fig.set_size_inches(10.0, 10.0)
-
-    mdt.register_sci_viz_colormaps()
 
     ax = plt.subplot(4, 2, 1)
     ax.plot(lat, AtlVsLat, label='Atlantic')
@@ -135,3 +112,31 @@ def cellWidthVsLatLon():
     plt.savefig('mesh_construction.png')
 
     return cellWidth, lon, lat
+
+def plot_cartopy(nPlot, varName, var, map_name):
+    ax = plt.subplot(4, 2, nPlot, projection=ccrs.PlateCarree())
+    ax.set_global()
+    im = ax.imshow(var,
+                   origin='lower',
+                   transform=ccrs.PlateCarree(),
+                   extent=[-180, 180, -90, 90], cmap=map_name,
+                   zorder=0)
+    ax.add_feature(cfeature.LAND, edgecolor='black', zorder=1)
+    gl = ax.gridlines(
+        crs=ccrs.PlateCarree(),
+        draw_labels=True,
+        linewidth=1,
+        color='gray',
+        alpha=0.5,
+        linestyle='-', zorder=2)
+    ax.coastlines()
+    gl.xlabels_top = False
+    gl.xlabels_bottom = False
+    gl.ylabels_right = False
+    gl.ylabels_left = False
+    plt.colorbar(im, shrink=.9)
+    plt.title(varName)
+
+
+if __name__ == '__main__':
+    cellWidthVsLatLon()

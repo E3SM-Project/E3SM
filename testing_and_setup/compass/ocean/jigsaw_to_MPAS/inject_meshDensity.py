@@ -40,8 +40,8 @@ def inject_meshDensity(cw_filename, mesh_filename, on_sphere=True):
        LatPos[np.argmax(LatPos)] = np.pi / 2.0
     minCellWidth = cellWidth.min()
     meshDensityVsXY = (minCellWidth / cellWidth)**4
-    print('  minimum cell width in grid definition:', minCellWidth)
-    print('  maximum cell width in grid definition:', cellWidth.max())
+    print('  minimum cell width in grid definition: {0:.0f} km'.format(minCellWidth/1000.))
+    print('  maximum cell width in grid definition: {0:.0f} km'.format(cellWidth.max()/1000.))
 
     if on_sphere:
        X, Y = np.meshgrid(LonPos, LatPos)

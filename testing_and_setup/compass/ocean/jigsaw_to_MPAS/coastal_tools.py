@@ -701,7 +701,7 @@ def distance_from_geojson(fc, lon_grd, lat_grd, nn_search, max_length=None):
     boundary_lon = boundary_lon[mask]
     boundary_lat = boundary_lat[mask]
 
-    print("    Mean boundary latitude: {}".format(np.mean(boundary_lat)))
+    print("    Mean boundary latitude: {0:.2f}".format(np.mean(boundary_lat)))
 
     # Convert coastline points to x,y,z and create kd-tree
     npoints = len(boundary_lon)
@@ -740,7 +740,7 @@ def distance_from_geojson(fc, lon_grd, lat_grd, nn_search, max_length=None):
         distance = np.sqrt(distance)
     end = timeit.default_timer()
     print("   Done")
-    print("   " + str(end - start) + " seconds")
+    print("   {0:.0f} seconds".format(end-start))
 
     # Make distance array that corresponds with cell_width array
     distance = np.reshape(distance, Lon_grd.shape)
