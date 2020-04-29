@@ -2026,6 +2026,14 @@
     <desc>Machines directory location</desc>
   </entry>
 
+  <entry id="EXTRA_MACHDIR">
+    <type>char</type>
+    <default_value></default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>Path to an extra directory containing supplementary machines files</desc>
+  </entry>
+
   <entry id="RUNDIR">
     <type>char</type>
     <default_value>$CIME_OUTPUT_ROOT/$CASE/run</default_value>

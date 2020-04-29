@@ -105,6 +105,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         mpilib = case.get_value("MPILIB")
         sysos = case.get_value("OS")
         comp_interface = case.get_value("COMP_INTERFACE")
+        extra_machines_dir = case.get_value("EXTRA_MACHDIR")
         expect(mach is not None, "xml variable MACH is not set")
 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
@@ -113,13 +114,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             reread = not os.path.isfile("env_mach_specific.xml")
             if reread:
                 case.flush()
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
+            configure(Machines(machine=mach, extra_machines_dir=extra_machines_dir),
+                      caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True,
+                      extra_machines_dir=extra_machines_dir)
             if reread:
                 case.read_xml()
 
         # Also write out Cmake macro file
         if not os.path.isfile("Macros.cmake"):
-            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
+            configure(Machines(machine=mach, extra_machines_dir=extra_machines_dir),
+                      caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos, noenv=True,
+                      extra_machines_dir=extra_machines_dir)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
