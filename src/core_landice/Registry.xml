@@ -165,6 +165,18 @@
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
 		/>
+		<nml_option name="config_grounded_calving" type="character" default_value="none" units="unitless"
+			    description="Selection of method for calving grounded ice."
+			    possible_values="'none', 'von_Mises_stress', 'uniform' (specified by config_uniform_grounded_calving_velocity)"
+		/>
+		<nml_option name="config_uniform_grounded_calving_velocity" type="real" default_value="1.15e-4"  units="m s^{-1}"
+			    description="Uniform calving velocity applied at all grounded marine margins. Default is 10 m/day."
+			    possible_values="Any non-negative real value"
+		/>
+		<nml_option name="config_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+			    possible_values="Any positive real value"
+		/>
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">
