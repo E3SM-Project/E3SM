@@ -43,6 +43,11 @@
       <grid name="atm">C768</grid>
     </model_grid>
 
+    <model_grid alias="T62_Atlantic8">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">Atlantic8</grid>      
+    </model_grid>
   </grids>
 
   <!-- ======================================================== -->
@@ -50,7 +55,6 @@
   <!-- ======================================================== -->
 
   <domains>
-
     <domain name="null">
       <!-- null grid -->
       <nx>0</nx> <ny>0</ny>
@@ -59,7 +63,6 @@
     </domain>
 
     <!-- fvcubed domains-->
-
     <domain name="C96">
       <nx>55296</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.C96_gx1v6.181018.nc</file>
@@ -87,6 +90,24 @@
       <desc>C768 is a fvcubed 13 km resolution grid:</desc>
       <support>Experimental for fv3 dycore</support>
     </domain>
+
+    <!-- domains for data atmosphere -->
+    <domain name="T62">
+      <nx>192</nx>  <ny>94</ny>
+      <file grid="atm|lnd" mask="Atlantic8">/glade/u/home/turuncu/UFS/Atlantic8/T62/domain.lnd.T62_Atlantic8.200423.nc</file>
+      <file grid="ocnice"  mask="Atlantic8">/glade/u/home/turuncu/UFS/Atlantic8/T62/domain.ocn.T62_Atlantic8.200423.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh.nc</mesh>
+      <desc>T62 is Gaussian grid:</desc>
+    </domain>
+
+    <!-- domains for regional ocean (HYCOM) -->
+    <domain name="Atlantic8">
+      <nx>1135</nx> <ny>633</ny>
+      <file grid="ocnice">/glade/u/home/turuncu/UFS/Atlantic8/T62/domain.ocn.Atlantic8.2004123.nc</file>
+      <mesh driver="nuopc">/glade/u/home/turuncu/UFS/Atlantic8/T62/Atlantic8_SCRIP_230420_ESMFmesh.nc</mesh>
+      <desc>Atlantic8 is a Atlantic grid for Dorian case at 7-8 km HYCOM grid:</desc>
+      <support>For regional HYCOM experiments</support>
+    </domain>    
   </domains>
 
   <!-- ======================================================== -->
@@ -116,6 +137,12 @@
   </required_gridmaps>
 
   <gridmaps driver="nuopc">
+    <gridmap atm_grid="T62" ocn_grid="Atlantic8">
+    <map name="ATM2OCN_FMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_T62_TO_Atlantic8_aave.200423.nc</map>
+    <map name="ATM2OCN_SMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_T62_TO_Atlantic8_blin.200423.nc</map>
+    <map name="ATM2OCN_VMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_T62_TO_Atlantic8_blin.200423.nc</map>
+    <map name="OCN2ATM_FMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_Atlantic8_TO_T62_aave.200423.nc</map>
+    <map name="OCN2ATM_SMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_Atlantic8_TO_T62_aave.200423.nc</map>
+    </gridmap>
   </gridmaps>
-
 </grid_data>

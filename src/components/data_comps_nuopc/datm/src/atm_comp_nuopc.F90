@@ -427,6 +427,10 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
 
+    ! Write mesh for debugging
+    call ESMF_MeshWrite(mesh, filename='datm_mesh', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
     call datm_comp_realize(importState, exportState, rc=rc)
