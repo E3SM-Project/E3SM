@@ -1157,9 +1157,7 @@ module li_calving
 
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
-         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
-               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
-                  ! calculate only for floating ice - map of "potential" calving rate
+         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
 
          call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
          
@@ -1448,16 +1446,16 @@ module li_calving
                inwardNeighbors = 0
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
-                  if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
-                          .and. (.not. li_mask_is_dynamic_margin(jCell))) then
+                  if ( li_mask_is_dynamic_ice(cellMask(jCell)) &
+                          .and. (.not. li_mask_is_dynamic_margin(jCell)) ) then
                      inwardNeighbors = inwardNeighbors + 1
                   endif
                enddo
                ! Now distribute the flux evenly amongst the neighbors
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
-                  if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
-                          .and. (.not. li_mask_is_dynamic_margin(jCell))) then
+                  if ( li_mask_is_dynamic_ice(cellMask(jCell)) &
+                          .and. (.not. li_mask_is_dynamic_margin(jCell)) ) then
                      ! this is thick neighbor that is not itself a margin - remove as much ice from here as we can
                      removeVolumeHere = min(volumeLeft / real(inwardNeighbors, kind=RKIND), cellVolume(jCell))
                         ! < how much we want to remove here
@@ -1628,7 +1626,7 @@ module li_calving
       calvingFrontMask = 0 !initialize
 
       do iCell = 1, nCells
-         if ( (li_mask_is_floating_ice(cellMask(iCell))) .and. (li_mask_is_dynamic_margin(cellMask(iCell))) ) then
+         if ( (li_mask_is_dynamic_margin(cellMask(iCell))) ) then
             oceanNeighbor = .false.
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
