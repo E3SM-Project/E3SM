@@ -86,7 +86,6 @@ module physpkg
   character(len=16) :: shallow_scheme
   character(len=16) :: macrop_scheme
   character(len=16) :: microp_scheme 
-  integer           :: deep_num_steps          ! Number of deep convection substeps
   integer           :: cld_macmic_num_steps    ! Number of macro/micro substeps
   logical           :: do_clubb_sgs
   logical           :: use_subcol_microp   ! if true, use subcolumns in microphysics
@@ -168,7 +167,6 @@ subroutine phys_register
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
                       microp_scheme_out        = microp_scheme,   &
-                      deep_num_steps_out       = deep_num_steps, &
                       cld_macmic_num_steps_out = cld_macmic_num_steps, &
                       do_clubb_sgs_out         = do_clubb_sgs,     &
                       do_aerocom_ind3_out      = do_aerocom_ind3,  &
@@ -1915,9 +1913,6 @@ subroutine tphysbc (ztodt,               &
 
     integer  i,k,m,ihist                       ! Longitude, level, constituent indices
     integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
-    ! for ZM substepping
-    integer :: deep_it                         ! iteration variables
-    real(r8) :: deep_ztodt                     ! modified timestep
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
     real(r8) :: cld_macmic_ztodt               ! modified timestep
@@ -2298,11 +2293,6 @@ if (l_dry_adj) then
     call t_stopf('dry_adjustment')
 
 end if
-    !
-    !===================================================
-    ! Moist convection
-    !===================================================
-    call t_startf('moist_convection')
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2323,71 +2313,6 @@ end if
     call pbuf_get_field(pbuf, rprddp_idx, rprddp)
     call pbuf_get_field(pbuf, nevapr_dpcu_idx, nevapr_dpcu)
     call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
-
-    prec_dp_accum = 0._r8
-    snow_dp_accum = 0._r8
-    rprddp_accum = 0._r8
-    nevapr_dpcu_accum = 0._r8
-    ttend_dp_accum = 0._r8
-    rliq_accum = 0._r8
-
-    deep_ztodt = ztodt / deep_num_steps
-
-    do deep_it = 1, deep_num_steps
-       !
-       ! Since the PBL doesn't pass constituent perturbations, they
-       ! are zeroed here for input to the moist convection routine
-       !
-       call t_startf ('convect_deep_tend')
-       call convect_deep_tend(  &
-            cmfmc,      cmfcme,             &
-            dlf,        pflx,    zdu,       &
-            rliq,    &
-            deep_ztodt,   &
-            state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-            dsubcld, jt, maxg, ideep, lengath) 
-       call t_stopf('convect_deep_tend')
-
-       call physics_ptend_scale(ptend, 1._r8/deep_num_steps, ncol)
-       call physics_update(state, ptend, ztodt, tend)
-
-       ! Check energy integrals, including "reserved liquid"
-       flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-       call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, &
-            flx_cnd/deep_num_steps, snow_dp/deep_num_steps, zero)
-       
-       prec_dp_accum(:ncol) = prec_dp_accum(:ncol) + prec_dp(:ncol)
-       snow_dp_accum(:ncol) = snow_dp_accum(:ncol) + snow_dp(:ncol)
-       rprddp_accum(:ncol,:) = rprddp_accum(:ncol,:) + rprddp(:ncol,:)
-       nevapr_dpcu_accum(:ncol,:) = nevapr_dpcu_accum(:ncol,:) + nevapr_dpcu(:ncol,:)
-       ttend_dp_accum(:ncol,:) = ttend_dp_accum(:ncol,:) + ttend_dp(:ncol,:)
-       rliq_accum(:ncol) = rliq_accum(:ncol) + rliq(:ncol)
-    end do
-    prec_dp(:ncol) = prec_dp_accum(:ncol) / deep_num_steps
-    snow_dp(:ncol) = snow_dp_accum(:ncol) / deep_num_steps
-    rprddp(:ncol,:) = rprddp_accum(:ncol,:) / deep_num_steps
-    nevapr_dpcu(:ncol,:) = nevapr_dpcu_accum(:ncol,:) / deep_num_steps
-    ttend_dp(:ncol,:) = ttend_dp_accum(:ncol,:) / deep_num_steps
-    rliq(:ncol) = rliq_accum(:ncol) / deep_num_steps
-
-    !
-    ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection
-    !
-    call t_startf ('convect_shallow_tend')
-
-    call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
-         dlf        , dlf2   ,  rliq   , rliq2, & 
-         state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
-    call t_stopf ('convect_shallow_tend')
-
-    call physics_update(state, ptend, ztodt, tend)
-
-    flx_cnd(:ncol) = prec_sh(:ncol) + rliq2(:ncol)
-    call check_energy_chng(state, tend, "convect_shallow", nstep, ztodt, zero, flx_cnd, snow_sh, zero)
-
-    call check_tracers_chng(state, tracerint, "convect_shallow", nstep, ztodt, zero_tracers)
-
-    call t_stopf('moist_convection')
 
 if (l_tracer_aero) then
 
@@ -2461,7 +2386,60 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
 
+       prec_dp_accum = 0._r8
+       snow_dp_accum = 0._r8
+       rprddp_accum = 0._r8
+       nevapr_dpcu_accum = 0._r8
+       ttend_dp_accum = 0._r8
+       rliq_accum = 0._r8
+
        do macmic_it = 1, cld_macmic_num_steps
+          !
+          !===================================================
+          ! Moist convection
+          !===================================================
+          call t_startf('moist_convection')
+
+          !
+          ! Since the PBL doesn't pass constituent perturbations, they
+          ! are zeroed here for input to the moist convection routine
+          !
+          call t_startf ('convect_deep_tend')
+          call convect_deep_tend(  &
+               cmfmc,      cmfcme,             &
+               dlf,        pflx,    zdu,       &
+               rliq,    &
+               cld_macmic_ztodt,   &
+               state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
+               dsubcld, jt, maxg, ideep, lengath) 
+          call t_stopf('convect_deep_tend')
+
+          call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
+          call physics_update(state, ptend, ztodt, tend)
+
+          ! Check energy integrals, including "reserved liquid"
+          flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
+          call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, &
+               flx_cnd/cld_macmic_num_steps, snow_dp/cld_macmic_num_steps, zero)
+
+          !
+          ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection
+          !
+          call t_startf ('convect_shallow_tend')
+
+          call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
+               dlf        , dlf2   ,  rliq   , rliq2, & 
+               state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
+          call t_stopf ('convect_shallow_tend')
+
+          call physics_update(state, ptend, ztodt, tend)
+
+          flx_cnd(:ncol) = prec_sh(:ncol) + rliq2(:ncol)
+          call check_energy_chng(state, tend, "convect_shallow", nstep, ztodt, zero, flx_cnd, snow_sh, zero)
+
+          call check_tracers_chng(state, tracerint, "convect_shallow", nstep, ztodt, zero_tracers)
+
+          call t_stopf('moist_convection')
 
         if (l_st_mac) then
 
@@ -2647,6 +2625,12 @@ end if
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
+          prec_dp_accum(:ncol) = prec_dp_accum(:ncol) + prec_dp(:ncol)
+          snow_dp_accum(:ncol) = snow_dp_accum(:ncol) + snow_dp(:ncol)
+          rprddp_accum(:ncol,:) = rprddp_accum(:ncol,:) + rprddp(:ncol,:)
+          nevapr_dpcu_accum(:ncol,:) = nevapr_dpcu_accum(:ncol,:) + nevapr_dpcu(:ncol,:)
+          ttend_dp_accum(:ncol,:) = ttend_dp_accum(:ncol,:) + ttend_dp(:ncol,:)
+          rliq_accum(:ncol) = rliq_accum(:ncol) + rliq(:ncol)
 
        end do ! end substepping over macrophysics/microphysics
 
@@ -2656,6 +2640,12 @@ end if
        snow_pcw(:ncol) = snow_pcw_macmic(:ncol)/cld_macmic_num_steps
        prec_str(:ncol) = prec_pcw(:ncol) + prec_sed(:ncol)
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
+       prec_dp(:ncol) = prec_dp_accum(:ncol) / cld_macmic_num_steps
+       snow_dp(:ncol) = snow_dp_accum(:ncol) / cld_macmic_num_steps
+       rprddp(:ncol,:) = rprddp_accum(:ncol,:) / cld_macmic_num_steps
+       nevapr_dpcu(:ncol,:) = nevapr_dpcu_accum(:ncol,:) / cld_macmic_num_steps
+       ttend_dp(:ncol,:) = ttend_dp_accum(:ncol,:) / cld_macmic_num_steps
+       rliq(:ncol) = rliq_accum(:ncol) / cld_macmic_num_steps
 
      end if !microp_scheme
 
