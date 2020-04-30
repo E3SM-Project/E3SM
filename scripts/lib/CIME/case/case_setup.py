@@ -80,6 +80,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
     mpilib = case.get_value("MPILIB")
     sysos = case.get_value("OS")
     comp_interface = case.get_value("COMP_INTERFACE")
+    extra_machines_dir = case.get_value("EXTRA_MACHDIR")
     expect(mach is not None, "xml variable MACH is not set")
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
@@ -106,7 +107,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         # Cannot leave case in bad state (missing env_mach_specific.xml)
         if clean and not os.path.isfile("env_mach_specific.xml"):
             case.flush()
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True)
+            configure(Machines(machine=mach, extra_machines_dir=extra_machines_dir),
+                      caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True,
+                      extra_machines_dir=extra_machines_dir)
             case.read_xml()
 
     if not clean:
