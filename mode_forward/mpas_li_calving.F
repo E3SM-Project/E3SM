@@ -106,7 +106,7 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving, config_grounded_calving
+      character (len=StrKIND), pointer :: config_calving 
       logical, pointer :: config_print_calving_info, config_data_calving
       real(kind=RKIND), pointer :: config_calving_timescale
 
@@ -143,7 +143,6 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
-      call mpas_pool_get_config(liConfigs, 'config_grounded_calving', config_grounded_calving)
 
       if (trim(config_calving) == 'none') then
          return ! do nothing
@@ -219,23 +218,18 @@ module li_calving
          call mask_calving(domain, err_tmp)
          err = ior(err, err_tmp)
 
+      elseif (trim(config_calving) == 'von_Mises_stress') then
+
+         call von_Mises_calving(domain, err_tmp)
+         err = ior(err, err_tmp)
+
       else
 
          call mpas_log_write("Invalid option for config_calving specified: " // trim(config_calving), MPAS_LOG_ERR)
          err = 1
 
       endif
-
-
-      ! compute calvingThickness for grounded marine margins
-      if (trim(config_grounded_calving) == 'von_Mises_stress') then
-
-         call von_Mises_calving(domain, err_tmp)
-         err = ior(err, err_tmp)
-      ! Add options here for uniform calving rate, etc
-      endif
-
-
+      
       ! now also remove any icebergs
       call remove_icebergs(domain)
 
@@ -1381,49 +1375,48 @@ module li_calving
       real (kind=RKIND), pointer :: config_default_flowParamA
       integer, pointer :: nCells
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
-      real (kind=RKIND), dimension(:), pointer :: groundedMarineMarginMask
 
       err = 0
       
       call mpas_pool_get_config(liConfigs, 'config_von_Mises_threshold_stress', config_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM ALBANY!!!!!
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
-
+      
+      
       block => domain % blocklist
       do while (associated(block))
          ! get pools
           call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-          call mpas_pool_get_subpool(block % structs, 'geometry', velocityPool)
-          call mpas_pool_get_subpool(block % structs, 'geometry', meshPool)
-
+          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          ! get fields
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_array(velocityPool, 'eMax', eMax)
           call mpas_pool_get_array(velocityPool, 'eMin', eMin)
+          call mpas_pool_get_array(velocityPool, 'vonMisesStress', vonMisesStress)
           call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
           call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
           call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity) 
-          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
 
          ! Calculate effective von Mises stress, ASSUMING "ice viscosity
-         ! parameter" = 2* sitiffnessFactor * A**(-1/n)
+         ! parameter" = 2 * sitiffnessFactor * A**(-1/n)
           vonMisesStress(:) = sqrt(3.0_RKIND) * 2.0_RKIND * stiffnessFactor(:) * &
                               config_default_flowParamA**(-1.0_RKIND / config_flowLawExponent) * &
-                              ( 0.5_RKIND * (max(0.0_RKIND, eMax(:))**2 + &
-                              max(0.0_RKIND, eMin(:))**2) )**(1 / (2 * config_flowLawExponent))
+                              ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(:)))**2 + &
+                              (max(0.0_RKIND, eMin(:)))**2) )**(1 / (2 * config_flowLawExponent))
           
-          do iCell = 1, nCells
-            ! Calculate calving velocity for grounded cells at marine margin
-             if ( groundedMarineMarginMask(iCell) == 1 ) then
-                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
-                                         vonMisesStress(iCell) / config_von_Mises_threshold_stress
-             endif
+         ! Calculate calving velocity for grounded cells at marine margin
+          calvingVelocity(:) = sqrt(xvelmean(:)**2 + yvelmean(:)**2) * &
+                                         vonMisesStress(:) / config_von_Mises_threshold_stress
+          
+          call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
 
-          enddo
-
-         block => block % next
+          block => block % next
+ 
       enddo ! associated(block)
+
    end subroutine von_Mises_calving 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
