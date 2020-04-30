@@ -154,11 +154,8 @@ contains
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-       call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-
        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-
        call mpas_pool_get_array(meshPool, 'xCell', xCell)
        call mpas_pool_get_array(meshPool, 'yCell', yCell)
        call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
@@ -176,8 +173,6 @@ contains
     !--------------------------------------------------------------------
     ! Use this section to set initial values
     !--------------------------------------------------------------------
-    call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -209,7 +204,6 @@ contains
        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
-       call mpas_pool_get_array(scratchPool, 'psiVertex', psiVertex)
        call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
        call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
        call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=1)
@@ -226,6 +220,11 @@ contains
        call mpas_dmpar_min_real(domain % dminfo, xMin, xMinGlobal)
        call mpas_dmpar_max_real(domain % dminfo, xMax, xMaxGlobal)
        call mpas_dmpar_min_real(domain % dminfo, dcEdgeMin, dcEdgeMinGlobal)
+
+       !$omp master
+       allocate(psiVertex(nVerticesSolve))
+       !$omp end master
+       !$omp barrier
 
        ! mark north / south boundaries
        if(config_write_cull_cell_mask) then
@@ -328,6 +327,11 @@ contains
          normalVelocity(:,iEdge) = -1.0_RKIND * (psiVertex(verticesOnEdge(1, iEdge)) &
                                  - psiVertex(verticesOnEdge(2, iEdge)))/dvEdge(iEdge)
        end do
+
+       !$omp barrier
+       !$omp master
+       deallocate(psiVertex)
+       !$omp end master
 
        block_ptr => block_ptr % next
     end do  ! do while(associated(block_ptr))
