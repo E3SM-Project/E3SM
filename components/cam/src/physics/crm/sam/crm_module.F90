@@ -352,7 +352,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
           !open the crm v component
           v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)
 #else       
+
+#ifdef MMF_ENABLE_VWIND
+          v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)
+#else
           v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)*YES3D
+#endif
+
 #endif
           w   (icrm,i,j,k) = crm_state_w_wind     (icrm,i,j,k)
           tabs(icrm,i,j,k) = crm_state_temperature(icrm,i,j,k)
@@ -377,7 +383,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             !open the crm v component
             v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) ) 
 #else     
+
+#ifdef MMF_ENABLE_VWIND
+            v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) )
+#else
             v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) )*YES3D
+#endif
+
 #endif
           enddo
         enddo
@@ -529,7 +541,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       !open the crm v component
       vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )
 #else
+
+#ifdef MMF_ENABLE_VWIND
+      vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )
+#else
       vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )*YES3D
+#endif
+
 #endif
       ttend(icrm,k) = (crm_input%tl(icrm,l)+gamaz(icrm,k)- fac_cond*(crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l))-fac_fus*crm_input%qiil(icrm,l)-t00(icrm,k))*idt_gl
       qtend(icrm,k) = (crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)-q0(icrm,k))*idt_gl
@@ -1539,7 +1557,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         enddo
       enddo
       crm_output%tkesgsz   (icrm,l)= rho(icrm,k)*tmp*factor_xy
-      crm_output%tkez      (icrm,l)= rho(icrm,k)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output%tkesgsz(icrm,l)
+#ifdef MMF_ENABLE_VWIND
+      crm_output%tkez      (icrm,l)= rho(icrm,k)*0.5*(u2z+v2z      +w2z)*factor_xy + crm_output%tkesgsz(icrm,l)
+#else
+      crm_output%tkez      (icrm,l)= rho(icrm,k)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output%tkesgsz(icrm,l) 
+#endif
       tmp = 0
       do j = 1 , ny
         do i = 1 , nx
