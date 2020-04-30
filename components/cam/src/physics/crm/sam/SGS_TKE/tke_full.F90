@@ -100,7 +100,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   tk_min_value = 0.05
   tk_min_depth = 500.
 
-  Cs  = 0.15
+#ifdef MMF_SGS_TUNE
+  Cs  = 0.4
+#else
+   Cs  = 0.15
+#endif
   Ck  = 0.1
   Ce  = Ck**3/Cs**4
   Ces = Ce/0.7*3.0
