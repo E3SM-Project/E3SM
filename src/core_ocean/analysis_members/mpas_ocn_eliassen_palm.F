@@ -439,7 +439,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'eliassenPalmAM', am_epftPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'eliassenPalmAMPKGScratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 

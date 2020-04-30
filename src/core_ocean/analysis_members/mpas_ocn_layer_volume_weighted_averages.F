@@ -162,7 +162,6 @@ contains
       type (mpas_pool_type), pointer :: layerVolumeWeightedAverageAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: tracersPool
@@ -256,9 +255,6 @@ contains
       ! NOTE: code is not valid for multiple blocks !
       block => domain % blocklist
       do while (associated(block))
-
-         ! get pointers to scratch variables
-         call mpas_pool_get_subpool(block % structs, 'layerVolumeWeightedAverageAMScratch', scratchPool)
 
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
