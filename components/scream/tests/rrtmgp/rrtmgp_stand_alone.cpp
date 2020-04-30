@@ -12,7 +12,7 @@
  */
 
 // #include "physics/rrtmgp/atmosphere_microphysics.hpp"
-// #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 // #include "physics/rrtmgp/rrtmgp_functions_f90.hpp"
 
 namespace scream {
@@ -30,6 +30,10 @@ namespace scream {
         using namespace scream::control;
 
         // Do something interesting here...
+        // NOTE: these will get replaced with AD stuff that handles these
+        rrtmgp_init_f90();
+        rrtmgp_main_f90();
+        rrtmgp_finalize_f90();
 
         // If we got here, we were able to run the above code
         REQUIRE(true);
