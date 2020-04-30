@@ -9,9 +9,9 @@ contains
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd), intent (in) :: bflx(ncrms)
-    real(crm_rknd) u_h0, tau00, tmp
+    real(crm_rknd) wspd, tau00, tmp
     integer i,j,icrm
-
+    real(crm_rknd), parameter :: min_wspd = 1e-4
     !--------------------------------------------------------
     !$acc parallel loop async(asyncid)
     do icrm = 1 , ncrms
@@ -24,10 +24,11 @@ contains
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
-          u_h0 = max(real(1.,crm_rknd),sqrt((0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug)**2+(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg)**2))
-          tau00 = rho(icrm,1) * diag_ustar(z(icrm,1),bflx(icrm),u_h0,z0(icrm))**2
-          fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug-uhl(icrm))/u_h0*tau00
-          fluxbv(icrm,i,j) = -(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/u_h0*tau00
+          wspd = max( min_wspd, sqrt( (0.5*(u(icrm,i+1,j      ,1)+u(icrm,i,j,1)))**2  &
+                                     +(0.5*(v(icrm,i  ,j+YES3D,1)+v(icrm,i,j,1)))**2) )
+          tau00 = rho(icrm,1) * diag_ustar(z(icrm,1),bflx(icrm),wspd,z0(icrm))**2
+          fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j      ,1)+u(icrm,i,j,1))+ug-uhl(icrm))/wspd*tau00
+          fluxbv(icrm,i,j) = -(0.5*(v(icrm,i  ,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/wspd*tau00
           tmp = fluxbu(icrm,i,j)/dble(nx*ny)
           !$acc atomic update
           taux0(icrm) = taux0(icrm) + tmp
