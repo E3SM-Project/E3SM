@@ -1320,7 +1320,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
        call tphysac(ztodt, cam_in(c), sgh(1,c), sgh30(1,c), &
-#ifdef MMF_MOVE_CRM
+#ifdef MMF_MOVE_RAD
             landm(1,c), fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), &
 #endif
             cam_out(c), phys_state(c), phys_tend(c), phys_buffer_chunk,&
@@ -1387,9 +1387,9 @@ end subroutine phys_final
 
 
 subroutine tphysac (ztodt, cam_in, sgh, sgh30, &
-#ifdef MMF_MOVE_CRM
+#ifdef MMF_MOVE_RAD
                     landm, fsns, fsnt, flns, flnt, &
-#endif
+#endif /* MMF_MOVE_RAD */
                     cam_out, state, tend, pbuf, fsds )
     !----------------------------------------------------------------------- 
     ! 
@@ -1462,7 +1462,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, &
     real(r8), intent(in) :: ztodt                  ! Two times model timestep (2 delta-t)
     real(r8), intent(in) :: sgh(pcols)             ! Std. deviation of orography for gwd
     real(r8), intent(in) :: sgh30(pcols)           ! Std. deviation of 30s orography for tms
-#ifdef MMF_MOVE_CRM
+#ifdef MMF_MOVE_RAD
     real(r8), intent(in) :: landm(pcols)           ! land fraction ramp
     real(r8), intent(inout) :: fsds(pcols)         ! Surface solar down flux
     real(r8), intent(inout) :: fsns(pcols)         ! Surface solar absorbed flux
@@ -1543,12 +1543,13 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, &
 #ifdef MMF_MOVE_CRM
     ! MMF stuff for running CRM from tphysac
     logical           :: use_MMF
-    real(r8)          :: crm_run_time              ! length of CRM integration
     real(r8), dimension(pcols) :: sp_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
     real(r8), dimension(pcols) :: sp_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
     real(r8), dimension(pcols) :: sp_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
     type(crm_ecpp_output_type) :: crm_ecpp_output   ! CRM output data for ECPP calculations
     real(r8) :: net_flx(pcols)
+    ! real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
+    real(r8), pointer, dimension(:,:) :: cldo       ! old cloud fraction
 #endif /* MMF_MOVE_CRM */
 
     !
@@ -1839,65 +1840,59 @@ if (l_gw_drag) then
 end if ! l_gw_drag
 
 
-#ifdef MMF_MOVE_CRM
+
     !---------------------------------------------------------------------------
     ! Run the CRM (MMF configuration)
     !---------------------------------------------------------------------------
-    write(*,*) 'WH_DEBUG - check 1,2'
-    call phys_getopts( use_MMF_out = use_MMF )
+#ifdef MMF_MOVE_CRM
     if (use_MMF) then
-      crm_run_time = ztodt
-      write(*,*) 'WH_DEBUG - calling CRM from tphysAC - nstep=',nstep
+      call phys_getopts( use_MMF_out = use_MMF )
+      
       call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                             species_class, crm_ecpp_output,                     &
                             sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
 
-      call physics_update(state, ptend, crm_run_time, tend)
-
-      call check_energy_chng(state, tend, "crm_tend_ac", nstep, crm_run_time,  &
+      call physics_update(state, ptend, ztodt, tend)
+      call check_energy_chng(state, tend, "crm_tend_tphysac", nstep, ztodt,  &
                              zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+
+
+      ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDO'), cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld , start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
     end if ! use_MMF
+#endif /* MMF_MOVE_CRM */
     !---------------------------------------------------------------------------
     ! Radiation computations
     !---------------------------------------------------------------------------
-#ifdef MMF_MOVE_CRM
-    if (.not. is_first_step()) then
-#endif /* MMF_MOVE_CRM */
-
-    call t_startf('radiation')
-
-    call radiation_tend(state,ptend, pbuf, &
-         cam_out, cam_in, &
-         cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
-         fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx,is_cmip6_volc)
-
-    ! Set net flux used by spectral dycores
-    do i=1,ncol
-       tend%flx_net(i) = net_flx(i)
-    end do
-
-    ! don't add radiative tendency to GCM temperature for MMF
-    ! as it was added above as part of crm tendency.
-    if (use_MMF) ptend%s = 0.
-
-    call physics_update(state, ptend, ztodt, tend)
-
+#ifdef MMF_MOVE_RAD
     if (use_MMF) then
-      call check_energy_chng(state, tend, "spradheat", nstep, ztodt, zero, zero, zero, zero)
-    else
-      call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
-    endif
+      if (.not. is_first_step()) then
 
-    call t_stopf('radiation')
+        call t_startf('radiation_ac')
+        call radiation_tend(state,ptend, pbuf, cam_out, cam_in, &
+             cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
+             fsns, fsnt, flns, flnt, fsds, net_flx,is_cmip6_volc)
 
-#ifdef MMF_MOVE_CRM
-    end if ! not is_first_step
-#endif /* MMF_MOVE_CRM */
+        ! Set net flux used by spectral dycores
+        do i=1,ncol
+           tend%flx_net(i) = net_flx(i)
+        end do
+
+        ! do not apply radiative tendency, it is added in CRM
+        ptend%s = 0.
+
+        call physics_update(state, ptend, ztodt, tend)
+        call check_energy_chng(state, tend, "mmf_rad_heat_tphysac", nstep, ztodt, zero, zero, zero, zero)
+        call t_stopf('radiation_ac')
+
+      end if ! not is_first_step
+    end if ! use_MMF
+#endif /* MMF_MOVE_RAD */
     !---------------------------------------------------------------------------
     !---------------------------------------------------------------------------
-#endif /* MMF_MOVE_CRM */
-
+    
 
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -3038,6 +3033,7 @@ end if
       !-------------------------------------------------------------------------
       ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
       !-------------------------------------------------------------------------
+#ifndef MMF_MOVE_CRM
 
       ifld = pbuf_get_index('CLDO')
       call pbuf_get_field(pbuf, ifld, cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
@@ -3047,6 +3043,7 @@ end if
 
       cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
 
+#endif /* MMF_MOVE_CRM */
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
    end if ! use_MMF
@@ -3155,9 +3152,9 @@ if (l_rad) then
     !===================================================
     ! Radiation computations
     !===================================================
-#ifdef MMF_MOVE_CRM
+#ifdef MMF_MOVE_RAD
   if (is_first_step()) then
-#endif /* MMF_MOVE_CRM */
+#endif /* MMF_MOVE_RAD */
     call t_startf('radiation')
 
     call radiation_tend(state,ptend, pbuf, &
@@ -3185,9 +3182,9 @@ if (l_rad) then
     endif
 
     call t_stopf('radiation')
-#ifdef MMF_MOVE_CRM
+#ifdef MMF_MOVE_RAD
   end if ! is_first_step
-#endif /* MMF_MOVE_CRM */
+#endif /* MMF_MOVE_RAD */
 
 end if ! l_rad
 
