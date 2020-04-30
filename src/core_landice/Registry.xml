@@ -127,7 +127,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'von_Mises_stress', 'mask'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -164,14 +164,6 @@
                 <nml_option name="config_remove_small_islands" type="logical" default_value=".false." units="unitless"
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
-		/>
-		<nml_option name="config_grounded_calving" type="character" default_value="none" units="unitless"
-			    description="Selection of method for calving grounded ice."
-			    possible_values="'none', 'von_Mises_stress', 'uniform' (specified by config_uniform_grounded_calving_velocity)"
-		/>
-		<nml_option name="config_uniform_grounded_calving_velocity" type="real" default_value="1.15e-4"  units="m s^{-1}"
-			    description="Uniform calving velocity applied at all grounded marine margins. Default is 10 m/day."
-			    possible_values="Any non-negative real value"
 		/>
 		<nml_option name="config_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
 			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
@@ -1215,6 +1207,9 @@ is the value of that variable from the *previous* time level!
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
                 />
+		<var name="vonMisesStress" type="real" dimensions="nCells Time" units="Pa"
+		     description="von Mises stress used for calving law"
+		/>
 
 		<!-- Variables only needed by HO solver -->
                 <var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
