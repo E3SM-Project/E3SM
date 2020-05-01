@@ -37,6 +37,8 @@ def _download_checksum_file(rundir):
             server = CIME.Servers.WGET.wget_login(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
+        if not server:
+            continue
 
         if chksum_file:
             chksum_found = True
@@ -119,7 +121,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False, i
         return False
     full_path = os.path.join(input_data_root, rel_path)
     if ic_filepath:
-        full_path = full_path.replace(ic_filepath, "")
+        full_path = full_path.replace(ic_filepath, "/")
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
@@ -276,7 +278,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     rundir = case.get_value("RUNDIR")
     # Fill in defaults as needed
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
-    input_ic_root = case.get_value("DIN_LOC_IC")
+    input_ic_root = case.get_value("DIN_LOC_IC", resolved=True)
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
@@ -300,7 +302,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
         if not server:
-            return False
+            return None
 
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))
@@ -318,6 +320,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                 if(full_path):
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
+                    rel_path = full_path
                     if input_ic_root and input_ic_root in full_path \
                        and ic_filepath:
                         rel_path = full_path.replace(input_ic_root, ic_filepath)
@@ -332,7 +335,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
                     model = os.path.basename(data_list_file).split('.')[0]
 
-                    if ("/" in rel_path and rel_path == full_path):
+                    if ("/" in rel_path and rel_path == full_path and not full_path.startswith('unknown')):
                         # User pointing to a file outside of input_data_root, we cannot determine
                         # rel_path, and so cannot download the file. If it already exists, we can
                         # proceed
@@ -352,7 +355,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                         # value and ignore it (perhaps with a warning)
                         isdirectory=rel_path.endswith(os.sep)
 
-                        if ("/" in rel_path and not os.path.exists(full_path)):
+                        if ("/" in rel_path and not os.path.exists(full_path) and not full_path.startswith('unknown')):
                             logger.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
                             no_files_missing = False
                             if (download):

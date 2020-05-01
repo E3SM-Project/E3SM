@@ -1241,18 +1241,23 @@ def convert_to_seconds(time_str):
     """
     Convert time value in [[HH:]MM:]SS to seconds
 
+    We assume that XX:YY is likely to be HH:MM, not MM:SS
+
     >>> convert_to_seconds("42")
     42
     >>> convert_to_seconds("01:01:01")
     3661
+    >>> convert_to_seconds("01:01")
+    3660
     """
     components = time_str.split(":")
     expect(len(components) < 4, "Unusual time string: '{}'".format(time_str))
 
     components.reverse()
     result = 0
+    starting_exp = 1 if len(components) == 2 else 0
     for idx, component in enumerate(components):
-        result += int(component) * pow(60, idx)
+        result += int(component) * pow(60, idx + starting_exp)
 
     return result
 
@@ -1351,7 +1356,7 @@ def format_time(time_format, input_format, input_time):
     """
     input_fields = input_format.split("%")
     expect(input_fields[0] == input_time[:len(input_fields[0])],
-           "Failed to parse the input time; does not match the header string")
+           "Failed to parse the input time '{}'; does not match the header string '{}'".format(input_time, input_format))
     input_time = input_time[len(input_fields[0]):]
     timespec = {"H": None, "M": None, "S": None}
     maxvals = {"M": 60, "S": 60}

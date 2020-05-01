@@ -41,7 +41,7 @@ class WGET(GenericServer):
         stat, out, err = run_cmd("wget {} --spider {}".format(self._args, full_url))
 
         if (stat != 0):
-            logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out.encode('utf-8'), err.encode('utf-8')))
+            logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out, err))
             return False
         return True
 
@@ -50,7 +50,7 @@ class WGET(GenericServer):
         stat, output, errput = \
                 run_cmd("wget {} {} -nc --output-document {}".format(self._args, full_url, full_path))
         if (stat != 0):
-            logging.warning("wget failed with output: {} and errput {}\n".format(output.encode('utf-8'), errput.encode('utf-8')))
+            logging.warning("wget failed with output: {} and errput {}\n".format(output, errput))
             # wget puts an empty file if it fails.
             try:
                 os.remove(full_path)
@@ -68,7 +68,7 @@ class WGET(GenericServer):
         logger.debug(output)
         logger.debug(errput)
         if (stat != 0):
-            logging.warning("wget failed with output: {} and errput {}\n".format(output.encode('utf-8'), errput.encode('utf-8')))
+            logging.warning("wget failed with output: {} and errput {}\n".format(output, errput))
             # wget puts an empty file if it fails.
             try:
                 os.remove(full_path)

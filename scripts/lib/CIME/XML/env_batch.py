@@ -4,7 +4,8 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, get_cime_config, get_batch_script_for_job, get_logging_options
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, convert_to_babylonian_time, \
+    get_cime_config, get_batch_script_for_job, get_logging_options, format_time
 from CIME.locked_files import lock_file, unlock_file
 from collections import OrderedDict
 import stat, re, math
@@ -61,16 +62,17 @@ class EnvBatch(EnvBase):
 
         value = None
         node = self.get_optional_child(item, attribute)
-        if node is None:
+        if item in ("BATCH_SYSTEM", "PROJECT_REQUIRED"):
+            return super(EnvBatch, self).get_value(item,attribute,resolved)
+
+        if not node:
             # this will take the last instance of item listed in all batch_system elements
             bs_nodes = self.get_children("batch_system")
             for bsnode in bs_nodes:
                 cnode = self.get_optional_child(item, attribute, root=bsnode)
-                if cnode is not None:
+                if cnode:
                     node = cnode
-        if node is None or item in ("BATCH_SYSTEM", "PROJECT_REQUIRED"):
-            value = super(EnvBatch, self).get_value(item,attribute,resolved)
-        else:
+        if node:
             value = self.text(node)
             if resolved:
                 value = self.get_resolved_value(value)
@@ -265,17 +267,11 @@ class EnvBatch(EnvBase):
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
-            else:
-                # Set the walltime to the correct walltime_format, if set.
-                # Assuming correct format is #H:#M or %H:%M:%S.
-                if walltime_format is not None:
-                    components=walltime.split(":")
-                    if len(components) > len(walltime_format.split(":")):
-                        walltime = ':'.join(components[:len(walltime_format.split(":"))])
-                        logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
-                    if len(components) < len(walltime_format.split(":")):
-                        walltime = walltime + ':' + ':'.join(["00"]*(len(walltime_format.split(":")) - len(components)))
-                        logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
+            walltime_format = self.get_value("walltime_format")
+            if walltime_format:
+                seconds = convert_to_seconds(walltime)
+                full_bab_time = convert_to_babylonian_time(seconds)
+                walltime = format_time(walltime_format, "%H:%M:%S", full_bab_time)
 
             env_workflow.set_value("JOB_QUEUE", self.text(queue), subgroup=job, ignore_type=specs is None)
             env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
@@ -415,8 +411,15 @@ class EnvBatch(EnvBase):
                             rval = val
                     else:
                         rval = val
+
+                    # We don't want floating-point data
+                    try:
+                        rval = int(round(float(rval)))
+                    except ValueError:
+                        pass
+
                     # need a correction for tasks per node
-                    if flag == "-n" and rval<= 0:
+                    if flag == "-n" and rval <= 0:
                         rval = 1
 
                     if flag == "-q" and rval == "batch" and case.get_value("MACH") == "blues":

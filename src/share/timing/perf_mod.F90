@@ -34,7 +34,10 @@ module perf_mod
    use namelist_utils,    only: find_group_name
 #endif
    use mpi
-!-----------------------------------------------------------------------
+#if ( defined _OPENMP )
+   use omp_lib, only :  omp_in_parallel
+#endif
+!!-----------------------------------------------------------------------
 !- module boilerplate --------------------------------------------------
 !-----------------------------------------------------------------------
    implicit none
@@ -715,6 +718,9 @@ contains
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
 #ifdef NUOPC_INTERFACE
+#if ( defined _OPENMP )
+   if (omp_in_parallel()) return
+#endif
    cur_timing_depth = cur_timing_depth + 1
    if(cur_timing_depth > timer_depth_limit) return
 #ifdef DEBUG
@@ -789,7 +795,11 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
-
+#ifdef NUOPC_INTERFACE
+#if ( defined _OPENMP )
+   if (omp_in_parallel()) return
+#endif
+#endif
 !$OMP MASTER
    if (perf_ovhd_measurement) then
 #ifdef HAVE_MPI
@@ -940,11 +950,7 @@ contains
 !
 !---------------------------Externals-----------------------------------
 !
-#if ( defined _OPENMP )
-   logical omp_in_parallel
-   external omp_in_parallel
-#endif
-!
+
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return

@@ -49,63 +49,6 @@ This allows using a different mpirun command to launch unit tests
 -->
 
 <config_machines version="2.0">
-  <machine MACH="centos7-linux">
-    <DESC>
-      Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
-      using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules
-    </DESC>
-    <NODENAME_REGEX>regex.expression.matching.your.machine</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <PROXY> https://howto.get.out </PROXY>
-    <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <PROJECT>none</PROJECT>
-    <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/cesm/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/cesm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/cesm/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{HOME}/cesm/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/cesm/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{HOME}/cesm/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE>make</GMAKE>
-    <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <SUPPORTED_BY>me@my.address</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>mpiexec</executable>
-      <arguments>
-	<arg name="ntasks"> -np {{ total_tasks }} </arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-	<command name="purge"/>
-      </modules>
-      <modules compiler="gnu">
-	<command name="load">compiler/gnu/8.2.0</command>
-	<command name="load">mpi/3.3/gcc-8.2.0</command>
-	<command name="load">tool/netcdf/4.6.1/gcc-8.1.0</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="OMP_STACKSIZE">256M</env>
-    </environment_variables>
-    <resource_limits>
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
-  </machine>
-
   <machine MACH="cheyenne">
     <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>.*.?cheyenne\d?.ucar.edu</NODENAME_REGEX>
@@ -114,16 +57,13 @@ This allows using a different mpirun command to launch unit tests
     <MPIRUN_RETRY_REGEX>MPT: Launcher network accept (MPI_LAUNCH_TIMEOUT) timed out</MPIRUN_RETRY_REGEX>
     <MPIRUN_RETRY_COUNT>10</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu,pgi</COMPILERS>
-    <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
-    <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
-    <MPILIBS compiler="gnu" >mpt,openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/ufs_inputdata</DIN_LOC_ROOT>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{CESMDATAROOT}/ufs_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs_baselines</BASELINE_ROOT>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -148,25 +88,13 @@ This allows using a different mpirun command to launch unit tests
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>mpirun</executable>
-      <arguments>
-	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="default" unit_testing="true">
-      <!-- The only place we can build and run the unit tests is on cheyenne's
-	   shared nodes. However, running mpi jobs on the shared nodes currently
-	   requires some workarounds; these workarounds are implemented here -->
-      <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
-    </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/csh</init_path>
-      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/sh</init_path>
-      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -175,11 +103,8 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">cmake</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/18.0.5</command>
+	<command name="load">intel/19.0.5</command>
 	<command name="load">mkl</command>
-      </modules>
-      <modules compiler="pgi">
-	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gnu/8.3.0</command>
@@ -191,33 +116,19 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
-	<!-- known failure in parallel netcdf with mpt, use serial -->
 	<command name="load">netcdf/4.7.3</command>
-	<command name="load">pnetcdf/1.11.1</command>
-      </modules>
-      <modules mpilib="mpt" compiler="pgi">
-	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
-	<command name="load">pnetcdf/1.11.1</command>
-      </modules>
-      <modules mpilib="openmpi" compiler="pgi">
-	<command name="load">openmpi/3.1.4</command>
-	<command name="load">netcdf/4.7.1</command>
-      </modules>
-      <modules mpilib="openmpi" compiler="gnu">
-        <command name="load">openmpi/3.1.4</command>
-        <command name="load">netcdf/4.7.1</command>
+	<command name="load">pnetcdf/1.12.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/gnu-8.3.0/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0alpha01</command>
+	<command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-18.0.5/mpt-2.19</command>
-	<command name="load">NCEPlibs/1.0.0alpha01</command>
+	<command name="use">/glade/p/ral/jntp/GMTB/tools/modulefiles/intel-19.0.5/mpt-2.19</command>
+	<command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
@@ -225,21 +136,13 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
       </modules>
-      <modules compiler="pgi" mpilib="mpi-serial">
-	<command name="load">netcdf/4.7.1</command>
-      </modules>
     </module_system>
-    <environment_variables comp_interface="nuopc">
-      <env name="ESMF_RUNTIME_PROFILE">ON</env>
-      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-    </environment_variables>
-    <environment_variables unit_testing="true">
-      <env name="MPI_USE_ARRAY">false</env>
-    </environment_variables>
     <environment_variables queue="share">
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <environment_variables>
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
       <env name="OMP_NUM_THREADS">1</env>
       <env name="OMP_STACKSIZE">1024M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
@@ -251,20 +154,78 @@ This allows using a different mpirun command to launch unit tests
     </resource_limits>
   </machine>
 
+  <machine MACH="gaea">
+    <DESC>
+      port to gaea
+    </DESC>
+    <NODENAME_REGEX>gaea*</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <PROJECT>esrl_bmcs</PROJECT>
+    <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/ufs-runs/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs-runs/baselines</BASELINE_ROOT>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>NOAA</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+     <executable>srun</executable>
+      <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
+    </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/cray/pe/modules/3.2.10.5/init/perl.pm</init_path>
+      <init_path lang="python">/opt/cray/pe/modules/3.2.10.5/init/python.py</init_path>
+      <init_path lang="csh">/opt/cray/pe/modules/3.2.10.5/init/csh</init_path>
+      <init_path lang="sh">/opt/cray/pe/modules/3.2.10.5/init/sh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/modules/4.1.3.1/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/modules/4.1.3.1/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules compiler="intel">
+        <command name="load">PrgEnv-intel/6.0.3</command>
+        <command name="load">intel/18.0.3.222</command>
+        <command name="unload">cray-mpich/7.4.0</command>
+        <command name="load">cray-mpich/7.7.3</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/generic</command>
+        <command name="load">cmake/3.16.4</command>
+        <command name="use">/lustre/f2/pdata/esrl/gsd/ufs/modules/modulefiles/intel-18.0.3.222</command>
+        <command name="load">NCEPlibs/1.0.0</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="PATH">$ENV{NCEPLIBS_DIR}/bin:$ENV{PATH}</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
   <machine MACH="hera">
     <DESC>NOAA hera system</DESC>
-    <NODENAME_REGEX>hfe</NODENAME_REGEX>
+    <NODENAME_REGEX>hfe[0-9][0-9]\.hera</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi</MPILIBS>
     <PROJECT>nems</PROJECT>
     <SAVE_TIMING_DIR/>
-    <CIME_OUTPUT_ROOT>/scratch1/NCEPDEV/nems/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch1/NCEPDEV/stmp2/CIME_UFSINPUT</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch1/NCEPDEV/stmp2/CIME_UFSINPUT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch1/NCEPDEV/stmp2/CIME_UFSBASELINES</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/Rocky.Dunlap/bin/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/UFS_BASELINES</BASELINE_ROOT>
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -291,12 +252,12 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel">
         <command name="purge"/>
         <command name="load">intel/18.0.5.274</command>
+        <command name="load">netcdf/4.7.0</command>
       </modules>
       <modules mpilib="impi">
-        <command name="load">netcdf/4.7.0</command>
         <command name="load">impi/2018.0.4</command>
 	<command name="use">/scratch1/BMC/gmtb/software/modulefiles/intel-18.0.5.274/impi-2018.0.4</command>
-	<command name="load">NCEPlibs/1.0.0alpha01</command>
+	<command name="load">NCEPlibs/1.0.0</command>
       </modules>
       <modules>
         <command name="use">/scratch1/BMC/gmtb/software/modulefiles/generic</command>
@@ -307,6 +268,149 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
+  </machine>
+
+  <machine MACH="orion">
+    <DESC>NOAA orion system</DESC>
+    <NODENAME_REGEX>Orion-login-\d+.HPC.MsState.Edu</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>nems</PROJECT>
+    <SAVE_TIMING_DIR/>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/UFS_BASELINES</BASELINE_ROOT>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>NCEP</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>80</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks">-n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/apps/lmod/init/sh</init_path>
+      <init_path lang="csh">/apps/lmod/init/csh</init_path>
+      <init_path lang="python">/apps/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/apps/lmod/libexec/lmod python</cmd_path>
+      <modules compiler="intel">
+        <command name="purge"/>
+        <command name="load">intel/2020</command>
+        <command name="load">netcdf/4.7.2</command>
+        <command name="load">cmake/3.15.4</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">impi/2020</command>
+      </modules>
+    </module_system>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
+  <machine MACH="jet">
+    <DESC>NOAA JET system</DESC>
+    <NODENAME_REGEX>fe\d?.fsl.noaa.gov</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>wrfruc</PROJECT>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/ufs_baselines</BASELINE_ROOT>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>NOAA</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="num_tasks">-n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="perl">/apps/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/apps/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/apps/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules compiler="intel">
+        <command name="purge"/>
+        <command name="load">intel/18.0.5.274</command>
+        <command name="load">netcdf/4.7.0</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">impi/2018.4.274</command>
+        <command name="load">pnetcdf/1.6.1</command>
+        <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/intel-18.0.5.274/impi-2018.4.274</command>
+        <command name="load">NCEPlibs/1.0.0</command>
+      </modules>
+      <modules>
+        <command name="use">/lfs3/projects/hfv3gfs/GMTB/modulefiles/generic</command>
+        <command name="load">cmake/3.16.4</command>
+      </modules>
+    </module_system>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="linux">
+    <DESC>
+      Customize these fields as appropriate for your system,
+      particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
+      number of cores on your machine.
+    </DESC>
+    <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>DTC</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
+	<arg name="labelstdout">-prepend-rank</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
   </machine>
 
   <machine MACH="macos">
@@ -320,14 +424,13 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{UFS_SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
     <DOUT_S_ROOT>$ENV{UFS_SCRATCH}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{UFS_INPUT}/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
+    <SUPPORTED_BY>DTC</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
@@ -338,11 +441,6 @@ This allows using a different mpirun command to launch unit tests
       </arguments>
     </mpirun>
     <module_system type="none"/>
-<!--
-     <environment_variables>
-       <env name="PATH">$ENV{PATH}:$ENV{NCEPLIBS_DIR}/bin</env>
-    </environment_variables>
--->
   </machine>
 
   <machine MACH="stampede2-skx">
@@ -350,14 +448,13 @@ This allows using a different mpirun command to launch unit tests
     <NODENAME_REGEX>.*stampede2</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>impi,mvapich2</MPILIBS>
+    <MPILIBS>impi</MPILIBS>
     <PROJECT>TG-ATM190009</PROJECT>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/work/01118/tg803972/stampede2/UFS/ufs_inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{UFS_INPUT}/ufs_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>${DIN_LOC_ROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/work/02503/edwardsj/UFS/ufs_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{WORK}/ufs_baselines</BASELINE_ROOT>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -409,22 +506,9 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
      </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="impi">
-      <env name="ESMFMKFILE">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib64/esmf.mk</env>
-    </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc">
-      <env name="NETCDF">$ENV{TACC_NETCDF_DIR}</env>
-      <env name="NCEPLIBS_DIR">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
-      <env name="NEMSIO_INC">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/include</env>
-      <env name="NEMSIO_LIB">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libbacio_v2.1.0_4.a</env>
-      <env name="SP_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libsp_v2.0.2_d.a</env>
-      <env name="W3EMC_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
-      <env name="W3NCO_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
     </environment_variables>
   </machine>
 
