@@ -68,7 +68,9 @@
 			<var name="velocityMeridionalSquared"/>
 			<var name="velocityZonalTimesTemperature"/>
 			<var name="velocityMeridionalTimesTemperature"/>
-                        <var name="velocityZonalTimesTemperature_GM"/>
-                        <var name="velocityMeridionalTimesTemperature_GM"/>
+      <var name="velocityZonalTimesTemperature_GM"/>
+      <var name="velocityMeridionalTimesTemperature_GM"/>
+      <var name="normalVelocityTimesTemperature"/>
+      <var name="normalVelocitySquared"/>
 		</stream>
 	</streams>
