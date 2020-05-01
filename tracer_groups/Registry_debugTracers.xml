@@ -79,57 +79,7 @@
 		</var_struct>
 	</var_struct>
 
-   <var_struct name="redi" time_levs="1">
-     <var_struct name="tracers_redi_term1" time_levs="1">
-       <var_array name="debugTracers_redi_term1" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
-         <var name="tracer1_redi_term1" array_group="debugGRP" units="tracer1"
-           description="time tendency of redi term 1 (straight horizontal mixing)"
-         />
-
-         <var name="tracer2_redi_term1" array_group="debugGRP" units="tracer2"
-           description="time tendency of redi term 1 (straight horizontal mixing)"
-         />
-
-         <var name="tracer3_redi_term1" array_group="debugGRP" units="tracer3"
-           description="time tendency of redi term 1 (straight horizontal mixing)"
-           />
-         </var_array>
-
-     </var_struct>
-     <var_struct name="tracers_redi_term2" time_levs="1">
-       <var_array name="debugTracers_redi_term2" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
-         <var name="tracer1_redi_term2" array_group="debugGRP" units="tracer1"
-           description="time tendency of redi term 2 (cross term)"
-         />
-
-         <var name="tracer2_redi_term2" array_group="debugGRP" units="tracer2"
-           description="time tendency of redi term 2 (cross term)"
-         />
-
-         <var name="tracer3_redi_term2" array_group="debugGRP" units="tracer3"
-           description="time tendency of redi term 2 (cross term)"
-           />
-         </var_array>
-
-     </var_struct>
-    <var_struct name="tracers_redi_term3" time_levs="1">
-       <var_array name="debugTracers_redi_term3" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
-         <var name="tracer1_redi_term3" array_group="debugGRP" units="tracer1"
-           description="time tendency of redi term 3 (cross term)"
-         />
-
-         <var name="tracer2_redi_term3" array_group="debugGRP" units="tracer2"
-           description="time tendency of redi term 3 (cross term)"
-         />
-
-         <var name="tracer3_redi_term3" array_group="debugGRP" units="tracer3"
-           description="time tendency of redi term 3 (cross term)"
-         />
-     </var_array>
-     </var_struct>
-  </var_struct>
-
-	<var_struct name="forcing" time_levs="1">
+   	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="debugTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="debugTracersPKG">
 				<var name="tracer1SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer1 m s^{-1}"
