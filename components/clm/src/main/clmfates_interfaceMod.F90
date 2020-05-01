@@ -108,7 +108,6 @@ module CLMFatesInterfaceMod
    use FatesInterfaceMod     , only : allocate_bcout
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : set_fates_ctrlparms
-   use FatesInterfaceMod     , only : InitPARTEHGlobals
 
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
@@ -122,6 +121,7 @@ module CLMFatesInterfaceMod
    use EDInitMod             , only : init_site_vars
    use EDInitMod             , only : init_patches
    use EDInitMod             , only : set_site_properties
+   use EDInitMod             , only : InitFatesGlobals
    use EDPftVarcon           , only : EDpftvarcon_inst
    use EDSurfaceRadiationMod , only : ED_SunShadeFracs, ED_Norman_Radiation
    use EDBtranMod            , only : btran_ed, &
@@ -477,7 +477,7 @@ contains
          call this%init_soil_depths(nc)
          
          if (use_fates_planthydro) then
-            call InitHydrSites(this%fates(nc)%sites,this%fates(nc)%bc_in,numpft_fates)
+            call InitHydrSites(this%fates(nc)%sites,this%fates(nc)%bc_in)
          end if
 
          if( this%fates(nc)%nsites == 0 ) then
@@ -501,13 +501,9 @@ contains
       end do
       !$OMP END PARALLEL DO
 
-      ! This will initialize all globals associated with the chosen
-      ! Plant Allocation and Reactive Transport hypothesis. This includes
-      ! mapping tables and global variables. These will be read-only
-      ! and only required once per machine instance (thus no requirements
-      ! to have it instanced on each thread
-      
-      call InitPARTEHGlobals()
+      ! This will initialize all FATES globals,
+      ! particular PARTEH and HYDRO globals
+      call InitFatesGlobals(masterproc)
 
       call this%init_history_io(bounds_proc)
       
@@ -1177,6 +1173,23 @@ contains
                      nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
                      this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil) = &
                           soilstate_inst%hksat_col(c,1:nlevsoil)
+                     
+                     this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = &
+                          soilstate_inst%watsat_col(c,1:nlevsoil)
+
+                     this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = &
+                          spval
+                     !  soilstate_inst%watres_col(c,1:nlevsoil)
+                     
+                     this%fates(nc)%bc_in(s)%sucsat_sisl(1:nlevsoil) = &
+                          soilstate_inst%sucsat_col(c,1:nlevsoil)
+                     
+                     this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil) = &
+                          soilstate_inst%bsw_col(c,1:nlevsoil)
+                     
+                     this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) = &
+                          waterstate_inst%h2osoi_liq_col(c,1:nlevsoil)
+                     
                   end do
                   
                   call RestartHydrStates(this%fates(nc)%sites,  &
@@ -1732,7 +1745,7 @@ contains
          end do
       end do
 
-      dtime = get_step_size()
+      dtime = real(get_step_size(),r8)
       
       ! Call photosynthesis
       
@@ -1799,7 +1812,8 @@ contains
     end do
 
 
-    dtime = get_step_size()
+    dtime = real(get_step_size(),r8)
+    
     call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
                                this%fates(nc)%sites, &
                                this%fates(nc)%bc_in,  &
@@ -1925,6 +1939,7 @@ contains
         totlitc       => col_cs%totlitc)   ! (gC/m2) total litter carbon in BGC pools
       
       nc = bounds_clump%clump_index
+      dtime = real(get_step_size(),r8)
       
       ! Summarize Net Fluxes
       do s = 1, this%fates(nc)%nsites
@@ -1938,7 +1953,8 @@ contains
       call this%fates_hist%update_history_cbal(nc, &
                                this%fates(nc)%nsites,  &
                                this%fates(nc)%sites,   &
-                               this%fates(nc)%bc_in)
+                               this%fates(nc)%bc_in,   &
+                               dtime)
 
       
     end associate
@@ -2244,40 +2260,20 @@ contains
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
        nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
+
+       ! This is the water removed from the soil layers by roots (or added)
        col_wf%qflx_rootsoi(c,1:nlevsoil) = &
             this%fates(nc)%bc_out(s)%qflx_soil2root_sisl(1:nlevsoil)
+
+       ! This is the total amount of water transferred to surface runoff
+       ! (this is generated potentially from supersaturating soils
+       ! (currently this is unnecessary)
+       ! waterflux_inst%qflx_drain_vr_col(c,1:nlevsoil) = &
+       !           this%fates(nc)%bc_out(s)%qflx_ro_sisl(1:nlevsoil)
+       
     end do
     
  end subroutine ComputeRootSoilFlux
-
- ! ======================================================================================
-!
-! THIS WAS MOVED TO WRAP_HYDRAULICS_DRIVE()
-!
-! subroutine TransferPlantWaterStorage(this, bounds_clump, nc, waterstate_inst)
-!   
-!   implicit none
-!   class(hlm_fates_interface_type), intent(inout) :: this
-!   type(bounds_type),intent(in)                   :: bounds_clump
-!   integer,intent(in)                             :: nc
-!   type(waterstate_type)   , intent(inout)        :: waterstate_inst
-!
-!   ! locals
-!   integer :: s
-!   integer :: c 
-!   
-!   if (.not. (use_fates .and. use_fates_planthydro) ) return
-!   
-!   do s = 1, this%fates(nc)%nsites
-!      c = this%f2hmap(nc)%fcolumn(s)
-!      col_ws%total_plant_stored_h2o(c) = &
-!            this%fates(nc)%bc_out(s)%plant_stored_h2o_si
-!   end do
-!   return
-!end subroutine TransferPlantWaterStorage
-
-
-
 
  ! ======================================================================================
 
@@ -2313,7 +2309,7 @@ contains
    if ( .not.use_fates_planthydro ) return
 
    nc = bounds_clump%clump_index
-   dtime = get_step_size()
+   dtime = real(get_step_size(),r8)
 
    ! Prepare Input Boundary Conditions
    ! ------------------------------------------------------------------------------------
@@ -2385,6 +2381,7 @@ contains
    call this%fates_hist%update_history_hydraulics(nc, &
          this%fates(nc)%nsites, &
          this%fates(nc)%sites, &
+         this%fates(nc)%bc_in, & 
          dtime)
 
 
