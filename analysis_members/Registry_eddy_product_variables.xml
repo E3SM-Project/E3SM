@@ -45,7 +45,13 @@
                 <var name="velocityMeridionalTimesTemperature_GM" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
                         description="cell-wise product of component of horizontal bolus velocity in the northward direction and temperature"
                 />
-	</var_struct>
+    <var name="normalVelocitySquared" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
+      description="edge based square of normal velocity"
+    />
+    <var name="normalVelocityTimesTemperature" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1} C"
+      description="edge based product of normal velocity and temperature"
+    />
+  </var_struct>
 	<streams>
 		<stream name="eddyProductVariablesOutput" type="output"
 				mode="forward;analysis"

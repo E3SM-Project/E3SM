@@ -178,14 +178,16 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
 
       integer, pointer :: nVertLevels, nCellsSolve
-      integer :: iTracer, k, iCell
+      integer :: iTracer, k, iCell, iEdge, nEdges, cell1, cell2
       integer, pointer :: index_temperature, index_salinity
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell, nEdgesArray
+      integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), pointer :: ssh, SSHSquared
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, GMBolusVelocityZonal, GMBolusVelocityMeridional, &
            velocityZonalSquared, velocityMeridionalSquared, velocityZonalTimesTemperature, velocityMeridionalTimesTemperature, &
-           velocityZonalTimesTemperature_GM, velocityMeridionalTimesTemperature_GM
+           velocityZonalTimesTemperature_GM, velocityMeridionalTimesTemperature_GM, normalVelocity, normalVelocitySquared, &
+           normalVelocityTimesTemperature
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       err = 0
@@ -203,6 +205,7 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
 
@@ -212,6 +215,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal',GMBolusVelocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesArray', nEdgesArray)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'SSHSquared', SSHSquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalSquared', velocityZonalSquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalSquared', velocityMeridionalSquared)
@@ -221,6 +228,20 @@ contains
          call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityZonalTimesTemperature_GM', velocityZonalTimesTemperature_GM)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityMeridionalTimesTemperature_GM', &
             velocityMeridionalTimesTemperature_GM)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocityTimesTemperature', normalVelocityTimesTemperature)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocitySquared', normalVelocitySquared)
+
+         nEdges = nEdgesArray(2)
+         do iEdge = 1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            do k = 1, maxLevelEdgeTop(iEdge)
+               normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
+                            activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
+               normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
+            end do
+         end do
 
          do iCell = 1,nCellsSolve
             SSHSquared(iCell) = ssh(iCell)**2
