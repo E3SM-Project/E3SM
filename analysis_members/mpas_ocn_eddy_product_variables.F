@@ -177,10 +177,10 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: diagnosticsPool
 
-      integer, pointer :: nVertLevels, nCellsSolve
-      integer :: iTracer, k, iCell, iEdge, nEdges, cell1, cell2
+      integer, pointer :: nEdges, nVertLevels, nCellsSolve
+      integer :: iTracer, k, iCell, iEdge, cell1, cell2
       integer, pointer :: index_temperature, index_salinity
-      integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell, nEdgesArray
+      integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), pointer :: ssh, SSHSquared
@@ -204,6 +204,7 @@ contains
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
@@ -215,7 +216,6 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal',GMBolusVelocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(meshPool, 'nEdgesArray', nEdgesArray)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
@@ -231,7 +231,6 @@ contains
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocityTimesTemperature', normalVelocityTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocitySquared', normalVelocitySquared)
 
-         nEdges = nEdgesArray(2)
          do iEdge = 1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
