@@ -36,7 +36,8 @@ module cam_history
                            pio_int, pio_real, pio_double, pio_char,           &
                            pio_offset_kind, pio_unlimited, pio_global,        &
                            pio_inq_dimlen, pio_def_var, pio_enddef,           &
-                           pio_put_att, pio_put_var, pio_get_att
+                           pio_put_att, pio_put_var, pio_get_att,             &
+                           PIO_MAX_NAME, pio_inq_varname, pio_syncfile
                            
 
    use perf_mod,            only: t_startf, t_stopf
@@ -4549,6 +4550,9 @@ end subroutine print_active_fldlst
     integer :: dtime            ! seconds component of current time
 #endif
     real(r8) :: kp, ap, f107, f107a
+    character(len=PIO_MAX_NAME)      :: vname
+    type(var_desc_t),      pointer   :: varid      ! PIO ID for var
+    integer                          :: tstep, num_patches
 
     !-----------------------------------------------------------------------
     ! get solar/geomagnetic activity data...
@@ -4734,6 +4738,36 @@ end subroutine print_active_fldlst
             call dump_field(f, t, restart)
           end do
           call t_stopf ('dump_field')
+
+          !if (masterproc) then
+          !  write(*,"(A)",ADVANCE="NO") "DBG: Syncing variables in history files : "
+          !end if
+
+          !if (associated(tape(t)%patches)) then
+          !  num_patches = size(tape(t)%patches)
+          !else
+          !  num_patches = 1
+          !end if
+          !do f=1,nflds(t)
+          !  do i=1,num_patches
+          !    varid => tape(t)%hlist(f)%varid(i)
+
+          !    ierr = pio_inq_varname(tape(t)%File, varid, vname)
+          !    if (restart) then
+          !      tstep = -1
+          !    else
+          !      tstep = int(max(1,nfils(t)))
+          !    end if
+          !    if (masterproc) then
+          !      write(*,"(A,A,I5,A)",ADVANCE="NO") trim(vname), "(timestep =", tstep, "), "
+          !    end if
+          !  end do
+          !end do
+          !if (masterproc) then
+          !  print *, ""
+          !end if
+          call pio_syncfile(tape(t)%File)
+
           !
           ! Zero history buffers and accumulators now that the fields have been written.
           !
