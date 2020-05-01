@@ -237,6 +237,12 @@
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
+    <grid>
+      <sname>1.9x2.5_d.25x.25</sname>
+      <alias>f19_d025</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%d.25x.25_r%r05_m%d.25x.25_g%null_w%null</lname>
+    </grid>
+
     <grid compset="SGLC.+DWAV">
       <sname>1.9x2.5_gx1v6</sname>
       <alias>f19_g16</alias>
@@ -858,9 +864,13 @@
     <domain name="1.9x2.5">
       <nx>144</nx>  <ny>96</ny>
       <file atm_mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
+      <file atm_mask="d.25x.25">domain.lnd.fv1.9x2.5_0.25x0.25.200430.nc</file>
       <file ice_mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
+      <file ice_mask="d.25x.25">domain.ocn.fv1.9x2.5_0.25x0.25.200430.nc</file>
       <file lnd_mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
+      <file lnd_mask="d.25x.25">domain.lnd.fv1.9x2.5_0.25x0.25.200430.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
+      <file ocn_mask="d.25x.25">domain.ocn.fv1.9x2.5_0.25x0.25.200430.nc</file>
       <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
 
@@ -1102,6 +1112,15 @@
       <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc</file>
       <desc>gx1v6 is displaced Greenland pole v6 1-deg grid:</desc>
+    </domain>
+
+    <domain name="d.25x.25">
+      <nx>1440</nx>  <ny>720</ny>
+      <file atm_mask="d.25x.25">domain.ocn.0.25x0.25.200430.nc</file>
+      <file ice_mask="d.25x.25">domain.ocn.0.25x0.25.200430.nc</file>
+      <file lnd_mask="d.25x.25">domain.ocn.0.25x0.25.200430.nc</file>
+      <file ocn_mask="d.25x.25">domain.ocn.0.25x0.25.200430.nc</file>
+      <desc>d.25x.25 is regular 1/4-deg grid:</desc>
     </domain>
 
     <domain name="gx3v7">
@@ -1453,6 +1472,14 @@
       <ATM2OCN_VMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v6_patc.130322.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv1.9x2.5_aave.130322.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv1.9x2.5_aave.130322.nc</OCN2ATM_SMAPNAME>
+    </gridmap>
+
+    <gridmap atm_grid="1.9x2.5" ocn_grid="d.25x.25">
+      <ATM2OCN_FMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_0.25x0.25_aave.200430.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_0.25x0.25_blin.200430.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_0.25x0.25_patc.200430.nc</ATM2OCN_VMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/gridmaps/d.25x.25/map_0.25x0.25_TO_fv1.9x2.5_aave.200430.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/gridmaps/d.25x.25/map_0.25x0.25_TO_fv1.9x2.5_aave.200430.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
     <gridmap atm_grid="4x5" ocn_grid="gx3v7">

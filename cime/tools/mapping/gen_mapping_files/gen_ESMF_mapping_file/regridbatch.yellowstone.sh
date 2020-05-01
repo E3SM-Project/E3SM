@@ -22,16 +22,21 @@
 # Set user-defined parameters here
 #----------------------------------------------------------------------
 
-griddir="/glade/scratch/mlevy/grids"
+griddir="/pic/projects/E3SM_DA/zhan391/e3sm_dart/acme_init/sst" #"/glade/scratch/mlevy/grids"
 
-filesrc="$griddir/tx0.1v2_090127.nc"
-filedst="$griddir/fv0.9x1.25_070727.nc"
-namesrc='tx0.1v2'
-namedst='fv0.9x1.25'
+#filesrc="$griddir/0.25x0.25_100723.nc" #tx0.1v2_090127.nc"
+#filedst="$griddir/fv1.9x2.5_090205.nc" #fv0.9x1.25_070727.nc"
+#namesrc='0.25x0.25'
+#namedst='fv1.9x2.5'
+
+filedst="$griddir/0.25x0.25_100723.nc" #tx0.1v2_090127.nc"
+filesrc="$griddir/fv1.9x2.5_090205.nc" #fv0.9x1.25_070727.nc"
+namedst='0.25x0.25'
+namesrc='fv1.9x2.5'
 
 typesrc='global'
 typedst='global'
-maptype='aave'
+maptype='patc' #'blin' #'patc' #'aave'
 
 #----------------------------------------------------------------------
 # Done setting user-defined parameters
