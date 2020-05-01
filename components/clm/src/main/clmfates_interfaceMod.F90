@@ -47,6 +47,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_spitfire
    use clm_varctl        , only : fates_parteh_mode
    use clm_varctl        , only : use_fates_planthydro
+   use clm_varctl        , only : use_fates_cohort_age_tracking
    use clm_varctl        , only : use_fates_ed_st3
    use clm_varctl        , only : use_fates_ed_prescribed_phys
    use clm_varctl        , only : use_fates_logging
@@ -252,6 +253,7 @@ contains
       integer                                        :: pass_logging
       integer                                        :: pass_ed_prescribed_phys
       integer                                        :: pass_planthydro
+      integer                                        :: pass_cohort_age_tracking
       integer                                        :: pass_inventory_init
       integer                                        :: pass_is_restart
       integer                                        :: nc        ! thread index
@@ -349,6 +351,14 @@ contains
       end if
       call set_fates_ctrlparms('use_planthydro',ival=pass_planthydro)
 
+      if(use_fates_cohort_age_tracking) then
+         pass_cohort_age_tracking = 1
+      else
+         pass_cohort_age_tracking = 0
+      end if
+      call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+      
       if(use_fates_inventory_init) then
          pass_inventory_init = 1
       else
@@ -2010,7 +2020,7 @@ contains
    use FatesIOVariableKindMod, only : site_scagpft_r8, site_agepft_r8
    use FatesIOVariableKindMod, only : site_height_r8, site_elem_r8, site_elpft_r8
    use FatesIOVariableKindMod, only : site_elcwd_r8, site_elage_r8
-
+   use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
    use FatesIOVariableKindMod, only : site_can_r8, site_cnlf_r8, site_cnlfpft_r8
    use FatesIODimensionsMod, only : fates_bounds_type
 
@@ -2143,7 +2153,7 @@ contains
              site_age_r8, site_height_r8, site_fuel_r8, site_cwdsc_r8, &
              site_can_r8,site_cnlf_r8, site_cnlfpft_r8, site_scag_r8, & 
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
-             site_elcwd_r8, site_elage_r8)
+             site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8)
 
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2402,6 +2412,7 @@ contains
    use EDtypesMod,        only : nclmax_fates     => nclmax
    use clm_varpar,        only : nlevgrnd
    use FatesInterfaceMod, only : numpft_fates     => numpft
+   use FatesInterfaceMod, only : nlevcoage
 
    implicit none
 
@@ -2471,6 +2482,11 @@ contains
    fates%elage_begin = 1
    fates%elage_end   = num_elements * nlevage_fates
 
+   fates%coagepf_class_begin = 1
+   fates%coagepf_class_end = nlevcoage * numpft_fates
+   
+   fates%coage_class_begin = 1
+   fates%coage_class_end = nlevcoage
    
  end subroutine hlm_bounds_to_fates_bounds
 
