@@ -236,7 +236,10 @@
 <bnd_topo hgrid="ne11np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="1">atm/cam/topo/USGS-gtopo30_ne30np4pg1_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="3">atm/cam/topo/USGS-gtopo30_ne30np4pg3_16xdel2.c20200504.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="4">atm/cam/topo/USGS-gtopo30_ne30np4pg4_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
@@ -830,7 +833,10 @@
 <drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" npg="0">atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne30np4" npg="1">atm/cam/chem/trop_mam/atmsrf_ne30pg1_200501.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne30pg2_200129.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne30np4" npg="3">atm/cam/chem/trop_mam/atmsrf_ne30pg3_200501.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne30np4" npg="4">atm/cam/chem/trop_mam/atmsrf_ne30pg4_200501.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
