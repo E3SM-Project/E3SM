@@ -120,6 +120,26 @@ subroutine stepon_init(dyn_in, dyn_out )
 
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
 
+#if 1
+!need 2-3 of these
+!d for 'dycore'
+  call addfld ('Ud1', (/ 'lev' /), 'A', 'm/s',  'u component',     gridname='GLL')
+  call addfld ('Vd1', (/ 'lev' /), 'A', 'm/s',  'v component',     gridname='GLL')
+  call register_vector_field('Ud1', 'Vd1')
+! will be Theta or T dep on dycore
+  call addfld ('Td1', (/ 'lev' /), 'A', 'K',  'temperature',     gridname='GLL')
+  call addfld ('PSd1', horiz_only, 'A', 'Pa', 'psurf',     gridname='GLL')
+  call addfld ('dp3d1', (/ 'lev' /), 'A', 'Pa', 'dp3d',     gridname='GLL')
+
+  call addfld ('Ud2', (/ 'lev' /), 'A', 'm/s',  'u component',gridname='GLL')
+  call addfld ('Vd2', (/ 'lev' /), 'A', 'm/s',  'v component',gridname='GLL')
+  call register_vector_field('Ud2', 'Vd2')
+! will be Theta or T dep on dycore
+  call addfld ('Td2', (/ 'lev' /), 'A', 'K',  'temperature',     gridname='GLL')
+  call addfld ('PSd2', horiz_only, 'A', 'Pa', 'psurf',     gridname='GLL')
+  call addfld ('dp3d2', (/ 'lev' /), 'A', 'Pa', 'dp3d',     gridname='GLL')
+#endif
+
   if (fv_nphys > 0) then
     grid_name = 'GLL'
   else
@@ -214,6 +234,23 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
 end subroutine stepon_run1
 
+#if 0
+subroutine energy_output_helper(state)
+   type(physics_state), intent(in) :: state
+
+   real(r8) :: ke(state%ncol), se(state%ncol), te(state%ncol), tw(state%ncol)
+
+   integer :: lchnk, ncol
+
+   lchnk = state%lchnk
+   ncol  = state%ncol
+
+   call compute_energy_in_columns(state, ke, se, te, tw)
+   call outfld('E1',   cldopaq_cal_2d,    pcols, lchnk)
+
+end energy_output_helper
+#endif 
+
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use bndry_mod,       only: bndry_exchangeV
    use dimensions_mod,  only: nlev, nlevp, nelemd, np, npsq
@@ -245,8 +282,20 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    integer :: nlev_tot
    nlev_tot=(3+pcnst)*nlev
 
+#if 0
+   integer :: c
+#endif
 
    dtime = get_step_size()
+
+!
+#if 0
+   do c=begchunk, endchunk
+   phys_state(c)
+  lchnk = state1%lchnk
+  ncol  = state1%ncol
+   enddo
+#endif
 
 
    ! copy from phys structures -> dynamics structures
@@ -337,6 +386,56 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
+  
+  enddo !ie
+
+!dumping state before ps adjust
+   if (hist_fld_active('Ud1') .or. hist_fld_active('Vd1') ) then
+      do ie=1,nelemd
+         do j=1,np
+            do i=1,np
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%v(i,j,1,:,tl_f)
+               ftmp(i+(j-1)*np,:,2) = dyn_in%elem(ie)%state%v(i,j,2,:,tl_f)
+            end do
+         end do
+         call outfld('Ud1',ftmp(:,:,1),npsq,ie)
+         call outfld('Vd1',ftmp(:,:,2),npsq,ie)
+      end do
+   endif
+   if (hist_fld_active('Td1')) then
+      do ie=1,nelemd
+         do j=1,np
+            do i=1,np
+#ifdef MODEL_THETA_L
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%vtheta_dp(i,j,:,tl_f)
+#else
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%T(i,j,:,tl_f)
+#endif
+            end do
+         end do
+         call outfld('Td1',ftmp(:,:,1),npsq,ie)
+      end do
+   endif
+
+   if (hist_fld_active('dp3d1')) then
+      do ie=1,nelemd
+         do j=1,np
+            do i=1,np
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%dp3d(i,j,:,tl_f)
+            end do
+         end do
+         call outfld('dp3d1',ftmp(:,:,1),npsq,ie)
+      end do
+   endif
+
+   if (hist_fld_active('PSd1')) then
+   do ie=1,nelemd
+      call outfld('PSd1'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+   enddo
+   endif
+
+   do ie=1,nelemd
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=2,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -347,6 +446,58 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
       endif ! if ftype == 2 or == 4
+
+    enddo
+
+
+!dumping state before ps adjust
+   if (hist_fld_active('Ud2') .or. hist_fld_active('Vd2') ) then
+      do ie=1,nelemd
+         do j=1,np
+            do i=1,np
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%v(i,j,1,:,tl_f)
+               ftmp(i+(j-1)*np,:,2) = dyn_in%elem(ie)%state%v(i,j,2,:,tl_f)
+            end do
+         end do
+         call outfld('Ud2',ftmp(:,:,1),npsq,ie)
+         call outfld('Vd2',ftmp(:,:,2),npsq,ie)
+      end do
+   endif
+   if (hist_fld_active('Td2')) then
+      do ie=1,nelemd
+         do j=1,np
+            do i=1,np
+#ifdef MODEL_THETA_L
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%vtheta_dp(i,j,:,tl_f)
+#else
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%T(i,j,:,tl_f)
+#endif
+            end do
+         end do
+         call outfld('Td2',ftmp(:,:,1),npsq,ie)
+      end do
+   endif
+
+   if (hist_fld_active('dp3d2')) then
+      do ie=1,nelemd
+         do j=1,np
+            do i=1,np
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%state%dp3d(i,j,:,tl_f)
+            end do
+         end do
+         call outfld('dp3d2',ftmp(:,:,1),npsq,ie)
+      end do
+   endif
+
+   if (hist_fld_active('PSd2')) then
+   do ie=1,nelemd
+      call outfld('PSd2'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+   enddo
+   endif
+
+
+
+    do ie=1,nelemd
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment
@@ -458,6 +609,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call get_temperature(dyn_in%elem(ie),temperature,hvcoord,tl_f)
       call outfld('DYN_T'     ,temperature                            ,npsq,ie)
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
+!missing register_vector_field(U,V) and inefficient
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
       call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
