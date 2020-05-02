@@ -234,22 +234,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
 end subroutine stepon_run1
 
-#if 0
-subroutine energy_output_helper(state)
-   type(physics_state), intent(in) :: state
-
-   real(r8) :: ke(state%ncol), se(state%ncol), te(state%ncol), tw(state%ncol)
-
-   integer :: lchnk, ncol
-
-   lchnk = state%lchnk
-   ncol  = state%ncol
-
-   call compute_energy_in_columns(state, ke, se, te, tw)
-   call outfld('E1',   cldopaq_cal_2d,    pcols, lchnk)
-
-end energy_output_helper
-#endif 
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use bndry_mod,       only: bndry_exchangeV
@@ -280,23 +264,10 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: omega(np,np,nlev)  ! temporary omega for DYN_OMEGA output
    real(r8) :: dtime
    integer :: nlev_tot
+
    nlev_tot=(3+pcnst)*nlev
 
-#if 0
-   integer :: c
-#endif
-
    dtime = get_step_size()
-
-!
-#if 0
-   do c=begchunk, endchunk
-   phys_state(c)
-  lchnk = state1%lchnk
-  ncol  = state1%ncol
-   enddo
-#endif
-
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
