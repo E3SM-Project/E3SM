@@ -30,7 +30,8 @@ contains
    subroutine get_cloud_optics_sw( &
          ncol, nlev, nbnd, do_snow, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rel, rei, &
-         tau_out, ssa_out, asm_out)
+         tau_out, ssa_out, asm_out, &
+         liq_tau_out, ice_tau_out, snw_tau_out)
 
       use ppgrid, only: pcols
       use physics_types, only: physics_state
@@ -50,7 +51,8 @@ contains
       ! corresponding fields were defined for all indices of nlev. This
       ! isn't the case right now I don't think, as cloud_rad_props makes explicit
       ! assumptions about array sizes.
-      real(r8), intent(out), dimension(:,:,:) :: tau_out, ssa_out, asm_out
+      real(r8), intent(out), dimension(:,:,:) :: &
+         tau_out, ssa_out, asm_out, liq_tau_out, ice_tau_out, snw_tau_out
 
       ! Temporary variables to hold cloud optical properties before combining into
       ! output arrays. Same shape as output arrays, so get shapes from output.
@@ -63,7 +65,15 @@ contains
 
       integer :: iband, ilev, icol
 
-      ! Initialize
+      ! Initialize outputs
+      tau_out = 0
+      ssa_out = 0
+      asm_out = 0
+      liq_tau_out = 0
+      ice_tau_out = 0
+      snw_tau_out = 0
+
+      ! Initialize local variables
       ice_tau = 0
       ice_tau_ssa = 0
       ice_tau_ssa_g = 0
@@ -205,6 +215,11 @@ contains
          elsewhere
             asm_out(:ncol,:nlev,iband) = 0.0
          end where
+
+         ! Re-order diagnostics outputs
+         liq_tau_out(:ncol,:nlev,iband) = liq_tau(iband,:ncol,:nlev)
+         ice_tau_out(:ncol,:nlev,iband) = ice_tau(iband,:ncol,:nlev)
+         snw_tau_out(:ncol,:nlev,iband) = snow_tau(iband,:ncol,:nlev)
       end do
 
       ! Check values
@@ -221,7 +236,7 @@ contains
    subroutine get_cloud_optics_lw( &
          ncol, nlev, nbnd, do_snow, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rei, &
-         tau_out)
+         tau_out, liq_tau_out, ice_tau_out, snw_tau_out)
 
       use ppgrid, only: pcols
       use cloud_rad_props, only: gammadist_liq_optics_lw, mitchell_ice_optics_lw
@@ -235,7 +250,7 @@ contains
          cld, cldfsnow, &
          iclwp, iciwp, icswp, &
          mu, lambdac, dei, des, rei
-      real(r8), intent(out), dimension(:,:,:) :: tau_out
+      real(r8), intent(out), dimension(:,:,:) :: tau_out, liq_tau_out, ice_tau_out, snw_tau_out
 
       ! Temporary variables to hold absorption optical depth
       real(r8), dimension(nbnd,pcols,nlev) :: &
@@ -243,12 +258,18 @@ contains
 
       integer :: iband
 
-      ! initialize
-      ice_tau(:,:,:) = 0.0
-      liq_tau(:,:,:) = 0.0
-      snow_tau(:,:,:) = 0.0
-      cld_tau(:,:,:) = 0.0
-      combined_tau(:,:,:) = 0.0
+      ! Initialize outputs
+      tau_out = 0
+      liq_tau_out = 0
+      ice_tau_out = 0
+      snw_tau_out = 0
+
+      ! Initialize local variables
+      ice_tau(:,:,:) = 0
+      liq_tau(:,:,:) = 0
+      snow_tau(:,:,:) = 0
+      cld_tau(:,:,:) = 0
+      combined_tau(:,:,:) = 0
 
       ! Get ice optics
       if (trim(icecldoptics) == 'mitchell') then
@@ -286,6 +307,9 @@ contains
       ! Set output optics
       do iband = 1,nbnd
          tau_out(1:ncol,1:nlev,iband) = combined_tau(iband,1:ncol,1:nlev)
+         liq_tau_out(1:ncol,1:nlev,iband) = liq_tau(iband,1:ncol,1:nlev)
+         ice_tau_out(1:ncol,1:nlev,iband) = ice_tau(iband,1:ncol,1:nlev)
+         snw_tau_out(1:ncol,1:nlev,iband) = snow_tau(iband,1:ncol,1:nlev)
       end do
 
       ! Check values
