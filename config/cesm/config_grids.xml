@@ -1153,7 +1153,7 @@
     <model_grid alias="C96_C96_mg17" >
       <grid name="atm">C96</grid>
       <grid name="lnd">C96</grid>
-      <grid name="ocnice">gx1v7</grid>
+      <grid name="ocnice">C96</grid>
       <grid name="glc">gland4</grid>
       <mask>gx1v7</mask>
     </model_grid>
