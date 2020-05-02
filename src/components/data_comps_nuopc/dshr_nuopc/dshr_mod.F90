@@ -36,17 +36,12 @@ module dshr_mod
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
   use shr_cal_mod      , only : shr_cal_datetod2string
-  use shr_map_mod      , only : shr_map_fs_remap, shr_map_fs_bilinear
-  use shr_map_mod      , only : shr_map_fs_srcmask, shr_map_fs_scalar
   use shr_const_mod    , only : shr_const_spval
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_infiles
   use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
-  use dshr_strdata_mod , only : shr_strdata_mapset
-  use dshr_methods_mod , only : memcheck, chkerr
+  use dshr_methods_mod , only : chkerr
   use perf_mod         , only : t_startf, t_stopf
-  use shr_ncread_mod   , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
   use pio
-  use mct_mod
 
   implicit none
   public
@@ -59,7 +54,6 @@ module dshr_mod
   public :: dshr_set_runclock
   public :: dshr_restart_read
   public :: dshr_restart_write
-  public :: dshr_get_atm_adjustment_factors
   public :: dshr_log_clock_advance
   public :: dshr_state_getscalar
   public :: dshr_state_setscalar
@@ -1054,13 +1048,13 @@ contains
        if (present(fld) .and. present(fldname)) then
           rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_nowrite)
           call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-          call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%gsize/), sdat%gindex, pio_iodesc)
+          call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%model_gsize/), sdat%model_gindex, pio_iodesc)
           rcode = pio_inq_varid(pioid, trim(fldname), varid)
           call pio_read_darray(pioid, varid, pio_iodesc, fld, rcode)
           call pio_closefile(pioid)
           call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
        end if
-       call shr_strdata_restRead(trim(rest_files), sdat, mpicom)
+       call shr_strdata_restRead(sdat, trim(rest_files), mpicom)
     else
        if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_files)
     endif
@@ -1111,263 +1105,20 @@ contains
         rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_clobber)
         call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
         rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
-        rcode = pio_def_dim(pioid, 'gsize', sdat%gsize, dimid(1))
+        rcode = pio_def_dim(pioid, 'gsize', sdat%model_gsize, dimid(1))
         rcode = pio_def_var(pioid, trim(fldname), PIO_DOUBLE, dimid, varid)
         rcode = pio_enddef(pioid)
-        call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%gsize/), sdat%gindex, pio_iodesc)
+        call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%model_gsize/), sdat%model_gindex, pio_iodesc)
         call pio_write_darray(pioid, varid, pio_iodesc, fld, rcode, fillval=shr_const_spval)
         call pio_closefile(pioid)
         call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
      end if
 
      ! write stream restart data
-     call shr_strdata_restWrite(trim(rest_files), sdat, mpicom, trim(case_name), &
+     call shr_strdata_restWrite(sdat, trim(rest_files), mpicom, trim(case_name), &
           'sdat strdata from '//trim(model_name))
 
   end subroutine dshr_restart_write
-
-  !===============================================================================
-  subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
-       mpicom, compid, masterproc, logunit, sdat)
-
-    ! input/output variables
-    character(*)           , intent(in)    :: fileName   ! file name string
-    real(R8)               , intent(inout) :: windF(:)   ! wind adjustment factor
-    real(R8)               , intent(inout) :: winddF(:)  ! wind adjustment factor
-    real(R8)               , intent(inout) :: qsatF(:)   ! rel humidty adjustment factors
-    integer                , intent(in)    :: mpicom     ! mpi comm
-    integer                , intent(in)    :: compid     ! mct compid
-    logical                , intent(in)    :: masterproc ! true if pe number is 0
-    integer                , intent(in)    :: logunit    ! logging unit
-    type(shr_strdata_type) , intent(in)    :: sdat
-
-    !--- data that describes the local model domain ---
-    integer          :: ni0,nj0     ! dimensions of global bundle0
-    integer          :: i,j,n       ! generic indicies
-    type(mct_ggrid)  :: ggridi      ! input file grid
-    type(mct_ggrid)  :: ggridoG     ! output grid gathered
-    type(mct_gsmap)  :: gsmapi      ! input file gsmap
-    type(mct_sMatp)  :: smatp       ! sparse matrix weights
-    type(mct_avect)  :: avi         ! input attr vect
-    type(mct_avect)  :: avo         ! output attr vect
-    integer          :: lsizei      ! local size of input
-    integer          :: lsizeo      ! local size of output
-    integer, pointer :: start(:)    ! start list
-    integer, pointer :: length(:)   ! length list
-    integer          :: gsizei      ! input global size
-    integer          :: numel       ! number of elements in start list
-    real(R8)         :: dadd        ! lon correction
-    logical          :: domap       ! map or not
-    integer          :: klon,klat   ! lon lat fld index
-
-    !--- temp arrays for data input ---
-    real(R8)     ,allocatable :: tempR4D(:,:,:,:)   ! 4D data array
-    real(R8)     ,pointer     :: tempR1D(:)         ! 1D data array
-    integer      ,allocatable :: tempI4D(:,:,:,:)   ! 4D data array
-    character(*) ,parameter   :: subName =  '(dshr_atm_get_adjustment_factors) '
-    character(*) ,parameter   :: F00    = "('(dshr_atm_get_adjustment_factors) ',4a) "
-    character(*) ,parameter   :: F01    = "('(dshr_atm_get_adjustment_factors) ',a,2i5)"
-    character(*) ,parameter   :: F02    = "('(dshr_atm_get_adjustment_factors) ',a,6e12.3)"
-    !-------------------------------------------------------------------------------
-
-    !   Note: gsmapi is all gridcells on root pe
-    ni0 = 0
-    nj0 = 0
-    allocate(start(1),length(1))
-    start = 0
-    length = 0
-    numel = 0
-
-    !----------------------------------------------------------------------------
-    ! read in and map global correction factors
-    !----------------------------------------------------------------------------
-
-    ! verify necessary data is in input file
-
-    if (masterproc) then
-       if (      .not. shr_ncread_varExists(fileName ,'lat'       )  &
-            .or. .not. shr_ncread_varExists(fileName ,'lon'       )  &
-            .or. .not. shr_ncread_varExists(fileName ,'mask'      )  &
-            .or. .not. shr_ncread_varExists(fileName ,'windFactor')  &
-            .or. .not. shr_ncread_varExists(fileName ,'qsatFactor')  ) then
-          write(logunit,F00) "ERROR: invalid correction factor data file"
-          call shr_sys_abort(subName//"invalid correction factor data file")
-       end if
-       call shr_ncread_varDimSizes(fileName,"windFactor",ni0,nj0)
-       start = 1
-       length = ni0*nj0
-       numel = 1
-    endif
-    call shr_mpi_bcast(ni0, mpicom, subname//' ni0')
-    call shr_mpi_bcast(nj0, mpicom, subname//' nj0')
-    gsizei = ni0*nj0
-
-    !--- allocate datatypes for input data ---
-    call mct_gsmap_init(gsmapi, start, length, 0, mpicom, compid, gsize=gsizei, numel=numel)
-    deallocate(start, length)
-    lsizei = mct_gsmap_lsize(gsmapi    , mpicom)
-    call mct_gGrid_init(GGrid=gGridi, CoordChars='lat:lon:hgt', OtherChars='mask', lsize=lsizei )
-    call mct_aVect_init(avi, rList="wind:windd:qsat", lsize=lsizei)
-    avi%rAttr = shr_const_spval
-
-    ! determine local size on data model grid
-    lsizeo = sdat%lsize
-
-    !--- gather output grid for map logic ---
-    call mct_ggrid_gather(sdat%grid, ggridoG, sdat%gsmap, 0, mpicom)
-
-    if (masterproc) then
-       allocate(tempR1D(ni0*nj0))
-
-       !--- read domain data: lon ---
-       allocate(tempR4D(ni0,1,1,1))
-       call shr_ncread_field4dG(fileName,'lon' ,rfld=tempR4D)
-       !--- needs to be monotonically increasing, add 360 at wraparound+ ---
-       dadd = 0.0_R8
-       do i = 2,ni0
-          if (tempR4D(i-1,1,1,1) > tempR4D(i,1,1,1)) dadd = 360.0_R8
-          tempR4D(i,1,1,1) = tempR4D(i,1,1,1) + dadd
-       enddo
-       n = 0
-       do j=1,nj0
-          do i=1,ni0
-             n = n + 1
-             tempR1D(n) = tempR4D(i,1,1,1)
-          end do
-       end do
-       deallocate(tempR4D)
-       call mct_gGrid_importRattr(gGridi,'lon',tempR1D,lsizei)
-
-       !--- read domain data: lat ---
-       allocate(tempR4D(nj0,1,1,1))
-       call shr_ncread_field4dG(fileName,'lat' ,rfld=tempR4D)
-       n = 0
-       do j=1,nj0
-          do i=1,ni0
-             n = n + 1
-             tempR1D(n) = tempR4D(j,1,1,1)
-          end do
-       end do
-       deallocate(tempR4D)
-       call mct_gGrid_importRattr(gGridi,'lat',tempR1D,lsizei)
-
-       !--- read domain mask---
-       allocate(tempI4D(ni0,nj0,1,1))
-       call shr_ncread_field4dG(fileName,'mask',ifld=tempI4D)
-       n = 0
-       do j=1,nj0
-          do i=1,ni0
-             n = n + 1
-             tempR1D(n) = real(tempI4D(i,j,1,1),R8)
-          end do
-       end do
-       deallocate(tempI4D)
-       call mct_gGrid_importRattr(gGridi,'mask',tempR1D,lsizei)
-
-       !--- read bundle data: wind factor ---
-       allocate(tempR4D(ni0,nj0,1,1))
-       if (shr_ncread_varExists(fileName,'windFactor')  ) then
-          call shr_ncread_field4dG(fileName,'windFactor',rfld=tempR4D)
-          n = 0
-          do j=1,nj0
-             do i=1,ni0
-                n = n + 1
-                tempR1D(n) = tempR4D(i,j,1,1)
-             end do
-          end do
-          call mct_aVect_importRattr(avi,'wind',tempR1D,lsizei)
-       endif
-
-       !--- read bundle data: windd factor ---
-       if (shr_ncread_varExists(fileName,'winddFactor')  ) then
-          call shr_ncread_field4dG(fileName,'winddFactor',rfld=tempR4D)
-          n = 0
-          do j=1,nj0
-             do i=1,ni0
-                n = n + 1
-                tempR1D(n) = tempR4D(i,j,1,1)
-             end do
-          end do
-          call mct_aVect_importRattr(avi,'windd',tempR1D,lsizei)
-       endif
-
-       !--- read bundle data: qsat factor ---
-       if (shr_ncread_varExists(fileName,'qsatFactor')  ) then
-          call shr_ncread_field4dG(fileName,'qsatFactor',rfld=tempR4D)
-          n = 0
-          do j=1,nj0
-             do i=1,ni0
-                n = n + 1
-                tempR1D(n) = tempR4D(i,j,1,1)
-             end do
-          end do
-          call mct_aVect_importRattr(avi,'qsat',tempR1D,lsizei)
-       endif
-
-       deallocate(tempR4D)
-       deallocate(tempR1D)
-
-       domap = .false.
-       if (ni0 /= sdat%nxg .or. nj0 /= sdat%nyg) then
-          domap = .true.
-       else
-          klon = mct_aVect_indexRA(ggridi%data   ,'lon')
-          klat = mct_aVect_indexRA(sdat%grid%data,'lat')
-          do n = 1,lsizei
-             if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) > 0.01_R8) then
-                if (abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n)) - 360._r8 > 0.01_R8) then
-                   write(6,*)'domap is true: n,londiff= ',n,abs(ggridi%data%rAttr(klon,n)-ggridoG%data%rAttr(klon,n))
-                   domap = .true.
-                end if
-             end if
-             if (abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n)) > 0.01_R8) then
-                write(6,*)'domap is true: n,latdiff= ',n,abs(ggridi%data%rAttr(klat,n)-ggridoG%data%rAttr(klat,n))
-                domap=.true.
-             end if
-          enddo
-       endif
-
-       call mct_gGrid_clean(ggridoG)
-
-    endif
-
-    call shr_mpi_bcast(domap,mpicom,subname//' domap')
-
-    if (domap) then
-       call shr_strdata_mapSet(smatp, &
-            ggridi, gsmapi, ni0 ,nj0, sdat%grid, sdat%gsmap, sdat%nxg, sdat%nyg, &
-            'datmfactor', shr_map_fs_remap, shr_map_fs_bilinear, &
-            shr_map_fs_srcmask, shr_map_fs_scalar, compid, mpicom, 'Xonly')
-
-       call mct_aVect_init(avo, avi, lsizeo)
-       call mct_sMat_avMult(avi, smatp, avo)
-       call mct_sMatP_clean(smatp)
-    else
-       call mct_aVect_scatter(avi, avo, sdat%gsmap, 0, mpicom)
-    endif
-
-    !--- fill the interface arrays, only if they are the right size ---
-    allocate(tempR1D(lsizeo))
-    if (size(windF ) >= lsizeo) then
-       call mct_aVect_exportRattr(avo,'wind' ,tempR1D,lsizeo)
-       windF = tempR1D
-    endif
-    if (size(winddF) >= lsizeo) then
-       call mct_aVect_exportRattr(avo,'windd',tempR1D,lsizeo)
-       winddF = tempR1D
-    endif
-    if (size(qsatF ) >= lsizeo) then
-       call mct_aVect_exportRattr(avo,'qsat' ,tempR1D,lsizeo)
-       qsatF = tempR1D
-    endif
-    deallocate(tempR1D)
-
-    call mct_aVect_clean(avi)
-    call mct_aVect_clean(avo)
-    call mct_gGrid_clean(ggridi)
-    call mct_gsmap_clean(gsmapi)
-
-  end subroutine dshr_get_atm_adjustment_factors
 
   !===============================================================================
   subroutine dshr_log_clock_advance(clock, component, logunit, rc)

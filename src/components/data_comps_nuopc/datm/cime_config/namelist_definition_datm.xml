@@ -205,224 +205,43 @@
     </values>
   </entry>
 
-  <entry id="strm_domdir">
-    <type>char</type>
+  <entry id="strm_meshfile">
+        <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value stream="CLM1PT.1x1">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
-      <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
-      <value stream="CPLHISTForcing">null</value>
-      <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value>
-      <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
-      <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
-      <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
-      <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMNLDAS2">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
-      <value stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.NCEP.PSLV.SOFS">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.LWDN.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.SWDN.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.SWUP.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.SHUM.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.TBOT.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.U.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.V.SOFS.6HOUR">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="CORE2_IAF.GCGCS.PREC">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.GISS.LWDN">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.GISS.SWDN">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.GISS.SWUP">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.NCEP.DN10">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.NCEP.Q_10">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.NCEP.SLP_">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.NCEP.T_10">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.NCEP.U_10">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE_IAF_JRA.PREC">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.LWDN">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.SWDN">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.Q_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.SLP_">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.T_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.U_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.V_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
-      <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
-      <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
-      <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
-      <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
-      <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="presaero.cplhist">null</value>
-      <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
-      <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
-      <value stream="presaero.clim_2010">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
-      <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.SSP5-3.4">null</value>
-      <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
-      <value stream="topo.cplhist">null</value>
-    </values>
-  </entry>
+      <value datm_mode="CORE2_NYF">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc</value>
+      <value datm_mode="CORE2_IAF">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc</value>
+      <value datm_mode="CORE2_IAF_JRA">$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc</value>
+      <value datm_mode="CORE2_IAF" atm_grid="01col">generate_mesh_from:$DIN_LOC_ROOT/domains/domain.ocn.01col.SOFS.20150828.nc</value>
+      <value stream="CLMGSWP3v1">$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh_c20191210.nc</value> <!-- the lons in the data is 0->360, but in the mesh are -180->180 -->
+      <value stream="Anomaly.Forcing">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc</value> <!-- what is this mesh? --> 
+      <value stream="CLM1PT.1x1_mexicocityMEX">generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</value>
+      <value stream="CLM1PT.1x1_vancouverCAN" >generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
+      <value stream="CLM1PT.1x1_urbanc_alpha" >generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </value>
+      <value stream="co2tseries">generate_mesh_from:$DIN_LOC_ROOT/atm/datm7/CO2/ </value> -->
 
-  <entry id="strm_domfil">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file path(s).</desc>
-    <values match="first">
-      <value>null</value>
-      <value stream="CLM1PT.1x1_mexicocityMEX">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</value>
-      <value stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
-      <value stream="CLM1PT.1x1_urbanc_alpha">domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </value>
-      <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
-      <value stream="CPLHISTForcing">null</value>
-      <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
-      <value stream="CLMCRUNCEPv7">domain.lnd.360x720_cruncep.130305.nc</value>
-      <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
-      <value stream="CLMGSWP3v1">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
-      <value stream="CLMGSWP3">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
-      <value stream="CLMMOSARTTEST">domain.lnd.nldas2_0224x0464_c110415.nc</value>
-      <value stream="CLMNLDAS2">domain.lnd.0.125nldas2_0.125nldas2.190410.nc</value>
-      <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
-      <value stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</value>
-      <value stream="CORE2_NYF.NCEP">nyf.ncep.T62.050923.nc</value>
-      <value stream="CORE2_IAF.NCEP.DENS.SOFS">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.NCEP.PSLV.SOFS">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.PREC.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.LWDN.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.SWDN.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.SWUP.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.SHUM.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.TBOT.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.U.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.V.SOFS.6HOUR">domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CORE2_IAF.GCGCS.PREC">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.GISS.LWDN">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.GISS.SWDN">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.GISS.SWUP">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.NCEP.DN10">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.NCEP.Q_10">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.NCEP.SLP_">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.NCEP.T_10">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.NCEP.U_10">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.NCEP.V_10">domain.T62.050609.nc</value>
-      <value stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="CORE_IAF_JRA.PREC">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.LWDN">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.SWDN">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.Q_10">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.SLP_">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.T_10">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.U_10">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.V_10">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
-      <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.SSP1-1.9.latbnd">fco2_datm_lat-bandsSSP1-1.9_simyr_2014-2500_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP1-2.6.latbnd">fco2_datm_lat-bandsSSP1-2.6__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP2-4.5.latbnd">fco2_datm_lat-bandsSSP2-4.5__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP3-7.0.latbnd">fco2_datm_lat-bandsSSP3-7.0__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP4-3.4.latbnd">fco2_datm_lat-bandsSSP4-3.4_simyr_2014-2500_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP4-6.0.latbnd">fco2_datm_lat-bandsSSP4-6.0__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-3.4.latbnd">fco2_datm_lat-bandsSSP5-3.4__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-8.5.latbnd">fco2_datm_lat-bandsSSP5-8.5__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP1-1.9">fco2_datm_globalSSP1-1.9_simyr_2014-2501_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP1-2.6">fco2_datm_globalSSP1-2.6__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP2-4.5">fco2_datm_globalSSP2-4.5__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP3-7.0">fco2_datm_globalSSP3-7.0__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP4-3.4">fco2_datm_globalSSP4-3.4_simyr_2014-2501_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP4-6.0">fco2_datm_globalSSP4-6.0__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-3.4">fco2_datm_globalSSP5-3.4__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-8.5">fco2_datm_globalSSP5-8.5__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="BC.QIAN.Precip">qian.bc.domain.c130531.nc</value>
-      <value stream="BC.CRUNCEP.GPCP.Precip">cruncep.bc.domain.0.9x1.25.nc</value>
-      <value stream="BC.CRUNCEP.CMAP.Precip">cruncep.bc.domain.c100429.nc</value>
-      <value stream="Anomaly.Forcing">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="presaero.cplhist">null</value>
-      <value stream="presaero atm_grid=CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP1-1.9" atm_grid="CLM_USRDAT">aerosoldep_SSP1-1.9_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP1-2.6" atm_grid="CLM_USRDAT">aerosoldep_SSP1-2.6_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP2-4.5" atm_grid="CLM_USRDAT">aerosoldep_SSP2-4.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP3-7.0" atm_grid="CLM_USRDAT">aerosoldep_SSP3-7.0_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP4-3.4" atm_grid="CLM_USRDAT">aerosoldep_SSP4-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP4-6.0" atm_grid="CLM_USRDAT">aerosoldep_SSP4-6.0_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP5-3.4" atm_grid="CLM_USRDAT">aerosoldep_SSP5-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP5-8.5" atm_grid="CLM_USRDAT">aerosoldep_SSP5-8.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.clim_1850" cime_model="e3sm">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.clim_2000" cime_model="e3sm">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
-      <value stream="presaero.clim_1850" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.clim_2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.trans_1850-2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <!-- <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value> -->
+      <!-- <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
+      <!-- <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value> -->
+      <!-- <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
+      <!-- <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value> -->
+      <!-- <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value> -->
+      <!-- <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
+      <!-- <value stream="CLMNLDAS2">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
+      <!-- <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value> -->
+      <!-- <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value> -->
+      <!-- <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value> -->
+      <!-- <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value> -->
+      <!-- <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value> -->
+      <!-- <value stream="presaero.clim_2010">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value> -->
+      <!-- <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value> -->
+      <!-- <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value> -->
+      <!-- <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value> -->
+      <!-- <value stream="topo.cplhist">null</value> -->
 
-      <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
-      <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
-      <value stream="presaero.SSP5-3.4">null</value>
-      <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
-      <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
-      <value stream="topo.cplhist">null</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domvar">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain variable name(s).</desc>
-    <values>
-      <value>
-        time    time
-        xc      lon
-        yc      lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="CPLHISTForcing|presaero.cplhist|topo.cplhist">
-        time         time
-        doma_lon     lon
-        doma_lat     lat
-        doma_aream   area
-        doma_mask    mask
-      </value>
-      <value stream="presaero">
-        time    time
-        lon     lon
-        lat     lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="CORE2_NYF">
-        time    time
-        lon      lon
-        lat      lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="topo.observed">
-        time   time
-        LONGXY lon
-        LATIXY lat
-        area   area
-        mask   mask
-      </value>
-      <value stream="co2tseries">
-        time    time
-        lonc    lon
-        latc    lat
-        area    area
-        mask    mask
-      </value>
     </values>
   </entry>
 
@@ -2657,18 +2476,34 @@
   </entry>
   <!--- for anomaly forcing -->
 
-  <entry id="factorfn">
+  <entry id="factorfn_data">
     <type>char</type>
     <category>datm</category>
     <group>datm_nml</group>
     <input_pathname>abs</input_pathname>
     <desc>
-      filename containing correction factors for use only with CORE2 modes (CORE2_IAF and CORE2_NYF).
+      filename containing correction factor data for use only with CORE2 modes (CORE2_IAF and CORE2_NYF).
     </desc>
     <values>
       <value>null</value>
       <value datm_mode="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</value>
       <value datm_mode="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</value>
+      <value datm_mode="CORE2_IAF" atm_grid="01col">null</value>
+    </values>
+  </entry>
+
+  <entry id="factorfn_mesh">
+    <type>char</type>
+    <category>datm</category>
+    <group>datm_nml</group>
+    <input_pathname>abs</input_pathname>
+    <desc>
+      filename containing correction factor data for use only with CORE2 modes (CORE2_IAF and CORE2_NYF).
+    </desc>
+    <values>
+      <value>null</value>
+      <value datm_mode="CORE2_NYF">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc</value>
+      <value datm_mode="CORE2_IAF">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col">null</value>
     </values>
   </entry>

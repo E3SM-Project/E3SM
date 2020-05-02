@@ -19,11 +19,9 @@ module lnd_comp_nuopc
   use shr_mpi_mod       , only : shr_mpi_bcast
   use dshr_methods_mod  , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
-  use dshr_mod          , only : dshr_state_setscalar
-  use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance
+  use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_sdat_init, dshr_state_setscalar
+  use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance, dshr_create_mesh_from_grid
   use dshr_mod          , only : dshr_restart_read, dshr_restart_write
-  use dshr_mod          , only : dshr_create_mesh_from_grid
   use dshr_dfield_mod   , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod  , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use glc_elevclass_mod , only : glc_elevclass_as_string, glc_elevclass_init
@@ -46,8 +44,8 @@ module lnd_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type)       :: sdat
-  type(ESMF_Mesh)              :: mesh
+  type(shr_strdata_type)       :: sdat                            ! instantiation of shr_strdata_type
+  type(ESMF_Mesh)              :: mesh                            ! model mesh
   character(len=CS)            :: flds_scalar_name = ''
   integer                      :: flds_scalar_num = 0
   integer                      :: flds_scalar_index_nx = 0
@@ -70,6 +68,8 @@ module lnd_comp_nuopc
   logical                      :: force_prognostic_true = .false. ! if true set prognostic true
   character(CL)                :: restfilm = nullstr              ! model restart file namelist
   character(CL)                :: restfils = nullstr              ! stream restart file namelist
+  integer                      :: nx_global
+  integer                      :: ny_global
 
   ! linked lists
   type(fldList_type) , pointer :: fldsImport => null()
@@ -153,7 +153,8 @@ contains
     character(len=*), parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
-    namelist / dlnd_nml / datamode, restfilm, restfils, force_prognostic_true, domain_fracname
+    namelist / dlnd_nml / datamode, restfilm, restfils, force_prognostic_true, domain_fracname, &
+         nx_global, ny_global
 
     rc = ESMF_SUCCESS
 
@@ -180,16 +181,20 @@ contains
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
        write(logunit,*)' datamode   = ',datamode
+       write(logunit,*)' domain_fracname = ',trim(domain_fracname)
+       write(logunit,*)' nx_global  = ',nx_global
+       write(logunit,*)' ny_global  = ',ny_global
        write(logunit,*)' restfilm   = ',trim(restfilm)
        write(logunit,*)' restfils   = ',trim(restfils)
        write(logunit,*)' force_prognostic_true = ',force_prognostic_true
-       write(logunit,*)' domain_fracname = ',trim(domain_fracname)
     endif
-    call shr_mpi_bcast(datamode ,mpicom, 'datamode')
-    call shr_mpi_bcast(domain_fracname,mpicom,'domain_fracname')
-    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
-    call shr_mpi_bcast(restfilm ,mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils ,mpicom, 'restfils')
+    call shr_mpi_bcast(datamode        , mpicom, 'datamode')
+    call shr_mpi_bcast(domain_fracname , mpicom, 'domain_fracname')
+    call shr_mpi_bcast(nx_global       , mpicom, 'nx_global')
+    call shr_mpi_bcast(ny_global       , mpicom, 'ny_global')
+    call shr_mpi_bcast(restfilm        , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils        , mpicom, 'restfils')
+    call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
 
     ! Validate sdat datamode
     if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
@@ -272,9 +277,9 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! add scalars to export state
-    call dshr_state_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_state_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! diagnostics
@@ -519,7 +524,8 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('dlnd_BARRIER',mpicom)
     call t_startf('dlnd_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'dlnd')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'dlnd', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_advance')
 
     !--------------------

@@ -18,20 +18,21 @@ module atm_comp_nuopc
   use shr_const_mod    , only : shr_const_spval, shr_const_tkfrz, shr_const_pi
   use shr_const_mod    , only : shr_const_pstd, shr_const_stebol, shr_const_rdair
   use shr_sys_mod      , only : shr_sys_abort
-  use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_ymd2date 
+  use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_ymd2date
   use shr_cal_mod      , only : shr_cal_ymd2julian, shr_cal_date2julian
   use shr_mpi_mod      , only : shr_mpi_bcast, shr_mpi_max
   use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
+  use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_regrid
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
-  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
+  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
   use dshr_mod         , only : dshr_create_mesh_from_grid
-  use dshr_mod         , only : dshr_get_atm_adjustment_factors
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
+  use pio
 
   implicit none
   private ! except
@@ -78,7 +79,8 @@ module atm_comp_nuopc
   character(CL)                :: nlfilename            ! filename to obtain namelist info from
   character(CL)                :: dataMode              ! flags physics options wrt input data
   integer                      :: iradsw                ! radiation interval (input namelist)
-  character(CL)                :: factorFn              ! file containing correction factors
+  character(CL)                :: factorFn_mesh         ! file containing correction factors mesh
+  character(CL)                :: factorFn_data         ! file containing correction factors data
   logical                      :: presaero              ! true => send valid prescribe aero fields to coupler
   character(CL)                :: bias_correct          ! true => send bias correction fields to coupler (not used here)
   character(CL)                :: anomaly_forcing(8)    ! true => send anomaly forcing fields to coupler (not used here)
@@ -283,15 +285,16 @@ contains
     integer           :: nu                    ! unit number
     integer           :: ierr                  ! error code
     character(len=CL) :: fileName              ! generic file name
-    character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
+    character(len=*),parameter :: subname='(atm_comp_nuopc):(InitializeAdvertise) '
+    character(*)    ,parameter :: F00 = "('(atm_comp_nuopc) ',a) "
     !-------------------------------------------------------------------------------
 
-    namelist / datm_nml / datamode, iradsw, factorFn, restfilm, restfils, &
-         presaero, bias_correct, anomaly_forcing, force_prognostic_true, wiso_datm
+    namelist / datm_nml / datamode, iradsw, factorFn_data, factorFn_mesh, &
+         restfilm, restfils, presaero, bias_correct, anomaly_forcing, force_prognostic_true, wiso_datm
 
     rc = ESMF_SUCCESS
 
-    ! Obtain flds_scalar values, mpi values, multi-instance values and  
+    ! Obtain flds_scalar values, mpi values, multi-instance values and
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
@@ -306,7 +309,8 @@ contains
 
     ! Read atm_nml from nlfilename
     iradsw = 0
-    factorFn = 'null'
+    factorFn_data = 'null'
+    factorFn_mesh = 'null'
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
     presaero = .false.
@@ -319,22 +323,24 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
-       write(logunit,*)' datamode = ',datamode
-       write(logunit,*)' iradsw   = ',iradsw
-       write(logunit,*)' factorFn = ',trim(factorFn)
-       write(logunit,*)' restfilm = ',trim(restfilm)
-       write(logunit,*)' restfils = ',trim(restfils)
-       write(logunit,*)' presaero = ',presaero
+       write(logunit,*)' datamode              = ',datamode
+       write(logunit,*)' iradsw                = ',iradsw
+       write(logunit,*)' factorFn_data         = ',trim(factorFn_data)
+       write(logunit,*)' factorFn_mesh         = ',trim(factorFn_mesh)
+       write(logunit,*)' restfilm              = ',trim(restfilm)
+       write(logunit,*)' restfils              = ',trim(restfils)
+       write(logunit,*)' presaero              = ',presaero
        write(logunit,*)' force_prognostic_true = ',force_prognostic_true
-       write(logunit,*)' wiso_datm   = ',wiso_datm
+       write(logunit,*)' wiso_datm             = ',wiso_datm
     endif
-    call shr_mpi_bcast(datamode  ,mpicom, 'datamode')
-    call shr_mpi_bcast(iradsw    ,mpicom, 'iradsw')
-    call shr_mpi_bcast(factorFn  ,mpicom, 'factorFn')
-    call shr_mpi_bcast(restfilm  ,mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils  ,mpicom, 'restfils')
-    call shr_mpi_bcast(presaero  ,mpicom, 'presaero')
-    call shr_mpi_bcast(wiso_datm ,mpicom, 'wiso_datm')
+    call shr_mpi_bcast(datamode              ,mpicom, 'datamode')
+    call shr_mpi_bcast(iradsw                ,mpicom, 'iradsw')
+    call shr_mpi_bcast(factorFn_data         ,mpicom, 'factorFn_data')
+    call shr_mpi_bcast(factorFn_mesh         ,mpicom, 'factorFn_mesh')
+    call shr_mpi_bcast(restfilm              ,mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils              ,mpicom, 'restfils')
+    call shr_mpi_bcast(presaero              ,mpicom, 'presaero')
+    call shr_mpi_bcast(wiso_datm             ,mpicom, 'wiso_datm')
     call shr_mpi_bcast(force_prognostic_true ,mpicom, 'force_prognostic_true')
 
     ! Call advertise phase
@@ -446,7 +452,7 @@ contains
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! Get model timestep (idt is module variable)
-    call ESMF_TimeIntervalGet( timeStep, s=idt, rc=rc) 
+    call ESMF_TimeIntervalGet( timeStep, s=idt, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize and update orbital values
@@ -1213,7 +1219,7 @@ contains
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
 
-    lsize = size(Sa_z)
+    lsize = sdat%lsize
 
     if (first_time) then
        ! allocate module arrays
@@ -1248,8 +1254,8 @@ contains
                 call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE2_IAF')
              endif
           endif
-          call dshr_get_atm_adjustment_factors(factorFn, windFactor, winddFactor, qsatFactor,  &
-               mpicom, compid, masterproc, logunit, sdat)
+          call datm_get_adjustment_factors(factorFn_mesh, factorFn_data, windFactor, winddFactor, qsatFactor, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
        call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
@@ -1349,13 +1355,14 @@ contains
                 call shr_sys_abort(trim(subname)//'ERROR: tarcf must be in an input stream for CORE_IAF_JRA')
              endif
           endif
-          if (trim(factorFn) == 'null') then
+          if (trim(factorFn_data) == 'null') then
             windFactor  = 1.0_R8
             winddFactor = 1.0_R8
             qsatFactor  = 1.0_R8
           else
-             call dshr_get_atm_adjustment_factors(factorFn, windFactor, winddFactor, qsatFactor,  &
-                  mpicom, compid, masterproc, logunit, sdat)
+             call datm_get_adjustment_factors(factorFn_mesh, factorFn_data, &
+                  windFactor, winddFactor, qsatFactor, rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
        endif
        call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
@@ -1648,5 +1655,155 @@ contains
     end if
 
   end function datm_eSat
+
+  !===============================================================================
+  subroutine datm_get_adjustment_factors(fileName_mesh, fileName_data, windF, winddF, qsatF, rc)
+
+    ! input/output variables
+    character(*)           , intent(in)  :: fileName_mesh ! file name string
+    character(*)           , intent(in)  :: fileName_data ! file name string
+    real(R8)               , pointer     :: windF(:)      ! wind adjustment factor
+    real(R8)               , pointer     :: winddF(:)     ! wind adjustment factor
+    real(r8)               , pointer     :: qsatF(:)      ! rel humidty adjustment factor
+    integer                , intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Mesh)        :: mesh      ! mesh read in from fileName_mesh
+    type(ESMF_DistGrid)    :: distgrid
+    type(ESMF_FieldBundle) :: fldbun_src
+    type(ESMF_FieldBundle) :: fldbun_dst
+    type(ESMF_RouteHandle) :: route_handle
+    type(ESMF_Field)       :: field_src
+    type(ESMF_Field)       :: field_dst
+    integer                :: lsize
+    integer                :: gsize
+    integer                :: n         ! generic indicies
+    logical                :: domap     ! map or not
+    integer, pointer       :: gindex(:) ! domain decomposition of data
+    integer                :: ndims     ! number of dims
+    integer, allocatable   :: dimid(:)
+    type(var_desc_t)       :: varid
+    type(file_desc_t)      :: pioid
+    integer                :: rcode
+    type(io_desc_t)        :: pio_iodesc
+    integer                :: nxg, nyg
+    real(r8), pointer      :: data(:)
+    integer                :: srcTermProcessing_Value = 0
+    character(*) ,parameter :: subName =  '(datm_get_adjustment_factors) '
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! read in the factors mesh
+    mesh = ESMF_MeshCreate(trim(filename_mesh), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Create input and output field bundles
+    fldbun_src = ESMF_FieldBundleCreate(rc=rc) ! input field bundle
+    field_src = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name='windFactor', &
+         meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleAdd(fldbun_src, (/field_src/), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    field_src = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name='winddFactor', &
+         meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleAdd(fldbun_src, (/field_src/), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    field_src = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name='qsatFactor', &
+         meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleAdd(fldbun_src, (/field_src/), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    fldbun_dst = ESMF_FieldBundleCreate(rc=rc) ! output field bundle
+    field_dst = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name='windFactor', &
+         meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleAdd(fldbun_dst, (/field_dst/), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    field_dst = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name='winddFactor', &
+         meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleAdd(fldbun_dst, (/field_dst/), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    field_dst = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name='qsatFactor', &
+         meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleAdd(fldbun_dst, (/field_dst/), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! Get mesh info
+    call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(gindex(lsize))
+    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Create_pio_iodesc
+    rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(filename_data), pio_nowrite)
+    call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+    rcode = pio_inq_varid(pioid, 'windFactor', varid)
+    rcode = pio_inq_varndims(pioid, varid, ndims)
+    allocate(dimid(ndims))
+    rcode = pio_inq_varid(pioid, 'windFactor', varid)
+    rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+    rcode = pio_inq_dimlen(pioid, dimid(1), nxg)
+    rcode = pio_inq_dimlen(pioid, dimid(2), nyg)
+    call pio_initdecomp(sdat%pio_subsystem, pio_double, (/nxg,nyg/), gindex, pio_iodesc)
+    deallocate(gindex)
+
+    ! Read in the data into the appropriate field bundle pointers
+    call dshr_fldbun_getFldPtr(fldbun_src, 'windFactor', data, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    rcode = pio_inq_varid(pioid, 'windFactor', varid)
+    call pio_read_darray(pioid, varid, pio_iodesc, data, rcode)
+
+    call dshr_fldbun_getFldPtr(fldbun_src, 'winddFactor', data, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    rcode = pio_inq_varid(pioid, 'winddFactor', varid)
+    call pio_read_darray(pioid, varid, pio_iodesc, data, rcode)
+
+    call dshr_fldbun_getFldPtr(fldbun_src, 'qsatFactor', data, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    rcode = pio_inq_varid(pioid, 'qsatFactor', varid)
+    call pio_read_darray(pioid, varid, pio_iodesc, data, rcode)
+
+    if (nxg*nyg /= sdat%gsize) then
+       ! TODO: this needs a mask that needs to be read in to have the mapping be accurate
+       ! create bilinear route handle -
+       call ESMF_FieldRegridStore(field_src, field_dst, routehandle=route_handle, &
+            regridmethod=ESMF_REGRIDMETHOD_BILINEAR, &
+            polemethod=ESMF_POLEMETHOD_ALLAVG, &
+            extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
+            srcTermProcessing=srcTermProcessing_Value, &
+            ignoreDegenerate=.true., rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    else
+       call ESMF_FieldRedistStore(field_src, field_dst, routehandle=route_handle, &
+            ignoreUnmatchedIndices=.true., rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    ! apply the route handle
+    call dshr_fldbun_regrid(fldbun_src, fldbun_dst, route_handle, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! obtain output data
+    call dshr_fldbun_getFldPtr(fldbun_dst, 'windFactor', windF, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_fldbun_getFldPtr(fldbun_dst, 'winddFactor', winddF, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_fldbun_getFldPtr(fldbun_dst, 'qsatFactor', qsatF, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call pio_closefile(pioid)
+    call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+    call ESMF_RouteHandleDestroy(route_handle, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine datm_get_adjustment_factors
 
 end module atm_comp_nuopc

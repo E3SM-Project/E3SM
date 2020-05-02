@@ -73,39 +73,13 @@
     </values>
   </entry>
 
-  <entry id="strm_domdir" skip_default_entry="true">
+  <entry id="strm_mesh" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value>null</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domfil"  skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file path(s).</desc>
-    <values>
-      <value>null</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domvar"  skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain variable name(s).</desc>
-    <values>
-      <value>
-        time         time
-        doml_lon     lon
-        doml_lat     lat
-        doml_aream   area
-        doml_mask    mask
-      </value>
+      <value stream="sno.cplhist">$LND_DOMAIN_MESH</value>
     </values>
   </entry>
 
@@ -125,7 +99,7 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value  stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
     </values>
   </entry>
 
@@ -179,7 +153,7 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value   stream="sno.cplhist">$DLND_CPLHIST_YR_END</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_YR_END</value>
     </values>
   </entry>
 
@@ -190,60 +164,6 @@
   <!-- =========================================  -->
   <!--- shr_strmdata_nml -->
   <!-- =========================================  -->
-
-  <entry id="nx_global" modify_via_xml="LND_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$LND_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="LND_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$LND_NY</value>
-    </values>
-  </entry>
-
-  <entry id="fillalgo"   per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
-    <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are just copy (ie. no fill), special value,
-      nearest neighbor, nearest neighbor in "i" direction, or nearest
-      neighbor in "j" direction.
-      valid values:  'copy','spval','nn','nnoni','nnonj'
-    </desc>
-    <values>
-      <value>nn</value>
-    </values>
-  </entry>
-
-  <entry id="fillmask"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      plays no role is fill algorithm at the present time.
-    </desc>
-    <values>
-      <value>nomask</value>
-    </values>
-  </entry>
 
   <entry id="mapmask"  per_stream_entry="true">
     <type>char(30)</type>
@@ -422,6 +342,30 @@
       <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
       <value dlnd_mode="CPLHIST">COPYALL</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="LND_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>dlnd_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$LND_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="LND_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>dlnd_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$LND_NY</value>
     </values>
   </entry>
 

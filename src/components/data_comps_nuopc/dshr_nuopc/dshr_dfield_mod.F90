@@ -84,7 +84,7 @@ contains
     dfields => dfield_new
 
     ! determine local size
-    lsize = sdat%lsize
+    lsize = sdat%model_lsize
 
     ! initialize dfield_new values
     dfield_new%sdat_stream_index = iunset  ! stream index
@@ -161,7 +161,7 @@ contains
     dfields => dfield_new
 
     ! determine local size
-    lsize = sdat%lsize
+    lsize = sdat%model_lsize
 
     ! Initialize strm_ptr and state_ptr if it is present.
     ! These will be set to valid values if the relevant fields are
@@ -268,7 +268,7 @@ contains
     dfields => dfield_new
 
     ! determine local size
-    lsize = sdat%lsize
+    lsize = sdat%model_lsize
 
     ! determine stream fldnames array
     nflds = size(strm_flds)

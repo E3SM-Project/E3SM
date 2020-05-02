@@ -39,29 +39,30 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Get a bunch of information from the case.
     #----------------------------------------------------
     dlnd_mode = case.get_value("DLND_MODE")
-    lnd_grid = case.get_value("LND_GRID")
+    lnd_mesh = case.get_value("LND_DOMAIN_MESH")
     glc_nec = case.get_value("GLC_NEC")
+    caseroot = case.get_value("CASEROOT")
 
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
-    expect(lnd_grid != "null",
-           "LND_GRID cannot be null")
-    expect(dlnd_mode != "NULL",
-           "DLND_MODE cannot be NULL")
+    expect(dlnd_mode != "NULL",  
+           "xml variable DLND_MODE cannot be NULL")
+
+    expect(lnd_mesh != "NULL",
+           "xml variable LND_DOMAIN_MESH cannot be NULL")
 
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
     logger.debug("DLND mode is {}".format(dlnd_mode))
-    logger.debug("DLND grid is {}".format(lnd_grid))
+    logger.debug("DLND mesh is {}".format(lnd_mesh))
     logger.debug("DLND glc_nec is {}".format(glc_nec))
 
     #----------------------------------------------------
     # Create configuration information.
     #----------------------------------------------------
     config = {}
-    config['lnd_grid'] = lnd_grid
     config['dlnd_mode'] = dlnd_mode
 
     #----------------------------------------------------
@@ -86,7 +87,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         inst_stream = stream + inst_string
         logger.debug("DLND stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "dlnd.streams.txt." + inst_stream)
-        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, case.get_value("CASEROOT"), stream, stream_path, data_list_path)
+        nmlgen.create_nuopc_stream_file_and_update_shr_strdata_nml(config, caseroot, 
+                                                                   stream, stream_path, data_list_path)
 
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
