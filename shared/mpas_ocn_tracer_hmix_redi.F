@@ -56,6 +56,7 @@ module ocn_tracer_hmix_Redi
 
    real(kind=RKIND) :: term1TaperFactor
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
+   real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
 
 !***********************************************************************
 
@@ -142,7 +143,6 @@ contains
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
-      real(kind=RKIND), dimension(:,:,:), allocatable :: redi_term1, redi_term2, redi_term3
       err = 0
 
       if (.not. config_use_Redi) return
