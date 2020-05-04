@@ -346,6 +346,121 @@ contains
 
   !==========================================================================================!
 
+  SUBROUTINE p3_main_pre_main_loop(i, its, ite, kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+       pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, &
+       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+       qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, &
+       nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent)
+
+    implicit none
+
+    ! args
+
+    integer, intent(in) :: i, its, ite, kts, kte, kbot, ktop, kdir
+    logical(btype), intent(in) :: log_predictNc
+    real(rtype), intent(in) :: dt
+
+    real(rtype), intent(in), dimension(its:ite,kts:kte) :: pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm
+
+    real(rtype), intent(inout), dimension(its:ite,kts:kte) :: t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, &
+         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, &
+         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
+
+    logical(btype), intent(inout) :: log_nucleationPossible, log_hydrometeorsPresent
+
+    ! locals
+    integer :: k
+    real(rtype) :: dum
+
+    k_loop_1: do k = kbot,ktop,kdir
+
+       !calculate some time-varying atmospheric variables
+       !AaronDonahue - changed "rho" to be defined on nonhydrostatic
+       !assumption, consistent with pressure based coordinate system
+       !             - moved latent heat calculation to above.  Latent
+       !heat is determined by calling a p3_util function so that it
+       !can be made consistent with E3SM definition of latent heat
+       rho(i,k)     = pdel(i,k)/dzq(i,k)/g  ! pres(i,k)/(rd*t(i,k))
+       inv_rho(i,k) = 1._rtype/rho(i,k)
+       qvs(i,k)     = qv_sat(t(i,k),pres(i,k),0)
+       qvi(i,k)     = qv_sat(t(i,k),pres(i,k),1)
+
+       sup(i,k)     = qv(i,k)/qvs(i,k)-1._rtype
+       supi(i,k)    = qv(i,k)/qvi(i,k)-1._rtype
+
+       rhofacr(i,k) = (rhosur*inv_rho(i,k))**0.54_rtype
+       rhofaci(i,k) = (rhosui*inv_rho(i,k))**0.54_rtype
+       dum          = 1.496e-6_rtype*t(i,k)**1.5_rtype/(t(i,k)+120._rtype)  ! this is mu
+       acn(i,k)     = g*rhow/(18._rtype*dum)  ! 'a' parameter for droplet fallspeed (Stokes' law)
+
+       !specify cloud droplet number (for 1-moment version)
+       if (.not.(log_predictNc)) then
+          nc(i,k) = nccnst*inv_rho(i,k)
+       endif
+
+       if ((t(i,k).lt.zerodegc .and. supi(i,k).ge.-0.05_rtype) .or.                              &
+            (t(i,k).ge.zerodegc .and. sup(i,k).ge.-0.05_rtype )) log_nucleationPossible = .true.
+
+       !--- apply mass clipping if dry and mass is sufficiently small
+       !    (implying all mass is expected to evaporate/sublimate in one time step)
+
+       if (qc(i,k).lt.qsmall .or. (qc(i,k).lt.1.e-8_rtype .and. sup(i,k).lt.-0.1_rtype)) then
+          qv(i,k) = qv(i,k) + qc(i,k)
+          th(i,k) = th(i,k) - exner(i,k)*qc(i,k)*xxlv(i,k)*inv_cp
+          qc(i,k) = 0._rtype
+          nc(i,k) = 0._rtype
+       else
+          log_hydrometeorsPresent = .true.    ! updated further down
+       endif
+
+       if (qr(i,k).lt.qsmall .or. (qr(i,k).lt.1.e-8_rtype .and. sup(i,k).lt.-0.1_rtype)) then
+          qv(i,k) = qv(i,k) + qr(i,k)
+          th(i,k) = th(i,k) - exner(i,k)*qr(i,k)*xxlv(i,k)*inv_cp
+          qr(i,k) = 0._rtype
+          nr(i,k) = 0._rtype
+       else
+          log_hydrometeorsPresent = .true.    ! updated further down
+       endif
+
+       if (qitot(i,k).lt.qsmall .or. (qitot(i,k).lt.1.e-8_rtype .and.             &
+            supi(i,k).lt.-0.1_rtype)) then
+          qv(i,k) = qv(i,k) + qitot(i,k)
+          th(i,k) = th(i,k) - exner(i,k)*qitot(i,k)*xxls(i,k)*inv_cp
+          qitot(i,k) = 0._rtype
+          nitot(i,k) = 0._rtype
+          qirim(i,k) = 0._rtype
+          birim(i,k) = 0._rtype
+       else
+          log_hydrometeorsPresent = .true.    ! final update
+       endif
+
+       if (qitot(i,k).ge.qsmall .and. qitot(i,k).lt.1.e-8_rtype .and.             &
+            t(i,k).ge.zerodegc) then
+          qr(i,k) = qr(i,k) + qitot(i,k)
+          th(i,k) = th(i,k) - exner(i,k)*qitot(i,k)*xlf(i,k)*inv_cp
+          qitot(i,k) = 0._rtype
+          nitot(i,k) = 0._rtype
+          qirim(i,k) = 0._rtype
+          birim(i,k) = 0._rtype
+       endif
+
+       t(i,k) = th(i,k) * inv_exner(i,k)
+
+       !Activaiton of cloud droplets
+       if (log_predictNc) then
+          nc(i,k) = nc(i,k) + npccn(i,k) * dt
+       endif
+
+       call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
+            inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
+            qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k))
+
+    enddo k_loop_1
+
+  END SUBROUTINE p3_main_pre_main_loop
+
+  !==========================================================================================!
+
   SUBROUTINE p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
@@ -616,93 +731,11 @@ contains
        log_hydrometeorsPresent = .false.
        log_nucleationPossible  = .false.
 
-       k_loop_1: do k = kbot,ktop,kdir
-
-          !calculate some time-varying atmospheric variables
-            !AaronDonahue - changed "rho" to be defined on nonhydrostatic
-            !assumption, consistent with pressure based coordinate system
-            !             - moved latent heat calculation to above.  Latent
-            !heat is determined by calling a p3_util function so that it
-            !can be made consistent with E3SM definition of latent heat
-          rho(i,k)     = pdel(i,k)/dzq(i,k)/g  ! pres(i,k)/(rd*t(i,k))
-          inv_rho(i,k) = 1._rtype/rho(i,k)
-          qvs(i,k)     = qv_sat(t(i,k),pres(i,k),0)
-          qvi(i,k)     = qv_sat(t(i,k),pres(i,k),1)
-
-          sup(i,k)     = qv(i,k)/qvs(i,k)-1._rtype
-          supi(i,k)    = qv(i,k)/qvi(i,k)-1._rtype
-
-          rhofacr(i,k) = (rhosur*inv_rho(i,k))**0.54_rtype
-          rhofaci(i,k) = (rhosui*inv_rho(i,k))**0.54_rtype
-          dum          = 1.496e-6_rtype*t(i,k)**1.5_rtype/(t(i,k)+120._rtype)  ! this is mu
-          acn(i,k)     = g*rhow/(18._rtype*dum)  ! 'a' parameter for droplet fallspeed (Stokes' law)
-
-          !specify cloud droplet number (for 1-moment version)
-          if (.not.(log_predictNc)) then
-             nc(i,k) = nccnst*inv_rho(i,k)
-          endif
-
-          if ((t(i,k).lt.zerodegc .and. supi(i,k).ge.-0.05_rtype) .or.                              &
-               (t(i,k).ge.zerodegc .and. sup(i,k).ge.-0.05_rtype )) log_nucleationPossible = .true.
-
-          !--- apply mass clipping if dry and mass is sufficiently small
-          !    (implying all mass is expected to evaporate/sublimate in one time step)
-
-          if (qc(i,k).lt.qsmall .or. (qc(i,k).lt.1.e-8_rtype .and. sup(i,k).lt.-0.1_rtype)) then
-             qv(i,k) = qv(i,k) + qc(i,k)
-             th(i,k) = th(i,k) - exner(i,k)*qc(i,k)*xxlv(i,k)*inv_cp
-             qc(i,k) = 0._rtype
-             nc(i,k) = 0._rtype
-          else
-             log_hydrometeorsPresent = .true.    ! updated further down
-          endif
-
-          if (qr(i,k).lt.qsmall .or. (qr(i,k).lt.1.e-8_rtype .and. sup(i,k).lt.-0.1_rtype)) then
-             qv(i,k) = qv(i,k) + qr(i,k)
-             th(i,k) = th(i,k) - exner(i,k)*qr(i,k)*xxlv(i,k)*inv_cp
-             qr(i,k) = 0._rtype
-             nr(i,k) = 0._rtype
-          else
-             log_hydrometeorsPresent = .true.    ! updated further down
-          endif
-
-          if (qitot(i,k).lt.qsmall .or. (qitot(i,k).lt.1.e-8_rtype .and.             &
-               supi(i,k).lt.-0.1_rtype)) then
-             qv(i,k) = qv(i,k) + qitot(i,k)
-             th(i,k) = th(i,k) - exner(i,k)*qitot(i,k)*xxls(i,k)*inv_cp
-             qitot(i,k) = 0._rtype
-             nitot(i,k) = 0._rtype
-             qirim(i,k) = 0._rtype
-             birim(i,k) = 0._rtype
-          else
-             log_hydrometeorsPresent = .true.    ! final update
-          endif
-
-          if (qitot(i,k).ge.qsmall .and. qitot(i,k).lt.1.e-8_rtype .and.             &
-               t(i,k).ge.zerodegc) then
-             qr(i,k) = qr(i,k) + qitot(i,k)
-             th(i,k) = th(i,k) - exner(i,k)*qitot(i,k)*xlf(i,k)*inv_cp
-             qitot(i,k) = 0._rtype
-             nitot(i,k) = 0._rtype
-             qirim(i,k) = 0._rtype
-             birim(i,k) = 0._rtype
-          endif
-
-          t(i,k) = th(i,k) * inv_exner(i,k)
-
-
-         !Activaiton of cloud droplets
-          if (log_predictNc) then
-             nc(i,k) = nc(i,k) + npccn(i,k) * dt
-          endif
-
-          call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
-                  inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
-                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k))
-          !===
-
-
-       enddo k_loop_1
+       call p3_main_pre_main_loop(i, its, ite, kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+            pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, &
+            t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+            qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, &
+            nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent)
 
 !      if (debug_ON) then
 !         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
