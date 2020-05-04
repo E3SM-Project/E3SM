@@ -475,7 +475,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain fractional land from first stream
-    call shr_strdata_get_stream_domain(sdat, 1, mpicom, my_task, domain_fracname, lfrac) 
+    call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac) 
 
     ! Create stream-> export state mapping
     allocate(strm_flds(0:glc_nec))

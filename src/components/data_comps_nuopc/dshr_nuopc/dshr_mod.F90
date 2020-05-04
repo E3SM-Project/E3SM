@@ -259,7 +259,8 @@ contains
     real(r8)                     :: scmlon
     character(len=CL)            :: cvalue
     character(len=*), parameter  :: subname='(dshr_mod:dshr_sdat_init)'
-    character(*)    , parameter  :: F01="('(dshr_init_strdata) ',a,2f10.4)"
+    character(*)    , parameter  :: F01 ="('(dshr_sdat_init) ',a,2f10.4)"
+    character(*)    , parameter  :: F00 ="('(dshr_sdat_init) ',a)"
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -334,7 +335,7 @@ contains
     end if
 
     if (my_task == master_task) then
-       write(logunit,*) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
+       write(logunit,F00) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
     end if
 
     ! Initialize sdat from data model input files

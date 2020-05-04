@@ -71,6 +71,7 @@ module dshr_stream_mod
   public :: shr_stream_findBounds        ! return lower/upper bounding date info
   public :: shr_stream_getMeshFileName   ! return stream filename
   public :: shr_stream_getModelFieldList ! return model field name list
+  public :: shr_stream_getStreamFieldList! return stream file field name list
   public :: shr_stream_getFileFieldName  ! return k-th input-file field name
   public :: shr_stream_getPrevFileName   ! return previous file in sequence
   public :: shr_stream_getNextFileName   ! return next file in sequence
@@ -78,6 +79,7 @@ module dshr_stream_mod
   public :: shr_stream_getNFiles         ! get the number of files in a stream
   public :: shr_stream_getCalendar       ! get the stream calendar
   public :: shr_stream_getCurrFile       ! get the currfile, fileopen, and currpioid
+  public :: shr_stream_getData           ! get stream data from target file 
   public :: shr_stream_setCurrFile       ! set the currfile, fileopen, and currpioid
   public :: shr_stream_dataDump          ! internal stream data for debugging
   public :: shr_stream_restWrite         ! write a streams restart file
@@ -106,7 +108,6 @@ module dshr_stream_mod
   type shr_stream_streamType
      !private                                          ! no public access to internal components
      !--- input data file names and data ---
-     type(shr_stream_fileType), allocatable :: file(:) ! data specific to each file
      logical           :: init                         ! has stream been initialized?
      integer  ,pointer :: initarr(:) => null()         ! surrogate for init flag
      integer           :: nFiles                       ! number of data files
@@ -125,8 +126,9 @@ module dshr_stream_mod
      character(CL)     :: calendar                     ! stream calendar
 
      ! stream data metadata - obtained from stream txt file
-     character(CL)     :: meshFileName                 ! local filepath for mesh for all fields on stream
-     character(CL)     :: filePath                     ! local filepath of stream data files
+     character(CL)     :: meshFileName                 ! filename for mesh for all fields on stream
+     character(CL)     :: filePath                     ! filepath of stream data files
+     type(shr_stream_fileType), allocatable :: file(:) ! filenames of stream data files
      character(CXX)    :: fldListFile                  ! field list: file's  field names
      character(CXX)    :: fldListModel                 ! field list: model's field names
 
@@ -226,9 +228,6 @@ contains
 
     read(nUnit,'(a)',END=999) str
     call shr_string_leftalign_and_convert_tabs(str)
-    n = len_trim(str)
-    if (n>0 .and. str(n:n) /= '/') str(n+1:n+2) = "/ " ! must have trailing slash
-    if (n==0) str = "./ "                              ! null path => ./
     strm%meshFileName = str
     if (debug>0) write(s_logunit,F00) '  * stream_meshfile = ', trim(strm%meshFileName)
 
@@ -312,8 +311,8 @@ contains
 
     ! find start tag
     open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
-    startTag =  "<stream_fields>"
-    endTag   = "</stream_fields>"
+    startTag =  "<stream_info>"
+    endTag   = "</stream_info>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
     startTag =  "<data_filePath>"
@@ -1357,6 +1356,20 @@ contains
   end subroutine shr_stream_getModelFieldList
 
   !===============================================================================
+  subroutine shr_stream_getStreamFieldList(stream, list)
+
+    ! Get list of file fields
+
+    !input/output parameters:
+    type(shr_stream_streamType) ,intent(in)  :: stream  ! stream in question
+    character(*)                ,intent(out) :: list    ! field list
+    !-------------------------------------------------------------------------------
+
+    list = stream%fldListFile
+
+  end subroutine shr_stream_getStreamFieldList
+
+  !===============================================================================
   subroutine shr_stream_getFileFieldName(stream, k, name)
 
     ! Get name of k-th field in list
@@ -1999,6 +2012,20 @@ contains
     if (present(rc)) rc = 0
 
   end subroutine shr_stream_clearInit
+
+  !===============================================================================
+  subroutine shr_stream_getData(stream, index, filename)
+
+    ! Returns full pathname of stream data file (nt)
+
+    type(shr_stream_streamType) , intent(in)  :: stream
+    integer                     , intent(in)  :: index
+    character(len=*)            , intent(out) :: filename
+    !-------------------------------------------------------------------------------
+
+    filename = trim(stream%filepath) // trim(stream%file(index)%name)
+
+  end subroutine shr_stream_getData
 
 end module dshr_stream_mod
 

@@ -60,9 +60,9 @@ _stream_mct_file_template = """<?xml version="1.0"?>
 _stream_nuopc_file_template = """<?xml version="1.0"?>
 <file id="stream" version="1.0">
   <stream_info>
-   <meshfile>
+   <mesh_filename>
       {data_meshfile}
-   </meshfile>
+   </mesh_filename>
    <data_filePath>
       {data_filepath}
    </datafilePath>
