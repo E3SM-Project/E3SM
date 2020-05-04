@@ -1934,11 +1934,7 @@ subroutine shoc_length(&
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._rtype)
 
   ! Define the brunt vaisalia frequency
-  do k=1,nlev
-    do i=1,shcol
-      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k)
-    enddo
-  enddo
+  call compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt)
 
   ! Find L_inf
   do k=1,nlev
@@ -2757,6 +2753,33 @@ real(rtype) function esatw_shoc(t)
       esatw_shoc = 2._rtype*0.01_rtype*exp(9.550426_rtype - 5723.265_rtype/t + 3.53068_rtype*Log(t) - 0.00728332_rtype*t)
    end if
 end
+
+
+subroutine compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt) 
+
+  !=========================================================
+  !
+  ! Computes the brunt_visala frequency 
+
+  implicit none
+  integer, intent(in) :: nlev, shcol  
+  ! Grid difference centereted on thermo grid [m]
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  ! virtual potential temperature [K]
+  real(rtype), intent(in) :: thv(shcol,nlev)
+  ! virtual potential temperature [K] at interface 
+  real(rtype), intent(in) :: thv_zi(shcol,nlev) 
+  ! brunt vaisala frequency [s-1]
+  real(rtype), intent(out) :: brunt(shcol, nlev)
+  integer k, i
+
+  do k=1,nlev
+    do i=1,shcol
+      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k)
+    enddo
+  enddo
+
+end subroutine compute_brunt_shoc_length
 
 end module shoc
 
