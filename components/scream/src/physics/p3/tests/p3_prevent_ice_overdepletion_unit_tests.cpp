@@ -36,31 +36,31 @@ static void run_bfb()
   constexpr Scalar t1 = 0.2, t2 = 0.4, t3 = 0.6, t4 = 0.8;
   constexpr Scalar qv1 = 0.125, qv2 = 0.25, qv3 = 0.375, qv4 = 0.5;
   constexpr Scalar xxls1 = 0.25, xxls2 = 0.5, xxls3 = 0.75, xxls4 = 1.0;
-  constexpr Scalar odt1 = 0.11, odt2 = 0.22, odt3 = 0.33, odt4 = 0.44;
+  constexpr Scalar odt = 0.11;
   constexpr Scalar qidep = 1.0;
   constexpr Scalar qisub = 1.0;
 
   PreventIceOverdepletionData prevent_ice_overdepletion_data[max_pack_size] = {
     // pres, t, qv, xxls, odt, qidep, qisub
-    {p1, t1, qv1, xxls1, odt1, qidep, qisub},
-    {p1, t1, qv1, xxls1, odt2, qidep, qisub},
-    {p1, t1, qv1, xxls1, odt3, qidep, qisub},
-    {p1, t1, qv1, xxls1, odt4, qidep, qisub},
+    {p1, t1, qv1, xxls1, odt, qidep, qisub},
+    {p1, t1, qv1, xxls1, odt, qidep, qisub},
+    {p1, t1, qv1, xxls1, odt, qidep, qisub},
+    {p1, t1, qv1, xxls1, odt, qidep, qisub},
 
-    {p2, t2, qv2, xxls2, odt1, qidep, qisub},
-    {p2, t2, qv2, xxls2, odt2, qidep, qisub},
-    {p2, t2, qv2, xxls2, odt3, qidep, qisub},
-    {p2, t2, qv2, xxls2, odt4, qidep, qisub},
+    {p2, t2, qv2, xxls2, odt, qidep, qisub},
+    {p2, t2, qv2, xxls2, odt, qidep, qisub},
+    {p2, t2, qv2, xxls2, odt, qidep, qisub},
+    {p2, t2, qv2, xxls2, odt, qidep, qisub},
 
-    {p3, t3, qv3, xxls3, odt1, qidep, qisub},
-    {p3, t3, qv3, xxls3, odt2, qidep, qisub},
-    {p3, t3, qv3, xxls3, odt3, qidep, qisub},
-    {p3, t3, qv3, xxls3, odt4, qidep, qisub},
+    {p3, t3, qv3, xxls3, odt, qidep, qisub},
+    {p3, t3, qv3, xxls3, odt, qidep, qisub},
+    {p3, t3, qv3, xxls3, odt, qidep, qisub},
+    {p3, t3, qv3, xxls3, odt, qidep, qisub},
 
-    {p4, t4, qv4, xxls4, odt1, qidep, qisub},
-    {p4, t4, qv4, xxls4, odt2, qidep, qisub},
-    {p4, t4, qv4, xxls4, odt3, qidep, qisub},
-    {p4, t4, qv4, xxls4, odt4, qidep, qisub}
+    {p4, t4, qv4, xxls4, odt, qidep, qisub},
+    {p4, t4, qv4, xxls4, odt, qidep, qisub},
+    {p4, t4, qv4, xxls4, odt, qidep, qisub},
+    {p4, t4, qv4, xxls4, odt, qidep, qisub}
   };
 
   // Sync to device
@@ -78,18 +78,17 @@ static void run_bfb()
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     // Init pack inputs
-    Spack pres, t, qv, xxls, odt, qidep, qisub;
+    Spack pres, t, qv, xxls, qidep, qisub;
     for (Int s = 0; s < Spack::n; ++s) {
       pres[s] = device_data(s).pres;
       t[s]    = device_data(s).t;
       qv[s]   = device_data(s).qv;
       xxls[s] = device_data(s).xxls;
-      odt[s]  = device_data(s).odt;
       qidep[s]  = device_data(s).qidep;
       qisub[s]  = device_data(s).qisub;
     }
 
-    Functions::prevent_ice_overdepletion(pres, t, qv, xxls, odt, qidep, qisub);
+    Functions::prevent_ice_overdepletion(pres, t, qv, xxls, device_data(0).odt, qidep, qisub);
 
     // Copy results back into views
     for (Int s = 0; s < Spack::n; ++s) {

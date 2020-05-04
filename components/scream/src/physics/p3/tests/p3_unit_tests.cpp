@@ -495,103 +495,106 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     static constexpr Int max_pack_size = 16;
 
     REQUIRE(Spack::n <= max_pack_size);
+    constexpr Scalar nmltratio     = C::nmltratio;
+    constexpr Scalar dt            = 1.8000E+03;
+    constexpr bool   log_predictNc = true;
 
     //fortran generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
     };
@@ -614,14 +617,14 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
         // Init pack inputs
         Spack qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr,
           qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
-          nmltratio, rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
+          rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
         Scalar dt;
-        bool log_predictNc, log_wetgrowth;
+        bool log_predictNc;
+        Smask log_wetgrowth;
 
         // variables with single values assigned outside of the for loop
         dt            = pupidc_device(0).dt;
         log_predictNc = pupidc_device(0).log_predictNc;
-        log_wetgrowth = pupidc_device(0).log_wetgrowth;
 
         for (Int s = 0; s < Spack::n; ++s) {
 
@@ -649,7 +652,6 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
           xlf[s]    = pupidc_device(s).xlf;
           xxls[s]   = pupidc_device(s).xxls;
 
-          nmltratio[s] = pupidc_device(s).nmltratio;
           rhorime_c[s] = pupidc_device(s).rhorime_c;
           th[s]    = pupidc_device(s).th;
           qv[s]    = pupidc_device(s).qv;
@@ -661,48 +663,20 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
           nitot[s] = pupidc_device(s).nitot;
           qirim[s] = pupidc_device(s).qirim;
           birim[s] = pupidc_device(s).birim;
+
+          log_wetgrowth.set(s, pupidc_device(s).log_wetgrowth);
         }
 
         Functions::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
                                          qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
                                          qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
                                          nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
-                                         log_predictNc, log_wetgrowth,  dt,  nmltratio,
+                                         log_predictNc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
                                          rhorime_c, th, qv, qitot, nitot, qirim,
                                          birim, qc, nc, qr, nr);
 
         // Copy results back into views
-        pupidc_device(0).dt            = dt;
-        pupidc_device(0).log_predictNc = log_predictNc;
-        pupidc_device(0).log_wetgrowth = log_wetgrowth;
         for (Int s = 0; s < Spack::n; ++s) {
-
-          pupidc_device(s).qcheti = qcheti[s];
-          pupidc_device(s).qccol  = qccol[s];
-          pupidc_device(s).qcshd  = qcshd[s];
-          pupidc_device(s).nccol  = nccol[s];
-          pupidc_device(s).ncheti = ncheti[s];
-          pupidc_device(s).ncshdc = ncshdc[s];
-          pupidc_device(s).qrcol  = qrcol[s];
-          pupidc_device(s).nrcol  = nrcol[s];
-          pupidc_device(s).qrheti = qrheti[s];
-          pupidc_device(s).nrheti = nrheti[s];
-          pupidc_device(s).nrshdr = nrshdr[s];
-          pupidc_device(s).qimlt  = qimlt[s];
-          pupidc_device(s).nimlt  = nimlt[s];
-          pupidc_device(s).qisub  = qisub[s];
-          pupidc_device(s).qidep  = qidep[s];
-          pupidc_device(s).qinuc  = qinuc[s];
-          pupidc_device(s).ninuc  = ninuc[s];
-          pupidc_device(s).nislf  = nislf[s];
-          pupidc_device(s).nisub  = nisub[s];
-          pupidc_device(s).qiberg = qiberg[s];
-          pupidc_device(s).exner  = exner[s];
-          pupidc_device(s).xlf    = xlf[s];
-          pupidc_device(s).xxls   = xxls[s];
-
-          pupidc_device(s).nmltratio = nmltratio[s];
-          pupidc_device(s).rhorime_c = rhorime_c[s];
           pupidc_device(s).th    = th[s];
           pupidc_device(s).qv	   = qv[s];
           pupidc_device(s).qc	   = qc[s];
@@ -722,6 +696,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
 
     // Validate results
     for (Int s = 0; s < Spack::n; ++s) {
+      REQUIRE(pupidc[s].th    == pupidc_host(s).th);
       REQUIRE(pupidc[s].qc    == pupidc_host(s).qc);
       REQUIRE(pupidc[s].nr    == pupidc_host(s).nr);
       REQUIRE(pupidc[s].qr    == pupidc_host(s).qr);
@@ -731,7 +706,6 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
       REQUIRE(pupidc[s].nitot == pupidc_host(s).nitot);
       REQUIRE(pupidc[s].qirim == pupidc_host(s).qirim);
       REQUIRE(pupidc[s].birim == pupidc_host(s).birim );
-      REQUIRE(pupidc[s].th    == pupidc_host(s).th);
     }
   }
 
@@ -752,22 +726,23 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
 
       //fortran generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
-      {2.9792E+02,9.8711E+04,1.1532E+00,2.5010E+06,2.8347E+06,2.0321E-02,2.0321E-02,9.3749E-05},
-      {2.9792E+02,9.8711E+04,1.1532E+00,2.5010E+06,2.8347E+06,2.0321E-02,2.0321E-02,9.3749E-05},
-      {2.9583E+02,9.7322E+04,1.1449E+00,2.5010E+06,2.8347E+06,1.8120E-02,1.8120E-02,1.8407E-05},
-      {2.9375E+02,9.5933E+04,1.1366E+00,2.5010E+06,2.8347E+06,1.6134E-02,1.6134E-02,1.8306E-05},
-      {2.8959E+02,9.3156E+04,1.1196E+00,2.5010E+06,2.8347E+06,1.2729E-02,1.2729E-02,1.8102E-05},
-      {2.8750E+02,9.1767E+04,1.1109E+00,2.5010E+06,2.8347E+06,1.1279E-02,1.1279E-02,1.7999E-05},
-      {2.8542E+02,9.0378E+04,1.1020E+00,2.5010E+06,2.8347E+06,9.9759E-03,9.9759E-03,1.7896E-05},
-      {2.8334E+02,8.8989E+04,1.0931E+00,2.5010E+06,2.8347E+06,8.8076E-03,8.8076E-03,1.7793E-05},
-      {2.8125E+02,8.7600E+04,1.0840E+00,2.5010E+06,2.8347E+06,7.7615E-03,7.7615E-03,1.7690E-05},
-      {2.7917E+02,8.6211E+04,1.0748E+00,2.5010E+06,2.8347E+06,6.8265E-03,6.8265E-03,1.7586E-05},
-      {2.7709E+02,8.4822E+04,1.0654E+00,2.5010E+06,2.8347E+06,5.9921E-03,5.9921E-03,1.7481E-05},
-      {2.7501E+02,8.3433E+04,1.0559E+00,2.5010E+06,2.8347E+06,5.2488E-03,5.2488E-03,1.7377E-05},
-      {2.7292E+02,8.2044E+04,1.0463E+00,2.5010E+06,2.8347E+06,4.5879E-03,4.5766E-03,1.7272E-05},
-      {2.7084E+02,8.0656E+04,1.0365E+00,2.5010E+06,2.8347E+06,4.0015E-03,3.9112E-03,1.7167E-05},
-      {2.6876E+02,7.9267E+04,1.0265E+00,2.5010E+06,2.8347E+06,3.4821E-03,3.3349E-03,1.7061E-05},
-      {2.6667E+02,7.7878E+04,1.0164E+00,2.5010E+06,2.8347E+06,3.0231E-03,2.8368E-03,1.6955E-05},
+      //        t,       pres,        rho,       xxlv,       xxls,        qvs,        qvi
+      {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
+      {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
+      {2.9583E+02, 9.7322E+04, 1.1449E+00, 2.5010E+06, 2.8347E+06, 1.8120E-02, 1.8120E-02},
+      {2.9375E+02, 9.5933E+04, 1.1366E+00, 2.5010E+06, 2.8347E+06, 1.6134E-02, 1.6134E-02},
+      {2.8959E+02, 9.3156E+04, 1.1196E+00, 2.5010E+06, 2.8347E+06, 1.2729E-02, 1.2729E-02},
+      {2.8750E+02, 9.1767E+04, 1.1109E+00, 2.5010E+06, 2.8347E+06, 1.1279E-02, 1.1279E-02},
+      {2.8542E+02, 9.0378E+04, 1.1020E+00, 2.5010E+06, 2.8347E+06, 9.9759E-03, 9.9759E-03},
+      {2.8334E+02, 8.8989E+04, 1.0931E+00, 2.5010E+06, 2.8347E+06, 8.8076E-03, 8.8076E-03},
+      {2.8125E+02, 8.7600E+04, 1.0840E+00, 2.5010E+06, 2.8347E+06, 7.7615E-03, 7.7615E-03},
+      {2.7917E+02, 8.6211E+04, 1.0748E+00, 2.5010E+06, 2.8347E+06, 6.8265E-03, 6.8265E-03},
+      {2.7709E+02, 8.4822E+04, 1.0654E+00, 2.5010E+06, 2.8347E+06, 5.9921E-03, 5.9921E-03},
+      {2.7501E+02, 8.3433E+04, 1.0559E+00, 2.5010E+06, 2.8347E+06, 5.2488E-03, 5.2488E-03},
+      {2.7292E+02, 8.2044E+04, 1.0463E+00, 2.5010E+06, 2.8347E+06, 4.5879E-03, 4.5766E-03},
+      {2.7084E+02, 8.0656E+04, 1.0365E+00, 2.5010E+06, 2.8347E+06, 4.0015E-03, 3.9112E-03},
+      {2.6876E+02, 7.9267E+04, 1.0265E+00, 2.5010E+06, 2.8347E+06, 3.4821E-03, 3.3349E-03},
+      {2.6667E+02, 7.7878E+04, 1.0164E+00, 2.5010E+06, 2.8347E+06, 3.0231E-03, 2.8368E-03},
     };
 
     // Sync to device
@@ -850,6 +825,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
       REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
     }
   }
+
   static void run_bfb(){
     get_time_space_phys_variables_unit_bfb_tests();
   }
@@ -1249,27 +1225,29 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
+    constexpr Scalar max_total_Ni = C::max_total_Ni;
+
     ImposeMaxTotalNiData dc[max_pack_size]= {
       // nitot_local, max_total_Ni, inv_rho_local
-      {0.000E0, 5.000E5, 5.466E3},
-      {3.358E4, 5.000E5, 9.691E-1},
-      {0.000E0, 5.000E5, 9.105E-1},
-      {0.000E3, 5.000E5, 3.371E0},
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
 
-      {0.000E0, 5.000E5, 5.466E3},
-      {3.358E4, 5.000E5, 9.691E-1},
-      {0.000E0, 5.000E5, 9.105E-1},
-      {0.000E3, 5.000E5, 3.371E0},
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
 
-      {0.000E0, 5.000E5, 5.466E3},
-      {3.358E4, 5.000E5, 9.691E-1},
-      {0.000E0, 5.000E5, 9.105E-1},
-      {0.000E3, 5.000E5, 3.371E0},
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
 
-      {0.000E0, 5.000E5, 5.466E3},
-      {3.358E4, 5.000E5, 9.691E-1},
-      {0.000E0, 5.000E5, 9.105E-1},
-      {0.000E3, 5.000E5, 3.371E0},
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
 
     };
 
@@ -1289,18 +1267,16 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     //Run function from a kernal and copy results back to the host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
         // Init pack inputs
-        Spack nitot_local, max_total_Ni, inv_rho_local;
+        Spack nitot_local, inv_rho_local;
         for (Int s = 0; s < Spack::n; ++s) {
           nitot_local[s] = dc_device(s).nitot_local;
-          max_total_Ni[s] = dc_device(s).max_total_Ni;
           inv_rho_local[s] = dc_device(s).inv_rho_local;
         }
 
-        Functions::impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local);
+        Functions::impose_max_total_Ni(nitot_local, dc_device(0).max_total_Ni, inv_rho_local);
         // Copy results back into views
         for (Int s = 0; s < Spack::n; ++s) {
           dc_device(s).nitot_local = nitot_local[s];
-          dc_device(s).max_total_Ni = max_total_Ni[s];
           dc_device(s).inv_rho_local = inv_rho_local[s];
         }
       });
@@ -1311,7 +1287,6 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     // Validate results
     for (Int s = 0; s < Spack::n; ++s) {
       REQUIRE(dc[s].nitot_local == dc_host(s).nitot_local);
-      REQUIRE(dc[s].max_total_Ni == dc_host(s).max_total_Ni);
       REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
     }
   }
@@ -1328,32 +1303,32 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 
 namespace {
 
-TEST_CASE("p3_conservation_test", "[p3_conservation_test]"){
+TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run_bfb();
 }
 
-TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_get_time_space_phys_variables_test]"){
+TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables::run_bfb();
 }
 
-TEST_CASE("p3_update_prognostic_ice_test", "[p3_update_prognostic_ice_test]"){
+TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
 }
 
-TEST_CASE("p3_update_prognostic_liquid_test", "[p3_update_prognostic_liquid_test]"){
+TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
 }
 
-TEST_CASE("p3_evaporate_sublimate_precip_test", "[p3_evaporate_sublimate_precip_test]"){
+TEST_CASE("p3_evaporate_sublimate_precip_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip::run_bfb();
 }
 
-TEST_CASE("p3_ice_deposition_sublimation_test", "[p3_ice_deposition_sublimation_test]"){
+TEST_CASE("p3_ice_deposition_sublimation_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3IceDepSublimation::run_bfb();
 }
 
-TEST_CASE("p3_impose_max_total_ni_test", "[p3_impose_max_total_ni_test]"){
+TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi::run_bfb();
 }
 

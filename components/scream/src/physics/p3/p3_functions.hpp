@@ -161,10 +161,9 @@ struct Functions
   // the subsequent adjustments are done with maximum possible rates for the
   // time step.
   KOKKOS_FUNCTION
-  static void prevent_ice_overdepletion(const Spack& pres, const Spack& t,
-                                        const Spack& qv, const Spack& xxls,
-                                        const Spack& odt, Spack& qidep,
-                                        Spack& qisub);
+  static void prevent_ice_overdepletion(
+    const Spack& pres, const Spack& t, const Spack& qv, const Spack& xxls, const Scalar& odt,
+    Spack& qidep, Spack& qisub);
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
@@ -451,7 +450,7 @@ struct Functions
 
   // Impose maximum ice number
   KOKKOS_FUNCTION
-  static void impose_max_total_Ni(Spack& nitot_local, const Spack& max_total_Ni, const Spack& inv_rho_local);
+  static void impose_max_total_Ni(Spack& nitot_local, const Scalar& max_total_Ni, const Spack& inv_rho_local);
 
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
@@ -479,8 +478,8 @@ struct Functions
     const Spack& nrshdr, const Spack& qimlt,  const Spack& nimlt,  const Spack& qisub,
     const Spack& qidep,  const Spack& qinuc,  const Spack& ninuc,  const Spack& nislf,
     const Spack& nisub,  const Spack& qiberg, const Spack& exner,  const Spack& xxls,
-    const Spack& xlf,    const bool log_predictNc, const bool log_wetgrowth, const Scalar dt,
-    const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
+    const Spack& xlf,    const bool log_predictNc, const Smask& log_wetgrowth, const Scalar dt,
+    const Scalar& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
     Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
     Spack& nr);
 
@@ -554,7 +553,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void calc_liq_relaxation_timescale(const view_2d_table& revap_table,
-                                            const Spack& rho, const Spack& f1r, const Spack& f2r,
+                                            const Spack& rho, const Scalar& f1r, const Scalar& f2r,
                                             const Spack& dv, const Spack& mu, const Spack& sc,
                                             const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
                                             const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
@@ -564,14 +563,14 @@ struct Functions
   KOKKOS_FUNCTION
   static void ice_nucleation(const Spack& temp, const Spack& inv_rho,
                              const Spack& nitot, const Spack& naai,
-                             const Spack& supi, const Spack& odt,
+                             const Spack& supi, const Scalar& odt,
                              const bool& log_predictNc,
                              Spack& qinuc, Spack& ninuc);
 
   KOKKOS_FUNCTION
   static void droplet_activation(const Spack& temp, const Spack& pres, const Spack& qv, const Spack& qc,
                                  const Spack& inv_rho,const Spack& sup, const Spack& xxlv, const Spack& npccn,
-                                 const bool& log_predictNc, const Spack& odt,
+                                 const bool& log_predictNc, const Scalar& odt,
                                  Spack& qcnuc, Spack& ncnuc);
 
   KOKKOS_FUNCTION
@@ -585,9 +584,9 @@ struct Functions
   static void get_latent_heat(const Int& ni, const Int& nk, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);
 
   KOKKOS_FUNCTION
-  static void check_values(const uview_1d<Spack>& qv, const uview_1d<Spack>& temp, const Int& kts, const Int& kte,
+  static void check_values(const uview_1d<const Spack>& qv, const uview_1d<const Spack>& temp, const Int& ktop, const Int& kbot,
                            const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
-                           const uview_1d<Scalar>& col_loc);
+                           const uview_1d<const Scalar>& col_loc);
 
   KOKKOS_FUNCTION
   static void calculate_incloud_mixingratios(const Spack& qc, const Spack& qr, const Spack& qitot, const Spack& qirim, const Spack& nc,
@@ -595,6 +594,313 @@ struct Functions
                                              const Spack& inv_icldm, const Spack& inv_rcldm,
                                              Spack& qc_incld, Spack& qr_incld, Spack& qitot_incld, Spack& qirim_incld,
                                              Spack& nc_incld, Spack& nr_incld, Spack& nitot_incld, Spack& birim_incld);
+
+  //
+  // main P3 functions
+  //
+
+  KOKKOS_FUNCTION
+  static void p3_main_init(
+    const MemberType& team,
+    const Int& nk_pack,
+    const uview_1d<const Spack>& oicldm,
+    const uview_1d<const Spack>& olcldm,
+    const uview_1d<const Spack>& orcldm,
+    const uview_1d<const Spack>& oexner,
+    const uview_1d<const Spack>& oth,
+    const uview_1d<Spack>& opratot,
+    const uview_1d<Spack>& oprctot,
+    const uview_1d<Spack>& prec,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& odiag_ze,
+    const uview_1d<Spack>& ze_ice,
+    const uview_1d<Spack>& ze_rain,
+    const uview_1d<Spack>& odiag_effc,
+    const uview_1d<Spack>& odiag_effi,
+    const uview_1d<Spack>& odiag_vmi,
+    const uview_1d<Spack>& odiag_di,
+    const uview_1d<Spack>& odiag_rhoi,
+    const uview_1d<Spack>& ocmeiout,
+    const uview_1d<Spack>& oprain,
+    const uview_1d<Spack>& onevapr,
+    const uview_1d<Spack>& orflx,
+    const uview_1d<Spack>& osflx,
+    const uview_1d<Spack>& inv_icldm,
+    const uview_1d<Spack>& inv_lcldm,
+    const uview_1d<Spack>& inv_rcldm,
+    const uview_1d<Spack>& omu_c,
+    const uview_1d<Spack>& olamc,
+    const uview_1d<Spack>& inv_exner,
+    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& oqv,
+    Scalar& prt_liq,
+    Scalar& prt_sol);
+
+  KOKKOS_FUNCTION
+  static void p3_main_pre_main_loop(
+    const MemberType& team,
+    const Int& nk_pack,
+    const bool& log_predictNc,
+    const Scalar& dt,
+    const uview_1d<const Spack>& opres,
+    const uview_1d<const Spack>& opdel,
+    const uview_1d<const Spack>& odzq,
+    const uview_1d<const Spack>& onpccn,
+    const uview_1d<const Spack>& oexner,
+    const uview_1d<const Spack>& inv_exner,
+    const uview_1d<const Spack>& inv_lcldm,
+    const uview_1d<const Spack>& inv_icldm,
+    const uview_1d<const Spack>& inv_rcldm,
+    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& rho,
+    const uview_1d<Spack>& inv_rho,
+    const uview_1d<Spack>& qvs,
+    const uview_1d<Spack>& qvi,
+    const uview_1d<Spack>& sup,
+    const uview_1d<Spack>& supi,
+    const uview_1d<Spack>& rhofacr,
+    const uview_1d<Spack>& rhofaci,
+    const uview_1d<Spack>& acn,
+    const uview_1d<Spack>& oqv,
+    const uview_1d<Spack>& oth,
+    const uview_1d<Spack>& oqc,
+    const uview_1d<Spack>& onc,
+    const uview_1d<Spack>& oqr,
+    const uview_1d<Spack>& onr,
+    const uview_1d<Spack>& oqitot,
+    const uview_1d<Spack>& onitot,
+    const uview_1d<Spack>& oqirim,
+    const uview_1d<Spack>& obirim,
+    const uview_1d<Spack>& oxxlv,
+    const uview_1d<Spack>& oxxls,
+    const uview_1d<Spack>& oxlf,
+    const uview_1d<Spack>& qc_incld,
+    const uview_1d<Spack>& qr_incld,
+    const uview_1d<Spack>& qitot_incld,
+    const uview_1d<Spack>& qirim_incld,
+    const uview_1d<Spack>& nc_incld,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& nitot_incld,
+    const uview_1d<Spack>& birim_incld,
+    bool& log_nucleationPossible,
+    bool& log_hydrometeorsPresent);
+
+  KOKKOS_FUNCTION
+  static void p3_main_main_loop(
+    const MemberType& team,
+    const Int& nk_pack,
+    const bool& log_predictNc,
+    const Scalar& dt,
+    const Scalar& odt,
+    const view_dnu_table& dnu,
+    const view_itab_table& itab,
+    const view_itabcol_table& itabcol,
+    const view_2d_table& revap_table,
+    const uview_1d<const Spack>& opres,
+    const uview_1d<const Spack>& opdel,
+    const uview_1d<const Spack>& odzq,
+    const uview_1d<const Spack>& onpccn,
+    const uview_1d<const Spack>& oexner,
+    const uview_1d<const Spack>& inv_exner,
+    const uview_1d<const Spack>& inv_lcldm,
+    const uview_1d<const Spack>& inv_icldm,
+    const uview_1d<const Spack>& inv_rcldm,
+    const uview_1d<const Spack>& onaai,
+    const uview_1d<const Spack>& oicldm,
+    const uview_1d<const Spack>& olcldm,
+    const uview_1d<const Spack>& orcldm,
+    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& rho,
+    const uview_1d<Spack>& inv_rho,
+    const uview_1d<Spack>& qvs,
+    const uview_1d<Spack>& qvi,
+    const uview_1d<Spack>& sup,
+    const uview_1d<Spack>& supi,
+    const uview_1d<Spack>& rhofacr,
+    const uview_1d<Spack>& rhofaci,
+    const uview_1d<Spack>& acn,
+    const uview_1d<Spack>& oqv,
+    const uview_1d<Spack>& oth,
+    const uview_1d<Spack>& oqc,
+    const uview_1d<Spack>& onc,
+    const uview_1d<Spack>& oqr,
+    const uview_1d<Spack>& onr,
+    const uview_1d<Spack>& oqitot,
+    const uview_1d<Spack>& onitot,
+    const uview_1d<Spack>& oqirim,
+    const uview_1d<Spack>& obirim,
+    const uview_1d<Spack>& oxxlv,
+    const uview_1d<Spack>& oxxls,
+    const uview_1d<Spack>& oxlf,
+    const uview_1d<Spack>& qc_incld,
+    const uview_1d<Spack>& qr_incld,
+    const uview_1d<Spack>& qitot_incld,
+    const uview_1d<Spack>& qirim_incld,
+    const uview_1d<Spack>& nc_incld,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& nitot_incld,
+    const uview_1d<Spack>& birim_incld,
+    const uview_1d<Spack>& omu_c,
+    const uview_1d<Spack>& nu,
+    const uview_1d<Spack>& olamc,
+    const uview_1d<Spack>& cdist,
+    const uview_1d<Spack>& cdist1,
+    const uview_1d<Spack>& cdistr,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& logn0r,
+    const uview_1d<Spack>& ocmeiout,
+    const uview_1d<Spack>& oprain,
+    const uview_1d<Spack>& onevapr,
+    const uview_1d<Spack>& oprer_evap,
+    const uview_1d<Spack>& ovap_cld_exchange,
+    const uview_1d<Spack>& ovap_liq_exchange,
+    const uview_1d<Spack>& ovap_ice_exchange,
+    const uview_1d<Spack>& oliq_ice_exchange,
+    const uview_1d<Spack>& opratot,
+    const uview_1d<Spack>& oprctot,
+    bool& log_hydrometeorsPresent);
+
+  KOKKOS_FUNCTION
+  static void p3_main_post_main_loop(
+    const MemberType& team,
+    const Int& nk_pack,
+    const bool& log_predictNc,
+    const Scalar& dt,
+    const Scalar& odt,
+    const view_dnu_table& dnu,
+    const view_itab_table& itab,
+    const view_itabcol_table& itabcol,
+    const view_2d_table& revap_table,
+    const uview_1d<const Spack>& opres,
+    const uview_1d<const Spack>& opdel,
+    const uview_1d<const Spack>& odzq,
+    const uview_1d<const Spack>& onpccn,
+    const uview_1d<const Spack>& oexner,
+    const uview_1d<const Spack>& inv_exner,
+    const uview_1d<const Spack>& inv_lcldm,
+    const uview_1d<const Spack>& inv_icldm,
+    const uview_1d<const Spack>& inv_rcldm,
+    const uview_1d<const Spack>& onaai,
+    const uview_1d<const Spack>& oicldm,
+    const uview_1d<const Spack>& olcldm,
+    const uview_1d<const Spack>& orcldm,
+    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& rho,
+    const uview_1d<Spack>& inv_rho,
+    const uview_1d<Spack>& qvs,
+    const uview_1d<Spack>& qvi,
+    const uview_1d<Spack>& sup,
+    const uview_1d<Spack>& supi,
+    const uview_1d<Spack>& rhofacr,
+    const uview_1d<Spack>& rhofaci,
+    const uview_1d<Spack>& acn,
+    const uview_1d<Spack>& oqv,
+    const uview_1d<Spack>& oth,
+    const uview_1d<Spack>& oqc,
+    const uview_1d<Spack>& onc,
+    const uview_1d<Spack>& oqr,
+    const uview_1d<Spack>& onr,
+    const uview_1d<Spack>& oqitot,
+    const uview_1d<Spack>& onitot,
+    const uview_1d<Spack>& oqirim,
+    const uview_1d<Spack>& obirim,
+    const uview_1d<Spack>& oxxlv,
+    const uview_1d<Spack>& oxxls,
+    const uview_1d<Spack>& oxlf,
+    const uview_1d<Spack>& qc_incld,
+    const uview_1d<Spack>& qr_incld,
+    const uview_1d<Spack>& qitot_incld,
+    const uview_1d<Spack>& qirim_incld,
+    const uview_1d<Spack>& nc_incld,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& nitot_incld,
+    const uview_1d<Spack>& birim_incld,
+    const uview_1d<Spack>& omu_c,
+    const uview_1d<Spack>& nu,
+    const uview_1d<Spack>& olamc,
+    const uview_1d<Spack>& cdist,
+    const uview_1d<Spack>& cdist1,
+    const uview_1d<Spack>& cdistr,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& logn0r,
+    const uview_1d<Spack>& ocmeiout,
+    const uview_1d<Spack>& oprain,
+    const uview_1d<Spack>& onevapr,
+    const uview_1d<Spack>& oprer_evap,
+    const uview_1d<Spack>& ovap_cld_exchange,
+    const uview_1d<Spack>& ovap_liq_exchange,
+    const uview_1d<Spack>& ovap_ice_exchange,
+    const uview_1d<Spack>& oliq_ice_exchange,
+    const uview_1d<Spack>& opratot,
+    const uview_1d<Spack>& oprctot,
+    const uview_1d<Spack>& ze_rain,
+    const uview_1d<Spack>& ze_ice,
+    const uview_1d<Spack>& odiag_vmi,
+    const uview_1d<Spack>& odiag_effi,
+    const uview_1d<Spack>& odiag_di,
+    const uview_1d<Spack>& odiag_rhoi,
+    const uview_1d<Spack>& odiag_ze,
+    const uview_1d<Spack>& tmparr1);
+
+  static void p3_main(
+    // inputs
+    const view_2d<const Spack>& pres,          // pressure                             Pa
+    const view_2d<const Spack>& dzq,           // vertical grid spacing                m
+    const view_2d<const Spack>& npccn,         // IN ccn activated number tendency     kg-1 s-1
+    const view_2d<const Spack>& naai,          // IN actived ice nuclei concentration  1/kg
+    const Real&                 dt,            // model time step                      s
+    const Int&                  ni,            // num columns
+    const Int&                  nk,            // column size
+    const Int&                  it,            // time step counter NOTE: starts at 1 for first time step
+    const bool&                 log_predictNc, // .T. (.F.) for prediction (specification) of Nc
+    const view_2d<const Spack>& pdel,          // pressure thickness                   Pa
+    const view_2d<const Spack>& exner,         // Exner expression
+
+    // inputs needed for PBUF variables used by other parameterizations
+    const view_2d<const Spack>& icldm,         // ice cloud fraction
+    const view_2d<const Spack>& lcldm,         // liquid cloud fraction
+    const view_2d<const Spack>& rcldm,         // rain cloud fraction
+    const view_2d<const Scalar>& col_location, // ni x 3
+
+    // input/output  arguments
+    const view_2d<Spack>& qc,    // cloud, mass mixing ratio         kg kg-1
+    const view_2d<Spack>& nc,    // cloud, number mixing ratio       #  kg-1
+    const view_2d<Spack>& qr,    // rain, mass mixing ratio          kg kg-1
+    const view_2d<Spack>& nr,    // rain, number mixing ratio        #  kg-1
+    const view_2d<Spack>& qitot, // ice, total mass mixing ratio     kg kg-1
+    const view_2d<Spack>& qirim, // ice, rime mass mixing ratio      kg kg-1
+    const view_2d<Spack>& nitot, // ice, total number mixing ratio   #  kg-1
+    const view_2d<Spack>& birim, // ice, rime volume mixing ratio    m3 kg-1
+    const view_2d<Spack>& qv,    // water vapor mixing ratio         kg kg-1
+    const view_2d<Spack>& th,    // potential temperature            K
+
+    // output arguments
+    const view_1d<Scalar>& prt_liq,  // precipitation rate, liquid       m s-1
+    const view_1d<Scalar>& prt_sol,  // precipitation rate, solid        m s-1
+    const view_2d<Spack>& diag_ze,   // equivalent reflectivity          dBZ
+    const view_2d<Spack>& diag_effc, // effective radius, cloud          m
+    const view_2d<Spack>& diag_effi, // effective radius, ice            m
+    const view_2d<Spack>& diag_vmi,  // mass-weighted fall speed of ice  m s-1
+    const view_2d<Spack>& diag_di,   // mean diameter of ice             m
+    const view_2d<Spack>& diag_rhoi, // bulk density of ice              kg m-3
+    const view_2d<Spack>& mu_c,      // Size distribution shape parameter for radiation
+    const view_2d<Spack>& lamc,      // Size distribution slope parameter for radiation
+
+    // outputs for PBUF variables used by other parameterizations
+    const view_2d<Spack>& cmeiout,          // qitend due to deposition/sublimation
+    const view_2d<Spack>& prain,            // Total precipitation (rain + snow)
+    const view_2d<Spack>& nevapr,           // evaporation of total precipitation (rain + snow)
+    const view_2d<Spack>& prer_evap,        // evaporation of rain
+    const view_2d<Spack>& rflx,             // grid-box average rain flux (kg m^-2 s^-1) pverp
+    const view_2d<Spack>& sflx,             // grid-box average ice/snow flux (kg m^-2 s^-1) pverp
+    const view_2d<Spack>& pratot,           // accretion of cloud by rain
+    const view_2d<Spack>& prctot,           // autoconversion of cloud to rain
+    const view_2d<Spack>& liq_ice_exchange, // sum of liq-ice phase change tendencies
+    const view_2d<Spack>& vap_liq_exchange, // sum of vap-liq phase change tendencies
+    const view_2d<Spack>& vap_ice_exchange, // sum of vap-ice phase change tendencies
+    const view_2d<Spack>& vap_cld_exchange); // sum of vap-cld phase change tendencies
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -647,6 +953,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_get_latent_heat_impl.hpp"
 # include "p3_functions_check_values_impl.hpp"
 # include "p3_functions_incloud_mixingratios_impl.hpp"
+# include "p3_functions_main_impl.hpp"
 #endif
 
 #endif

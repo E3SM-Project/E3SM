@@ -52,6 +52,8 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
       self[i].randomize();
       self[i].qr_incld = (i % 2) ? qr_small : qr_not_small;
       self[i].qc_incld = ((i/2) % 2) ? qc_small : qc_not_small;
+      self[i].f1r = C::f1r;
+      self[i].f2r = C::f2r;
     }
 
     // Get data from fortran
@@ -67,14 +69,11 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-    // Init pack inputs
-    Spack rho, f1r, f2r, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld,
-      qc_incld;
+      // Init pack inputs
+      Spack rho, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
 
       for (Int s = 0; s < Spack::n; ++s) {
         rho[s]      = self_device(s).rho;
-        f1r[s]      = self_device(s).f1r;
-        f2r[s]      = self_device(s).f2r;
         dv[s]       = self_device(s).dv;
         mu[s]       = self_device(s).mu;
         sc[s]       = self_device(s).sc;
@@ -87,7 +86,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
       }
 
       Spack epsr{0.0}, epsc{0.0};
-      Functions::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv,
+      Functions::calc_liq_relaxation_timescale(revap_table, rho, self_device(0).f1r, self_device(0).f2r, dv,
         mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
       for (Int s = 0; s < Spack::n; ++s) {

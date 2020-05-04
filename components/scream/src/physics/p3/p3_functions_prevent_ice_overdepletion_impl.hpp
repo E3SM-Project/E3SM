@@ -14,9 +14,9 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::prevent_ice_overdepletion(const Spack& pres, const Spack& t,
-                            const Spack& qv, const Spack& xxls,
-                            const Spack& odt, Spack& qidep, Spack& qisub)
+::prevent_ice_overdepletion(
+  const Spack& pres, const Spack& t, const Spack& qv, const Spack& xxls, const Scalar& odt,
+  Spack& qidep, Spack& qisub)
 {
   constexpr Scalar cp = C::CP;
   constexpr Scalar rv = C::RH2O;
