@@ -14,7 +14,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 :: droplet_activation(const Spack& temp, const Spack& pres, const Spack& qv, const Spack& qc,
                       const Spack& inv_rho,const Spack& sup, const Spack& xxlv, const Spack& npccn,
-                      const bool& log_predictNc, const Spack& odt,
+                      const bool& log_predictNc, const Scalar& odt,
                       Spack& qcnuc, Spack& ncnuc)
 {
   constexpr Scalar cons7  = C::CONS7;

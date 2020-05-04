@@ -608,16 +608,16 @@ void calculate_incloud_mixingratios(IncloudMixingData& d)
 
 }
 
-  void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
-    p3_init(true);
-    update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
-            		    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
-			    d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
-			    d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
-			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
-			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
-			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
-  }
+void update_prognostic_ice(P3UpdatePrognosticIceData& d){
+  p3_init(true);
+  update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
+                          d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
+                          d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
+                          d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
+                          d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
+                          d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
+                          &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
+}
 
 void evaporate_sublimate_precip(EvapSublimatePrecipData& d)
 {
@@ -1193,9 +1193,10 @@ void update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncco
 	ncheti(ncheti_),  ncshdc(ncshdc_),  qrcol(qrcol_),  nrcol(nrcol_),  qrheti(qrheti_),
 	nrheti(nrheti_),  nrshdr(nrshdr_),  qimlt(qimlt_),  nimlt(nimlt_),  qisub(qisub_),
 	qidep(qidep_),  qinuc(qinuc_),  ninuc(ninuc_),  nislf(nislf_),  nisub(nisub_),
-	qiberg(qiberg_),  exner(exner_),  xlf(xlf_),  xxls(xxls_),  nmltratio(nmltratio_),
+	qiberg(qiberg_),  exner(exner_),  xlf(xlf_),  xxls(xxls_),
 	rhorime_c(rhorime_c_);
-      bool log_predictNc(log_predictNc_), log_wetgrowth(log_wetgrowth_);
+      bool log_predictNc(log_predictNc_);
+      typename P3F::Smask log_wetgrowth(log_wetgrowth_);
       typename P3F::Scalar dt(dt_);
 
       typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr),
@@ -1205,7 +1206,7 @@ void update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncco
 				 qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
 				 qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
 				 nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
-				 log_predictNc, log_wetgrowth,  dt,  nmltratio,
+				 log_predictNc, log_wetgrowth,  dt,  nmltratio_,
 				 rhorime_c, th, qv, qitot, nitot, qirim,
 				 birim, qc, nc, qr, nr);
 
@@ -1950,14 +1951,14 @@ void prevent_ice_overdepletion_f(
   Real local_qisub = *qisub_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack pres(pres_), t(t_), qv(qv_), xxls(xxls_), odt(odt_),
-                          qidep(local_qidep), qisub(local_qisub);
-      P3F::prevent_ice_overdepletion(pres, t, qv, xxls, odt, qidep, qisub);
+    typename P3F::Spack pres(pres_), t(t_), qv(qv_), xxls(xxls_),
+      qidep(local_qidep), qisub(local_qisub);
+    P3F::prevent_ice_overdepletion(pres, t, qv, xxls, odt_, qidep, qisub);
 
-      t_d(0) = qidep[0];
-      t_d(1) = qisub[0];
+    t_d(0) = qidep[0];
+    t_d(1) = qisub[0];
 
-    });
+  });
   Kokkos::deep_copy(t_h, t_d);
 
   *qidep_ = t_h(0);
@@ -2181,10 +2182,9 @@ void impose_max_total_ni_f(Real* nitot_local_, Real max_total_Ni_, Real inv_rho_
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     Spack nitot_local(local_nitot_local);
-    Spack max_total_Ni(max_total_Ni_);
     Spack inv_rho_local(inv_rho_local_);
 
-    P3F::impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local);
+    P3F::impose_max_total_Ni(nitot_local, max_total_Ni_, inv_rho_local);
     t_d(0) = nitot_local[0];
   });
 
@@ -2480,13 +2480,13 @@ void calc_liq_relaxation_timescale_f(Real rho_, Real f1r_, Real f2r_, Real dv_,
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
-    Spack rho{rho_}, f1r{f1r_}, f2r{f2r_}, dv{dv_},
+    Spack rho{rho_}, dv{dv_},
           mu{mu_}, sc{sc_}, mu_r{mu_r_}, lamr{lamr_}, cdistr{cdistr_},
           cdist{cdist_}, qr_incld{qr_incld_}, qc_incld{qc_incld_};
 
     Spack epsr{0.0}, epsc{0.0};
 
-    P3F::calc_liq_relaxation_timescale(revap_table, rho, f1r, f2r, dv, mu, sc,
+    P3F::calc_liq_relaxation_timescale(revap_table, rho, f1r_, f2r_, dv, mu, sc,
       mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
     t_d(0) = epsr[0];
@@ -2513,10 +2513,10 @@ void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
-    Spack temp{temp_}, inv_rho{inv_rho_}, nitot{nitot_}, naai{naai_}, supi{supi_}, odt{odt_};
+    Spack temp{temp_}, inv_rho{inv_rho_}, nitot{nitot_}, naai{naai_}, supi{supi_};
     Spack qinuc{0.0}, ninuc{0.0};
 
-    P3F::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, log_predictNc_,
+    P3F::ice_nucleation(temp, inv_rho, nitot, naai, supi, odt_, log_predictNc_,
                         qinuc, ninuc);
 
     t_d(0) = qinuc[0];
@@ -2546,12 +2546,10 @@ void droplet_activation_f(Real temp_, Real pres_, Real qv_, Real qc_,
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
 
-    Spack temp{temp_}, pres{pres_}, qv{qv_}, qc{qc_}, inv_rho{inv_rho_}, sup{sup_}, xxlv{xxlv_},
-          npccn{npccn_}, odt{odt_};
-
+    Spack temp{temp_}, pres{pres_}, qv{qv_}, qc{qc_}, inv_rho{inv_rho_}, sup{sup_}, xxlv{xxlv_}, npccn{npccn_};
     Spack qcnuc{qcnuc_loc}, ncnuc{ncnuc_loc};
 
-    P3F::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc_, odt, qcnuc, ncnuc);
+    P3F::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc_, odt_, qcnuc, ncnuc);
 
     t_d(0) = qcnuc[0];
     t_d(1) = ncnuc[0];

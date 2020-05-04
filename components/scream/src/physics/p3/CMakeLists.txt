@@ -55,7 +55,8 @@ if (NOT CUDA_BUILD)
     p3_functions_ice_cldliq_wet_growth.cpp
     p3_functions_get_latent_heat.cpp
     p3_functions_check_values.cpp
-    p3_functions_incloud_mixingratios.cpp)
+    p3_functions_incloud_mixingratios.cpp
+    p3_functions_main.cpp)
 endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})

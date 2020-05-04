@@ -12,7 +12,7 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_nucleation(const Spack& temp, const Spack& inv_rho, const Spack& nitot, const Spack& naai,
-                 const Spack& supi, const Spack& odt, const bool& log_predictNc,
+                 const Spack& supi, const Scalar& odt, const bool& log_predictNc,
                  Spack& qinuc, Spack& ninuc)
 {
    constexpr Scalar nsmall  = C::NSMALL;

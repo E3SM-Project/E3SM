@@ -12,8 +12,8 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_cldliq_wet_growth(const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
                         const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
-                        const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld, 
-                        const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld, 
+                        const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
+                        const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
                         Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd)
 {
    constexpr Scalar qsmall = C::QSMALL;
@@ -39,7 +39,7 @@ void Functions<S,D>
 
    if (any_if.any()) {
       qsat0 = sp(0.622)*e0/(pres-e0);
-  
+
       qwgrth.set(any_if,
                 ((f1pr05+f1pr14*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*
                 twopi*(rho*xxlv*dv*(qsat0-qv)-(temp-tmelt)*kap)/
@@ -70,7 +70,7 @@ void Functions<S,D>
 
       log_wetgrowth = any_if && dum_ge_small;
   }
-  
+
 }
 
 } // namespace p3
