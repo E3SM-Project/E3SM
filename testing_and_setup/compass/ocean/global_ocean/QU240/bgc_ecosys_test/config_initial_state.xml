@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<config case="initial_state">
+	<get_file dest_path="initial_condition_database" file_name="Salinity.01.filled.60levels.PHC.151106.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="PotentialTemperature.01.filled.60levels.PHC.151106.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="ETOPO2v2c_f4_151106.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="chlorophyllA_monthly_averages_1deg.151201.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="ecosys_jan_IC_360x180x60_corrO2_Dec2014phaeo.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="ecoForcingAllSurface.forMPASO.interp360x180.1timeLevel.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+	</get_file>
+
+	<add_link source="../../init/culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source="../../init/culled_mesh/culled_graph.info" dest="graph.info"/>
+	<add_link source="../../init/culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
+	<add_link source_path="script_core_dir" source="scripts/plots/plot_initial_state.py" dest="plot_initial_state.py"/>
+	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="layer_depth.nc"/>
+	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
+	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="salinity.nc"/>
+	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
+	<add_link source_path="initial_condition_database" source="ETOPO2v2c_f4_151106.nc" dest="topography.nc"/>
+	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
+	<add_link source_path="initial_condition_database" source="ecosys_jan_IC_360x180x60_corrO2_Dec2014phaeo.nc" dest="ecosys.nc"/>
+	<add_link source_path="initial_condition_database" source="ecoForcingAllSurface.forMPASO.interp360x180.1timeLevel.nc" dest="ecosys_forcing.nc"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
+		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+		<option name="config_global_ocean_depth_file">'layer_depth.nc'</option>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
+		<option name="config_global_ocean_tracer_depth_conversion_factor">0.01</option>
+		<option name="config_global_ocean_minimum_depth">10</option>
+		<option name="config_global_ocean_deepen_critical_passages">.false.</option>
+		<option name="config_use_ecosysTracers">.true.</option>
+		<option name="config_use_DMSTracers">.true.</option>
+		<option name="config_use_MacroMoleculesTracers">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
+		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./plot_initial_state.py">
+		</step>
+	</run_script>
+</config>

@@ -56,6 +56,7 @@ module ocn_tracer_hmix_Redi
 
    real(kind=RKIND) :: term1TaperFactor
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
+   real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
 
 !***********************************************************************
 
@@ -73,7 +74,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
-                                        redi_term1, redi_term2, redi_term3, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
                                         kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tend, err)!{{{
 
@@ -113,7 +113,7 @@ contains
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:, :, :), intent(inout) :: &
-         tend, redi_term1, redi_term2, redi_term3     !< Input/Output: velocity tendency
+         tend
 
       !-----------------------------------------------------------------
       !
@@ -172,6 +172,9 @@ contains
       allocate (minimumVal(nTracers))
       allocate (fluxRediZTop(nTracers, nVertLevels + 1))
       !$omp master
+      allocate (redi_term1(nTracers, nVertLevels, nCells))
+      allocate (redi_term2(nTracers, nVertLevels, nCells))
+      allocate (redi_term3(nTracers, nVertLevels, nCells))
       allocate (redi_term2_edge(nTracers, nVertLevels, nEdges))
       allocate (redi_term3_topOfCell(nTracers, nVertLevels + 1, nCells))
       !$omp end master
@@ -398,6 +401,9 @@ contains
       deallocate (fluxRediZTop)
       deallocate (minimumVal)
       !$omp master
+      deallocate (redi_term1)
+      deallocate (redi_term2)
+      deallocate (redi_term3)
       deallocate (redi_term2_edge)
       deallocate (redi_term3_topOfCell)
       !$omp end master
