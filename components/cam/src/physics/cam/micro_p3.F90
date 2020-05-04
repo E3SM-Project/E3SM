@@ -388,9 +388,9 @@ contains
        sup(k)     = qv(k)/qvs(k)-1._rtype
        supi(k)    = qv(k)/qvi(k)-1._rtype
 
-       rhofacr(k) = (rhosur*inv_rho(k))**0.54_rtype
-       rhofaci(k) = (rhosui*inv_rho(k))**0.54_rtype
-       dum          = 1.496e-6_rtype*t(k)**1.5_rtype/(t(k)+120._rtype)  ! this is mu
+       rhofacr(k) = bfb_pow(rhosur*inv_rho(k), 0.54_rtype)
+       rhofaci(k) = bfb_pow(rhosui*inv_rho(k), 0.54_rtype)
+       dum        = 1.496e-6_rtype * bfb_pow(t(k), 1.5_rtype) / (t(k)+120._rtype)  ! this is mu
        acn(k)     = g*rhow/(18._rtype*dum)  ! 'a' parameter for droplet fallspeed (Stokes' law)
 
        !specify cloud droplet number (for 1-moment version)
