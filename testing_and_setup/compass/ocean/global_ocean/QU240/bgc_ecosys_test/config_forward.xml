@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../initial_state/initial_state.nc" dest="init.nc"/>
+	<add_link source="../initial_state/graph.info" dest="graph.info"/>
+	<add_link source="../initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
+		<option name="config_use_ecosysTracers">.true.</option>
+		<option name="config_use_DMSTracers">.true.</option>
+		<option name="config_use_MacroMoleculesTracers">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="output">
+			<attribute name="output_interval">0000_06:00:00</attribute>
+		</stream>
+		<stream name="ecosys_monthly_flux">
+			<attribute name="filename_template">init.nc</attribute>
+			<attribute name="input_interval">none</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="packages">ecosysTracersPKG</attribute>
+			<add_contents>
+				<member name="xtime" type="var" />
+				<member name="depositionFluzNO3" type="var" />
+				<member name="depositionFluzNH4" type="var" />
+				<member name="IRON_FLUZ_IN" type="var" />
+				<member name="dust_FLUZ_IN" type="var" />
+				<member name="riverFluzNO3" type="var" />
+				<member name="riverFluzPO4" type="var" />
+				<member name="riverFluzDON" type="var" />
+				<member name="riverFluzDOP" type="var" />
+				<member name="riverFluzSiO3" type="var" />
+				<member name="riverFluzFe" type="var" />
+				<member name="riverFluzDIC" type="var" />
+				<member name="riverFluzALK" type="var" />
+				<member name="riverFluzDOC" type="var" />
+			</add_contents>
+		</stream>
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">4</argument>
+		</step>
+
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>
