@@ -1448,10 +1448,12 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, &
     use cam_history,        only: outfld 
 
 #ifdef MMF_MOVE_CRM
-    use time_manager,       only: is_first_step
-    use crm_physics,        only: crm_physics_tend
-    use radiation,          only: radiation_tend
+    use time_manager,           only: is_first_step
+    use crm_physics,            only: crm_physics_tend
+    use radiation,              only: radiation_tend
     use crm_ecpp_output_module, only: crm_ecpp_output_type
+    use cloud_diagnostics,      only: cloud_diagnostics_calc
+    use cam_diagnostics,        only: diag_conv_tend_ini, diag_conv
 #endif /* MMF_MOVE_CRM */
 
     implicit none
@@ -1742,6 +1744,68 @@ end if ! l_tracer_aero
     endif
 
 
+
+    !---------------------------------------------------------------------------
+    ! Run the CRM (MMF configuration)
+    !---------------------------------------------------------------------------
+#ifdef MMF_MOVE_CRM
+    call phys_getopts( use_MMF_out = use_MMF )
+    if (use_MMF) then
+
+      call diag_conv_tend_ini(state, pbuf)
+      
+      call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
+                            species_class, crm_ecpp_output,                     &
+                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+
+      call physics_update(state, ptend, ztodt, tend)
+      call check_energy_chng(state, tend, "crm_tend_tphysac", nstep, ztodt,  &
+                             zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+
+
+      ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
+      call pbuf_get_field(pbuf, pbuf_get_index('CLDO'), cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld , start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
+
+      call diag_conv(state, ztodt, pbuf)
+      call cloud_diagnostics_calc(state, pbuf)
+
+    end if ! use_MMF
+#endif /* MMF_MOVE_CRM */
+    !---------------------------------------------------------------------------
+    ! Radiation computations
+    !---------------------------------------------------------------------------
+#ifdef MMF_MOVE_RAD
+    if (use_MMF) then
+      if (.not. is_first_step()) then
+
+        call t_startf('radiation_ac')
+        call radiation_tend(state,ptend, pbuf, cam_out, cam_in, &
+             cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
+             fsns, fsnt, flns, flnt, fsds, net_flx,is_cmip6_volc)
+
+        ! Set net flux used by spectral dycores
+        do i=1,ncol
+           tend%flx_net(i) = net_flx(i)
+        end do
+
+        ! do not apply radiative tendency, it is added in CRM
+        ptend%s = 0.
+
+        call physics_update(state, ptend, ztodt, tend)
+        call check_energy_chng(state, tend, "mmf_rad_heat_tphysac", nstep, ztodt, zero, zero, zero, zero)
+        call t_stopf('radiation_ac')
+
+      end if ! not is_first_step
+    end if ! use_MMF
+#endif /* MMF_MOVE_RAD */
+    !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
+
+
+
+
 if (l_rayleigh) then
     !===================================================
     ! Rayleigh friction calculation
@@ -1839,59 +1903,6 @@ if (l_gw_drag) then
 
 end if ! l_gw_drag
 
-
-
-    !---------------------------------------------------------------------------
-    ! Run the CRM (MMF configuration)
-    !---------------------------------------------------------------------------
-#ifdef MMF_MOVE_CRM
-    if (use_MMF) then
-      call phys_getopts( use_MMF_out = use_MMF )
-      
-      call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
-                            species_class, crm_ecpp_output,                     &
-                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
-
-      call physics_update(state, ptend, ztodt, tend)
-      call check_energy_chng(state, tend, "crm_tend_tphysac", nstep, ztodt,  &
-                             zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
-
-
-      ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDO'), cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-      call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld , start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-      cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
-    end if ! use_MMF
-#endif /* MMF_MOVE_CRM */
-    !---------------------------------------------------------------------------
-    ! Radiation computations
-    !---------------------------------------------------------------------------
-#ifdef MMF_MOVE_RAD
-    if (use_MMF) then
-      if (.not. is_first_step()) then
-
-        call t_startf('radiation_ac')
-        call radiation_tend(state,ptend, pbuf, cam_out, cam_in, &
-             cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
-             fsns, fsnt, flns, flnt, fsds, net_flx,is_cmip6_volc)
-
-        ! Set net flux used by spectral dycores
-        do i=1,ncol
-           tend%flx_net(i) = net_flx(i)
-        end do
-
-        ! do not apply radiative tendency, it is added in CRM
-        ptend%s = 0.
-
-        call physics_update(state, ptend, ztodt, tend)
-        call check_energy_chng(state, tend, "mmf_rad_heat_tphysac", nstep, ztodt, zero, zero, zero, zero)
-        call t_stopf('radiation_ac')
-
-      end if ! not is_first_step
-    end if ! use_MMF
-#endif /* MMF_MOVE_RAD */
-    !---------------------------------------------------------------------------
-    !---------------------------------------------------------------------------
     
 
 if (l_ac_energy_chk) then
@@ -2950,7 +2961,11 @@ end if
       !-------------------------------------------------------------------------
 #ifdef MMF_MOVE_CRM
     if (is_first_step()) then
-#endif /* MMF_MOVE_CRM */
+      call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
+                            species_class, crm_ecpp_output,                     &
+                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+    end if ! is_first_step
+#else
       call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                             species_class, crm_ecpp_output,                     &
                             sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
@@ -2959,8 +2974,6 @@ end if
 
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
                              zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
-#ifdef MMF_MOVE_CRM
-    end if ! is_first_step
 #endif /* MMF_MOVE_CRM */
       !-------------------------------------------------------------------------
       ! Modal aerosol wet radius for radiative calculation
@@ -3135,18 +3148,28 @@ end if ! l_tracer_aero
 
     call t_startf('bc_history_write')
     call diag_phys_writeout(state, cam_out%psl)
+#ifdef MMF_MOVE_CRM
+  if (is_first_step()) then
+#endif /* MMF_MOVE_CRM */
     call diag_conv(state, ztodt, pbuf)
+#ifdef MMF_MOVE_CRM
+  end if ! is_first_step
+#endif /* MMF_MOVE_CRM */
     call t_stopf('bc_history_write')
 
     !===================================================
     ! Write cloud diagnostics on history file
     !===================================================
 
+#ifdef MMF_MOVE_CRM
+  if (is_first_step()) then
+#endif /* MMF_MOVE_CRM */
     call t_startf('bc_cld_diag_history_write')
-
     call cloud_diagnostics_calc(state, pbuf)
-
     call t_stopf('bc_cld_diag_history_write')
+#ifdef MMF_MOVE_CRM
+  end if ! is_first_step
+#endif /* MMF_MOVE_CRM */
 
 if (l_rad) then
     !===================================================
