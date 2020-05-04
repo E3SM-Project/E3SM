@@ -163,29 +163,28 @@ contains
   end subroutine dshr_fldbun_getfldptr
 
   !===============================================================================
-  subroutine dshr_fldbun_regrid(FBin, FBout, RH, zeroregion, rc)
+  subroutine dshr_fldbun_regrid(FBsrc, FBdst, RH, zeroregion, rc)
 
     ! ----------------------------------------------
     ! Assumes that FBin and FBout contain fields with the same name
     ! ----------------------------------------------
 
     ! input/output variables
-    type(ESMF_FieldBundle), intent(inout)        :: FBin
-    type(ESMF_FieldBundle), intent(inout)        :: FBout
+    type(ESMF_FieldBundle), intent(inout)        :: FBsrc
+    type(ESMF_FieldBundle), intent(inout)        :: FBdst
     type(ESMF_RouteHandle), intent(inout)        :: RH
     type(ESMF_Region_Flag), intent(in), optional :: zeroregion
     integer               , intent(out)          :: rc
 
     ! local
+    integer                    :: n
+    type(ESMF_Region_Flag)     :: localzr
     type(ESMF_Field)           :: field_src
     type(ESMF_Field)           :: field_dst
-    integer                    :: fieldcount
-    logical                    :: checkflag = .false.
-    character(len=8)           :: filename
-    type(ESMF_Region_Flag)     :: localzr
-    character(len=cs)          :: fldname
-    integer                    :: n
-    character(ESMF_MAXSTR), allocatable :: lfieldNameList(:)
+    integer                    :: fieldcount_src
+    integer                    :: fieldcount_dst
+    character(ESMF_MAXSTR), allocatable :: lfieldNameList_src(:)
+    character(ESMF_MAXSTR), allocatable :: lfieldNameList_dst(:)
     character(len=*),parameter :: subname='(dshr_fldbun_FieldRegrid)'
     ! ----------------------------------------------
 
@@ -198,22 +197,41 @@ contains
        localzr = zeroregion
     endif
 
-    call ESMF_FieldBundleGet(FBin, fieldCount=fieldCount, rc=rc)
+    call ESMF_FieldBundleGet(FBsrc, fieldCount=fieldCount_src, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    allocate(lfieldNameList(fieldCount))
-    call ESMF_FieldBundleGet(FBin, fieldNameList=lfieldNameList, rc=rc)
+    allocate(lfieldNameList_src(fieldCount_src))
+    call ESMF_FieldBundleGet(FBsrc, fieldNameList=lfieldNameList_src, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    do n = 1,fieldCount
-       fldname = trim(lfieldnamelist(n))
-       call ESMF_FieldBundleGet(FBin, fieldName=trim(fldname), field=field_src, rc=rc)
+
+    call ESMF_FieldBundleGet(FBdst, fieldCount=fieldCount_dst, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    allocate(lfieldNameList_dst(fieldCount_dst))
+    call ESMF_FieldBundleGet(FBdst, fieldNameList=lfieldNameList_dst, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! check that input and output field bundles have identical number of fields
+    if (fieldcount_src /= fieldcount_dst) then
+       call ESMF_LogWrite(trim(subname)//": ERROR fieldcount_src and field_count_dst are not the same")
+       rc = ESMF_FAILURE
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) then
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       end if
+    end if
+
+    do n = 1,fieldCount_src
+       call ESMF_FieldBundleGet(FBsrc, fieldName=trim(lfieldnamelist_src(n)), field=field_src, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_FieldBundleGet(FBout, fieldName=trim(fldname), field=field_dst, rc=rc)
+
+       call ESMF_FieldBundleGet(FBdst, fieldName=trim(lfieldnamelist_dst(n)), field=field_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_FieldRegrid(field_src, field_dst, routehandle=RH, &
             termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.false., zeroregion=localzr, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     end do
+
+    deallocate(lfieldnamelist_src)
+    deallocate(lfieldnamelist_dst)
 
     call t_stopf(subname)
 
