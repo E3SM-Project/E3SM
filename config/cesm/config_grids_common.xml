@@ -175,6 +175,10 @@
     <!--- river to ocn area overlap -->
     <!-- ======================================================== -->
 
+    <gridmap rof_grid="r05" ocn_grid="gx3v7" >
+      <map name="ROF2OCN_FMAPNAME">cpl/gridmaps/r05/map_r05_TO_gx3v7_aave.200504.nc</map>
+    </gridmap>
+
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
       <map name="ROF2OCN_FMAPNAME">cpl/cpl6/map_r05_TO_g16_aave.120920.nc</map>
     </gridmap>
