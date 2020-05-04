@@ -1085,11 +1085,11 @@ struct P3MainPreLoopData
   Int kts, kte, kbot, ktop, kdir;
   bool log_predictNc;
   Real dt;
-  Real* pres, *pdel, *dzq, *npccn, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm;
+  Real* pres, *pdel, *dzq, *npccn, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *xxlv, *xxls, *xlf;
 
   // In/out
   Real* t, *rho, *inv_rho, *qvs, *qvi, *sup, *supi, *rhofacr, *rhofaci,
-    *acn, *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls, *xlf, *qc_incld, *qr_incld, *qitot_incld,
+    *acn, *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *qc_incld, *qr_incld, *qitot_incld,
     *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld;
 
   // Output
@@ -1118,9 +1118,9 @@ void p3_main_pre_main_loop_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
-  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
+  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
 

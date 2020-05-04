@@ -49,6 +49,9 @@ static void run_bfb_p3_main_pre_loop()
     std::make_pair(0, 1), // inv_lcldm
     std::make_pair(0, 1), // inv_icldm
     std::make_pair(0, 1), // inv_rcldm
+    std::make_pair(0, 1), // xxlv
+    std::make_pair(0, 1), // xxls
+    std::make_pair(0, 1), // xlf
     std::make_pair(zerodegc - 10, zerodegc + 10), // t
     std::make_pair(0, 1), // rho
     std::make_pair(0, 1), // inv_rho
@@ -69,9 +72,6 @@ static void run_bfb_p3_main_pre_loop()
     std::make_pair(0, 1), // nitot
     std::make_pair(0, 1), // qirim
     std::make_pair(0, 1), // birim
-    std::make_pair(0, 1), // xxlv
-    std::make_pair(0, 1), // xxls
-    std::make_pair(0, 1), // xlf
     std::make_pair(0, 1), // qc_incld
     std::make_pair(0, 1), // qr_incld
     std::make_pair(0, 1), // qitot_incld
@@ -84,10 +84,10 @@ static void run_bfb_p3_main_pre_loop()
 
   P3MainPreLoopData isds_fortran[] = {
     //              kts, kte, ktop, kbot, kdir, log_predictNc,        dt, ranges
-    P3MainPreLoopData(1,  72,    1,   72,   -1, false,         1.800E+03, ranges),
-    P3MainPreLoopData(1,  72,    1,   72,   -1, true,          1.800E+03, ranges),
-    P3MainPreLoopData(1,  72,   72,    1,    1, false,         1.800E+03, ranges),
-    P3MainPreLoopData(1,  72,   72,    1,    1, true,          1.800E+03, ranges),
+    P3MainPreLoopData(1,  1,    1,   72,   -1, false,         1.800E+03, ranges),
+    P3MainPreLoopData(1,  1,    1,   72,   -1, true,          1.800E+03, ranges),
+    P3MainPreLoopData(1,  1,   72,    1,    1, false,         1.800E+03, ranges),
+    P3MainPreLoopData(1,  1,   72,    1,    1, true,          1.800E+03, ranges),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPreLoopData);
@@ -110,9 +110,9 @@ static void run_bfb_p3_main_pre_loop()
   for (Int i = 0; i < num_runs; ++i) {
     P3MainPreLoopData& d = isds_cxx[i];
     p3_main_pre_main_loop_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.log_predictNc, d.dt,
-                            d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm,
+                            d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
                             d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci,
-                            d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.xxlv, d.xxls, d.xlf, d.qc_incld, d.qr_incld, d.qitot_incld,
+                            d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.qc_incld, d.qr_incld, d.qitot_incld,
                             d.qirim_incld, d.nc_incld, d.nr_incld, d.nitot_incld, d.birim_incld,
                             &d.log_nucleationPossible, &d.log_hydrometeorsPresent);
   }
@@ -141,9 +141,6 @@ static void run_bfb_p3_main_pre_loop()
       REQUIRE(isds_fortran[i].nitot[k]       == isds_cxx[i].nitot[k]);
       REQUIRE(isds_fortran[i].qirim[k]       == isds_cxx[i].qirim[k]);
       REQUIRE(isds_fortran[i].birim[k]       == isds_cxx[i].birim[k]);
-      REQUIRE(isds_fortran[i].xxlv[k]        == isds_cxx[i].xxlv[k]);
-      REQUIRE(isds_fortran[i].xxls[k]        == isds_cxx[i].xxls[k]);
-      REQUIRE(isds_fortran[i].xlf[k]         == isds_cxx[i].xlf[k]);
       REQUIRE(isds_fortran[i].qc_incld[k]    == isds_cxx[i].qc_incld[k]);
       REQUIRE(isds_fortran[i].qr_incld[k]    == isds_cxx[i].qr_incld[k]);
       REQUIRE(isds_fortran[i].qitot_incld[k] == isds_cxx[i].qitot_incld[k]);

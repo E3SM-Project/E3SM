@@ -347,10 +347,14 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
-       pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, &
+       pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
        t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
-       qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, &
+       qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
        nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: p3_main_pre_main_loop_f
+#endif
 
     implicit none
 
@@ -360,10 +364,10 @@ contains
     logical(btype), intent(in) :: log_predictNc
     real(rtype), intent(in) :: dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm
+    real(rtype), intent(in), dimension(kts:kte) :: pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
 
     real(rtype), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, &
-         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, &
+         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
          qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
 
     logical(btype), intent(inout) :: log_nucleationPossible, log_hydrometeorsPresent
@@ -371,6 +375,17 @@ contains
     ! locals
     integer :: k
     real(rtype) :: dum
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call p3_main_pre_main_loop_f(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+           pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
+           t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+           qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
+           nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent)
+      return
+   endif
+#endif
 
     k_loop_1: do k = kbot,ktop,kdir
 
@@ -731,9 +746,9 @@ contains
        log_nucleationPossible  = .false.
 
        call p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
-            pres(i,:), pdel(i,:), dzq(i,:), npccn(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), &
+            pres(i,:), pdel(i,:), dzq(i,:), npccn(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
             t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), sup(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
-            qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), &
+            qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), &
             nc_incld(i,:), nr_incld(i,:), nitot_incld(i,:), birim_incld(i,:), log_nucleationPossible, log_hydrometeorsPresent)
 
 !      if (debug_ON) then

@@ -193,9 +193,9 @@ void p3_main_pre_main_loop_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
-  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
+  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
 
@@ -952,9 +952,9 @@ P3MainPreLoopData::P3MainPreLoopData(
   m_data( NUM_ARRAYS * m_nk, 0.0)
 {
   std::array<Real**, NUM_ARRAYS> ptrs = {
-    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm,
+    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
     &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci,
-    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &xxlv, &xxls, &xlf, &qc_incld, &qr_incld, &qitot_incld,
+    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &qc_incld, &qr_incld, &qitot_incld,
     &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld};
 
   gen_random_data(ranges, ptrs, m_data.data(), m_nk);
@@ -976,9 +976,9 @@ P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
   Real* data_begin = m_data.data();
 
   std::array<Real**, NUM_ARRAYS> ptrs = {
-    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm,
+    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
     &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci,
-    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &xxlv, &xxls, &xlf, &qc_incld, &qr_incld, &qitot_incld,
+    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &qc_incld, &qr_incld, &qitot_incld,
     &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld};
 
   for (size_t i = 0; i < NUM_ARRAYS; ++i) {
@@ -994,9 +994,9 @@ void p3_main_pre_main_loop(P3MainPreLoopData& d)
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
     d.log_predictNc,
     d.dt,
-    d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm,
+    d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
     d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci,
-    d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.xxlv, d.xxls, d.xlf, d.qc_incld, d.qr_incld, d.qitot_incld,
+    d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.qc_incld, d.qr_incld, d.qitot_incld,
     d.qirim_incld, d.nc_incld, d.nr_incld, d.nitot_incld, d.birim_incld,
     &d.log_nucleationPossible, &d.log_hydrometeorsPresent);
 }
@@ -2981,9 +2981,9 @@ void p3_main_pre_main_loop_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
-  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
+  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent)
 {
@@ -3106,21 +3106,21 @@ void p3_main_pre_main_loop_f(
 
     P3F::p3_main_pre_main_loop(
       team, nk_pack, log_predictNc, dt,
-      upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d,
+      upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
       ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d,
-      uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uxxlv_d, uxxls_d, uxlf_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,
+      uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,
       uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d,
       *log_nucleationPossible, *log_hydrometeorsPresent);
   });
 
   // Sync back to host
-  Kokkos::Array<view_1d, 31> inout_views = {
+  Kokkos::Array<view_1d, 28> inout_views = {
     t_d, rho_d, inv_rho_d, qvs_d, qvi_d, sup_d, supi_d, rhofacr_d, rhofaci_d,
-    acn_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d, xlf_d, qc_incld_d, qr_incld_d, qitot_incld_d,
+    acn_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, qc_incld_d, qr_incld_d, qitot_incld_d,
     qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d};
 
   pack::device_to_host({t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci,
-        acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld,
+        acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld,
         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld},
     nk, inout_views);
 }

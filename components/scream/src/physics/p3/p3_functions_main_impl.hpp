@@ -102,6 +102,9 @@ void Functions<S,D>
   const uview_1d<const Spack>& inv_lcldm,
   const uview_1d<const Spack>& inv_icldm,
   const uview_1d<const Spack>& inv_rcldm,
+  const uview_1d<const Spack>& oxxlv,
+  const uview_1d<const Spack>& oxxls,
+  const uview_1d<const Spack>& oxlf,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -122,9 +125,6 @@ void Functions<S,D>
   const uview_1d<Spack>& onitot,
   const uview_1d<Spack>& oqirim,
   const uview_1d<Spack>& obirim,
-  const uview_1d<Spack>& oxxlv,
-  const uview_1d<Spack>& oxxls,
-  const uview_1d<Spack>& oxlf,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
   const uview_1d<Spack>& qitot_incld,
@@ -1136,8 +1136,8 @@ void Functions<S,D>
 
     p3_main_pre_main_loop(
       team, nk_pack, log_predictNc, dt,
-      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld,
+      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, oxxlv, oxxls, oxlf,
+      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld,
       log_nucleationPossible, log_hydrometeorsPresent);
 
     // There might not be any work to do for this team
