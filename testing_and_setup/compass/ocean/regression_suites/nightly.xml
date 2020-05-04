@@ -20,6 +20,9 @@
 	<test name="Global Ocean 240km - Analysis Test" core="ocean" configuration="global_ocean" resolution="QU240" test="analysis_test">
 		<script name="run.py"/>
 	</test>
+	<test name="Global Ocean 240km - BGC Ecosys Test" core="ocean" configuration="global_ocean" resolution="QU240" test="bgc_ecosys_test">
+		<script name="run.py"/>
+	</test>
 	<test name="ZISO 20km - Smoke Test" core="ocean" configuration="ziso" resolution="20km" test="default">
 		<script name="run_test.py"/>
 	</test>
