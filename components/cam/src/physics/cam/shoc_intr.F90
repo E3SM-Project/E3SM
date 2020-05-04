@@ -132,9 +132,9 @@ module shoc_intr
     call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.false.)
   
     ! Fields that are not prognostic should be added to PBUF
-    call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx)
-    call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tkh_idx) 
-    call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tk_idx) 
+    call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), wthv_idx)
+    call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tkh_idx) 
+    call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tk_idx) 
 
     call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/), pblh_idx)
     call pbuf_add_field('tke',        'global', dtype_r8, (/pcols, pverp/), tke_idx)
