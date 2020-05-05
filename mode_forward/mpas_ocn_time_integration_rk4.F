@@ -103,7 +103,6 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: swForcingPool
-      type (mpas_pool_type), pointer :: rediPool
 
       integer :: rk_step
 
@@ -939,7 +938,7 @@ module ocn_time_integration_rk4
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, diagnosticsPool, forcingPool
-      type (mpas_pool_type), pointer :: scratchPool, rediPool, tendPool, provisStatePool
+      type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
       type (mpas_pool_type), pointer :: swForcingPool, tracersPool
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
@@ -961,7 +960,6 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
-      call mpas_pool_get_subpool(block % structs, 'redi', rediPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
 
@@ -997,7 +995,7 @@ module ocn_time_integration_rk4
       endif
       call mpas_threading_barrier()
 
-      call ocn_tend_tracer(tendPool, rediPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
       call mpas_threading_barrier()
 
@@ -1011,7 +1009,7 @@ module ocn_time_integration_rk4
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, diagnosticsPool, forcingPool
-      type (mpas_pool_type), pointer :: rediPool, scratchPool, tendPool, provisStatePool
+      type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
       type (mpas_pool_type), pointer :: swForcingPool, tracersPool
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
@@ -1033,7 +1031,6 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
-      call mpas_pool_get_subpool(block % structs, 'redi', rediPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
 
@@ -1087,7 +1084,7 @@ module ocn_time_integration_rk4
       endif
       call mpas_threading_barrier()
 
-      call ocn_tend_tracer(tendPool, rediPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
       call mpas_threading_barrier()
 
