@@ -174,8 +174,8 @@ void Functions<S,D>
     sup(k)  = oqv(k) / qvs(k) - 1;
     supi(k) = oqv(k) / qvi(k) - 1;
 
-    rhofacr(k) = pack::pow(rhosur * inv_rho(k), .54);
-    rhofaci(k) = pack::pow(rhosui * inv_rho(k), .54);
+    rhofacr(k) = pack::pow(rhosur * inv_rho(k), sp(.54));
+    rhofaci(k) = pack::pow(rhosui * inv_rho(k), sp(.54));
     Spack dum  = sp(1.496e-6) * pack::pow(t(k), sp(1.5)) / (t(k) + 120); // this is mu
     acn(k)     = g * rhow / (18 * dum); // 'a' parameter for droplet fallspeed (Stokes' law)
 
