@@ -912,8 +912,7 @@ contains
     ! --------------------------------------------------------------
    
     if ( use_fates .and. .not.is_restart() .and. finidat == ' ') then
-       call alm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
-                                     soilstate_vars, frictionvel_vars)
+       call alm_fates%init_coldstart(canopystate_vars, soilstate_vars, frictionvel_vars)
     end if
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
