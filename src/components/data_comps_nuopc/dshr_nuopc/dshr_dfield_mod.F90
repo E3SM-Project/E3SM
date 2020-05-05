@@ -60,8 +60,8 @@ contains
     type(shr_strdata_type) , intent(in)    :: sdat
     character(len=*)       , intent(in)    :: strm_fld
     real(r8)               , pointer       :: strm_ptr(:)
-    integer, optional      , intent(in)    :: logunit
-    logical, optional      , intent(in)    :: masterproc
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
 
     ! local variables
     integer                         :: rc
@@ -110,10 +110,8 @@ contains
              write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
              if (status /= 0) call shr_sys_abort(msgstr)
              strm_ptr => dfield_new%stream_data1d
-             if (present(logunit) .and. present(masterproc)) then
-                if (masterproc) then
-                   write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
-                end if
+             if (masterproc) then
+                write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
              end if
              exit
           end if
@@ -137,8 +135,8 @@ contains
     type(ESMF_State)       , intent(inout) :: state
     real(r8), optional     , pointer       :: state_ptr(:)
     real(r8), optional     , pointer       :: strm_ptr(:)
-    integer , optional     , intent(in)    :: logunit
-    logical , optional     , intent(in)    :: masterproc
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -184,6 +182,7 @@ contains
        call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldNameList=lfieldnamelist, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        do nf = 1,fieldcount
+          write(6,*)'DEBUG: ns,nf,strm_fld,fieldname= ',ns,nf,trim(strm_fld),trim(lfieldnamelist(nf))
           if (trim(strm_fld) == trim(lfieldnamelist(nf))) then
 
              ! if strm_fld is in the field bundle of stream ns then
@@ -191,6 +190,7 @@ contains
              ! and set the index of the stream
              dfield_new%sdat_fldbun_index = nf
              dfield_new%sdat_stream_index = ns
+             write(6,*)'DEBUG: match is found with sdat_stream_index = ',ns
 
              ! set the pointer to the stream data
              allocate(dfield_new%stream_data1d(lsize), stat=status)
@@ -202,10 +202,8 @@ contains
              end if
 
              ! write output
-             if (present(logunit) .and. present(masterproc)) then
-                if (masterproc) then
-                   write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
-                end if
+             if (masterproc) then
+                write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
              end if
              exit
 
@@ -218,10 +216,8 @@ contains
     call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfield_new%state_data1d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data1d = 0.0_r8
-    if (present(logunit) .and. present(masterproc)) then
-       if (masterproc) then
-          write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
-       end if
+    if (masterproc) then
+       write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
     end if
 
     ! Return array pointer if argument is present
@@ -243,8 +239,8 @@ contains
     character(len=*)       , intent(in)    :: strm_flds(:)
     type(ESMF_State)       , intent(inout) :: state
     real(r8), optional     , pointer       :: state_ptr(:,:)
-    integer , optional     , intent(in)    :: logunit
-    logical , optional     , intent(in)    :: masterproc
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -311,16 +307,14 @@ contains
              do n = 1,fieldcount
                 if (trim(strm_flds(nf)) == trim(lfieldnamelist(n))) then
                    dfield_new%sdat_fldbun_indices(nf) = n
+                   if (masterproc) then
+                      write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
+                           trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
+                   end if
                 end if
              end do
              deallocate(lfieldnamelist)
              exit ! go to the next fld
-          end if
-          if (present(logunit) .and. present(masterproc)) then
-             if (masterproc) then
-                write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
-                     trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
-             end if
           end if
        end do
     end do
@@ -329,10 +323,8 @@ contains
     call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfield_new%state_data2d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data2d(nflds,lsize) = 0._r8
-    if (present(logunit) .and. present(masterproc)) then
-       if (masterproc) then
-          write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
-       end if
+    if (masterproc) then
+       write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
     end if
 
     ! Return array pointer if argument is present
@@ -392,6 +384,7 @@ contains
           do nf = 1,dfield%stream_nflds
              stream_index = dfield%sdat_stream_indices(nf)
              fldbun_index = dfield%sdat_fldbun_indices(nf)
+             write(6,*)'DEBUG: stream_index = ',stream_index
              call dshr_fldbun_getfieldn(sdat%fldbun_model(stream_index), fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)

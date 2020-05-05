@@ -478,24 +478,31 @@ contains
     call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac) 
 
     ! Create stream-> export state mapping
+    ! Note that strm_flds is the model name for the stream field
+    ! Note that state_fld is the model name for the export field
     allocate(strm_flds(0:glc_nec))
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
        strm_flds(n) = 'tsrf' // trim(nec_str)
     end do
-    call dshr_dfield_add(dfields, sdat, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, state=exportState, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, state=exportState, &
+         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
        strm_flds(n) = 'topo' // trim(nec_str)
     end do
-    call dshr_dfield_add(dfields, sdat, state_fld='Sl_topo_elev', strm_flds=strm_flds, state=exportState, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sl_topo_elev', strm_flds=strm_flds, state=exportState, &
+         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
        strm_flds(n) = 'qice' // trim(nec_str)
     end do
-    call dshr_dfield_add(dfields, sdat, state_fld='Flgl_qice_elev', strm_flds=strm_flds, state=exportState, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Flgl_qice_elev', strm_flds=strm_flds, state=exportState, &
+         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine dlnd_comp_realize

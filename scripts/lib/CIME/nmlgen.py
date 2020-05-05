@@ -65,7 +65,7 @@ _stream_nuopc_file_template = """<?xml version="1.0"?>
    </mesh_filename>
    <data_filePath>
       {data_filepath}
-   </datafilePath>
+   </data_filePath>
    <data_fileNames>
       {data_filenames}
    </data_fileNames>
