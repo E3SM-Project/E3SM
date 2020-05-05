@@ -148,7 +148,7 @@ module dshr_stream_mod
   !----- parameters -----
   real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
   integer          , parameter :: initarr_size = 3     ! size of initarr
-  integer          , save      :: debug = 0            ! edit/turn-on for debug write statements
+  integer          , save      :: debug = 1            ! edit/turn-on for debug write statements
   character(len=*) , parameter :: sourcefile = &
        __FILE__
 
