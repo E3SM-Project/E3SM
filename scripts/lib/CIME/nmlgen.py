@@ -60,18 +60,15 @@ _stream_mct_file_template = """<?xml version="1.0"?>
 _stream_nuopc_file_template = """<?xml version="1.0"?>
 <file id="stream" version="1.0">
   <stream_info>
-   <mesh_filename>
+   <stream_mesh_file>
       {data_meshfile}
-   </mesh_filename>
-   <data_filePath>
-      {data_filepath}
-   </data_filePath>
-   <data_fileNames>
+   </stream_mesh_file>
+   <stream_data_files>
       {data_filenames}
-   </data_fileNames>
-   <data_variableNames>
+   </stream_data_files>
+   <stream_data_variables>
       {data_varnames}
-   </data_variableNames>
+   </stream_data_variables>
    <stream_offset>
       {offset}
    </stream_offset>
@@ -559,30 +556,20 @@ class NamelistGenerator(object):
             # user stream file is specified - use an already created stream txt file
             safe_copy(user_stream_path, stream_path)
             strmobj = Stream(infile=stream_path)
-            stream_meshfile = strmobj.get_value("strm_mesh")
-            stream_data_filepath = strmobj.get_value("strm_filePath")
-            stream_data_filenames = strmobj.get_value("strm_fileNames")
+            stream_meshfile = strmobj.get_value("streaminfo/stream_mesh_file")
+            stream_datafiles = strmobj.get_value("streaminfo/streama-data_files")
         else:
-            # user stream file is not specified - create a stream txt file
-            # parse namelist_default_<dmodel>.xml
-            if stream in ("prescribed", "copyall"):
-                # Assume only one file for prescribed mode!
-                stream_meshfile = self.get_default("strm_mesh", config)
-                stream_data_filepath = self.get_default("strm_data_files", config)
-                stream_data_filepath, stream_data_filenames = os.path.split(data_file)
-            else:
-                stream_meshfile = self.get_default("strm_mesh", config)
-                stream_data_filepath = self.get_default("strm_datdir", config)
-                stream_data_filenames = self.get_default("strm_datfil", config)
+            stream_meshfile = self.get_default("strm_mesh", config)
+            stream_datafiles = self.get_default("strm_datfil", config)
+            stream_variables = self._sub_fields(self.get_default("strm_datvar", config))
 
             # determine data_filenames - first set year_start, year_end and offset as input
             # to creating data_filenames
             year_start = int(self.get_default("strm_year_start", config))
             year_end = int(self.get_default("strm_year_end", config))
-            stream_data_filenames = self._sub_paths(stream_data_filenames, year_start, year_end)
 
-            # determine stream data variable names
-            stream_data_varnames = self._sub_fields(self.get_default("strm_datvar", config))
+            # needed for input data list
+            stream_datafiles = self._sub_paths(stream_datafiles, year_start, year_end)
 
             # determine stream time offset
             stream_offset = self.get_default("strm_offset", config)
@@ -590,9 +577,8 @@ class NamelistGenerator(object):
             # create stream txt file
             stream_file_text = _stream_nuopc_file_template.format(
                 data_meshfile=stream_meshfile,
-                data_varnames=stream_data_varnames,
-                data_filepath=stream_data_filepath, 
-                data_filenames=stream_data_filenames,
+                data_filenames=stream_datafiles,
+                data_varnames=stream_variables,
                 offset=stream_offset)
             with open(stream_path, 'w') as stream_file:
                 stream_file.write(stream_file_text)
@@ -604,11 +590,11 @@ class NamelistGenerator(object):
             hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
             if hashValue not in lines_hash:
                 input_data_list.write(string)
-            for i, filename in enumerate(stream_data_filenames.split("\n")):
+            for i, filename in enumerate(stream_datafiles.split("\n")):
                 if filename.strip() == '':
                     continue
-                filepath = os.path.join(stream_data_filepath, filename.strip())
-                string = "file{:d} = {}\n".format(i+1, filepath)
+                #filepath = os.path.join(stream_data_filepath, filename.strip())
+                string = "file{:d} = {}\n".format(i+1, filename)
                 hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
                 if hashValue not in lines_hash:
                     input_data_list.write(string)

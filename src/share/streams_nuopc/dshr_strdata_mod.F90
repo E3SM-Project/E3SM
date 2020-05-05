@@ -25,7 +25,7 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_getMeshFilename
   use dshr_stream_mod  , only : shr_stream_init_from_infiles, shr_stream_init_from_fortran
   use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
-  use dshr_stream_mod  , only : shr_stream_getFilePath, shr_stream_findBounds
+  use dshr_stream_mod  , only : shr_stream_findBounds
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename
   use dshr_stream_mod  , only : shr_stream_getfilefieldname, shr_stream_getData
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
@@ -235,12 +235,11 @@ contains
   end subroutine shr_strdata_init_from_infiles
 
   !===============================================================================
-  subroutine shr_strdata_init_from_fortran( sdat, mpicom, compid,          &
-       model_mesh, model_nxg, model_nyg, model_clock,                      &
-       stream_meshfile, stream_filepath, stream_filenames,                 &
-       stream_FldListFile, stream_fldListModel,                            &
-       stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, &
-       stream_taxMode, stream_dtlimit, stream_tintalgo, stream_readmode,   &
+  subroutine shr_strdata_init_from_fortran( sdat, mpicom, compid,                  &
+       model_mesh, model_nxg, model_nyg, model_clock,                              &
+       stream_meshfile, stream_filenames, stream_FldListFile, stream_fldListModel, &
+       stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset,         &
+       stream_taxMode, stream_dtlimit, stream_tintalgo, stream_readmode,           &
        stream_mapalgo, stream_mapmask, rc)
 
     ! Set strdata and stream info from fortran interface.
@@ -256,7 +255,6 @@ contains
     integer                ,intent(in)   :: model_nyg
     type(ESMF_Clock)       ,intent(in)   :: model_clock
     character(len=*)       ,intent(in)   :: stream_meshfile
-    character(*)           ,intent(in)   :: stream_FilePath     ! path to stream data
     character(*)           ,intent(in)   :: stream_FileNames(:) ! filenames for stream data
     character(*)           ,intent(in)   :: stream_fldListFile  ! file field names, colon delim list
     character(*)           ,intent(in)   :: stream_fldListModel ! model field names, colon delim list
@@ -298,7 +296,7 @@ contains
     ! Initialize sdat stream info
     call shr_stream_init_from_fortran(sdat%stream(1), stream_meshfile, &
          stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
-         stream_fldlistFile, stream_fldlistModel, stream_filepath, stream_fileNames)
+         stream_fldlistFile, stream_fldlistModel, stream_fileNames)
 
     ! Initialize sdat model domain info
     call shr_strdata_init_model_domain(sdat, model_mesh, mpicom, compid, rc=rc)
@@ -448,7 +446,6 @@ contains
     integer                 :: ne              ! number of local mesh elements
     integer                 :: ns              ! stream index
     integer                 :: n,m,k           ! generic index
-    character(CL)           :: filePath        ! generic file path
     character(CL)           :: fileName        ! generic file name
     integer                 :: nfiles          ! number of data files for a given stream
     character(CXX)          :: fldList_stream  ! list of fields in stream
@@ -600,9 +597,9 @@ contains
        call dshr_fldbun_getFieldN(sdat%fldbun_model_lb(ns), 1, lfield_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       call ESMF_FieldRedistStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
-            ignoreUnmatchedIndices = .true., rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       ! call ESMF_FieldRedistStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
+       !      ignoreUnmatchedIndices = .true., rc=rc)
+       ! if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
        !      regridmethod=ESMF_REGRIDMETHOD_BILINEAR, polemethod=ESMF_POLEMETHOD_ALLAVG, &
@@ -614,6 +611,10 @@ contains
        ! call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
        !      regridmethod=ESMF_REGRIDMETHOD_BILINEAR, &
        !      srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
+
+       call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
+            regridmethod=ESMF_REGRIDMETHOD_BILINEAR, polemethod=ESMF_POLEMETHOD_NONE, &
+            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
 
     end do ! end of loop over streams
 
@@ -1553,8 +1554,10 @@ contains
     integer           :: oDateUB,oSecUB,dDateUB
     real(r8)          :: rDateM,rDateLB,rDateUB  ! model,LB,UB dates with fractional days
     integer           :: n_lb, n_ub
-    character(CL)     :: fn_lb,fn_ub,fn_next,fn_prev
-    character(CL)     :: path
+    character(CL)     :: filename_lb
+    character(CL)     :: filename_ub
+    character(CL)     :: filename_next
+    character(CL)     :: filename_prev
     real(r8), pointer :: dataptr_lb(:)
     real(r8), pointer :: dataptr_ub(:)
     integer           :: fieldcount
@@ -1571,8 +1574,8 @@ contains
     newData = .false.
     n_lb = -1
     n_ub = -1
-    fn_lb = 'undefinedlb'
-    fn_ub = 'undefinedub'
+    filename_lb = 'undefinedlb'
+    filename_ub = 'undefinedub'
 
     oDateLB = mDateLB
     oSecLB  = mSecLB
@@ -1587,9 +1590,9 @@ contains
     if (rDateM < rDateLB .or. rDateM > rDateUB) then
        call t_startf(trim(istr)//'_fbound')
        if (my_task == master_task) then ! Note that the stream bounds is only done on the master task
-          call shr_stream_findBounds(stream,mDate,mSec,  &
-               ivals(1), dDateLB, ivals(2), ivals(5), fn_lb, ivals(3), dDateUB, ivals(4), ivals(6), fn_ub)
-          call shr_stream_getFilePath(stream,path)
+          call shr_stream_findBounds(stream, mDate, mSec,  &
+               ivals(1), dDateLB, ivals(2), ivals(5), filename_lb, &
+               ivals(3), dDateUB, ivals(4), ivals(6), filename_ub)
        endif
        call t_stopf(trim(istr)//'_fbound')
 
@@ -1628,7 +1631,7 @@ contains
        else
           call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
                fldbun_stream_input_lb, fldbun_stream_model_lb, &
-               Pio_subsystem, pio_iotype, pio_iodesc, path, fn_lb, n_lb, &
+               pio_subsystem, pio_iotype, pio_iodesc, filename_lb, n_lb, &
                istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -1638,7 +1641,7 @@ contains
        newdata = .true.
        call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
             fldbun_stream_input_ub, fldbun_stream_model_ub, &
-            pio_subsystem, pio_iotype, pio_iodesc, path, fn_ub, n_ub, &
+            pio_subsystem, pio_iotype, pio_iodesc, filename_ub, n_ub, &
             istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -1647,11 +1650,10 @@ contains
 
     call t_startf(trim(istr)//'_filemgt')
     if (my_task == master_task .and. newdata) then
-       call shr_stream_getFilePath(stream,path)
-       call shr_stream_getPrevFileName(stream,fn_lb,fn_prev,path)
-       call shr_stream_getNextFileName(stream,fn_ub,fn_next,path)
-       inquire(file=trim(fn_next),exist=fileExists)
-       if ( trim(fn_next) == "unknown" .or. fileExists) then
+       call shr_stream_getPrevFileName(stream, filename_lb, filename_prev)
+       call shr_stream_getNextFileName(stream, filename_ub, filename_next)
+       inquire(file=trim(filename_next),exist=fileExists)
+       if ( trim(filename_next) == "unknown" .or. fileExists) then
           ! do nothing
        end if
     endif
@@ -1662,7 +1664,7 @@ contains
   !===============================================================================
   subroutine shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
        fldbun_stream_input, fldbun_stream_model, &
-       pio_subsystem, pio_iotype, pio_iodesc, path, fn, nt, istr, boundstr, rc)
+       pio_subsystem, pio_iotype, pio_iodesc, filename, nt, istr, boundstr, rc)
 
     ! Read the stream data and initialize the strea pio_iodesc the first time
     ! the stream is read
@@ -1677,15 +1679,13 @@ contains
     type(iosystem_desc_t)       , intent(inout), target :: pio_subsystem
     integer                     , intent(in)            :: pio_iotype
     type(io_desc_t)             , intent(inout)         :: pio_iodesc
-    character(len=*)            , intent(in)            :: path
-    character(len=*)            , intent(in)            :: fn
+    character(len=*)            , intent(in)            :: filename
     integer                     , intent(in)            :: nt
     character(len=*)            , intent(in)            :: istr
     character(len=*)            , intent(in)            :: boundstr
     integer                     , intent(out)           :: rc
 
     ! local variables
-    character(CL)                 :: fileName
     character(CL)                 :: currfile
     logical                       :: fileexists
     logical                       :: fileopen
@@ -1711,17 +1711,13 @@ contains
 
     ! Set up file to read from
     call t_barrierf(trim(istr)//'_BARRIER', mpicom)
-    call t_startf(trim(istr)//'_setup')
     if (my_task == master_task) then
-       fileName = trim(path)//fn
        inquire(file=trim(fileName),exist=fileExists)
        if (.not. fileExists) then
           write(logunit,F00) "ERROR: file does not exist: ", trim(fileName)
           call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
        end if
     endif
-    call shr_mpi_bcast(filename, mpicom,'filename')
-    call t_stopf(trim(istr)//'_setup')
 
     ! Get current file and determine if it is open
     call shr_stream_getCurrFile(stream, fileopen=fileopen, currfile=currfile, currpioid=pioid)

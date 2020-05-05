@@ -83,23 +83,13 @@
     </values>
   </entry>
 
-  <entry id="strm_datdir"  skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file directory.</desc>
-    <values>
-      <value stream="sno.cplhist">$DLND_CPLHIST_DIR</value>
-    </values>
-  </entry>
-
   <entry id="strm_datfil"  skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_DIR/$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
     </values>
   </entry>
 
