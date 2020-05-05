@@ -3567,6 +3567,8 @@ OR
     GLOBAL_TIMEOUT = ns.timeout
     NO_TEARDOWN    = ns.no_teardown
 
+    os.chdir(os.path.dirname(__file__))
+
     if ns.machine is not None:
         MACHINE = Machines(machine=ns.machine)
         os.environ["CIME_MACHINE"] = ns.machine
