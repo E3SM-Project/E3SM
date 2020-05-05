@@ -90,7 +90,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::p3_main_pre_main_loop(
   const MemberType& team,
-  const Int& nk_pack,
+  const Int& nk,
   const bool& log_predictNc,
   const Scalar& dt,
   const uview_1d<const Spack>& opres,
@@ -150,6 +150,8 @@ void Functions<S,D>
   log_hydrometeorsPresent = false;
   team.team_barrier();
 
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
+
   //
   // calculate some time-varying atmospheric variables
   // AaronDonahue - changed "rho" to be defined on nonhydrostatic
@@ -160,6 +162,9 @@ void Functions<S,D>
   //
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+
+    const auto range_pack = scream::pack::range<IntSmallPack>(k*Spack::n);
+    const auto range_mask = range_pack < nk;
 
     rho(k)     = opdel(k)/odzq(k) / g;
     inv_rho(k) = 1 / rho(k);
@@ -187,31 +192,34 @@ void Functions<S,D>
     // apply mass clipping if dry and mass is sufficiently small
     // (implying all mass is expected to evaporate/sublimate in one time step)
     auto drymass = (oqc(k) < qsmall || (oqc(k) < 1.e-8 && sup(k) < -0.1));
+    auto not_drymass = !drymass && range_mask;
     oqv(k).set(drymass, oqv(k) + oqc(k));
     oth(k).set(drymass, oth(k) - oexner(k) * oqc(k) * oxxlv(k) * inv_cp);
     oqc(k).set(drymass, 0);
     onc(k).set(drymass, 0);
-    if ( !drymass.all() ) {
+    if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // updated further down
     }
 
     drymass = (oqr(k) < qsmall || (oqr(k) < 1.e-8 && sup(k) < -0.1));
+    not_drymass = !drymass && range_mask;
     oqv(k).set(drymass, oqv(k) + oqr(k));
     oth(k).set(drymass, oth(k) - oexner(k) * oqr(k) * oxxlv(k) * inv_cp);
     oqr(k).set(drymass, 0);
     onr(k).set(drymass, 0);
-    if ( !drymass.all() ) {
+    if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // updated further down
     }
 
     drymass = (oqitot(k) < qsmall || (oqitot(k) < 1.e-8 && supi(k) < -0.1));
+    not_drymass = !drymass && range_mask;
     oqv(k).set(drymass, oqv(k) + oqitot(k));
     oth(k).set(drymass, oth(k) - oexner(k) * oqitot(k) * oxxls(k) * inv_cp);
     oqitot(k).set(drymass, 0);
     onitot(k).set(drymass, 0);
     oqirim(k).set(drymass, 0);
     obirim(k).set(drymass, 0);
-    if ( !drymass.all() ) {
+    if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // final update
     }
 
@@ -1139,7 +1147,7 @@ void Functions<S,D>
       prt_liq(i), prt_sol(i));
 
     p3_main_pre_main_loop(
-      team, nk_pack, log_predictNc, dt,
+      team, nk, log_predictNc, dt,
       opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, oxxlv, oxxls, oxlf,
       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld,
       log_nucleationPossible, log_hydrometeorsPresent);

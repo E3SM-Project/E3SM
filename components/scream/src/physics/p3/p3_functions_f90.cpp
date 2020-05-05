@@ -3105,7 +3105,7 @@ void p3_main_pre_main_loop_f(
       ubirim_incld_d (temp_d[39]);
 
     P3F::p3_main_pre_main_loop(
-      team, nk_pack, log_predictNc, dt,
+      team, nk, log_predictNc, dt,
       upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
       ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d,
       uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,

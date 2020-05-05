@@ -639,7 +639,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void p3_main_pre_main_loop(
     const MemberType& team,
-    const Int& nk_pack,
+    const Int& nk,
     const bool& log_predictNc,
     const Scalar& dt,
     const uview_1d<const Spack>& opres,
