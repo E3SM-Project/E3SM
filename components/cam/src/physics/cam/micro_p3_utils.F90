@@ -128,7 +128,7 @@ module micro_p3_utils
     cp     = cpair ! specific heat of dry air (J/K/kg) !1005.
     inv_cp = 1._rtype/cp ! inverse of cp
     g      = gravit ! Gravity (m/s^2) !9.816
-    rd     = rair ! Dry air gas constant     ~ J/K/kg     !287.15
+    rd     = rair ! Dry air gas constant     ~ J/K/kg
     rv     = rh2o ! Water vapor gas constant ~ J/K/kg     !461.51
     ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
     rhosur = 100000._rtype/(rd*zerodegc) ! density of air at surface
