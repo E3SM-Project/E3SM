@@ -475,7 +475,8 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain fractional land from first stream
-    call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac) 
+    call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac, rc=rc) 
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Create stream-> export state mapping
     ! Note that strm_flds is the model name for the stream field

@@ -182,7 +182,6 @@ contains
        call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldNameList=lfieldnamelist, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        do nf = 1,fieldcount
-          write(6,*)'DEBUG: ns,nf,strm_fld,fieldname= ',ns,nf,trim(strm_fld),trim(lfieldnamelist(nf))
           if (trim(strm_fld) == trim(lfieldnamelist(nf))) then
 
              ! if strm_fld is in the field bundle of stream ns then
@@ -190,7 +189,6 @@ contains
              ! and set the index of the stream
              dfield_new%sdat_fldbun_index = nf
              dfield_new%sdat_stream_index = ns
-             write(6,*)'DEBUG: match is found with sdat_stream_index = ',ns
 
              ! set the pointer to the stream data
              allocate(dfield_new%stream_data1d(lsize), stat=status)
@@ -384,7 +382,6 @@ contains
           do nf = 1,dfield%stream_nflds
              stream_index = dfield%sdat_stream_indices(nf)
              fldbun_index = dfield%sdat_fldbun_indices(nf)
-             write(6,*)'DEBUG: stream_index = ',stream_index
              call dshr_fldbun_getfieldn(sdat%fldbun_model(stream_index), fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)

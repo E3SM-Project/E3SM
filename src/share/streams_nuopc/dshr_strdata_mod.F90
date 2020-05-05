@@ -29,14 +29,15 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename
   use dshr_stream_mod  , only : shr_stream_getfilefieldname, shr_stream_getData
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
-  use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_getfieldN, dshr_fldbun_fldchk, chkerr 
+  use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_getfieldN, dshr_fldbun_fldchk, chkerr
   use dshr_methods_mod , only : dshr_fldbun_diagnose, dshr_fldbun_regrid
 
   use pio              , only : file_desc_t, iosystem_desc_t, io_desc_t, var_desc_t
   use pio              , only : pio_openfile, pio_closefile, pio_nowrite
   use pio              , only : pio_seterrorhandling, pio_initdecomp, pio_freedecomp
-  use pio              , only : pio_inq_varid, pio_inq_varndims, pio_inq_vardimid
-  use pio              , only : pio_inq_dimlen, pio_double, pio_real, pio_int, pio_offset_kind
+  use pio              , only : pio_inquire, pio_inq_varid, pio_inq_varndims, pio_inq_vardimid
+  use pio              , only : pio_inq_dimlen, pio_inq_vartype
+  use pio              , only : pio_double, pio_real, pio_int, pio_offset_kind
   use pio              , only : pio_read_darray, pio_get_var, pio_setframe
   use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR
   use perf_mod
@@ -106,11 +107,11 @@ module dshr_strdata_mod
      integer, pointer               :: model_gindex(:)                   ! model global index spzce
 
      ! stream domain info
-     type(shr_stream_streamType)    :: stream(nStrMax)
+     type(shr_stream_streamType)    :: stream(nStrMax)                    ! stream datatype
      character(CL)                  :: stream_desc(nStrMax)               ! stream description from shr_strdata_nml
      character(CL)                  :: stream_vectors(nVecMax)            ! stream vectors names from shr_strdata_nml
      character(CL)                  :: stream_meshfile(nStrMax)           ! stream mesh file from stream txt file
-     type(ESMF_Mesh)                :: stream_mesh(nStrMax)               ! stream mesh created from stream mesh file 
+     type(ESMF_Mesh)                :: stream_mesh(nStrMax)               ! stream mesh created from stream mesh file
      type(io_desc_t)                :: stream_pio_iodesc(nStrMax)         ! stream pio descriptor
 
      ! stream-> model mapping info
@@ -130,7 +131,7 @@ module dshr_strdata_mod
      type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:,:)  ! field bundle for stream n for all time slices for stream
 
      ! time info
-     type(ESMF_CLock)               :: model_clock 
+     type(ESMF_CLock)               :: model_clock
      integer                        :: ymd, tod                          ! model time
      character(CL)                  :: model_calendar                    ! model calendar for ymd,tod
      integer                        :: ymdLB(nStrMax)                    ! stream n ymd lower bound
@@ -228,7 +229,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Now finish initializing sdat
-    call shr_strdata_init(sdat, clock, compid, mpicom, logunit, rc) 
+    call shr_strdata_init(sdat, clock, compid, mpicom, logunit, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_strdata_init_from_infiles
@@ -254,7 +255,7 @@ contains
     integer                ,intent(in)   :: model_nxg
     integer                ,intent(in)   :: model_nyg
     type(ESMF_Clock)       ,intent(in)   :: model_clock
-    character(len=*)       ,intent(in)   :: stream_meshfile 
+    character(len=*)       ,intent(in)   :: stream_meshfile
     character(*)           ,intent(in)   :: stream_FilePath     ! path to stream data
     character(*)           ,intent(in)   :: stream_FileNames(:) ! filenames for stream data
     character(*)           ,intent(in)   :: stream_fldListFile  ! file field names, colon delim list
@@ -304,7 +305,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize the rest of sdat
-    call shr_strdata_init(sdat, model_clock, compid, mpicom, logunit, rc) 
+    call shr_strdata_init(sdat, model_clock, compid, mpicom, logunit, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_strdata_init_from_fortran
@@ -425,14 +426,14 @@ contains
   end subroutine shr_strdata_init_model_domain
 
   !===============================================================================
-  subroutine shr_strdata_init(sdat, model_clock, compid, mpicom, logunit, rc) 
+  subroutine shr_strdata_init(sdat, model_clock, compid, mpicom, logunit, rc)
 
     ! input/output variables
     type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_Clock)       , intent(in)    :: model_clock
     integer                , intent(in)    :: mpicom
     integer                , intent(in)    :: compid
-    integer                , intent(in)    :: logunit   
+    integer                , intent(in)    :: logunit
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -441,7 +442,6 @@ contains
     type(ESMF_DistGrid)     :: distgrid
     character(CS)           :: calendar        ! calendar name
     integer                 :: dimcount
-    integer                 :: tilecount
     integer, allocatable    :: minIndexPTile(:,:)
     integer, allocatable    :: maxIndexPTile(:,:)
     integer                 :: lnx, lny        ! global mesh dimensions
@@ -458,7 +458,7 @@ contains
     integer                 :: nu, nv          ! vector indices
     integer                 :: nstream         ! loop stream index
     integer                 :: nvector         ! loop vector index
-    integer                 :: nfld            ! loop stream field index 
+    integer                 :: nfld            ! loop stream field index
     character(CS)           :: fldname         ! field name of field index nfld
     integer                 :: nflds           ! total number of fields in a given stream
     type(ESMF_Field)        :: lfield          ! temporary
@@ -466,9 +466,7 @@ contains
     type(ESMF_Field)        :: lfield_dst      ! temporary
     integer                 :: srcTermProcessing_Value = 0 ! should this be a module variable?
     integer , pointer       :: stream_gindex(:)
-    integer                 :: stream_gsize
     integer                 :: stream_lsize
-    integer, allocatable    :: elementCountPTile(:)
     character(CS)           :: tmpstr
     integer                 :: ierr
     integer                 :: my_task
@@ -505,29 +503,6 @@ contains
        end if
        sdat%stream_mesh(ns) = ESMF_MeshCreate(trim(filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       ! initialize sdat%lsize
-       call ESMF_MeshGet(sdat%stream_mesh(ns), elementdistGrid=distGrid, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_DistGridGet(distGrid, localDe=0, elementCount=stream_lsize, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       allocate(stream_gindex(stream_lsize))
-       call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=stream_gindex, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_DistGridGet(distGrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       allocate(elementCountPTile(tileCount))
-       call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       stream_gsize = 0
-       do ne = 1,size(elementCountPTile)
-          stream_gsize = stream_gsize + elementCountPTile(ne)
-       end do
-       deallocate(elementCountPTile)
-
-       !*** TODO: the following is a bug ***
-       !call pio_initdecomp(sdat%pio_subsystem, pio_double, (/stream_gsize/), stream_gindex, sdat%stream_pio_iodesc(ns))
-       call pio_initdecomp(sdat%pio_subsystem, pio_double, (/288,192/), stream_gindex, sdat%stream_pio_iodesc(ns))
 
        ! Determine colon delimited field name string for stream fields with model names
        if (my_task == master_task) then
@@ -585,8 +560,8 @@ contains
        end do ! end of loop over streams (ns)
 
        ! Create field bundles on stream mesh but with fldlist_stream input file names
-       sdat%fldbun_stream_input_lb(ns) = ESMF_FieldBundleCreate(rc=rc) 
-       sdat%fldbun_stream_input_ub(ns) = ESMF_FieldBundleCreate(rc=rc) 
+       sdat%fldbun_stream_input_lb(ns) = ESMF_FieldBundleCreate(rc=rc)
+       sdat%fldbun_stream_input_ub(ns) = ESMF_FieldBundleCreate(rc=rc)
        do nfld = 1, shr_string_listGetNum(fldlist_stream)
           ! get nth fldname in colon delimited string
           call shr_string_listGetName(fldlist_stream, nfld, fldname)
@@ -616,17 +591,18 @@ contains
        ! these fields will be used to create the route handles
        ! since all fields in a stream share the same mesh and there is only a unique model mesh
        ! can do this outside of a stream loop by just using the first stream index
-       ! TODO: Determine if mask was reset - and if so if the masks are the same - if they are not do the bilinear 
-       ! interpolation below - 
+       ! TODO: Determine if mask was reset - and if so if the masks are the same - if they are not do the bilinear
+       ! interpolation below -
 
        call dshr_fldbun_getFieldN(sdat%fldbun_stream_model_lb(ns), 1, lfield_src, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+
        call dshr_fldbun_getFieldN(sdat%fldbun_model_lb(ns), 1, lfield_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       ! call ESMF_FieldRedistStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
-       !      ignoreUnmatchedIndices = .true., rc=rc)
-       ! if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_FieldRedistStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
+            ignoreUnmatchedIndices = .true., rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
        !      regridmethod=ESMF_REGRIDMETHOD_BILINEAR, polemethod=ESMF_POLEMETHOD_ALLAVG, &
@@ -635,9 +611,9 @@ contains
        !      !unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, rc=rc)
        !      srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
 
-       call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
-            regridmethod=ESMF_REGRIDMETHOD_BILINEAR, &
-            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
+       ! call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%routehandle(ns), &
+       !      regridmethod=ESMF_REGRIDMETHOD_BILINEAR, &
+       !      srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
 
     end do ! end of loop over streams
 
@@ -714,7 +690,7 @@ contains
   end subroutine shr_strdata_init
 
   !===============================================================================
-  subroutine shr_strdata_get_stream_domain(sdat, stream_index, fldname, flddata)
+  subroutine shr_strdata_get_stream_domain(sdat, stream_index, fldname, flddata, rc)
 
     ! Obtain the data for fldname from the stream domain data
 
@@ -723,24 +699,41 @@ contains
     integer                , intent(in)    :: stream_index
     character(len=*)       , intent(in)    :: fldname
     real(r8)               , pointer       :: flddata(:)
+    integer                , intent(out)   :: rc
 
     ! local variables
     type(var_desc_t)  :: varid
     type(file_desc_t) :: pioid
     integer           :: rcode
     character(CL)     :: filename
+    type(io_desc_t)   :: pio_iodesc
     ! ----------------------------------------------
 
+    rc = ESMF_SUCCESS
+
+    ! Determine the file to open
     if (sdat%my_task == master_task) then
        call shr_stream_getData(sdat%stream(stream_index), 1, filename)
     end if
     call shr_mpi_bcast(filename, sdat%mpicom, 'streamfile')
 
+    ! Open the file
     rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(filename), pio_nowrite)
+
+    ! Create the pio iodesc for fldname
+    call shr_strdata_set_stream_iodesc(sdat%pio_subsystem, pioid, &
+         trim(fldname), sdat%stream_mesh(stream_index), pio_iodesc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Now read in the data for fldname
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     rcode = pio_inq_varid(pioid, trim(fldname), varid)
+    call pio_read_darray(pioid, varid, pio_iodesc, flddata, rcode)
 
-    call pio_read_darray(pioid, varid, sdat%stream_pio_iodesc(stream_index), flddata, rcode)
+    ! Free the memory associate with the iodesc
+    call pio_freedecomp(pioid, pio_iodesc)
+
+    ! Close the file
     call pio_closefile(pioid)
 
   end subroutine shr_strdata_get_stream_domain
@@ -769,25 +762,23 @@ contains
     ! Proceed in the standard way.
     !
     ! (1) The stream is a no leap calendar and the model is gregorian:
-    ! Time interpolate on the noleap calendar.  Then if the model date
-    ! is Feb 29, compute stream data for Feb 28 by setting ymdmod and
-    ! todmod to Feb 28.  This results in duplicate stream data on Feb
-    ! 28 and Feb 29 and a discontinuity at the start of Feb 29.  This
-    ! could be potentially updated by using the gregorian calendar for
-    ! time interpolation when the input data is relatively infrequent
-    ! (say greater than daily) with the following concerns.
-    !   - The forcing will not be reproduced identically on
-    !     the same day with climatological inputs data
+    ! Time interpolate on the noleap calendar.  If the model date is Feb 29,
+    ! compute stream data for Feb 28 by setting ymdmod and todmod to Feb 28.
+    ! This results in duplicate stream data on Feb 28 and Feb 29 and a
+    ! discontinuity at the start of Feb 29.  This could potentially be fixed
+    ! by using the gregorian calendar for time interpolation when the input data
+    ! is relatively infrequent (say greater than daily) with the following concerns.
+    !   - The forcing will not be reproduced identically on the same day with
+    !     with climatological inputs data
     !   - Input data with variable input frequency might behave funny
-    !   - An arbitrary discontinuity will be introduced in the time 
+    !   - An arbitrary discontinuity will be introduced in the time
     !     interpolation method based upon the logic chosen to transition
     !     from reproducing Feb 28 on Feb 29 and interpolating to Feb 29.
     !   - The time gradient of data will change by adding a day arbitrarily.
     !
     ! (2) The stream is a gregorian calendar and the model is a noleap calendar:
-    ! Then just time interpolate on the gregorian calendar. This
-    ! causes Feb 29 stream data to be skipped and will lead to a
-    ! discontinuity at the start of March 1.
+    ! Then just time interpolate on the gregorian calendar. This causes Feb 29
+    ! stream data to be skipped and lead to a discontinuity at the start of March 1.
     !
     ! (3) If the calendars mismatch and neither of the three cases above
     ! are recognized, then abort.
@@ -801,7 +792,7 @@ contains
     integer                ,intent(in)          :: logunit
     character(len=*)       ,intent(in)          :: istr
     logical                ,intent(in),optional :: timers
-    integer                ,intent(out)         :: rc 
+    integer                ,intent(out)         :: rc
 
     ! local variables
     integer                             :: ns               !stream index
@@ -813,7 +804,7 @@ contains
     integer                             :: lsize
     logical , allocatable               :: newData(:)
     integer , allocatable               :: ymdmod(:)        ! modified model dates to handle Feb 29
-    real(r8), allocatable               :: coszen(:)        ! cosine of zenith angle 
+    real(r8), allocatable               :: coszen(:)        ! cosine of zenith angle
     integer                             :: todmod           ! modified model dates to handle Feb 29
     character(len=32)                   :: lstr             ! local string
     logical                             :: ltimers          ! local logical for timers
@@ -843,7 +834,7 @@ contains
     real(r8)                            :: lon, lat
     real(r8)                            :: sinlon, sinlat
     real(r8)                            :: coslon, coslat
-    real(r8)                            :: ux, uy, uz 
+    real(r8)                            :: ux, uy, uz
     logical                             :: checkflag = .false.
     integer                             :: fieldCount
     integer                             :: npes
@@ -931,7 +922,7 @@ contains
 
           select case(sdat%readMode(ns))
           case ('single')
-             call shr_strdata_readLBUB(sdat, sdat%stream(ns), &
+             call shr_strdata_readLBUB(sdat%mpicom, sdat%my_task, sdat%stream(ns), sdat%stream_mesh(ns), &
                   sdat%fldbun_stream_input_lb(ns), sdat%fldbun_stream_input_ub(ns), &
                   sdat%fldbun_stream_model_lb(ns), sdat%fldbun_stream_model_ub(ns), &
                   sdat%pio_subsystem, sdat%io_type, sdat%stream_pio_iodesc(ns), ymdmod(ns), todmod, &
@@ -1010,7 +1001,7 @@ contains
        ! ---------------------------------------------------------
        ! remap with vectors if needed
        ! ---------------------------------------------------------
-       
+
        do m = 1,sdat%nvectors
           nu = sdat%ustrm(m) ! nu is the stream index that contains the u vector
           nv = sdat%vstrm(m) ! nv is the stream index that contains the v vector
@@ -1263,7 +1254,6 @@ contains
   end subroutine shr_strdata_restWrite
 
   !===============================================================================
-
   subroutine shr_strdata_restRead(sdat, filename, mpicom)
 
     type(shr_strdata_type) ,intent(inout) :: sdat
@@ -1276,13 +1266,12 @@ contains
 
     call mpi_comm_rank(mpicom,my_task,ier)
     if (my_task == 0) then
-       call shr_stream_restRead(sdat%stream,trim(filename),sdat%nstreams)
+       call shr_stream_restRead(sdat%stream, trim(filename), sdat%nstreams)
     endif
 
   end subroutine shr_strdata_restRead
 
   !===============================================================================
-
   subroutine shr_strdata_setOrbs(sdat,eccen,mvelpp,lambm0,obliqr,modeldt)
 
     type(shr_strdata_type),intent(inout) :: sdat
@@ -1526,7 +1515,7 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_readLBUB(sdat, stream, &
+  subroutine shr_strdata_readLBUB(mpicom, my_task, stream, stream_mesh, &
        fldbun_stream_input_lb, fldbun_stream_input_ub, &
        fldbun_stream_model_lb, fldbun_stream_model_ub, &
        pio_subsystem, pio_iotype, pio_iodesc, mDate, mSec, &
@@ -1537,8 +1526,10 @@ contains
     !-------------------------------------------------------------------------
 
     ! input/output variables
-    type(shr_strdata_type)        ,intent(inout) :: sdat
+    integer                       ,intent(in)    :: mpicom
+    integer                       ,intent(in)    :: my_task
     type(shr_stream_streamType)   ,intent(inout) :: stream
+    type(ESMF_Mesh)               ,intent(in)    :: stream_mesh
     type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_input_lb
     type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_input_ub
     type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_model_lb
@@ -1568,9 +1559,9 @@ contains
     real(r8), pointer :: dataptr_ub(:)
     integer           :: fieldcount
     character(ESMF_MAXSTR), allocatable :: fieldNameList(:)
-    character(*), parameter :: subname = '(dshr_strdata_readLBUB) '
-    character(*), parameter :: F00   = "('(dshr_strdata_readLBUB) ',8a)"
-    character(*), parameter :: F01   = "('(dshr_strdata_readLBUB) ',a,5i8)"
+    character(*), parameter :: subname = '(shr_strdata_readLBUB) '
+    character(*), parameter :: F00   = "('(shr_strdata_readLBUB) ',8a)"
+    character(*), parameter :: F01   = "('(shr_strdata_readLBUB) ',a,5i8)"
     !-------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1595,7 +1586,7 @@ contains
 
     if (rDateM < rDateLB .or. rDateM > rDateUB) then
        call t_startf(trim(istr)//'_fbound')
-       if (sdat%my_task == master_task) then ! Note that the stream bounds is only done on the master task
+       if (my_task == master_task) then ! Note that the stream bounds is only done on the master task
           call shr_stream_findBounds(stream,mDate,mSec,  &
                ivals(1), dDateLB, ivals(2), ivals(5), fn_lb, ivals(3), dDateUB, ivals(4), ivals(6), fn_ub)
           call shr_stream_getFilePath(stream,path)
@@ -1603,8 +1594,8 @@ contains
        call t_stopf(trim(istr)//'_fbound')
 
        call t_startf(trim(istr)//'_bcast')
-       call shr_mpi_bcast(stream%calendar, sdat%mpicom)
-       call shr_mpi_bcast(ivals, sdat%mpicom)
+       call shr_mpi_bcast(stream%calendar, mpicom)
+       call shr_mpi_bcast(ivals, mpicom)
        mDateLB = ivals(1) ! Now all processors have the bounds
        mSecLB  = ivals(2)
        mDateUB = ivals(3)
@@ -1635,23 +1626,27 @@ contains
           deallocate(fieldNameList)
           call t_stopf(trim(istr)//'_LB_copy')
        else
-          call shr_strdata_readstrm(sdat, stream, fldbun_stream_input_lb, fldbun_stream_model_lb, &
-               Pio_subsystem, pio_iotype, pio_iodesc, path, fn_lb, n_lb, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
+          call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
+               fldbun_stream_input_lb, fldbun_stream_model_lb, &
+               Pio_subsystem, pio_iotype, pio_iodesc, path, fn_lb, n_lb, &
+               istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
     endif
 
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
-       call shr_strdata_readstrm(sdat, stream, fldbun_stream_input_ub, fldbun_stream_model_ub, &
-            pio_subsystem, pio_iotype, pio_iodesc, path, fn_ub, n_ub, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
+       call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
+            fldbun_stream_input_ub, fldbun_stream_model_ub, &
+            pio_subsystem, pio_iotype, pio_iodesc, path, fn_ub, n_ub, &
+            istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
 
     ! determine previous & next data files in list of files
 
     call t_startf(trim(istr)//'_filemgt')
-    if (sdat%my_task == master_task .and. newdata) then
+    if (my_task == master_task .and. newdata) then
        call shr_stream_getFilePath(stream,path)
        call shr_stream_getPrevFileName(stream,fn_lb,fn_prev,path)
        call shr_stream_getNextFileName(stream,fn_ub,fn_next,path)
@@ -1665,23 +1660,29 @@ contains
   end subroutine shr_strdata_readLBUB
 
   !===============================================================================
-  subroutine shr_strdata_readstrm(sdat, stream, fldbun_stream_input, fldbun_stream_model, &
+  subroutine shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
+       fldbun_stream_input, fldbun_stream_model, &
        pio_subsystem, pio_iotype, pio_iodesc, path, fn, nt, istr, boundstr, rc)
 
+    ! Read the stream data and initialize the strea pio_iodesc the first time
+    ! the stream is read
+
     ! input/output variables
-    type(shr_strdata_type)      ,intent(inout)         :: sdat
-    type(shr_stream_streamType) ,intent(inout)         :: stream
-    type(ESMF_FieldBundle)      ,intent(inout)         :: fldbun_stream_input ! field bundle stream with file fieldnames
-    type(ESMF_FieldBundle)      ,intent(inout)         :: fldbun_stream_model ! field bundle stream with model fieldnames
-    type(iosystem_desc_t)       ,intent(inout), target :: pio_subsystem
-    integer                     ,intent(in)            :: pio_iotype
-    type(io_desc_t)             ,intent(inout)         :: pio_iodesc
-    character(len=*)            ,intent(in)            :: path
-    character(len=*)            ,intent(in)            :: fn
-    integer                     ,intent(in)            :: nt
-    character(len=*)            ,intent(in)            :: istr
-    character(len=*)            ,intent(in)            :: boundstr
-    integer                     ,intent(out)           :: rc 
+    integer                     , intent(in)            :: mpicom
+    integer                     , intent(in)            :: my_task
+    type(shr_stream_streamType) , intent(inout)         :: stream
+    type(ESMF_Mesh)             , intent(in)            :: stream_mesh
+    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream_input ! field bundle stream with file fieldnames
+    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream_model ! field bundle stream with model fieldnames
+    type(iosystem_desc_t)       , intent(inout), target :: pio_subsystem
+    integer                     , intent(in)            :: pio_iotype
+    type(io_desc_t)             , intent(inout)         :: pio_iodesc
+    character(len=*)            , intent(in)            :: path
+    character(len=*)            , intent(in)            :: fn
+    integer                     , intent(in)            :: nt
+    character(len=*)            , intent(in)            :: istr
+    character(len=*)            , intent(in)            :: boundstr
+    integer                     , intent(out)           :: rc
 
     ! local variables
     character(CL)                 :: fileName
@@ -1692,28 +1693,26 @@ contains
     type(var_desc_t)              :: varid
     integer(kind=pio_offset_kind) :: frame
     integer                       :: nf
-    integer                       :: rCode      ! return code
+    integer                       :: rCode
     integer                       :: fieldcount
     real(r8), pointer             :: dataptr_stream_input(:)
     real(r8), pointer             :: dataptr_stream_model(:)
-    character(CL)                 :: fldname_stream_input 
+    character(CL)                 :: fldname_stream_input
     character(CL)                 :: fldname_stream_model
     character(CL), allocatable    :: fieldnameList_stream_input(:)
     character(cl), allocatable    :: fieldnameList_stream_model(:)
     logical                       :: first_time = .true.
-    integer                       :: m
-    character(*), parameter :: subname = '(dshr_strdata_readstrm) '
-    character(*), parameter :: F00   = "('(dshr_strdata_readstrm) ',8a)"
-    character(*), parameter :: F02   = "('(dshr_strdata_readstrm) ',2a,i8)"
+    character(*), parameter       :: subname = '(shr_strdata_readstrm) '
+    character(*), parameter       :: F00   = "('(shr_strdata_readstrm) ',8a)"
+    character(*), parameter       :: F02   = "('(shr_strdata_readstrm) ',2a,i8)"
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
-
     ! Set up file to read from
-    call t_barrierf(trim(istr)//'_BARRIER', sdat%mpicom)
+    call t_barrierf(trim(istr)//'_BARRIER', mpicom)
     call t_startf(trim(istr)//'_setup')
-    if (sdat%my_task == master_task) then
+    if (my_task == master_task) then
        fileName = trim(path)//fn
        inquire(file=trim(fileName),exist=fileExists)
        if (.not. fileExists) then
@@ -1721,7 +1720,7 @@ contains
           call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
        end if
     endif
-    call shr_mpi_bcast(filename, sdat%mpicom,'filename')
+    call shr_mpi_bcast(filename, mpicom,'filename')
     call t_stopf(trim(istr)//'_setup')
 
     ! Get current file and determine if it is open
@@ -1731,59 +1730,67 @@ contains
     else
        ! otherwise close the old file if open and open new file
        if (fileopen) then
-          if (sdat%my_task == master_task) then
-             write(logunit,F00) 'close  : ',trim(currfile)
-          endif
+          if (my_task == master_task) write(logunit,F00) 'close  : ',trim(currfile)
           call pio_closefile(pioid)
        endif
-       if (sdat%my_task == master_task) then
-          write(logunit,F00) 'opening   : ',trim(filename)
-       endif
+       if (my_task == master_task) write(logunit,F00) 'opening   : ',trim(filename)
        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
        call shr_stream_setCurrFile(stream, fileopen=.true., currfile=trim(filename), currpioid=pioid)
     endif
+
+    ! Always use pio to read in stream data
+    call t_startf(trim(istr)//'_readpio')
+    if (my_task == master_task) then
+       write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
+    endif
+
+    ! Determine the number of fields in fldbun_stream_input and fldbun_model_input (they are the same)
+    call ESMF_FieldBundleGet(fldbun_stream_input, fieldCount=fieldCount, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! Determine the field names in the fldbun_stream_input
+    allocate(fieldNameList_stream_input(fieldCount))
+    call ESMF_FieldBundleGet(fldbun_stream_input, fieldNameList=fieldnameList_stream_input, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! Determine the field names in the fldbun_stream_model
+    allocate(fieldNameList_stream_model(fieldCount))
+    call ESMF_FieldBundleGet(fldbun_stream_model, fieldNameList=fieldnameList_stream_model, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! ******************************************************************************
+    ! Determine the pio io descriptor for the stream from the first data field in the stream
+    ! ******************************************************************************
+
+    if (first_time) then
+       call shr_strdata_set_stream_iodesc(pio_subsystem, pioid, &
+            trim(fieldnamelist_stream_input(1)), stream_mesh, pio_iodesc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       first_time = .false.
+    end if
 
     ! ******************************************************************************
     ! Read in the stream data into fldbun_stream_input and fill in the values for fldbun_stream_model
     ! ******************************************************************************
 
-    ! Always use pio to read in stream data
-    call t_startf(trim(istr)//'_readpio')
-    if (sdat%my_task == master_task) then
-       write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
-    endif
     call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-
-    ! Loop over all stream fields in fldbun_stream and read in the data
-    call ESMF_FieldBundleGet(fldbun_stream_input, fieldCount=fieldCount, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    allocate(fieldNameList_stream_input(fieldCount))
-    call ESMF_FieldBundleGet(fldbun_stream_input, fieldNameList=fieldnameList_stream_input, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    allocate(fieldNameList_stream_model(fieldCount))
-    call ESMF_FieldBundleGet(fldbun_stream_model, fieldNameList=fieldnameList_stream_model, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
     do nf = 1,fieldCount
        fldname_stream_input = trim(fieldnamelist_stream_input(nf))
        fldname_stream_model = trim(fieldnamelist_stream_model(nf))
 
+       ! set pointers into field bundles
        call dshr_fldbun_getfldptr(fldbun_stream_input, trim(fldname_stream_input), fldptr1=dataptr_stream_input, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return 
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call dshr_fldbun_getfldptr(fldbun_stream_model, trim(fldname_stream_model), fldptr1=dataptr_stream_model, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        rcode = pio_inq_varid(pioid, fldname_stream_input, varid) ! get varid of field nf in input stream file
        frame = nt ! set frame to time index
        call pio_setframe(pioid,varid,frame)
-
-       ! ***TODO:*** need to generalize the pio_iodesc to match the stream input type and then do a conversion
-       ! need Jim's input on this
        call pio_read_darray(pioid, varid, pio_iodesc, dataptr_stream_input, rcode)
 
-       ! now set the data for fldbun_stream
+       ! set the data for fldbun_stream_model
        dataptr_stream_model(:) = dataptr_stream_input(:)
     enddo
 
@@ -1793,5 +1800,104 @@ contains
     call t_stopf(trim(istr)//'_readpio')
 
   end subroutine shr_strdata_readstrm
+
+  !===============================================================================
+  subroutine shr_strdata_set_stream_iodesc(pio_subsystem, pioid, fldname, stream_mesh, pio_iodesc, rc)
+
+    ! input/output variables
+    type(iosystem_desc_t) , intent(inout), target :: pio_subsystem
+    type(file_desc_t)     , intent(inout)         :: pioid
+    character(len=*)      , intent(in)            :: fldname
+    type(ESMF_Mesh)       , intent(in)            :: stream_mesh
+    type(io_desc_t)       , intent(inout)         :: pio_iodesc
+    integer               , intent(out)           :: rc
+
+    ! local variables
+    integer                       :: n
+    type(var_desc_t)              :: varid
+    integer                       :: ndims
+    integer, allocatable          :: dimids(:)
+    integer, allocatable          :: dimlens(:)
+    integer                       :: unlimdid
+    integer                       :: itype
+    type(ESMF_DistGrid)           :: distGrid
+    integer                       :: lsize
+    integer, pointer              :: compdof(:)
+    integer                       :: rCode      ! pio return code
+    character(*), parameter       :: subname = '(shr_strdata_set_stream_iodesc) '
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! query the first field in the stream dataset
+    call PIO_seterrorhandling(pioid, PIO_BCAST_ERROR)
+
+    rcode = pio_inq_varid(pioid, fldname, varid)
+    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring varid for '//trim(fldname))
+    rcode = pio_inq_varndims(pioid, varid, ndims)
+    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring ndims for '//trim(fldname))
+    allocate(dimids(ndims))
+    allocate(dimlens(ndims))
+    rcode = pio_inq_vardimid(pioid, varid, dimids(1:ndims))
+    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring dimids for '//trim(fldname))
+    do n = 1, ndims
+       rcode = pio_inq_dimlen(pioid, dimids(n), dimlens(n))
+       call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring dimlens for '//trim(fldname))
+    end do
+
+    ! determine compdof for stream
+    call ESMF_MeshGet(stream_mesh, elementdistGrid=distGrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(compdof(lsize))
+    call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=compdof, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine type of the variable
+    rcode = pio_inq_vartype(pioid, varid, itype)
+    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring type for '//trim(fldname))
+
+    ! now create the io descriptor
+    rcode = pio_inquire(pioid, unlimitedDimid=unlimdid)
+    if (rcode == PIO_NOERR) then
+       if (dimids(ndims) == unlimdid) then
+          ! remove unlimited time dimension from the pio_init decomp
+          ndims = ndims - 1
+       end if
+    end if
+    if (ndims == 2) then
+       !call pio_initdecomp(pio_subsystem, itype, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
+       call pio_initdecomp(pio_subsystem, pio_double, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
+    else if (ndims == 3) then
+       call pio_initdecomp(pio_subsystem, pio_double, (/dimlens(1),dimlens(2),dimlens(3)/), compdof, pio_iodesc)
+    else
+       write(6,*)'ERROR: dimlens= ',dimlens
+       call shr_sys_abort(trim(subname)//' only dimlen of 2 and 3 are currently supported')
+    end if
+
+    deallocate(compdof)
+    deallocate(dimids)
+    deallocate(dimlens)
+
+  end subroutine shr_strdata_set_stream_iodesc
+
+  !===============================================================================
+  subroutine shr_strdata_handle_error(ierr, errorstr)
+    use pio, only: pio_noerr
+
+    ! input/output variables
+    integer,          intent(in)  :: ierr
+    character(len=*), intent(in)  :: errorstr
+
+    ! local variables
+    character(len=256) :: errormsg
+    !-------------------------------------------------------------------------------
+
+    if (ierr /= PIO_NOERR) then
+      write(errormsg, '(a,i6,2a)') '(PIO:', ierr, ') ', trim(errorstr)
+      call shr_sys_abort(errormsg)
+    end if
+  end subroutine shr_strdata_handle_error
 
 end module dshr_strdata_mod
