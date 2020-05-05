@@ -213,7 +213,7 @@ def write_seq_maps_file(case, nmlgen, confdir):
 
     # The ATM grid may contain vertical grid information ("zxx" where xx is a number of levels)
     # it's not desirable here, remove it.
-    if 'atm' in gridvalue and 'z' in gridvalue['atm']:
+    if 'atm' in gridvalue and re.match('z\d',gridvalue['atm']):
         gridvalue['atm'] = (gridvalue['atm'])[0:gridvalue['atm'].rfind('z')]
 
     # Currently, hard-wire values of mapping file names to ignore
