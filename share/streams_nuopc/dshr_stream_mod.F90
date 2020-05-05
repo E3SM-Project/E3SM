@@ -21,15 +21,13 @@ module dshr_stream_mod
   !    <meshfile>
   !      mesh_filename 
   !    </meshfile>
-  !    <data_filePath>
-  !       /glade/p/cesmdata/cseg/inputdata/atm/datm7/NYF
-  !    </datafilePath>
-  !    <data_fileNames>
-  !       nyf.ncep.T62.050923.nc
-  !    </data_fileNames>
-  !    <data_variableNames>
+  !    <data_files>
+  !       /glade/p/cesmdata/cseg/inputdata/atm/datm7/NYF/nyf.ncep.T62.050923.nc
+  !       .....
+  !    <data_files>
+  !    <data_variables>
   !       u_10  u
-  !    </data_variableNames>
+  !    </data_variables>
   !    <stream_offset>
   !       0
   !    </stream_offset>
@@ -75,7 +73,6 @@ module dshr_stream_mod
   public :: shr_stream_getFileFieldName  ! return k-th input-file field name
   public :: shr_stream_getPrevFileName   ! return previous file in sequence
   public :: shr_stream_getNextFileName   ! return next file in sequence
-  public :: shr_stream_getFilePath       ! return file path
   public :: shr_stream_getNFiles         ! get the number of files in a stream
   public :: shr_stream_getCalendar       ! get the stream calendar
   public :: shr_stream_getCurrFile       ! get the currfile, fileopen, and currpioid
@@ -98,11 +95,11 @@ module dshr_stream_mod
 
   ! a useful derived type to use inside shr_streamType ---
   type shr_stream_fileType
-     character(CL)         :: name = shr_stream_file_null ! the file name
-     logical               :: haveData = .false. ! has t-coord data been read in?
-     integer               :: nt = 0             ! size of time dimension
-     integer  ,allocatable :: date(:)            ! t-coord date: yyyymmdd
-     integer  ,allocatable :: secs(:)            ! t-coord secs: elapsed on date
+     character(CL)         :: name = shr_stream_file_null ! the file name (full pathname)
+     logical               :: haveData = .false.          ! has t-coord data been read in?
+     integer               :: nt = 0                      ! size of time dimension
+     integer  ,allocatable :: date(:)                     ! t-coord date: yyyymmdd
+     integer  ,allocatable :: secs(:)                     ! t-coord secs: elapsed on date
   end type shr_stream_fileType
 
   type shr_stream_streamType
@@ -126,9 +123,8 @@ module dshr_stream_mod
      character(CL)     :: calendar                     ! stream calendar
 
      ! stream data metadata - obtained from stream txt file
-     character(CL)     :: meshFileName                 ! filename for mesh for all fields on stream
-     character(CL)     :: filePath                     ! filepath of stream data files
-     type(shr_stream_fileType), allocatable :: file(:) ! filenames of stream data files
+     character(CL)     :: meshFileName                 ! filename for mesh for all fields on stream (full pathname)
+     type(shr_stream_fileType), allocatable :: file(:) ! filenames of stream data files (full pathname)
      character(CXX)    :: fldListFile                  ! field list: file's  field names
      character(CXX)    :: fldListModel                 ! field list: model's field names
 
@@ -214,15 +210,14 @@ contains
     if (debug>0) write(s_logunit,F00) '  reading stream mesh filename'
     !-----------------------------------------------------------------------------
 
-    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
-
     ! find start tag then read data
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<stream_info>"
     endTag   = "</stream_info>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
-    startTag =  "<mesh_filename>"
-    endTag   = "</mesh_filename>"
+    startTag =  "<stream_mesh_file>"
+    endTag   = "</stream_mesh_file>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
 
@@ -230,7 +225,6 @@ contains
     call shr_string_leftalign_and_convert_tabs(str)
     strm%meshFileName = str
     if (debug>0) write(s_logunit,F00) '  * stream_meshfile = ', trim(strm%meshFileName)
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -243,8 +237,8 @@ contains
     endTag   = "</stream_info>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
-    startTag =  "<data_variableNames>"
-    endTag   = "</data_variableNames>"
+    startTag =  "<stream_data_variables>"
+    endTag   = "</stream_data_variables>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
 
@@ -292,8 +286,8 @@ contains
     endTag   = "</stream_info>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
-    startTag =  "<offset>"
-    endTag   = "</offset>"
+    startTag =  "<stream_offset>"
+    endTag   = "</stream_offset>"
     call shr_stream_readUpToTag(nUnit,startTag,optionalTag=.true.,rc=rCode)
     if (rCode == 0) then
        ! read data
@@ -306,31 +300,6 @@ contains
     close(nUnit)
 
     !-----------------------------------------------------------------------------
-    if (debug>0) write(s_logunit,F00) '  reading data file path'
-    !-----------------------------------------------------------------------------
-
-    ! find start tag
-    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
-    startTag =  "<stream_info>"
-    endTag   = "</stream_info>"
-    call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
-    if (rCode /= 0) goto 999
-    startTag =  "<data_filePath>"
-    endTag    = "</data_filePath>"
-    call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
-    if (rCode /= 0) goto 999
-
-    ! read data ---
-    read(nUnit,'(a)',END=999) str
-    call shr_string_leftalign_and_convert_tabs(str)
-    n = len_trim(str)
-    if (n>0 .and. str(n:n) /= '/') str(n+1:n+2) = "/ " ! must have trailing slash
-    if (n==0) str = "./ "                              ! null path => ./
-    strm%FilePath = str
-    if (debug>0) write(s_logunit,F00) '  * data file path = ', trim(strm%FilePath)
-    close(nUnit)
-
-    !-----------------------------------------------------------------------------
     if (debug>0) write(s_logunit,F00) '  reading field data file names'
     !-----------------------------------------------------------------------------
 
@@ -340,8 +309,8 @@ contains
     endTag   = "</stream_info>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
-    startTag =  "<data_fileNames>"
-    endTag   = "</data_fileNames>"
+    startTag =  "<stream_data_files>"
+    endTag   = "</stream_data_files>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
     if (rCode /= 0) goto 999
 
@@ -392,7 +361,7 @@ contains
 
   subroutine shr_stream_init_from_fortran(strm, meshfile, &
        yearFirst, yearLast, yearAlign, offset, taxmode, &
-       fldlistFile, fldListModel, filepath, fileNames)
+       fldlistFile, fldListModel, fileNames)
 
     ! --------------------------------------------------------
     ! set values of stream datatype independent of a reading in a stream text file
@@ -409,8 +378,7 @@ contains
     character(*)                ,intent(in)    :: taxMode      ! time axis mode
     character(*)                ,intent(in)    :: fldListFile  ! file field names, colon delim list
     character(*)                ,intent(in)    :: fldListModel ! model field names, colon delim list
-    character(*)                ,intent(in)    :: filePath     ! path to stream data files
-    character(*)                ,intent(in)    :: filenames(:) ! stream data filenames
+    character(*)                ,intent(in)    :: filenames(:) ! stream data filenames (full pathnamesa)
 
     ! local variables
     integer                   :: n
@@ -430,7 +398,6 @@ contains
     strm%offset       = offset
     strm%taxMode      = trim(taxMode)
     strm%meshFileName = trim(meshFile)
-    strm%filepath     = trim(filePath)
     strm%fldListFile  = trim(fldListFile)
     strm%fldListModel = trim(fldListModel)
 
@@ -458,7 +425,7 @@ contains
 
   !===============================================================================
   subroutine shr_stream_set( strm, yearFirst, yearLast, yearAlign, offset, taxMode,  &
-       meshFileName, fldListFile, fldListModel, filePath, filenames, rc)
+       meshFileName, fldListFile, fldListModel, filenames, rc)
 
     !-------------------------------------------------------------------------------
     ! set or override stream settings
@@ -474,8 +441,7 @@ contains
     character(*) ,optional      ,intent(in)    :: meshFileName ! stream mesh file
     character(*) ,optional      ,intent(in)    :: fldListFile  ! file field names, colon delim list
     character(*) ,optional      ,intent(in)    :: fldListModel ! model field names, colon delim list
-    character(*) ,optional      ,intent(in)    :: filePath     ! path for filenames
-    character(*) ,optional      ,intent(in)    :: filenames(:)  ! input filenames
+    character(*) ,optional      ,intent(in)    :: filenames(:) ! input filenames
     integer      ,optional      ,intent(out)   :: rc           ! return code
 
     ! local variables
@@ -497,8 +463,6 @@ contains
     if (present(yearAlign    )) strm%yearAlign    = yearAlign
     if (present(offset       )) strm%offset       = offset
     if (present(taxMode      )) strm%taxMode      = trim(taxMode)
-    if (present(filePath     )) strm%filePath     = trim(filePath)
-    if (present(filePath     )) strm%filePath     = trim(filePath)
     if (present(fldListFile  )) strm%fldListFile  = trim(fldListFile)
     if (present(fldListModel )) strm%fldListModel = trim(fldListModel)
     if (present(meshFileName )) strm%meshFileName = trim(meshFileName)
@@ -541,7 +505,6 @@ contains
 
     strm%meshFileName = ' '
     strm%nFiles       = 0
-    strm%filePath     = ' '
     strm%yearFirst    = 0
     strm%yearLast     = 0
     strm%yearAlign    = 0
@@ -607,9 +570,6 @@ contains
 
     !-------------------------------------------------------------------------------
     ! shr_stream_parseInput -- extract fileName,yearAlign, etc. from a string
-    ! - this routine exists largely because of the difficulty of reading file names
-    !   that include dir paths, ie. containing "/", from char strings
-    !   because the "/" is interpreted as an end-of-record.
     !-------------------------------------------------------------------------------
 
     ! input/output parameters:
@@ -1136,7 +1096,7 @@ contains
 
     lrc = 0
 
-    fileName  = trim(strm%filePath)//adjustl(strm%file(k)%name)
+    fileName  = trim(strm%file(k)%name)
     rCode = nf90_open(fileName, nf90_nowrite, fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
     rCode = nf90_inq_varid(fid, 'time', vid)
@@ -1385,20 +1345,6 @@ contains
   end subroutine shr_stream_getFileFieldName
 
   !===============================================================================
-  subroutine shr_stream_getFilepath(strm, path)
-
-    ! Returns file path.
-
-    ! input/output parameters:
-    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
-    character(*)               ,intent(out) :: path      ! file path
-    !-------------------------------------------------------------------------------
-
-    path = strm%filePath
-
-  end subroutine shr_stream_getFilePath
-
-  !===============================================================================
   subroutine shr_stream_getCalendar(strm,k,calendar)
 
     ! Returns calendar name
@@ -1419,7 +1365,7 @@ contains
     calendar = ' '
     if (k > strm%nfiles) call shr_sys_abort(subname//' ERROR: k gt nfiles')
 
-    fileName = trim(strm%filePath)//adjustl(strm%file(k)%name)
+    fileName = trim(strm%file(k)%name)
 
     rCode = nf90_open(fileName,nf90_nowrite,fid)
 
@@ -1482,7 +1428,7 @@ contains
   end subroutine shr_stream_setCurrFile
 
   !===============================================================================
-  subroutine shr_stream_getNextFileName(strm,fn,fnNext,path,rc)
+  subroutine shr_stream_getNextFileName(strm, fn, fnNext,rc)
 
     ! Returns next file name in sequence
     ! Note: will wrap-around data loop if lvd & gvd are known
@@ -1492,7 +1438,6 @@ contains
     type(shr_stream_streamType) ,intent(in)  :: strm   ! data stream
     character(*)                ,intent(in)  :: fn     ! file name
     character(*)                ,intent(out) :: fnNext ! next file name
-    character(*) ,optional      ,intent(out) :: path   ! file path
     integer      ,optional      ,intent(out) :: rc     ! return code
 
     ! local variables
@@ -1504,7 +1449,6 @@ contains
     !-------------------------------------------------------------------------------
 
     rCode = 0
-    if (present(path)) path = strm%filePath
 
     !--- locate input file in the stream's list of files ---
     found = .false.
@@ -1536,7 +1480,7 @@ contains
   end subroutine shr_stream_getNextFileName
 
   !===============================================================================
-  subroutine shr_stream_getPrevFileName(strm,fn,fnPrev,path,rc)
+  subroutine shr_stream_getPrevFileName(strm, fn, fnPrev,rc)
 
     ! Returns previous file name in sequence
 
@@ -1544,7 +1488,6 @@ contains
     type(shr_stream_streamType) ,intent(in)  :: strm   ! data stream
     character(*)                ,intent(in)  :: fn     ! file name
     character(*)                ,intent(out) :: fnPrev ! preciding file name
-    character(*) ,optional      ,intent(out) :: path   ! file path
     integer      ,optional      ,intent(out) :: rc     ! return code
 
     !--- local ---
@@ -1560,7 +1503,6 @@ contains
     !-------------------------------------------------------------------------------
 
     rCode = 0
-    if (present(path)) path = strm%filePath
 
     !--- locate input file in the stream's list of files ---
     found = .false.
@@ -1690,7 +1632,6 @@ contains
 
        write(nUnit) strm(k)%init         ! has stream been initialized?
        write(nUnit) strm(k)%nFiles       ! number of data files
-       write(nUnit) strm(k)%filePath     ! remote location of files
 
        if (debug > 0) then
           write(s_logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
@@ -1825,7 +1766,6 @@ contains
 
        ! tcraig, don't overwrite these from input
        read(nUnit) nFiles       ! number of data files
-       read(nUnit) inpcl  ! filePath     ! remote location of files
 
        do n=1,nFiles                     ! data specific to each file...
           read(nUnit) name       ! the file name
@@ -1934,7 +1874,6 @@ contains
     if (debug > 0) then
        write(s_logunit,F00) "dump internal data for debugging..."
        write(s_logunit,F01) "nFiles        = ", strm%nFiles
-       write(s_logunit,F00) "filePath      = ", trim(strm%filePath)
        do k=1,strm%nFiles
           write(s_logunit,F01) "data for file k = ",k
           write(s_logunit,F00)    "* file(k)%name    = ", trim(strm%file(k)%name)
@@ -2023,7 +1962,7 @@ contains
     character(len=*)            , intent(out) :: filename
     !-------------------------------------------------------------------------------
 
-    filename = trim(stream%filepath) // trim(stream%file(index)%name)
+    filename = trim(stream%file(index)%name)
 
   end subroutine shr_stream_getData
 
