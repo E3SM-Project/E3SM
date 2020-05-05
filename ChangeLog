@@ -1,6 +1,36 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-26-2020
+Tag: cime5.8.22
+Answer Changes: b4b
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix issue with mpi-serial io.
+    - Use esmf8.1.0b14 on cheyenne.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+3b4ea8a99 Merge pull request #3499 from jedwards4b/pio_serialio_fix
+eb2e04e52 Merge pull request #3494 from jedwards4b/update_cheyenne_esmf
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       config/cesm/machines/config_pio.xml
+M       scripts/Tools/Makefile
+M       src/externals/pio2/src/flib/piolib_mod.F90
+M       src/share/util/shr_pio_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 4-17-2020
 Tag: cime5.8.21
 Answer Changes: None

@@ -341,6 +341,11 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs = []
         cls._do_teardown = []
         cls._testroot = os.path.join(TEST_ROOT, 'TestCreateNewcase')
+        cls._root_dir = os.getcwd()
+
+    def tearDown(self):
+        cls = self.__class__
+        os.chdir(cls._root_dir)
 
     def test_a_createnewcase(self):
         cls = self.__class__
@@ -687,7 +692,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         and make sure they are the same by comparing the namelist files in CaseDocs.
         Ignore the modelio files and clean the directory names out first.
         """
-
         cls = self.__class__
 
         testdir1 = os.path.join(cls._testroot, 'testcreatenewcase_user_compset')
@@ -756,7 +760,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._do_teardown.append(testdir1)
         cls._do_teardown.append(testdir2)
 
-
     def test_k_append_config(self):
         machlist_before = MACHINE.list_available_machines()
         self.assertEqual(len(machlist_before)>1, True, msg="Problem reading machine list")
@@ -769,6 +772,62 @@ class J_TestCreateNewcase(unittest.TestCase):
         self.assertEqual(len(machlist_after)-len(machlist_before), 1, msg="Not able to append config_machines.xml {} {}".format(len(machlist_after), len(machlist_before)))
         self.assertEqual("mymachine" in machlist_after, True, msg="Not able to append config_machines.xml")
 
+    def test_ka_createnewcase_extra_machines_dir(self):
+        # Test that we pick up changes in both config_machines.xml and
+        # config_compilers.xml in a directory specified with the --extra-machines-dir
+        # argument to create_newcase.
+        cls = self.__class__
+        casename = 'testcreatenewcase_extra_machines_dir'
+
+        # Setup: stage some xml files in a temporary directory
+        extra_machines_dir = os.path.join(cls._testroot, '{}_machine_config'.format(casename))
+        os.makedirs(extra_machines_dir)
+        cls._do_teardown.append(extra_machines_dir)
+        newmachfile = os.path.join(get_cime_root(),"config",
+                                   "xml_schemas","config_machines_template.xml")
+        safe_copy(newmachfile, os.path.join(extra_machines_dir, "config_machines.xml"))
+        config_compilers_text = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<config_compilers version="2.0">
+<compiler MACH="mymachine">
+  <NETCDF_PATH>/my/netcdf/path</NETCDF_PATH>
+</compiler>
+</config_compilers>
+"""
+        config_compilers_path = os.path.join(extra_machines_dir, "config_compilers.xml")
+        with open(config_compilers_path, "w") as config_compilers:
+            config_compilers.write(config_compilers_text)
+
+        # Create the case
+        testdir = os.path.join(cls._testroot, casename)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        # In the following, note that 'mymachine' is the machine name defined in
+        # config_machines_template.xml
+        args = (" --case {testdir} --compset X --mach mymachine"
+                " --output-root {testroot} --non-local"
+                " --extra-machines-dir {extra_machines_dir}".format(
+                    testdir=testdir, testroot=cls._testroot,
+                    extra_machines_dir=extra_machines_dir))
+        if CIME.utils.get_cime_default_driver() == "nuopc":
+            args += " --res f19_g17 "
+        else:
+            args += " --res f19_g16 "
+        run_cmd_assert_result(self, "./create_newcase {}".format(args),
+                              from_dir=SCRIPT_DIR)
+        cls._do_teardown.append(testdir)
+
+        # Run case.setup
+        run_cmd_assert_result(self, "./case.setup",
+                              from_dir=testdir)
+
+        # Make sure Macros file contains expected text
+        macros_file_name = os.path.join(testdir, "Macros.make")
+        self.assertTrue(os.path.isfile(macros_file_name))
+        with open(macros_file_name) as macros_file:
+            macros_contents = macros_file.read()
+        expected_re = re.compile("NETCDF_PATH.*/my/netcdf/path")
+        self.assertTrue(expected_re.search(macros_contents))
 
     def test_m_createnewcase_alternate_drivers(self):
         # Test that case.setup runs for nuopc and moab drivers
@@ -842,10 +901,8 @@ class J_TestCreateNewcase(unittest.TestCase):
                     shutil.rmtree(tfile)
                 except BaseException:
                     print("Could not remove directory {}".format(tfile))
-        if rmtestroot:
+        if rmtestroot and do_teardown:
             shutil.rmtree(cls._testroot)
-
-
 
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):
@@ -1128,11 +1185,14 @@ class TestCreateTestCommon(unittest.TestCase):
         self._testroot          = TEST_ROOT
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = not NO_TEARDOWN
+        self._root_dir          = os.getcwd()
 
     ###########################################################################
     def tearDown(self):
     ###########################################################################
         kill_subprocesses()
+
+        os.chdir(self._root_dir)
 
         if (self._unset_proxy):
             del os.environ["http_proxy"]
@@ -2468,6 +2528,19 @@ class K_TestCimeCase(TestCreateTestCommon):
         run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
 
         self._wait_for_tests(self._baseline_name, always_wait=True)
+
+    ###########################################################################
+    def test_case_clean(self):
+    ###########################################################################
+        testname = "ERS_Ln7.f19_g16_rx1.A"
+        self._create_test([testname, "--no-build"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "{}.{}".format(CIME.utils.get_full_test_name(testname, machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        run_cmd_assert_result(self, "./case.setup --clean", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.setup --clean", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.setup", from_dir=casedir)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
