@@ -853,7 +853,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
 
-   logical(kind=c_bool), intent(inout) :: log_nucleationPossible, log_hydrometeorsPresent
+   logical(kind=c_bool), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
 
    call p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
         pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &

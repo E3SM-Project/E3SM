@@ -146,6 +146,10 @@ void Functions<S,D>
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
 
+  log_nucleationPossible = false;
+  log_hydrometeorsPresent = false;
+  team.team_barrier();
+
   //
   // calculate some time-varying atmospheric variables
   // AaronDonahue - changed "rho" to be defined on nonhydrostatic
@@ -167,7 +171,7 @@ void Functions<S,D>
 
     rhofacr(k) = pack::pow(rhosur * inv_rho(k), .54);
     rhofaci(k) = pack::pow(rhosui * inv_rho(k), .54);
-    Spack dum  = pack::pow(sp(1.496e-6) * t(k), sp(1.5) / t(k) + 120); // this is mu
+    Spack dum  = sp(1.496e-6) * pack::pow(t(k), sp(1.5)) / (t(k) + 120); // this is mu
     acn(k)     = g * rhow / (18 * dum); // 'a' parameter for droplet fallspeed (Stokes' law)
 
     // specify cloud droplet number (for 1-moment version)
@@ -219,7 +223,7 @@ void Functions<S,D>
     oqirim(k).set(drymass, 0);
     obirim(k).set(drymass, 0);
 
-    t(k) = oth(k) + inv_exner(k);
+    t(k) = oth(k) * inv_exner(k);
 
     // Activation of cloud droplets
     if (log_predictNc) {

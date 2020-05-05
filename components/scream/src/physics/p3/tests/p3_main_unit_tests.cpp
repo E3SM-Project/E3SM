@@ -84,10 +84,10 @@ static void run_bfb_p3_main_pre_loop()
 
   P3MainPreLoopData isds_fortran[] = {
     //              kts, kte, ktop, kbot, kdir, log_predictNc,        dt, ranges
-    P3MainPreLoopData(1,  1,    1,   72,   -1, false,         1.800E+03, ranges),
-    P3MainPreLoopData(1,  1,    1,   72,   -1, true,          1.800E+03, ranges),
-    P3MainPreLoopData(1,  1,   72,    1,    1, false,         1.800E+03, ranges),
-    P3MainPreLoopData(1,  1,   72,    1,    1, true,          1.800E+03, ranges),
+    P3MainPreLoopData(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
+    P3MainPreLoopData(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
+    P3MainPreLoopData(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
+    P3MainPreLoopData(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPreLoopData);
@@ -150,8 +150,8 @@ static void run_bfb_p3_main_pre_loop()
       REQUIRE(isds_fortran[i].nitot_incld[k] == isds_cxx[i].nitot_incld[k]);
       REQUIRE(isds_fortran[i].birim_incld[k] == isds_cxx[i].birim_incld[k]);
     }
-    REQUIRE(isds_fortran[i].log_hydrometeorsPresent == isds_cxx[i].log_hydrometeorsPresent);
-    REQUIRE(isds_fortran[i].log_nucleationPossible  == isds_cxx[i].log_nucleationPossible);
+    REQUIRE( isds_fortran[i].log_hydrometeorsPresent == isds_cxx[i].log_hydrometeorsPresent );
+    REQUIRE( isds_fortran[i].log_nucleationPossible == isds_cxx[i].log_nucleationPossible );
   }
 }
 

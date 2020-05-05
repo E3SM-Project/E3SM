@@ -537,7 +537,7 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
 
-   logical(kind=c_bool), intent(inout) :: log_nucleationPossible, log_hydrometeorsPresent
+   logical(kind=c_bool), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
  end subroutine p3_main_pre_main_loop_f
 
   !

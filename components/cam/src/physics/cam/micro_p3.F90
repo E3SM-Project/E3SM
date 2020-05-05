@@ -370,11 +370,14 @@ contains
          acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
          qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
 
-    logical(btype), intent(inout) :: log_nucleationPossible, log_hydrometeorsPresent
+    logical(btype), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
 
     ! locals
     integer :: k
     real(rtype) :: dum
+
+    log_nucleationPossible = .false.
+    log_hydrometeorsPresent = .false.
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -388,7 +391,6 @@ contains
 #endif
 
     k_loop_1: do k = kbot,ktop,kdir
-
        !calculate some time-varying atmospheric variables
        !AaronDonahue - changed "rho" to be defined on nonhydrostatic
        !assumption, consistent with pressure based coordinate system
@@ -741,9 +743,6 @@ contains
     i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)
 
 !      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
-
-       log_hydrometeorsPresent = .false.
-       log_nucleationPossible  = .false.
 
        call p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
             pres(i,:), pdel(i,:), dzq(i,:), npccn(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
