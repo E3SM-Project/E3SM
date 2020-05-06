@@ -1921,14 +1921,10 @@ subroutine shoc_length(&
   real(rtype) :: conv_vel(shcol), tscale(shcol)
   real(rtype) :: thv_zi(shcol,nlevi)
 
-  real(rtype) :: numer(shcol)
-  real(rtype) :: denom(shcol)
   real(rtype) :: l_inf(shcol)
   real(rtype) :: brunt2(shcol,nlev)
 
   brunt2(:,:) = 0._rtype
-  numer(:) = 0._rtype
-  denom(:) = 0._rtype
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._rtype)
@@ -1937,23 +1933,7 @@ subroutine shoc_length(&
   call compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt)
 
   ! Find L_inf
-  do k=1,nlev
-    do i=1,shcol
-
-        tkes=sqrt(tke(i,k))
-        numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
-        denom(i)=denom(i)+tkes*dz_zt(i,k)
-
-    enddo
-  enddo
-
-  do i=1,shcol
-    if (denom(i) .gt. 0._rtype) then
-      l_inf(i)=0.1_rtype*(numer(i)/denom(i))
-    else
-      l_inf(i)=100._rtype
-    endif
-  enddo
+  call  compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
   ! determine the convective velocity scale of
   !   the planetary boundary layer
@@ -2780,6 +2760,40 @@ subroutine compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt)
   enddo
 
 end subroutine compute_brunt_shoc_length
+
+subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+
+  !=========================================================
+  !
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  real(rtype), intent(in) :: zt_grid(shcol,nlev), dz_zt(shcol,nlev), tke(shcol,nlev)
+  real(rtype), intent(inout) :: l_inf(shcol)
+  real(rtype) :: tkes, numer(shcol), denom(shcol) 
+  integer k, i
+  
+  numer(:) = 0._rtype 
+  denom(:) = 0._rtype
+
+  do k=1,nlev
+    do i=1,shcol
+        tkes=sqrt(tke(i,k))
+        numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
+        denom(i)=denom(i)+tkes*dz_zt(i,k)
+    enddo
+  enddo
+
+
+  do i=1,shcol
+    if (denom(i) .gt. 0._rtype) then
+      l_inf(i)=0.1_rtype*(numer(i)/denom(i))
+    else
+      l_inf(i)=100._rtype
+    endif
+  enddo
+
+end subroutine compute_l_inf_shoc_length
 
 end module shoc
 
