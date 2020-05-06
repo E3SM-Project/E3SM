@@ -101,9 +101,6 @@ module micro_p3_interface
       snow_pcw_idx = -1,       &
       snow_sed_idx = -1
 
-! pbuf fields for heterogeneous freezing
-   integer :: &
-
    real(rtype) :: &
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
       prc_coef1_in             = huge(1.0_rtype), &
@@ -255,7 +252,7 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('PRAIN','physpkg',dtype_r8,(/pcols,pver/), prain_idx)
    call pbuf_add_field('NEVAPR','physpkg',dtype_r8,(/pcols,pver/), nevapr_idx)
 
-   !! module aero_model
+   !! module aero_model  !TODO, also looks like we don't do anything with this.
    if (prog_modal_aero) then
       call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,(/pcols,pver/), rate1_cw2pr_st_idx)
    endif
@@ -719,7 +716,6 @@ end subroutine micro_p3_readnl
                               qsmall, &
                               mincld, & 
                               inv_cp 
-    use output_aerocom_aie, only: do_aerocom_ind3
 
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
@@ -837,12 +833,6 @@ end subroutine micro_p3_readnl
     real(rtype), parameter :: mucon  = 5.3_rtype            ! Convective size distribution shape parameter
     real(rtype), parameter :: deicon = 50._rtype            ! Convective ice effective diameter (um)
 
-    ! For aerocom3  ! TODO: Check if aerocom3 will ever be used.
-    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
-    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
-    real(rtype) :: pratot(pcols,pver) ! accretion of cloud by rain      
-    real(rtype) :: prctot(pcols,pver) ! autoconversion of cloud by rain      
-
     call t_startf('micro_p3_tend_init')
  
     psetcols = state%psetcols
@@ -891,18 +881,6 @@ end subroutine micro_p3_readnl
     !==============
     cldo(:ncol,top_lev:pver)=ast(:ncol,top_lev:pver)
     
-    ! If aerocom 3 is used
-    if(do_aerocom_ind3) then  
-      cldliqbf_idx    = pbuf_get_index('cldliqbf')
-      cldicebf_idx    = pbuf_get_index('cldicebf')
-      numliqbf_idx    = pbuf_get_index('numliqbf')
-      numicebf_idx    = pbuf_get_index('numicebf')
- 
-      call pbuf_set_field(pbuf, cldliqbf_idx, state%q(:, :, ixcldliq))
-      call pbuf_set_field(pbuf, cldicebf_idx, state%q(:, :, ixcldice))
-      call pbuf_set_field(pbuf, numliqbf_idx, state%q(:, :, ixnumliq))
-      call pbuf_set_field(pbuf, numicebf_idx, state%q(:, :, ixnumice))
-    end if
     ! INITIALIZE PTEND
     !==============
     !ptend is an output variable. Since not substepping in micro, don't need 
@@ -1066,8 +1044,8 @@ end subroutine micro_p3_readnl
          rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
          lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
          icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
-         pratot(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
-         prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
+         dummy_out(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
+         dummy_out(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
          lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
@@ -1099,8 +1077,6 @@ end subroutine micro_p3_readnl
       p3_main_outputs(1,k,22) = prer_evap(1,k)
       p3_main_outputs(1,k,23) = rflx(1,k)
       p3_main_outputs(1,k,24) = sflx(1,k)
-      p3_main_outputs(1,k,25) = pratot(1,k)
-      p3_main_outputs(1,k,26) = prctot(1,k)
       p3_main_outputs(1,k,27) = mu(1,k)
       p3_main_outputs(1,k,28) = lambdac(1,k)
       p3_main_outputs(1,k,29) = liq_ice_exchange(1,k)
@@ -1319,13 +1295,6 @@ end subroutine micro_p3_readnl
     reffsnow(:ncol,top_lev:pver) = 1000._rtype !! dummy value, the choice here impacts the COSP output variable: CFAD_DBZE94_CS.  TODO: Figure out if this is ok, change if needed.
 
 !====================== COSP Specific Outputs  END ======================!
-
-   if(do_aerocom_ind3) then
-     autocl_idx = pbuf_get_index('autocl')
-     accretl_idx = pbuf_get_index('accretl')
-     call pbuf_set_field(pbuf, autocl_idx, prctot)
-     call pbuf_set_field(pbuf, accretl_idx, pratot)
-   end if
 
     !WRITE OUTPUT
     !=============
