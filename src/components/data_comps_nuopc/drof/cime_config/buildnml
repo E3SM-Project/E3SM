@@ -38,8 +38,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    rof_domain_file = case.get_value("ROF_DOMAIN_FILE")
-    rof_domain_path = case.get_value("ROF_DOMAIN_PATH")
     drof_mode = case.get_value("DROF_MODE")
     rof_grid = case.get_value("ROF_GRID")
 
