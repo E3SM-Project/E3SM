@@ -69,7 +69,6 @@ module micro_p3_interface
       qme_idx,            &
       prain_idx,          &
       nevapr_idx,         &
-      rate1_cw2pr_st_idx, &
       dei_idx,            &
       mu_idx,             &
       lambdac_idx,        &
@@ -88,8 +87,7 @@ module micro_p3_interface
 
 ! Physics buffer indices for fields registered by other modules
    integer :: &
-      ast_idx = -1,            &
-      cld_idx = -1,            &
+      ast_idx = -1            &
 
    integer :: &
       naai_idx = -1,           &
@@ -105,10 +103,7 @@ module micro_p3_interface
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
       prc_coef1_in             = huge(1.0_rtype), &
       prc_exp_in               = huge(1.0_rtype), &
-      prc_exp1_in              = huge(1.0_rtype), &
-      cld_sed_in               = huge(1.0_rtype), & !scale fac for cloud sedimentation velocity
-      nccons                   = huge(1.0_rtype), &
-      nicons                   = huge(1.0_rtype)
+      prc_exp1_in              = huge(1.0_rtype)
 
    integer :: ncnst
 
@@ -199,11 +194,8 @@ end subroutine micro_p3_readnl
 
   subroutine micro_p3_register()
 
-  logical :: prog_modal_aero
-
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
-   call phys_getopts( prog_modal_aero_out   = prog_modal_aero )
    ncnst = 0
     ! Register Microphysics Constituents 
     ! (i.e. members of state%q) and save indices.
@@ -251,11 +243,6 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('QME',  'physpkg',dtype_r8,(/pcols,pver/), qme_idx)
    call pbuf_add_field('PRAIN','physpkg',dtype_r8,(/pcols,pver/), prain_idx)
    call pbuf_add_field('NEVAPR','physpkg',dtype_r8,(/pcols,pver/), nevapr_idx)
-
-   !! module aero_model  !TODO, also looks like we don't do anything with this.
-   if (prog_modal_aero) then
-      call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,(/pcols,pver/), rate1_cw2pr_st_idx)
-   endif
 
    !! module clubb_intr
    call pbuf_add_field('PRER_EVAP',  'global', dtype_r8,(/pcols,pver/), prer_evap_idx)
