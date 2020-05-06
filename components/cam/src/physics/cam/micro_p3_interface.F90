@@ -24,14 +24,12 @@ module micro_p3_interface
                             rh2o, latvap, latice, tmelt, rhoh2o, rairv 
   use constituents,   only: cnst_add, pcnst, sflxnam, apcnst, bpcnst, pcnst,&
                             cnst_name, cnst_get_ind,cnst_longname
-  use physics_buffer, only: physics_buffer_desc, dtype_r8, col_type_subcol, &
+  use physics_buffer, only: physics_buffer_desc, dtype_r8, &
                             pbuf_get_field, pbuf_add_field,dyn_time_lvls,dtype_i4, &
-                            pbuf_register_subcol, pbuf_set_field, pbuf_get_index, &
+                            pbuf_set_field, pbuf_get_index, &
                             pbuf_old_tim_idx
   use ref_pres,       only: top_lev=>trop_cloud_top_lev
   use phys_control,   only: phys_getopts
-!  use cam_debug,      only: l_debug, l_summary_debug
-  use subcol_utils,   only: subcol_get_scheme
   use cam_abortutils, only: endrun
   use spmd_utils,     only: masterproc
   use cam_logfile,    only: iulog
@@ -52,7 +50,6 @@ module micro_p3_interface
   !Define indices for state%q constituents at module level so
   !defining them in micro_p3_register makes them permanently 
   !available.
-  logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
   CHARACTER(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
   integer, public ::    &
@@ -93,13 +90,10 @@ module micro_p3_interface
    integer :: &
       ast_idx = -1,            &
       cld_idx = -1,            &
-      concld_idx = -1
 
    integer :: &
       naai_idx = -1,           &
       npccn_idx = -1,          &
-      rndst_idx = -1,          &
-      nacon_idx = -1,          &
       prec_str_idx = -1,       &
       prec_pcw_idx = -1,       &
       prec_sed_idx = -1,       &
@@ -109,9 +103,6 @@ module micro_p3_interface
 
 ! pbuf fields for heterogeneous freezing
    integer :: &
-      frzimm_idx = -1, &
-      frzcnt_idx = -1, &
-      frzdep_idx = -1
 
    real(rtype) :: &
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
@@ -215,8 +206,7 @@ end subroutine micro_p3_readnl
 
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
-   call phys_getopts(use_subcol_microp_out = use_subcol_microp, &
-                    prog_modal_aero_out   = prog_modal_aero )
+   call phys_getopts( prog_modal_aero_out   = prog_modal_aero )
    ncnst = 0
     ! Register Microphysics Constituents 
     ! (i.e. members of state%q) and save indices.
@@ -254,11 +244,6 @@ end subroutine micro_p3_readnl
          longname='Grid box averaged riming volume', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-!+++ Aaron
-!    call cnst_add(cnst_names(8), mwh2o, cpair, 0._rtype, ixqirim, &
-!         longname='Grid box averaged riming ???', &
-!         is_convtran1=.true.)  ! TODO what is this?
-!--- Aaron
 
     ! Add Variables to Pbuf
     !================
@@ -354,8 +339,6 @@ end subroutine micro_p3_readnl
     !==============
     !might want to add all E3SM parameter vals to p3_init call...
     ast_idx      = pbuf_get_index('AST') !! from CLUBB 
-    cld_idx      = pbuf_get_index('CLD') !! from CLUBB 
-    concld_idx   = pbuf_get_index('CONCLD') !! from CLUBB 
     cmeliq_idx   = pbuf_get_index('CMELIQ') !! from CLUBB Rate of cond-evap of liq within the cloud
 
     !!
@@ -364,11 +347,6 @@ end subroutine micro_p3_readnl
 
     naai_idx     = pbuf_get_index('NAAI') !! from microp 
     npccn_idx    = pbuf_get_index('NPCCN')!! from microp 
-    rndst_idx    = pbuf_get_index('RNDST')!! from microp 
-    nacon_idx    = pbuf_get_index('NACON')!! from microp 
-    frzimm_idx   = pbuf_get_index('FRZIMM', ierr) !! from microp 
-    frzcnt_idx   = pbuf_get_index('FRZCNT', ierr) !! from microp 
-    frzdep_idx   = pbuf_get_index('FRZDEP', ierr) !! from microp 
 
     prec_str_idx = pbuf_get_index('PREC_STR') !! from physpkg 
     snow_str_idx = pbuf_get_index('SNOW_STR') !! from physpkg 
@@ -734,7 +712,6 @@ end subroutine micro_p3_readnl
     use time_manager,   only: get_nstep
     use cam_history,    only: outfld
     use time_manager,   only: get_nstep
-    use physics_buffer, only: pbuf_col_type_index
     use micro_p3,       only: p3_main
     use micro_p3_utils, only: avg_diameter, &
                               rhow, &
@@ -785,28 +762,18 @@ end subroutine micro_p3_readnl
 
     ! PBUF Variables
     real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
-    real(rtype), pointer :: cld(:,:)          ! Total cloud fraction
-    real(rtype), pointer :: concld(:,:)       ! Convective cloud fraction
-    real(rtype), pointer :: naai(:,:)      ! ice nucleation number
-    real(rtype), pointer :: npccn(:,:)     ! liquid activation number tendency
-    real(rtype), pointer :: rndst(:,:,:)
-    real(rtype), pointer :: nacon(:,:,:)
+    real(rtype), pointer :: naai(:,:)     ! ice nucleation number
+    real(rtype), pointer :: npccn(:,:)    ! liquid activation number tendency
     real(rtype), pointer :: cmeliq(:,:)
-    !! variables for heterogeneous freezing
-    real(rtype), pointer :: frzimm(:,:)
-    real(rtype), pointer :: frzcnt(:,:)
-    real(rtype), pointer :: frzdep(:,:)
     !!
-    real(rtype), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ]
-    real(rtype), pointer :: prec_sed(:)          ! Surface flux of total cloud water from sedimentation
-    real(rtype), pointer :: prec_pcw(:)          ! Sfc flux of precip from microphysics [ m/s ]
-    real(rtype), pointer :: snow_str(:)          ! [Total] Sfc flux of snow from stratiform   [ m/s ]
-    real(rtype), pointer :: snow_pcw(:)          ! Sfc flux of snow from microphysics [ m/s ]
-    real(rtype), pointer :: snow_sed(:)          ! Surface flux of cloud ice from sedimentation
-    real(rtype), pointer :: relvar(:,:)       ! relative variance of cloud water
-    real(rtype), pointer :: accre_enhan(:,:)  ! optional accretion enhancement for experimentation
-    real(rtype), pointer :: cldo(:,:)         ! Old cloud fraction
-    real(rtype), pointer :: prer_evap(:,:)    ! precipitation evaporation rate 
+    real(rtype), pointer :: prec_str(:)    ! [Total] Sfc flux of precip from stratiform [ m/s ]
+    real(rtype), pointer :: prec_sed(:)    ! Surface flux of total cloud water from sedimentation
+    real(rtype), pointer :: prec_pcw(:)    ! Sfc flux of precip from microphysics [ m/s ]
+    real(rtype), pointer :: snow_str(:)    ! [Total] Sfc flux of snow from stratiform   [ m/s ]
+    real(rtype), pointer :: snow_pcw(:)    ! Sfc flux of snow from microphysics [ m/s ]
+    real(rtype), pointer :: snow_sed(:)    ! Surface flux of cloud ice from sedimentation
+    real(rtype), pointer :: cldo(:,:)      ! Old cloud fraction
+    real(rtype), pointer :: prer_evap(:,:) ! precipitation evaporation rate 
     !! wetdep 
     real(rtype), pointer :: qme(:,:)
     real(rtype), pointer :: prain(:,:)        ! Total precipitation (rain + snow)
@@ -820,9 +787,6 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: reffsnow(:,:)   ! P3 diagnostic snow effective radius (um)
     real(rtype), pointer :: cvreffliq(:,:)    ! convective cloud liquid effective radius (um)
     real(rtype), pointer :: cvreffice(:,:)    ! convective cloud ice effective radius (um)
-    ! iwipst and iclwpst are pbuf pointers in MG, but appear to only ever be local.  Switching to local arrays for P3
-    real(rtype) :: iciwpst(pcols,pver)      ! Stratiform in-cloud ice water path for radiation
-    real(rtype) :: iclwpst(pcols,pver)      ! Stratiform in-cloud liquid water path for radiation
     !! radiation 
     real(rtype), pointer :: dei(:,:)          ! Ice effective diameter (um)
     real(rtype), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
@@ -864,11 +828,9 @@ end subroutine micro_p3_readnl
 
     logical :: log_predictNc           !prognostic droplet concentration or not?
     logical :: do_subgrid_clouds       !use subgrid cloudiness in tendency calculations?
-    integer :: col_type ! Flag to store whether accessing grid or sub-columns in pbuf_get_field
     integer :: icol, ncol, k
     integer :: psetcols, lchnk
     integer :: itim_old
-    integer :: ngrdcol
 
     ! For rrtmg optics. specified distribution.
     real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
@@ -885,56 +847,43 @@ end subroutine micro_p3_readnl
  
     psetcols = state%psetcols
     lchnk = state%lchnk
-    ngrdcol  = state%ngrdcol
 
     !+++ Aaron Donahue
     itim_old = pbuf_old_tim_idx()
-    call phys_getopts(use_subcol_microp_out=use_subcol_microp)
-    call pbuf_col_type_index(use_subcol_microp, col_type=col_type)
 
     !============================ 
     ! All external PBUF variables:
     ! INPUTS
-    call pbuf_get_field(pbuf, ast_idx,         ast,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
-         col_type=col_type, copy_if_needed=use_subcol_microp)
-    call pbuf_get_field(pbuf, cld_idx,         cld,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
-         col_type=col_type, copy_if_needed=use_subcol_microp)
-    call pbuf_get_field(pbuf, concld_idx,      concld,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
-         col_type=col_type, copy_if_needed=use_subcol_microp)  ! Not used
-    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp) 
-    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp)
-    call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
-    call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
-    call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq,      col_type=col_type, copy_if_needed=use_subcol_microp)
+    call pbuf_get_field(pbuf, ast_idx,         ast, start=(/1,1,itim_old/), kount=(/psetcols,pver,1/))
+    call pbuf_get_field(pbuf, naai_idx,        naai                                                  ) 
+    call pbuf_get_field(pbuf, npccn_idx,       npccn                                                 )
+    call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq                                                )
     ! OUTPUTS
-    call pbuf_get_field(pbuf,    prec_str_idx,  prec_str,    col_type=col_type)
-    call pbuf_get_field(pbuf,    snow_str_idx,  snow_str,    col_type=col_type)
-    call pbuf_get_field(pbuf,    prec_sed_idx,  prec_sed,    col_type=col_type)
-    call pbuf_get_field(pbuf,    snow_sed_idx,  snow_sed,    col_type=col_type)
-    call pbuf_get_field(pbuf,    prec_pcw_idx,  prec_pcw,    col_type=col_type)
-    call pbuf_get_field(pbuf,    snow_pcw_idx,  snow_pcw,    col_type=col_type)
+    call pbuf_get_field(pbuf,    prec_str_idx,  prec_str)
+    call pbuf_get_field(pbuf,    snow_str_idx,  snow_str)
+    call pbuf_get_field(pbuf,    prec_sed_idx,  prec_sed)
+    call pbuf_get_field(pbuf,    snow_sed_idx,  snow_sed)
+    call pbuf_get_field(pbuf,    prec_pcw_idx,  prec_pcw)
+    call pbuf_get_field(pbuf,    snow_pcw_idx,  snow_pcw)
     !============================ 
     ! All internal PBUF variables
-    ! INPUTS
-    call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
-    call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     ! OUTPUTS
-    call pbuf_get_field(pbuf,        cldo_idx,      cldo,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf,         qme_idx,       qme,    col_type=col_type)
-    call pbuf_get_field(pbuf,       prain_idx,     prain,    col_type=col_type)
-    call pbuf_get_field(pbuf,      nevapr_idx,    nevapr,    col_type=col_type)
-    call pbuf_get_field(pbuf,   prer_evap_idx, prer_evap,    col_type=col_type)
-    call pbuf_get_field(pbuf,         rei_idx,       rei,    col_type=col_type) ! ice eff. rad
-    call pbuf_get_field(pbuf,         rel_idx,       rel,    col_type=col_type) ! liq. eff. rad
-    call pbuf_get_field(pbuf,         dei_idx,       dei,    col_type=col_type)
-    call pbuf_get_field(pbuf,          mu_idx,        mu,    col_type=col_type)
-    call pbuf_get_field(pbuf,     lambdac_idx,   lambdac,    col_type=col_type)
-    call pbuf_get_field(pbuf,   ls_flxprc_idx,    flxprc,    col_type=col_type)
-    call pbuf_get_field(pbuf,   ls_flxsnw_idx,    flxsnw,    col_type=col_type)
-    call pbuf_get_field(pbuf, ls_reffrain_idx,  reffrain                      ) 
-    call pbuf_get_field(pbuf, ls_reffsnow_idx,  reffsnow                      ) 
-    call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq,    col_type=col_type)
-    call pbuf_get_field(pbuf,  cv_reffice_idx, cvreffice,    col_type=col_type)
+    call pbuf_get_field(pbuf,        cldo_idx,      cldo, start=(/1,1,itim_old/), kount=(/psetcols,pver,1/))
+    call pbuf_get_field(pbuf,         qme_idx,       qme                                                   )
+    call pbuf_get_field(pbuf,       prain_idx,     prain                                                   )
+    call pbuf_get_field(pbuf,      nevapr_idx,    nevapr                                                   )
+    call pbuf_get_field(pbuf,   prer_evap_idx, prer_evap                                                   )
+    call pbuf_get_field(pbuf,         rei_idx,       rei                                                   ) ! ice eff. rad
+    call pbuf_get_field(pbuf,         rel_idx,       rel                                                   ) ! liq. eff. rad
+    call pbuf_get_field(pbuf,         dei_idx,       dei                                                   )
+    call pbuf_get_field(pbuf,          mu_idx,        mu                                                   )
+    call pbuf_get_field(pbuf,     lambdac_idx,   lambdac                                                   )
+    call pbuf_get_field(pbuf,   ls_flxprc_idx,    flxprc                                                   )
+    call pbuf_get_field(pbuf,   ls_flxsnw_idx,    flxsnw                                                   )
+    call pbuf_get_field(pbuf, ls_reffrain_idx,  reffrain                                                   ) 
+    call pbuf_get_field(pbuf, ls_reffsnow_idx,  reffsnow                                                   ) 
+    call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq                                                   )
+    call pbuf_get_field(pbuf,  cv_reffice_idx, cvreffice                                                   )
 
     ncol = state%ncol
     !==============
@@ -1228,8 +1177,6 @@ end subroutine micro_p3_readnl
       
    icinc = 0._rtype
    icwnc = 0._rtype
-   iciwpst = 0._rtype
-   iclwpst = 0._rtype
       
    do k = top_lev, pver
       do icol = 1, ncol
@@ -1241,10 +1188,6 @@ end subroutine micro_p3_readnl
               state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
          icwnc(icol,k)     = state%q(icol,k,ixnumliq) / max(mincld,lcldm(icol,k)) * &
               state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
-         ! Calculate micro_p3_acme cloud water paths in each layer
-         ! Note: uses stratiform cloud fraction!
-         iciwpst(icol,k)   = min(state%q(icol,k,ixcldice)/max(mincld,ast(icol,k)),0.005_rtype) * state%pdel(icol,k) / gravit
-         iclwpst(icol,k)   = min(state%q(icol,k,ixcldliq)/max(mincld,ast(icol,k)),0.005_rtype) * state%pdel(icol,k) / gravit
       end do                    
    end do
 
@@ -1257,18 +1200,18 @@ end subroutine micro_p3_readnl
     !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
     !where rhopo is bulk ice density from table lookup (taken from f1pr16, here written as diag_rhoi) and rhows=917.0 is a constant parameter.
    !! Effective radius for cloud liquid
-   rel(:ngrdcol,top_lev:) = rel(:ngrdcol,top_lev:) * 1e6_rtype  ! Rescale rel to be in microns
+   rel(:ncol,top_lev:) = rel(:ncol,top_lev:) * 1e6_rtype  ! Rescale rel to be in microns
    !! Effective radius for cloud ice
-   rei(:ngrdcol,top_lev:) = rei(:ngrdcol,top_lev:) * 1e6_rtype  ! Rescale rei to be in microns
+   rei(:ncol,top_lev:) = rei(:ncol,top_lev:) * 1e6_rtype  ! Rescale rei to be in microns
    !! Effective diameter for cloud ice
-   dei(:ngrdcol,top_lev:) = rei(:ngrdcol,top_lev:) * diag_rhoi(:ngrdcol,top_lev:)/rhows * 2._rtype
+   dei(:ncol,top_lev:) = rei(:ncol,top_lev:) * diag_rhoi(:ncol,top_lev:)/rhows * 2._rtype
 
    !!
    !! Limiters for low cloud fraction
    !!
    
    do k = top_lev, pver
-      do icol = 1, ngrdcol
+      do icol = 1, ncol
          if ( ast(icol,k) < 1.e-4_rtype ) then
             mu(icol,k) = mucon
             lambdac(icol,k) = (mucon + 1._rtype)/dcon
@@ -1291,7 +1234,7 @@ end subroutine micro_p3_readnl
 
    ! FICE
    do k = top_lev, pver
-      do icol = 1, ngrdcol
+      do icol = 1, ncol
       if (ice(icol,k).gt.qsmall .and. (rain(icol,k)+ice(icol,k)+cldliq(icol,k)).gt.qsmall) then
          nfice(icol,k)=min(ice(icol,k)/(rain(icol,k)+ice(icol,k)+cldliq(icol,k)),1._rtype)
       else
@@ -1301,10 +1244,10 @@ end subroutine micro_p3_readnl
    end do
 
    ! Column droplet concentration
-   cdnumc(:ngrdcol) = sum(numliq(:ngrdcol,top_lev:pver) * &
-        state%pdel(:ngrdcol,top_lev:pver)/gravit, dim=2)
+   cdnumc(:ncol) = sum(numliq(:ncol,top_lev:pver) * &
+        state%pdel(:ncol,top_lev:pver)/gravit, dim=2)
    do k = top_lev, pver
-      do icol = 1, ngrdcol
+      do icol = 1, ncol
          if ( lcldm(icol,k) > 0.01_rtype .and. icwmrst(icol,k) > 5.e-5_rtype ) then
             efcout(icol,k) = rel(icol,k) * lcldm(icol,k)
             ncout(icol,k)  = icwnc(icol,k) * lcldm(icol,k)
@@ -1331,16 +1274,16 @@ end subroutine micro_p3_readnl
    anrain    = 0._rtype
    freqr     = 0._rtype
    ! Prognostic precipitation
-   where (rain(:ngrdcol,top_lev:) >= 1.e-7_rtype)
-      drout2(:ngrdcol,top_lev:) = avg_diameter( &
-           rain(:ngrdcol,top_lev:), &
-           numrain(:ngrdcol,top_lev:) * rho(:ngrdcol,top_lev:), &
-           rho(:ngrdcol,top_lev:), rhow)
+   where (rain(:ncol,top_lev:) >= 1.e-7_rtype)
+      drout2(:ncol,top_lev:) = avg_diameter( &
+           rain(:ncol,top_lev:), &
+           numrain(:ncol,top_lev:) * rho(:ncol,top_lev:), &
+           rho(:ncol,top_lev:), rhow)
 
       aqrain = rain * rcldm
       anrain = numrain * rcldm
       freqr = rcldm
-      reff_rain(:ngrdcol,top_lev:) = drout2(:ngrdcol,top_lev:) * &
+      reff_rain(:ncol,top_lev:) = drout2(:ncol,top_lev:) * &
            1.5_rtype * 1.e6_rtype
    end where
 
@@ -1372,8 +1315,8 @@ end subroutine micro_p3_readnl
 
     reffrain(:,:) = 0._rtype
     reffsnow(:,:) = 0._rtype
-    reffrain(:ngrdcol,top_lev:pver) = reff_rain(:ngrdcol,top_lev:pver)
-    reffsnow(:ngrdcol,top_lev:pver) = 1000._rtype !! dummy value, the choice here impacts the COSP output variable: CFAD_DBZE94_CS.  TODO: Figure out if this is ok, change if needed.
+    reffrain(:ncol,top_lev:pver) = reff_rain(:ncol,top_lev:pver)
+    reffsnow(:ncol,top_lev:pver) = 1000._rtype !! dummy value, the choice here impacts the COSP output variable: CFAD_DBZE94_CS.  TODO: Figure out if this is ok, change if needed.
 
 !====================== COSP Specific Outputs  END ======================!
 
@@ -1386,26 +1329,21 @@ end subroutine micro_p3_readnl
 
     !WRITE OUTPUT
     !=============
-   call outfld('AQRAIN',      aqrain,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('ANRAIN',      anrain,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('AREL',        efcout,      pcols, lchnk)
-   call outfld('AREI',        efiout,      pcols, lchnk) 
-   call outfld('AWNC' ,       ncout,       pcols, lchnk)
-   call outfld('AWNI' ,       niout,       pcols, lchnk)
-   call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FREQL',       freql,       pcols, lchnk)
-   call outfld('FREQI',       freqi,       pcols, lchnk)
-   call outfld('FREQR',       freqr,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('CDNUMC',      cdnumc,      pcols, lchnk)
+   call outfld('AQRAIN',      aqrain,      psetcols, lchnk)
+   call outfld('ANRAIN',      anrain,      psetcols, lchnk)
+   call outfld('AREL',        efcout,      pcols,    lchnk)
+   call outfld('AREI',        efiout,      pcols,    lchnk) 
+   call outfld('AWNC' ,       ncout,       pcols,    lchnk)
+   call outfld('AWNI' ,       niout,       pcols,    lchnk)
+   call outfld('FICE',        nfice,       psetcols, lchnk)
+   call outfld('FREQL',       freql,       pcols,    lchnk)
+   call outfld('FREQI',       freqi,       pcols,    lchnk)
+   call outfld('FREQR',       freqr,       psetcols, lchnk)
+   call outfld('CDNUMC',      cdnumc,      pcols,    lchnk)
 
-   call outfld('CLOUDFRAC_LIQ_MICRO', lcldm,      pcols, lchnk)
-   call outfld('CLOUDFRAC_ICE_MICRO', icldm,      pcols, lchnk)
+   call outfld('CLOUDFRAC_LIQ_MICRO',  lcldm,      pcols, lchnk)
+   call outfld('CLOUDFRAC_ICE_MICRO',  icldm,      pcols, lchnk)
    call outfld('CLOUDFRAC_RAIN_MICRO', rcldm,      pcols, lchnk)
-
-! P3 doesn't have snow
-!   call outfld('FREQS',       freqs,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-!   call outfld('ANSNOW',      nsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-!   call outfld('AQSNOW',      qsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 
    ! Write p3 tendencies as output 
    ! warm-phase process rates
