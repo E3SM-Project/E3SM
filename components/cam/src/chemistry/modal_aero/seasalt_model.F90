@@ -13,14 +13,17 @@ module seasalt_model
   private
 
   public :: seasalt_nbin
-  public :: seasalt_nnum
   public :: seasalt_names
-  public :: seasalt_indices
+  public :: ncl_names
+  public :: mom_names
+  public :: ncl_spc_ind
+  public :: mom_spc_ind
   public :: seasalt_init
   public :: seasalt_emis
   public :: seasalt_active
 
   public :: n_ocean_data
+  public :: nslt
   public :: nslt_om
   public :: F_eff_out                 ! Output effective enrichment ratio?
                                       !  (logical, currently set to FALSE) 
@@ -30,6 +33,7 @@ module seasalt_model
   public :: init_ocean_data           ! initialize ocean data variables
   public :: ocean_data_readnl         ! read ocean data namelist
 
+!BSINGH- why don't we just count ncl species in modes and compute 'nslt'?
 #if  ( defined MODAL_AERO_9MODE || defined MODAL_AERO_5MODE_MOM)
   integer, parameter :: nslt = 4
 #else
@@ -41,49 +45,85 @@ module seasalt_model
   integer, parameter :: nslt_om = 0
   integer, parameter :: nnum_om = 0
   integer, parameter :: om_num_modes = 0
-  character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
-       (/ 'ncl_a1', 'ncl_a2', 'ncl_a4', 'ncl_a6', 'num_a1', 'num_a2', 'num_a4', 'num_a6' /)
+
+  character(len=6),parameter :: ncl_names(nslt) = &
+       (/ 'ncl_a1', 'ncl_a2', 'ncl_a4', 'ncl_a6' /)
+  character(len=6),parameter :: num_names(nnum+nnum_om) = &
+       (/ 'num_a1', 'num_a2', 'num_a4', 'num_a6' /)
+
   integer, parameter :: om_num_ind = 0
+
+  character(len=6), parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+       (/ncl_names,num_names/)
+
 #elif( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
   integer, parameter :: nslt_om = 0
   integer, parameter :: nnum_om = 0
   integer, parameter :: om_num_modes = 0
-  character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
-       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
-          'num_a1', 'num_a2', 'num_a3'/)
+
+  character(len=6),parameter :: ncl_names(nslt) = &
+       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3' /)
+  character(len=6),parameter :: num_names(nnum+nnum_om) = &
+       (/ 'num_a1', 'num_a2', 'num_a3' /)
+
   integer, parameter :: om_num_ind = 0
+  character(len=6), parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+       (/ncl_names,num_names/)
+
 #elif( defined MODAL_AERO_5MODE_MOM )
   integer, parameter :: nslt_om = 3 !number of mom mass tracers
   integer, parameter :: nnum_om = 1 ! # of num modes which have mom but not sea salt
   integer, parameter :: om_num_modes = 3
-  character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
-       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_a5', &
-       'mom_a1', 'mom_a2', 'mom_a4', &
-       'num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_a5'/)
+  character(len=6),parameter :: ncl_names(nslt) = &
+       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_a5'/)
+  character(len=6),parameter :: mom_names(nslt_om) = &
+       (/ 'mom_a1', 'mom_a2', 'mom_a4'/)
+  character(len=6),parameter :: num_names(nnum+nnum_om) = &
+       (/'num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_a5'/)
 
   integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 4 /)
+  character(len=6), parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+       (/ncl_names,mom_names,num_names/)
+
 #elif( defined MODAL_AERO_4MODE_MOM )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
   integer, parameter :: om_num_modes = 3
-  character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
-       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
-       'mom_a1', 'mom_a2', 'mom_a4', &
-       'num_a1', 'num_a2', 'num_a3', 'num_a4'/)
+
+  character(len=6),parameter :: ncl_names(nslt) = &
+       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3' /)
+  character(len=6),parameter :: mom_names(nslt_om) = &
+       (/'mom_a1', 'mom_a2', 'mom_a4'/)
+  character(len=6),parameter :: num_names(nnum+nnum_om) = &
+       (/'num_a1', 'num_a2', 'num_a3', 'num_a4'/)
+
   integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 4 /)
+
+  character(len=6), parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+       (/ncl_names,mom_names,num_names/)
+
 #elif (defined MODAL_AERO_9MODE)
   integer, parameter :: nslt_om = 12
   integer, parameter :: nnum_om = 2
   integer, parameter :: om_num_modes = 4
-  character(len=8),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
-       (/'ncl_a1  ', 'ncl_a2  ', 'ncl_a4  ', 'ncl_a6  ', &
-         'mpoly_a1', 'mpoly_a2', 'mpoly_a8', 'mpoly_a9', &
-         'mprot_a1', 'mprot_a2', 'mprot_a8', 'mprot_a9', &
-         'mlip_a1 ', 'mlip_a2 ', 'mlip_a8 ', 'mlip_a9 ', &
-         'num_a1  ', 'num_a2  ', 'num_a4  ', 'num_a6  ', &
-         'num_a8  ', 'num_a9  ' &
-         /)
+
+  character(len=8),parameter :: ncl_names(nslt) = &
+       (/'ncl_a1  ', 'ncl_a2  ', 'ncl_a4  ', 'ncl_a6'/)
+
+  character(len=8),parameter :: mom_names(nslt_om) = &
+       (/'mpoly_a1', 'mpoly_a2', 'mpoly_a8', 'mpoly_a9', &
+       'mprot_a1', 'mprot_a2', 'mprot_a8', 'mprot_a9',   &
+       'mlip_a1 ', 'mlip_a2 ', 'mlip_a8 ', 'mlip_a9 ' /)
+
+  character(len=8),parameter :: num_names(nnum+nnum_om) = &
+       (/'num_a1  ', 'num_a2  ', 'num_a4  ', 'num_a6  ', &
+         'num_a8  ', 'num_a9  ' /)
+
   integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 5, 6 /)
+
+  character(len=8), parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+        (/ncl_names,mom_names,num_names/)
+
 #endif
 
   integer, parameter :: seasalt_nbin = nslt+nslt_om
@@ -101,7 +141,11 @@ module seasalt_model
 
   real(r8), parameter :: small_oceanorg = 1.0e-30 ! smallest ocean organic concentration allowed
 
-  integer :: seasalt_indices(seasalt_nbin+seasalt_nnum)
+  logical :: fine_or_coarse_bin(nslt)
+  integer :: ncl_spc_ind(nslt)
+  integer :: num_ncl_ind(nslt)
+  integer :: mom_spc_ind(nslt_om)
+  integer :: num_mom_ind(nslt_om)
 
   logical :: seasalt_active = .false.
 
@@ -212,22 +256,74 @@ contains
     use sslt_sections, only: sslt_sections_init
     use constituents,  only: cnst_get_ind
 
-    integer :: m
+    integer :: islt, imom
 
-    do m = 1, seasalt_nbin
-       call cnst_get_ind(seasalt_names(m), seasalt_indices(m),abort=.false.)
-    enddo
-    do m = 1, seasalt_nnum
-       call cnst_get_ind(seasalt_names(seasalt_nbin+m), seasalt_indices(seasalt_nbin+m),abort=.false.)
+    do islt = 1, nslt
+       call get_spc_num_ind(ncl_names(islt),ncl_spc_ind(islt),num_ncl_ind(islt), &
+            fine_or_coarse_bin(islt))
     enddo
 
-    seasalt_active = any(seasalt_indices(:) > 0)
+    if(has_mam_mom) then
+       do imom = 1, nslt_om
+          call get_spc_num_ind(mom_names(imom),mom_spc_ind(imom),num_mom_ind(imom))
+       enddo
+    endif
+
+    seasalt_active = any(ncl_spc_ind(:) > 0) .or. any(mom_spc_ind(:) > 0)
 
     if (.not.seasalt_active) return
 
     call sslt_sections_init()
 
   end subroutine seasalt_init
+
+  !=============================================================================
+
+  !-------------------------------------------------------------------
+  ! Find species and number index for a specie
+  ! Author: Balwinder Singh
+  !-------------------------------------------------------------------
+  subroutine get_spc_num_ind(name,spc_ind,num_ind,fine_or_coarse)
+
+    use constituents,    only: cnst_get_ind
+    use shr_log_mod ,    only: errMsg => shr_log_errMsg
+    use modal_aero_data, only: numptr_amode, modenum_from_spc_cnst_idx, &
+         modeptr_fineseas, modeptr_coarseas, modeptr_coarse
+    use shr_kind_mod,    only: cs =>SHR_KIND_CS,cxx =>SHR_KIND_CXX
+
+    !intent-in
+    character(len = *), intent(in) :: name
+
+    !intent-out
+    integer, intent(out) :: spc_ind, num_ind
+    logical, intent(out), optional :: fine_or_coarse
+
+    !local variables
+    integer :: modenum
+    character(len = cs)  :: num_spc_nm
+    character(len = cxx) :: errstr
+
+    call cnst_get_ind(trim(name), spc_ind, abort=.false.)
+
+    !Find mode number from specie index
+    modenum = modenum_from_spc_cnst_idx(spc_ind) !Find mode number
+
+    if(present(fine_or_coarse)) then
+       fine_or_coarse = .false.
+       if(modenum == modeptr_fineseas .or. modenum == modeptr_coarseas .or. &
+            modenum == modeptr_coarse)fine_or_coarse = .true.
+    endif
+    
+
+    !Exit if modenum is not found
+    if(modenum == -1) then
+       write(errstr, *)'Mode number is ',modenum,', it cannot be negative for specie ',name,','//errmsg(__FILE__,__LINE__)
+       call endrun(errstr)
+    endif
+
+    num_ind = numptr_amode(modenum)
+
+  end subroutine get_spc_num_ind
 
   !=============================================================================
 
@@ -539,9 +635,9 @@ end subroutine ocean_data_readnl
 
     tracer_loop: do ibin = 1,nslt
        ! Index of mass mode
-       mm = seasalt_indices(ibin)
+       mm = ncl_spc_ind(ibin)
        ! Index of number mode
-       mn = seasalt_indices(nslt+nslt_om+ibin)
+       mn = num_ncl_ind(ibin)
 
        if (mn>0) then
 !! Total number flux per mode
@@ -550,7 +646,7 @@ end subroutine ocean_data_readnl
              cflx_help2(:ncol) = 0.0_r8
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
-                if ((ibin==3).or.(ibin==4)) then
+                if (fine_or_coarse_bin(ibin)) then
                    ! Don't apply OM parameterization to fine or coarse SS mode
                    cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)
                 else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
@@ -581,11 +677,12 @@ end subroutine ocean_data_readnl
        cflx(:ncol,mm)=0.0_r8
        section_loop_sslt_mass: do i=1, nsections
           if ( has_mam_mom ) then
-          if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
+          !if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then !BSINGH
+             if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin) .and. mm .ne. 41) then !BSINGH
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
-             if ((ibin==3).or.(ibin==4)) then
+             if (fine_or_coarse_bin(ibin)) then
                 ! Don't apply OM parameterization to fine or coarse SS mode
                 cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol)
              else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
@@ -664,12 +761,12 @@ add_om_species: if ( has_mam_mom ) then
           "Error: om_num_ind is a scalar, but attempting to calculate MOM.  Something bad happened!!  We should never get here!")
        end if
        m = om_num_ind(m_om)
-       mn=seasalt_indices(nslt+nslt_om+m)
+       mn= num_mom_ind(m_om)
 
           ! add number tracers for organics-only modes
           if (emit_this_mode(m_om)) then
              if(masterproc .and. debug_mam_mom) then
-                write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mn ! for debugging
+                write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(mom_names(m_om)), mn ! for debugging
              endif
              section_loop_OM_num: do i=1, nsections
                 cflx_help2(:ncol) = 0.0_r8
@@ -698,15 +795,9 @@ add_om_species: if ( has_mam_mom ) then
        end do om_num_mode_loop
 
     om_mode_loop: do m_om=1,nslt_om
-#if ( defined MODAL_AERO_9MODE )
-       mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
-#elif ( defined MODAL_AERO_4MODE_MOM || MODAL_AERO_5MODE_MOM ) 
-       mm = seasalt_indices(nslt+m_om)
-#endif
-
+       mm = mom_spc_ind(m_om)
        cflx(:ncol,mm)=0.0_r8
        if (emit_this_mode(m_om)) then
-!          write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mm ! for debugging
           ! add mass tracers
           om_type_loop: do n=1,n_org
              section_loop_OM_mass: do i=1, nsections
@@ -742,7 +833,7 @@ add_om_species: if ( has_mam_mom ) then
     endif
 
     if (debug_mam_mom) then
-       call outfld('cflx_'//trim(seasalt_names(nslt+m_om))//'_debug',cflx(:ncol,mm),pcols,lchnk)
+       call outfld('cflx_'//trim(mom_names(m_om))//'_debug',cflx(:ncol,mm),pcols,lchnk)
     endif
 
     end do om_mode_loop
@@ -1232,13 +1323,9 @@ subroutine init_ocean_data()
        call add_default ('mass_frac_bub_lip', 1, ' ')
 
        om_mode_loop: do m_om=1,nslt_om
-#if ( defined MODAL_AERO_9MODE )
-          m = nslt+(n-1)*om_num_modes+m_om
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_MOM)
-          m = nslt+m_om
-#endif
-          call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 
-          call add_default ('cflx_'//trim(seasalt_names(m))//'_debug', 1, ' ')
+          m = m_om
+          call addfld('cflx_'//trim(mom_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 
+          call add_default ('cflx_'//trim(mom_names(m))//'_debug', 1, ' ')
        enddo om_mode_loop
 
        call addfld('omf_bub_section_mpoly', horiz_only, 'A',' ', 'omf poly' ) 

@@ -183,7 +183,7 @@ contains
     use modal_aero_convproc, only: deepconv_wetdep_history
     use rad_constituents,           only: rad_cnst_get_info
     use dust_model,      only: dust_init, dust_names, dust_active, dust_nbin, dust_nnum
-    use seasalt_model,   only: seasalt_init, seasalt_names, seasalt_active,seasalt_nbin
+    use seasalt_model,   only: seasalt_init, seasalt_active, ncl_names, mom_names, nslt, nslt_om, has_mam_mom
     use drydep_mod,      only: inidrydep
     use wetdep,          only: wetdep_init
     use mo_chem_utls,    only: get_het_ndx
@@ -201,7 +201,7 @@ contains
     logical  :: history_verbose ! produce verbose history output
 
     character(len=*), parameter :: subrname = 'aero_model_init'
-    character(len=20) :: dummy
+    character(len=20) :: dummy, name, sf_name
     character(len=fieldname_len) :: wetdep_name, depflx_name
     character(len=6) :: test_name
     character(len=100) :: errmes
@@ -459,15 +459,20 @@ contains
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
-
-       do m = 1, seasalt_nbin
-          dummy = trim(seasalt_names(m)) // 'SF'
-          call addfld (dummy,horiz_only, 'A','kg/m2/s',trim(seasalt_names(m))//' seasalt surface emission')
-          if (history_aerosol) then
-             call add_default (dummy, 1, ' ')
-          endif
+       do m = 1, nslt
+          name    = ncl_names(m)
+          sf_name = trim(name) // 'SF'
+          call addfld (sf_name,horiz_only, 'A','kg/m2/s',trim(name)//' seasalt surface emission')
+          if (history_aerosol)call add_default (sf_name, 1, ' ')
        enddo
-
+       if ( has_mam_mom ) then
+          do m = 1, nslt_om
+             name    = mom_names(m)
+             sf_name = trim(name) // 'SF'
+             call addfld (sf_name,horiz_only, 'A','kg/m2/s',trim(name)//' seasalt surface emission')
+             if (history_aerosol)call add_default (sf_name, 1, ' ')
+          enddo
+       endif
 #if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM || MODAL_AERO_5MODE_MOM )
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
@@ -1643,12 +1648,13 @@ mmode_loop_aa: &
 ! REASTER 08/11/2015 BEGIN
     do mtmp = 1, ntot_amode ! main loop over aerosol modes
        m = mtmp
-       if (ntot_amode == 4) then
-          ! for mam4, do accum, aitken, pcarbon, then coarse 
+	!ASSUMPTION: coarse mode number is ALWAYS less than pcarbon mode
+       if (ntot_amode == 4 .or. ntot_amode == 5) then
+          ! for mam4, do accum, aitken, pcarbon, then coarse
           if (mtmp == modeptr_coarse) then
-             m = ntot_amode
-          else if (mtmp > modeptr_coarse) then
-             m = mtmp - 1
+             m = modeptr_pcarbon
+          else if (mtmp == modeptr_pcarbon) then
+             m = modeptr_coarse
           endif
        endif
 ! REASTER 08/11/2015 END
@@ -2640,8 +2646,8 @@ do_lphase2_conditional: &
   !=============================================================================
   !=============================================================================
   subroutine aero_model_emissions( state, cam_in )
-    use seasalt_model, only: seasalt_emis, seasalt_names, seasalt_indices, seasalt_active,seasalt_nbin, &
-         has_mam_mom, F_eff_out, nslt_om
+    use seasalt_model, only: seasalt_emis, ncl_names, mom_names, seasalt_active, &
+         has_mam_mom, F_eff_out, nslt_om, nslt, ncl_spc_ind, mom_spc_ind
     use dust_model,    only: dust_emis, dust_names, dust_indices, dust_active,dust_nbin, dust_nnum
     use physics_types, only: physics_state
 
@@ -2696,10 +2702,10 @@ do_lphase2_conditional: &
        call seasalt_emis(u10, u10cubed, lchnk, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale, F_eff)
 
        ! Write out salt mass fluxes to history files
-       do m=1,seasalt_nbin-nslt_om
-          mm = seasalt_indices(m)
+       do m = 1, nslt
+          mm = ncl_spc_ind(m)
           sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
-          call outfld(trim(seasalt_names(m))//'SF',cam_in%cflx(:,mm),pcols,lchnk)
+          call outfld(trim(ncl_names(m))//'SF',cam_in%cflx(:,mm),pcols,lchnk)
        enddo
        ! accumulated flux
        call outfld('SSTSFMBL',sflx(:),pcols,lchnk)
@@ -2707,10 +2713,10 @@ do_lphase2_conditional: &
        ! Write out marine organic mass fluxes to history files
        if ( has_mam_mom ) then
           sflx(:)=0._r8
-          do m=seasalt_nbin-nslt_om+1,seasalt_nbin
-             mm = seasalt_indices(m)
+          do m = 1, nslt_om
+             mm = mom_spc_ind(m)
              sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
-             call outfld(trim(seasalt_names(m))//'SF',cam_in%cflx(:,mm),pcols,lchnk)
+             call outfld(trim(mom_names(m))//'SF',cam_in%cflx(:,mm),pcols,lchnk)
           end do
           ! accumulated flux
           call outfld('SSTSFMBL_OM',sflx(:),pcols,lchnk)

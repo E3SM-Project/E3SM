@@ -342,6 +342,34 @@
 
         end function qqcw_get_field
 
+        !-------------------------------------------------------------------
+        ! Extract mode number form the modal specie's index in cnst_name array
+        ! of physics/cam/constituents.F90 module
+        ! Author: Balwinder Singh
+        !-------------------------------------------------------------------
+        pure function modenum_from_spc_cnst_idx (ind) result (modenum)
+
+          !intent-in
+          integer, intent(in) :: ind !index of specie in cnst_name array
+
+          !return value for the function
+          integer :: modenum         ! mode number in which the specie exists
+
+          !local variables
+          integer :: imode, ispc
+
+          modenum = -1
+          do imode = 1, ntot_amode !loop through all modes
+             do ispc = 1, nspec_amode(imode) ! loop through all species indices of the mode
+                if(ind == lmassptr_amode(ispc,imode)) then
+                   modenum = imode
+                   exit
+                endif
+             enddo
+          enddo
+
+        end function modenum_from_spc_cnst_idx
+
       end module modal_aero_data
 
 !----------------------------------------------------------------

@@ -7,6 +7,7 @@ module cam_comp
 !           host of surface components.
 !
 !-----------------------------------------------------------------------
+   use constituents
    use shr_kind_mod,      only: r8 => SHR_KIND_R8, cl=>SHR_KIND_CL, cs=>SHR_KIND_CS
    use pmgrid,            only: plat, plev
    use spmd_utils,        only: masterproc
@@ -273,7 +274,7 @@ subroutine cam_run2( cam_out, cam_in )
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
-
+   integer :: cb
    type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
    type(cam_in_t),  intent(inout) :: cam_in(begchunk:endchunk)
 
@@ -290,6 +291,11 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_stepon_run2', mpicom)
    call t_startf ('stepon_run2')
+   if(pcnst>40) then
+      do cb = begchunk,endchunk
+         phys_state(cb)%q(:,:,43) = 0.0_r8
+      enddo
+   endif
    call stepon_run2( phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_stopf  ('stepon_run2')

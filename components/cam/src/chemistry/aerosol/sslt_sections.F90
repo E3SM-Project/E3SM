@@ -30,7 +30,8 @@ module sslt_sections
        1.1668e-5_r8, 1.4786e-5_r8, 1.8736e-5_r8,  &
        2.3742e-5_r8 /)
 
-  real(r8), dimension(nsections) :: bm, rdry, rm
+  real(r8), parameter :: rdry(1:nsections)=Dg(1:nsections)/2._r8   ! meter
+  real(r8), dimension(nsections) :: bm, rm
   real(r8), dimension(4,nsections) :: consta, constb  !constants for calculating emission polynomial
 
 contains
@@ -42,7 +43,6 @@ contains
     integer :: m
 
     ! use Ekman's ss
-    rdry(:)=Dg(:)/2._r8   ! meter
     ! multiply rm with 1.814 because it should be RH=80% and not dry particles
     ! for the parameterization
     rm(:)=1.814_r8*rdry(:)*1.e6_r8   ! um

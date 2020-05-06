@@ -34,7 +34,7 @@ module dust_model
 
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'dst_a5','num_a1', 'num_a3', 'num_a5' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8, 1.0e-6_r8/)
-  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8,0.999_r8 /)
+  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8,0.989_r8 /)
 #elif ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
   integer, parameter :: dust_nbin = 2
   integer, parameter :: dust_nnum = 2
@@ -160,6 +160,7 @@ module dust_model
           cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 &
                * dust_emis_sclfctr(m)*soil_erod(i)/soil_erod_fact*1.15_r8
 
+          if(idst==42) cflx(i,idst) = 0.0_r8 !BSINGH
           x_mton = 6._r8 / (pi * dust_density * (dust_dmt_vwr(m)**3._r8))                
 
           inum = dust_indices(m+dust_nbin)
