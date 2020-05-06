@@ -37,8 +37,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    wav_domain_file = case.get_value("WAV_DOMAIN_FILE")
-    wav_domain_path = case.get_value("WAV_DOMAIN_PATH")
     dwav_mode = case.get_value("DWAV_MODE")
     wav_grid = case.get_value("WAV_GRID")
 
