@@ -1599,6 +1599,8 @@ contains
        call t_startf(trim(istr)//'_bcast')
        call shr_mpi_bcast(stream%calendar, mpicom)
        call shr_mpi_bcast(ivals, mpicom)
+       call shr_mpi_bcast(filename_lb, mpicom)
+       call shr_mpi_bcast(filename_ub, mpicom)
        mDateLB = ivals(1) ! Now all processors have the bounds
        mSecLB  = ivals(2)
        mDateUB = ivals(3)
@@ -1827,8 +1829,7 @@ contains
 
     ! query the first field in the stream dataset
     call PIO_seterrorhandling(pioid, PIO_BCAST_ERROR)
-
-    rcode = pio_inq_varid(pioid, fldname, varid)
+    rcode = pio_inq_varid(pioid, trim(fldname), varid)
     call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring varid for '//trim(fldname))
     rcode = pio_inq_varndims(pioid, varid, ndims)
     call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring ndims for '//trim(fldname))

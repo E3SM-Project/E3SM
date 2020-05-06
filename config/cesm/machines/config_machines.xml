@@ -434,27 +434,27 @@ This allows using a different mpirun command to launch unit tests
 
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
         <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
-        <command name="load">esmf-8.1.0b14-ncdfio-mpt-g</command>
+        <command name="load">esmf-8.1.0b16-ncdfio-mpt-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
         <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
-        <command name="load">esmf-8.1.0b14-ncdfio-mpt-O</command>
+        <command name="load">esmf-8.1.0b16-ncdfio-mpt-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
         <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
-        <command name="load">esmf-8.1.0b14-ncdfio-mpiuni-g</command>
+        <command name="load">esmf-8.1.0b16-ncdfio-mpiuni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
         <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
-        <command name="load">esmf-8.1.0b14-ncdfio-mpiuni-O</command>
+        <command name="load">esmf-8.1.0b16-ncdfio-mpiuni-O</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE">
         <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.1.0b14-ncdfio-mpt-g</command>
+        <command name="load">esmf-8.1.0b16-ncdfio-mpt-g</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="FALSE">
         <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
-        <command name="load">esmf-8.1.0b14-ncdfio-mpt-O</command>
+        <command name="load">esmf-8.1.0b16-ncdfio-mpt-O</command>
       </modules>
 
       <modules mpilib="mpt" compiler="gnu">
