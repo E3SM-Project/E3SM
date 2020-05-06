@@ -75,7 +75,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="lawrencium-lr2|lawrencium-lr3">
+    <mach name="lawrencium-lr3">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
