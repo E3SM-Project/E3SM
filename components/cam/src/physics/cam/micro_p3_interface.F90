@@ -87,7 +87,7 @@ module micro_p3_interface
 
 ! Physics buffer indices for fields registered by other modules
    integer :: &
-      ast_idx = -1            &
+      ast_idx = -1            
 
    integer :: &
       naai_idx = -1,           &
