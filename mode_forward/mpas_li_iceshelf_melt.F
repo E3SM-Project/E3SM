@@ -1196,6 +1196,7 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: alphaSubglacial ! param alpha
       real (kind=RKIND), pointer :: B ! param B
       real (kind=RKIND), pointer :: betaTF ! param beta
+      real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
       real (kind=RKIND), parameter :: secPerDay = 86400.0
       real (kind=RKIND), parameter :: rhow = 1000.0 ! subglacial runoff density
       integer, dimension(:), pointer :: groundedMarineMarginMask
@@ -1213,6 +1214,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_alpha_subglacial_discharge', alphaSubglacial)
       call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_coefficient', aSubglacial)
       call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_intercept', B)
+      call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
 
       block => domain % blocklist
       do while (associated(block))
@@ -1282,7 +1284,7 @@ module li_iceshelf_melt
                 ! Calculate ice front melt rate at each cell
                 iceFrontMeltVelocity = (aSubglacial * waterDepth * & ! m s^-1
                          (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
-                         + B) * TFocean(iCell)**betaTF / secPerDay
+                         + B) * (TFocean(iCell) + addTFocean)**betaTF / secPerDay
                 
                 !calvingVelocity(iCell) = calvingVelocity(iCell) + iceFrontMeltRate ! m s^-1
                 faceMeltRateApplied(iCell) = iceFrontMeltVelocity * submergedFaceArea ! m^3 s^-1

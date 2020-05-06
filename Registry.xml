@@ -302,6 +302,10 @@
 			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
                 />
+		<nml_option name="config_add_ocean_thermal_forcing" type="real" default_value="0.0" units="deg. C"
+			    description="Adjust ismip6_2dThermalForcing by a scalar value"
+			    possible_values="any real value"
+		/>
                 <nml_option name="config_alpha_subglacial_discharge" type="real" default_value="0.39" units="unitless"
                             description="Exponent of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
