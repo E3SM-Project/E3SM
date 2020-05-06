@@ -946,35 +946,38 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:), pointer :: exx, eyy, exy, eyx, eTheta, eMax, eMin
-      real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
+      real(kind=RKIND), dimension(:), pointer :: exx, eyy, exy, eTheta, eMax, eMin, dudy, dvdx
+      real(kind=RKIND), dimension(:), pointer :: xvelmean, yvelmean
       integer :: err_tmp
 
       err = 0
 
-      call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
-      call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
+      call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
       call mpas_pool_get_array(velocityPool, 'exx', exx)
       call mpas_pool_get_array(velocityPool, 'eyy', eyy)
+      call mpas_pool_get_array(velocityPool, 'dudy', dudy)
+      call mpas_pool_get_array(velocityPool, 'dvdx', dvdx)
       call mpas_pool_get_array(velocityPool, 'exy', exy)
-      call mpas_pool_get_array(velocityPool, 'eyx', eyx)
       call mpas_pool_get_array(velocityPool, 'eTheta', eTheta)
       call mpas_pool_get_array(velocityPool, 'eMax', eMax)
       call mpas_pool_get_array(velocityPool, 'eMin', eMin)
 
       ! Calculate strain rates
-      call li_compute_gradient_2d(meshPool, uReconstructX(1,:), exx, exy, err_tmp)
+      call li_compute_gradient_2d(meshPool, xvelmean, exx, dudy, err_tmp)
       err = ior(err, err_tmp)
 
-      call li_compute_gradient_2d(meshPool, uReconstructY(1,:), eyx, eyy, err_tmp)
+      call li_compute_gradient_2d(meshPool, yvelmean, dvdx, eyy, err_tmp)
       err = ior(err, err_tmp)
+
+      exy = 0.5_RKIND * (dudy + dvdx)
 
       ! Calculate principal strain rate angle
-      eTheta = 0.5_RKIND * atan( (exy + eyx) / (exx - eyy + 1.0e-42_RKIND) )
+      eTheta = 0.5_RKIND * atan( (2.0_RKIND * exy) / (exx - eyy + 1.0e-42_RKIND) )
 
       ! Calculate principal strain rates
-      eMax = 0.5_RKIND * (exx + eyy) + sqrt( (0.5_RKIND * (exx - eyy))**2 + (0.25_RKIND*(exy + eyx))**2)
-      eMin = 0.5_RKIND * (exx + eyy) - sqrt( (0.5_RKIND * (exx - eyy))**2 + (0.25_RKIND*(exy + eyx))**2)
+      eMax = 0.5_RKIND * (exx + eyy) + sqrt( (0.5_RKIND * (exx - eyy))**2 + exy**2)
+      eMin = 0.5_RKIND * (exx + eyy) - sqrt( (0.5_RKIND * (exx - eyy))**2 + exy**2)
 
    !--------------------------------------------------------------------
    end subroutine calculate_strain_rates

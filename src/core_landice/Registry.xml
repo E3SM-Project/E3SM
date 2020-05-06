@@ -1188,25 +1188,28 @@ is the value of that variable from the *previous* time level!
 		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
 		/>
                 <var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="x-component of surface strain rate"
+                     description="x-component of depth-integrated strain rate"
                 />
                 <var name="eyy" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="y-component of surface strain rate"
+                     description="y-component of depth-integrated strain rate"
                 />
                 <var name="exy" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="shear component of surface strain rate"
+                     description="shear component of depth-integrated strain rate"
+                />
+                <var name="dudy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="y-derivative of x-component of depth-integrated velocity"
+                />
+                <var name="dvdx" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="x-derivative of y-component of depth-integrated velocity"
                 />
                 <var name="eTheta" type="real" dimensions="nCells Time" units="radians"
-                     description="orientation of principal surface strain rate"
-                />
-                <var name="eyx" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="shear component of surface strain rate"
+                     description="orientation of principal depth-integrated strain rate"
                 />
                 <var name="eMax" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="magnitude of first principal surface strain rate"
+                     description="magnitude of first principal depth-integrated strain rate"
                 />
                 <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="magnitude of second principal surface strain rate"
+                     description="magnitude of second principal depth-integrated strain rate"
                 />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
