@@ -62,7 +62,7 @@ struct Constants
   static constexpr Scalar ZERO          = 0.0;
   static constexpr Scalar ONE           = 1.0;
   static constexpr Scalar P0            = 100000.0;        // reference pressure, Pa
-  static constexpr Scalar RD            = 287.15;          // gas constant for dry air, J/kg/K
+  static constexpr Scalar RD            = Rair;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR        = P0/(RD*Tmelt);
   static constexpr Scalar rhosui        = 60000/(RD*253.15);
   static constexpr Scalar CP            = Cpair;          // heat constant of air at constant pressure, J/kg
