@@ -86,6 +86,8 @@ logical, parameter :: do_implicit = .true.
 real(rtype), parameter :: basetemp = 300._rtype
 ! Reference pressure [Pa]
 real(rtype), parameter :: basepres = 100000._rtype
+! Lower troposphere pressure [Pa]
+real(rtype), parameter :: troppres = 80000._rtype
 ! Minimum surface friction velocity
 real(rtype), parameter :: ustar_min = 0.01_rtype
 ! PBL max depth in pressure units
@@ -1720,112 +1722,208 @@ subroutine shoc_tke(&
   real(rtype) :: brunt_int(shcol)
   integer i,j,k,kc,kb,kt
 
-  lambda_low=0.001_rtype
-  lambda_high=0.04_rtype
-  lambda_slope=0.65_rtype
-  brunt_low=0.02_rtype
-
-  ! Turbulent coefficients
-  Cs=0.15_rtype
-  Ck=0.1_rtype
-  Ckh=0.1_rtype
-  Ckm=0.1_rtype
-  Ce=Ck**3/Cs**4
-
-  Ce1=Ce/0.7_rtype*0.19_rtype
-  Ce2=Ce/0.7_rtype*0.51_rtype
-
-  Cee=Ce1+Ce2
-
   ! Compute integrated column stability in lower troposphere
-  brunt_int(:)=0._rtype
-  do k=1,nlev
-    do i=1,shcol
-      if (pres(i,k) .gt. 80000._rtype) then
-        brunt_int(i) = brunt_int(i) + dz_zt(i,k)*brunt(i,k)
-      endif
-    enddo
-  enddo
+  call integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
 
   ! Interpolate tk onto interface grid
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
 
   ! Compute shear production term, which is on interface levels
   ! This follows the methods of Bretheron and Park (2010)
-  do k=2,nlev
-    do i=1,shcol
 
-      kt=k-1
-      grid_dz = 1._rtype/dz_zi(i,k)
-
-      tk_in=tk_zi(i,k)
-      ! calculate vertical gradient of u&v wind
-      u_grad=grid_dz*(u_wind(i,kt)-u_wind(i,k))
-      v_grad=grid_dz*(v_wind(i,kt)-v_wind(i,k))
-      shear_prod(i,k)=tk_in*(u_grad**2+v_grad**2)
-    enddo
-  enddo
-
-  ! Set lower and upper boundary for shear production
-  ! Note that the lower bound for shear production has already
-  !  been taken into account for the TKE boundary condition,
-  !  thus zero out here
-  shear_prod(:,1) = 0._rtype
-  shear_prod(:,nlevi) = 0._rtype
+  call compute_shr_prod(nlevi, nlev, shcol, dz_zi, tk_zi, u_wind, v_wind, shear_prod)
 
   ! Interpolate shear production from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
 
-  do k=1,nlev
-    do i=1,shcol
-
-      smix=shoc_mix(i,k)
-      ! Compute buoyant production term
-      a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
-
-      tke(i,k)=max(0._rtype,tke(i,k))
-
-      ! Shear production term
-      a_prod_sh=shear_prod_zt(i,k)
-
-      ! Dissipation term
-      a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
-
-      ! March equation forward one timestep
-      tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
-
-      tke(i,k)=min(tke(i,k),maxtke)
-
-      ! Now compute the return to isotropic timescale as per
-      ! Canuto et al. 2004.  This is used to define the
-      ! eddy coefficients as well as to diagnose higher
-      ! moments in SHOC
-
-      ! define the time scale
-      tscale1=(2.0_rtype*tke(i,k))/a_diss
-
-      ! define a damping term "lambda" based on column stability
-      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-      lambda=max(lambda_low,min(lambda_high,lambda))
-
-      buoy_sgs_save=brunt(i,k)
-      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
-
-      ! Compute the return to isotropic timescale
-      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
-
-      ! Define the eddy coefficients for heat and momentum
-      tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
-      tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
-
-      tke(i,k) = max(mintke,tke(i,k))
-
-    enddo ! end i loop
-  enddo ! end k loop
+  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+       shear_prod_zt, brunt_int, brunt, tkh, tk, tke, isotropy)
 
   return
 
 end subroutine shoc_tke
+
+!==============================================================
+! Compute column integrated stability in lower troposphere
+
+subroutine integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
+
+  !intent-ins
+  integer,     intent(in) :: nlev, shcol
+  ! thickness on thermodynamic grid [m]
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  ! pressure [Pa]
+  real(rtype), intent(in) :: pres(shcol,nlev)
+  ! Brunt Vaisalla frequncy [/s]
+  real(rtype), intent(in) :: brunt(shcol,nlev)
+
+  !intent-out
+  !column integrated stability
+  real(rtype), intent(out) :: brunt_int(shcol)
+
+  !local variables
+  integer :: i, k
+
+  brunt_int(1:shcol) = 0._rtype
+  do k = 1, nlev
+     do i = 1, shcol
+        if (pres(i,k) .gt. troppres) then
+           brunt_int(i) = brunt_int(i) + dz_zt(i,k)*brunt(i,k)
+        endif
+     enddo
+  enddo
+
+end subroutine integ_column_stability
+
+!==============================================================
+! Compute shear production term, which is on interface levels
+! This follows the methods of Bretheron and Park (2010)
+
+subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, tk_zi, u_wind, v_wind, shear_prod)
+
+  integer,     intent(in)  :: nlevi, nlev, shcol
+  ! thickness on interface grid [m]
+  real(rtype), intent(in)  :: dz_zi(shcol,nlevi)
+  ! eddy coefficient for momentum at interfaces [m2/s]
+  real(rtype), intent(in)  :: tk_zi(shcol,nlevi)
+  ! Meridional wind [m/s]
+  real(rtype), intent(in)  :: u_wind(shcol,nlev)
+  ! Zonal wind [m/s]
+  real(rtype), intent(in)  :: v_wind(shcol,nlev)
+
+  !intent-outs
+  real(rtype), intent(out) :: shear_prod(shcol,nlev)
+
+  !local variables
+  integer :: i, k, km1
+  real(rtype) :: grid_dz, u_grad, v_grad
+
+  !compute shear production term
+  do k = 2, nlev
+     km1 = k - 1
+     do i = 1, shcol
+        grid_dz = 1._rtype/dz_zi(i,k)
+
+        ! calculate vertical gradient of u&v wind
+        u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
+        v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
+        shear_prod(i,k) = tk_zi(i,k)*(u_grad**2+v_grad**2)
+     enddo
+  enddo
+
+  ! Set lower and upper boundary for shear production
+  ! Note that the lower bound for shear production has already
+  ! been taken into account for the TKE boundary condition,
+  ! thus zero out here
+  shear_prod(1:shcol,1)     = 0._rtype
+  shear_prod(1:shcol,nlevi) = 0._rtype
+
+end subroutine compute_shr_prod
+
+!==============================================================
+! Advance SGS TKE
+
+subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+     shear_prod_zt, brunt_int, brunt, tkh, tk, tke, isotropy)
+
+  !intent -ins
+  integer, intent(in) :: nlev, shcol
+
+  ! timestep [s]
+  real(rtype), intent(in) :: dtime
+  ! Mixing length [m]
+  real(rtype), intent(in) :: shoc_mix(shcol,nlev)
+  ! SGS buoyancy flux [K m/s]
+  real(rtype), intent(in) :: wthv_sec(shcol,nlev)
+  ! Interpolate shear production to thermo grid
+  real(rtype), intent(in) :: shear_prod_zt(shcol,nlev)
+  !column integrated stability
+  real(rtype), intent(in) :: brunt_int(shcol)
+  ! Brunt Vaisalla frequncy [/s]
+  real(rtype), intent(in) :: brunt(shcol,nlev)
+
+  ! intent-inout
+  ! eddy coefficient for heat [m2/s]
+  real(rtype), intent(inout) :: tkh(shcol,nlev)
+  ! eddy coefficient for momentum [m2/s]
+  real(rtype), intent(inout) :: tk(shcol,nlev)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(inout) :: tke(shcol,nlev)
+
+  ! intent-out
+  ! Return to isotropic timescale [s]
+  real(rtype), intent(out) :: isotropy(shcol,nlev)
+
+  !local variables
+  integer :: i, k 
+
+  !parameters
+  real(rtype), parameter :: lambda_low   = 0.001_rtype
+  real(rtype), parameter :: lambda_high  = 0.04_rtype
+  real(rtype), parameter :: lambda_slope = 0.65_rtype
+  real(rtype), parameter :: brunt_low    = 0.02_rtype
+
+  ! Turbulent coefficients
+  real(rtype), parameter :: Cs  = 0.15_rtype
+  real(rtype), parameter :: Ck  = 0.1_rtype
+  real(rtype), parameter :: Ckh = 0.1_rtype
+  real(rtype), parameter :: Ckm = 0.1_rtype
+  real(rtype), parameter :: Ce  = Ck**3/Cs**4
+
+  real(rtype), parameter :: Ce1 = Ce/0.7_rtype*0.19_rtype
+  real(rtype), parameter :: Ce2 = Ce/0.7_rtype*0.51_rtype
+
+  real(rtype), parameter :: Cee = Ce1 + Ce2
+
+  real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale, lambda
+
+  do k=1,nlev
+     do i=1,shcol
+
+        ! Compute buoyant production term
+        a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
+
+        tke(i,k)=max(0._rtype,tke(i,k))
+
+        ! Shear production term
+        a_prod_sh=shear_prod_zt(i,k)
+
+        ! Dissipation term
+        a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
+
+        ! March equation forward one timestep
+        tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
+
+        tke(i,k)=min(tke(i,k),maxtke)
+
+        ! Now compute the return to isotropic timescale as per
+        ! Canuto et al. 2004.  This is used to define the
+        ! eddy coefficients as well as to diagnose higher
+        ! moments in SHOC
+
+        ! define the time scale
+        tscale=(2.0_rtype*tke(i,k))/a_diss
+
+        ! define a damping term "lambda" based on column stability
+        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+        lambda=max(lambda_low,min(lambda_high,lambda))
+
+        buoy_sgs_save=brunt(i,k)
+        if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+
+        ! Compute the return to isotropic timescale
+        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
+
+        ! Define the eddy coefficients for heat and momentum
+        tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
+        tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+
+        tke(i,k) = max(mintke,tke(i,k))
+
+     enddo ! end i loop
+  enddo ! end k loop
+
+end subroutine adv_sgs_tke
 
 !==============================================================
 ! Check the TKE
