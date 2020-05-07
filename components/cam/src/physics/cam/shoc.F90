@@ -1940,22 +1940,15 @@ subroutine shoc_length(&
   !   the planetary boundary layer
   call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
 
-
   ! computed quantity above is wstar3
   ! clip, to avoid negative values and take the cubed
   !   root to get the convective velocity scale
-  do i=1,shcol
-    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
 
-    ! Compute eddy turnover timescale.  If
-    !  convective velocity scale is zero then
-    !  set to a minimum threshold
-    if (conv_vel(i) .gt. 0._rtype) then
-      tscale(i)=pblh(i)/conv_vel(i)
-    else
-      tscale(i)=100._rtype
-    endif
-  enddo
+  ! Compute eddy turnover timescale.  If
+  !  convective velocity scale is zero then
+  !  set to a minimum threshold
+
+  call compute_conv_time_shoc_length(shcol, pblh, conv_vel, tscale)
 
   do k=1,nlev
     do i=1,shcol
@@ -2811,6 +2804,30 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
   enddo ! end k loop (vertical loop)
 
 end subroutine compute_conv_vel_shoc_length
+
+subroutine compute_conv_time_shoc_length(shcol, pblh, conv_vel, tscale)
+  ! Compute eddy turnover timescale.  If
+  !  convective velocity scale is zero then
+  !  set to a minimum threshold
+
+  implicit none
+  integer, intent(in) :: shcol
+  real(rtype), intent(in) :: pblh(shcol)
+  real(rtype), intent(inout) :: conv_vel(shcol), tscale(shcol) 
+
+  integer i 
+
+  do i=1,shcol
+    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
+
+    if (conv_vel(i) .gt. 0._rtype) then
+      tscale(i)=pblh(i)/conv_vel(i)
+    else
+      tscale(i)=100._rtype
+    endif
+  enddo
+
+end subroutine compute_conv_time_shoc_length
 
 end module shoc
 
