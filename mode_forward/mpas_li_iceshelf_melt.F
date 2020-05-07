@@ -1181,7 +1181,7 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: rhoi
       integer, pointer :: nCellsSolve, nEdgesSolve, maxEdges
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
-      real (kind=RKIND) :: waterDepth, submergedFaceArea, oceanEdgeLength, iceFrontMeltVelocity 
+      real (kind=RKIND) :: waterDepth, submergedFaceArea, oceanEdgeLength
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, scratchPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
@@ -1197,10 +1197,11 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: B ! param B
       real (kind=RKIND), pointer :: betaTF ! param beta
       real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
+      real (kind=RKIND), pointer :: config_uniform_face_melt_rate
       real (kind=RKIND), parameter :: secPerDay = 86400.0
       real (kind=RKIND), parameter :: rhow = 1000.0 ! subglacial runoff density
       integer, dimension(:), pointer :: groundedMarineMarginMask
-      real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied
+      real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, faceMeltSpeed
       integer :: err_tmp
 
       err = 0
@@ -1215,7 +1216,8 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_coefficient', aSubglacial)
       call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_intercept', B)
       call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
-
+      call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
+      
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -1245,6 +1247,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface) 
          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
          call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
+         call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
          
        ! Calculate retreat rate for each cell
          do iCell = 1, nCellsSolve
@@ -1269,25 +1272,27 @@ module li_iceshelf_melt
                      oceanEdgeLength = oceanEdgeLength + dvEdge(edgesOnCell(iEdge, iCell))
                  endif
             enddo 
-                 
             
             if ( nEmptyNeighbors > 0 &
                .and. thickness(iCell) > 0.0_RKIND &
                .and. li_mask_is_grounded_ice(cellMask(iCell)) &
                .and. bedTopography(iCell) < seaLevel ) then
-              
+                
                 groundedMarineMarginMask(iCell) = 1
                 waterDepth = seaLevel - bedTopography(iCell)
-                
+                          
                 submergedFaceArea = waterDepth * oceanEdgeLength
                 
+                if (config_uniform_face_melt_rate == 0.0) then                
                 ! Calculate ice front melt rate at each cell
-                iceFrontMeltVelocity = (aSubglacial * waterDepth * & ! m s^-1
+                   faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
                          (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
                          + B) * (TFocean(iCell) + addTFocean)**betaTF / secPerDay
-                
+                else
+                   faceMeltSpeed(iCell) = config_uniform_face_melt_rate
+                endif
                 !calvingVelocity(iCell) = calvingVelocity(iCell) + iceFrontMeltRate ! m s^-1
-                faceMeltRateApplied(iCell) = iceFrontMeltVelocity * submergedFaceArea ! m^3 s^-1
+                faceMeltRateApplied(iCell) = faceMeltSpeed(iCell) * submergedFaceArea ! m^3 s^-1
             else 
                 groundedMarineMarginMask(iCell) = 0
                 faceMeltRateApplied(iCell) = 0.0_RKIND     
