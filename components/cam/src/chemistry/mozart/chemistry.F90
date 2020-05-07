@@ -368,7 +368,6 @@ end function chem_is
        if ( islvd > 0 ) then
           short_lived_map(islvd) = m
        else
-          if(m==34)qmin = 0.0_r8
           call cnst_add( solsym(m), adv_mass(m), cptmp, qmin, n, readiv=ic_from_cam2, cam_outfld=cam_outfld, &
                mixtype=mixtype, molectype=molectype, fixed_ubc=has_fixed_ubc, fixed_ubflx=has_fixed_ubflx, longname=trim(lng_name) )
 

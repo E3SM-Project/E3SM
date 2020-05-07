@@ -33,7 +33,6 @@ module seasalt_model
   public :: init_ocean_data           ! initialize ocean data variables
   public :: ocean_data_readnl         ! read ocean data namelist
 
-!BSINGH- why don't we just count ncl species in modes and compute 'nslt'?
 #if  ( defined MODAL_AERO_9MODE || defined MODAL_AERO_5MODE_MOM)
   integer, parameter :: nslt = 4
 #else
@@ -677,8 +676,7 @@ end subroutine ocean_data_readnl
        cflx(:ncol,mm)=0.0_r8
        section_loop_sslt_mass: do i=1, nsections
           if ( has_mam_mom ) then
-          !if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then !BSINGH
-             if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin) .and. mm .ne. 41) then !BSINGH
+          if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
@@ -798,6 +796,7 @@ add_om_species: if ( has_mam_mom ) then
        mm = mom_spc_ind(m_om)
        cflx(:ncol,mm)=0.0_r8
        if (emit_this_mode(m_om)) then
+!          write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mm ! for debugging
           ! add mass tracers
           om_type_loop: do n=1,n_org
              section_loop_OM_mass: do i=1, nsections
