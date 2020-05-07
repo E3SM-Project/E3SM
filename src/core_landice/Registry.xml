@@ -318,6 +318,10 @@
                             description="Added value B in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
                 />
+		<nml_option name="config_uniform_face_melt_rate" type="real" default_value="0.0" units="m s^{-1}"
+			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. If set to 0.0, it will not be applied."
+			    possible_values="any non-negative value"
+		/>
         </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
@@ -625,6 +629,7 @@
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
 			<var name="faceMeltRateApplied" packages="ismip6GroundedFaceMelt" />
 			<var name="subglacialWaterFlux" packages="ismip6GroundedFaceMelt" />
+		        <var name="faceMeltSpeed" packages="ismip6GroundedFaceMelt" />
 			<var name="groundedMarineMarginMask" packages="ismip6GroundedFaceMelt" />
 		</stream>
 
@@ -707,6 +712,7 @@
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
                         <var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
 			<var name="faceMeltRateApplied" packages="ismip6GroundedFaceMelt" />
+			<var name="faceMeltSpeed" packages="ismip6GroundedFaceMelt" />
                         <var name="subglacialWaterFlux" packages="ismip6GroundedFaceMelt" />
                         <var name="groundedMarineMarginMask" packages="ismip6GroundedFaceMelt" />
 		</stream>
@@ -1100,9 +1106,12 @@ is the value of that variable from the *previous* time level!
                 <var name="groundedMarineMarginMask" type="integer" dimensions="nCells Time" units="none" time_levs="1" packages="ismip6GroundedFaceMelt"
                      description="mask of grid cells that are grounded and adjacent to the ocean. 0=interior, 1=grounded ice margin"
                 />
-                <var name="faceMeltRateApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt"
-                     description="melt rate applied at grounded marine margin, in same units as other mass balance terms (rather than calvingVelocity)"
+                <var name="faceMeltRateApplied" type="real" dimensions="nCells Time" units="m^{3} s^{-1}" packages="ismip6GroundedFaceMelt"
+                     description="Volumetric submarine melt rate applied at grounded marine margin"
                 />
+		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" packages="ismip6GroundedFaceMelt"
+		     description="linear speed of submarine melting at grounded glacier front"
+  		/>
                 <var name="subglacialWaterFlux" type="real" dimensions="nCells Time" units="m day^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="Catchment-wide subglacial runoff normalized by modern submerged face area, in units used by ismip6 grounded marine melt parameterization, with zeros where ISMIP6 forcing file has negative runoff"
                 />
