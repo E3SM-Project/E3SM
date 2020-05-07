@@ -388,7 +388,6 @@ subroutine shoc_main ( &
        wthv_sec,shoc_mix,&                  ! Input
        dz_zi,dz_zt,pres,&                   ! Input
        u_wind,v_wind,brunt,&                ! Input
-       uw_sfc,vw_sfc,&                      ! Input
        zt_grid,zi_grid,&                    ! Input
        tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
@@ -1654,7 +1653,6 @@ subroutine shoc_tke(&
          wthv_sec,shoc_mix,&         ! Input
          dz_zi,dz_zt,pres,&          ! Input
          u_wind,v_wind,brunt,&       ! Input
-         uw_sfc,vw_sfc,&             ! Input
          zt_grid,zi_grid,&           ! Input
          tke,tk,tkh, &               ! Input/Output
          isotropy)                   ! Output
@@ -1681,10 +1679,6 @@ subroutine shoc_tke(&
   real(rtype), intent(in) :: u_wind(shcol,nlev)
   ! Zonal wind [m/s]
   real(rtype), intent(in) :: v_wind(shcol,nlev)
-  ! Zonal momentum flux at sfc [m2/s2]
-  real(rtype), intent(in) :: uw_sfc(shcol)
-  ! Meridional momentum flux at sfc [m2/s2]
-  real(rtype), intent(in) :: vw_sfc(shcol)
   ! thickness on interface grid [m]
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
   ! thickness on thermodynamic grid [m]
@@ -1713,14 +1707,8 @@ subroutine shoc_tke(&
 ! LOCAL VARIABLES
   real(rtype) :: shear_prod(shcol,nlevi)
   real(rtype) :: shear_prod_zt(shcol,nlev), tk_zi(shcol,nlevi)
-  real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce,Ces,Ce1,Ce2,smix,Cee,Cs
-  real(rtype) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
-  real(rtype) :: lstarn, lstarp, bbb, omn, omp, ustar
-  real(rtype) :: qsatt,dqsat,tk_in, u_grad, v_grad
-  real(rtype) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
-  real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
   real(rtype) :: brunt_int(shcol)
-  integer i,j,k,kc,kb,kt
+
 
   ! Compute integrated column stability in lower troposphere
   call integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
@@ -1762,16 +1750,18 @@ subroutine integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
   real(rtype), intent(out) :: brunt_int(shcol)
 
   !local variables
-  integer :: i, k
+  integer :: icol, klev
 
   brunt_int(1:shcol) = 0._rtype
-  do k = 1, nlev
-     do i = 1, shcol
-        if (pres(i,k) .gt. troppres) then
-           brunt_int(i) = brunt_int(i) + dz_zt(i,k)*brunt(i,k)
+  do klev = 1, nlev
+     do icol = 1, shcol
+        if (pres(icol,klev) .gt. troppres) then
+           brunt_int(icol) = brunt_int(icol) + dz_zt(icol,klev)*brunt(icol,klev)
         endif
      enddo
   enddo
+
+  return
 
 end subroutine integ_column_stability
 
@@ -1795,19 +1785,19 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, tk_zi, u_wind, v_wind, sh
   real(rtype), intent(out) :: shear_prod(shcol,nlev)
 
   !local variables
-  integer :: i, k, km1
+  integer :: icol, klev, km1
   real(rtype) :: grid_dz, u_grad, v_grad
 
   !compute shear production term
-  do k = 2, nlev
-     km1 = k - 1
-     do i = 1, shcol
-        grid_dz = 1._rtype/dz_zi(i,k)
+  do klev = 2, nlev
+     km1 = klev - 1
+     do icol = 1, shcol
+        grid_dz = 1._rtype/dz_zi(icol,klev)
 
         ! calculate vertical gradient of u&v wind
-        u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
-        v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
-        shear_prod(i,k) = tk_zi(i,k)*(u_grad**2+v_grad**2)
+        u_grad = grid_dz*(u_wind(icol,km1)-u_wind(icol,klev))
+        v_grad = grid_dz*(v_wind(icol,km1)-v_wind(icol,klev))
+        shear_prod(icol,klev) = tk_zi(icol,klev)*(u_grad**2+v_grad**2)
      enddo
   enddo
 
@@ -1817,6 +1807,8 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, tk_zi, u_wind, v_wind, sh
   ! thus zero out here
   shear_prod(1:shcol,1)     = 0._rtype
   shear_prod(1:shcol,nlevi) = 0._rtype
+
+  return
 
 end subroutine compute_shr_prod
 
@@ -1855,7 +1847,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   real(rtype), intent(out) :: isotropy(shcol,nlev)
 
   !local variables
-  integer :: i, k 
+  integer :: icol, klev 
 
   !parameters
   real(rtype), parameter :: lambda_low   = 0.001_rtype
@@ -1877,24 +1869,24 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale, lambda
 
-  do k=1,nlev
-     do i=1,shcol
+  do klev = 1, nlev
+     do icol = 1, shcol
 
         ! Compute buoyant production term
-        a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
+        a_prod_bu=(ggr/basetemp)*wthv_sec(icol,klev)
 
-        tke(i,k)=max(0._rtype,tke(i,k))
+        tke(icol,klev)=max(0._rtype,tke(icol,klev))
 
         ! Shear production term
-        a_prod_sh=shear_prod_zt(i,k)
+        a_prod_sh=shear_prod_zt(icol,klev)
 
         ! Dissipation term
-        a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
+        a_diss=Cee/shoc_mix(icol,klev)*tke(icol,klev)**1.5
 
         ! March equation forward one timestep
-        tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
+        tke(icol,klev)=max(0._rtype,tke(icol,klev)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
 
-        tke(i,k)=min(tke(i,k),maxtke)
+        tke(icol,klev)=min(tke(icol,klev),maxtke)
 
         ! Now compute the return to isotropic timescale as per
         ! Canuto et al. 2004.  This is used to define the
@@ -1902,26 +1894,28 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         ! moments in SHOC
 
         ! define the time scale
-        tscale=(2.0_rtype*tke(i,k))/a_diss
+        tscale=(2.0_rtype*tke(icol,klev))/a_diss
 
         ! define a damping term "lambda" based on column stability
-        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+        lambda=lambda_low+((brunt_int(icol)/ggr)-brunt_low)*lambda_slope
         lambda=max(lambda_low,min(lambda_high,lambda))
 
-        buoy_sgs_save=brunt(i,k)
+        buoy_sgs_save=brunt(icol,klev)
         if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
         ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
+        isotropy(icol,klev)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
 
         ! Define the eddy coefficients for heat and momentum
-        tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
-        tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+        tkh(icol,klev)=Ckh*isotropy(icol,klev)*tke(icol,klev)
+        tk(icol,klev)=Ckm*isotropy(icol,klev)*tke(icol,klev)
 
-        tke(i,k) = max(mintke,tke(i,k))
+        tke(icol,klev) = max(mintke,tke(icol,klev))
 
-     enddo ! end i loop
-  enddo ! end k loop
+     enddo ! end icol loop
+  enddo ! end klev loop
+
+  return
 
 end subroutine adv_sgs_tke
 
