@@ -1935,17 +1935,11 @@ subroutine shoc_length(&
   ! Find L_inf
   call  compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
+  !=========================================================
   ! determine the convective velocity scale of
   !   the planetary boundary layer
-  conv_vel(:)=0._rtype
+  call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
 
-  do k=nlev-1,1,-1
-    do i=1,shcol
-      if (zt_grid(i,k) .lt. pblh(i)) then
-        conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
-      endif
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
 
   ! computed quantity above is wstar3
   ! clip, to avoid negative values and take the cubed
@@ -2794,6 +2788,29 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
   enddo
 
 end subroutine compute_l_inf_shoc_length
+
+subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
+
+  !=========================================================
+  ! determine the convective velocity scale of
+  !   the planetary boundary layer
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  real(rtype), intent(in) :: pblh(shcol), zt_grid(shcol,nlev),  dz_zt(shcol,nlev), thv(shcol,nlev), wthv_sec(shcol,nlev)
+  real(rtype), intent(inout) :: conv_vel(shcol)
+  integer k, i
+  conv_vel(:) = 0._rtype
+
+  do k=nlev-1,1,-1
+    do i=1,shcol
+      if (zt_grid(i,k) .lt. pblh(i)) then
+        conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
+      endif
+    enddo ! end i loop (column loop)
+  enddo ! end k loop (vertical loop)
+
+end subroutine compute_conv_vel_shoc_length
 
 end module shoc
 
