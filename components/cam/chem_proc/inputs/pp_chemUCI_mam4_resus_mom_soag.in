@@ -152,7 +152,8 @@ CHEMISTRY
  End Photolysis
 
  Reactions
-[uci1] O3 + H2O -> 2*OH                           ; 1.630E-10, 63
+[uci1] O3 + H2O -> 2*OH                           ; 1.630E-10, 60
+*   fix typo, exp(-B/T), B=60 (JPL15)
 [uci2] O3 + H2 -> OH + HO2                        ; 1.200E-10,  0
 [uci3] O3 + CH4 -> OH + CH3OO                     ; 1.750E-10,  0
 *  These 3 rates for O(1D) rxt w/ H2O, H2, CH4 are scaled with jo1d and divided
@@ -161,8 +162,8 @@ CHEMISTRY
 *  effectively k[uci1] = J(jo1d)*1.63e-10*exp(63/T) /
 *     (1.63e-10*exp(63/T)*[H2O] + 3.30e-11*exp(55/T)*[N2] + 2.15e-11*exp(110/T)*[O2])
 *  and rxt[uci1] = k[uci1]*[O3]*[H2O]
-   CO + OH -> H                                   ; 1.440E-13,  0
-   CO + OH + M -> HO2 + M                         ; 2.670E-33,  0
+   CO + OH -> H                                   ; 1.500E-13,  0
+   CO + OH + M -> HO2 + M                         ; 5.90e-33, 1.0, 1.10E-12, -1.3, 0.6
    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
    CH4 + OH -> CH3O2 + H2O                        ; 2.450E-12, -1775
    C2H6 + OH -> C2H5O2                            ; 7.660E-12, -1020
@@ -188,6 +189,8 @@ CHEMISTRY
    OH + NO3 -> HO2 + NO2                          ; 2.200e-11, 0
    NO + NO3 -> 2.*NO2                             ; 1.500e-11, 170
    HNO4 + OH -> NO2 + H2O + O2                    ; 1.300E-12, 380
+   HNO3 + OH -> NO3 + H2O                         ; 2.400E-14, 460
+*   fix needed to add this bimolec rate, missing from the one below
 [uci6] HNO3 + OH -> NO3 + H2O
 *    k[uci6] = (k2*k3*[M])/(k2 + k3*[M])  k2=2.7e-17*exp(2199/T)  k3=6.5e-34*exp(1335/T)*[M]
    NO2 + OH + M -> HNO3 + M                       ; 1.80e-30, 3.0,  2.80e-11, 0.0, 0.6
