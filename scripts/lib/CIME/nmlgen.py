@@ -557,7 +557,7 @@ class NamelistGenerator(object):
             safe_copy(user_stream_path, stream_path)
             strmobj = Stream(infile=stream_path)
             stream_meshfile = strmobj.get_value("streaminfo/stream_mesh_file")
-            stream_datafiles = strmobj.get_value("streaminfo/streama-data_files")
+            stream_datafiles = strmobj.get_value("streaminfo/stream_data_files")
         else:
             stream_meshfile = self.get_default("strm_mesh", config)
             stream_datafiles = self.get_default("strm_datfil", config)

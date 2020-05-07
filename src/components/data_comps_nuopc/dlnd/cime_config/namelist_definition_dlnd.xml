@@ -335,6 +335,19 @@
     </values>
   </entry>
 
+  <entry id="model_meshfile" modify_via_xml="LND_DOMAIN_MESH">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>docn_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$OCN_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
   <entry id="nx_global" modify_via_xml="LND_NX">
     <type>integer</type>
     <category>streams</category>

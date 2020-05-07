@@ -62,8 +62,9 @@ module lnd_comp_nuopc
   character(*) , parameter     :: nullstr = 'undefined'
 
   ! dlnd_in namelist input
-  character(CL)                :: nlfilename                      ! filename to obtain namelist info from
   character(CL)                :: dataMode                        ! flags physics options wrt input data
+  character(CL)                :: model_meshfile = nullstr        ! full pathname to model meshfile
+  character(CL)                :: nlfilename                      ! filename to obtain namelist info from
   character(CL)                :: domain_fracname = 'undefined'   ! name of fraction field on first stream file
   logical                      :: force_prognostic_true = .false. ! if true set prognostic true
   character(CL)                :: restfilm = nullstr              ! model restart file namelist
@@ -180,13 +181,14 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
-       write(logunit,*)' datamode   = ',datamode
-       write(logunit,*)' domain_fracname = ',trim(domain_fracname)
-       write(logunit,*)' nx_global  = ',nx_global
-       write(logunit,*)' ny_global  = ',ny_global
-       write(logunit,*)' restfilm   = ',trim(restfilm)
-       write(logunit,*)' restfils   = ',trim(restfils)
-       write(logunit,*)' force_prognostic_true = ',force_prognostic_true
+       write(logunit ,*)' datamode              = ',datamode
+       write(logunit ,*)' model_meshfile        = ',trim(model_meshfile)
+       write(logunit ,*)' domain_fracname       = ',trim(domain_fracname)
+       write(logunit ,*)' nx_global             = ',nx_global
+       write(logunit ,*)' ny_global             = ',ny_global
+       write(logunit ,*)' restfilm              = ',trim(restfilm)
+       write(logunit ,*)' restfils              = ',trim(restfils)
+       write(logunit ,*)' force_prognostic_true = ',force_prognostic_true
     endif
     call shr_mpi_bcast(datamode        , mpicom, 'datamode')
     call shr_mpi_bcast(domain_fracname , mpicom, 'domain_fracname')

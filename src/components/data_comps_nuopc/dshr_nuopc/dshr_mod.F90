@@ -225,7 +225,8 @@ contains
 
   !===============================================================================
   subroutine dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, compname, &
-       mesh, read_restart, sdat, reset_mask, model_maskfile, rc)
+       model_meshfile, model_maskfile, model_mesh, read_restart, sdat, &
+       reset_mask, model_createmesh_fromfile, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat
@@ -238,11 +239,13 @@ contains
     integer                    , intent(in)    :: logunit
     character(len=*)           , intent(in)    :: compname
     integer                    , intent(out)   :: compid
-    type(ESMF_Mesh)            , intent(out)   :: mesh
+    character(len=*)           , intent(in)    :: model_meshfile
+    character(len=*)           , intent(in)    :: model_maskfile
+    type(ESMF_Mesh)            , intent(out)   :: model_mesh
     logical                    , intent(out)   :: read_restart
     type(shr_strdata_type)     , intent(inout) :: sdat
     logical         , optional , intent(in)    :: reset_mask
-    character(len=*), optional , intent(in)    :: model_maskfile
+    character(len=*), optional , intent(in)    :: model_createmesh_fromfile
     integer                    , intent(out)   :: rc
 
     ! local varaibles
@@ -251,7 +254,6 @@ contains
     type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
     type(ESMF_CalKind_Flag)      :: esmf_caltype  ! esmf calendar type
     character(CS)                :: calendar      ! calendar name
-    character(CL)                :: mesh_filename
     integer                      :: mpicom
     integer                      :: my_task
     logical                      :: scmMode
@@ -276,34 +278,28 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
-    ! Set single column values
-    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) scmMode
-
     ! Set restart flag
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
-    ! Obtain the input mesh filename
-    call NUOPC_CompAttributeGet(gcomp, name='mesh_'//trim(compname), value=mesh_filename, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! Obtain the data model mesh 
+    ! (1) if asked to create the mesh - create mesh from input file given by model_createmesh_fromfile
+    ! (2) if single column - read in the data model domain file - and find the nearest neighbor
+    ! (3) if not single column - obtain the mesh directly from the mesh input
 
-    ! Create the data model mesh
-    ! if single column
-    !   - read in the data model domain file - and find the nearest neighbor
-    ! if not single column
-    !   - obtain the mesh directly from the mesh input
-    !   - ***TODO: remove the hard-wired domain_atm name here**
-
-    if (trim(mesh_filename) == 'create_mesh') then
-       ! get the data model grid from the domain file
-       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=mesh_filename, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_create_mesh_from_grid(trim(mesh_filename), mesh, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (trim(model_meshfile) == 'create_mesh') then
+       if (present(model_createmesh_fromfile)) then
+          call dshr_create_mesh_from_grid(trim(model_createmesh_fromfile), model_mesh, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       else
+          call shr_sys_abort('ERROR: need to pass model_createmesh_fromfile')
+       end if
     else
+       ! Set single column values
+       call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) scmMode
        if (scmMode) then
           ! verify that are only using 1 pe
           if (my_task > 0) then
@@ -321,25 +317,25 @@ contains
              write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
           end if
           ! Read in the input mesh
-          mesh_global = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          mesh_global = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           ! Now create a single column mesh using the single column lats and lons and the global mesh
-          call  dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
+          call  dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_MeshDestroy(mesh_global)
        else
           ! Read in the input mesh
-          mesh = ESMF_MeshCreate(trim(mesh_filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          model_mesh = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
     end if
 
     if (my_task == master_task) then
-       write(logunit,F00) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
+       write(logunit,F00) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(model_meshfile)
     end if
 
     ! Initialize sdat from data model input files
-    call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, mpicom, compid, logunit, &
+    call shr_strdata_init_from_infiles(sdat, nlfilename, model_mesh, clock, mpicom, compid, logunit, &
          reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -442,7 +438,7 @@ contains
   end subroutine dshr_create_mesh_from_grid
 
   !===============================================================================
-  subroutine dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, mesh, rc)
+  subroutine dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
 
     !-------------------------------------------
     ! Create mct ggrid for model grid and set model gsmap if not input
@@ -454,7 +450,7 @@ contains
     real(R8)        , intent(in)    :: scmlat      ! single column lat
     integer         , intent(in)    :: logunit     ! stdout log unit
     type(ESMF_MESH) , intent(in)    :: mesh_global ! global or regional domain
-    type(ESMF_MESH) , intent(out)   :: mesh        ! single column mesh
+    type(ESMF_MESH) , intent(out)   :: model_mesh  ! single column model mesh
     integer         , intent(out)   :: rc          ! error code
 
     ! local variables
@@ -538,7 +534,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! create the single column mesh from the grid
-    mesh =  ESMF_MeshCreate(lgrid, rc=rc)
+    model_mesh =  ESMF_MeshCreate(lgrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! deallocate memory
