@@ -1731,6 +1731,14 @@ if (l_gw_drag) then
 
 end if ! l_gw_drag
 
+    !===================================================
+    ! Update Nudging values, if needed
+    !===================================================
+    if((Nudge_Model).and.(Nudge_ON)) then
+      call nudging_timestep_tend(state,ptend)
+      call physics_update(state,ptend,ztodt,tend)
+    endif
+
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
@@ -1790,14 +1798,6 @@ end if ! l_ac_energy_chk
        if (labort) then
           call endrun ('TPHYSAC error:  grid contains non-ocean point')
        endif
-    endif
-
-    !===================================================
-    ! Update Nudging values, if needed
-    !===================================================
-    if((Nudge_Model).and.(Nudge_ON)) then
-      call nudging_timestep_tend(state,ptend)
-      call physics_update(state,ptend,ztodt,tend)
     endif
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
@@ -1910,6 +1910,7 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+    use nudging,         only: Nudge_Model,Nudge_Loc,nudging_calc_tend
 
     implicit none
 
@@ -2746,6 +2747,13 @@ end if ! l_tracer_aero
     call diag_conv(state, ztodt, pbuf)
 
     call t_stopf('bc_history_write')
+
+    !===================================
+    ! Update Nudging tendency if needed
+    !===================================
+    if (Nudge_Model .and. Nudge_Loc) then
+       call nudging_calc_tend(state)
+    endif
 
     !===================================================
     ! Write cloud diagnostics on history file
