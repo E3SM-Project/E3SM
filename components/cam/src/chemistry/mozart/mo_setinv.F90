@@ -12,8 +12,8 @@ module mo_setinv
   save
 
   integer :: id_o, id_o2, id_h
-  integer :: m_ndx, o2_ndx, n2_ndx, h2o_ndx, o3_ndx
-  logical :: has_o2, has_n2, has_h2o, has_o3, has_var_o2
+  integer :: m_ndx, o2_ndx, n2_ndx, h2o_ndx, o3_ndx, h2_ndx
+  logical :: has_o2, has_n2, has_h2o, has_o3, has_var_o2, has_h2
 
   private
   public :: setinv_inti, setinv, has_h2o, o2_ndx, h2o_ndx, n2_ndx
@@ -37,6 +37,7 @@ contains
     o2_ndx  = get_inv_ndx( 'O2' )
     h2o_ndx = get_inv_ndx( 'H2O' )
     o3_ndx  = get_inv_ndx( 'O3' )
+    h2_ndx  = get_inv_ndx( 'H2' )
 
     id_o  = get_spc_ndx('O')
     id_o2 = get_spc_ndx('O2')
@@ -48,8 +49,9 @@ contains
     has_o2  = o2_ndx > 0
     has_h2o = h2o_ndx > 0
     has_o3  = o3_ndx > 0
+    has_h2  = h2_ndx > 0
 
-    if (masterproc) write(iulog,*) 'setinv_inti: m,n2,o2,h2o ndx = ',m_ndx,n2_ndx,o2_ndx,h2o_ndx
+    if (masterproc) write(iulog,*) 'setinv_inti: m,n2,o2,h2o,h2 ndx = ',m_ndx,n2_ndx,o2_ndx,h2o_ndx,h2_ndx
 
     do i = 1,nfs
       call addfld( trim(inv_lst(i))//'_dens', (/ 'lev' /),'A', 'molecules/cm3', 'invariant density' )
@@ -127,6 +129,11 @@ contains
     if( has_h2o ) then
        do k = 1,pver
           invariants(:ncol,k,h2o_ndx) = h2ovmr(:ncol,k) * invariants(:ncol,k,m_ndx)
+       end do
+    end if
+    if( has_h2 ) then
+       do k = 1,pver
+          invariants(:ncol,k,h2_ndx) = 5.5e-7_r8 * invariants(:ncol,k,m_ndx)
        end do
     end if
 
