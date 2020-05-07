@@ -122,6 +122,12 @@
       <grid name="rof">null</grid>
     </model_grid>
 
+    <model_grid alias="5x5_amazon_r05" compset="DATM.+CLM.+MIZUROUTE">
+      <grid name="atm">5x5_amazon</grid>
+      <grid name="lnd">5x5_amazon</grid>
+      <grid name="rof">r05_amazon</grid>
+    </model_grid>
+
     <!-- Regional NLDAS-2 grid over the U.S. (0.125 degree resolution;
          25-53N, 235-293E), with mask from NLDAS-2 atmospheric drivers -->
     <model_grid alias="nldas2_rnldas2_mnldas2" compset="DATM.+CLM">
@@ -1783,6 +1789,12 @@
       <nx>720</nx> <ny>360</ny>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh.nc</mesh>
       <desc>r05 is 1/2 degree river routing grid:</desc>
+    </domain>
+
+    <domain name="r05_amazon">
+      <nx>816</nx> <ny>1</ny>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/rof/mizuRoute/meshes/r05_amazon_360_c110308_cdf5_ESMFmesh_c20200507.nc</mesh>
+      <desc>r05_amazon is 1/2 degree river routing grid, just over a 5x5 cell in the Amazon:</desc>
     </domain>
 
     <domain name="HDMA">
