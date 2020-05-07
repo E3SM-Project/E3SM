@@ -31,9 +31,9 @@ namespace scream {
 
         // Do something interesting here...
         // NOTE: these will get replaced with AD stuff that handles these
-        rrtmgp_init_f90();
-        rrtmgp_main_f90();
-        rrtmgp_finalize_f90();
+        rrtmgp::rrtmgp_init();
+        rrtmgp::rrtmgp_main();
+        rrtmgp::rrtmgp_finalize();
 
         // If we got here, we were able to run the above code
         REQUIRE(true);

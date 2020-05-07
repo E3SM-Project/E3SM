@@ -2,6 +2,7 @@
 # Once the C++ port of RRTMGP is complete we should switch over to that.
 set(RRTMGP_SRCS
   rrtmgp.cpp
+  scream_rrtmgp_interface.cpp
   scream_rrtmgp_interface.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/rrtmgp/external/rrtmgp/kernels/mo_gas_optics_kernels.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/rrtmgp/external/rrtmgp/kernels/mo_rrtmgp_util_reorder_kernels.F90
