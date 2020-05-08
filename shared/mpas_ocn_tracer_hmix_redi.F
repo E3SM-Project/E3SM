@@ -139,7 +139,7 @@ contains
 
       real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
-      real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
+      real(kind=RKIND) :: areaSum, r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal, rediKappaCell
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
@@ -183,12 +183,14 @@ contains
 
       nCells = nCellsArray(2)
       do iCell = 1,nCells
-        rediKappaCell(iCell) = 0.0
-        invAreaCell = 1.0_RKIND/areaCell(iCell)
+        rediKappaCell(iCell) = 0.0_RKIND
+        areaSum = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
-          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
+          areaSum = areaSum + 0.5_RKIND*dvEdge(iEdge)*dcEdge(iEdge)
+          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
         enddo
+        rediKappaCell(iCell) = rediKappaCell(iCell) / areaSum
       enddo
 
       nCells = nCellsArray(1)
@@ -203,7 +205,7 @@ contains
          redi_term2(:, :, iCell) = 0.0_RKIND
          redi_term3(:, :, iCell) = 0.0_RKIND
          fluxRediZTop(:, :) = 0.0_RKIND
-      !   rediKappaCell(iCell) = 0.0_RKIND
+        !rediKappaCell(iCell) = 0.0_RKIND
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
