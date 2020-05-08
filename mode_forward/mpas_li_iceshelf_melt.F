@@ -1296,6 +1296,7 @@ module li_iceshelf_melt
             else 
                 groundedMarineMarginMask(iCell) = 0
                 faceMeltRateApplied(iCell) = 0.0_RKIND     
+                faceMeltSpeed(iCell) = 0.0_RKIND
             endif           
          enddo
 
