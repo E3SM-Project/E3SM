@@ -1,3 +1,102 @@
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 4-19-2020
+Tag: cime5.8.23
+Answer Changes: roundoff for some compsets, bfb for others
+Tests: scripts_regressions_tests
+Dependencies:
+
+Brief Summary:
+    - Improvement to scripts regression tests on the Melvin machine.
+    - Fix atm level spec so that it does not match 1x1_brazil.
+    - Document provenance from COARE/Fairall surface flux scheme option.
+    - Add missing ROF2OCN grid for r05_TO_gx3v7.
+    - Updates to CIME used for 0.1 degree JRA-forced G run with BGC enabled. 
+    - FV3 bug fix and Makefile update.
+    - Update cheyenne ESMF libs.
+    - case.setup: fix merge error from prev PR.
+    - case.setup: fix case.setup --clean.
+    - First steps to ESMF data models.
+    - Allow user to specify an extra machines directory in create_newcase.
+    - Remove code specific to ORNL machine.
+
+
+User interface changes: 
+    - Adds --extra-machines-dir argument to create_newcase.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+332d8c9b3 Merge pull request #3522 from ESMCI/wpcoomb/melvin_regression_tests_improvements
+6d745aa6b Merge pull request #3519 from jedwards4b/atm_level_fix
+850bef781 Merge pull request #3520 from mt5555/patch-1
+ebb9dd6c9 Merge pull request #3517 from ESMCI/fischer/r05_gx3v7
+5805a40a5 Merge pull request #3515 from mnlevy1981/highres_JRA_BGC
+1bc586676 Merge pull request #3516 from jtruesdal/fv3_3452
+6a00e248c Merge pull request #3514 from ESMCI/fischer/esmf_libs
+793764fd2 Merge pull request #3513 from ESMCI/jgfouca/fix_case_setup
+25840072d Merge pull request #3511 from ESMCI/jgfouca/fix_case_clean
+509f2bfa8 Merge pull request #3505 from ESMCI/mvertens/dmodels_refactor_to_esmfpre
+51ac93be5 Merge pull request #3508 from billsacks/alternate_dot_cime_location
+7303682ed Merge pull request #3502 from jedwards4b/remove_titan_piocode
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/config_grids_common.xml
+M	config/cesm/machines/config_machines.xml
+M	config/xml_schemas/config_machines_template.xml
+M	scripts/Tools/Makefile
+M	scripts/create_newcase
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/SystemTests/erio.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps_nuopc/datm/cime_config/buildnml
+M	src/components/data_comps_nuopc/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps_nuopc/datm/src/atm_comp_nuopc.F90
+D	src/components/data_comps_nuopc/datm/src/datm_comp_mod.F90
+M	src/components/data_comps_nuopc/dice/cime_config/buildnml
+M	src/components/data_comps_nuopc/dice/cime_config/namelist_definition_dice.xml
+D	src/components/data_comps_nuopc/dice/src/dice_comp_mod.F90
+M	src/components/data_comps_nuopc/dice/src/ice_comp_nuopc.F90
+M	src/components/data_comps_nuopc/dlnd/cime_config/buildnml
+M	src/components/data_comps_nuopc/dlnd/cime_config/namelist_definition_dlnd.xml
+D	src/components/data_comps_nuopc/dlnd/src/dlnd_comp_mod.F90
+M	src/components/data_comps_nuopc/dlnd/src/lnd_comp_nuopc.F90
+M	src/components/data_comps_nuopc/docn/cime_config/buildnml
+M	src/components/data_comps_nuopc/docn/cime_config/namelist_definition_docn.xml
+D	src/components/data_comps_nuopc/docn/src/docn_comp_mod.F90
+M	src/components/data_comps_nuopc/docn/src/ocn_comp_nuopc.F90
+M	src/components/data_comps_nuopc/drof/cime_config/buildnml
+M	src/components/data_comps_nuopc/drof/cime_config/namelist_definition_drof.xml
+D	src/components/data_comps_nuopc/drof/src/drof_comp_mod.F90
+M	src/components/data_comps_nuopc/drof/src/rof_comp_nuopc.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_dfield_mod.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_fldlist_mod.F90
+R063	src/components/data_comps_nuopc/dshr_nuopc/dshr_nuopc_mod.F90	src/components/data_comps_nuopc/dshr_nuopc/dshr_mod.F90
+M	src/components/data_comps_nuopc/dwav/cime_config/buildnml
+M	src/components/data_comps_nuopc/dwav/cime_config/namelist_definition_dwav.xml
+D	src/components/data_comps_nuopc/dwav/src/dwav_comp_mod.F90
+M	src/components/data_comps_nuopc/dwav/src/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/share/streams/shr_stream_mod.F90
+R058	src/components/data_comps_nuopc/dshr_nuopc/dshr_methods_mod.F90	src/share/streams_nuopc/dshr_methods_mod.F90
+A	src/share/streams_nuopc/dshr_strdata_mod.F90
+A	src/share/streams_nuopc/dshr_stream_mod.F90
+A	src/share/streams_nuopc/dshr_tInterp_mod.F90
+M	src/share/util/shr_flux_mod.F90
+M	utils/perl5lib/Config/SetupTools.pm
+======================================================================
+
 ======================================================================
 
 Originator: Chris Fischer 
