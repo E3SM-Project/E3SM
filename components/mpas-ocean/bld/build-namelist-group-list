@@ -2,9 +2,6 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
-                init_setup
-                cvtgenerator
-                init_ssh_and_landicepressure
                 time_integration
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
@@ -13,7 +10,9 @@ my @groups = qw(run_modes
                 hmix_del2
                 hmix_del4
                 hmix_leith
-                mesoscale_eddy_parameterization
+                redi_isopycnal_mixing
+                gm_eddy_parameterization
+                mesoscale_eddy_parameterizations
                 hmix_del2_tensor
                 hmix_del4_tensor
                 rayleigh_damping
