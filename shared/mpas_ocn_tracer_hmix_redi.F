@@ -181,6 +181,16 @@ contains
       !$omp end master
       !$omp barrier
 
+      nCells = nCellsArray(2)
+      do iCell = 1,nCells
+        rediKappaCell(iCell) = 0.0
+        invAreaCell = 1.0_RKIND/areaCell(iCell)
+        do i = 1, nEdgesOnCell(iCell)
+          iEdge = edgesOnCell(i, iCell)
+          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
+        enddo
+      enddo
+
       nCells = nCellsArray(1)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
 
@@ -193,7 +203,7 @@ contains
          redi_term2(:, :, iCell) = 0.0_RKIND
          redi_term3(:, :, iCell) = 0.0_RKIND
          fluxRediZTop(:, :) = 0.0_RKIND
-         rediKappaCell(iCell) = 0.0_RKIND
+      !   rediKappaCell(iCell) = 0.0_RKIND
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
@@ -207,7 +217,7 @@ contains
                iCellSelf = 2
             endif
 
-            rediKappaCell(iCell) = rediKappaCell(iCell) + RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
+      !      rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
