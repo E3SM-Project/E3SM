@@ -528,7 +528,7 @@ contains
                 eddyLength(iEdge) = min(c_visbeck(iEdge)/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
                                 sqrt(c_visbeck(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
                 eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_visbeck(iEdge)*betaEdge(iEdge))) /  &
-                                      (1.0E-11_RKIND + sqrt(sumRi/ltsum)))
+                                      (1.0E-11_RKIND + sqrt(sumRi)))
                 gmBolusKappa(iEdge) = config_GM_visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
                 gmBolusKappa(iEdge) = max(config_GM_visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_visbeck_max_kappa))
              else !for really shallow columns use min bolus kappa
@@ -744,7 +744,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      real(kind=RKIND) :: avgCellDiameter, sqrtPiInv
+      real(kind=RKIND) :: avgCellDiameter, sqrtPiInv, sphereRadius
 
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
@@ -754,7 +754,7 @@ contains
       integer :: iEdge
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
-      real(KIND=RKIND), pointer :: sphere_radius
+      real(kind=RKIND), pointer :: sphere_radius
       real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
             gmResolutionTaper, gmBolusKappa
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOncell
