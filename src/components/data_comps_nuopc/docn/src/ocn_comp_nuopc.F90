@@ -356,14 +356,15 @@ contains
     call shr_file_setLogUnit (logUnit)
 
     ! Initialize sdat and set the model domain mask in sdat if appropriate
-    ! TODO: need a check that the mask file has the same grid as the model mesh
-    call t_startf('docn_strdata_init')
     reset_mask = .false.
     if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
        reset_mask = .true.
     end if
-    ! TODO: right now model_mesh that is returned overwrites the model_mesh obtained from the config attributes
-    ! This needs to be fixed
+
+    ! TODO: need a check that the mask file has the same grid as the model mesh
+
+    ! Initialize sdat
+    call t_startf('docn_strdata_init')
     call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ocn', &
          model_meshfile, model_maskfile, model_mesh, read_restart, sdat, &
          reset_mask=reset_mask,  rc=rc)
@@ -621,7 +622,8 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain So_omask (the ocean fraction)
-    if (trim(model_maskfile) /= nullstr) then 
+    if (trim(model_maskfile) /= trim(model_meshfile)) then 
+       !TODO: check that the variable 'frac' is on the file and if not abort
        ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
        rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)

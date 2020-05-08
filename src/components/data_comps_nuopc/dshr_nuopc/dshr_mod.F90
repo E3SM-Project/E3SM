@@ -335,9 +335,16 @@ contains
     end if
 
     ! Initialize sdat from data model input files
-    call shr_strdata_init_from_infiles(sdat, nlfilename, model_mesh, clock, mpicom, compid, logunit, &
-         reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (trim(model_meshfile) == trim(model_maskfile)) then
+       ! do not read in a separate mask
+       call shr_strdata_init_from_infiles(sdat, nlfilename, model_mesh, clock, mpicom, compid, logunit, &
+            reset_mask=reset_mask, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call shr_strdata_init_from_infiles(sdat, nlfilename, model_mesh, clock, mpicom, compid, logunit, &
+            reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
   end subroutine dshr_sdat_init
 

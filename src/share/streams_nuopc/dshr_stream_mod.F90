@@ -1605,15 +1605,6 @@ contains
 
     open(newunit=nUnit,file=trim(fileName),form="unformatted",action="write")
 
-    read(nUnit) nStreams
-    if (present(nstrms)) then
-       if (nstrms /= nStreams) then
-          write(s_logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
-          call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
-       endif
-       nStreams = nstrms
-    endif
-
     str = "case name        : "//caseName
     write(nUnit) str
     str = "case description : "//caseDesc
@@ -1621,6 +1612,15 @@ contains
     str = 'File created     : '&
          //dStr(1:4)//'-'//dStr(5:6)//'-'//dStr(7:8)//' '//tStr(1:2)//':'//tStr(3:4)//':'//tStr(5:6)
     write(nUnit) str
+
+    write(nUnit) nStreams
+    if (present(nstrms)) then
+       if (nstrms /= nStreams) then
+          write(s_logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
+          call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
+       endif
+       nStreams = nstrms
+    endif
 
     write(nUnit) nStreams
     do k = 1,nStreams
