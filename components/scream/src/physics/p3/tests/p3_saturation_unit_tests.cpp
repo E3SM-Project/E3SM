@@ -38,8 +38,6 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     Spack sat_liq_p = Functions::polysvp1(temps, false);
     Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
     Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
-    Spack qsi_exact=Functions::qvsat_exact(temps, pres, true);
-    Spack qsl_exact=Functions::qvsat_exact(temps, pres, false);
 
     //Set error tolerances
     //--------------------------------------
@@ -49,13 +47,6 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     //bunch of double-precision intermediate calculations which will add error.
 					     
     Scalar tol = (util::is_single_precision<Scalar>::value ) ? C::Tol*2 : C::Tol;
-
-    //For comparison against analytic saturation mixing ratio formula, note that error in the Flatau et al
-    //approximation is <1e-3 hPa (=0.1 Pa) *if I'm reading their Fig 2a correctly*. qs=0.622 es/(p-es)
-    //\approx 0.622*es/p since p>>es (causes 4% error at 303K and 1e5 Pa). Thus dqs/des = 0.622/p =>
-    //qs errors due to numerical method should be 0.622/1e5*1e-3 ~ 1e-8 at 1e5 Pa.
-
-    const Scalar sym_tol_q = 1e-4; //PMC hack: wasn't passing at 1e-8 so setting to very lax value for now.
 
     //Set constant values
     //--------------------------------------
@@ -73,13 +64,15 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     //necessary b/c packs were created by copying a scalar up to pack size. Thus just evaluating
     // 1st entry below.
 
-
     //==========================================================
     // Test Saturation Vapor Pressure
     //==========================================================
     // First calculate condition number Cond=x*f'(x)/f(x), which gives the growth in roundoff error
     // expected from the function. Here, x=temperature, f(x) = sat_X_p, and
     // f'(x) = L/T*sat_X_p/(Rv*T - sat_X_p/rho_{liq or ice}) from Clausius-Clapeyron.
+    // Note this analytical solution isn't exact because it misses things like surface tension
+    // so it can't replace curve fits like Flatau. But Clausius-Clapeyron is good enough for
+    // getting a ballpark value, which is all we're doing here.
 
     const Scalar Cond_ice_p=(LatVap+LatIce)*sat_ice_p[0]/(RV*temps[0] - sat_ice_p[0]/RhoIce);
     const Scalar Cond_liq_p=LatVap*sat_liq_p[0]/(RV*temps[0] - sat_liq_p[0]/RhoLiq);
@@ -103,16 +96,6 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     const Scalar Cond_ice_r=(LatVap+LatIce)/(RV*temps[0]);
     const Scalar Cond_liq_r=LatVap/(RV*temps[0]);
  
-    
-    // Test vapor pressure against exact symbolic implementation
-    // ---------------------------------------------------------
-    if ( std::abs(mix_ice_r[0] - qsi_exact[0] ) > Cond_ice_r*sym_tol_q ) {
-      printf("Diff btwn analytic qsi=%e and computed=%e is %e, bigger than tol=%e\n",qsi_exact[0],mix_ice_r[0],qsi_exact[0]-mix_ice_r[0],Cond_ice_r*sym_tol_q);
-      errors++;}
-    if ( std::abs(mix_liq_r[0] - qsl_exact[0] ) > Cond_liq_r*sym_tol_q ) {
-      printf("Diff btwn analytic qsl=%e and computed=%e is %e, bigger than tol=%e\n",qsl_exact[0],mix_liq_r[0],qsl_exact[0]-mix_liq_r[0],Cond_liq_r*sym_tol_q);
-      errors++;}
-
     //Test mixing-ratios against Wexler approx: 
     // -------------------     
     // Now check that computed vs expected values are small enough.

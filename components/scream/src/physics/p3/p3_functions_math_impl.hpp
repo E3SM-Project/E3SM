@@ -63,47 +63,6 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice)
   return ep_2 * e_pres / pack::max(p_atm-e_pres, sp(1.e-3));
 }
 
-template <typename S, typename D>
-KOKKOS_FUNCTION
-typename Functions<S,D>::Spack
-Functions<S,D>::qvsat_exact(const Spack& t_atm, const Spack& p_atm, const bool ice)
-{
-  // Compute saturation mixing ratio qs analytically. 
-  // Derivation: Clausius Clapeyron says dqs/dT = L*qs/(Rv*T**2.).
-  // Taking the integral between some T0 and a particular T yields:
-  // qs(T) = qs(T0)*exp{-L/Rv*(1/T - 1/T0)}.
-  // Note that pressure dependency comes from qs(T0), which can
-  // be computed by using an experimentally-determined value for saturation 
-  // vapor pressure (es_T0) at 273.15 K and converting to qs using
-  // the exact formula qs(p) = es_T0/(pres - es_T0).
-
-  const auto tmelt = C::Tmelt;
-  const auto RV = C::RV;
-  const auto LatVap = C::LatVap;
-  const auto LatIce = C::LatIce;
-  const auto ep_2 = C::ep_2;
-  
-  Spack result;
-  Spack es_T0; //saturation vapor pressure at T=tmelt
-  Spack L; //latent heat of vaporization from liquid or ice
-
-  Smask ice_mask = (t_atm < tmelt) && ice;
-  Smask liq_mask = !ice_mask;
-
-  es_T0.set(ice_mask, sp(611.147274) );
-  es_T0.set(liq_mask, sp(611.239921) );
-
-  L.set(ice_mask, LatVap+LatIce );
-  L.set(liq_mask,LatVap);
-
-  Spack qs_T0 = ep_2 * es_T0 / pack::max(p_atm-es_T0, sp(1.e-3));
-  return qs_T0*pack::exp( -L/RV*(1/t_atm - 1/tmelt) );
-
-} // end qvsat_exact
-
-
-
-
 } // namespace p3
 } // namespace scream
 
