@@ -2991,6 +2991,7 @@ void p3_main_pre_main_loop_f(
 
   using Spack      = typename P3F::Spack;
   using view_1d    = typename P3F::view_1d<Spack>;
+  using bview_1d   = typename P3F::view_1d<bool>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
@@ -3059,9 +3060,9 @@ void p3_main_pre_main_loop_f(
     birim_incld_d (temp_d[39]);
 
   // Call core function from kernel
-  Int result = 0;
+  bview_1d bools_d("bools", 2);
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
-  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Int& res) {
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     uview_1d
       upres_d        (temp_d[0]),
@@ -3105,7 +3106,6 @@ void p3_main_pre_main_loop_f(
       unitot_incld_d (temp_d[38]),
       ubirim_incld_d (temp_d[39]);
 
-
     bool log_nucleationPossible_local, log_hydrometeorsPresent_local;
     P3F::p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
@@ -3113,10 +3113,8 @@ void p3_main_pre_main_loop_f(
       ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d,
       uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,
       uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d,
-      log_nucleationPossible_local, log_hydrometeorsPresent_local);
-
-    res = log_nucleationPossible_local + 2*log_hydrometeorsPresent_local;
-  }, result);
+      bools_d(0), bools_d(1));
+  });
 
   // Sync back to host
   Kokkos::Array<view_1d, 28> inout_views = {
@@ -3129,8 +3127,11 @@ void p3_main_pre_main_loop_f(
         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld},
     nk, inout_views);
 
-  *log_nucleationPossible  = (result & 1) != 0;
-  *log_hydrometeorsPresent = (result & 2) != 0;
+  const auto bools_h = Kokkos::create_mirror_view(bools_d);
+  Kokkos::deep_copy(bools_h, bools_d);
+
+  *log_nucleationPossible  = bools_h(0);
+  *log_hydrometeorsPresent = bools_h(1);
 }
 
 } // namespace p3

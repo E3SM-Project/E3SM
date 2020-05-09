@@ -1038,6 +1038,9 @@ void Functions<S,D>
   init_kokkos_ice_lookup_tables(itab, itabcol);
   init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
+  // per-column bools
+  view_2d<bool> bools("bools", ni, 2);
+
   // p3_main loop
   Kokkos::parallel_for(
     "p3 main loop",
@@ -1136,8 +1139,8 @@ void Functions<S,D>
     const auto oxlf              = util::subview(xlf, i);
 
     // Need to watch out for race conditions with these shared variables
-    bool log_hydrometeorsPresent = false;
-    bool log_nucleationPossible  = false;
+    bool &log_nucleationPossible  = bools(i)(0);
+    bool &log_hydrometeorsPresent = bools(i)(1);
 
     // initialize
     p3_main_init(
