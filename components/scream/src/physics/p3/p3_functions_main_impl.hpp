@@ -1139,8 +1139,8 @@ void Functions<S,D>
     const auto oxlf              = util::subview(xlf, i);
 
     // Need to watch out for race conditions with these shared variables
-    bool &log_nucleationPossible  = bools(i)(0);
-    bool &log_hydrometeorsPresent = bools(i)(1);
+    bool &log_nucleationPossible  = bools(i, 0);
+    bool &log_hydrometeorsPresent = bools(i, 1);
 
     // initialize
     p3_main_init(
