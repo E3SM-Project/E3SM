@@ -680,7 +680,6 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="anlworkstation" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
-  <MOAB_PATH>/home/sarich/software/anlworkstation/gcc-6.2-mpich-3.2/moab</MOAB_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -692,7 +691,6 @@ flags should be captured within MPAS CMake files.
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
-    <append> -DMOABDEBUG </append>
   </FFLAGS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack</append>
@@ -702,7 +700,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
-  <MOAB_PATH>/home/sarich/software/anvil/gnu-8-mvapich-2.3/moab</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
@@ -717,12 +714,9 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-  <MOAB_PATH MPILIB="mvapich">/lcrc/project/ACME/MOAB/gcc-73-mvapich</MOAB_PATH>
-  <MOAB_PATH MPILIB="openmpi">/lcrc/project/ACME/MOAB/gcc-73-openmpi</MOAB_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
-  <MOAB_PATH>/home/sarich/software/anvil/intel-18-mvapich-2.3/moab</MOAB_PATH>
   <CFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
@@ -751,8 +745,6 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-  <MOAB_PATH MPILIB="mvapich">/lcrc/project/ACME/MOAB/intel-18-mvapich</MOAB_PATH>
-  <MOAB_PATH MPILIB="openmpi">/lcrc/project/ACME/MOAB/intel-18-openmpi</MOAB_PATH> 
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel18">
@@ -824,27 +816,22 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
-  <MOAB_PATH>/home/iulian/moab-blds/bebop/moab-intel-17</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
-    <append> -DMOABDEBUG -DNO_SHR_VMATH </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
-    <append> $SHELL{nf-config --fflags} -DNO_SHR_VMATH </append>
-    <append DEBUG="FALSE"> $SHELL{nf-config --fflags} -O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
   </FFLAGS>
   <MPICC  MPILIB="impi"> mpiicc  </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
   <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
   <SLIBS>
-    <append>$SHELL{nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{nf-config --flibs} -mkl</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
