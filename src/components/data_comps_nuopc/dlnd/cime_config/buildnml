@@ -70,6 +70,11 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
+    # Determine if will create mesh by reading in a domain file
+    model_meshfile = case.get_value("ATM_DOMAIN_MESH")
+    if model_meshfile == 'create_mesh':
+        nmlgen.set_value("model_createmesh_fromfile",os.path.join(atm_domain_path,atm_domain_file))
+
     #----------------------------------------------------
     # Construct the list of streams.
     #----------------------------------------------------

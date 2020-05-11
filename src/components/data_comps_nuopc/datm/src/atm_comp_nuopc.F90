@@ -69,23 +69,24 @@ module atm_comp_nuopc
   integer                      :: mpicom                    ! mpi communicator
   integer                      :: my_task                   ! my task in mpi communicator mpicom
   logical                      :: masterproc                ! true of my_task == master_task
+  integer                      :: inst_index                ! number of current instance (ie. 1)
   character(len=16)            :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer                      :: logunit                   ! logging unit number
   logical                      :: read_restart              ! start from restart
   character(len=*) , parameter :: nullstr = 'undefined'
 
   ! datm_in namelist input
-  character(CL)                :: nlfilename                          ! filename to obtain namelist info from
-  character(CL)                :: dataMode                            ! flags physics options wrt input data
+  character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
+  character(CL)                :: dataMode = nullstr                  ! flags physics options wrt input data
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
   character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
-  integer                      :: iradsw                              ! radiation interval (input namelist)
-  character(CL)                :: factorFn_mesh                       ! file containing correction factors mesh
-  character(CL)                :: factorFn_data                       ! file containing correction factors data
-  logical                      :: presaero                            ! true => send valid prescribe aero fields to coupler
-  character(CL)                :: bias_correct                        ! true => send bias correction fields to coupler (not used here)
-  character(CL)                :: anomaly_forcing(8)                  ! true => send anomaly forcing fields to coupler (not used here)
+  integer                      :: iradsw = 0                          ! radiation interval (input namelist)
+  character(CL)                :: factorFn_mesh = 'null'              ! file containing correction factors mesh
+  character(CL)                :: factorFn_data = 'null'              ! file containing correction factors data
+  logical                      :: presaero = .false.                  ! true => send valid prescribe aero fields to coupler
+  character(CL)                :: bias_correct = nullstr              ! send bias correction fields to coupler (not used here)
+  character(CL)                :: anomaly_forcing(8) = nullstr        ! send anomaly forcing fields to coupler (not used here)
   logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
   logical                      :: wiso_datm = .false.                 ! expect isotopic forcing from file?
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
@@ -119,8 +120,8 @@ module atm_comp_nuopc
   real(R8), pointer            :: qsatFactor(:)
 
   ! constants
+  logical                      :: diagnose_data= .true.
   integer                      :: idt                        ! integer model timestep
-  logical                      :: diagnose_data= .false.
   integer          , parameter :: master_task  = 0           ! task number of master task
   character(len=*) , parameter :: rpfile       = 'rpointer.atm'
   character(*)     , parameter :: modName      = "(atm_comp_nuopc)"
@@ -283,12 +284,10 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer           :: inst_index ! number of current instance (ie. 1)
     character(len=CL) :: cvalue     ! temporary
     integer           :: shrlogunit ! original log unit
     integer           :: nu         ! unit number
     integer           :: ierr       ! error code
-    character(len=CL) :: fileName   ! generic file name
     logical           :: exists     ! check for file existence  
     character(len=*),parameter :: subname='(atm_comp_nuopc):(InitializeAdvertise) '
     character(*)    ,parameter :: F00 = "('(atm_comp_nuopc) ',8a)"
@@ -310,21 +309,12 @@ contains
          logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Determine namelist filename
-    nlfilename = "datm_in"//trim(inst_suffix)
-
     ! Determine logical masterproc
     masterproc = (my_task == master_task)
 
     ! Read atm_nml from nlfilename
-    iradsw = 0
-    factorFn_data = 'null'
-    factorFn_mesh = 'null'
-    restfilm = trim(nullstr)
-    restfils = trim(nullstr)
-    presaero = .false.
-    force_prognostic_true = .false.
     if (my_task == master_task) then
+       nlfilename = "datm_in"//trim(inst_suffix)
        open (newunit=nu,file=trim(nlfilename),status="old",action="read")
        read (nu,nml=datm_nml,iostat=ierr)
        close(nu)
@@ -332,8 +322,24 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
+    end if
+    call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
+    call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
+    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
+    call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
+    call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
+    call shr_mpi_bcast(iradsw                    , mpicom, 'iradsw')
+    call shr_mpi_bcast(factorFn_data             , mpicom, 'factorFn_data')
+    call shr_mpi_bcast(factorFn_mesh             , mpicom, 'factorFn_mesh')
+    call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
+    call shr_mpi_bcast(presaero                  , mpicom, 'presaero')
+    call shr_mpi_bcast(wiso_datm                 , mpicom, 'wiso_datm')
+    call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
 
-       ! write namelist input to standard out
+    ! write namelist input to standard out
+    if (my_task == master_task) then
        write(logunit,F00)' datamode = ',trim(datamode)
        if (model_createmesh_fromfile /= nullstr) then
           write(logunit,F00)' model_create_meshfile_fromfile = ',trim(model_createmesh_fromfile)
@@ -353,8 +359,10 @@ contains
        write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F02)' presaero  = ',presaero
        write(logunit,F02)' wiso_datm = ',wiso_datm
+    end if
 
-       ! check that files exists
+    ! check that files exists
+    if (my_task == master_task) then
        if (model_createmesh_fromfile /= nullstr) then
           inquire(file=trim(model_createmesh_fromfile), exist=exists)
           if (.not.exists) then
@@ -376,22 +384,8 @@ contains
           end if
        end if
     endif
-    call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
-    call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
-    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
-    call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
-    call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
-    call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
-    call shr_mpi_bcast(iradsw                    , mpicom, 'iradsw')
-    call shr_mpi_bcast(factorFn_data             , mpicom, 'factorFn_data')
-    call shr_mpi_bcast(factorFn_mesh             , mpicom, 'factorFn_mesh')
-    call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
-    call shr_mpi_bcast(presaero                  , mpicom, 'presaero')
-    call shr_mpi_bcast(wiso_datm                 , mpicom, 'wiso_datm')
-    call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
 
-    ! Call advertise phase
+    ! Validate sdat datamode
     if (masterproc) write(logunit,*) ' datm datamode = ',trim(datamode)
     if (trim(datamode) == 'NULL'      .or. trim(datamode) == 'CORE2_NYF'    .or. &
         trim(datamode) == 'CORE2_IAF' .or. trim(datamode) == 'CORE_IAF_JRA' .or. &
@@ -425,7 +419,10 @@ contains
        if (wiso_datm /= flds_wiso) then
           call shr_sys_abort(subName//': datm namelist wiso_datm must match nuopc attribute flds_wiso')
        end if
+    end if
 
+    ! Advertise the export fields
+    if (trim(datamode) /= 'NULL') then
        call datm_comp_advertise(importState, exportState, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -1350,7 +1347,7 @@ contains
           Sa_u(n) = uprime*cos(winddFactor(n)*degtorad) - vprime*sin(winddFactor(n)*degtorad)
           Sa_v(n) = uprime*sin(winddFactor(n)*degtorad) + vprime*cos(winddFactor(n)*degtorad)
 
-          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
+          !--- density and pslv taken directly from input stream, set pbot ---
           Sa_pbot(n) = Sa_pslv(n)
 
           !--- correction to NCEP Arctic & Antarctic air T & potential T ---
