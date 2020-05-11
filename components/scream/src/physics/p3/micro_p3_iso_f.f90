@@ -518,6 +518,28 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    real(kind=c_real), intent(out) :: qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
  end subroutine calculate_incloud_mixingratios_f
 
+ subroutine p3_main_pre_main_loop_f(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+       pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
+       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+       qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
+       nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent) bind(C)
+
+   use iso_c_binding
+
+   ! arguments
+   integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
+   logical(kind=c_bool), value, intent(in) :: log_predictNc
+   real(kind=c_real), value, intent(in) :: dt
+
+   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
+
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, &
+        acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
+        qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
+
+   logical(kind=c_bool), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
+ end subroutine p3_main_pre_main_loop_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use
