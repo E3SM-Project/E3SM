@@ -269,13 +269,13 @@
        group="nudging_nl" valid_values="" >
        Method to perform Nudging analyses.
        1. Step: the model meteorology is nudged toward the same (future) time 
-          slice of the constraining data within each nudging window (e.g., 6-hr)
+          slice of the constraining data within each nudging window (e.g., 6-hr).
        2. Linear: the model meteorology is nudged toward the state at the next 
           model time step, which is linearly interpolated between two neighboring 
-          time slices of the constraining data 
+          time slices of the constraining data. 
        3. IMT: the model meteorology is nudged toward the constraining data at 
           the same model time step and nudging is only applied when the constrainging 
-          data is available
+          data is available.
        Default: Linear
        </entry>
 
@@ -289,22 +289,28 @@
 
 <entry id="Nudge_Loc" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
-       If TRUE, change the location of calculation of nudging tendency to the same location
-       where the nudging data is written out
-       If FALSE, calculate the nudging tendency at the beginning of tphysbc (the same as the default model)
+       If TRUE, change the location of calculation of nudging tendency to 
+       the same location where the nudging data is written out.
+       If FALSE, calculate the nudging tendency at the beginning of 
+       tphysbc (the same as the default model).
        Default: TRUE
        </entry>
 
 <entry id="Nudge_Curr" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
-       Linearly interpolate nudging data to current (set to TRUE) or future (set to FALSE, used by the default model) model time step
+       Linearly interpolate nudging data to current (set to TRUE) or future 
+       (set to FALSE, used by the default model) model time step.
        Default: FALSE
        </entry>
 
 <entry id="Num_Slice" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
        Number of time slices per nudging data file
-       Default: 1 
+       The current nudging code only works for the nudging data file with one-day data. 
+       It does not work correctly when the nudging data file contains multiple-day data.
+       Thus, Num_Slice has to equal to 1 or Nudge_Times_Per_Day.
+       Set default Num_Slice to 0 to force the user to set its value correctly.
+       Default: 0
        </entry>
 
 <!-- Aerosols: Data (CAM version) -->

@@ -164,6 +164,9 @@ module nudging
 !                        Example: Nudge_Curr = FALSE 
 !
 !        Num_Slice:      Number of time slices per nudging data file
+!                        The current nudging code only works for the nudging data file with one-day data.
+!                        It does not work correctly when the nudging data file contains multiple-day data.
+!                        Thus, Num_Slice has to equal to 1 or Nudge_Times_Per_Day.
 !
 !                        Example: Num_Slice = 1
 !
@@ -218,7 +221,7 @@ module nudging
 !      Nudge_Loc           - LOGICAL change the location of calculation of nudging tendency 
 !      Nudge_Curr          - LOGICAL linearly interpolate nudging data to current
 !                                    or future model time step
-!      Num_Slice           - Number of time slices per nudging data file
+!      Num_Slice           - INT  Number of time slices per nudging data file
 !    /
 !
 !================
@@ -462,7 +465,7 @@ contains
    Nudge_Loc          = .true.
    Nudge_Tau          = -999._r8
    Nudge_Curr         = .false.
-   Num_Slice          = 1
+   Num_Slice          = 0
    ! Read in namelist values
    !------------------------
    if(masterproc) then
@@ -532,11 +535,11 @@ contains
      call endrun('nudging_readnl:: ERROR in namelist')
    endif
 
-!   if ( (Num_Slice .ne. Nudge_Times_Per_Day) .and. (Num_Slice .ne. 1) ) then
-!     write(iulog,*) 'NUDGING: Num_Slice=',Num_Slice 
-!     write(iulog,*) 'NUDGING: Num_Slice must equal to Nudge_Times_Per_Day or 1'
-!     call endrun('nudging_readnl:: ERROR in namelist')
-!   end if
+   if ( (Num_Slice .ne. Nudge_Times_Per_Day) .and. (Num_Slice .ne. 1) ) then
+     write(iulog,*) 'NUDGING: Num_Slice=',Num_Slice 
+     write(iulog,*) 'NUDGING: Num_Slice must equal to Nudge_Times_Per_Day or 1'
+     call endrun('nudging_readnl:: ERROR in namelist')
+   end if
 
    ! Broadcast namelist variables
    !------------------------------
