@@ -1794,7 +1794,7 @@
     <domain name="r05_amazon">
       <nx>816</nx> <ny>1</ny>
       <mesh driver="nuopc">$DIN_LOC_ROOT/rof/mizuRoute/meshes/r05_amazon_360_c110308_cdf5_ESMFmesh_c20200507.nc</mesh>
-      <desc>r05_amazon is 1/2 degree river routing grid, just over a 5x5 cell in the Amazon:</desc>
+      <desc>r05_amazon is the regular 1/2 degree river routing grid, but just over a region in the Amazon (corresponds to the 5x5_amazon region for CTSM):</desc>
     </domain>
 
     <domain name="HDMA">
