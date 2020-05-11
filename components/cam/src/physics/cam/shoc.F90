@@ -1954,6 +1954,9 @@ subroutine shoc_length(&
 
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
+  call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
+
+
   do k=1,nlev
     do i=1,shcol
 
@@ -2794,7 +2797,7 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
 
 end subroutine compute_conv_vel_shoc_length
 
-subroutine compute_conv_time_shoc_length(shcol, pblh, conv_vel, tscale)
+subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   ! Compute eddy turnover timescale.  If
   !  convective velocity scale is zero then
   !  set to a minimum threshold
@@ -2818,7 +2821,7 @@ subroutine compute_conv_time_shoc_length(shcol, pblh, conv_vel, tscale)
 
 end subroutine compute_conv_time_shoc_length
 
-subroutine compute_shoc_mix_shoc_length(nlev, shcol, tke, brunt, tscale, zt_grid, l_inf, brunt2,shoc_mix)
+subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,brunt2,shoc_mix)
 
   implicit none
   integer, intent(in) :: nlev, shcol
@@ -2843,7 +2846,28 @@ subroutine compute_shoc_mix_shoc_length(nlev, shcol, tke, brunt, tscale, zt_grid
 
 end subroutine compute_shoc_mix_shoc_length
 
-end module shoc
+subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
+  ! Do checks on the length scale.  Make sure it is not
+  !  larger than the grid mesh of the host model.
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  real(rtype), intent(in) :: host_dx(shcol), host_dy(shcol)  
+  
+  real(rtype), intent(inout) :: shoc_mix(shcol, nlev)
+  integer k, i
+
+  do k=1,nlev
+    do i=1,shcol
+      shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
+      shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
+      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
+    enddo
+  enddo
+
+end subroutine check_length_scale_shoc_length
+
+end module
 
 !==============================================================
 ! This is the end of the SHOC parameterization
