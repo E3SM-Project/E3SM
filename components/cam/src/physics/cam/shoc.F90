@@ -2782,7 +2782,12 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
 
   implicit none
   integer, intent(in) :: nlev, shcol
-  real(rtype), intent(in) :: pblh(shcol), zt_grid(shcol,nlev),  dz_zt(shcol,nlev), thv(shcol,nlev), wthv_sec(shcol,nlev)
+! Planetary boundary layer (PBL) height [m]
+  real(rtype), intent(in) :: pblh(shcol)
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  real(rtype), intent(in) :: thv(shcol,nlev)
+  real(rtype), intent(in) :: wthv_sec(shcol,nlev)
   real(rtype), intent(inout) :: conv_vel(shcol)
   integer k, i
   conv_vel(:) = 0._rtype
@@ -2804,8 +2809,12 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
 
   implicit none
   integer, intent(in) :: shcol
+! Planetary boundary layer (PBL) height [m]
   real(rtype), intent(in) :: pblh(shcol)
-  real(rtype), intent(inout) :: conv_vel(shcol), tscale(shcol) 
+  ! Convective velocity scale
+  real(rtype), intent(inout) :: conv_vel(shcol)
+  ! Convective time scale
+  real(rtype), intent(inout) ::  tscale(shcol) 
 
   integer i 
 
@@ -2825,9 +2834,18 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
 
   implicit none
   integer, intent(in) :: nlev, shcol
-  real(rtype), intent(in) :: tke(shcol,nlev), brunt(shcol,nlev), tscale(shcol)
-  real(rtype), intent(in) :: zt_grid(shcol,nlev), l_inf(shcol)
-  real(rtype), intent(inout) :: brunt2(shcol,nlev), shoc_mix(shcol,nlev)
+  ! turbulent kinetic energy [m^2/s^2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+  ! brunt vaisala frequency [s-1]
+  real(rtype), intent(in) :: brunt(shcol,nlev)
+  ! convective time scale 
+  real(rtype), intent(in) :: tscale(shcol)
+  ! heights, for thermo grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  real(rtype), intent(in) :: l_inf(shcol)
+  real(rtype), intent(inout) :: brunt2(shcol,nlev)
+  ! Turbulent length scale [m]
+  real(rtype), intent(inout) :: shoc_mix(shcol,nlev)
 
   integer k, i
   real(rtype) :: tkes
@@ -2853,7 +2871,7 @@ subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
   implicit none
   integer, intent(in) :: nlev, shcol
   real(rtype), intent(in) :: host_dx(shcol), host_dy(shcol)  
-  
+  ! Turbulent length scale [m]  
   real(rtype), intent(inout) :: shoc_mix(shcol, nlev)
   integer k, i
 
