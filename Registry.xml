@@ -575,6 +575,28 @@
 					possible_values="NONE, LWF16, LF17, RWHGK16"
 		/>
 	</nml_record>
+	<nml_record name="gotm" mode="forward">
+		<nml_option name="config_use_gotm" type="logical" default_value=".false." units="NA"
+					description="If true, use the General Ocean Turbulence Model routines to compute vertical diffusivity and viscosity"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_gotm_namelist_file" type="character" default_value="gotmturb.nml" units="NA"
+					description="File name of GOTM turbulence namelist"
+					possible_values="gotmturb.nml"
+		/>
+		<nml_option name="config_gotm_constant_surface_roughness_length" type="real" default_value="0.02" units="m"
+					description="The constant surface roughness length scale."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_gotm_constant_bottom_roughness_length" type="real" default_value="0.0015" units="m"
+					description="The constant bottom roughness length scale."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_gotm_constant_bottom_drag_coeff" type="real" default_value="1.e-3" units="unitless"
+					description="The constant bottom drag coefficient."
+					possible_values="Any positive real number."
+		/>
+	</nml_record>
 	<nml_record name="forcing" mode="init;forward">
 		<nml_option name="config_use_variable_drag" type="logical" default_value=".false." units="unitless"
 					description="Controls if variable drag is enabled."
@@ -977,11 +999,19 @@
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
 					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
-					possible_values="'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
+					possible_values="'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential' or 'constant_forced'"
 		/>
 		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
 					description="The weight between standard Jacobian and weighted Jacobian, $\gamma$."
 					possible_values="any real between 0 and 1"
+		/>
+		<nml_option name="config_zonal_ssh_grad" type="real" default_value="0.0" units="unitless"
+					description="The zonal (x) ssh gradient to be applied."
+					possible_values="any real"
+		/>
+		<nml_option name="config_meridional_ssh_grad" type="real" default_value="0.0" units="unitless"
+					description="The meridional (y) ssh gradient to be applied."
+					possible_values="any real"
 		/>
 	</nml_record>
 	<nml_record name="eos">
@@ -1342,6 +1372,7 @@
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
+		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 	</packages>
 
 	<streams>
@@ -1630,6 +1661,13 @@
 			<var name="filteredSSHGradientMeridional"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
+            <var name="gotmVertViscTopOfCell"/>
+            <var name="gotmVertDiffTopOfCell"/>
+            <var name="gotmTKETopOfCell"/>
+            <var name="gotmKbTopOfCell"/>
+            <var name="gotmEpsbTopOfCell"/>
+            <var name="gotmDissTopOfCell"/>
+            <var name="gotmLengthTopOfCell"/>
 		</stream>
 
 		<stream name="output"
@@ -1990,6 +2028,35 @@
 		<var name="effectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^{-3}"
 			description="The effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
+		/>
+        <!-- FIELDS FOR GOTM -->
+		<var name="gotmVertViscTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GOTM: vertical viscosity defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
+		/>
+		<var name="gotmVertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GOTM: vertical diffusion defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
+		/>
+		<var name="gotmTKETopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-2}"
+			 description="GOTM: turbulent kenetic energy defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
+		/>
+		<var name="gotmKbTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-4}"
+			 description="GOTM: (half) buoyancy variance defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
+		/>
+		<var name="gotmEpsbTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-5}"
+			 description="GOTM: destruction of buoyancy variance defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
+		/>
+		<var name="gotmDissTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-3}"
+			 description="GOTM: rate of dissipation defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
+		/>
+		<var name="gotmLengthTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m"
+			 description="GOTM: turbulent length scale defined at the cell center (horizontally) and top (vertically)"
+			 packages="gotmPKG"
 		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
