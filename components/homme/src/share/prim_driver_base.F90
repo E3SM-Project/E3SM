@@ -655,6 +655,7 @@ contains
 
     integer :: edgesz, sendsz, recvsz, n, den
 
+#ifdef HAVE_MOAB
     allocate(dom_mt(0:hthreads-1))
     do ith=0,hthreads-1
        dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
@@ -662,7 +663,6 @@ contains
     ith=0
     nets=1
     nete=nelemd
-#ifdef HAVE_MOAB
     call create_moab_mesh_fine(par, elem, nets, nete)
 #endif
 
