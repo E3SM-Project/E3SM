@@ -779,14 +779,9 @@ subroutine update_prognostics_implicit( &
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
 
-  tmpi(:,1) = 0._rtype
   ! Define the tmpi variable, which is really dt*(g*rho)**2/dp
   !  at interfaces. Sub dp = g*rho*dz
-  do k=2,nlevi
-    do i=1,shcol
-       tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / dz_zi(i,k)
-    enddo
-  enddo
+  call compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 
   ! compute 1/dp term, needed in diffusion solver
   do k=1,nlev
@@ -845,6 +840,35 @@ subroutine update_prognostics_implicit( &
   return
 
 end subroutine update_prognostics_implicit
+
+
+subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
+
+  !intent-ins
+  integer,     intent(in) :: nlevi, shcol
+  !time step [s]
+  real(rtype), intent(in) :: dtime
+  !air density at interfaces [kg/m3]
+  real(rtype), intent(in) :: rho_zi(shcol,nlevi)
+  !height thickness at interfaces [m]
+  real(rtype), intent(in) :: dz_zi(shcol,nlevi)
+
+  !intent-out
+  real(rtype), intent(out) :: tmpi(shcol,nlevi)
+
+  !local vars
+  integer :: icol, klev
+
+  tmpi(:,1) = 0._rtype
+  ! tmpi = dt*(g*rho)**2/dp, where dp = g*rho*dz, therefore tmpi = dt*g*rho/dz
+  do klev = 2, nlevi
+    do icol = 1, shcol
+       tmpi(icol,klev) = dtime * (ggr*rho_zi(icol,klev)) / dz_zi(icol,klev)
+    enddo
+  enddo
+
+end subroutine compute_tmpi
+
 
 !==============================================================
 ! SHOC Diagnose the second order moments
