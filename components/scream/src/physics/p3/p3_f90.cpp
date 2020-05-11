@@ -9,8 +9,8 @@
 using scream::Real;
 using scream::Int;
 extern "C" {
-  void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RhoH2O, 
-                 Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce, 
+  void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RhoH2O,
+                 Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce,
                  Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info);
   void p3_use_cxx_c(bool use_cxx);
@@ -25,7 +25,7 @@ extern "C" {
                  Real* pdel, Real* exner, Real* cmeiout, Real* prain,
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
-                 Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot, 
+                 Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot,
                  Real* p3_tend_out, Real* mu_c, Real* lamc, Real* liq_ice_exchange,
                  Real* vap_liq_exchange, Real* vap_ice_exchange, Real* vap_cld_exchange);
 }
@@ -106,7 +106,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(pdel); fdipb(exner); fdipb(cmeiout); fdipb(prain);
   fdipb(nevapr); fdipb(prer_evap);
   fdipb(rflx); fdipb(sflx);
-  fdipb(rcldm); fdipb(lcldm); fdipb(icldm); 
+  fdipb(rcldm); fdipb(lcldm); fdipb(icldm);
   fdipb(pratot); fdipb(prctot); fdipb(p3_tend_out);
   fdipb(mu_c); fdipb(lamc); fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
   fdipb(vap_ice_exchange); fdipb(vap_cld_exchange);
@@ -121,8 +121,8 @@ FortranDataIterator::getfield (Int i) const {
 
 void micro_p3_utils_init () {
   using c = scream::physics::Constants<Real>;
-  micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RhoH2O, 
-                 c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce, 
+  micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RhoH2O,
+                 c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce,
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 

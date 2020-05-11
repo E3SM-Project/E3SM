@@ -32,6 +32,7 @@ set(P3_TESTS_SRCS
   p3_get_latent_heat_unit_tests.cpp
   p3_check_values_unit_tests.cpp
   p3_incloud_mixingratios_unit_tests.cpp
+  p3_main_unit_tests.cpp
 )
 
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)
@@ -52,5 +53,3 @@ add_dependencies(baseline p3_baseline_f90)
 add_dependencies(baseline_cxx p3_baseline_cxx)
 
 configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4 data/p3_lookup_table_1.dat-v4 COPYONLY)
-
-

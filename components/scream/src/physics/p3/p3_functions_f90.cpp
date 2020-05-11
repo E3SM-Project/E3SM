@@ -188,6 +188,17 @@ void calculate_incloud_mixingratios_c(Real qc, Real qr, Real qitot, Real qirim, 
                                       Real inv_lcldm, Real inv_icldm, Real inv_rcldm,
                                       Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
                                       Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);
+
+void p3_main_pre_main_loop_c(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  bool log_predictNc,
+  Real dt,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
+  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
+  Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
+  bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
+
 }
 
 namespace scream {
@@ -931,6 +942,65 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
                                &d.nr, &d.nr_incld, &d.mu_r, &d.lamr, &d.V_qr, &d.V_nr);
 }
 
+P3MainPreLoopData::P3MainPreLoopData(
+  Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  bool log_predictNc_, Real dt_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
+  log_predictNc(log_predictNc_), dt(dt_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
+    &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci,
+    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &qc_incld, &qr_incld, &qitot_incld,
+    &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld};
+
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite invs
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k] = 1 / rho[k];
+    inv_exner[k] = 1 / exner[k];
+  }
+}
+
+P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
+  log_predictNc(rhs.log_predictNc), dt(rhs.dt),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
+    &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci,
+    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &qc_incld, &qr_incld, &qitot_incld,
+    &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void p3_main_pre_main_loop(P3MainPreLoopData& d)
+{
+  p3_init(true);
+  p3_main_pre_main_loop_c(
+    d.kts, d.kte, d.kbot, d.ktop, d.kdir,
+    d.log_predictNc,
+    d.dt,
+    d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
+    d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci,
+    d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.qc_incld, d.qr_incld, d.qitot_incld,
+    d.qirim_incld, d.nc_incld, d.nr_incld, d.nitot_incld, d.birim_incld,
+    &d.log_nucleationPossible, &d.log_hydrometeorsPresent);
+}
+
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
 const P3GlobalForFortran::Views& P3GlobalForFortran::get()
@@ -948,6 +1018,10 @@ void P3GlobalForFortran::deinit()
 {
   P3GlobalForFortran::s_views = nullptr;
 }
+
+//
+// _f function definitions
+//
 
 void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
@@ -1387,6 +1461,7 @@ void calc_first_order_upwind_step_f_impl(
   k_qxtop -= 1;
 
   const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Setup views
   Kokkos::Array<view_1d, 3> temp_d;
@@ -1401,7 +1476,7 @@ void calc_first_order_upwind_step_f_impl(
   pack::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
 
   // Call core function from kernel
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
     for (int i = 0; i < N; ++i) {
@@ -1446,6 +1521,7 @@ void generalized_sedimentation_f_impl(
   *k_qxbot -= 1;
 
   const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
   Kokkos::Array<view_1d, 3> temp_d;
@@ -1464,7 +1540,7 @@ void generalized_sedimentation_f_impl(
   pack::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
 
   // Call core function from kernel
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
     for (int i = 0; i < N; ++i) {
@@ -1563,6 +1639,7 @@ void cloud_sedimentation_f(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
   const auto dnu = P3GlobalForFortran::dnu();
@@ -1588,7 +1665,7 @@ void cloud_sedimentation_f(
     nc_tend_d (temp_d[12]);
 
   // Call core function from kernel
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
 
@@ -1646,6 +1723,7 @@ void ice_sedimentation_f(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
   Kokkos::Array<view_1d, IceSedData::NUM_ARRAYS> temp_d;
@@ -1672,7 +1750,7 @@ void ice_sedimentation_f(
 
   // Call core function from kernel
   auto itab = P3GlobalForFortran::itab();
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
   Real my_prt_sol = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_sol_k) {
@@ -1735,6 +1813,7 @@ void rain_sedimentation_f(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
   Kokkos::Array<view_1d, RainSedData::NUM_ARRAYS> temp_d;
@@ -1764,7 +1843,7 @@ void rain_sedimentation_f(
   // Call core function from kernel
   auto vn_table = P3GlobalForFortran::vn_table();
   auto vm_table = P3GlobalForFortran::vm_table();
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
   Real my_prt_liq = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
@@ -2244,6 +2323,7 @@ void homogeneous_freezing_f(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
   Kokkos::Array<view_1d, HomogeneousFreezingData::NUM_ARRAYS> temp_d;
@@ -2266,7 +2346,7 @@ void homogeneous_freezing_f(
     th_d   (temp_d[11]);
 
   // Call core function from kernel
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     uview_1d
@@ -2685,6 +2765,7 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   kstart -= 1;
   kend -= 1;
   const Int nk = (kend - kstart) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
   Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS+1> cvd_d;
 
   pack::host_to_device({qv, temp, col_loc}, {nk, nk, 3}, cvd_d);
@@ -2692,7 +2773,7 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   view_1d qv_d(cvd_d[0]), temp_d(cvd_d[1]), col_loc_d(cvd_d[2]);
   suview_1d ucol_loc_d(reinterpret_cast<Real*>(col_loc_d.data()), 3);
 
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     uview_1d uqv_d(qv_d), utemp_d(temp_d);
@@ -2849,52 +2930,208 @@ Real cxx_exp(Real input)
 
 void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_,
   Real* qcheti_, Real* qcshd_, Real* qiberg_, Real* qisub_, Real* qidep_)
-  {
-    using P3F = Functions<Real, HostDevice>;
-    using Spack   = typename P3F::Spack;
+{
+  using P3F = Functions<Real, HostDevice>;
+  using Spack   = typename P3F::Spack;
 
-    Spack qc(qc_), qcnuc(qcnuc_), qcaut(*qcaut_), qcacc(*qcacc_), qccol(*qccol_), qcheti(*qcheti_);
-    Spack qcshd(*qcshd_), qiberg(*qiberg_), qisub(*qisub_), qidep(*qidep_);
+  Spack qc(qc_), qcnuc(qcnuc_), qcaut(*qcaut_), qcacc(*qcacc_), qccol(*qccol_), qcheti(*qcheti_);
+  Spack qcshd(*qcshd_), qiberg(*qiberg_), qisub(*qisub_), qidep(*qidep_);
 
-    P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
-    *qcaut_ = qcaut[0];
-    *qcacc_ = qcacc[0];
-    *qccol_ = qccol[0];
-    *qcheti_ = qcheti[0];
-    *qcshd_ = qcshd[0];
-    *qiberg_ = qiberg[0];
-    *qisub_ = qisub[0];
-    *qidep_ = qidep[0];
-  }
+  P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+  *qcaut_ = qcaut[0];
+  *qcacc_ = qcacc[0];
+  *qccol_ = qccol[0];
+  *qcheti_ = qcheti[0];
+  *qcshd_ = qcshd[0];
+  *qiberg_ = qiberg[0];
+  *qisub_ = qisub[0];
+  *qidep_ = qidep[0];
+}
 
 void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, Real qcshd_,
   Real dt, Real* qrevp_, Real* qrcol_, Real* qrheti_)
-  {
-    using P3F = Functions<Real, HostDevice>;
-    using Spack   = typename P3F::Spack;
+{
+  using P3F = Functions<Real, HostDevice>;
+  using Spack   = typename P3F::Spack;
 
-    Spack qr(qr_), qcaut(qcaut_), qcacc(qcacc_), qimlt(qimlt_), qcshd(qcshd_), qrevp(*qrevp_);
-    Spack qrcol(*qrcol_), qrheti(*qrheti_);
+  Spack qr(qr_), qcaut(qcaut_), qcacc(qcacc_), qimlt(qimlt_), qcshd(qcshd_), qrevp(*qrevp_);
+  Spack qrcol(*qrcol_), qrheti(*qrheti_);
 
-    P3F::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
-    *qrevp_ = qrevp[0];
-    *qrcol_ = qrcol[0];
-    *qrheti_ = qrheti[0];
-  }
+  P3F::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
+  *qrevp_ = qrevp[0];
+  *qrcol_ = qrcol[0];
+  *qrheti_ = qrheti[0];
+}
 
 void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg_, Real qrcol_, Real qccol_,
   Real qrheti_, Real qcheti_, Real dt, Real* qisub_, Real* qimlt_)
 {
-    using P3F = Functions<Real, HostDevice>;
-    using Spack   = typename P3F::Spack;
+  using P3F = Functions<Real, HostDevice>;
+  using Spack   = typename P3F::Spack;
 
-    Spack qitot(qitot_), qidep(qidep_), qinuc(qinuc_), qiberg(qiberg_), qrcol(qrcol_), qccol(qccol_);
-    Spack qrheti(qrheti_), qcheti(qcheti_), qisub(*qisub_), qimlt(*qimlt_);
+  Spack qitot(qitot_), qidep(qidep_), qinuc(qinuc_), qiberg(qiberg_), qrcol(qrcol_), qccol(qccol_);
+  Spack qrheti(qrheti_), qcheti(qcheti_), qisub(*qisub_), qimlt(*qimlt_);
 
-    P3F::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt);
-    *qisub_ = qisub[0];
-    *qimlt_ = qimlt[0];
+  P3F::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt);
+  *qisub_ = qisub[0];
+  *qimlt_ = qimlt[0];
+}
 
+void p3_main_pre_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  bool log_predictNc,
+  Real dt,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
+  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
+  Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
+  bool* log_nucleationPossible, bool* log_hydrometeorsPresent)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using bview_1d   = typename P3F::view_1d<bool>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts  -= 1;
+  kte  -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
+
+  // Set up views
+  Kokkos::Array<view_1d, P3MainPreLoopData::NUM_ARRAYS> temp_d;
+
+  pack::host_to_device({pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm,
+        t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci,
+        acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld,
+        qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld},
+    nk, temp_d);
+
+  view_1d
+    pres_d        (temp_d[0]),
+    pdel_d        (temp_d[1]),
+    dzq_d         (temp_d[2]),
+    npccn_d       (temp_d[3]),
+    exner_d       (temp_d[4]),
+    inv_exner_d   (temp_d[5]),
+    inv_lcldm_d   (temp_d[6]),
+    inv_icldm_d   (temp_d[7]),
+    inv_rcldm_d   (temp_d[8]),
+    t_d           (temp_d[9]),
+    rho_d         (temp_d[10]),
+    inv_rho_d     (temp_d[11]),
+    qvs_d         (temp_d[12]),
+    qvi_d         (temp_d[13]),
+    sup_d         (temp_d[14]),
+    supi_d        (temp_d[15]),
+    rhofacr_d     (temp_d[16]),
+    rhofaci_d     (temp_d[17]),
+    acn_d         (temp_d[18]),
+    qv_d          (temp_d[19]),
+    th_d          (temp_d[20]),
+    qc_d          (temp_d[21]),
+    nc_d          (temp_d[22]),
+    qr_d          (temp_d[23]),
+    nr_d          (temp_d[24]),
+    qitot_d       (temp_d[25]),
+    nitot_d       (temp_d[26]),
+    qirim_d       (temp_d[27]),
+    birim_d       (temp_d[28]),
+    xxlv_d        (temp_d[29]),
+    xxls_d        (temp_d[30]),
+    xlf_d         (temp_d[31]),
+    qc_incld_d    (temp_d[32]),
+    qr_incld_d    (temp_d[33]),
+    qitot_incld_d (temp_d[34]),
+    qirim_incld_d (temp_d[35]),
+    nc_incld_d    (temp_d[36]),
+    nr_incld_d    (temp_d[37]),
+    nitot_incld_d (temp_d[38]),
+    birim_incld_d (temp_d[39]);
+
+  // Call core function from kernel
+  bview_1d bools_d("bools", 2);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    uview_1d
+      upres_d        (temp_d[0]),
+      updel_d        (temp_d[1]),
+      udzq_d         (temp_d[2]),
+      unpccn_d       (temp_d[3]),
+      uexner_d       (temp_d[4]),
+      uinv_exner_d   (temp_d[5]),
+      uinv_lcldm_d   (temp_d[6]),
+      uinv_icldm_d   (temp_d[7]),
+      uinv_rcldm_d   (temp_d[8]),
+      ut_d           (temp_d[9]),
+      urho_d         (temp_d[10]),
+      uinv_rho_d     (temp_d[11]),
+      uqvs_d         (temp_d[12]),
+      uqvi_d         (temp_d[13]),
+      usup_d         (temp_d[14]),
+      usupi_d        (temp_d[15]),
+      urhofacr_d     (temp_d[16]),
+      urhofaci_d     (temp_d[17]),
+      uacn_d         (temp_d[18]),
+      uqv_d          (temp_d[19]),
+      uth_d          (temp_d[20]),
+      uqc_d          (temp_d[21]),
+      unc_d          (temp_d[22]),
+      uqr_d          (temp_d[23]),
+      unr_d          (temp_d[24]),
+      uqitot_d       (temp_d[25]),
+      unitot_d       (temp_d[26]),
+      uqirim_d       (temp_d[27]),
+      ubirim_d       (temp_d[28]),
+      uxxlv_d        (temp_d[29]),
+      uxxls_d        (temp_d[30]),
+      uxlf_d         (temp_d[31]),
+      uqc_incld_d    (temp_d[32]),
+      uqr_incld_d    (temp_d[33]),
+      uqitot_incld_d (temp_d[34]),
+      uqirim_incld_d (temp_d[35]),
+      unc_incld_d    (temp_d[36]),
+      unr_incld_d    (temp_d[37]),
+      unitot_incld_d (temp_d[38]),
+      ubirim_incld_d (temp_d[39]);
+
+    bool log_nucleationPossible_local, log_hydrometeorsPresent_local;
+    P3F::p3_main_pre_main_loop(
+      team, nk, log_predictNc, dt,
+      upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
+      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d,
+      uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,
+      uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d,
+      bools_d(0), bools_d(1));
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 28> inout_views = {
+    t_d, rho_d, inv_rho_d, qvs_d, qvi_d, sup_d, supi_d, rhofacr_d, rhofaci_d,
+    acn_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, qc_incld_d, qr_incld_d, qitot_incld_d,
+    qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d};
+
+  pack::device_to_host({t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci,
+        acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld,
+        qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld},
+    nk, inout_views);
+
+  const auto bools_h = Kokkos::create_mirror_view(bools_d);
+  Kokkos::deep_copy(bools_h, bools_d);
+
+  *log_nucleationPossible  = bools_h(0);
+  *log_hydrometeorsPresent = bools_h(1);
 }
 
 } // namespace p3
