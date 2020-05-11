@@ -3,6 +3,7 @@
 list(APPEND CPPDEFS "-DCORE_OCEAN")
 list(APPEND CPPDEFS "-DEXCLUDE_INIT_MODE")
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
+list(APPEND INCLUDES "core_ocean/gotm/include")
 
 # check if lapack is linked
 find_package(LAPACK)
@@ -55,6 +56,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vmix.F
   core_ocean/shared/mpas_ocn_vmix_coefs_redi.F
   core_ocean/shared/mpas_ocn_vmix_cvmix.F
+  core_ocean/shared/mpas_ocn_vmix_gotm.F
   core_ocean/shared/mpas_ocn_tendency.F
   core_ocean/shared/mpas_ocn_tracer_hmix.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del2.F
@@ -131,8 +133,55 @@ set(BGC_FILES
   core_ocean/BGC/co2calc.F90
 )
 
-list(APPEND RAW_SOURCES ${CVMIX_FILES} ${BGC_FILES})
-list(APPEND NO_PREPROCESS ${CVMIX_FILES} ${BGC_FILES})
+# Add GOTM
+if (NOT EXISTS core_ocean/gotm/.git)
+  message(FATAL "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?")
+endif()
+set(GOTM_FILES
+  core_ocean/gotm/src/util/adv_center.F90
+  core_ocean/gotm/src/util/convert_fluxes.F90
+  core_ocean/gotm/src/util/diff_center.F90
+  core_ocean/gotm/src/util/diff_face.F90
+  core_ocean/gotm/src/util/eqstate.F90
+  core_ocean/gotm/src/util/gridinterpol.F90
+  core_ocean/gotm/src/util/lagrange.F90
+  core_ocean/gotm/src/util/ode_solvers.F90
+  core_ocean/gotm/src/util/time.F90
+  core_ocean/gotm/src/util/tridiagonal.F90
+  core_ocean/gotm/src/util/util.F90
+  core_ocean/gotm/src/util/field_manager.F90
+  core_ocean/gotm/src/turbulence/algebraiclength.F90
+  core_ocean/gotm/src/turbulence/alpha_mnb.F90
+  core_ocean/gotm/src/turbulence/cmue_a.F90
+  core_ocean/gotm/src/turbulence/cmue_b.F90
+  core_ocean/gotm/src/turbulence/cmue_c.F90
+  core_ocean/gotm/src/turbulence/cmue_d.F90
+  core_ocean/gotm/src/turbulence/cmue_ma.F90
+  core_ocean/gotm/src/turbulence/cmue_rf.F90
+  core_ocean/gotm/src/turbulence/cmue_sg.F90
+  core_ocean/gotm/src/turbulence/compute_cpsi3.F90
+  core_ocean/gotm/src/turbulence/compute_rist.F90
+  core_ocean/gotm/src/turbulence/dissipationeq.F90
+  core_ocean/gotm/src/turbulence/epsbalgebraic.F90
+  core_ocean/gotm/src/turbulence/fk_craig.F90
+  core_ocean/gotm/src/turbulence/genericeq.F90
+  core_ocean/gotm/src/turbulence/internal_wave.F90
+  core_ocean/gotm/src/turbulence/ispralength.F90
+  core_ocean/gotm/src/turbulence/kbalgebraic.F90
+  core_ocean/gotm/src/turbulence/kbeq.F90
+  core_ocean/gotm/src/turbulence/lengthscaleeq.F90
+  core_ocean/gotm/src/turbulence/potentialml.F90
+  core_ocean/gotm/src/turbulence/production.F90
+  core_ocean/gotm/src/turbulence/q2over2eq.F90
+  core_ocean/gotm/src/turbulence/r_ratio.F90
+  core_ocean/gotm/src/turbulence/tkealgebraic.F90
+  core_ocean/gotm/src/turbulence/tkeeq.F90
+  core_ocean/gotm/src/turbulence/turbulence.F90
+  core_ocean/gotm/src/turbulence/variances.F90
+)
+
+list(APPEND RAW_SOURCES ${CVMIX_FILES} ${BGC_FILES} ${GOTM_FILES})
+list(APPEND NO_PREPROCESS ${CVMIX_FILES} ${BGC_FILES} ${GOTM_FILES})
 
 # Add analysis members
 list(APPEND RAW_SOURCES
