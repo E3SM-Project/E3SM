@@ -1063,6 +1063,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	// Determine field type and default value.
 	get_field_information(vararrtype, vararrdefaultval, default_value, vararrmissingval, missing_value, &type);
 
+	// If a default_value is not specified, but a missing_value is, then set the
+	// default_value (defaultValue) to missing_value
+	if(!vararrdefaultval && vararrmissingval) {
+		snprintf(default_value, 1024, "%s ! defaultValue taking specified missing_value", missing_value);
+	}
+
 	// Determine ndims, hasTime, and decomp type
 	build_dimension_information(registry, var_arr_xml, &ndims, &hasTime, &decomp);
 	ndims++; // Add a dimension for constituents in var_array
@@ -1488,6 +1494,12 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	// Determine field type and default value.
 	get_field_information(vartype, vardefaultval, default_value, varmissingval, missing_value, &type);
+
+	// If a default_value is not specified, but a missing_value is, then set the
+	// default_value (defaultValue) to missing_value
+	if(!vardefaultval && varmissingval) {
+		snprintf(default_value, 1024, "%s ! defaultValue taking specified missing_value", missing_value);
+	}
 
 	// Determine ndims, hasTime, and decomp type
 	build_dimension_information(registry, var_xml, &ndims, &hasTime, &decomp);
