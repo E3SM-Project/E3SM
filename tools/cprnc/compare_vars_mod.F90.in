@@ -364,10 +364,10 @@ contains
           ! can be sensitive to outliers).
           if (n1 > 0 .and. n2 > 0 .and. rms > 0) then
              rms_normalized_denom = (avgval(1) + avgval(2)) / 2.0
-             if(abs(rms_normalized_denom)>1.e-20_r8)then
+             if(abs(rms_normalized_denom)>0)then
                 rms_normalized = rms / rms_normalized_denom
              else
-                rms_normalized = 0
+                rms_normalized = huge(rms)
              end if
           else
              ! don't try to compute rms_normalized in any of the following conditions:
