@@ -268,31 +268,42 @@
 <entry id="Nudge_Method" type="char*80" category="nudging"
        group="nudging_nl" valid_values="" >
        Method to perform Nudging analyses.
-       Default: Step
+       1. Step: the model meteorology is nudged toward the same (future) time 
+          slice of the constraining data within each nudging window (e.g., 6-hr)
+       2. Linear: the model meteorology is nudged toward the state at the next 
+          model time step, which is linearly interpolated between two neighboring 
+          time slices of the constraining data 
+       3. IMT: the model meteorology is nudged toward the constraining data at 
+          the same model time step and nudging is only applied when the constrainging 
+          data is available
+       Default: Linear
        </entry>
 
 <entry id="Nudge_Tau" type="real" category="nudging"
        group="nudging_nl" valid_values="" >
-       Use user-defined relaxation time scale. 
+       Use user-defined relaxation time scale (unit: hour).
+       If Nudge_Tau > 0, the relaxation time scale is determined by Nudge_Tau;
+       If not, the relaxation time scale is determined by Nudge_Times_Per_Day;
        Default: -999
        </entry>
 
 <entry id="Nudge_Loc" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
-       Change the location of calculation of nudging tendency to the same location 
+       If TRUE, change the location of calculation of nudging tendency to the same location
        where the nudging data is written out
-       Default: FALSE
+       If FALSE, calculate the nudging tendency at the beginning of tphysbc (the same as the default model)
+       Default: TRUE
        </entry>
 
 <entry id="Nudge_Curr" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
-       Linearly interpolate nudging data to current or future model time step
+       Linearly interpolate nudging data to current (set to TRUE) or future (set to FALSE, used by the default model) model time step
        Default: FALSE
        </entry>
 
 <entry id="Num_Slice" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
-       Number of time slices per nudging data file; Must be 1 or Nudge_Times_Per_Day
+       Number of time slices per nudging data file
        Default: 1 
        </entry>
 

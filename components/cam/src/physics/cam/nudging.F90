@@ -2,11 +2,11 @@
 module nudging
 !=====================================================================
 !
-! Purpose: Update the nudging code with more functions and flexibility
+! See Patrick's original implementation in the section below
 !
-! Author:  Jian Sun, Kai Zhang, Shixuan Zhang, PNNL, 04/11/2020
+! Revised by Jian Sun, Kai Zhang, Shixuan Zhang, PNNL, 05/11/2020
 !
-! Revisions: 
+! Revisions:
 !   - Include the linear interpolation of nudge data to the model time step. 
 !   - Add the "Nudge_Method" option in the namelist for different methods.
 !   - Bug fix for intermittent nudged simulation:
@@ -127,6 +127,46 @@ module nudging
 !                        Nudge_Hwin_lo = 1.
 !                        Nudge_Hwin_hi = 0.
 !
+!    The following nudging options are added for more flexible controls of nudged simulations
+!
+!        Nudge_Method:   The method to perform Nudging analyses. It has to be
+!                        one of the following three options:
+!                        1. Step: the model meteorology is nudged toward the same (future) time
+!                           slice of the constraining data within each nudging window (e.g., 6-hr)
+!                        2. Linear: the model meteorology is nudged toward the state at the next
+!                           model time step, which is linearly interpolated between two neighboring
+!                           time slices of the constraining data
+!                        3. IMT: the model meteorology is nudged toward the constraining data at
+!                           the same model time step and nudging is only applied when the 
+!                           constrainging  data is available
+! 
+!                        The first two options are continuous nudging while the
+!                        third option is intermittent nudging. 
+!
+!                        Example: Nudge_Method = 'Linear'
+!
+!        Nudge_Tau:      User-defined relaxation time scale (unit: hour).
+!                        If Nudge_Tau > 0, the relaxation time scale is determined by Nudge_Tau;
+!                        If not, the relaxation time scale is determined by Nudge_Times_Per_Day;
+!
+!                        Example: Nudge_Tau = -999
+!
+!        Nudge_Loc:      If TRUE, change the location of calculation of nudging tendency to the
+!                        same location where the nudging data is written out
+!                        If FALSE, calculate the nudging tendency at the beginning of tphysbc (the
+!                        same as the default model)
+!
+!                        Example: Nudge_Loc = TRUE
+!
+!        Nudge_Curr:     If TRUE, linearly interpolate nudging data to current model time step
+!                        If FALSE, linearly interpolate nudging data to future model time step (the same as default model)
+!
+!                        Example: Nudge_Curr = FALSE 
+!
+!        Num_Slice:      Number of time slices per nudging data file
+!
+!                        Example: Num_Slice = 1
+!
 !    &nudging_nl
 !      Nudge_Model         - LOGICAL toggle to activate nudging.
 !      Nudge_Path          - CHAR path to the analyses files.
@@ -173,6 +213,12 @@ module nudging
 !      Nudge_Vwin_Hindex   - REAL HI model index of transition
 !      Nudge_Vwin_Ldelta   - REAL LO transition length
 !      Nudge_Vwin_Hdelta   - REAL HI transition length
+!      Nudge_Method        - CHAR method to perform Nudging analyses. [Step,Linear,IMT]
+!      Nudge_Tau           - REAL relaxation time scale if Nudge_Tau > 0
+!      Nudge_Loc           - LOGICAL change the location of calculation of nudging tendency 
+!      Nudge_Curr          - LOGICAL linearly interpolate nudging data to current
+!                                    or future model time step
+!      Num_Slice           - Number of time slices per nudging data file
 !    /
 !
 !================
@@ -412,8 +458,8 @@ contains
    Nudge_Vwin_Hdelta  =0.1_r8
    Nudge_Vwin_Lindex  =0.0_r8
    Nudge_Vwin_Ldelta  =0.1_r8
-   Nudge_Method       = 'Step'
-   Nudge_Loc          = .false.
+   Nudge_Method       = 'Linear'
+   Nudge_Loc          = .true.
    Nudge_Tau          = -999._r8
    Nudge_Curr         = .false.
    Num_Slice          = 1
@@ -486,11 +532,11 @@ contains
      call endrun('nudging_readnl:: ERROR in namelist')
    endif
 
-   if ( (Num_Slice .ne. Nudge_Times_Per_Day) .and. (Num_Slice .ne. 1) ) then
-     write(iulog,*) 'NUDGING: Num_Slice=',Num_Slice 
-     write(iulog,*) 'NUDGING: Num_Slice must equal to Nudge_Times_Per_Day or 1'
-     call endrun('nudging_readnl:: ERROR in namelist')
-   end if
+!   if ( (Num_Slice .ne. Nudge_Times_Per_Day) .and. (Num_Slice .ne. 1) ) then
+!     write(iulog,*) 'NUDGING: Num_Slice=',Num_Slice 
+!     write(iulog,*) 'NUDGING: Num_Slice must equal to Nudge_Times_Per_Day or 1'
+!     call endrun('nudging_readnl:: ERROR in namelist')
+!   end if
 
    ! Broadcast namelist variables
    !------------------------------
