@@ -64,7 +64,7 @@ module shr_strdata_mod
 
   ! !PRIVATE:
 
-  integer(IN)                          :: debug    = 0  ! local debug flag
+  integer(IN)                          :: debug    = 10  ! local debug flag
   integer(IN)      ,parameter          :: nStrMax = 30
   integer(IN)      ,parameter          :: nVecMax = 30
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
