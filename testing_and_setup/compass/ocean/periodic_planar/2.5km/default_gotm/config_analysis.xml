@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config case="analysis">
+	<add_link source="../forward/output.nc" dest="output.nc"/>
+	<add_link source="../plot_profile.py" dest="plot_profile.py"/>
+	<copy_file source_path="script_test_dir" source="plot_profile.py" dest="plot_profile.py"/>
+
+	<run_script name="run.py">
+		<step executable="./plot_profile.py">
+		</step>
+	</run_script>
+</config>

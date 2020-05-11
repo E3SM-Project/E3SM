@@ -30,6 +30,7 @@ module ocn_vmix
    use ocn_constants
    use ocn_config
    use ocn_vmix_cvmix
+   use ocn_vmix_gotm
    use ocn_vmix_coefs_redi
    use ocn_diagnostics_variables
 
@@ -128,7 +129,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2
+      integer :: err1, err2, err3
       integer :: timeLevel
 
       integer :: iEdge, iCell, nEdges, nCells
@@ -173,8 +174,10 @@ contains
 
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, err1, timeLevel)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, err2, timeLevel)
+      !!!!!!!!!!!!! MRP: need to remove diagnosticsPool here
+      call ocn_vmix_coefs_gotm_build(meshPool, statePool, forcingPool, diagnosticsPool, err3, timeLevel)
 
-      err = ior(err1, err2)
+      err = ior(ior(err1, err2), err3)
 
    !--------------------------------------------------------------------
 
@@ -1109,6 +1112,24 @@ contains
          call mpas_timer_stop('CVMix avg')
       endif
 
+      ! if using GOTM, then viscosity has to be averaged from cell centers to cell edges
+      if ( config_use_gotm ) then
+
+         nEdges = nEdgesArray( 1 )
+         call mpas_timer_start('GOTM avg', .false.)
+         !$omp do schedule(runtime) private(cell1, cell2, k)
+         do iEdge=1,nEdges
+            vertViscTopOfEdge(:, iEdge) = 0.0_RKIND
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k=1,maxLevelEdgeTop(iEdge)
+               vertViscTopOfEdge(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
+            end do
+         end do
+         !$omp end do
+         call mpas_timer_stop('GOTM avg')
+      endif
+
       !
       !  Implicit vertical solve for momentum
       !
@@ -1254,6 +1275,8 @@ contains
       endif
 
       call ocn_vmix_cvmix_init(domain,err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_vmix_gotm_init(domain,err_tmp)
       err = ior(err, err_tmp)
       call ocn_vmix_coefs_redi_init(err_tmp)
       err = ior(err, err_tmp)

@@ -67,7 +67,8 @@ module ocn_vel_pressure_grad
       pGradTypeMontPot     = 3, &! Montgomery potential
       pGradTypeMontPotDens = 4, &! Montgomery potential and density
       pGradTypeJacobDens   = 5, &! Jacobian from density
-      pGradTypeJacobTS     = 6   ! Jacobian from T,S
+      pGradTypeJacobTS     = 6, &! Jacobian from T,S
+      pGradTypeConstForced = 7   ! constant forced
 
    real (kind=RKIND) :: &! precomputed constants for efficiency
       density0Inv,      &! 1/density0
@@ -98,6 +99,8 @@ contains
                                   indxT, indxS, tracers, &
                                   thermExpCoeff, salineContractCoeff, &
                                   tend, err)!{{{
+
+      implicit none
 
       !-----------------------------------------------------------------
       ! input variables
@@ -155,6 +158,11 @@ contains
          rhoL, rhoR,       &! density neighbors for Jacobian
          TL, TR,           &! temperature neighbors for Jacobian
          SL, SR             ! salinity neighbors for Jacobian
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), dimension(:), allocatable :: JacobianDxDs,JacobianTz,JacobianSz,T1,T2,S1,S2
+      real (kind=RKIND), dimension(:,:), allocatable :: FXTop, work1, work2
+      real (kind=RKIND) :: invdcEdge, pGrad, sumAJTop, AJTop, FC, FCPrev, alpha, beta, pressureGrad
+      real (kind=RKIND), dimension(:), pointer :: angleEdge
 
       real (kind=RKIND), dimension(:,:), allocatable :: &
          JacobianDxDs,     &! Jacobian in density * Dx * DS
@@ -542,6 +550,21 @@ contains
 
          !$acc exit data delete (JacobianDxDs, JacobianTz, JacobianSz)
          deallocate(JacobianDxDs, JacobianTz, JacobianSz)
+
+      case (pGradTypeConstForced)
+
+!!!!!!!!!!! need to add updated openMP and  ACC here mrp
+         !$omp do schedule(runtime) private(k)
+         do iEdge=1,nEdges
+            ! compute the pressure gradient to be applied at the edge
+            pressureGrad = config_zonal_ssh_grad * cos(angleEdge(iEdge)) + config_meridional_ssh_grad * sin(angleEdge(iEdge))
+
+            do k=1,maxLevelEdgeTop(iEdge)
+               tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pressureGrad
+            end do
+         end do
+!!!!!!!!!!! need to add updated openMP and  ACC here mrp
+         !$omp end do
 
       case default
 
