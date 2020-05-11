@@ -111,7 +111,7 @@ class Grids(GenericXML):
                 if compset_attrib and not_compset_attrib:
                     compset_match = re.search(compset_attrib, compset)
                     not_compset_match = re.search(not_compset_attrib, compset)
-                    if compset_match is not None and not_compset_match is not None:
+                    if compset_match is not None and not_compset_match is None:
                         foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for {} with compset_match {} and not_compset_match {}"
