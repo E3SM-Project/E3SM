@@ -722,9 +722,9 @@ subroutine update_tracers( &
   ! linearly interpolate air density from thermo to interface grid
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
 
-  do i=1,shcol
-    do k=1,nlev
-      kb=k+1
+  do k=1,nlev
+    kb = k+1
+    do i=1,shcol
       ! define air densities on various levels for mass weighted
       !  diffusion for conservation of mass
       r1=rho_zi(i,k)
