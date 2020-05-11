@@ -3,6 +3,22 @@
 #endif
 
 module gllfvremap_util_mod
+  ! Utilities and extended tests for high-order, mass-conserving, optionally
+  ! shape-preserving
+  !     FV physics <-> GLL dynamics
+  ! remap.
+  !
+  ! Tests operate at the level of gllfvremap_mod's API.
+  !
+  ! Utilities are to support homme_tool. So far these focus on creating
+  ! topography files.
+  !   A topography file contains FV data -- PHIS, SGH*, etc -- plus ncol_d and
+  ! PHIS_d that are the original GLL data. The FV PHIS data are consistent with
+  ! PHIS_d in the sense that an integral of either one over a finite volume
+  ! subcell has the same value.
+  !
+  ! AMB 2019/07-2020/05 Initial
+
   use hybrid_mod, only: hybrid_t
   use kinds, only: real_kind
   use dimensions_mod, only: nelemd, np, nlev, nlevp, qsize
@@ -567,11 +583,6 @@ contains
 
   subroutine gfr_convert_topo(par, elem, nphys, intopofn, outtopoprefix)
     ! Read a pure-GLL topography file. Remap all fields to physgrid. Write a new
-    ! topography file that contains physgrid data, plus ncol_d and PHIS_d that
-    ! are the original GLL data.
-    !   The resulting file has physgrid PHIS data that are consistent with
-    ! PHIS_d in the sense that an integral of either one over a finite volume
-    ! subcell has the same value.
 
 #ifndef CAM
     use common_io_mod, only: varname_len

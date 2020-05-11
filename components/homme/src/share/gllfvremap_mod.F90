@@ -33,7 +33,7 @@ module gllfvremap_mod
   ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are
   ! nearly identical out to day 30, whereas pg1 fields differ visibly.
   !
-  ! AMB 2019/07 Initial
+  ! AMB 2019/07-2020/05 Initial
 
   use hybrid_mod, only: hybrid_t
   use kinds, only: real_kind
