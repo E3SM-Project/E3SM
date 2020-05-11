@@ -1948,20 +1948,9 @@ subroutine shoc_length(&
   !  convective velocity scale is zero then
   !  set to a minimum threshold
 
-  call compute_conv_time_shoc_length(shcol, pblh, conv_vel, tscale)
+  call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
 
-  do k=1,nlev
-    do i=1,shcol
-
-      tkes=sqrt(tke(i,k))
-
-      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
-
-      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k))) &
-        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
-
-    enddo  ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
+  call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,brunt2,shoc_mix)
 
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
@@ -2828,6 +2817,31 @@ subroutine compute_conv_time_shoc_length(shcol, pblh, conv_vel, tscale)
   enddo
 
 end subroutine compute_conv_time_shoc_length
+
+subroutine compute_shoc_mix_shoc_length(nlev, shcol, tke, brunt, tscale, zt_grid, l_inf, brunt2,shoc_mix)
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  real(rtype), intent(in) :: tke(shcol,nlev), brunt(shcol,nlev), tscale(shcol)
+  real(rtype), intent(in) :: zt_grid(shcol,nlev), l_inf(shcol)
+  real(rtype), intent(inout) :: brunt2(shcol,nlev), shoc_mix(shcol,nlev)
+
+  integer k, i
+  real(rtype) :: tkes
+
+  do k=1,nlev
+    do i=1,shcol
+
+      tkes = sqrt(tke(i,k))
+
+      if(brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
+
+      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k)))&
+        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
+    enddo ! end i loop (column loop) 
+  enddo ! end k loop (vertical loop)
+
+end subroutine compute_shoc_mix_shoc_length
 
 end module shoc
 
