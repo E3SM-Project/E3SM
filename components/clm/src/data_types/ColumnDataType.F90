@@ -559,6 +559,7 @@ module ColumnDataType
     real(r8), pointer :: dwt_conv_cflux                        (:)     => null() ! (gC/m2/s) conversion C flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10c_gain                      (:)     => null() ! (gC/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100c_gain                     (:)     => null() ! (gC/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productc_gain                (:)     => null() ! (gC/m2/s) addition to crop product pool
     real(r8), pointer :: dwt_closs                             (:)     => null() ! (gC/m2/s) total carbon loss from product pools and conversion
     real(r8), pointer :: landuseflux                           (:)     => null() ! (gC/m2/s) dwt_closs+product_closs
     real(r8), pointer :: landuptake                            (:)     => null() ! (gC/m2/s) nee-landuseflux
@@ -579,6 +580,8 @@ module ColumnDataType
     real(r8), pointer :: nep                                   (:)     => null() ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nbp                                   (:)     => null() ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
+    real(r8), pointer :: cinputs                               (:)     => null() ! column-level C inputs (gC/m2/s) 
+    real(r8), pointer :: coutputs                              (:)     => null() ! column-level C outputs (gC/m2/s)
     ! CLAMP summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: bgc_cpool_ext_inputs_vr               (:,:,:) => null() ! col-level extneral organic carbon input gC/m3 /time step
     real(r8), pointer :: bgc_cpool_ext_loss_vr                 (:,:,:) => null() ! col-level extneral organic carbon loss gC/m3 /time step
@@ -601,6 +604,11 @@ module ColumnDataType
     real(r8), pointer :: plant_to_cwd_cflux		               (:)     => null() ! for the purpose of mass balance check
     ! Temporary and annual sums
     real(r8), pointer :: annsum_npp                            (:)     => null() ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
+     ! C4MIP output variable
+     real(r8), pointer :: plant_c_to_cwdc                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mortality, plant carbon flux to CWD
+     ! C4MIP output variable
+     real(r8), pointer :: plant_p_to_cwdp                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mortality, plant phosphorus flux to CWD
+
     real(r8), pointer :: lag_npp                               (:)     => null() ! col lagged net primary production (gC/m2/s)
     ! Variables for clm_interface_funcsMod & pflotran
     real(r8), pointer :: externalc_to_decomp_cpools            (:,:,:) => null() ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
@@ -751,6 +759,7 @@ module ColumnDataType
     real(r8), pointer :: dwt_conv_nflux                        (:)     => null() ! (gN/m2/s) conversion N flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10n_gain                      (:)     => null() ! (gN/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100n_gain                     (:)     => null() ! (gN/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productn_gain                (:)     => null() ! (gN/m2/s) addition to crop product pool
     real(r8), pointer :: dwt_frootn_to_litr_met_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootn_to_litr_cel_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootn_to_litr_lig_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
@@ -798,6 +807,8 @@ module ColumnDataType
     real(r8), pointer :: soil_n_grossmin_flux                  (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_litter_nflux                 (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_cwd_nflux                    (:)     => null() ! for the purpose of mass balance check
+  ! C4MIP output variable
+     real(r8), pointer :: plant_n_to_cwdn                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mort
   contains
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
@@ -895,6 +906,7 @@ module ColumnDataType
     real(r8), pointer :: dwt_conv_pflux                        (:)     ! (gP/m2/s) conversion P flux (immediate loss to atm)
     real(r8), pointer :: dwt_prod10p_gain                      (:)     ! (gP/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100p_gain                     (:)     ! (gP/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productp_gain                (:)     ! (gP/m2/s) addition to crop product pool
     real(r8), pointer :: dwt_frootp_to_litr_met_p              (:,:)   ! (gP/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootp_to_litr_cel_p              (:,:)   ! (gP/m3/s) fine root to litter due to landcover change
     real(r8), pointer :: dwt_frootp_to_litr_lig_p              (:,:)   ! (gP/m3/s) fine root to litter due to landcover change
@@ -2974,7 +2986,7 @@ contains
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
-            this%prod1c(c)   + &
+            this%totprodc(c) + &
             this%ctrunc(c)   + &
             this%cropseedc_deficit(c)
             
@@ -3898,7 +3910,7 @@ contains
        this%totprodn(c) = &
             this%prod1n(c) + &
             this%prod10n(c) + &
-            this%prod100n(c)	 
+            this%prod100n(c) 
     
        ! total ecosystem nitrogen, including veg (TOTECOSYSN)
        this%totecosysn(c) = &
@@ -3916,7 +3928,7 @@ contains
             this%totlitn(c) + &
             this%totsomn(c) + &
             this%sminn(c) + &
-            this%prod1n(c) + &
+            this%totprodn(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
             this%cropseedn_deficit(c)
@@ -4891,7 +4903,7 @@ contains
       this%totprodp(c) = &
            this%prod1p(c) + &
            this%prod10p(c) + &
-           this%prod100p(c)	 
+           this%prod100p(c) 
 
       ! total ecosystem phosphorus, including veg (TOTECOSYSP)
       this%totecosysp(c) = &
@@ -4912,7 +4924,7 @@ contains
            this%cwdp(c) + &
            this%totlitp(c) + &
            this%totsomp(c) + &
-           this%prod1p(c) + &
+           this%totprodp(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
@@ -5478,6 +5490,7 @@ contains
     allocate(this%dwt_conv_cflux                    (begc:endc))                  ; this%dwt_conv_cflux               (:)   = nan    
     allocate(this%dwt_prod10c_gain                  (begc:endc))                  ; this%dwt_prod10c_gain             (:)   = nan    
     allocate(this%dwt_prod100c_gain                 (begc:endc))                  ; this%dwt_prod100c_gain            (:)   = nan    
+    allocate(this%dwt_crop_productc_gain            (begc:endc))                  ; this%dwt_crop_productc_gain       (:)   = nan
     allocate(this%dwt_closs                         (begc:endc))                  ; this%dwt_closs                    (:)   = nan    
     allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = nan    
     allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = nan    
@@ -5497,6 +5510,8 @@ contains
     allocate(this%nep                               (begc:endc))                  ; this%nep                          (:)   = nan    
     allocate(this%nbp                               (begc:endc))                  ; this%nbp                          (:)   = nan    
     allocate(this%nee                               (begc:endc))                  ; this%nee                          (:)   = nan    
+    allocate(this%cinputs                           (begc:endc))                  ; this%cinputs                      (:)   = nan
+    allocate(this%coutputs                          (begc:endc))                  ; this%coutputs                     (:)   = nan
     allocate(this%bgc_cpool_ext_inputs_vr           (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_inputs_vr(:,:,:) = nan
     allocate(this%bgc_cpool_ext_loss_vr             (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_loss_vr  (:,:,:) = nan
     allocate(this%cwdc_hr                           (begc:endc))                  ; this%cwdc_hr                      (:)   = nan    
@@ -5516,6 +5531,13 @@ contains
     allocate(this%plant_to_litter_cflux             (begc:endc))                  ; this%plant_to_litter_cflux        (:)   = nan              
     allocate(this%plant_to_cwd_cflux	             (begc:endc))                  ; this%plant_to_cwd_cflux		       (:)   = nan 
     allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = nan 
+    ! C4MIP output variable
+     allocate(this%plant_c_to_cwdc                  (begc:endc))                  ; this%plant_c_to_cwdc              (:)  =nan
+
+    ! C4MIP output variable
+     allocate(this%plant_p_to_cwdp                  (begc:endc))                  ; this%plant_p_to_cwdp              (:)  =nan
+
+
     allocate(this%lag_npp                           (begc:endc))                  ; this%lag_npp                      (:)   = spval 
     allocate(this%externalc_to_decomp_cpools        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%externalc_to_decomp_cpools(:,:,:) = spval
     allocate(this%externalc_to_decomp_delta         (begc:endc))                  ; this%externalc_to_decomp_delta    (:)   = spval    
@@ -5914,6 +5936,11 @@ contains
             avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
             ptr_col=this%dwt_prod100c_gain, default='inactive')
 
+       this%dwt_crop_productc_gain(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_CROP_PRODUCTC_GAIN', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain, default='inactive')
+
        this%prod100c_loss(begc:endc) = spval
        call hist_addfld1d (fname='PROD100C_LOSS', units='gC/m^2/s', &
             avgflag='A', long_name='loss from 100-yr wood product pool', &
@@ -5973,6 +6000,18 @@ contains
        call hist_addfld1d (fname='CANNSUM_NPP', units='gC/m^2/s', &
             avgflag='A', long_name='annual sum of column-level NPP', &
             ptr_col=this%annsum_npp, default='inactive')
+
+       ! C4MIP output variable, plant carbon flux to cwd (a part of fVegLitter)
+       this%plant_c_to_cwdc(begc:endc) = spval
+       call hist_addfld1d (fname='VEGC_TO_CWDC', units='gC/m^2/s', &
+            avgflag='A', long_name='plant carbon flux to cwd', &
+            ptr_col=this%plant_c_to_cwdc, default='inactive')
+
+    ! C4MIP output variable, plant phosphorus flux to cwd (a part of fVegLitter)
+      this%plant_p_to_cwdp(begc:endc) = spval
+      call hist_addfld1d (fname='VEGP_TO_CWDP', units='gP/m^2/s', &
+         avgflag='A', long_name='plant phosphorus flux to cwd', &
+         ptr_col=this%plant_p_to_cwdp, default='inactive')
 
        ! end of C12 block
        
@@ -6110,6 +6149,11 @@ contains
        call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 conversion C flux (immediate loss to atm)', &
             ptr_col=this%dwt_conv_cflux)
+
+       this%dwt_crop_productc_gain(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_CROP_PRODUCTC_GAIN', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain)
 
        this%dwt_prod10c_gain(begc:endc) = spval
        call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN', units='gC13/m^2/s', &
@@ -6416,6 +6460,7 @@ contains
           this%dwt_conv_cflux(c)        = 0._r8
           this%dwt_prod10c_gain(c)      = 0._r8
           this%dwt_prod100c_gain(c)     = 0._r8
+          this%dwt_crop_productc_gain(c) = 0._r8
           this%prod1c_loss(c)           = 0._r8
           this%prod10c_loss(c)          = 0._r8
           this%prod100c_loss(c)         = 0._r8
@@ -7143,6 +7188,8 @@ contains
        this%nep(i)                       = value_column
        this%nbp(i)                       = value_column
        this%nee(i)                       = value_column
+       this%cinputs(i)                   = value_column
+       this%coutputs(i)                  = value_column
        this%fire_closs(i)                = value_column
        this%cwdc_hr(i)                   = value_column
        this%cwdc_loss(i)                 = value_column
@@ -7225,6 +7272,7 @@ contains
        this%dwt_conv_cflux(c)           = 0._r8
        this%dwt_prod10c_gain(c)         = 0._r8
        this%dwt_prod100c_gain(c)        = 0._r8
+       this%dwt_crop_productc_gain(c)   = 0._r8
        this%dwt_slash_cflux(c)          = 0._r8
     end do
 
@@ -7455,6 +7503,7 @@ contains
     allocate(this%ndep_to_sminn                   (begc:endc))                   ; this%ndep_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_sminn                   (begc:endc))                   ; this%nfix_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_ecosysn                 (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = nan
+
     allocate(this%fert_to_sminn                   (begc:endc))                   ; this%fert_to_sminn	                 (:)   = nan
     allocate(this%soyfixn_to_sminn                (begc:endc))                   ; this%soyfixn_to_sminn               (:)   = nan
     allocate(this%hrv_deadstemn_to_prod10n        (begc:endc))                   ; this%hrv_deadstemn_to_prod10n       (:)   = nan
@@ -7495,6 +7544,7 @@ contains
     allocate(this%dwt_conv_nflux                  (begc:endc))                   ; this%dwt_conv_nflux                 (:)   = nan
     allocate(this%dwt_prod10n_gain                (begc:endc))                   ; this%dwt_prod10n_gain               (:)   = nan
     allocate(this%dwt_prod100n_gain               (begc:endc))                   ; this%dwt_prod100n_gain              (:)   = nan
+    allocate(this%dwt_crop_productn_gain          (begc:endc))                   ; this%dwt_crop_productn_gain         (:)   = nan
     allocate(this%dwt_nloss                       (begc:endc))                   ; this%dwt_nloss                      (:)   = nan
     allocate(this%wood_harvestn                   (begc:endc))                   ; this%wood_harvestn                  (:)   = nan
     allocate(this%dwt_frootn_to_litr_met_n        (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n       (:,:) = nan
@@ -7586,6 +7636,10 @@ contains
     allocate(this%smin_nh4_to_plant               (begc:endc))                    ; this%smin_nh4_to_plant             (:)   = nan 
     allocate(this%plant_to_litter_nflux           (begc:endc))                    ; this%plant_to_litter_nflux         (:)   = nan
     allocate(this%plant_to_cwd_nflux              (begc:endc))                    ; this%plant_to_cwd_nflux            (:)   = nan
+    ! C4MIP output variable
+    allocate(this%plant_n_to_cwdn                  (begc:endc))                   ; this%plant_n_to_cwdn               (:)  =nan
+
+
     allocate(this%bgc_npool_ext_inputs_vr         (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_inputs_vr          (:,:,:) = nan
     allocate(this%bgc_npool_ext_loss_vr           (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_loss_vr            (:,:,:) = nan
     allocate(this%decomp_cascade_ntransfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ntransfer_vr      (:,:,:) = nan
@@ -7625,10 +7679,22 @@ contains
          avgflag='A', long_name='atmospheric N deposition to soil mineral N', &
          ptr_col=this%ndep_to_sminn)
 
+    this%nfix_to_ecosysn(begc:endc) = spval
+    call hist_addfld1d (fname='NFIX_TO_ECOSYSN', units='gN/m^2/s', &
+         avgflag='A', long_name='symbiotic/asymbiotic N fixation to the whole ecosystem', &
+         ptr_col=this%nfix_to_ecosysn,default='inactive')
+
+
     this%nfix_to_sminn(begc:endc) = spval
     call hist_addfld1d (fname='NFIX_TO_SMINN', units='gN/m^2/s', &
          avgflag='A', long_name='symbiotic/asymbiotic N fixation to soil mineral N', &
          ptr_col=this%nfix_to_sminn)
+
+    ! C4MIP output variable, plant nitrogen flux to cwd (a part of fVegLitter)
+    this%plant_n_to_cwdn(begc:endc) = spval
+    call hist_addfld1d (fname='VEGN_TO_CWDN', units='gN/m^2/s', &
+         avgflag='A', long_name='plant nitrogen flux to cwd', &
+         ptr_col=this%plant_n_to_cwdn, default='inactive')
 
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
@@ -8257,6 +8323,11 @@ contains
          avgflag='A', long_name='conversion N flux (immediate loss to atm)', &
          ptr_col=this%dwt_conv_nflux, default='inactive')
 
+    this%dwt_crop_productn_gain(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_CROP_PRODUCTN_GAIN', units='gN/m^2/s', &
+         avgflag='A', long_name='addition to crop product pool', &
+         ptr_col=this%dwt_crop_productn_gain, default='inactive')
+
     this%dwt_prod10n_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10N_GAIN', units='gN/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
@@ -8804,6 +8875,7 @@ contains
        this%dwt_conv_nflux(c)        = 0._r8
        this%dwt_prod10n_gain(c)      = 0._r8
        this%dwt_prod100n_gain(c)     = 0._r8
+       this%dwt_crop_productn_gain(c) = 0._r8
        this%dwt_slash_nflux(c)       = 0._r8
     end do
 
@@ -9406,6 +9478,7 @@ contains
     allocate(this%dwt_conv_pflux                   (begc:endc))                   ; this%dwt_conv_pflux                (:)   = nan
     allocate(this%dwt_prod10p_gain                 (begc:endc))                   ; this%dwt_prod10p_gain              (:)   = nan
     allocate(this%dwt_prod100p_gain                (begc:endc))                   ; this%dwt_prod100p_gain             (:)   = nan
+    allocate(this%dwt_crop_productp_gain           (begc:endc))                   ; this%dwt_crop_productp_gain        (:)   = nan
     allocate(this%dwt_ploss                        (begc:endc))                   ; this%dwt_ploss                     (:)   = nan
     allocate(this%wood_harvestp                    (begc:endc))                   ; this%wood_harvestp                 (:)   = nan
     allocate(this%dwt_frootp_to_litr_met_p         (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_met_p      (:,:) = nan
@@ -9929,6 +10002,11 @@ contains
          avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
          ptr_col=this%dwt_conv_pflux, default='inactive')
 
+    this%dwt_crop_productp_gain(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_CROP_PRODUCTP_GAIN', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to crop product pool', &
+         ptr_col=this%dwt_crop_productp_gain, default='inactive')
+
     this%dwt_prod10p_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
@@ -10197,9 +10275,9 @@ contains
        this%secondp_to_labilep(i)        = value_column
        this%secondp_to_occlp(i)          = value_column
        this%sminp_leached(i)             = value_column
+       this%fire_ploss(i)                = value_column
        this%pinputs(i)                   = value_column
        this%poutputs(i)                  = value_column
-       this%fire_ploss(i)                = value_column
        this%som_p_leached(i)             = value_column
        this%somp_erode(i)                = value_column
        this%somp_deposit(i)              = value_column
@@ -10335,6 +10413,7 @@ contains
        this%dwt_conv_pflux(c)        = 0._r8
        this%dwt_prod10p_gain(c)      = 0._r8
        this%dwt_prod100p_gain(c)     = 0._r8
+       this%dwt_crop_productp_gain(c) = 0._r8
        this%dwt_slash_pflux(c)       = 0._r8
     end do
 

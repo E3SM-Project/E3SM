@@ -4031,6 +4031,14 @@ Type of radiation scheme employed.
 Default: set by build-namelist
 </entry>
 
+<entry id="constant_zenith_deg" type="real"  category="radiation"
+       group="phys_ctl_nl" valid_values="" >
+Constant solar zenith angle value in degrees for idealized configurations
+such as radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
+</entry>
+
 <entry id="conv_water_in_rad" type="integer" category="radiation"
        group="phys_ctl_nl" valid_values="0,1,2" >
 Convective water used in radiation?
@@ -4076,6 +4084,20 @@ Default: -1
 Specifies length of time in timesteps (positive) or hours (negative) SW/LW
 radiation will be run for every timestep from the start of an initial run.
 Default: 0
+</entry>
+
+<entry id="do_aerosol_rad" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Indicates whether to consider aerosols in radiative calculations
+Default: TRUE
+</entry>
+
+<entry id="fixed_total_solar_irradiance" type="real"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Fixed value of solar constant for idealized configurations such as 
+radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
 </entry>
 
 <entry id="spectralflux" type="logical"  category="radiation"
@@ -4404,6 +4426,53 @@ Default: current model time of day
 Use spectral scaling in the radiation heating 
 Default: false
 </entry>
+
+<!-- MMF -->
+<entry id="use_MMF" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on super parameterized CAM
+Default: false
+</entry>
+
+<entry id="use_ECPP" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on explicit cloud parameterized pollutants
+Default: false
+</entry>
+
+<entry id="use_MAML" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on Multiple Atmosphere and Multiple Land option 
+Default: false
+</entry>
+
+<entry id="MMF_microphysics_scheme" type="char*16" category="conv"
+       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+Type of SPCAM microphysics scheme employed.
+Default: sam1mom
+</entry>
+
+<!-- MMF Mean State Acceleration(MSA) definitions -->
+<entry id="use_crm_accel" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Enables CRM mean-state acceleration when using SPCAM.
+Default: true
+</entry>
+
+<entry id="crm_accel_factor" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+CRM acceleration factor to apply if use_crm_accel is true
+Default: 2.0
+</entry>
+
+<entry id="crm_accel_uv" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Turn on CRM mean-state acceleration for u,v when use_crm_accel is true.
+If crm_accel_uv is false and use_crm_accel is true, then mean-state
+acceleration will only be applied to scalar fields (liquid/ice static 
+energy and non-precipitating total water mixing ratio). This has
+no effect when use_crm_accel is false.
+Default: true
 
 <!-- Test Tracers -->
 
@@ -7331,6 +7400,12 @@ Default: 1.0 for CAM, set by build-namelist for WACCM, T31
 Factor determining z_0 from orographic standard deviation [ no unit ] 
 Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varname>.
 set by build-namelist for WACCM, T31
+</entry>
+
+<entry id="omega" type="real" category="physconst"
+       group="physconst_nl" valid_values="" >
+Planetary rotation rate (radians/second). Value set here is ONLY used in the atmosphere.
+Default: set to shr_const value
 </entry>
 
 </namelist_definition>

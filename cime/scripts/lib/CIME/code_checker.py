@@ -76,7 +76,11 @@ def get_all_checkable_files():
     cimeroot = get_cime_root()
     all_git_files = run_cmd_no_fail("git ls-files", from_dir=cimeroot, verbose=False).splitlines()
     if get_cime_default_driver() == "nuopc":
-        nuopc_git_files = run_cmd_no_fail("git ls-files", from_dir=os.path.join(cimeroot,"src","drivers","nuopc"), verbose=False).splitlines()
+        nuopc_git_files = []
+        try:
+            nuopc_git_files = run_cmd_no_fail("git ls-files", from_dir=os.path.join(cimeroot,"src","drivers","nuopc"), verbose=False).splitlines()
+        except:
+            logger.warning("No nuopc driver found in source")
         all_git_files.extend([os.path.join("src","drivers","nuopc",_file) for _file in nuopc_git_files])
     files_to_test = [item for item in all_git_files
                      if ((item.endswith(".py") or is_python_executable(os.path.join(cimeroot, item))) and not _should_pylint_skip(item))]

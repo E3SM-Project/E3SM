@@ -1,0 +1,90 @@
+#!/bin/bash
+{{ batchdirectives }}
+
+# Check environment variable
+if [ -z "${NCEPLIBS_DIR}" ]; then
+  echo "NCEPLIBS_DIR needs to be set! Exiting ..."
+  exit
+fi
+
+# Set environment variables and load modules
+source {{ caseroot }}/.env_mach_specific.sh
+
+# Query run directory
+rundir=`./xmlquery --value RUNDIR`
+echo "Run directory is $rundir"
+
+# Query build directory
+blddir="$rundir/../bld"
+
+# Link chgres executable to build directory
+cd $blddir
+ln -sf $NCEPLIBS_DIR/bin/chgres_cube.exe .
+cd -
+
+# Find date command
+OS=`uname -a`
+MACOS='Darwin'
+if [[ "$OS" == *"$MACOS"* ]]; then
+  date_cmd=gdate
+else
+  date_cmd=date
+fi
+
+# Query resolution and date
+atm_grid=`./xmlquery --value ATM_GRID`
+start_date=`./xmlquery --value RUN_STARTDATE`
+start_tod=`./xmlquery --value START_TOD`
+start_hh=$((start_tod/3600))
+echo "ATM_GRID = $atm_grid"
+echo "RUN_STARTDATE = $start_date + $start_hh hours"
+
+# Prefix for file names
+prefix=`printf "${atm_grid}.${start_date}_%02d" "$start_hh"`
+echo "FILE PREFIX = $prefix"
+
+# Query it is a restart or not
+isrestart=`./xmlquery --value CONTINUE_RUN`
+echo "Is this run restart? $isrestart"
+
+# Make sure namelists are up to date
+./preview_namelists
+
+# Query required number of task
+np=`./xmlquery task_count --subgroup case.chgres --value`
+
+# Goto run directory
+cd $rundir
+
+# Run it only if it is not restart and INPUT/ directory has no input for the given date
+if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; then
+  # Link namelist file
+  ln -sf config.nml fort.41
+
+  # Get current date
+  LID=`${date_cmd} +%y%m%d-%H%M%S`
+
+  # Run chgres
+  runcmd='{{ mpirun }}'
+  mpirun=`echo $runcmd | awk '{print $1}'`
+  eval "$mpirun -n $np $blddir/chgres_cube.exe 1> chgres_cube.$LID.log 2>&1"
+
+  # Move output files to input directory
+  mv -f gfs_ctrl.nc INPUT/${prefix}.gfs_ctrl.nc
+  mv -f out.atm.tile1.nc INPUT/${prefix}.gfs_data.tile1.nc
+  mv -f out.atm.tile2.nc INPUT/${prefix}.gfs_data.tile2.nc
+  mv -f out.atm.tile3.nc INPUT/${prefix}.gfs_data.tile3.nc
+  mv -f out.atm.tile4.nc INPUT/${prefix}.gfs_data.tile4.nc
+  mv -f out.atm.tile5.nc INPUT/${prefix}.gfs_data.tile5.nc
+  mv -f out.atm.tile6.nc INPUT/${prefix}.gfs_data.tile6.nc
+  mv -f out.sfc.tile1.nc INPUT/${prefix}.sfc_data.tile1.nc
+  mv -f out.sfc.tile2.nc INPUT/${prefix}.sfc_data.tile2.nc
+  mv -f out.sfc.tile3.nc INPUT/${prefix}.sfc_data.tile3.nc
+  mv -f out.sfc.tile4.nc INPUT/${prefix}.sfc_data.tile4.nc
+  mv -f out.sfc.tile5.nc INPUT/${prefix}.sfc_data.tile5.nc
+  mv -f out.sfc.tile6.nc INPUT/${prefix}.sfc_data.tile6.nc
+else
+  echo "Skip running CHGRES!"
+  echo "Restarted? - $isrestart"
+  echo "Input already exists or processed? - $rundir/INPUT/${prefix}.gfs_ctrl.nc"
+fi

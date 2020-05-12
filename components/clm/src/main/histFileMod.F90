@@ -2667,6 +2667,7 @@ contains
           call ncd_io(varname='lon', data=ldomain%lonc, dim1name=grlnd, ncid=nfid(t), flag='write')
           call ncd_io(varname='lat', data=ldomain%latc, dim1name=grlnd, ncid=nfid(t), flag='write')
        end if
+       call ncd_io(varname='topo'    , data=ldomain%topo, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='area'    , data=ldomain%area, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landfrac', data=ldomain%frac, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')

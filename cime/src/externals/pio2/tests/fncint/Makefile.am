@@ -16,7 +16,7 @@ LDADD += -lnetcdff
 AM_FCFLAGS = -I${top_builddir}/src/flib ${CPPFLAGS}
 
 # Find the pio.h and pio_tests.h file for the C test.
-AM_CPPFLAGS = -I${top_srcdir}/src/clib -I${top_srcdir}/tests/cunit
+AM_CPPFLAGS += -I${top_srcdir}/src/clib -I${top_srcdir}/tests/cunit
 
 # Build the test for make check.
 check_PROGRAMS = ftst_pio ftst_pio_orig tst_c_pio

@@ -1,15 +1,15 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.test_scheduler import NAMELIST_PHASE
-from CIME.utils import run_cmd, expect, get_scripts_root, get_model, EnvironmentContext
+from CIME.utils import run_cmd, get_scripts_root, get_model, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
-
-import os, glob, time, six
+from CIME.test_utils import get_test_status_files
+import os,  time, six
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def bless_namelists(test_name, report_only, force, baseline_name, baseline_root):
+def bless_namelists(test_name, report_only, force, baseline_name, baseline_root, new_test_root=None, new_test_id=None):
 ###############################################################################
     # Be aware that restart test will overwrite the original namelist files
     # with versions of the files that should not be blessed. This forces us to
@@ -21,6 +21,11 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
         (force or six.moves.input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
 
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
+        if new_test_root is not None:
+            create_test_gen_args += " --test-root={0} --output-root={0} ".format(new_test_root)
+        if new_test_id is not None:
+            create_test_gen_args += " -t {}".format(new_test_id)
+
         stat, out, _ = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root), combine_output=True)
         if stat != 0:
             return False, "Namelist regen failed: '{}'".format(out)
@@ -57,11 +62,9 @@ def bless_history(test_name, case, baseline_name, baseline_root, report_only, fo
 
 ###############################################################################
 def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False,
-                       report_only=False, force=False, bless_tests=None, no_skip_pass=False):
+                       report_only=False, force=False, bless_tests=None, no_skip_pass=False, new_test_root=None, new_test_id=None):
 ###############################################################################
-    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}*".format(test_id)
-    test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
-    expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
+    test_status_files = get_test_status_files(test_root, compiler, test_id=test_id)
 
     # auto-adjust test-id if multiple rounds of tests were matched
     timestamps = set()
@@ -159,7 +162,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
                     # Bless namelists
                     if nl_bless:
-                        success, reason = bless_namelists(test_name, report_only, force, baseline_name_resolved, baseline_root_resolved)
+                        success, reason = bless_namelists(test_name, report_only, force, baseline_name_resolved, baseline_root_resolved, new_test_root=new_test_root, new_test_id=new_test_id)
                         if not success:
                             broken_blesses.append((test_name, reason))
 

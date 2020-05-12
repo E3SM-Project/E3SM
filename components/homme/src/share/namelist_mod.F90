@@ -377,7 +377,7 @@ module namelist_mod
     mesh_file='none'
     ne              = 0
     transport_alg = 0
-    semi_lagrange_cdr_alg = 21
+    semi_lagrange_cdr_alg = 3
     semi_lagrange_cdr_check = .false.
     semi_lagrange_hv_q = 1
     semi_lagrange_nearest_point_lev = 256
@@ -1105,10 +1105,26 @@ module namelist_mod
 #endif
 #endif
 
+      call print_clear_message()
 
 !=======================================================================================================!
     endif
 
   end subroutine readnl
+
+  subroutine print_clear_message()
+    ! Those familiar with Homme can deduce dycore and transport type from
+    ! options. But we should provide friendly message for others.
+#if defined MODEL_THETA_L
+    write(iulog,*) 'Running dycore: theta-l'
+#elif defined _PRIM
+    write(iulog,*) 'Running dycore: preqx'
+#endif
+    if (transport_alg == 0) then
+       write(iulog,*) 'Running tracer transport method: horizonatally Eulerian'
+    else
+       write(iulog,*) 'Running tracer transport method: semi-Lagrangian'
+    end if
+  end subroutine print_clear_message
 
 end module namelist_mod

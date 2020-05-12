@@ -130,6 +130,20 @@ module clm_varctl
 
   ! True is 2way, false is 1way
   logical, public :: tw_irr = .false.  
+  
+  !----------------------------------------------------------
+  ! Extra groundwater pumping for irrigation
+  !----------------------------------------------------------
+
+  ! True is extra pumping, false is stick with the gw fraction
+  logical, public :: extra_gw_irr = .false. 
+  
+  !----------------------------------------------------------
+  ! FIRRIG data
+  !----------------------------------------------------------
+
+  ! True is read from surface data, false is constant
+  logical, public :: firrig_data = .false. 
 
   !----------------------------------------------------------
   ! Landunit logic
@@ -318,6 +332,7 @@ module clm_varctl
   logical, public :: use_vichydro        = .false.
   logical, public :: use_century_decomp  = .false.
   logical, public :: use_cn              = .false.
+  logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
   logical, public :: use_snicar_ad       = .false.

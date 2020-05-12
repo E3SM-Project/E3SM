@@ -44,6 +44,12 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- twowayirrigation default -->
 <tw_irr>.false.</tw_irr>
 
+<!-- extra gw pumping for irrigation default -->
+<extra_gw_irr>.false.</extra_gw_irr>
+
+<!-- firrig from surface data default -->
+<firrig_data>.false.</firrig_data>
+
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
 <suplnitro use_fates=".true." >NONE</suplnitro>
@@ -98,7 +104,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c180713.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
 
@@ -110,7 +116,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
-<fsoilordercon nu_com="RD" >lnd/clm2/paramdata/CNP_parameters_c180529.nc</fsoilordercon> 
+<fsoilordercon nu_com="RD" >lnd/clm2/paramdata/CNP_parameters_c180529.nc</fsoilordercon>
+<fsoilordercon nu_com="ECA">lnd/clm2/paramdata/CNP_parameters_c180312.nc'</fsoilordercon>
 
 <!-- HOMME grid ne4 resolution -->
 

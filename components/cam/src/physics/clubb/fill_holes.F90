@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: fill_holes.F90 8738 2018-07-19 19:58:53Z bmg2@uwm.edu $
+! $Id: fill_holes.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
 !===============================================================================
 module fill_holes
 
@@ -12,7 +12,6 @@ module fill_holes
             fill_holes_wv, &
             vertical_avg, &
             vertical_integral, &
-            clip_hydromet_conc_mvr, &
             setup_stats_indices
 
   private :: fill_holes_multiplicative
@@ -117,14 +116,14 @@ module fill_holes
           if ( field_grid == "zt" ) then
             call fill_holes_multiplicative &
                     ( begin_idx, end_idx, threshold, &
-                      rho_ds(begin_idx:end_idx), gr%dzt(begin_idx:end_idx), &
+                      rho_ds(begin_idx:end_idx), gr%invrs_dzt(begin_idx:end_idx), &
                       field(begin_idx:end_idx) )
                       
           ! 'field' is on the zm (momentum level) grid
           elseif ( field_grid == "zm" )  then
             call fill_holes_multiplicative &
                     ( begin_idx, end_idx, threshold, &
-                      rho_ds_zm(begin_idx:end_idx), gr%dzm(begin_idx:end_idx), &
+                      rho_ds_zm(begin_idx:end_idx), gr%invrs_dzm(begin_idx:end_idx), &
                       field(begin_idx:end_idx) )
           endif
 
@@ -145,14 +144,14 @@ module fill_holes
         if ( field_grid == "zt" ) then
           call fill_holes_multiplicative &
                  ( 2, upper_hf_level, threshold, &
-                   rho_ds(2:upper_hf_level), gr%dzt(2:upper_hf_level), &
+                   rho_ds(2:upper_hf_level), gr%invrs_dzt(2:upper_hf_level), &
                    field(2:upper_hf_level) )
                    
         ! 'field' is on the zm (momentum level) grid
         elseif ( field_grid == "zm" )  then
             call fill_holes_multiplicative &
                  ( 2, upper_hf_level, threshold, &
-                   rho_ds_zm(2:upper_hf_level), gr%dzm(2:upper_hf_level), &
+                   rho_ds_zm(2:upper_hf_level), gr%invrs_dzm(2:upper_hf_level), &
                    field(2:upper_hf_level) )
         endif
 
@@ -167,7 +166,7 @@ module fill_holes
   !=============================================================================
   subroutine fill_holes_multiplicative &
                  ( begin_idx, end_idx, threshold, &
-                   rho, dz, &
+                   rho, invrs_dz, &
                    field )
 
     ! Description:
@@ -186,9 +185,6 @@ module fill_holes
     ! Dynamics", Durran (1999), p. 292.
     !-----------------------------------------------------------------------
 
-    use constants_clubb, only: &
-      eps
-
     use clubb_precision, only: &
       core_rknd ! Variable(s)
 
@@ -205,7 +201,7 @@ module fill_holes
 
     real( kind = core_rknd ), dimension(end_idx-begin_idx+1), intent(in) ::  & 
       rho,     &  ! Dry, static density on either thermodynamic or momentum levels   [kg/m^3]
-      dz          ! Reciprocal of thermodynamic or momentum level thickness depending on whether
+      invrs_dz    ! Reciprocal of thermodynamic or momentum level thickness depending on whether
                   ! we're on zt or zm grid.
 
     ! Input/Output variable
@@ -228,7 +224,7 @@ module fill_holes
 
     ! Compute the field's vertical average, which we must conserve.
     field_avg = vertical_avg( (end_idx-begin_idx+1), rho, &
-                                  field, dz )
+                                  field, invrs_dz )
 
     ! Clip small or negative values from field.
     if ( field_avg >= threshold ) then
@@ -243,13 +239,15 @@ module fill_holes
     ! Compute the clipped field's vertical integral.
     ! clipped_total_mass >= original_total_mass
     field_clipped_avg = vertical_avg( (end_idx-begin_idx+1), rho, &
-                                      field_clipped, dz )
+                                      field_clipped, invrs_dz )
 
     ! If the difference between the field_clipped_avg and the threshold is so
     ! small that it falls within numerical round-off, return to the parent
     ! subroutine without altering the field in order to avoid divide-by-zero
     ! error.
-    if ( abs(field_clipped_avg-threshold) <= abs(field_clipped_avg+threshold)*eps/2) then
+    !if ( abs(field_clipped_avg - threshold)  &
+    !      < threshold*epsilon(threshold) ) then
+    if ( abs(field_clipped_avg - threshold) == 0.0_core_rknd ) then
       return
     endif
 
@@ -262,12 +260,14 @@ module fill_holes
     field = mass_fraction * ( field_clipped - threshold )  & 
                  + threshold
 
+
     return
 
   end subroutine fill_holes_multiplicative
 
   !=============================================================================
-  function vertical_avg( total_idx, rho_ds, field, dz )
+  function vertical_avg( total_idx, rho_ds, &
+                             field, invrs_dz )
 
     ! Description:
     ! Computes the density-weighted vertical average of a field.
@@ -376,7 +376,7 @@ module fill_holes
     real( kind = core_rknd ), dimension(total_idx), intent(in) ::  &
       rho_ds, & ! Dry, static density on either thermodynamic or momentum levels    [kg/m^3]
       field,  & ! The field (e.g. wp2) to be vertically averaged                    [Units vary]
-      dz  ! Reciprocal of thermodynamic or momentum level thickness           [1/m]
+      invrs_dz  ! Reciprocal of thermodynamic or momentum level thickness           [1/m]
                 ! depending on whether we're on zt or zm grid.
     ! Note:  The rho_ds and field points need to be arranged from
     !        lowest to highest in altitude, with rho_ds(1) and
@@ -391,24 +391,40 @@ module fill_holes
       numer_integral, & ! Integral in the numerator (see description)
       denom_integral    ! Integral in the denominator (see description)
       
-
-    integer :: k
+    real( kind = core_rknd ), dimension(total_idx) :: &
+      denom_field       ! When computing the vertical integral in the denominator
+                        ! there is no field variable, so create a "dummy" variable
+                        ! with value of 1 to pass as an argument
 
     !-----------------------------------------------------------------------
     
-    ! Initialize variable
-    numer_integral = 0.0_core_rknd
-    denom_integral = 0.0_core_rknd
+    ! Fill array with 1's (see variable description)
+    denom_field = 1.0_core_rknd
 
-    ! Compute the numerator and denominator integral.
+    ! Initializing vertical_avg to avoid a compiler warning.
+    vertical_avg = 0.0_core_rknd
+    
+     
+    ! Compute the numerator integral.
+    ! Multiply the variable 'field' at level k by rho_ds at level k and by
+    ! the level thickness at level k.  Then, sum over all vertical levels.
+    ! Note:  The level thickness at level k is the distance between either
+    !        momentum level k and momentum level k-1, or
+    !        thermodynamic level k+1 and thermodynamic level k, depending
+    !        on which field grid is being analyzed. Thus, 1.0/invrs_dz(k)
+    !        is the level thickness for level k.
+    ! Note:  The values of 'field' and rho_ds are passed into this function
+    !        so that field(1) and rho_ds(1) are actually 'field' and rho_ds
+    !        at the level k = 1.
+       
+    numer_integral = vertical_integral( total_idx, rho_ds(1:total_idx), &
+                                            field(1:total_idx), invrs_dz(1:total_idx) )
+    
+    ! Compute the denominator integral.
     ! Multiply rho_ds at level k by the level thickness
     ! at level k.  Then, sum over all vertical levels.
-    do k=1, total_idx
-
-        numer_integral = numer_integral + rho_ds(k) * dz(k) * field(k)
-        denom_integral = denom_integral + rho_ds(k) * dz(k)
-
-    end do
+    denom_integral = vertical_integral( total_idx, rho_ds(1:total_idx), &
+                                            denom_field(1:total_idx), invrs_dz(1:total_idx) )
 
     ! Find the vertical average of 'field'.
     vertical_avg = numer_integral / denom_integral
@@ -418,10 +434,10 @@ module fill_holes
 
   !=============================================================================
   pure function vertical_integral( total_idx, rho_ds, &
-                                       field, dz )
+                                       field, invrs_dz )
 
     ! Description:
-    ! Computes the vertical integral. rho_ds, field, and dz must all be
+    ! Computes the vertical integral. rho_ds, field, and invrs_dz must all be
     ! of size total_idx and should all start at the same index.
     ! 
     
@@ -441,7 +457,7 @@ module fill_holes
     real( kind = core_rknd ), dimension(total_idx), intent(in) ::  &
       rho_ds,  & ! Dry, static density                   [kg/m^3]
       field,   & ! The field to be vertically averaged   [Units vary]
-      dz         ! Level thickness                       [1/m]
+      invrs_dz   ! Level thickness                       [1/m]
     ! Note:  The rho_ds and field points need to be arranged from
     !        lowest to highest in altitude, with rho_ds(1) and
     !        field(1) actually their respective values at level k = begin_idx.
@@ -466,9 +482,7 @@ module fill_holes
     ! Note:  The values of the field and rho_ds are passed into this function
     !        so that field(1) and rho_ds(1) are actually the field and rho_ds
     !        at level k_start.
-    vertical_integral = sum( field * rho_ds * dz )
-
-    !print *, vertical_integral
+    vertical_integral = sum( field * rho_ds / invrs_dz )
 
     return
   end function vertical_integral
@@ -492,14 +506,13 @@ module fill_holes
 
     use constants_clubb, only: &
         one, & ! Variable(s)
-        zero, &
-        eps
+        zero
 
     use clubb_precision, only: &
         core_rknd ! Variable(s)
 
     use error_code, only: &
-        clubb_at_least_debug_level  ! Procedure
+        clubb_at_least_debug_level  ! Procedure(s)
 
     implicit none
 
@@ -549,10 +562,10 @@ module fill_holes
 !    print *, "num_neg_hm = ", num_neg_hm
 
     ! There is no water substance at all to fill the hole
-    if ( abs(total_mass) < eps ) then
+    if ( total_mass == zero ) then
 
-       if ( clubb_at_least_debug_level( 2 ) ) then
-          print *, "Warning: One-level hole filling was not successful! total_mass ~= 0"
+       if ( clubb_at_least_debug_level(2) ) then
+          print *, "Warning: One level hole filling was not successful! total_mass = 0"
        endif
 
        hm_one_lev_filled = hm_one_lev
@@ -569,8 +582,8 @@ module fill_holes
        ! if there is not enough material, fill the holes partially with all the material available
        if ( abs(total_hole) > total_mass ) then
 
-          if ( clubb_at_least_debug_level( 2 ) ) then
-             print *, "Warning: One-level hole filling was not able to fill holes completely!" // &
+          if ( clubb_at_least_debug_level(2) ) then
+             print *, "Warning: One level hole was not able to fill holes completely!" // &
                       " The holes were filled partially. |total_hole| > total_mass"
           endif
 
@@ -586,8 +599,7 @@ module fill_holes
     ! Assertion checks (water substance conservation, non-negativity)
     if ( clubb_at_least_debug_level( 2 ) ) then
 
-       if ( abs(sum( hm_one_lev ) - sum(hm_one_lev_filled)) > &
-            abs(sum( hm_one_lev ) + sum(hm_one_lev_filled)) * eps/2 ) then
+       if ( sum( hm_one_lev ) /= sum(hm_one_lev_filled) ) then
           print *, "Warning: Hole filling was not conservative!"
        endif
 
@@ -811,11 +823,16 @@ module fill_holes
         core_rknd   ! Variable(s)
 
     use constants_clubb, only: &
+        pi,              &
+        four_thirds,     &
+        one,             &
         zero,            &
         zero_threshold,  &
         Lv,              &
         Ls,              &
         Cp,              &
+        rho_lw,          &
+        rho_ice,         &
         fstderr
 
     use array_index, only: &
@@ -830,6 +847,9 @@ module fill_holes
         Nx2rx_hm_idx, & ! Procedure(s)
         mvr_hm_max
 
+    use error_code, only: &
+        clubb_at_least_debug_level ! Procedure(s)
+
     use stats_type_utilities, only: &
         stat_begin_update, & ! Subroutines
         stat_end_update
@@ -837,9 +857,6 @@ module fill_holes
     use stats_variables, only: &
         stats_zt, &  ! Variables
         l_stats_samp
-
-    use error_code, only: &
-        clubb_at_least_debug_level  ! Procedure
 
     implicit none
 
@@ -862,22 +879,22 @@ module fill_holes
 
     ! Input/Output Variables
     real( kind = core_rknd ), dimension(nz, hydromet_dim), intent(inout) :: &
-      hydromet    ! Mean of hydrometeor fields    [units vary]
+      hydromet
 
     real( kind = core_rknd ), dimension(nz), intent(inout) :: &
-      rvm_mc,  & ! Microphysics contributions to vapor water           [kg/kg/s]
-      thlm_mc    ! Microphysics contributions to liquid potential temp [K/s]
+      rvm_mc,  & ! Microphysics contributions to vapor water            [kg/kg/s]
+      thlm_mc    ! Microphysics contributions to liquid potential temp. [K/s]
 
     ! Local Variables
     integer :: i, k ! Loop iterators
 
     real( kind = core_rknd ), dimension(nz, hydromet_dim) :: &
-      hydromet_filled,  & ! Frozen hydrometeor mixing ratios after hole filling
-      hydromet_clipped    ! Clipped mean of hydrometeor fields    [units vary]
+      hydromet_filled   ! Frozen hydrometeor mixing ratios after hole filling
 
     character( len = 10 ) :: hydromet_name
 
     real( kind = core_rknd ) :: &
+      Nxm_min_coef, & ! Coefficient for min. mean value of a concentration [1/kg]
       max_velocity    ! Maximum sedimentation velocity                     [m/s]
 
     integer :: ixrm_hf, ixrm_wvhf, ixrm_cl, &
@@ -930,11 +947,11 @@ module fill_holes
                                 ixrm_cl, ixrm_mc,            & ! Intent(inout)
                                 max_velocity )                 ! Intent(inout)
 
-      hydromet_name = hydromet_list(i)
-
       ! Print warning message if any hydrometeor species has a value < 0.
       if ( clubb_at_least_debug_level( 1 ) ) then
          if ( any( hydromet(:,i) < zero_threshold ) ) then
+
+            hydromet_name = hydromet_list(i)
 
             do k = 1, nz
                if ( hydromet(k,i) < zero_threshold ) then
@@ -943,7 +960,6 @@ module fill_holes
                                    " in fill_holes_driver at k= ", k
                endif ! hydromet(k,i) < 0
             enddo ! k = 1, nz
-
          endif ! hydromet(:,i) < 0       
       endif ! clubb_at_least_debug_level( 1 )
 
@@ -1073,38 +1089,85 @@ module fill_holes
 
     enddo ! i = 1, hydromet_dim, 1
 
-    ! Calculate clipping for hydrometeor concentrations.
-    call clip_hydromet_conc_mvr( hydromet_dim, hydromet, & ! Intent(in)
-                                 hydromet_clipped )        ! Intent(out)
-
-    ! Clip hydrometeor concentrations and output stats.
+    ! Clipping for hydrometeor concentrations.
     do i = 1, hydromet_dim
 
-       if ( .not. l_mix_rat_hm(i) ) then
+      if ( .not. l_mix_rat_hm(i) ) then
 
-          if ( l_stats_samp ) then
+         ! Set up the stats indices for hydrometeor at index i
+         call setup_stats_indices( i,                           & ! Intent(in)
+                                   ixrm_bt, ixrm_hf, ixrm_wvhf, & ! Intent(inout)
+                                   ixrm_cl, ixrm_mc,            & ! Intent(inout)
+                                   max_velocity )                 ! Intent(inout)
 
-             ! Set up the stats indices for hydrometeor at index i
-             call setup_stats_indices( i,                           & ! In
-                                       ixrm_bt, ixrm_hf, ixrm_wvhf, & ! In/Out
-                                       ixrm_cl, ixrm_mc,            & ! In/Out
-                                       max_velocity )                 ! In/Out
+         ! Store the previous value of the hydrometeor for the effect of
+         ! clipping.
+         if ( l_stats_samp ) then
+            call stat_begin_update( ixrm_cl, &
+                                    hydromet(:,i) &
+                                    / dt, &
+                                    stats_zt )
+         endif
 
-             ! Store the previous value of the hydrometeor for the effect of
-             ! clipping.
-             call stat_begin_update( ixrm_cl, hydromet(:,i) / dt, stats_zt )
+         if ( .not. l_frozen_hm(i) ) then
 
-          endif ! l_stats_samp
+            ! Clipping for mean rain drop concentration, <Nr>.
+            ! When mean rain water mixing ratio, <rr>, is found at a grid level,
+            ! mean rain drop concentration must be at least a minimum value so
+            ! that average rain drop mean volume radius stays within an upper
+            ! bound.  Otherwise, mean rain drop concentration is 0.
 
-          ! Apply clipping of hydrometeor concentrations.
-          hydromet(:,i) = hydromet_clipped(:,i)
+            ! The minimum mean rain drop concentration is given by:
+            !
+            ! <Nr> = <rr> / ( (4/3) * pi * rho_lw * mvr_rain_max^3 ).
 
-          ! Enter the new value of the hydrometeor for the effect of clipping.
-          if ( l_stats_samp ) then
-             call stat_end_update( ixrm_cl, hydromet(:,i) / dt, stats_zt )
-          endif
+            Nxm_min_coef &
+            = one / ( four_thirds * pi * rho_lw * mvr_hm_max(i)**3 )
 
-       endif ! .not. l_mix_rat_hm(i)
+         else ! l_frozen_hm(i)
+
+            ! Clipping for mean frozen hydrometeor concentration, <Nx>.
+            ! When mean frozen hydrometeor mixing ratio, <rx>, is found at a
+            ! grid level, mean frozen hydrometeor concentration must be at least
+            ! a minimum value so that average frozen hydrometeor mean volume
+            ! radius stays within an upper bound.  Otherwise, mean frozen
+            ! hydrometeor concentration is 0.
+
+            ! The minimum mean frozen hydrometeor concentration is given by:
+            !
+            ! <Nx> = <rx> / ( (4/3) * pi * rho_ice * mvr_x_max^3 ).
+
+            Nxm_min_coef &
+            = one / ( four_thirds * pi * rho_ice * mvr_hm_max(i)**3 )
+
+         endif ! .not. l_frozen_hm(i)
+
+         ! Loop over vertical levels and increase hydrometeor concentrations
+         ! when necessary.
+         do k = 2, gr%nz, 1
+
+            if ( hydromet(k,Nx2rx_hm_idx(i)) > zero ) then
+
+               ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
+               hydromet(k,i) &
+               = max( hydromet(k,i), &
+                      Nxm_min_coef * hydromet(k,Nx2rx_hm_idx(i)) )
+
+            else ! <rx> = 0
+
+               hydromet(k,i) = zero
+
+            endif ! hydromet(k,Nx2rx_hm_idx(i)) > 0
+
+         enddo ! k = 2, gr%nz, 1
+
+         ! Enter the new value of the hydrometeor for the effect of clipping.
+         if ( l_stats_samp ) then
+            call stat_end_update( ixrm_cl, hydromet(:,i) &
+                                           / dt, stats_zt )
+         endif
+
+      endif ! .not. l_mix_rat_hm(i)
 
     enddo ! i = 1, hydromet_dim, 1
 
@@ -1112,151 +1175,6 @@ module fill_holes
     return
 
   end subroutine fill_holes_driver
-
-  !=============================================================================
-  subroutine clip_hydromet_conc_mvr( hydromet_dim, hydromet, & ! Intent(in)
-                                     hydromet_clipped )        ! Intent(out)
-
-    ! Description:
-    ! Increases the value of a hydrometeor concentration when it is too small,
-    ! according to the hydrometeor mixing ratio (which remains unchanged) and
-    ! the maximum acceptable drop or particle mean volume radius for that
-    ! hydrometeor species.
-
-    ! References:
-    !-----------------------------------------------------------------------
-
-    use grid_class, only: &
-        gr    ! Variable(s)
-
-    use constants_clubb, only: &
-        pi,          & ! Variable(s)
-        four_thirds, &
-        one,         &
-        zero,        &
-        rho_lw,      &
-        rho_ice
-
-    use array_index, only: &
-        l_mix_rat_hm, & ! Variable(s)
-        l_frozen_hm
-
-    use index_mapping, only: &
-        Nx2rx_hm_idx, & ! Procedure(s)
-        mvr_hm_max
-
-    use clubb_precision, only: &
-        core_rknd    ! Variable(s)
-
-    implicit none
-
-    ! Input Variables
-    integer, intent(in) :: &
-      hydromet_dim    ! Number of hydrometeor fields
-
-    real( kind = core_rknd ), dimension(gr%nz,hydromet_dim), intent(in) :: &
-      hydromet    ! Mean of hydrometeor fields    [units vary]
-
-    ! Output Variable
-    real( kind = core_rknd ), dimension(gr%nz,hydromet_dim), intent(out) :: &
-      hydromet_clipped    ! Clipped mean of hydrometeor fields    [units vary]
-
-    ! Local Variables
-    real( kind = core_rknd ) :: &
-      Nxm_min_coef    ! Coefficient for min mean value of a concentration [1/kg]
-
-    integer :: &
-      k,   & ! Vertical grid index
-      idx    ! Hydrometeor species index
-
-
-    ! Clipping for hydrometeor concentrations.
-    do idx = 1, hydromet_dim
-
-       if ( .not. l_mix_rat_hm(idx) ) then
-
-          ! The field is a hydrometeor concentration.
-
-          if ( .not. l_frozen_hm(idx) ) then
-
-             ! Clipping for mean rain drop concentration, <Nr>.
-             !
-             ! When mean rain water mixing ratio, <rr>, is found at a grid
-             ! level, mean rain drop concentration must be at least a minimum
-             ! value so that average rain drop mean volume radius stays within
-             ! an upper bound.  Otherwise, mean rain drop concentration is 0.
-             ! This can also be applied to values at a sample point, rather than
-             ! a grid-box mean.
-
-             ! The minimum mean rain drop concentration is given by:
-             !
-             ! <Nr> = <rr> / ( (4/3) * pi * rho_lw * mvr_rain_max^3 );
-             !
-             ! where mvr_rain_max is the maximum acceptable average rain drop
-             ! mean volume radius.
-
-             Nxm_min_coef &
-             = one / ( four_thirds * pi * rho_lw * mvr_hm_max(idx)**3 )
-
-          else ! l_frozen_hm(idx)
-
-             ! Clipping for mean frozen hydrometeor concentration, <Nx>, where x
-             ! stands for any frozen hydrometeor species.
-             !
-             ! When mean frozen hydrometeor mixing ratio, <rx>, is found at a
-             ! grid level, mean frozen hydrometeor concentration must be at
-             ! least a minimum value so that average frozen hydrometeor mean
-             ! volume radius stays within an upper bound.  Otherwise, mean
-             ! frozen hydrometeor concentration is 0.  This can also be applied
-             ! to values at a sample point, rather than a grid-box mean.
-
-             ! The minimum mean frozen hydrometeor concentration is given by:
-             !
-             ! <Nx> = <rx> / ( (4/3) * pi * rho_ice * mvr_x_max^3 );
-             !
-             ! where mvr_x_max is the maximum acceptable average frozen
-             ! hydrometeor mean volume radius for frozen hydrometeor species, x.
-
-             Nxm_min_coef &
-             = one / ( four_thirds * pi * rho_ice * mvr_hm_max(idx)**3 )
-
-          endif ! .not. l_frozen_hm(idx)
-
-          ! Loop over vertical levels and increase hydrometeor concentrations
-          ! when necessary.
-          do k = 2, gr%nz, 1
-
-             if ( hydromet(k,Nx2rx_hm_idx(idx)) > zero ) then
-
-                ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
-                hydromet_clipped(k,idx) &
-                = max( hydromet(k,idx), &
-                       Nxm_min_coef * hydromet(k,Nx2rx_hm_idx(idx)) )
-
-             else ! <rx> = 0
-
-                hydromet_clipped(k,idx) = zero
-
-             endif ! hydromet(k,Nx2rx_hm_idx(idx)) > 0
-
-          enddo ! k = 2, gr%nz, 1
-
-          ! The lowest thermodynamic level is below the model's lower boundary.
-          hydromet_clipped(1,idx) = hydromet(1,idx)
-
-       else ! l_mix_rat_hm(idx)
-
-          ! The field is a hydrometeor mixing ratio.
-          hydromet_clipped(:,idx) = hydromet(:,idx)
-
-       endif ! .not. l_mix_rat_hm(idx)
-
-    enddo ! idx = 1, hydromet_dim, 1
-
-
-    return
-
-  end subroutine clip_hydromet_conc_mvr
 
   !-----------------------------------------------------------------------
   subroutine setup_stats_indices( ihm,                         & ! Intent(in)

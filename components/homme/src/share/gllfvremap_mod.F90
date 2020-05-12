@@ -30,8 +30,8 @@ module gllfvremap_mod
   !   This module supports all ftype values 0 to 4.
   !   We find in practice that pg1 is too coarse. To see this, run the
   ! Homme-standalone test dcmip2016_test1_pg1 and compare results with
-  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are nearly
-  ! identical out to day 30, whereas pg1 fields differ visibly.
+  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are
+  ! nearly identical out to day 30, whereas pg1 fields differ visibly.
   !
   ! AMB 2019/07 Initial
 
@@ -95,8 +95,8 @@ module gllfvremap_mod
           ! Remap FV nphys <-> GLL np
           g2f_remapd(np,np,nphys_max*nphys_max), &
           f2g_remapd(nphys_max*nphys_max,np,np)
-     ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
      real(kind=real_kind), allocatable :: &
+          ! FV subcell areas; FV analogue of GLL elem(ie)%metdet arrays
           fv_metdet(:,:), & ! (nphys*nphys,nelemd)
           ! Vector on ref elem -> vector on sphere
           D_f(:,:,:,:,:), &   ! (nphys,nphys,2,2,nelemd)
@@ -186,6 +186,7 @@ contains
 
     gfr%tolfac = one
     if (par%masterproc) then
+       write(iulog,*) 'gfr> Running with dynamics and physics on separate grids (physgrid).'
        write(iulog, '(a,i3,a,l2,a,i2,a,l2)') 'gfr> init nphys', nphys, ' check', gfr%check, &
             ' ftype', ftype, ' boost_pg1', gfr%boost_pg1
        if (nphys == 1) then
@@ -292,9 +293,9 @@ contains
        call get_temperature(elem(ie), wr2, hvcoord, nt)
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
-       wr2 = wr2*(p/p0)**kappa
+       wr2 = wr2*(p0/p)**kappa
        call gfr_g2f_scalar_dp(gfr, ie, elem(ie)%metdet, dp, dp_fv, wr2, wr1)
-       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)/(p_fv(:nf,:nf,:)/p0)**kappa
+       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
        T(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
 
        call gfr_g2f_vector(gfr, ie, elem, &
@@ -365,9 +366,9 @@ contains
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr1(:nf,:nf,:) = reshape(T(:ncol,:,ie), (/nf,nf,nlev/))
-       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
+       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p0/p_fv(:nf,:nf,:))**kappa
        call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, elem(ie)%derived%FT)
-       elem(ie)%derived%FT = elem(ie)%derived%FT/(p/p0)**kappa
+       elem(ie)%derived%FT = elem(ie)%derived%FT*(p/p0)**kappa
 
        do qi = 1,qsize
           if (q_adjustment) then
@@ -1756,7 +1757,7 @@ contains
        dp = elem(ie)%state%dp3d(:,:,:,nt)
 
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
-       wr1 = (p/p0)**kappa
+       wr1 = (p0/p)**kappa
        elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
        call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
             elem(ie)%derived%FT)
