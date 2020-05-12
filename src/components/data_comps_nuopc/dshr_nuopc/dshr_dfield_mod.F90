@@ -1,11 +1,11 @@
 module dshr_dfield_mod
 
-  use ESMF             
+  use ESMF
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
   use dshr_strdata_mod , only : shr_strdata_type
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_fldbun_getfieldn, dshr_field_getfldptr
-  use dshr_methods_mod , only : chkerr 
+  use dshr_methods_mod , only : chkerr
 
   implicit none
   private
@@ -52,7 +52,7 @@ contains
 !===============================================================================
 
   subroutine dshr_dfield_add_strmfld(dfields, sdat, strm_fld, strm_ptr, logunit, masterproc)
-    
+
     ! Add a dfields element with just stream data info
 
     ! input/output variables
@@ -89,16 +89,16 @@ contains
     ! initialize dfield_new values
     dfield_new%sdat_stream_index = iunset  ! stream index
     dfield_new%sdat_fldbun_index = iunset  ! index into field bundle for stream(stream_index)
-    dfield_new%stream_data1d => null()     ! pointer to stream data 
+    dfield_new%stream_data1d => null()     ! pointer to stream data
 
     ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
     do ns = 1, sdat%nstreams
        ! determine if the strm_fld is in the fb_model of stream ns
-       call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldCount=fieldCount, rc=rc)
+       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
        allocate(lfieldnamelist(fieldCount))
-       call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldNameList=lfieldnamelist, rc=rc)
+       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -176,10 +176,10 @@ contains
 
     ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
     do ns = 1, sdat%nstreams
-       call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldCount=fieldCount, rc=rc)
+       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        allocate(lfieldnamelist(fieldCount))
-       call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldNameList=lfieldnamelist, rc=rc)
+       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        do nf = 1,fieldcount
           if (trim(strm_fld) == trim(lfieldnamelist(nf))) then
@@ -292,22 +292,22 @@ contains
        do ns = 1, sdat%nstreams
 
           ! determine which stream the field with name dfield%stream_fldnames(nf) is in
-          call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldName=trim(dfield_new%stream_fldnames(nf)), &
+          call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldName=trim(dfield_new%stream_fldnames(nf)), &
                isPresent=isPresent, rc=rc)
           if (ispresent) then
              ! if field is present in stream - determine the index in the field bundle of this field
              dfield_new%sdat_stream_indices(nf) = ns
-             call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldCount=fieldCount, rc=rc)
+             call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              allocate(lfieldnamelist(fieldCount))
-             call ESMF_FieldBundleGet(sdat%fldbun_model(ns), fieldNameList=lfieldnamelist, rc=rc)
+             call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              do n = 1,fieldcount
                 if (trim(strm_flds(nf)) == trim(lfieldnamelist(n))) then
                    dfield_new%sdat_fldbun_indices(nf) = n
                    if (masterproc) then
                       write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
-                           trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
+                           trim(strm_flds(nf))//' for 2d '//trim(state_fld)
                    end if
                 end if
              end do
@@ -338,7 +338,7 @@ contains
 
     ! Copy stream data into dfield data type for each element of dfields
     ! This routine will do one of the following
-    ! - populate the export state data (dfield%state_data1d or dfield%state_data2d) 
+    ! - populate the export state data (dfield%state_data1d or dfield%state_data2d)
     !   with the stream field data
     ! - populate the dfield stream field (dfield%stream_data1d) with spatially and
     !   time interpolate stream field data
@@ -371,7 +371,7 @@ contains
           stream_index = dfield%sdat_stream_index
           fldbun_index = dfield%sdat_fldbun_index
           if (stream_index /= iunset .and. fldbun_index /= iunset) then
-             call dshr_fldbun_getfieldn(sdat%fldbun_model(stream_index), fldbun_index, lfield, rc=rc)
+             call dshr_fldbun_getfieldn(sdat%pstrm(stream_index)%fldbun_model, fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -382,7 +382,7 @@ contains
           do nf = 1,dfield%stream_nflds
              stream_index = dfield%sdat_stream_indices(nf)
              fldbun_index = dfield%sdat_fldbun_indices(nf)
-             call dshr_fldbun_getfieldn(sdat%fldbun_model(stream_index), fldbun_index, lfield, rc=rc)
+             call dshr_fldbun_getfieldn(sdat%pstrm(stream_index)%fldbun_model, fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -393,7 +393,7 @@ contains
           stream_index = dfield%sdat_stream_index
           fldbun_index = dfield%sdat_fldbun_index
           if (stream_index /= iunset .and. fldbun_index /= iunset) then
-             call dshr_fldbun_getfieldn(sdat%fldbun_model(stream_index), fldbun_index, lfield, rc=rc)
+             call dshr_fldbun_getfieldn(sdat%pstrm(stream_index)%fldbun_model, fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
