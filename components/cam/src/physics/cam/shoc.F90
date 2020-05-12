@@ -888,15 +888,15 @@ subroutine compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, 
   real(rtype), intent(in) :: v_wind(shcol,nlev)
   !inverse of dp
   real(rtype), intent(in) :: rdp_zt(shcol,nlev)
-  !vertical heat flux at surface [K m/s] 
+  !vertical heat flux at surface [K m/s]
   real(rtype), intent(in) :: wthl_sfc(shcol)
-  !vertical moisture flux at surface [kg/kg m/s]  
+  !vertical moisture flux at surface [kg/kg m/s]
   real(rtype), intent(in) :: wqw_sfc(shcol)
 
   !intent-inouts
   ! liquid water potential temperature [K]
   real(rtype), intent(inout) :: thetal(shcol,nlev)
-  ! total water mixing ratio [kg/kg] 
+  ! total water mixing ratio [kg/kg]
   real(rtype), intent(inout) :: qw(shcol,nlev)
   ! turbulent kinetic energy [m2/s2]
   real(rtype), intent(inout) :: tke(shcol,nlev)
@@ -930,7 +930,7 @@ subroutine compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, 
 
      ! Apply the surface fluxes explicitly for temperature and moisture
      rdp        = rdp_zt(icol,nlev)
-     tmpi       =  dtime * (ggr * rho * rdp) !BALLI -revisit this!!
+     tmpi       =  dtime * (ggr * rho * rdp)
 
      thetal(icol,nlev) = thetal(icol,nlev) + tmpi * wthl_sfc(icol)
      qw(icol,nlev)     = qw(icol,nlev)     + tmpi * wqw_sfc(icol)
