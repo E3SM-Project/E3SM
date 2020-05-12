@@ -750,7 +750,7 @@ subroutine update_prognostics_implicit( &
   real(rtype), intent(inout) :: tke(shcol,nlev)
 
 ! LOCAL VARIABLES
-  integer :: i, k, p
+  integer :: p
   real(rtype) :: rdp_zt(shcol,nlev)
   real(rtype) :: tmpi(shcol,nlevi)
   real(rtype) :: tkh_zi(shcol,nlevi)
@@ -758,9 +758,7 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: rho_zi(shcol,nlevi)
 
   real(rtype) :: flux_dummy(shcol)
-  real(rtype) :: ws(shcol)
-  real(rtype) :: tau(shcol), taux(shcol), tauy(shcol)
-  real(rtype) :: ksrf(shcol), ustar, wtke_flux(shcol)
+  real(rtype) :: ksrf(shcol)
 
   real(rtype) :: ca(shcol,nlev) ! superdiagonal for solver
   real(rtype) :: cc(shcol,nlev) ! subdiagonal for solver
