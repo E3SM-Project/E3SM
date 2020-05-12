@@ -43,7 +43,7 @@ module prim_driver_base
 
   public :: smooth_topo_datasets, deriv1
 
-  public :: applyCAMforcing_tracers
+  public :: applyCAMforcing_tracers_elem
 
   ! Service variables used to partition the mesh.
   ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
@@ -1212,7 +1212,7 @@ contains
     ! for ftype==4, energy diagnostics will be incorrect
     ! ===============
     if (ftype==4) then
-       call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+       call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)
        ! E(1) Energy after CAM forcing applied
        ! with ftype==4, need (E(1)-E(3))/dt_dyn instead (E(1)-E(3))/dt_tracer
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
@@ -1221,7 +1221,7 @@ contains
     call prim_advance_exp(elem,deriv1,hvcoord,hybrid,dt,tl,nets,nete,compute_diagnostics)
     do n=2,dt_tracer_factor
        call TimeLevel_update(tl,"leapfrog")
-       if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+       if (ftype==4) call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
@@ -1298,7 +1298,7 @@ contains
        if (ftype == 4) then
           ! also apply dynamics tendencies from forcing; energy
           ! diagnostics will be incorrect
-          call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+          call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)
           if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
        end if
 
@@ -1425,24 +1425,24 @@ contains
     !do nothing
   elseif (ftype==0) then
     do ie = nets,nete
-       call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+       call applyCAMforcing_tracers_elem (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
-    call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+    call applyCAMforcing_dynamics(elem,n0,dt_remap,nets,nete)
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
     ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
     do ie = nets,nete
-       call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+       call ApplyCAMForcing_tracers_elem (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
 #endif
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+    call ApplyCAMForcing_dynamics(elem,n0,dt_remap,nets,nete)
  elseif (ftype==4) then
     ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
     do ie = nets,nete
-       call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+       call ApplyCAMForcing_tracers_elem (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
 #endif
   endif
@@ -1451,7 +1451,7 @@ contains
 
 
 
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
+  subroutine applyCAMforcing_tracers_elem(elem,hvcoord,np1,np1_qdp,dt,adjustment)
   !
   ! Apply forcing to tracers
   !    adjustment=1:  apply forcing as hard adjustment, assume qneg check already done
@@ -1661,7 +1661,7 @@ contains
      
 
 
-  end subroutine applyCAMforcing_tracers
+  end subroutine applyCAMforcing_tracers_elem
   
   
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
@@ -1735,7 +1735,7 @@ contains
     do n=2,dt_tracer_factor
  
       call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)       
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,tl%n0,dt,nets,nete)       
 
       ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
       call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel      

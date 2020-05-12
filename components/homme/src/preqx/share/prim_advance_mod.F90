@@ -26,7 +26,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_dynamics
+            applyCAMforcing_dynamics, &
+            applyCAMforcing_dynamics_elem
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -548,11 +549,10 @@ contains
   end subroutine prim_advance_exp
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,np1,dt,nets,nete)
   !
   ! applies dynamic tendencies without dp adjustment
   !
-  use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
   type (element_t)     ,  intent(inout) :: elem(:)
@@ -560,15 +560,27 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
 
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
+  integer :: ie
 
   do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
+     call applyCAMforcing_dynamics_elem(elem(ie),np1,dt)
   enddo
   end subroutine applyCAMforcing_dynamics
 
+
+  subroutine applyCAMforcing_dynamics_elem(elem,np1,dt)
+  !
+  ! applies dynamic tendencies without dp adjustment
+  !
+
+  implicit none
+  type (element_t)     ,  intent(inout) :: elem
+  real (kind=real_kind),  intent(in)    :: dt
+  integer,                intent(in)    :: np1
+
+  elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    +dt*elem(ie)%derived%FT(:,:,:)
+  elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) +dt*elem(ie)%derived%FM(:,:,:,:)
+  end subroutine applyCAMforcing_dynamics_elem
 
 
   subroutine advance_hypervis_dp(elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)

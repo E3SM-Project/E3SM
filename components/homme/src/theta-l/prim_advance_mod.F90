@@ -53,7 +53,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_dynamics, compute_andor_apply_rhs
+       applycamforcing_dynamics, applycamforcing_dynamics_elem, &
+       compute_andor_apply_rhs
 
 contains
 
@@ -728,28 +729,39 @@ contains
 
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,np1,dt,nets,nete)
 
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
 
-  integer :: k,ie
+  integer :: ie
+
   do ie=nets,nete
-
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
-     elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
-
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
-     elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
-
-     ! finally update w at the surface: 
-     elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-          elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
+     applyCAMforcing_dynamics_elem(elem(ie),np1,dt)
   enddo
   
   end subroutine applyCAMforcing_dynamics
+
+
+  subroutine applyCAMforcing_dynamics_elem(elem,np1,dt)
+
+  type (element_t)     ,  intent(inout) :: elem
+  real (kind=real_kind),  intent(in)    :: dt
+  integer,                intent(in)    :: np1,nets,nete
+
+  elem%state%vtheta_dp(:,:,:,np1)    = elem%state%vtheta_dp(:,:,:,np1)    + dt*elem%derived%FVTheta(:,:,:)
+  elem%state%phinh_i(:,:,1:nlev,np1) = elem%state%phinh_i(:,:,1:nlev,np1) + dt*elem%derived%FPHI(:,:,1:nlev)
+
+  elem%state%v(:,:,:,:,np1)          = elem%state%v(:,:,:,:,np1)          + dt*elem%derived%FM(:,:,1:2,:)
+  elem%state%w_i(:,:,1:nlev,np1)     = elem%state%w_i(:,:,1:nlev,np1)     + dt*elem%derived%FM(:,:,3,:)
+
+  ! finally update w at the surface: 
+  elem%state%w_i(:,:,nlevp,np1) = (elem%state%v(:,:,1,nlev,np1)*elem%derived%gradphis(:,:,1) + &
+      elem%state%v(:,:,2,nlev,np1)*elem%derived%gradphis(:,:,2))/g
+
+  end subroutine applyCAMforcing_dynamics_elem
+
 
 
 !----------------------------- ADVANCE-HYPERVIS ----------------------------
