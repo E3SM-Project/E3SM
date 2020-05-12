@@ -416,38 +416,38 @@ contains
 
              else
                 write(6,800) diffcnt, s1, trim(max_str(1)),trim(min_str(1)), trim(dmax_str), trim(rdmax_str)
-#if ({ITYPE} == TYPEINT)
-                ! Note that rdmaxloc is NOT computed in this case, so we print 0 in place
-                ! of buf(rdmaxloc,1) and buf(rdmaxloc,2)
-                write(6,903) s2, max_val(1), space(1:spacelen),min_val(1), m1, buf(l1(1),1), rdbar, 0, &
-                     count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), 0
-                write(6,810) s1, trim(max_str(2)), trim(min_str(2))
+!#if ({ITYPE} == TYPEINT)
+!                ! Note that rdmaxloc is NOT computed in this case, so we print 0 in place
+!                ! of buf(rdmaxloc,1) and buf(rdmaxloc,2)
+!                write(6,903) s2, max_val(1), space(1:spacelen),min_val(1), m1, buf(l1(1),1), rdbar, 0, &
+!                     count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), 0
+!                write(6,810) s1, trim(max_str(2)), trim(min_str(2))
                 !          write(6,905) avgval(1), rms, rdbar, avgval(2), rdlogbar, log10(1./rdmax)
-                write(6,811) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', rms_normalized
-#else
+!                write(6,811) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', rms_normalized
+!#else
                 write(6,803) s2, max_val(1), space(1:spacelen),min_val(1), m1, buf(l1(1),1), rdbar, buf(rdmaxloc,1), &
                      count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), buf(rdmaxloc,2)
                 write(6,810) s1, trim(max_str(2)), trim(min_str(2))
                 write(6,805) avgval(1), rms, rdbar, avgval(2), rdlogbar, log10(1./rdmax)
                 write(6,812) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', rms_normalized
-#endif
+!#endif
              endif
           endif
        end if
        if(diffcnt==0) then ! no differences found
           if(n1>0) then
              write(6,810) s1, trim(max_str(1)),trim(min_str(1))
-#if ({ITYPE} == TYPEINT)
-             write(6,914) s2, max_val(1), space(1:spacelen),min_val(1), count(mask(:,2)),&
-                  max_val(2),space(1:spacelen),min_val(2)
-             write(6,810) s1, trim(max_str(2)), trim(min_str(2))
-             write(6,915) avgval(1), avgval(2)
-#else
+!#if ({ITYPE} == TYPEINT)
+!             write(6,914) s2, max_val(1), space(1:spacelen),min_val(1), count(mask(:,2)),&
+!                  max_val(2),space(1:spacelen),min_val(2)
+!             write(6,810) s1, trim(max_str(2)), trim(min_str(2))
+!             write(6,915) avgval(1), avgval(2)
+!#else
              write(6,814) s2, max_val(1), space(1:spacelen),min_val(1), count(mask(:,2)),&
                   max_val(2),space(1:spacelen),min_val(2)
              write(6,810) s1, trim(max_str(2)), trim(min_str(2))
              write(6,815) avgval(1), avgval(2)
-#endif
+!#endif
           endif
        end if
     else   ! Single file analysis output
@@ -456,14 +456,14 @@ contains
        end if
 
        write(6,810 ) s1, trim(max_str(1)),trim(min_str(1))
-#if ({ITYPE} == TYPEINT)
+!#if ({ITYPE} == TYPEINT)
        write(6, 820) s2, max_val(1),min_val(1)
        write(6, 821) avgval(1)
 
-#else
+!#else
        write(6, 825) s2, max_val(1),min_val(1)
        write(6, 826) avgval(1)
-#endif
+!#endif
     end if
 
     deallocate(buf, mask)
@@ -480,7 +480,7 @@ contains
 810 format(12x,i8,2x,a,1x,a)
 
 ! RMS for int
-811 format(a,a32,i10,11x,a,i10,/)
+811 format(a,a32,1pe11.4,11x,a,i12,/)
 
 ! RMS for real
 812 format(a,a32,1pe11.4,11x,a,1pe11.4,/)
