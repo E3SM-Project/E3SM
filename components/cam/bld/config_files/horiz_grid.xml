@@ -34,8 +34,8 @@
 <!-- if npg=0 then physics is done on GLL nodes -->
 <!-- if npg=N>0 then physics is done FV grid with NxN cells per element -->
 <!-- Formualas for ncol:           -->
-<!--   np4: ncol = (np-1)*6*ne^2+2 -->
-<!--   pgN: ncol = 6*ne^2*npg^2    -->
+<!--   GLL grid (np4): ncol = (np-1)*6*ne^2+2 -->
+<!--   FV physgrid   : ncol = 6*ne^2*npg^2    -->
 <horiz_grid dyn="se"    hgrid="ne2np4"       ncol="218"     csne="2"   csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne4np4"       ncol="866"     csne="4"   csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne4np4.pg2"   ncol="384"     csne="4"   csnp="4" npg="2" />
