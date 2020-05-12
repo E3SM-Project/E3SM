@@ -88,6 +88,9 @@ realclean:
 
 include $(CURDIR)/Depends
 
+# 'make check' will run the standard tests but without baseline
+# comparisons. For complete testing, you should generally also do
+# baseline comparisons. See the notes in test_inputs/README for details.
 check: $(EXEDIR)/$(EXENAME)
 	$(RM) -fr tmpdir
 	./run_tests -outdir tmpdir
