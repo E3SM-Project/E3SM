@@ -308,8 +308,8 @@
        Number of time slices per nudging data file
        The current nudging code only works for the nudging data file with one-day data. 
        It does not work correctly when the nudging data file contains multiple-day data.
-       Thus, Num_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
-       Set default Num_File_Ntime to 0 to force the user to set its value correctly.
+       Thus, Nudge_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
+       Set default Nudge_File_Ntime to 0 to force the user to set its value correctly.
        Default: 0
        </entry>
 
