@@ -530,7 +530,8 @@ contains
               ! Build deltaVelocitySquared
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
-                 factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+                 factor = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+                 areaSum = areaSum + factor
 
                  deltaVelocitySquared(1) = 0.0_RKIND
 
@@ -555,7 +556,7 @@ contains
 
               do kIndexOBL = 1, maxLevelCell(iCell)
                 ! !compute shear contribution assuming BLdepth is cell bottom
-                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
+                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL) / areaSum, 1.0e-15_RKIND)
 
                 bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
                                   - potentialDensitySum(surfaceAverageIndex(kIndexOBL)) &
