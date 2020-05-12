@@ -87,3 +87,7 @@ realclean:
 	$(RM) -f $(OBJS) *.mod $(EXEDIR)/$(EXENAME) compare_vars_mod.F90 core
 
 include $(CURDIR)/Depends
+
+check: $(EXEDIR)/$(EXENAME)
+	$(RM) -fr tmpdir
+	./run_tests -outdir tmpdir
