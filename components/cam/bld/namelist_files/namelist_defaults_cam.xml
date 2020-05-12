@@ -242,6 +242,7 @@
 <bnd_topo hgrid="ne30np4"  npg="4">atm/cam/topo/USGS-gtopo30_ne30np4pg4_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
+<bnd_topo hgrid="ne120np4" npg="2">atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</bnd_topo>
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
@@ -842,6 +843,7 @@
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne512np4">atm/cam/chem/trop_mam/atmsrf_ne512np4_interp_20190409.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne1024np4">atm/cam/chem/trop_mam/atmsrf_ne1024np4_20190621.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne120np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne120pg2_200511.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne256np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne256pg2_200212.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne512np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne512pg2_200212.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne1024np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne1024pg2_200212.nc</drydep_srf_file>
