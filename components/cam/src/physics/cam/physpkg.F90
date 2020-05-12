@@ -1910,7 +1910,7 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
-    use nudging,         only: Nudge_Model,Nudge_Loc,nudging_calc_tend
+    use nudging,         only: Nudge_Model,Nudge_Loc_Same,nudging_calc_tend
 
     implicit none
 
@@ -2751,7 +2751,7 @@ end if ! l_tracer_aero
     !===================================
     ! Update Nudging tendency if needed
     !===================================
-    if (Nudge_Model .and. Nudge_Loc) then
+    if (Nudge_Model .and. Nudge_Loc_Same) then
        call nudging_calc_tend(state)
     endif
 

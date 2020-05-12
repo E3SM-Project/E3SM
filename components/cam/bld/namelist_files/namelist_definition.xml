@@ -283,11 +283,11 @@
        group="nudging_nl" valid_values="" >
        Use user-defined relaxation time scale (unit: hour).
        If Nudge_Tau > 0, the relaxation time scale is determined by Nudge_Tau;
-       If not, the relaxation time scale is determined by Nudge_Times_Per_Day;
+       If not, the relaxation time scale is determined by Nudge_Times_Per_Day and nudging strength specified in the namelist (e.g. Nudge_Ucoef).
        Default: -999
        </entry>
 
-<entry id="Nudge_Loc" type="logical" category="nudging"
+<entry id="Nudge_Loc_Same" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, change the location of calculation of nudging tendency to 
        the same location where the nudging data is written out.
@@ -303,13 +303,13 @@
        Default: FALSE
        </entry>
 
-<entry id="Num_Slice" type="integer" category="nudging"
+<entry id="Nudge_File_Ntime" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
        Number of time slices per nudging data file
        The current nudging code only works for the nudging data file with one-day data. 
        It does not work correctly when the nudging data file contains multiple-day data.
-       Thus, Num_Slice has to equal to 1 or Nudge_Times_Per_Day.
-       Set default Num_Slice to 0 to force the user to set its value correctly.
+       Thus, Num_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
+       Set default Num_File_Ntime to 0 to force the user to set its value correctly.
        Default: 0
        </entry>
 
