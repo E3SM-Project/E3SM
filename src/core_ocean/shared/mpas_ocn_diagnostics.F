@@ -155,7 +155,7 @@ contains
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
-
+      real (kind=RKIND) :: areaSum
       real (kind=RKIND) :: areaTri1, layerThicknessVertexInv, tempRiVal, dcEdge_temp, dvEdge_temp, weightsOnEdge_temp
       real (kind=RKIND), dimension(:), allocatable:: layerThicknessVertexVec
       integer :: edgeSignOnCell_temp
@@ -730,16 +730,17 @@ contains
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, factor, delU2, shearMean)
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
-         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+         areaSum = 0.0_RKIND 
          do k=2,maxLevelCell(iCell)
            shearSquared = 0.0_RKIND
            do i = 1, nEdgesOnCell(iCell)
              iEdge = edgesOnCell(i, iCell)
-             factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell1
+             factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+             areaSum = areaSum + factor
              delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
              shearSquared = shearSquared + factor * delU2
            enddo
-           shearMean = sqrt(shearSquared)
+           shearMean = sqrt(shearSquared / areaSum)
            shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
            RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
           end do
@@ -1383,7 +1384,7 @@ contains
       integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
       real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
-      real (kind=RKIND) :: factor, deltaVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND) :: factor, deltaVelocitySquared, delU2, areaSum, invAreaCell
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
 
@@ -1511,13 +1512,15 @@ contains
 
        ! compute magnitude of surface stress
         deltaVelocitySquared = 0.0_RKIND
+        areaSum = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
-          factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+          factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+          areaSum = areaSum + factor
           delU2 =  (surfaceStress(iEdge))**2
           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
         enddo
-        surfaceStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
+        surfaceStressMagnitude(iCell) = sqrt(deltaVelocitySquared / areaSum)
 
        ! compute surface friction velocity
          surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
