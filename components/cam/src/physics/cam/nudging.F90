@@ -26,7 +26,7 @@ module nudging
 !         Nudge_Tau = -999
 !         Nudge_Loc_Same = .False.
 !         Nudge_Curr = .False.
-!         Num_File_Ntime = 1
+!         Nudge_File_Ntime = 1
 !         Nudge_Method = ‘Step’
 
 !=====================================================================
@@ -173,9 +173,9 @@ module nudging
 !        Nudge_File_Ntime:  Number of time slices per nudging data file
 !                           The current nudging code only works for the nudging data file with one-day data.
 !                           It does not work correctly when the nudging data file contains multiple-day data.
-!                           Thus, Num_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
+!                           Thus, Nudge_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
 !
-!                           Example: Num_File_Ntime = 1
+!                           Example: Nudge_File_Ntime = 1
 !
 !    &nudging_nl
 !      Nudge_Model         - LOGICAL toggle to activate nudging.
@@ -228,7 +228,7 @@ module nudging
 !      Nudge_Loc_Same      - LOGICAL change the location of calculation of nudging tendency 
 !      Nudge_Curr          - LOGICAL linearly interpolate nudging data to current
 !                                    or future model time step
-!      Num_File_Ntime      - INT  Number of time slices per nudging data file
+!      Nudge_File_Ntime    - INT  Number of time slices per nudging data file
 !    /
 !
 !================
@@ -375,7 +375,7 @@ module nudging
                                                             ! at the same location where the nudging data is written out
   real(r8)           :: Nudge_Tau                           ! nudge relaxation timescale
   logical            :: Nudge_Curr                          ! .true. if linearly interpolated to current model time step
-  integer            :: Num_File_Ntime                      ! number of time slices per nudging data file 
+  integer            :: Nudge_File_Ntime                    ! number of time slices per nudging data file 
   logical :: first_file                                     ! the flag for first nudge data
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_U       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_V       ! (pcols,pver,begchunk:endchunk,:)
@@ -420,7 +420,7 @@ contains
                          Nudge_Vwin_Lindex,Nudge_Vwin_Hindex,          &
                          Nudge_Vwin_Ldelta,Nudge_Vwin_Hdelta,          &
                          Nudge_Method, Nudge_Tau, Nudge_Loc_Same,      &
-                         Nudge_Curr, Num_File_Ntime
+                         Nudge_Curr, Nudge_File_Ntime
 
    ! Nudging is NOT initialized yet, For now
    ! Nudging will always begin/end at midnight.
@@ -472,7 +472,7 @@ contains
    Nudge_Loc_Same     = .true.
    Nudge_Tau          = -999._r8
    Nudge_Curr         = .false.
-   Num_File_Ntime     = 0
+   Nudge_File_Ntime   = 0
    ! Read in namelist values
    !------------------------
    if(masterproc) then
@@ -542,9 +542,9 @@ contains
      call endrun('nudging_readnl:: ERROR in namelist')
    endif
 
-   if ( (Num_File_Ntime .ne. Nudge_Times_Per_Day) .and. (Num_File_Ntime .ne. 1) ) then
-     write(iulog,*) 'NUDGING: Num_File_Ntime=',Num_File_Ntime 
-     write(iulog,*) 'NUDGING: Num_File_Ntime must equal to Nudge_Times_Per_Day or 1'
+   if ( (Nudge_File_Ntime .ne. Nudge_Times_Per_Day) .and. (Nudge_File_Ntime .ne. 1) ) then
+     write(iulog,*) 'NUDGING: Nudge_File_Ntime=',Nudge_File_Ntime 
+     write(iulog,*) 'NUDGING: Nudge_File_Ntime must equal to Nudge_Times_Per_Day or 1'
      call endrun('nudging_readnl:: ERROR in namelist')
    end if
 
@@ -595,7 +595,7 @@ contains
    call mpibcast(Nudge_Loc_Same,1,mpilog,0,mpicom)
    call mpibcast(Nudge_Tau,1,mpir8,0,mpicom)
    call mpibcast(Nudge_Curr,1,mpilog,0,mpicom)
-   call mpibcast(Num_File_Ntime,1,mpiint,0,mpicom)
+   call mpibcast(Nudge_File_Ntime,1,mpiint,0,mpicom)
 #endif
 
    ! End Routine
@@ -874,7 +874,7 @@ contains
      write(iulog,*) 'NUDGING: Nudge_Loc_Same      =',Nudge_Loc_Same
      write(iulog,*) 'NUDGING: Nudge_Tau           =',Nudge_Tau
      write(iulog,*) 'NUDGING: Nudge_Curr          =',Nudge_Curr
-     write(iulog,*) 'NUDGING: Num_File_Ntime      =',Num_File_Ntime
+     write(iulog,*) 'NUDGING: Nudge_File_Ntime    =',Nudge_File_Ntime
      write(iulog,*) ' '
      write(iulog,*) ' '
 
@@ -1503,7 +1503,7 @@ contains
               call get_curr_date(Year,Month,Day,Sec)
               n_cnt = Sec/Nudge_Step + 1
               n_cnt = n_cnt + 1                      ! nudge to future model time step
-              if (n_cnt .gt. Num_File_Ntime) then
+              if (n_cnt .gt. Nudge_File_Ntime) then
                   n_cnt = 1
               end if
               strt3(1) = 1
@@ -1526,7 +1526,7 @@ contains
               call open_netcdf (ncid1, -Nudge_Step)
               call t_stopf ('read_nudging_data')
               n_cnt = Sec/Nudge_Step + 1
-              if (n_cnt .gt. Num_File_Ntime) then       ! account for one time slice per file
+              if (n_cnt .gt. Nudge_File_Ntime) then       ! account for one time slice per file
                  n_cnt = 1
               end if
               strt3(1) = 1
@@ -1547,7 +1547,7 @@ contains
       case ('Linear')
            ! Single time slice per file
            ! Need to open a new netcdf file to get the CURR time slice
-           if (Num_File_Ntime .eq. 1) then
+           if (Nudge_File_Ntime .eq. 1) then
               if (first_file) then
                   first_file = .false.
                   if (masterproc) then
@@ -1618,7 +1618,7 @@ contains
                   first_file = .false.
                   call get_curr_date(Year,Month,Day,Sec)
                   n_cnt = Sec/Nudge_Step + 1
-                  if (n_cnt .eq. Num_File_Ntime) then
+                  if (n_cnt .eq. Nudge_File_Ntime) then
                      if (masterproc) then
                         call t_startf ('read_nudging_data')
                         call open_netcdf (ncid1, -Nudge_Step)
@@ -1681,7 +1681,7 @@ contains
                   call get_curr_date(Year,Month,Day,Sec)
                   n_cnt = Sec/Nudge_Step + 1
                   n_cnt = n_cnt + 1                ! open the nudging data at future model time step
-                  if (n_cnt .gt. Num_File_Ntime) then
+                  if (n_cnt .gt. Nudge_File_Ntime) then
                       n_cnt = 1
                   end if
                   ! The previous end point becomes the start point
@@ -2143,7 +2143,7 @@ contains
               call get_curr_date(Year,Month,Day,Sec)
               n_cnt = Sec/Nudge_Step + 1
               n_cnt = n_cnt + 1                      ! nudge to future model time step
-              if (n_cnt .gt. Num_File_Ntime) then
+              if (n_cnt .gt. Nudge_File_Ntime) then
                   n_cnt = 1
               end if
               strt4(1) = 1
@@ -2168,7 +2168,7 @@ contains
               call open_netcdf (ncid1, -Nudge_Step)
               call t_stopf ('read_nudging_data')
               n_cnt = Sec/Nudge_Step + 1
-              if (n_cnt .gt. Num_File_Ntime) then       ! account for one time slice per file
+              if (n_cnt .gt. Nudge_File_Ntime) then       ! account for one time slice per file
                   n_cnt = 1
               end if
               strt4(1) = 1
@@ -2190,7 +2190,7 @@ contains
       case ('Linear')
            ! Single time slice per file
            ! Need to open a new netcdf file to get the CURR time slice
-           if (Num_File_Ntime .eq. 1) then
+           if (Nudge_File_Ntime .eq. 1) then
               if (first_file) then
                   first_file = .false.
                   if (masterproc) then
@@ -2265,7 +2265,7 @@ contains
                   first_file = .false.
                   call get_curr_date(Year,Month,Day,Sec)
                   n_cnt = Sec/Nudge_Step + 1
-                  if (n_cnt .eq. Num_File_Ntime) then
+                  if (n_cnt .eq. Nudge_File_Ntime) then
                      if (masterproc) then
                         call t_startf ('read_nudging_data')
                         call open_netcdf (ncid1, -Nudge_Step)
@@ -2332,7 +2332,7 @@ contains
                   call get_curr_date(Year,Month,Day,Sec)
                   n_cnt = Sec/Nudge_Step + 1
                   n_cnt = n_cnt + 1                ! open the nudging data at future model time step
-                  if (n_cnt .gt. Num_File_Ntime) then
+                  if (n_cnt .gt. Nudge_File_Ntime) then
                       n_cnt = 1
                   end if
 
