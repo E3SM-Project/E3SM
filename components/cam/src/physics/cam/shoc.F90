@@ -767,45 +767,21 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: denom(shcol,nlev) ! denominator in solver
   real(rtype) :: ze(shcol,nlev)
 
-  real(rtype) :: wsmin, ksrfmin
-  real(rtype) :: timeres
-
-  wsmin = 1._rtype      ! Minimum wind speed for ksrfturb computation [ m/s ]
-  ksrfmin = 1.e-4_rtype ! Minimum surface drag coefficient  [ kg/s/m^2 ]
-  timeres = 7200._rtype ! Relaxation time scale of residual stress ( >= dt ) [s]
-
   ! linearly interpolate tkh, tk, and air density onto the interface grids
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
 
   ! Define the tmpi variable, which is really dt*(g*rho)**2/dp
-  !  at interfaces. Sub dp = g*rho*dz
+  !  at interfaces. Substitue dp = g*rho*dz in the above equation
   call compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 
   ! compute 1/dp term, needed in diffusion solver
-  do k=1,nlev
-    do i=1,shcol
-      rdp_zt(i,k) = 1._rtype/(ggr*rho_zt(i,k)*dz_zt(i,k))
-    enddo
-  enddo
+  call dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
   ! define terms needed for the implicit surface stress
-  do i=1,shcol
-    taux(i) = rho_zi(i,nlevi)*uw_sfc(i) ! stress in N/m2
-    tauy(i) = rho_zi(i,nlevi)*vw_sfc(i) ! stress in N/m2
-    ! compute the wind speed
-    ws(i) = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
-    tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
-    ksrf(i) = max(tau(i) / ws(i), ksrfmin)
-    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
-    wtke_flux(i) = ustar**3
-  enddo
-
-  ! Apply the surface fluxes explicitly for temperature and moisture
-  thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wthl_sfc(:)
-  qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
-  tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
+  call compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, u_wind, &
+       v_wind, rdp_zt, wthl_sfc, wqw_sfc, thetal, qw, tke, ksrf)
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
@@ -869,6 +845,101 @@ subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 
 end subroutine compute_tmpi
 
+subroutine dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
+
+  !intent-ins
+  integer,     intent(in) :: nlev, nlevi, shcol
+  ! Air density on thermo grid [kg/m3]
+  real(rtype), intent(in) :: rho_zt(shcol,nlev)
+  ! height thickness centered on thermo grid [m]
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+
+  !intent-out
+  real(rtype), intent(out) :: rdp_zt(shcol,nlev)
+
+  !local vars
+  integer :: icol, klev
+
+  do klev = 1, nlev
+    do icol = 1, shcol
+
+      rdp_zt(icol,klev) = 1._rtype/(ggr*rho_zt(icol,klev)*dz_zt(icol,klev))
+
+    enddo
+  enddo
+
+end subroutine dp_inverse
+
+subroutine compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, u_wind, &
+       v_wind, rdp_zt, wthl_sfc, wqw_sfc, thetal, qw, tke, ksrf)
+
+  !intent-ins
+  integer,     intent(in) :: nlev, nlevi, shcol
+
+  !time step [s]
+  real(rtype), intent(in) :: dtime
+  !air density at interfaces [kg/m3]
+  real(rtype), intent(in) :: rho_zi(shcol,nlevi)
+  !vertical zonal momentum flux at surface [m3/s3]
+  real(rtype), intent(in) :: uw_sfc(shcol)
+  !vertical meridional momentum flux at surface [m3/s3]
+  real(rtype), intent(in) :: vw_sfc(shcol)
+  !zonal wind [m/s]
+  real(rtype), intent(in) :: u_wind(shcol,nlev)
+  !meridional wind [m/s]
+  real(rtype), intent(in) :: v_wind(shcol,nlev)
+  !inverse of dp
+  real(rtype), intent(in) :: rdp_zt(shcol,nlev)
+  !vertical heat flux at surface [K m/s] 
+  real(rtype), intent(in) :: wthl_sfc(shcol)
+  !vertical moisture flux at surface [kg/kg m/s]  
+  real(rtype), intent(in) :: wqw_sfc(shcol)
+
+  !intent-inouts
+  ! liquid water potential temperature [K]
+  real(rtype), intent(inout) :: thetal(shcol,nlev)
+  ! total water mixing ratio [kg/kg] 
+  real(rtype), intent(inout) :: qw(shcol,nlev)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(inout) :: tke(shcol,nlev)
+
+  !intent-out
+  real(rtype), intent(out) :: ksrf(shcol)
+
+  !local vars
+  integer :: icol
+
+  real(rtype) :: taux, tauy !stresses (N/m2)
+  real(rtype) :: ws         !wind speed (m/s)
+  real(rtype) :: rho, tau, ustar, tmpi, rdp, uw, vw, wtke_flux
+
+  real(rtype), parameter :: wsmin   = 1._rtype    ! Minimum wind speed for ksrfturb computation [ m/s ]
+  real(rtype), parameter :: ksrfmin = 1.e-4_rtype ! Minimum surface drag coefficient  [ kg/s/m^2 ]
+
+  do icol=1,shcol
+     rho        = rho_zi(icol,nlevi)
+     uw         = uw_sfc(icol)
+     vw         = vw_sfc(icol)
+
+     taux       = rho*uw ! stress in N/m2
+     tauy       = rho*vw ! stress in N/m2
+     ! compute the wind speed
+     ws         = max(sqrt(u_wind(icol,nlev)**2._rtype + v_wind(icol,nlev)**2._rtype), wsmin)
+     tau        = sqrt( taux**2._rtype + tauy**2._rtype )
+     ksrf(icol) = max(tau/ws, ksrfmin)
+     ustar      = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),0.01_rtype)
+     wtke_flux  = ustar**3
+
+     ! Apply the surface fluxes explicitly for temperature and moisture
+     rdp        = rdp_zt(icol,nlev)
+     tmpi       =  dtime * (ggr * rho * rdp) !BALLI -revisit this!!
+
+     thetal(icol,nlev) = thetal(icol,nlev) + tmpi * wthl_sfc(icol)
+     qw(icol,nlev)     = qw(icol,nlev)     + tmpi * wqw_sfc(icol)
+     tke(icol,nlev)    = tke(icol,nlev)    + tmpi * wtke_flux
+  enddo
+
+end subroutine compute_sfc_terms
 
 !==============================================================
 ! SHOC Diagnose the second order moments
