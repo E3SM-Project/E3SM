@@ -14,7 +14,7 @@ module element_state
 #else
   integer, public, parameter :: timelevels = 3
 #endif
-  integer, public, parameter :: diagtimes = 6
+  integer, public, parameter :: diagtimes = 7
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
   integer, public               :: max_itercnt=0

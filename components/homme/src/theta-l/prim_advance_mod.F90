@@ -142,6 +142,14 @@ contains
     endif
 #endif
 
+
+    if (compute_diagnostics) then
+       call t_startf("prim_diag")
+       call prim_energy_halftimes(elem,hvcoord,tl,7,.true.,nets,nete)
+       call t_stopf("prim_diag")
+    endif
+
+
     ! ==================================
     ! Take timestep
     ! ==================================

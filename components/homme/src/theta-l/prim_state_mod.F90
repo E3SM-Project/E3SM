@@ -763,13 +763,13 @@ contains
 
        ! changes due to viscosity were with tstep
        ! changes due to forcing depend on ftype
-       write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, remap:'
-       write(iulog,'(a,3e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_f,&
-            (KEner(6)-KEner(5))/tstep,(KEner(2)-KEner(4))/dt
-       write(iulog,'(a,3e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_f,&
-            (IEner(6)-IEner(5))/tstep,(IEner(2)-IEner(4))/dt
-       write(iulog,'(a,3e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_f,&
-            (PEner(6)-PEner(5))/tstep,(PEner(2)-PEner(4))/dt
+       write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, remap, CAAR:'
+       write(iulog,'(a,4e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_f,&
+            (KEner(6)-KEner(5))/tstep,(KEner(2)-KEner(4))/dt,         (KEner(5)-KEner(7))/tstep
+       write(iulog,'(a,4e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_f,&
+            (IEner(6)-IEner(5))/tstep,(IEner(2)-IEner(4))/dt,         (IEner(5)-IEner(7))/tstep
+       write(iulog,'(a,4e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_f,&
+            (PEner(6)-PEner(5))/tstep,(PEner(2)-PEner(4))/dt,         (PEner(5)-PEner(7))/tstep
        q=1
        if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
 
