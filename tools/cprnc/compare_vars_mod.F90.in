@@ -234,13 +234,14 @@ contains
     integer :: s1, s2, l1(1), i, ierr
 
     {VTYPE}, pointer :: buf(:,:), vdiff(:)
-    {VTYPE} :: fv1, fv2, rms, min_val(2), max_val(2), avgval(2), m1, rdmax
-    {VTYPE} :: rms_normalized          ! rms normalized by absolute values
-    {VTYPE} :: rms_normalized_denom    ! denominator for computing rms_normalized
-    {VTYPE} :: rdsum                   ! sum of relative differences
-    {VTYPE} :: rdlogsum                ! sum of negative log10 of relative differences
-    {VTYPE} :: rdbar                   ! average of relative differences
-    {VTYPE} :: rdlogbar                ! rdlogsum normalized by number of non-zero differences
+    {VTYPE} :: fv1, fv2
+    real(r8) :: rms, min_val(2), max_val(2), avgval(2), m1, rdmax
+    real(r8) :: rms_normalized          ! rms normalized by absolute values
+    real(r8) :: rms_normalized_denom    ! denominator for computing rms_normalized
+    real(r8) :: rdsum                   ! sum of relative differences
+    real(r8) :: rdlogsum                ! sum of negative log10 of relative differences
+    real(r8) :: rdbar                   ! average of relative differences
+    real(r8) :: rdlogbar                ! rdlogsum normalized by number of non-zero differences
     integer :: t(2), n1, n2, min_loc(2), max_loc(2), spacelen
     integer :: start(NF90_MAX_DIMS,2), kount(NF90_MAX_DIMS,2), dsizes(NF90_MAX_DIMS,2)
     logical, pointer :: mask(:,:)
@@ -512,9 +513,9 @@ contains
     integer, intent(in) :: s1
     {VTYPE}, intent(in) :: v1(:), v2(:), vdiff(:)
     logical, intent(in) :: mask(:)
-    {VTYPE}, intent(out) :: rdsum, rdlogsum, rdmax
+    real(r8), intent(out) :: rdsum, rdlogsum, rdmax
     integer, intent(out) :: loc
-    {VTYPE} :: denom, rdiff(s1)
+    real(r8) :: denom, rdiff(s1)
 
     integer :: i, iloc(1)
 
@@ -541,7 +542,7 @@ contains
     {VTYPE}, intent(in) :: buf(:)
     logical, intent(in) :: mask(:)
     integer, intent(out) :: nvalid, min_loc, max_loc
-    {VTYPE}, intent(out) :: min_val, max_val, avgval
+    real(r8), intent(out) :: min_val, max_val, avgval
 
     integer :: loc(2)
 
