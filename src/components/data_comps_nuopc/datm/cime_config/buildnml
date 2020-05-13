@@ -46,15 +46,18 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     atm_grid = case.get_value("ATM_GRID")
     grid = case.get_value("GRID")
     clm_usrdat_name = case.get_value("CLM_USRDAT_NAME")
+    comp_lnd = case.get_value("COMP_LND")
 
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
-    if "CLM" in datm_mode:
+    
+    if "CLM" in datm_mode and comp_lnd == "clm":
         expect(datm_presaero != "none",
                "A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none.")
         expect(datm_topo != "none",
                "A DATM_MODE for CLM is incompatible with DATM_TOPO=none.")
+
     expect(grid != "CLM_USRDAT" or clm_usrdat_name in ("", "UNSET"),
            "GRID=CLM_USRDAT and CLM_USRDAT_NAME is NOT set.")
 

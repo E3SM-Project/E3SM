@@ -19,7 +19,7 @@
       %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
 
       In dice_in,  streams namelist input has the form
-      streams = 'stream1.txt year_align year_first year_last ',
+       streams = 'stream1.txt year_align year_first year_last ',
       'stream2.txt year_align year_first year_last ',
       ...
       'streamN.txt year_align year_first year_last '
@@ -55,156 +55,102 @@
     <group>streams_file</group>
     <desc>List of streams used for the given dice_mode.</desc>
     <values>
-      <value dice_mode="null">NULL</value>
-      <value dice_mode="ssmi$">SSMI</value>
-      <value dice_mode="ssmi_iaf">SSMI_IAF</value>
-      <value dice_mode="prescribed">prescribed</value>
+      <value dice_mode="null">null</value>
+      <value dice_mode="ssmi$">ssmi</value>
+      <value dice_mode="ssmi_iaf">ssmi_iaf</value>
     </values>
   </entry>
 
-  <entry id="strm_grid_file" skip_default_entry="true">
+  <entry id="strm_mesh" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>derived</group>
-    <desc>does not appear in namelist - only used to set domain and data information</desc>
+    <desc>stream mesh (appears in the stream xml file)</desc>
     <values>
-      <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
-    </values>
-  </entry>
-
-  <entry id="strm_data_file" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>derived</group>
-    <desc>does not appear in namelist - only used to set domain and data information</desc>
-    <values>
-      <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domdir" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file directory.</desc>
-    <values>
-      <value>null</value>
-      <value stream="SSMI$">$DIN_LOC_ROOT/ice/dice7</value>
-      <value stream="SSMI_IAF">$DIN_LOC_ROOT/ice/dice7</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domfil" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file path(s).</desc>
-    <values>
-      <value>null</value>
-      <value stream="SSMI$">domain.ocn.x0.5.090227.nc</value>
-      <value stream="SSMI_IAF">domain.ocn.x0.5.090227.nc</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domvar" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain variable name(s).</desc>
-    <values>
-      <value>
-        time    time
-        xc      lon
-        yc      lat
-        area    area
-        mask    mask
+      <value stream="ssmi$">
+	$DIN_LOC_ROOT/ice/dice7/SSMI/ssmi.ifrac.0.5x0.5_ESMFmesh_120520.nc
       </value>
-    </values>
-  </entry>
-
-  <entry id="strm_datdir" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file directory.</desc>
-    <values>
-      <value>null</value>
-      <value stream="SSMI$">$DIN_LOC_ROOT/ice/dice7/SSMI</value>
-      <value stream="SSMI_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
+      <value stream="ssmi_IAF">
+	$DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5_ESMFmesh_120520.nc
+      </value>
     </values>
   </entry>
 
   <entry id="strm_datfil" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file path(s).</desc>
+    <group>derived</group>
+    <desc>stream data files (appears in the stream xml files)</desc>
     <values>
-      <value>null</value>
-      <value stream="SSMI$">ssmi_ifrac.clim.x0.5.090319.nc</value>
-      <value stream="SSMI_IAF">
-        ssmi.ifrac.0.5x0.5.1948.nc
-        ssmi.ifrac.0.5x0.5.1949.nc
-        ssmi.ifrac.0.5x0.5.1950.nc
-        ssmi.ifrac.0.5x0.5.1951.nc
-        ssmi.ifrac.0.5x0.5.1952.nc
-        ssmi.ifrac.0.5x0.5.1953.nc
-        ssmi.ifrac.0.5x0.5.1954.nc
-        ssmi.ifrac.0.5x0.5.1955.nc
-        ssmi.ifrac.0.5x0.5.1956.nc
-        ssmi.ifrac.0.5x0.5.1957.nc
-        ssmi.ifrac.0.5x0.5.1958.nc
-        ssmi.ifrac.0.5x0.5.1959.nc
-        ssmi.ifrac.0.5x0.5.1960.nc
-        ssmi.ifrac.0.5x0.5.1961.nc
-        ssmi.ifrac.0.5x0.5.1962.nc
-        ssmi.ifrac.0.5x0.5.1963.nc
-        ssmi.ifrac.0.5x0.5.1964.nc
-        ssmi.ifrac.0.5x0.5.1965.nc
-        ssmi.ifrac.0.5x0.5.1966.nc
-        ssmi.ifrac.0.5x0.5.1967.nc
-        ssmi.ifrac.0.5x0.5.1968.nc
-        ssmi.ifrac.0.5x0.5.1969.nc
-        ssmi.ifrac.0.5x0.5.1970.nc
-        ssmi.ifrac.0.5x0.5.1971.nc
-        ssmi.ifrac.0.5x0.5.1972.nc
-        ssmi.ifrac.0.5x0.5.1973.nc
-        ssmi.ifrac.0.5x0.5.1974.nc
-        ssmi.ifrac.0.5x0.5.1975.nc
-        ssmi.ifrac.0.5x0.5.1976.nc
-        ssmi.ifrac.0.5x0.5.1977.nc
-        ssmi.ifrac.0.5x0.5.1978.nc
-        ssmi.ifrac.0.5x0.5.1979.nc
-        ssmi.ifrac.0.5x0.5.1980.nc
-        ssmi.ifrac.0.5x0.5.1981.nc
-        ssmi.ifrac.0.5x0.5.1982.nc
-        ssmi.ifrac.0.5x0.5.1983.nc
-        ssmi.ifrac.0.5x0.5.1984.nc
-        ssmi.ifrac.0.5x0.5.1985.nc
-        ssmi.ifrac.0.5x0.5.1986.nc
-        ssmi.ifrac.0.5x0.5.1987.nc
-        ssmi.ifrac.0.5x0.5.1988.nc
-        ssmi.ifrac.0.5x0.5.1989.nc
-        ssmi.ifrac.0.5x0.5.1990.nc
-        ssmi.ifrac.0.5x0.5.1991.nc
-        ssmi.ifrac.0.5x0.5.1992.nc
-        ssmi.ifrac.0.5x0.5.1993.nc
-        ssmi.ifrac.0.5x0.5.1994.nc
-        ssmi.ifrac.0.5x0.5.1995.nc
-        ssmi.ifrac.0.5x0.5.1996.nc
-        ssmi.ifrac.0.5x0.5.1997.nc
-        ssmi.ifrac.0.5x0.5.1998.nc
-        ssmi.ifrac.0.5x0.5.1999.nc
-        ssmi.ifrac.0.5x0.5.2000.nc
-        ssmi.ifrac.0.5x0.5.2001.nc
-        ssmi.ifrac.0.5x0.5.2002.nc
-        ssmi.ifrac.0.5x0.5.2003.nc
-        ssmi.ifrac.0.5x0.5.2004.nc
-        ssmi.ifrac.0.5x0.5.2005.nc
-        ssmi.ifrac.0.5x0.5.2006.nc
-        ssmi.ifrac.0.5x0.5.2007.nc
-        ssmi.ifrac.0.5x0.5.2008.20120420.nc
-        ssmi.ifrac.0.5x0.5.2009.20120420.nc
+      <value>
+	null
+      </value>
+      <value stream="ssmi$">
+	$DIN_LOC_ROOT/ice/dice7/SSMI/ssmi_ifrac.clim.x0.5.090319.nc
+      </value>
+      <value stream="ssmi_iaf">
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2005.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2008.20120420.nc
+        $DIN_LOC_ROOT/ocn/iaf/ssmi.ifrac.0.5x0.5.2009.20120420.nc
       </value>
     </values>
   </entry>
@@ -213,7 +159,7 @@
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>Stream data variable name(s).</desc>
+    <desc>Stream data variable name(s) (this appears in the stream xml file)</desc>
     <values>
       <value>
         ifrac  ifrac
@@ -225,7 +171,7 @@
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>Stream offset.</desc>
+    <desc>Stream offset (this appears in the stream xml file)</desc>
     <values>
       <value>0</value>
     </values>
@@ -238,9 +184,8 @@
   <desc>Simulation year to align stream to.</desc>
   <values>
     <value>-999</value>
-    <value stream="SSMI$">1 </value>
-    <value stream="SSMI_IAF">1</value>
-    <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
+    <value stream="ssmi$">1 </value>
+    <value stream="ssmi_iaf">1</value>
   </values>
   </entry>
 
@@ -251,9 +196,8 @@
     <desc>First year of stream.</desc>
     <values>
       <value>-999</value>
-      <value stream="SSMI$">1 </value>
-      <value stream="SSMI_IAF">1948</value>
-      <value stream="prescribed">$SSTICE_YEAR_START</value>
+      <value stream="ssmi$">1 </value>
+      <value stream="ssmi_iaf">1948</value>
     </values>
   </entry>
 
@@ -264,9 +208,8 @@
     <desc>Last year of stream.</desc>
     <values>
       <value>-999</value>
-      <value stream="SSMI$">1 </value>
-      <value stream="SSMI_IAF">2009</value>
-      <value stream="prescribed">$SSTICE_YEAR_END</value>
+      <value stream="ssmi$">1 </value>
+      <value stream="ssmi_iaf">2009</value>
     </values>
   </entry>
 
@@ -277,78 +220,6 @@
   <!-- =========================================  -->
   <!--- shr_strmdata_nml (file dice_ice_in)       -->
   <!-- =========================================  -->
-
-  <entry id="nx_global" modify_via_xml="ICE_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$ICE_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="ICE_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$ICE_NY</value>
-    </values>
-  </entry>
-
-  <entry id="fillalgo" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
-    <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are just copy (ie. no fill), special value,
-      nearest neighbor, nearest neighbor in "i" direction, or nearest
-      neighbor in "j" direction.
-      valid values:  'copy','spval','nn','nnoni','nnonj'
-    </desc>
-    <values>
-      <value>nn</value>
-    </values>
-  </entry>
-
-  <entry id="fillmask" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      plays no role is fill algorithm at the present time.
-      valid values: "nomask,srcmask,dstmask,bothmask"
-    </desc>
-    <values>
-      <value>nomask</value>
-    </values>
-  </entry>
-
-  <entry id="mapmask" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      array (up to 30 elements) of masking algorithms for mapping input data
-      associated with the array of streams.  valid options are map only from
-      valid src points, map only to valid destination points, ignore all
-      masks, map only from valid src points to valid destination points.
-      valid values: srcmask, dstmask, nomask, bothmask
-    </desc>
-    <values>
-      <value>dstmask</value>
-    </values>
-  </entry>
 
   <entry id="mapalgo" per_stream_entry="true">
     <type>char(30)</type>
@@ -495,44 +366,48 @@
     <type>char</type>
     <category>streams</category>
     <group>dice_nml</group>
-    <valid_values>NULL,SSTDATA,COPYALL</valid_values>
+    <valid_values>null,ssmi,ssmi_iaf,copyall</valid_values>
     <desc>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
       convenience.  valid options are dependent on the data model and will
       be described elsewhere.  NULL is always a valid option and means no
       data will be generated.  default='NULL'
-      datamode = "NULL"
+      datamode = "null"
       Turns off the data model as a provider of data to the coupler.  The
       ice_present flag will be set to false and the coupler will assume no
       exchange of data to or from the data model.
-      dataMode = "COPYALL"
+      dataMode = "copyall"
       Copies all fields directly from the input data streams Any required
       fields not found on an input stream will be set to zero.
-      dataMode = "SSTDATA"
+      dataMode = "ssmi"
       Is a prognostic mode. It requires data be sent to the ice
       model. Ice fraction (extent) data is read from an input stream,
       atmosphere state variables are received from the coupler, and then
-      an atmosphere-ice surface flux is computed and sent to the
-      coupler. It is called "SSTDATA" mode because normally the ice
-      fraction data is found in the same data files that provide SST
-      data to the data ocean model. They are normally found in the same
-      file because the SST and ice fraction data are derived from the
-      same observational data sets and are consistent with each other.
-      Set by the xml variable DICE_MODE in env_run.xml
-      Currently, DICE_MODE can be [ssmi, ssmi_iaf, null]
-      If DICE_MODE is set to ssmi or ssmi_iaf, datamode will be set to SSTDATA
-      If DICE_MODE is set to null, datamodel will be set to NULL
+      an atmosphere-ice surface flux is computed and sent to the mediator.
+      Currently, dice_mode and datamode are the same.
     </desc>
     <values>
-      <value dice_mode="null">NULL</value>
-      <value dice_mode="ssmi_iaf">SSTDATA</value>
-      <value dice_mode="ssmi">SSTDATA</value>
-      <value dice_mode="prescribed">SSTDATA</value>
+      <value dice_mode="null">null</value>
+      <value dice_mode="ssmi_iaf">ssmi_iaf</value>
+      <value dice_mode="ssmi">ssmi</value>
     </values>
   </entry>
 
-  <entry id="model_maskfile" skip_default_entry="true">
+  <entry id="model_meshfile" modify_via_xml="OCN_DOMAIN_MESH">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dice_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$ICE_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_maskfile">
     <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
@@ -541,7 +416,44 @@
       file specifying model mask if not obtained from input model mesh
     </desc>
     <values>
-      <value>null</value>
+      <value>$ICE_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dice_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$ICE_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="ICE_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>dice_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$ICE_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="ICE_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>dice_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$ICE_NY</value>
     </values>
   </entry>
 

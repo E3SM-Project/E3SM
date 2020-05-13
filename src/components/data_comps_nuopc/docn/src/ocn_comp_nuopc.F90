@@ -366,8 +366,7 @@ contains
     ! Initialize sdat
     call t_startf('docn_strdata_init')
     call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ocn', &
-         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, &
-         reset_mask=reset_mask,  rc=rc)
+         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, reset_mask=reset_mask,  rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_init')
 
