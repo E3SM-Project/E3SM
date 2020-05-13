@@ -139,7 +139,7 @@ contains
 
       real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
-      real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
+      real(kind=RKIND) :: areaSum, r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
@@ -192,6 +192,8 @@ contains
          redi_term2(:, :, iCell) = 0.0_RKIND
          redi_term3(:, :, iCell) = 0.0_RKIND
          fluxRediZTop(:, :) = 0.0_RKIND
+        !rediKappaCell(iCell) = 0.0_RKIND
+         areaSum = 0.0_RKIND
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
@@ -204,6 +206,9 @@ contains
             else  ! cell2 == iCell
                iCellSelf = 2
             endif
+
+            areaSum = areaSum + 0.5_RKIND * dvEdge(iEdge) * dcEdge(iEdge)
+      !      rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
@@ -261,10 +266,10 @@ contains
                   redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - flux_term2*invAreaCell
                   redi_term2_edge(iTr, k, iEdge) = -flux_term2
 
-                  dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
+                  dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))/dcEdge(iEdge)*0.5_RKIND
                   fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                          0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
-                                         *dTracerDx*invAreaCell
+                                         *dTracerDx
                end do
             end do
 
@@ -301,10 +306,10 @@ contains
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - flux_term2*invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
 
-               dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
+               dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))/dcEdge(iEdge)*0.5_RKIND
                fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                       0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
-                                      *dTracerDx*invAreaCell
+                                      *dTracerDx
             end do
          end do ! nEdgesOnCell(iCell)
 
@@ -313,7 +318,7 @@ contains
          fluxRediZTop(:, maxLevelCell(iCell) + 1) = 0.0_RKIND
          redi_term3_topOfCell(:, 1, iCell) = 0.0_RKIND
          do k = 2, maxLevelCell(iCell)
-            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k)
+            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k)/areaSum
          end do
          redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
 
@@ -323,8 +328,8 @@ contains
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
                flux_term3 = RediKappa(iCell)*2.0_RKIND* &
-                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k) - &
-                             kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell)*fluxRediZTop(iTr, k + 1))
+                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k)/areaSum - &
+                             kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell)*fluxRediZTop(iTr, k + 1)/areaSum)
 
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
             end do
