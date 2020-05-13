@@ -7,9 +7,12 @@ contains
 
   subroutine advect_mom(ncrms)
     use vars
+    use params, only: docolumn
     implicit none
     integer, intent(in) :: ncrms
     integer i,j,k
+
+    if(docolumn) return
 
     call advect2_mom_xy(ncrms)
     call advect2_mom_z(ncrms)
