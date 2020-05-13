@@ -34,9 +34,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
-  auto Qdp = Q * Pa;
   Q.set_string("kg/kg");
-  Qdp.set_string("kg/kg Pa");
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
   constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
@@ -55,7 +53,6 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Inputs
   auto nondim = m/m;
-  m_required_fields.emplace("qdp",    tracers_layout,           Qdp, grid_name);  
   m_required_fields.emplace("ast",    scalar3d_layout_mid,   nondim, grid_name);
   m_required_fields.emplace("naai",   scalar3d_layout_mid,     1/kg, grid_name);
   m_required_fields.emplace("npccn",  scalar3d_layout_mid, 1/(kg*s), grid_name);
@@ -63,7 +60,11 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("dp",     scalar3d_layout_mid,       Pa, grid_name);
   m_required_fields.emplace("zi",     scalar3d_layout_int,        m, grid_name);
 
-  // Outputs
+  // Input-Outputs
+  m_required_fields.emplace("FQ", tracers_layout,      Q, grid_name);
+  m_required_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
+  m_required_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
+
   m_computed_fields.emplace("FQ", tracers_layout,      Q, grid_name);
   m_computed_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
   m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
@@ -81,7 +82,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
   if (m_p3_params.get<bool>("Standalone", false)) {
     // Loop over required fields. If no provider/initializer is found for a field,
     // assume P3StandAloneInit will init it.
-    std::array<std::string,7> inputs = {"qdp","ast","naai","npccn","pmid","dp","zi"};
+    std::array<std::string,9> inputs = {"q","T","FQ","ast","naai","npccn","pmid","dp","zi"};
     bool all_inited = true, all_uninited = true;
     for (auto name : inputs) {
       const auto& f = m_p3_fields_in.at(name);
@@ -105,7 +106,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 // =========================================================================================
 void P3Microphysics::run (const Real dt)
 {
-  // std::array<const char*, num_views> view_names = {"q", "FQ", "qdp", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
+  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
 
   std::vector<const Real*> in;
   std::vector<Real*> out;
@@ -119,7 +120,7 @@ void P3Microphysics::run (const Real dt)
   }
 
   // Call f90 routine
-  p3_main_f90 (dt, m_raw_ptrs_in["qdp"], m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["npccn"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
+  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["npccn"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
 
   // Copy outputs back to device
   for (auto& it : m_p3_fields_out) {
