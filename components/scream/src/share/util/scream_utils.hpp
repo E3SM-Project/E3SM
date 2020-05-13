@@ -24,7 +24,7 @@ namespace scream {
  * especially useful for bfb tests agaisnt fortran,
  * to ensure that literals are not a source of round-off differences.
  */
-template<typename T>
+template<typename T> KOKKOS_INLINE_FUNCTION
 constexpr typename std::enable_if<std::is_arithmetic<T>::value,Real>::type
 sp (const T val) {
   return Real(val);
