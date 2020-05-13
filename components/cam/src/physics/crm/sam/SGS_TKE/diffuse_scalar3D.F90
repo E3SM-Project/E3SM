@@ -8,7 +8,9 @@ contains
     use grid
     use params
     use task_util_mod, only: task_rank_to_index
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     ! input
@@ -38,17 +40,26 @@ contains
     allocate( flx_y(ncrms,0:nx,0:ny,0:nzm) )
     allocate( flx_z(ncrms,0:nx,0:ny,0:nzm) )
     allocate( dfdt (ncrms,nx,ny,nz) )
+#if defined(_OPENACC)
     call prefetch( flx_x )
     call prefetch( flx_y )
     call prefetch( flx_z )
     call prefetch( dfdt  )
-
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: flx_x)
+    !$omp target enter data map(alloc: flx_y)
+    !$omp target enter data map(alloc: flx_z)
+    !$omp target enter data map(alloc: dfdt)
+#endif
     rdx2=1./(dx*dx)
     rdy2=1./(dy*dy)
     dxy=dx/dy
     dyx=dy/dx
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k = 1 , nzm
       do j = 1 , ny
         do i = 1 , nx
@@ -62,7 +73,11 @@ contains
     !-----------------------------------------
     if(dowallx) then
       if(mod(rank,nsubdomains_x).eq.0) then
+#if defined(_OPENACC)
         !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+        !$omp target teams distribute parallel do collapse(3)
+#endif
         do k=1,nzm
           do j=1,ny
             do icrm = 1 , ncrms
@@ -72,7 +87,11 @@ contains
         enddo
       endif
       if(mod(rank,nsubdomains_x).eq.nsubdomains_x-1) then
+#if defined(_OPENACC)
         !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+        !$omp target teams distribute parallel do collapse(3)
+#endif
         do k=1,nzm
           do j=1,ny
             do icrm = 1 , ncrms
@@ -85,7 +104,11 @@ contains
 
     if(dowally) then
       if(rank.lt.nsubdomains_x) then
+#if defined(_OPENACC)
         !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+        !$omp target teams distribute parallel do collapse(3)
+#endif
         do k=1,nzm
           do i=1,nx
             do icrm = 1 , ncrms
@@ -95,7 +118,11 @@ contains
         enddo
       endif
       if(rank.gt.nsubdomains-nsubdomains_x-1) then
+#if defined(_OPENACC)
         !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+        !$omp target teams distribute parallel do collapse(3)
+#endif
         do k=1,nzm
           do i=1,nx
             do icrm = 1 , ncrms
@@ -107,7 +134,11 @@ contains
     endif
 
     if(dowally) then
+#if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do i=1,nx
           do icrm = 1 , ncrms
@@ -115,7 +146,11 @@ contains
           enddo
         enddo
       enddo
+#if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do i=1,nx
           do icrm = 1 , ncrms
@@ -126,7 +161,11 @@ contains
     endif
 
     !  Horizontal diffusion:
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=0,ny
         do i=0,nx
@@ -147,7 +186,11 @@ contains
         enddo
       enddo
     enddo
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
@@ -162,14 +205,21 @@ contains
     enddo
 
     !  Vertical diffusion:
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k = 1 , nzm
       do icrm = 1 , ncrms
         flux(icrm,k) = 0.
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
@@ -181,22 +231,33 @@ contains
               rdz5=0.5*rdz2 * grdf_z(icrm,k)
               tkz=rdz5*(tkh(icrm,i,j,k)+tkh(icrm,i,j,kc))
               flx_z(icrm,i,j,k)=-tkz*(field(icrm,i,j,kc)-field(icrm,i,j,k))*rhoi
+#if defined(_OPENACC)
               !$acc atomic update
+#elif defined(_OPENMP)
+              !$omp atomic update
+#endif
               flux(icrm,kc) = flux(icrm,kc) + flx_z(icrm,i,j,k)
             elseif (k == nzm) then
               tmp=1./adzw(icrm,nz)
               rdz=1./dz(icrm)
               flx_z(icrm,i,j,0)=fluxb(icrm,i,j)*rdz*rhow(icrm,1)
               flx_z(icrm,i,j,nzm)=fluxt(icrm,i,j)*rdz*tmp*rhow(icrm,nz)
+#if defined(_OPENACC)
               !$acc atomic update
+#elif defined(_OPENMP)
+              !$omp atomic update
+#endif
               flux(icrm,1) = flux(icrm,1) + flx_z(icrm,i,j,0)
             endif
           enddo
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
@@ -209,7 +270,12 @@ contains
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
+    !$omp target exit data map(delete: flx_x)
+    !$omp target exit data map(delete: flx_y)
+    !$omp target exit data map(delete: flx_z)
+    !$omp target exit data map(delete: dfdt)
+#endif
     deallocate( flx_x )
     deallocate( flx_y )
     deallocate( flx_z )

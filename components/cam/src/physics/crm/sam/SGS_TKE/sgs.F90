@@ -434,7 +434,11 @@ CONTAINS
     integer i,j,kk,k,icrm
 
     allocate( dummy(ncrms,nz) )
+#if defined(_OPENACC)
     call prefetch(dummy)
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: dummy)
+#endif
 
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),t,fluxbt,fluxtt,tdiff,twsb)
 
@@ -481,7 +485,9 @@ CONTAINS
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),&
                         v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs)
 #endif
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: dummy)
+#endif
     deallocate( dummy )
   end subroutine sgs_scalars
 

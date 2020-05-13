@@ -9,7 +9,9 @@ contains
     use grid
     use vars, only: rho, rhow
     use params
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     ! input:
@@ -29,9 +31,17 @@ contains
     integer i,j,k,icrm
 
     allocate( df(ncrms,dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm) )
+#if defined(_OPENACC)
     call prefetch(df)
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: df)
+#endif
 
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k = 1 , nzm
       do j = dimy1_s , dimy2_s
         do i = dimx1_s , dimx2_s
@@ -47,26 +57,39 @@ contains
     else
       call diffuse_scalar2D (ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,       grdf_z,f,fluxb,fluxt,tkh,rho,rhow,flux)
     endif
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k=1,nzm
       do icrm = 1 , ncrms
         fdiff(icrm,k)=0.
       enddo
     enddo
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
             tmp = f(icrm,i,j,k)-df(icrm,i,j,k)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             fdiff(icrm,k)=fdiff(icrm,k)+tmp
           end do
         end do
       end do
     enddo
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: df)
+#endif
     deallocate( df )
 
   end subroutine diffuse_scalar
