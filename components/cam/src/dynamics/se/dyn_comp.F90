@@ -167,6 +167,9 @@ CONTAINS
        neltmp(1) = 0
        neltmp(2) = 0
        neltmp(3) = 0
+       allocate(elem(nelemd))
+       dyn_in%elem => elem
+       dyn_out%elem => elem
     endif
 
     dyndecomp_set = .true.
