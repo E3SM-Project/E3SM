@@ -63,6 +63,7 @@ module lnd_comp_nuopc
 
   ! dlnd_in namelist input
   character(CL)                :: nlfilename                      ! filename to obtain namelist info from
+  character(CL)                :: xmlfilename                      ! filename to obtain stream info from
   character(CL)                :: dataMode                        ! flags physics options wrt input data
   character(CL)                :: domain_fracname = 'undefined'   ! name of fraction field on first stream file
   logical                      :: force_prognostic_true = .false. ! if true set prognostic true
@@ -158,7 +159,7 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! Obtain flds_scalar values, mpi values, multi-instance values and  
+    ! Obtain flds_scalar values, mpi values, multi-instance values and
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
@@ -250,7 +251,8 @@ contains
 
     ! Initialize sdat
     call t_startf('dlnd_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'lnd', mesh, read_restart, sdat, rc=rc)
+    xmlfilename = 'dlnd.streams.xml'
+    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'lnd', mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_init')
 
@@ -475,7 +477,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain fractional land from first stream
-    call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac, rc=rc) 
+    call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Create stream-> export state mapping

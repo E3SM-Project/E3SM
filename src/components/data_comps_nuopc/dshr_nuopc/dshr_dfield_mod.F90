@@ -78,8 +78,10 @@ contains
     ! ----------------------------------------------
 
     allocate(dfield_new, stat=status)
-    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-    if (status /= 0) call shr_sys_abort(msgstr)
+    if (status /= 0) then
+       write(msgstr,*) subname,' allocation error ',__LINE__,':',__FILE__
+       call shr_sys_abort(msgstr)
+    end if
     dfield_new%next => dfields
     dfields => dfield_new
 
@@ -107,8 +109,11 @@ contains
              dfield_new%sdat_stream_index = ns
              dfield_new%sdat_fldbun_index = nf
              allocate(dfield_new%stream_data1d(lsize), stat=status)
-             write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-             if (status /= 0) call shr_sys_abort(msgstr)
+
+             if (status /= 0) then
+                call shr_sys_abort(msgstr)
+                write(msgstr,*) subname, ' allocation error ',__LINE__,':',__FILE__
+             end if
              strm_ptr => dfield_new%stream_data1d
              if (masterproc) then
                 write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)

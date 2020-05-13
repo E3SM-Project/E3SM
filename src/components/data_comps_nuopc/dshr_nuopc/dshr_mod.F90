@@ -224,7 +224,7 @@ contains
   end subroutine dshr_init
 
   !===============================================================================
-  subroutine dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, compname, &
+  subroutine dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, compname, &
        mesh, read_restart, sdat, reset_mask, model_maskfile, rc)
 
     ! ----------------------------------------------
@@ -234,7 +234,7 @@ contains
     ! input/output variables
     type(ESMF_GridComp), intent(inout)         :: gcomp
     type(ESMF_Clock)           , intent(in)    :: clock
-    character(len=*)           , intent(in)    :: nlfilename ! for shr_strdata_nml namelist
+    character(len=*)           , intent(in)    :: xmlfilename ! for shr_strdata_nml namelist
     integer                    , intent(in)    :: logunit
     character(len=*)           , intent(in)    :: compname
     integer                    , intent(out)   :: compid
@@ -337,9 +337,8 @@ contains
     if (my_task == master_task) then
        write(logunit,F00) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(mesh_filename)
     end if
-
     ! Initialize sdat from data model input files
-    call shr_strdata_init_from_infiles(sdat, nlfilename, mesh, clock, mpicom, compid, logunit, &
+    call shr_strdata_init_from_infiles(sdat, xmlfilename, mesh, clock, compid, logunit,my_task==master_task, &
          reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
