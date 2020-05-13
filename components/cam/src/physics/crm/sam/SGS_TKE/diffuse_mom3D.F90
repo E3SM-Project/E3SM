@@ -9,7 +9,7 @@ contains
     !        momentum tendency due to SGS diffusion
 
     use vars
-    use params, only: crm_rknd
+    use params, only: docolumn, crm_rknd
     use openacc_utils
     implicit none
     integer, intent(in) :: ncrms
@@ -30,18 +30,26 @@ contains
     allocate( fu(ncrms,0:nx,0:ny,nz) )
     allocate( fv(ncrms,0:nx,0:ny,nz) )
     allocate( fw(ncrms,0:nx,0:ny,nz) )
+#if defined(_OPENACC)
     call prefetch( fu )
     call prefetch( fv )
     call prefetch( fw )
-
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: fu)
+    !$omp target enter data map(alloc: fv)
+    !$omp target enter data map(alloc: fw)
+#endif
     rdx2=1./(dx*dx)
     rdy2=1./(dy*dy)
     rdx25=0.25*rdx2
     rdy25=0.25*rdy2
     dxy=dx/dy
     dyx=dy/dx
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=0,nx
@@ -63,22 +71,44 @@ contains
         enddo
       enddo
     enddo
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
             kc=k+1
             ib=i-1
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,k)-fu(icrm,ib,j,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,k)-fv(icrm,ib,j,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-(fw(icrm,i,j,k)-fw(icrm,ib,j,k))
           enddo
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=0,ny
         do i=1,nx
@@ -100,22 +130,44 @@ contains
         enddo
       enddo
     enddo
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
             jb=j-1
             kc=k+1
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,k)-fu(icrm,i,jb,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,k)-fv(icrm,i,jb,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-(fw(icrm,i,j,k)-fw(icrm,i,jb,k))
           enddo
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k = 1 , nzm
       do icrm = 1 , ncrms
         uwsb(icrm,k)=0.
@@ -124,7 +176,11 @@ contains
     enddo
 
     !-------------------------
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm-1
       do j=1,ny
         do i=1,nx
@@ -145,16 +201,27 @@ contains
             fu(icrm,i,j,kc)=-tkz*( (u(icrm,i,j,kc)-u(icrm,i,j,k))*iadzw + (w(icrm,i,j,kc)-w(icrm,ib,j,kc))*dzx)*rhow(icrm,kc)
             tkz=rdz25*(tk(icrm,i,j,k)+tk(icrm,i,jb,k)+tk(icrm,i,j,kc)+tk(icrm,i,jb,kc))
             fv(icrm,i,j,kc)=-tkz*( (v(icrm,i,j,kc)-v(icrm,i,j,k))*iadzw + (w(icrm,i,j,kc)-w(icrm,i,jb,kc))*dzy)*rhow(icrm,kc)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             uwsb(icrm,kc)=uwsb(icrm,kc)+fu(icrm,i,j,kc)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             vwsb(icrm,kc)=vwsb(icrm,kc)+fv(icrm,i,j,kc)
           enddo
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
@@ -166,40 +233,73 @@ contains
           fv(icrm,i,j,1)=fluxbv(icrm,i,j) * rdz * rhow(icrm,1)
           fu(icrm,i,j,nz)=fluxtu(icrm,i,j) * rdz * rhow(icrm,nz)
           fv(icrm,i,j,nz)=fluxtv(icrm,i,j) * rdz * rhow(icrm,nz)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           uwsb(icrm,1) = uwsb(icrm,1) + fu(icrm,i,j,1)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           vwsb(icrm,1) = vwsb(icrm,1) + fv(icrm,i,j,1)
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
             kc=k+1
             rhoi = 1./(rho(icrm,k)*adz(icrm,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,kc)-fu(icrm,i,j,k))*rhoi
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,kc)-fv(icrm,i,j,k))*rhoi
           enddo
         enddo
       enddo ! k
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=2,nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
             rhoi = 1./(rhow(icrm,k)*adzw(icrm,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-(fw(icrm,i,j,k+1)-fw(icrm,i,j,k))*rhoi
           enddo
         enddo
       enddo ! k
     enddo
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: fu)
+    !$omp target exit data map(delete: fv)
+    !$omp target exit data map(delete: fw)
+#endif
     deallocate( fu )
     deallocate( fv )
     deallocate( fw )
