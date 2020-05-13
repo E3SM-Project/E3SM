@@ -626,7 +626,7 @@ contains
          ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
          ! regridmethod=ESMF_REGRIDMETHOD_CONSERVE, &
          ! polemethod=ESMF_POLEMETHOD_NONE, &
-         ! dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
+           dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -1217,15 +1217,6 @@ contains
                 call dshr_fldbun_getfldptr(sdat%fldbun_model_ub(ns), fieldNameList(nf), dataptr_ub, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 dataptr(:) = dataptr_lb(:) * flb + dataptr_ub(:) * fub
-!                 if (trim(fieldNameList(nf)) == 't') then
-!                    write(6,*)'DEBUG: fldname t flb,fub= ',flb,fub
-!                    do n = 1,size(sdat%model_gindex)
-!                       write(6,100)'DEBUG: n, dataptr_lb(n)',n,dataptr_lb(n) + 273.15_R8
-!                       write(6,100)'DEBUG: n, dataptr_ub(n)',n,dataptr_ub(n) + 273.15_R8
-!                       write(6,100)'DEBUG: n, dataptr(n)   ',n,dataptr(n) + 273.15_R8
-! 100                   format(a,i8,3(f13.5,2x))
-!                    end do
-!                 end if
              end do
              call t_stopf(trim(lstr)//trim(timname)//'_tint')
 
@@ -1636,7 +1627,6 @@ contains
     if (mDateLB /= oDateLB .or. mSecLB /= oSecLB) then
        newdata = .true.
        if (mDateLB == oDateUB .and. mSecLB == oSecUB) then
-          write(6,*)'DEBUG: copying field bundle ub to lb'
           ! copy fldbun_stream_model_ub to fldbun_stream_model_lb
           call t_startf(trim(istr)//'_LB_copy')
           call ESMF_FieldBundleGet(fldbun_stream_model_ub, fieldCount=fieldCount, rc=rc)
@@ -1654,7 +1644,6 @@ contains
           deallocate(fieldNameList)
           call t_stopf(trim(istr)//'_LB_copy')
        else
-          write(6,*)'DEBUG: reading  in field bundle lb'
           ! read lower bound of data
           call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
                fldbun_stream_input_lb, fldbun_stream_model_lb, &
@@ -1666,7 +1655,6 @@ contains
 
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
-       write(6,*)'DEBUG: reading  in ub'
        call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
             fldbun_stream_input_ub, fldbun_stream_model_ub, &
             pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, filename_ub, n_ub, &
@@ -1828,13 +1816,6 @@ contains
        end if
        dataptr_stream_model(:) = real(data_real(:), kind=r8)
        deallocate(data_real)
-
-       if (fldname_stream_model == 't') then
-          do n = 1,size(dataptr_stream_model)
-             write(6,*)'DEBUG: n,t= ',n,dataptr_stream_model(n)
-          end do
-       end if
-
     enddo
 
     deallocate(fieldnameList_stream_input)
