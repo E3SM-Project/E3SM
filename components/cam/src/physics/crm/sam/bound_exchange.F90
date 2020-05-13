@@ -15,7 +15,10 @@ contains
     ! periodic boundary exchange
     use grid
     use params, only: crm_rknd
+#if defined(_OPENACC)
     use openacc_utils
+#endif
+
     implicit none
     integer dimx1, dimx2, dimy1, dimy2, dimz, ncrms
     integer i_1, i_2, j_1, j_2
@@ -26,7 +29,12 @@ contains
     integer i1, i2, j1, j2
 
     allocate(buffer((nx+ny)*3*nz*ncrms))
+#if defined(_OPENACC)
     call prefetch( buffer )
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: buffer)
+    !$omp target update from (f)
+#endif
 
     i1 = i_1 - 1
     i2 = i_2 - 1
@@ -39,7 +47,11 @@ contains
 
     if(RUN3D) then
       ! "North" -> "South":
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=ny-j1,ny
           do i=1,nx
@@ -50,7 +62,11 @@ contains
           end do
         end do
       end do
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=-j1,0
           do i=1,nx
@@ -63,7 +79,11 @@ contains
       end do
 
       ! "North-East" -> "South-West":
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=ny-j1,ny
           do i=nx-i1,nx
@@ -74,7 +94,11 @@ contains
           end do
         end do
       end do
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=-j1,0
           do i=-i1,0
@@ -87,7 +111,11 @@ contains
       end do
 
       ! "South-East" -> "North-West":
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=1,1+j2
           do i=nx-i1,nx
@@ -98,7 +126,11 @@ contains
           end do
         end do
       end do
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=nyp1,nyp1+j2
           do i=-i1,0
@@ -111,7 +143,11 @@ contains
       end do
 
       ! "South" -> "North":
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=1,1+j2
           do i=1,nx
@@ -122,7 +158,11 @@ contains
           end do
         end do
       end do
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=nyp1,nyp1+j2
           do i=1,nx
@@ -135,7 +175,11 @@ contains
       end do
 
       ! "South-West" -> "North-East":
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=1,1+j2
           do i=1,1+i2
@@ -146,7 +190,11 @@ contains
           end do
         end do
       end do
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=nyp1,nyp1+j2
           do i=nxp1,nxp1+i2
@@ -160,7 +208,11 @@ contains
 
 
       ! To "North-West" -> "South-East":
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=ny-j1,ny
           do i=1,1+i2
@@ -171,7 +223,11 @@ contains
           end do
         end do
       end do
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
       do k=1,dimz
         do j=-j1,0
           do i=nxp1,nxp1+i2
@@ -187,7 +243,11 @@ contains
     endif
 
     !  "East" -> "West":
-    !$acc parallel loop collapse(4) async(asyncid)
+#if defined(_OPENACC)
+      !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
     do k=1,dimz
       do j=1,ny
         do i=nx-i1,nx
@@ -198,7 +258,11 @@ contains
         end do
       end do
     end do
-    !$acc parallel loop collapse(4) async(asyncid)
+#if defined(_OPENACC)
+      !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
     do k=1,dimz
       do j=1,ny
         do i=-i1,0
@@ -211,7 +275,11 @@ contains
     end do
 
     ! "West" -> "East":
-    !$acc parallel loop collapse(4) async(asyncid)
+#if defined(_OPENACC)
+      !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
     do k=1,dimz
       do j=1,ny
         do i=1,1+i2
@@ -222,7 +290,11 @@ contains
         end do
       end do
     end do
-    !$acc parallel loop collapse(4) async(asyncid)
+#if defined(_OPENACC)
+      !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4) 
+#endif
     do k=1,dimz
       do j=1,ny
         do i=nxp1,nxp1+i2
@@ -234,6 +306,9 @@ contains
       end do
     end do
 
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: buffer)
+#endif
     deallocate(buffer)
 
   end subroutine bound_exchange
