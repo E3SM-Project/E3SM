@@ -1226,22 +1226,56 @@ subroutine diag_third_shoc_moments(&
   ! set upper condition
   w3(:,1) = 0._rtype
 
+  call clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
   ! perform clipping to prevent unrealistically large values from occuring
-  do k=1,nlevi
-    do i=1,shcol
+  !do k=1,nlevi
+  !  do i=1,shcol
+  !
+  !    tsign = 1._rtype
+  !    theterm = w_sec_zi(i,k)
+  !    cond = w3clip * sqrt(2._rtype * theterm**3)
+  !    if (w3(i,k) .lt. 0) tsign = -1._rtype
+  !    if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
+  !
+  !    enddo ! end i loop (column loop)
+  !enddo ! end k loop (vertical loop)
 
-      tsign = 1._rtype
+  return
+
+end subroutine diag_third_shoc_moments
+
+
+subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
+
+  ! perform clipping to prevent unrealistically large values from occuring
+
+  implicit none
+
+  integer, intent(in) :: nlevi
+  integer, intent(in) :: shcol
+
+  real(rtype), intent(in) :: w_sec_zi(shcol,nlevi)
+  real(rtype), intent(inout) :: w3(shcol,nlevi)
+
+  real(rtype) :: tsign 
+  real(rtype) :: cond
+  real(rtype) :: theterm
+
+  integer k, i
+
+  do k=1, nlevi
+    do i=1, shcol 
+
+      tsign = 1._rtype   
       theterm = w_sec_zi(i,k)
       cond = w3clip * sqrt(2._rtype * theterm**3)
       if (w3(i,k) .lt. 0) tsign = -1._rtype
       if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
 
-    enddo ! end i loop (column loop)
+    enddo !mend i loop (column loop)
   enddo ! end k loop (vertical loop)
 
-  return
-
-end subroutine diag_third_shoc_moments
+end subroutine 
 
 !==============================================================
 ! Assumed PDF closure for the SHOC scheme
