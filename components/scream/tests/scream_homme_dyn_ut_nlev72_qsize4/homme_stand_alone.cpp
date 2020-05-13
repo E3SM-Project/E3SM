@@ -4,6 +4,7 @@
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"
+#include "share/scream_parse_yaml_file.hpp"
 
 // Hommexx includes
 #include "Context.hpp"
@@ -14,19 +15,10 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   using namespace scream;
   using namespace scream::control;
 
-  // Create a parameter list for inputs
+  // Load ad parameter list
+  std::string fname = "input.yaml";
   ParameterList ad_params("Atmosphere Driver");
-  auto& params = ad_params.sublist("Atmosphere Processes");
-
-  params.set("Number of Entries",1);
-  params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "dynamics");
-
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  gm_params.set<std::string>("Type","Dynamics Driven");
-  gm_params.set<std::string>("Reference Grid","SE Dynamics");
+  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.

@@ -2,6 +2,7 @@
 
 #include "control/atmosphere_driver.hpp"
 #include "share/scream_parameter_list.hpp"
+#include "share/scream_parse_yaml_file.hpp"
 #include "dummy_atm_setup.hpp"
 
 namespace scream {
@@ -9,19 +10,11 @@ namespace scream {
 TEST_CASE ("dag_check","[!throws]")
 {
   // This test checks that unmet dependencies in the Atm DAG will throw
+
+  // Load ad parameter list
+  std::string fname = "ad_tests.yaml";
   ParameterList ad_params("Atmosphere Driver");
-  auto& proc_params = ad_params.sublist("Atmosphere Processes");
-
-  proc_params.set("Number of Entries",1);
-  proc_params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "Physics_fwd");
-  p0.set<int>("Number of vector components",1);
-
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  gm_params.set<std::string>("Reference Grid","Physics_fwd");
-  gm_params.set<std::string>("Type","User Provided");
+  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
   // Setup the atm factories and grid manager
   dummy_atm_init(1);

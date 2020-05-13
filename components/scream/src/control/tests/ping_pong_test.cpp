@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include "share/grid/user_provided_grids_manager.hpp"
+#include "share/scream_parse_yaml_file.hpp"
 #include "control/atmosphere_driver.hpp"
 
 #include "dummy_atm_setup.hpp"
@@ -12,26 +13,12 @@ TEST_CASE("ping-pong", "") {
   using namespace scream;
 
   constexpr int num_cols   = 2;
-  constexpr int vec_length = 4;
 
-  // Create a parameter list for inputs
+  // Load ad parameter list
+  std::string fname = "ping_pong.yaml";
   ParameterList ad_params("Atmosphere Driver");
-  auto& proc_params = ad_params.sublist("Atmosphere Processes");
-
-  proc_params.set("Number of Entries",2);
-  proc_params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "Physics_fwd");
-  p0.set<int>("Number of vector components",vec_length);
-
-  auto& p1 = proc_params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Physics_bwd");
-  p1.set<int>("Number of vector components",vec_length);
-
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  gm_params.set<std::string>("Reference Grid","Physics_fwd");
-  gm_params.set<std::string>("Type","User Provided");
+  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  const int vec_length = ad_params.sublist("Atmosphere Processes").sublist("Process 0").get<int>("Number of vector components");
 
   // Create a comm
   Comm atm_comm (MPI_COMM_WORLD);

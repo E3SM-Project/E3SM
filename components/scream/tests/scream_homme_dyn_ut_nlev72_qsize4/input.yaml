@@ -5,13 +5,10 @@ Debug:
 
 Atmosphere Processes:
   Number of Entries: 1
-
   Process 0:
-    Process Name: P3
-    Grid: Physics
-    Standalone: true
+    Process Name: Dynamics
 
 Grids Manager:
-  Type: User Provided
-  Reference Grid: Physics
+  Type: Dynamics Driven
+  Reference Grid: SE Dynamics
 ...
