@@ -43,9 +43,11 @@ contains
       if(masterproc)print*,'cannot compute gamma-function in precip_init. Exiting...'
       call task_abort
     end if
-
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2)  async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k=1,nzm
       do icrm = 1 , ncrms
         pratio = sqrt(1.29 / rho(icrm,k))
@@ -90,8 +92,6 @@ contains
         evapr2(icrm,k)  =  0.31 * 2. * pi  * nzeror * gamr2 * 0.89 * sqrt(a_rain/(muelq*rrr1))/(pi * rhor * nzeror)**((5+b_rain)/8.) / (coef1+coef2) * rho(icrm,k)**((1+b_rain)/8.)*sqrt(pratio)
       end do
     end do
-
   end subroutine precip_init
-
 
 end module precip_init_mod
