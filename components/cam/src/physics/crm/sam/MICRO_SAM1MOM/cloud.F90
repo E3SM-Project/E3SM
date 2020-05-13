@@ -20,9 +20,9 @@ contains
     real(crm_rknd) qn(ncrms,nx,ny,nzm)  ! cloud condensate (liquid + ice)
 
     integer i,j,k, kb, kc,icrm
-    real(crm_rknd) dtabs, tabs1, an, bn, ap, bp, om, ag, omp
+    real(crm_rknd) dtabs, tabs1, tabs10, an, bn, ap, bp, om, ag, omp
     real(crm_rknd) fac1,fac2
-    real(crm_rknd) fff,dfff,qsatt,dqsat
+    real(crm_rknd) fff,dfff,qsatt,qsatt0,dqsat
     real(crm_rknd) lstarn,dlstarn,lstarp,dlstarp
     integer niter
 
@@ -34,11 +34,16 @@ contains
     fac2 = fac_fus*ap
     ag = 1./(tgrmax-tgrmin)
 
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do k = 1, nzm
       do j = 1, ny
-        do i = 1, nx
+!        do i = 1, nx
           do icrm = 1 , ncrms
+            do i = 1, nx
             q(icrm,i,j,k)=max(real(0.,crm_rknd),q(icrm,i,j,k))
             ! Initial guess for temperature assuming no cloud water/ice:
             tabs(icrm,i,j,k) = t(icrm,i,j,k)-gamaz(icrm,k)
@@ -46,21 +51,22 @@ contains
             ! Warm cloud:
             if(tabs1.ge.tbgmax) then
               tabs1=tabs(icrm,i,j,k)+fac_cond*qp(icrm,i,j,k)
-              qsatt = qsatw_crm(tabs1,pres(icrm,k))
+              qsatt0 = qsatw_crm(tabs1,pres(icrm,k))
               ! Ice cloud:
             elseif(tabs1.le.tbgmin) then
               tabs1=tabs(icrm,i,j,k)+fac_sub*qp(icrm,i,j,k)
-              qsatt = qsati_crm(tabs1,pres(icrm,k))
+              qsatt0 = qsati_crm(tabs1,pres(icrm,k))
               ! Mixed-phase cloud:
             else
               om = an*tabs1-bn
-              qsatt = om*qsatw_crm(tabs1,pres(icrm,k))+(1.-om)*qsati_crm(tabs1,pres(icrm,k))
+              qsatt0 = om*qsatw_crm(tabs1,pres(icrm,k))+(1.-om)*qsati_crm(tabs1,pres(icrm,k))
             endif
             !  Test if condensation is possible:
-            if(q(icrm,i,j,k).gt.qsatt) then
-              niter=0
+!            if(q(icrm,i,j,k).gt.qsatt0) then
+              tabs10 = tabs1
+              niter = 0
               dtabs = 100.
-              do while(abs(dtabs).gt.0.01.and.niter.lt.10)
+              do while(niter .lt. 10)  !abs(dtabs).gt.0.01)
                 if(tabs1.ge.tbgmax) then
                   om=1.
                   lstarn=fac_cond
@@ -99,13 +105,15 @@ contains
                 niter=niter+1
                 tabs1=tabs1+dtabs
               end do
+
+            if(q(icrm,i,j,k).gt.qsatt0) then
+              tabs(icrm,i,j,k) = tabs1
               qsatt = qsatt + dqsat * dtabs
               qn(icrm,i,j,k) = max(real(0.,crm_rknd),q(icrm,i,j,k)-qsatt)
             else
+              tabs(icrm,i,j,k) = tabs10
               qn(icrm,i,j,k) = 0.
             endif
-            tabs(icrm,i,j,k) = tabs1
-            qp(icrm,i,j,k) = max(real(0.,crm_rknd),qp(icrm,i,j,k)) ! just in case
           end do
         end do
       end do
