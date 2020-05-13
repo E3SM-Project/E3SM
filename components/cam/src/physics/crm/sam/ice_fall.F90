@@ -9,44 +9,72 @@ contains
     use microphysics, only: micro_field, index_cloud_ice
     !use micro_params
     use params
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     integer, allocatable :: kmax(:)
     integer, allocatable :: kmin(:)
     real(crm_rknd), allocatable :: fz(:,:,:,:)
-    integer :: i,j,k, kb, kc, ici,icrm
+    integer :: i,j,k,k1,k2,kb,kc,ici,icrm
     real(crm_rknd) coef,dqi,lat_heat,vt_ice
     real(crm_rknd) omnu, omnc, omnd, qiu, qic, qid, tmp_theta, tmp_phi
 
     allocate( kmax(ncrms) )
     allocate( kmin(ncrms) )
     allocate( fz(ncrms,nx,ny,nz) )
+#if defined(_OPENACC)
     call prefetch( kmax )
     call prefetch( kmin )
     call prefetch( fz )
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: kmax )
+    !$omp target enter data map(alloc: kmin )
+    !$omp target enter data map(alloc: fz )
+#endif
 
+#if defined(_OPENACC)
     !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do
+#endif
     do icrm = 1 , ncrms
       kmax(icrm)=0
       kmin(icrm)=nzm+1
     enddo
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j = 1, ny
       do i = 1, nx
         do icrm = 1 , ncrms
           do k = 1,nzm
             if(qcl(icrm,i,j,k)+qci(icrm,i,j,k).gt.0..and. tabs(icrm,i,j,k).lt.273.15) then
+#if defined(_OPENACC)
               !$acc atomic update
+#elif defined(_OPENMP)
+              !$omp atomic update 
+#endif
               kmin(icrm) = min(kmin(icrm),k)
+#if defined(_OPENACC)
               !$acc atomic update
+#elif defined(_OPENMP)
+              !$omp atomic update
+#endif
               kmax(icrm) = max(kmax(icrm),k)
             end if
           end do
         end do
       end do
     end do
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k = 1,nzm
       do icrm = 1 , ncrms
         qifall(icrm,k) = 0.
@@ -55,8 +83,11 @@ contains
     end do
 
     if(index_cloud_ice.eq.-1) return
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4) 
+#endif
     do k = 1,nz
       do j = 1, ny
         do i = 1, nx
@@ -70,12 +101,18 @@ contains
     ! Compute cloud ice flux (using flux limited advection scheme, as in
     ! chapter 6 of Finite Volume Methods for Hyperbolic Problems by R.J.
     ! LeVeque, Cambridge University Press, 2002).
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k = 1 , nz
       do j = 1,ny
         do i = 1,nx
           do icrm = 1 , ncrms
-            if (k >= max(1,kmin(icrm)-1) .and. k <= kmax(icrm) ) then
+            k1 = max(1,kmin(icrm)-1)
+            k2 = kmax(icrm)
+            if (k >= k1 .and. k <= k2 ) then
               ! Set up indices for x-y planes above and below current plane.
               kc = min(nzm,k+1)
               kb = max(1,k-1)
@@ -98,6 +135,7 @@ contains
               !         if (qic.eq.qid) then
               if (abs(qic-qid).lt.1.0e-25) then  ! when qic, and qid is very small, qic_qid can still be zero
                 ! even if qic is not equal to qid. so add a fix here +++mhwang
+                tmp_theta = 0.
                 tmp_phi = 0.
               else
                 tmp_theta = (qiu-qic)/(qic-qid)
@@ -113,7 +151,11 @@ contains
         end do
       end do
     enddo
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j = 1, ny
       do i = 1, nx
         do icrm = 1 , ncrms
@@ -123,20 +165,34 @@ contains
     end do
 
     ici = index_cloud_ice
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1, nz
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
-            if ( k >= max(1,kmin(icrm)-2) .and. k <= kmax(icrm) ) then
+            k1 = max(1,kmin(icrm)-2)
+            k2 = kmax(icrm)
+            if ( k >= k1 .and. k <= k2 ) then
             coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
             ! The cloud ice increment is the difference of the fluxes.
             dqi=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
             ! Add this increment to both non-precipitating and total water.
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             micro_field(icrm,i,j,k,ici)  = micro_field(icrm,i,j,k,ici)  + dqi
             ! Include this effect in the total moisture budget.
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             qifall(icrm,k) = qifall(icrm,k) + dqi
 
             ! The latent heat flux induced by the falling cloud ice enters
@@ -144,28 +200,55 @@ contains
             ! precipitation.  Note: use latent heat of sublimation.
             lat_heat  = (fac_cond+fac_fus)*dqi
             ! Add divergence of latent heat flux to liquid-ice static energy.
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             t(icrm,i,j,k)  = t(icrm,i,j,k)  - lat_heat
             ! Add divergence to liquid-ice static energy budget.
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             tlatqi(icrm,k) = tlatqi(icrm,k) - lat_heat
             endif
           end do
         end do
       end do
     end do
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
           coef=dtn/dz(icrm)
           dqi=-coef*fz(icrm,i,j,1)
+#if defined(_OPENACC)
+          !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           precsfc(icrm,i,j) = precsfc(icrm,i,j)+dqi
+#if defined(_OPENACC)
+          !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           precssfc(icrm,i,j) = precssfc(icrm,i,j)+dqi
         end do
       end do
     end do
 
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: kmax )
+    !$omp target exit data map(delete: kmin )
+    !$omp target exit data map(delete: fz )
+#endif
     deallocate( kmax )
     deallocate( kmin )
     deallocate( fz )
