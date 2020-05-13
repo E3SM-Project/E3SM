@@ -13,7 +13,7 @@ include(CMakeParseArguments) # Needed for backwards compatibility
 function(CreateUnitTest target_name target_srcs scream_libs)
   set(options OPTIONAL EXCLUDE_MAIN_CPP)
   set(oneValueArgs EXE_ARGS DEP)
-  set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS)
+  set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS LABELS)
   cmake_parse_arguments(CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   # Set link directories (must be done BEFORE add_executable is called)
@@ -124,6 +124,10 @@ function(CreateUnitTest target_name target_srcs scream_libs)
       set_tests_properties(${FULL_TEST_NAME} PROPERTIES ENVIRONMENT OMP_NUM_THREADS=${CURR_THREADS} PROCESSORS ${CURR_CORES} PROCESSOR_AFFINITY True)
       if (CreateUnitTest_DEP AND NOT CreateUnitTest_DEP STREQUAL "${FULL_TEST_NAME}")
         set_tests_properties(${FULL_TEST_NAME} PROPERTIES DEPENDS ${CreateUnitTest_DEP})
+      endif()
+
+      if (CreateUnitTest_LABELS)
+        set_tests_properties(${FULL_TEST_NAME} PROPERTIES LABELS "${CreateUnitTest_LABELS}")
       endif()
 
       math(EXPR CURR_THREADS "${CURR_THREADS}+${THREAD_INCREMENT}")

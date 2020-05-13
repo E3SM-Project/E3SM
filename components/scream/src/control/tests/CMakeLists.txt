@@ -4,14 +4,14 @@ SET (num_mpi_ranks 1)
 SET (config_defines "")
 
 # Test control folder
-CreateUnitTest(ping_pong "ping_pong_test.cpp" "scream_control;scream_share" num_mpi_ranks config_defines)
+CreateUnitTest(ping_pong "ping_pong_test.cpp" "scream_control;scream_share" num_mpi_ranks config_defines LABELS "driver")
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ping_pong.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/ping_pong.yaml COPYONLY)
 
 # Unit test the ad
-CreateUnitTest(ad_ut "ad_tests.cpp" "scream_control;scream_share" num_mpi_ranks config_defines)
+CreateUnitTest(ad_ut "ad_tests.cpp" "scream_control;scream_share" num_mpi_ranks config_defines LABELS "driver")
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ad_tests.yaml
