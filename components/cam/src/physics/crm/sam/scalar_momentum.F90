@@ -18,8 +18,9 @@ module scalar_momentum_mod
 !---------------------------------------------------------------------------
    use params
    use grid, only: nx,ny,nzm,nz,dimx1_s,dimx2_s,dimy1_s,dimy2_s
+#if defined(_OPENACC)
    use openacc_utils
-
+#endif
    implicit none
 
    public allocate_scalar_momentum
@@ -65,7 +66,7 @@ subroutine allocate_scalar_momentum(ncrms)
    allocate( v_esmt_sgs   (nz,ncrms)  )
    allocate( u_esmt_diff  (nz,ncrms)  )
    allocate( v_esmt_diff  (nz,ncrms)  )
-
+#if defined(_OPENACC)
    call prefetch( u_esmt )
    call prefetch( v_esmt )
    call prefetch( fluxb_u_esmt )
@@ -76,6 +77,18 @@ subroutine allocate_scalar_momentum(ncrms)
    call prefetch( v_esmt_sgs )
    call prefetch( u_esmt_diff )
    call prefetch( v_esmt_diff )
+#elif defined(_OPENMP)
+   !$omp target enter data map(alloc: u_esmt )
+   !$omp target enter data map(alloc: v_esmt )
+   !$omp target enter data map(alloc: fluxb_u_esmt )
+   !$omp target enter data map(alloc: fluxb_v_esmt )
+   !$omp target enter data map(alloc: fluxt_u_esmt )
+   !$omp target enter data map(alloc: fluxt_v_esmt )
+   !$omp target enter data map(alloc: u_esmt_sgs )
+   !$omp target enter data map(alloc: v_esmt_sgs )
+   !$omp target enter data map(alloc: u_esmt_diff)
+   !$omp target enter data map(alloc: v_esmt_diff)
+#endif
 
    u_esmt       = 0.0_crm_rknd
    v_esmt       = 0.0_crm_rknd
@@ -93,8 +106,36 @@ subroutine allocate_scalar_momentum(ncrms)
    esmt_units  = 'm/s'
 
 end subroutine allocate_scalar_momentum
-
 !========================================================================================
+#if defined(_OPENMP)
+subroutine update_device_scalar_momentum()
+   implicit none
+   !$omp target update to( u_esmt )
+   !$omp target update to( v_esmt )
+   !$omp target update to( fluxb_u_esmt )
+   !$omp target update to( fluxb_v_esmt )
+   !$omp target update to( fluxt_u_esmt )
+   !$omp target update to( fluxt_v_esmt )
+   !$omp target update to( u_esmt_sgs )
+   !$omp target update to( v_esmt_sgs )
+   !$omp target update to( u_esmt_diff )
+   !$omp target update to( v_esmt_diff )
+end subroutine update_device_scalar_momentum
+
+subroutine update_host_scalar_momentum
+   implicit none
+   !$omp target update from( u_esmt )
+   !$omp target update from( v_esmt )
+   !$omp target update from( fluxb_u_esmt )
+   !$omp target update from( fluxb_v_esmt )
+   !$omp target update from( fluxt_u_esmt )
+   !$omp target update from( fluxt_v_esmt )
+   !$omp target update from( u_esmt_sgs )
+   !$omp target update from( v_esmt_sgs )
+   !$omp target update from( u_esmt_diff )
+   !$omp target update from( v_esmt_diff )
+end subroutine update_host_scalar_momentum
+#endif
 !========================================================================================
 subroutine deallocate_scalar_momentum()
    !------------------------------------------------------------------
@@ -102,6 +143,18 @@ subroutine deallocate_scalar_momentum()
    ! Author: Walter Hannah - Lawrence Livermore National Lab
    !------------------------------------------------------------------
    implicit none
+#if defined(_OPENMP)
+   !$omp target exit data map(delete: u_esmt )
+   !$omp target exit data map(delete: v_esmt )
+   !$omp target exit data map(delete: fluxb_u_esmt )
+   !$omp target exit data map(delete: fluxb_v_esmt )
+   !$omp target exit data map(delete: fluxt_u_esmt )
+   !$omp target exit data map(delete: fluxt_v_esmt )
+   !$omp target exit data map(delete: u_esmt_sgs )
+   !$omp target exit data map(delete: v_esmt_sgs )
+   !$omp target exit data map(delete: u_esmt_diff )
+   !$omp target exit data map(delete: v_esmt_diff )
+#endif
    deallocate( u_esmt       )
    deallocate( v_esmt       )
    deallocate( fluxb_u_esmt )

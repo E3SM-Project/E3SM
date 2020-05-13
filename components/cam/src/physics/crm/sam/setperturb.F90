@@ -32,7 +32,10 @@ contains
       real(crm_rknd)     :: perturb_k_scaling         ! scaling factor so perturbation magnitudes decrease with altitude
       integer, parameter :: perturb_num_layers  = 5   ! Number of levels to perturb
       integer, parameter :: perturb_t_magnitude = 1.0 ! perturbation LSE amplitube [K]
-
+#if defined(_OPENMP)
+      !$omp target update from(t)
+      !$omp target update from(t0)
+#endif
       factor_xy = 1./real((nx*ny),crm_rknd)
 
       ! set the sub-grid scale (SGS) turbulence fields
@@ -80,7 +83,9 @@ contains
       end do ! k
       !--------------------------------------------------------
       !--------------------------------------------------------
-
+#if defined(_OPENMP)
+   !$omp target update to(t)
+#endif
    end subroutine setperturb
 
 end module setperturb_mod
