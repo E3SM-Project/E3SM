@@ -189,7 +189,7 @@ contains
          if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
          if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
          if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
-
+#if defined(_OPENACC)
          call prefetch(output%qcl)
          call prefetch(output%qci)
          call prefetch(output%qpl)
@@ -220,7 +220,7 @@ contains
          call prefetch(output%qs_mean)
          call prefetch(output%qg_mean)
          call prefetch(output%qr_mean)
-
+#endif
 #ifdef m2005
          if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
          if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
@@ -251,8 +251,10 @@ contains
 #ifdef MAML
          if (.not. allocated(output%crm_pcp)) allocate(output%crm_pcp(ncol,crm_nx,crm_ny))
          if (.not. allocated(output%crm_snw)) allocate(output%crm_snw(ncol,crm_nx,crm_ny))
+#if defined(_OPENACC)
          call prefetch(output%crm_pcp)
          call prefetch(output%crm_snw)
+#endif
 #endif
          
          if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
@@ -299,7 +301,7 @@ contains
          if (.not. allocated(output%tauy         )) allocate(output%tauy         (ncol))
          if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
          if (.not. allocated(output%timing_factor)) allocate(output%timing_factor(ncol))
-
+#if defined(_OPENACC)
          call prefetch(output%sltend  )
          call prefetch(output%qltend  )
          call prefetch(output%qcltend )
@@ -341,7 +343,7 @@ contains
          call prefetch(output%tauy          )
          call prefetch(output%z0m           )
          call prefetch(output%timing_factor )
-
+#endif
       end if ! present(ncol)
 
       ! Initialize 

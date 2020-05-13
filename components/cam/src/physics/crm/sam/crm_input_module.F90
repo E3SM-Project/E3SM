@@ -3,7 +3,9 @@ module crm_input_module
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
 #endif
+#if defined(_OPENACC)
    use openacc_utils
+#endif
    implicit none
    private
    public crm_input_type
@@ -76,7 +78,7 @@ contains
       if (.not. allocated(this%fluxv00))  allocate(this%fluxv00(ncrms))
       if (.not. allocated(this%fluxt00))  allocate(this%fluxt00(ncrms))
       if (.not. allocated(this%fluxq00))  allocate(this%fluxq00(ncrms))
-
+#if defined(_OPENACC)
       call prefetch(this%zmid)
       call prefetch(this%zint)
       call prefetch(this%tl)
@@ -98,14 +100,17 @@ contains
       call prefetch(this%fluxv00)
       call prefetch(this%fluxt00)
       call prefetch(this%fluxq00)
+#endif
 
 #if defined( m2005 ) && defined( MODAL_AERO )
       if (.not. allocated(this%naermod))  allocate(this%naermod(ncrms,nlev,ntot_amode))
       if (.not. allocated(this%vaerosol)) allocate(this%vaerosol(ncrms,nlev,ntot_amode))
       if (.not. allocated(this%hygro))    allocate(this%hygro(ncrms,nlev,ntot_amode))
+#if defined(_OPENACC)
       call prefetch(this%naermod)
       call prefetch(this%vaerosol)
       call prefetch(this%hygro)
+#endif
 #endif
 
 #if defined(MMF_ESMT)
