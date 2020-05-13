@@ -27,7 +27,9 @@ contains
       bt = 0.
       ct = 0.
     end if
-
+#if defined(_OPENMP)
+  !$omp target update to(dt3)
+#endif
   end subroutine abcoefs
 
 end module abcoefs_mod
