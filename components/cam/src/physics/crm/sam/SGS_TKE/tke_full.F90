@@ -74,7 +74,6 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   real(crm_rknd) :: cy            ! correction factor for eddy visc CFL criteria
   real(crm_rknd) :: cz            ! correction factor for eddy visc CFL criteria
   real(crm_rknd) :: tkmax         ! Maximum TKE (CFL limiter)
-  real(crm_rknd) :: tke2_temp
 
   integer :: i,j,k,icrm
   integer :: kc      ! = k+1
