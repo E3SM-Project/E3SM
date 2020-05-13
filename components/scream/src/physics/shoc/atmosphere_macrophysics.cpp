@@ -27,7 +27,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   Qdp.set_string("kg/kg Pa");
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
-  constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   auto grid = grids_manager->get_grid("Physics");
   const int num_dofs = grid->get_num_local_dofs();
@@ -36,13 +36,12 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   auto VL = FieldTag::VerticalLevel;
   auto CO = FieldTag::Column;
   auto VR = FieldTag::Variable;
-  auto TL = FieldTag::TimeLevel;
 
   FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
-  FieldLayout tracers_state_layout { {CO,TL,VR,VL}, {nc,2,4,NVL} };
-  FieldLayout scalar_state_3d_mid_layout { {CO,TL,VL} , {nc,2,NVL}};
-  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,4,NVL} };
+  FieldLayout tracers_state_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
+  FieldLayout scalar_state_3d_mid_layout { {CO,VL} , {nc,NVL}};
+  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,QSZ,NVL} };
 
   // set requirements
   m_required_fields.emplace("dp"         , scalar_state_3d_mid_layout,      Pa, "Physics");
