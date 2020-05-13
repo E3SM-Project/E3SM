@@ -50,6 +50,7 @@ module sgs
 
   logical:: dosmagor   ! if true, then use Smagorinsky closure
 
+  ! whannah
   ! logical:: doscalar   ! if true, transport a passive scalar in the place of prognostic SGS TKE only if dosmagor=.true.
 
   ! Local diagnostics:
@@ -98,18 +99,16 @@ CONTAINS
     call prefetch( tkesbshear  )
     call prefetch( tkesbdiss  )
 #elif defined(_OPENMP)
-    !$omp target enter data map(alloc: sgs_field)
-    !$omp target enter data map(alloc: sgs_field_diag)
-    !$omp target enter data map(alloc: grdf_x)
-    !$omp target enter data map(alloc: grdf_y)
-    !$omp target enter data map(alloc: grdf_z)
-    !$omp target enter data map(alloc: tkesbbuoy)
-    !$omp target enter data map(alloc: tkesbshear)
-    !$omp target enter data map(alloc: tkesbdiss)
+    !$omp target enter data map(alloc: sgs_field )
+    !$omp target enter data map(alloc: sgs_field_diag )
+    !$omp target enter data map(alloc: grdf_x )
+    !$omp target enter data map(alloc: grdf_y )
+    !$omp target enter data map(alloc: grdf_z )
+    !$omp target enter data map(alloc: tkesbbuoy  )
+    !$omp target enter data map(alloc: tkesbshear )
+    !$omp target enter data map(alloc: tkesbdiss  )
 #endif
-
     zero = 0
-
     sgs_field = zero
     sgs_field_diag = zero
     grdf_x = zero
@@ -119,29 +118,6 @@ CONTAINS
     tkesbshear = zero
     tkesbdiss = zero
   end subroutine allocate_sgs
-
-
-  subroutine deallocate_sgs()
-    implicit none
-#if defined(_OPENMP)
-    !$omp target enter data map(delete: sgs_field)
-    !$omp target enter data map(delete: sgs_field_diag)
-    !$omp target enter data map(delete: grdf_x)
-    !$omp target enter data map(delete: grdf_y)
-    !$omp target enter data map(delete: grdf_z)
-    !$omp target enter data map(delete: tkesbbuoy)
-    !$omp target enter data map(delete: tkesbshear)
-    !$omp target enter data map(delete: tkesbdiss)
-#endif
-    deallocate( sgs_field  )
-    deallocate( sgs_field_diag  )
-    deallocate( grdf_x  )
-    deallocate( grdf_y  )
-    deallocate( grdf_z  )
-    deallocate( tkesbbuoy  )
-    deallocate( tkesbshear  )
-    deallocate( tkesbdiss  )
-  end subroutine deallocate_sgs
 
 #if defined(_OPENMP)
   subroutine update_device_sgs()
@@ -167,6 +143,29 @@ CONTAINS
   end subroutine update_host_sgs
 #endif
 
+  subroutine deallocate_sgs()
+    implicit none
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: sgs_field  )
+    !$omp target exit data map(delete: sgs_field_diag  )
+    !$omp target exit data map(delete: grdf_x  )
+    !$omp target exit data map(delete: grdf_y  )
+    !$omp target exit data map(delete: grdf_z  )
+    !$omp target exit data map(delete: tkesbbuoy  )
+    !$omp target exit data map(delete: tkesbshear  )
+    !$omp target exit data map(delete: tkesbdiss  )
+#endif
+    deallocate( sgs_field  )
+    deallocate( sgs_field_diag  )
+    deallocate( grdf_x  )
+    deallocate( grdf_y  )
+    deallocate( grdf_z  )
+    deallocate( tkesbbuoy  )
+    deallocate( tkesbshear  )
+    deallocate( tkesbdiss  )
+  end subroutine deallocate_sgs
+
+
   ! required microphysics subroutines and function:
   !----------------------------------------------------------------------
   !!! Read microphysics options from prm (namelist) file
@@ -185,7 +184,7 @@ CONTAINS
     NAMELIST /BNCUIODSBJCB/ place_holder
 
     dosmagor = .true.  ! default
-    ! doscalar = .false. ! default
+    ! doscalar = .false. ! default ! whannah
 
     !----------------------------------
     !  Read namelist for microphysics options from prm file:
@@ -218,13 +217,18 @@ CONTAINS
 
 
   subroutine sgs_init(ncrms)
-    use grid, only: nrestart, dx, dy, dz, adz
+    use grid, only: nrestart, dx, dy, dz, adz, masterproc
+    use params, only: LES
     implicit none
     integer, intent(in) :: ncrms
     integer k,icrm, i, j, l
 
     if(nrestart.eq.0) then
+#if defined(_OPENACC)
       !$acc parallel loop collapse(5) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(5)
+#endif
       do l=1,nsgs_fields
         do k=1,nzm
           do j=dimy1_s,dimy2_s
@@ -236,7 +240,11 @@ CONTAINS
           enddo
         enddo
       enddo
+#if defined(_OPENACC)
       !$acc parallel loop collapse(5) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(5)
+#endif
       do l=1,nsgs_fields_diag
         do k=1,nzm
           do j=dimy1_d,dimy2_d
@@ -249,16 +257,34 @@ CONTAINS
         enddo
       enddo
     end if
-    
-    !$acc parallel loop collapse(2) async(asyncid)
-    do k=1,nzm
-      do icrm = 1 , ncrms
-        grdf_x(icrm,k) = min( real(16.,crm_rknd), dx**2/(adz(icrm,k)*dz(icrm))**2)
-        grdf_y(icrm,k) = min( real(16.,crm_rknd), dy**2/(adz(icrm,k)*dz(icrm))**2)
-        grdf_z(icrm,k) = 1.
-      end do
-    end do
 
+    if(LES) then
+#if defined(_OPENACC)
+      !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(2)
+#endif
+      do k=1,nzm
+        do icrm = 1 , ncrms
+          grdf_x(icrm,k) = dx**2/(adz(icrm,k)*dz(icrm))**2
+          grdf_y(icrm,k) = dy**2/(adz(icrm,k)*dz(icrm))**2
+          grdf_z(icrm,k) = 1.
+        end do
+      end do
+    else
+#if defined(_OPENACC)
+      !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(2)
+#endif
+      do k=1,nzm
+        do icrm = 1 , ncrms
+          grdf_x(icrm,k) = min( real(16.,crm_rknd), dx**2/(adz(icrm,k)*dz(icrm))**2)
+          grdf_y(icrm,k) = min( real(16.,crm_rknd), dy**2/(adz(icrm,k)*dz(icrm))**2)
+          grdf_z(icrm,k) = 1.
+        end do
+      end do
+    end if
   end subroutine sgs_init
 
   !----------------------------------------------------------------------
@@ -274,7 +300,9 @@ CONTAINS
     select case (ptype)
 
     case(0)
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -286,7 +314,9 @@ CONTAINS
       end do
 
     case(1)
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -300,7 +330,9 @@ CONTAINS
     case(2)
 
     case(3)   ! gcss wg1 smoke-cloud case
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -313,7 +345,9 @@ CONTAINS
 
 
     case(4)  ! gcss wg1 arm case
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -326,7 +360,9 @@ CONTAINS
 
 
     case(5)  ! gcss wg1 BOMEX case
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -338,8 +374,9 @@ CONTAINS
       end do
 
     case(6)  ! GCSS Lagragngian ASTEX
-
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -371,28 +408,40 @@ CONTAINS
     real(crm_rknd) tmp
 
     allocate(tkhmax(ncrms,nz))
+#if defined(_OPENACC)
     call prefetch(tkhmax)
-
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: tkhmax)
+#endif
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k = 1,nzm
       do icrm = 1 , ncrms
         tkhmax(icrm,k) = 0.
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k = 1,nzm
       do j = 1 , ny
         do i = 1 , nx
           do icrm = 1 , ncrms
-            !$acc atomic update
             tkhmax(icrm,k) = max(tkhmax(icrm,k),sgs_field_diag(icrm,i,j,k,2))
           enddo
         enddo
       end do
     end do
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) reduction(max:cfl) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2) reduction(max: cfl)
+#endif
     do k=1,nzm
       do icrm = 1 , ncrms
         tmp = max( 0.5*tkhmax(icrm,k)*grdf_z(icrm,k)*dt/(dz(icrm)*adzw(icrm,k))**2  , &
@@ -401,7 +450,9 @@ CONTAINS
         cfl = max( cfl , tmp )
       end do
     end do
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: tkhmax)
+#endif
     deallocate(tkhmax)
 
   end subroutine kurant_sgs
@@ -438,6 +489,9 @@ CONTAINS
     call prefetch(dummy)
 #elif defined(_OPENMP)
     !$omp target enter data map(alloc: dummy)
+#endif
+#if defined(_OPENMP)
+    !$omp target update from(flag_precip)
 #endif
 
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),t,fluxbt,fluxtt,tdiff,twsb)
@@ -478,7 +532,7 @@ CONTAINS
     !  total_water_evap(icrm) = total_water_evap(icrm) + total_water(ncrms,icrm)
     !enddo
 
-#if defined(MMF_ESMT)
+#if defined(SP_ESMT)
     ! diffusion of scalar momentum tracers
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),&
                         u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs)
@@ -497,6 +551,7 @@ CONTAINS
 subroutine sgs_proc(ncrms)
   use tke_full_mod, only: tke_full
   use grid, only: dt,icycle
+  use params, only: dosmoke
   implicit none
   integer, intent(in) :: ncrms
   integer :: icrm, k, j, i
