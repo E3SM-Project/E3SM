@@ -207,8 +207,7 @@ contains
                iCellSelf = 2
             endif
 
-            areaSum = areaSum + 0.5_RKIND * dvEdge(iEdge) * dcEdge(iEdge)
-      !      rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
+            areaSum = areaSum + 0.25_RKIND * dvEdge(iEdge) * dcEdge(iEdge)
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
@@ -266,7 +265,7 @@ contains
                   redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - flux_term2*invAreaCell
                   redi_term2_edge(iTr, k, iEdge) = -flux_term2
 
-                  dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))/dcEdge(iEdge)*0.5_RKIND
+                  dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
                   fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                          0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
                                          *dTracerDx
@@ -306,7 +305,7 @@ contains
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - flux_term2*invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
 
-               dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))/dcEdge(iEdge)*0.5_RKIND
+               dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
                fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                       0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
                                       *dTracerDx
