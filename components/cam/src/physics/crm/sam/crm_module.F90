@@ -1,6 +1,8 @@
 
 module crm_module
+#if defined(_OPENACC)
   use openacc_utils, only: prefetch
+#endif
   use perf_mod
   use task_init_mod, only: task_init
   use abcoefs_mod, only: abcoefs
@@ -190,7 +192,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( qtot (ncrms,20) )
   allocate( colprec (ncrms) )
   allocate( colprecs(ncrms) )
-
+#if defined(_OPENACC)
   call prefetch( t00      )
   call prefetch( tln      )
   call prefetch( qln      )
@@ -216,6 +218,38 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   call prefetch( qtot     ) 
   call prefetch( colprec  ) 
   call prefetch( colprecs ) 
+#elif defined(_OPENMP)
+  !$omp target enter data map(alloc: t00      )
+  !$omp target enter data map(alloc: tln      )
+  !$omp target enter data map(alloc: qln      )
+  !$omp target enter data map(alloc: qccln    )
+  !$omp target enter data map(alloc: qiiln    )
+  !$omp target enter data map(alloc: uln      )
+  !$omp target enter data map(alloc: vln      )
+  !$omp target enter data map(alloc: cwp      )
+  !$omp target enter data map(alloc: cwph     )
+  !$omp target enter data map(alloc: cwpm     )
+  !$omp target enter data map(alloc: cwpl     )
+  !$omp target enter data map(alloc: flag_top )
+  !$omp target enter data map(alloc: cltemp   )
+  !$omp target enter data map(alloc: cmtemp   )
+  !$omp target enter data map(alloc: chtemp   )
+  !$omp target enter data map(alloc: cttemp   )
+  !$omp target enter data map(alloc: dd_crm   )
+  !$omp target enter data map(alloc: mui_crm  )
+  !$omp target enter data map(alloc: mdi_crm  )
+  !$omp target enter data map(alloc: ustar    )
+  !$omp target enter data map(alloc: bflx     )
+  !$omp target enter data map(alloc: wnd      )
+  !$omp target enter data map(alloc: qtot     )
+  !$omp target enter data map(alloc: colprec  )
+  !$omp target enter data map(alloc: colprecs )
+
+  !$omp target update to(crm_input)
+  !$omp target update to(crm_output)
+  !$omp target update to(crm_rad)
+  !$omp target update to(crm_state)
+#endif
 
   call allocate_params(ncrms)
   call allocate_vars(ncrms)
@@ -1619,6 +1653,46 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   call ecpp_crm_cleanup ()
 #endif
 
+  call deallocate_params()
+  call deallocate_grid()
+  call deallocate_tracers()
+  call deallocate_sgs()
+  call deallocate_vars()
+  call deallocate_micro()
+#ifdef sam1mom
+  call deallocate_micro_params()
+#endif
+#if defined( MMF_ESMT )
+  call deallocate_scalar_momentum()
+#endif
+
+#if defined(_OPENMP)
+  !$omp target exit data map(delete: t00      )
+  !$omp target exit data map(delete: tln      )
+  !$omp target exit data map(delete: qln      )
+  !$omp target exit data map(delete: qccln    )
+  !$omp target exit data map(delete: qiiln    )
+  !$omp target exit data map(delete: uln      )
+  !$omp target exit data map(delete: vln      )
+  !$omp target exit data map(delete: cwp      )
+  !$omp target exit data map(delete: cwph     )
+  !$omp target exit data map(delete: cwpm     )
+  !$omp target exit data map(delete: cwpl     )
+  !$omp target exit data map(delete: flag_top )
+  !$omp target exit data map(delete: cltemp   )
+  !$omp target exit data map(delete: cmtemp   )
+  !$omp target exit data map(delete: chtemp   )
+  !$omp target exit data map(delete: cttemp   )
+  !$omp target exit data map(delete: dd_crm   )
+  !$omp target exit data map(delete: mui_crm  )
+  !$omp target exit data map(delete: mdi_crm  )
+  !$omp target exit data map(delete: ustar    )
+  !$omp target exit data map(delete: bflx     )
+  !$omp target exit data map(delete: wnd      )
+  !$omp target exit data map(delete: qtot     )
+  !$omp target exit data map(delete: colprec  )
+  !$omp target exit data map(delete: colprecs )
+#endif
   deallocate( t00)
   deallocate( tln)
   deallocate( qln)
@@ -1648,20 +1722,66 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   deallocate( qtot )
   deallocate( colprec  )
   deallocate( colprecs )
-
-  call deallocate_params()
-  call deallocate_grid()
-  call deallocate_tracers()
-  call deallocate_sgs()
-  call deallocate_vars()
-  call deallocate_micro()
-#ifdef sam1mom
-  call deallocate_micro_params()
+  CONTAINS
+#if defined(_OPENMP)
+  subroutine update_device_crm()
+    implicit none
+    !$omp target update to( t00      )
+    !$omp target update to( tln      )
+    !$omp target update to( qln      )
+    !$omp target update to( qccln    )
+    !$omp target update to( qiiln    )
+    !$omp target update to( uln      )
+    !$omp target update to( vln      )
+    !$omp target update to( cwp      )
+    !$omp target update to( cwph     )
+    !$omp target update to( cwpm     )
+    !$omp target update to( cwpl     )
+    !$omp target update to( flag_top )
+    !$omp target update to( cltemp   )
+    !$omp target update to( cmtemp   )
+    !$omp target update to( chtemp   )
+    !$omp target update to( cttemp   )
+    !$omp target update to( dd_crm   )
+    !$omp target update to( mui_crm  )
+    !$omp target update to( mdi_crm  )
+    !$omp target update to( ustar    )
+    !$omp target update to( bflx     )
+    !$omp target update to( wnd      )
+    !$omp target update to( qtot     )
+    !$omp target update to( colprec  )
+    !$omp target update to( colprecs )
+  end subroutine update_device_crm
+  ! update host from device
+  subroutine update_host_crm()
+    implicit none
+    !$omp target update from( t00      )
+    !$omp target update from( tln      )
+    !$omp target update from( qln      )
+    !$omp target update from( qccln    )
+    !$omp target update from( qiiln    )
+    !$omp target update from( uln      )
+    !$omp target update from( vln      )
+    !$omp target update from( cwp      )
+    !$omp target update from( cwph     )
+    !$omp target update from( cwpm     )
+    !$omp target update from( cwpl     )
+    !$omp target update from( flag_top )
+    !$omp target update from( cltemp   )
+    !$omp target update from( cmtemp   )
+    !$omp target update from( chtemp   )
+    !$omp target update from( cttemp   )
+    !$omp target update from( dd_crm   )
+    !$omp target update from( mui_crm  )
+    !$omp target update from( mdi_crm  )
+    !$omp target update from( ustar    )
+    !$omp target update from( bflx     )
+    !$omp target update from( wnd      )
+    !$omp target update from( qtot     )
+    !$omp target update from( colprec  )
+    !$omp target update from( colprecs )
+  end subroutine update_host_crm
 #endif
-#if defined( MMF_ESMT )
-  call deallocate_scalar_momentum()
-#endif
-
 end subroutine crm
 
 end module crm_module

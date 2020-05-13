@@ -1,14 +1,17 @@
+
 module vars
   use grid
   use params, only: crm_rknd
+#ifdef CRM
 #ifdef MODAL_AERO
   use modal_aero_data,   only: ntot_amode
 #endif
+#endif
 
   implicit none
+  public
   !--------------------------------------------------------------------
   ! prognostic variables:
-
   real(crm_rknd), allocatable :: u   (:,:,:,:) ! x-wind
   real(crm_rknd), allocatable :: v   (:,:,:,:) ! y-wind
   real(crm_rknd), allocatable :: w   (:,:,:,:) ! z-wind
@@ -16,7 +19,6 @@ module vars
 
   !--------------------------------------------------------------------
   ! diagnostic variables:
-
   real(crm_rknd), allocatable :: p       (:,:,:,:)     ! perturbation pressure (from Poison eq)
   real(crm_rknd), allocatable :: tabs    (:,:,:,:)                 ! temperature
   real(crm_rknd), allocatable :: qv      (:,:,:,:)                ! water vapor
@@ -36,11 +38,10 @@ module vars
 
   !----------------------------------------------------------------
   ! Temporary storage array:
-
   real(crm_rknd), allocatable :: misc(:,:,:,:)
+
   !------------------------------------------------------------------
   ! fluxes at the top and bottom of the domain:
-
   real(crm_rknd), allocatable :: fluxbu  (:,:,:)
   real(crm_rknd), allocatable :: fluxbv  (:,:,:)
   real(crm_rknd), allocatable :: fluxbt  (:,:,:)
@@ -55,7 +56,6 @@ module vars
 
   !-----------------------------------------------------------------
   ! profiles
-
   real(crm_rknd), allocatable :: t0   (:,:)
   real(crm_rknd), allocatable :: q0   (:,:)
   real(crm_rknd), allocatable :: qv0  (:,:)
@@ -110,7 +110,6 @@ module vars
 
   !----------------------------------------------------------------------
   ! Vertical profiles of quantities sampled for statitistics purposes:
-
   real(crm_rknd), allocatable :: w_max(:)
   real(crm_rknd), allocatable :: u_max(:)
 
@@ -152,26 +151,32 @@ module vars
 
   ! END UW ADDITIONS
   !===========================================================================
-#ifdef MODAL_AERO
+#if (defined CRM && defined MODAL_AERO)
   real(crm_rknd), allocatable :: naer (:,:,:)     ! Aerosol number concentration [/m3]
   real(crm_rknd), allocatable :: vaer (:,:,:)     ! aerosol volume concentration [m3/m3]
   real(crm_rknd), allocatable :: hgaer(:,:,:)    ! hygroscopicity of aerosol mode
 #endif
 
-
+  public :: allocate_vars
+  public :: deallocate_vars
+#if defined(_OPENMP)
+  public :: update_device_vars
+  public :: update_host_vars
+#endif
 contains
-
-
   subroutine allocate_vars(ncrms)
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd) :: zero
+
     allocate( u(ncrms,dimx1_u:dimx2_u,dimy1_u:dimy2_u,nzm)  )
     allocate( v(ncrms,dimx1_v:dimx2_v,dimy1_v:dimy2_v,nzm)  )
     allocate( w(ncrms,dimx1_w:dimx2_w,dimy1_w:dimy2_w,nz )  )
     allocate( t(ncrms,dimx1_s:dimx2_s,dimy1_s:dimy2_s,nzm)  )
-    allocate( p       (ncrms,0:nx, (1-YES3D):ny, nzm)      )
+    allocate( p(ncrms,0:nx, (1-YES3D):ny, nzm)      )
     allocate( tabs(ncrms,nx, ny, nzm)                  )
     allocate( qv(ncrms,nx, ny, nzm)                 )
     allocate( qcl(ncrms,nx, ny, nzm)                 )
@@ -261,12 +266,12 @@ contains
     allocate( w_max(ncrms) )
     allocate( total_water_evap(ncrms) )
     allocate( total_water_prec(ncrms) )
-#ifdef MODAL_AERO
+#if (defined CRM && defined MODAL_AERO)
     allocate( naer(ncrms,nzm, ntot_amode) )
     allocate( vaer(ncrms,nzm, ntot_amode) )
     allocate( hgaer(ncrms,nzm, ntot_amode) )
 #endif
-
+#if defined(_OPENACC)
     call prefetch( u )
     call prefetch( v )
     call prefetch( w )
@@ -361,14 +366,112 @@ contains
     call prefetch( w_max )
     call prefetch( total_water_evap )
     call prefetch( total_water_prec )
-#ifdef MODAL_AERO
+#if (defined CRM && defined MODAL_AERO)
     call prefetch( naer )
     call prefetch( vaer )
     call prefetch( hgaer  )
 #endif
-
-    zero = 0
-
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: u )
+    !$omp target enter data map(alloc: v )
+    !$omp target enter data map(alloc: w )
+    !$omp target enter data map(alloc: t )
+    !$omp target enter data map(alloc: p )
+    !$omp target enter data map(alloc: tabs )
+    !$omp target enter data map(alloc: qv )
+    !$omp target enter data map(alloc: qcl )
+    !$omp target enter data map(alloc: qpl )
+    !$omp target enter data map(alloc: qci )
+    !$omp target enter data map(alloc: qpi )
+    !$omp target enter data map(alloc: tke2 )
+    !$omp target enter data map(alloc: tk2 )
+    !$omp target enter data map(alloc: dudt )
+    !$omp target enter data map(alloc: dvdt )
+    !$omp target enter data map(alloc: dwdt )
+    !$omp target enter data map(alloc: misc )
+    !$omp target enter data map(alloc: fluxbu ) 
+    !$omp target enter data map(alloc: fluxbv )
+    !$omp target enter data map(alloc: fluxbt ) 
+    !$omp target enter data map(alloc: fluxbq )
+    !$omp target enter data map(alloc: fluxtu )
+    !$omp target enter data map(alloc: fluxtv )
+    !$omp target enter data map(alloc: fluxtt )
+    !$omp target enter data map(alloc: fluxtq )
+    !$omp target enter data map(alloc: fzero )
+    !$omp target enter data map(alloc: precsfc )
+    !$omp target enter data map(alloc: precssfc )
+    !$omp target enter data map(alloc: t0 )
+    !$omp target enter data map(alloc: q0 )
+    !$omp target enter data map(alloc: qv0 )
+    !$omp target enter data map(alloc: tabs0 )
+    !$omp target enter data map(alloc: tv0 )
+    !$omp target enter data map(alloc: u0 )
+    !$omp target enter data map(alloc: v0 )
+    !$omp target enter data map(alloc: tg0 )
+    !$omp target enter data map(alloc: qg0 )
+    !$omp target enter data map(alloc: ug0 )
+    !$omp target enter data map(alloc: vg0 )
+    !$omp target enter data map(alloc: p0 )
+    !$omp target enter data map(alloc: tke0 )
+    !$omp target enter data map(alloc: t01 )
+    !$omp target enter data map(alloc: q01 )
+    !$omp target enter data map(alloc: qp0 )
+    !$omp target enter data map(alloc: qn0 )
+    !$omp target enter data map(alloc: prespot )
+    !$omp target enter data map(alloc: rho )
+    !$omp target enter data map(alloc: rhow )
+    !$omp target enter data map(alloc: bet )
+    !$omp target enter data map(alloc: gamaz )
+    !$omp target enter data map(alloc: wsub )
+    !$omp target enter data map(alloc: qtend )
+    !$omp target enter data map(alloc: ttend )
+    !$omp target enter data map(alloc: utend )
+    !$omp target enter data map(alloc: vtend )
+    !$omp target enter data map(alloc: sstxy )
+    !$omp target enter data map(alloc: fcory )
+    !$omp target enter data map(alloc: fcorzy )
+    !$omp target enter data map(alloc: latitude )
+    !$omp target enter data map(alloc: prec_xy )
+    !$omp target enter data map(alloc: pw_xy )
+    !$omp target enter data map(alloc: cw_xy )
+    !$omp target enter data map(alloc: iw_xy )
+    !$omp target enter data map(alloc: cld_xy )
+    !$omp target enter data map(alloc: u200_xy )
+    !$omp target enter data map(alloc: usfc_xy )
+    !$omp target enter data map(alloc: v200_xy )
+    !$omp target enter data map(alloc: vsfc_xy )
+    !$omp target enter data map(alloc: w500_xy )
+    !$omp target enter data map(alloc: twsb )
+    !$omp target enter data map(alloc: precflux )
+    !$omp target enter data map(alloc: uwle )
+    !$omp target enter data map(alloc: uwsb )
+    !$omp target enter data map(alloc: vwle )
+    !$omp target enter data map(alloc: vwsb )
+    !$omp target enter data map(alloc: tkelediss )
+    !$omp target enter data map(alloc: tdiff )
+    !$omp target enter data map(alloc: tlat )
+    !$omp target enter data map(alloc: tlatqi )
+    !$omp target enter data map(alloc: qifall )
+    !$omp target enter data map(alloc: qpfall )
+    !$omp target enter data map(alloc: cf3d )
+    !$omp target enter data map(alloc: u850_xy )
+    !$omp target enter data map(alloc: v850_xy )
+    !$omp target enter data map(alloc: psfc_xy )
+    !$omp target enter data map(alloc: swvp_xy )
+    !$omp target enter data map(alloc: cloudtopheight )
+    !$omp target enter data map(alloc: echotopheight )
+    !$omp target enter data map(alloc: cloudtoptemp )
+    !$omp target enter data map(alloc: u_max )
+    !$omp target enter data map(alloc: w_max )
+    !$omp target enter data map(alloc: total_water_evap )
+    !$omp target enter data map(alloc: total_water_prec )
+#if (defined CRM && defined MODAL_AERO)
+    !$omp target enter data map(alloc: naer )
+    !$omp target enter data map(alloc: vaer )
+    !$omp target enter data map(alloc: hgaer )
+#endif
+#endif
+    zero = 0.0_crm_rknd
     u = zero
     v = zero
     w = zero
@@ -463,16 +566,320 @@ contains
     w_max = zero
     total_water_evap = zero
     total_water_prec = zero
-#ifdef MODAL_AERO
+#if (defined CRM && defined MODAL_AERO)
     naer = zero
     vaer = zero
     hgaer = zero
 #endif
   end subroutine allocate_vars
 
+#if defined(_OPENMP)
+  subroutine update_device_vars()
+    implicit none
+    !$omp target update to( u )
+    !$omp target update to( v )
+    !$omp target update to( w )
+    !$omp target update to( t )
+    !$omp target update to( p )
+    !$omp target update to( tabs )
+    !$omp target update to( qv )
+    !$omp target update to( qcl )
+    !$omp target update to( qpl )
+    !$omp target update to( qci )
+    !$omp target update to( qpi )
+    !$omp target update to( tke2 )
+    !$omp target update to( tk2 )
+    !$omp target update to( dudt )
+    !$omp target update to( dvdt )
+    !$omp target update to( dwdt )
+    !$omp target update to( misc )
+    !$omp target update to( fluxbu )
+    !$omp target update to( fluxbv )
+    !$omp target update to( fluxbt )
+    !$omp target update to( fluxbq )
+    !$omp target update to( fluxtu )
+    !$omp target update to( fluxtv )
+    !$omp target update to( fluxtt )
+    !$omp target update to( fluxtq )
+    !$omp target update to( fzero )
+    !$omp target update to( precsfc )
+    !$omp target update to( precssfc )
+    !$omp target update to( t0 )
+    !$omp target update to( q0 )
+    !$omp target update to( qv0 )
+    !$omp target update to( tabs0 )
+    !$omp target update to( tv0 )
+    !$omp target update to( u0 )
+    !$omp target update to( v0 )
+    !$omp target update to( tg0 )
+    !$omp target update to( qg0 )
+    !$omp target update to( ug0 )
+    !$omp target update to( vg0 )
+    !$omp target update to( p0 )
+    !$omp target update to( tke0 )
+    !$omp target update to( t01 )
+    !$omp target update to( q01 )
+    !$omp target update to( qp0 )
+    !$omp target update to( qn0 )
+    !$omp target update to( prespot )
+    !$omp target update to( rho )
+    !$omp target update to( rhow )
+    !$omp target update to( bet )
+    !$omp target update to( gamaz )
+    !$omp target update to( wsub )
+    !$omp target update to( qtend )
+    !$omp target update to( ttend )
+    !$omp target update to( utend )
+    !$omp target update to( vtend )
+    !$omp target update to( sstxy )
+    !$omp target update to( fcory )
+    !$omp target update to( fcorzy )
+    !$omp target update to( latitude )
+    !$omp target update to( longitude )
+    !$omp target update to( prec_xy )
+    !$omp target update to( pw_xy )
+    !$omp target update to( cw_xy )
+    !$omp target update to( iw_xy )
+    !$omp target update to( cld_xy )
+    !$omp target update to( u200_xy )
+    !$omp target update to( vsfc_xy )
+    !$omp target update to( w500_xy )
+    !$omp target update to( twsb )
+    !$omp target update to( precflux )
+    !$omp target update to( uwle )
+    !$omp target update to( uwsb )
+    !$omp target update to( vwle )
+    !$omp target update to( vwsb )
+    !$omp target update to( tkelediss )
+    !$omp target update to( tdiff )
+    !$omp target update to( tlat )
+    !$omp target update to( tlatqi )
+    !$omp target update to( qifall )
+    !$omp target update to( qpfall )
+    !$omp target update to( CF3D )
+    !$omp target update to( u850_xy )
+    !$omp target update to( v850_xy )
+    !$omp target update to( psfc_xy )
+    !$omp target update to( swvp_xy )
+    !$omp target update to( cloudtopheight )
+    !$omp target update to( echotopheight )
+    !$omp target update to( cloudtoptemp )
+    !$omp target update to( u_max )
+    !$omp target update to( w_max )
+    !$omp target update to( total_water_evap )
+    !$omp target update to( total_water_prec )
+#if (defined CRM && defined MODAL_AERO)
+    !$omp target update to( naer )
+    !$omp target update to( vaer )
+    !$omp target update to( hgaer )
+#endif
+  end subroutine update_device_vars
+
+  subroutine update_host_vars()
+    implicit none
+    !$omp target update from( u )
+    !$omp target update from( v )
+    !$omp target update from( w )
+    !$omp target update from( t )
+    !$omp target update from( p )
+    !$omp target update from( tabs )
+    !$omp target update from( qv )
+    !$omp target update from( qcl )
+    !$omp target update from( qpl )
+    !$omp target update from( qci )
+    !$omp target update from( qpi )
+    !$omp target update from( tke2 )
+    !$omp target update from( tk2 )
+    !$omp target update from( dudt )
+    !$omp target update from( dvdt )
+    !$omp target update from( dwdt )
+    !$omp target update from( misc )
+    !$omp target update from( fluxbu )
+    !$omp target update from( fluxbv )
+    !$omp target update from( fluxbt )
+    !$omp target update from( fluxbq )
+    !$omp target update from( fluxtu )
+    !$omp target update from( fluxtv )
+    !$omp target update from( fluxtt )
+    !$omp target update from( fluxtq )
+    !$omp target update from( fzero )
+    !$omp target update from( precsfc )
+    !$omp target update from( precssfc )
+    !$omp target update from( t0 )
+    !$omp target update from( q0 )
+    !$omp target update from( qv0 )
+    !$omp target update from( tabs0 )
+    !$omp target update from( tv0 )
+    !$omp target update from( u0 )
+    !$omp target update from( v0 )
+    !$omp target update from( tg0 )
+    !$omp target update from( qg0 )
+    !$omp target update from( ug0 )
+    !$omp target update from( vg0 )
+    !$omp target update from( p0 )
+    !$omp target update from( tke0 )
+    !$omp target update from( t01 )
+    !$omp target update from( q01 )
+    !$omp target update from( qp0 )
+    !$omp target update from( qn0 )
+    !$omp target update from( prespot )
+    !$omp target update from( rho )
+    !$omp target update from( rhow )
+    !$omp target update from( bet )
+    !$omp target update from( gamaz )
+    !$omp target update from( wsub )
+    !$omp target update from( qtend )
+    !$omp target update from( ttend )
+    !$omp target update from( utend )
+    !$omp target update from( vtend )
+    !$omp target update from( sstxy )
+    !$omp target update from( fcory )
+    !$omp target update from( fcorzy )
+    !$omp target update from( latitude )
+    !$omp target update from( longitude )
+    !$omp target update from( prec_xy )
+    !$omp target update from( pw_xy )
+    !$omp target update from( cw_xy )
+    !$omp target update from( iw_xy )
+    !$omp target update from( cld_xy )
+    !$omp target update from( u200_xy )
+    !$omp target update from( vsfc_xy )
+    !$omp target update from( w500_xy )
+    !$omp target update from( twsb )
+    !$omp target update from( precflux )
+    !$omp target update from( uwle )
+    !$omp target update from( uwsb )
+    !$omp target update from( vwle )
+    !$omp target update from( vwsb )
+    !$omp target update from( tkelediss )
+    !$omp target update from( tdiff )
+    !$omp target update from( tlat )
+    !$omp target update from( tlatqi )
+    !$omp target update from( qifall )
+    !$omp target update from( qpfall )
+    !$omp target update from( CF3D )
+    !$omp target update from( u850_xy )
+    !$omp target update from( v850_xy )
+    !$omp target update from( psfc_xy )
+    !$omp target update from( swvp_xy )
+    !$omp target update from( cloudtopheight )
+    !$omp target update from( echotopheight )
+    !$omp target update from( cloudtoptemp )
+    !$omp target update from( u_max )
+    !$omp target update from( w_max )
+    !$omp target update from( total_water_evap )
+    !$omp target update from( total_water_prec )
+#if (defined CRM && defined MODAL_AERO)
+    !$omp target update from( naer )
+    !$omp target update from( vaer )
+    !$omp target update from( hgaer )
+#endif
+  end subroutine update_host_vars
+#endif
 
   subroutine deallocate_vars()
     implicit none
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: u )
+    !$omp target exit data map(delete: v )
+    !$omp target exit data map(delete: w )
+    !$omp target exit data map(delete: t )
+    !$omp target exit data map(delete: p )
+    !$omp target exit data map(delete: tabs )
+    !$omp target exit data map(delete: qv )
+    !$omp target exit data map(delete: qcl )
+    !$omp target exit data map(delete: qpl )
+    !$omp target exit data map(delete: qci )
+    !$omp target exit data map(delete: qpi )
+    !$omp target exit data map(delete: tke2 )
+    !$omp target exit data map(delete: tk2 )
+    !$omp target exit data map(delete: dudt )
+    !$omp target exit data map(delete: dvdt )
+    !$omp target exit data map(delete: dwdt )
+    !$omp target exit data map(delete: misc )
+    !$omp target exit data map(delete: fluxbu )
+    !$omp target exit data map(delete: fluxbv )
+    !$omp target exit data map(delete: fluxbt )
+    !$omp target exit data map(delete: fluxbq )
+    !$omp target exit data map(delete: fluxtu )
+    !$omp target exit data map(delete: fluxtv )
+    !$omp target exit data map(delete: fluxtt )
+    !$omp target exit data map(delete: fluxtq )
+    !$omp target exit data map(delete: fzero )
+    !$omp target exit data map(delete: precsfc )
+    !$omp target exit data map(delete: precssfc )
+    !$omp target exit data map(delete: t0 )
+    !$omp target exit data map(delete: q0 )
+    !$omp target exit data map(delete: qv0 )
+    !$omp target exit data map(delete: tabs0 )
+    !$omp target exit data map(delete: tv0 )
+    !$omp target exit data map(delete: u0 )
+    !$omp target exit data map(delete: v0 )
+    !$omp target exit data map(delete: tg0 )
+    !$omp target exit data map(delete: qg0 )
+    !$omp target exit data map(delete: ug0 )
+    !$omp target exit data map(delete: vg0 )
+    !$omp target exit data map(delete: p0 )
+    !$omp target exit data map(delete: tke0 )
+    !$omp target exit data map(delete: t01 )
+    !$omp target exit data map(delete: q01 )
+    !$omp target exit data map(delete: qp0 )
+    !$omp target exit data map(delete: qn0 )
+    !$omp target exit data map(delete: prespot )
+    !$omp target exit data map(delete: rho )
+    !$omp target exit data map(delete: rhow )
+    !$omp target exit data map(delete: bet )
+    !$omp target exit data map(delete: gamaz )
+    !$omp target exit data map(delete: wsub )
+    !$omp target exit data map(delete: qtend )
+    !$omp target exit data map(delete: ttend )
+    !$omp target exit data map(delete: utend )
+    !$omp target exit data map(delete: vtend )
+    !$omp target exit data map(delete: sstxy )
+    !$omp target exit data map(delete: fcory )
+    !$omp target exit data map(delete: fcorzy )
+    !$omp target exit data map(delete: latitude )
+    !$omp target exit data map(delete: longitude )
+    !$omp target exit data map(delete: prec_xy )
+    !$omp target exit data map(delete: pw_xy )
+    !$omp target exit data map(delete: cw_xy )
+    !$omp target exit data map(delete: iw_xy )
+    !$omp target exit data map(delete: cld_xy )
+    !$omp target exit data map(delete: u200_xy )
+    !$omp target exit data map(delete: usfc_xy )
+    !$omp target exit data map(delete: v200_xy )
+    !$omp target exit data map(delete: vsfc_xy )
+    !$omp target exit data map(delete: w500_xy )
+    !$omp target exit data map(delete: twsb )
+    !$omp target exit data map(delete: precflux )
+    !$omp target exit data map(delete: uwle )
+    !$omp target exit data map(delete: uwsb )
+    !$omp target exit data map(delete: vwle )
+    !$omp target exit data map(delete: vwsb )
+    !$omp target exit data map(delete: tkelediss )
+    !$omp target exit data map(delete: tdiff )
+    !$omp target exit data map(delete: tlat )
+    !$omp target exit data map(delete: tlatqi )
+    !$omp target exit data map(delete: qifall )
+    !$omp target exit data map(delete: qpfall )
+    !$omp target exit data map(delete: CF3D )
+    !$omp target exit data map(delete: u850_xy )
+    !$omp target exit data map(delete: v850_xy )
+    !$omp target exit data map(delete: psfc_xy )
+    !$omp target exit data map(delete: swvp_xy )
+    !$omp target exit data map(delete: cloudtopheight )
+    !$omp target exit data map(delete: echotopheight )
+    !$omp target exit data map(delete: cloudtoptemp )
+    !$omp target exit data map(delete: u_max )
+    !$omp target exit data map(delete: w_max )
+    !$omp target exit data map(delete: total_water_evap )
+    !$omp target exit data map(delete: total_water_prec )
+#if (defined CRM && defined MODAL_AERO)
+    !$omp target exit data map(delete: naer )
+    !$omp target exit data map(delete: vaer )
+    !$omp target exit data map(delete: hgaer )
+#endif
+#endif
     deallocate( u )
     deallocate( v )
     deallocate( w )
@@ -567,12 +974,10 @@ contains
     deallocate( w_max )
     deallocate( total_water_evap )
     deallocate( total_water_prec )
-#ifdef MODAL_AERO
+#if (defined CRM && defined MODAL_AERO)
     deallocate( naer )
     deallocate( vaer )
     deallocate( hgaer  )
 #endif
 end subroutine deallocate_vars
-
-
 end module vars

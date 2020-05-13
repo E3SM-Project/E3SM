@@ -419,6 +419,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call crm_rad_initialize(crm_rad)
    call crm_input%initialize(pcols,pver)
    call crm_output_initialize(crm_output,pcols,pver)
+#if defined(_OPENMP)
+   !$omp declare target(crm_state)
+   !$omp declare target(crm_rad)
+   !$omp declare target(crm_input)
+   !$omp declare traget(crm_output)
+#endif
 
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
