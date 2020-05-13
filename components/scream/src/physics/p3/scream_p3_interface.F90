@@ -57,12 +57,11 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_standalone_init_f90 (q,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
+  subroutine p3_standalone_init_f90 (qdp,zi,pmid,pdel,ast,naai,npccn) bind(c)
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
-    real(kind=c_real), intent(inout) :: q(pcols,pver,9)      ! State array  kg/kg
-    real(kind=c_real), intent(inout) :: T(pcols,pver)        ! 
+    real(kind=c_real), intent(inout) :: qdp(pcols,pver,qsize)    ! State array  kg/kg Pa
     real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     ! 
     real(kind=c_real), intent(inout) :: pmid(pcols,pver)     ! 
     real(kind=c_real), intent(inout) :: pdel(pcols,pver)     ! 
@@ -70,13 +69,15 @@ contains
     real(kind=c_real), intent(inout) :: naai(pcols,pver)     ! ice nucleation number
     real(kind=c_real), intent(inout) :: npccn(pcols,pver)    ! liquid activation number tendency
 
+    real(kind=c_real) :: T(pcols,pver)
+
     character(len=100) :: case_title
 
     integer(kind=c_int) :: i, k
     logical(kind=c_bool) :: masterproc
 
     ! READ inputs from SCM for p3-stand-alone:
-    q(:,:,:) = 0.0_rtype
+    qdp(:,:,:) = 0.0_rtype
     open(unit=981,file='./data/p3_universal_constants.inp',status='old',action='read')
     read(981,'(A)') case_title
     read(981,'(2I8)') ncol, nlev
@@ -89,13 +90,17 @@ contains
     do i = 1,ncol
       do k = 1,nlev
         read(981,'(16E16.8)') ast(i,k), naai(i,k), npccn(i,k), pmid(i,k), zi(i,k), T(i,k), &
-                         q(i,k,1), q(i,k,2), q(i,k,3), q(i,k,4), q(i,k,5), q(i,k,6), &
-                         q(i,k,7), q(i,k,8), q(i,k,9), pdel(i,k)
+                         qdp(i,k,1), qdp(i,k,2), qdp(i,k,3), qdp(i,k,4), qdp(i,k,5), qdp(i,k,6), &
+                         qdp(i,k,7), qdp(i,k,8), qdp(i,k,9), pdel(i,k)
       end do
       read(981,'(E16.8)') zi(i,nlev+1)
     end do
     close(981)
 
+    ! So far qdp contains q. Multiply by pdel to get the mass
+    do i=1,qsize
+      qdp(:,:,i) = qdp(:,:,i) * pdel
+    enddo
     !q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
     !q(:,:,2) = 1.0e-6_rtype!state%q(:,:,ixcldliq)
     !q(:,:,3) = 1.0e-7_rtype!state%q(:,:,ixcldice)
