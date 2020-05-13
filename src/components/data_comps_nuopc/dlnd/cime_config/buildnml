@@ -46,7 +46,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
-    expect(dlnd_mode != "NULL",  
+    expect(dlnd_mode != "NULL",
            "xml variable DLND_MODE cannot be NULL")
 
     expect(lnd_mesh != "NULL",
@@ -79,16 +79,9 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # For each stream, create stream text file and update
     # shr_strdata_nml group and input data list.
     #----------------------------------------------------
-    for stream in streams:
-        # Ignore null values.
-        if stream is None or stream in ("NULL", ""):
-            continue
-
-        inst_stream = stream + inst_string
-        logger.debug("DLND stream is {}".format(inst_stream))
-        stream_path = os.path.join(confdir, "dlnd.streams.txt." + inst_stream)
-        nmlgen.create_nuopc_stream_file_and_update_shr_strdata_nml(config, caseroot, 
-                                                                   stream, stream_path, data_list_path)
+    stream_path = os.path.join(confdir, "dlnd.streams"+inst_string+".xml" )
+    nmlgen.create_nuopc_stream_file_and_update_shr_strdata_nml(config, caseroot,
+                                                                   streams, stream_path, data_list_path)
 
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
@@ -188,8 +181,8 @@ def buildnml(case, caseroot, compname):
                 file_dest += inst_string
             safe_copy(file_src,file_dest)
 
-            for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
-                safe_copy(txtfile, rundir)
+            for xmlfile in glob.glob(os.path.join(confdir, "*streams.xml")):
+                safe_copy(xmlfile, rundir)
 
 ###############################################################################
 def _main_func():

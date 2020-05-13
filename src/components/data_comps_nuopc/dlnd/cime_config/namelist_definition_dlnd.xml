@@ -158,7 +158,7 @@
   <entry id="mapmask"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
       array (up to 30 elements) of masking algorithms for mapping input data
@@ -174,7 +174,7 @@
   <entry id="mapalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
     <desc>
       array (up to 30 elements) of fill algorithms associated with the array
@@ -191,7 +191,7 @@
   <entry id="tintalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
       array (up to 30 elements) of time interpolation options associated with the array of
@@ -212,7 +212,7 @@
   <entry id="taxmode"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>
     <desc>
       array of time axis modes associated with the array of streams for
@@ -234,7 +234,7 @@
   <entry id="readmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
       array (up to 30 elements) of reading mode associated with the array of
@@ -251,7 +251,7 @@
   <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       array (up to 30 elements) of delta time ratio limits placed on the
       time interpolation associated with the array of streams.  this real
@@ -274,7 +274,7 @@
   <entry id="vectors" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       list of paired colon delimited field names that should be treated as
       vectors when carrying out spatial interpolation.  unlike other
