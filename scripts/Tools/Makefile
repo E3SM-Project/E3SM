@@ -106,12 +106,6 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-ifeq ($(COMP_INTERFACE), nuopc)
-   CPPDEFS += -DNUOPC_INTERFACE
-else
-   CPPDEFS += -DMCT_INTERFACE
-endif
-
 ifeq ($(COMPARE_TO_NUOPC), TRUE)
    CPPDEFS += -DCOMPARE_TO_NUOPC
 endif
@@ -125,6 +119,14 @@ endif
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
+endif
+
+ifeq ($(COMP_INTERFACE), nuopc)
+   CPPDEFS += -DNUOPC_INTERFACE
+   FoX_LIBS := $(shell $(SHAREDLIBROOT)/$(SHAREDPATH)/bin/FoX-config --libs)
+   SLIBS += $(FoX_LIBS)
+else
+   CPPDEFS += -DMCT_INTERFACE
 endif
 
 ifeq ($(PIO_VERSION),2)
@@ -408,8 +410,7 @@ endif
 #===============================================================================
 # User-specified INCLDIR
 #===============================================================================
-
-INCLDIR := -I.
+INCLDIR := -I. -I$(SHAREDLIBROOT)/$(SHAREDPATH)/finclude
 ifdef USER_INCLDIR
   INCLDIR += $(USER_INCLDIR)
 endif
@@ -554,6 +555,10 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
                 LDFLAGS="$(LDFLAGS)"
 
+ifeq ($(MODEL), fox)
+  CONFIG_ARGS += --prefix="$(INSTALL_SHAREDPATH)"
+endif
+
 ifeq ($(NETCDF_SEPARATE), FALSE)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
 else ifeq ($(NETCDF_SEPARATE), TRUE)
@@ -677,6 +682,10 @@ endif
 #------------------------------------------------------------------------------
 # Drive configure scripts for support libraries (mct)
 #------------------------------------------------------------------------------
+
+$(SHAREDLIBROOT)/$(SHAREDPATH)/fox/arch.make:
+	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
+	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/fox/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/fox
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
