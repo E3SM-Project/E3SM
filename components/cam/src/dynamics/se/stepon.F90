@@ -225,6 +225,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use hycoef,          only: hyai, hybi
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers_elem
+   use prim_advance_mod,only: applyCAMforcing_dynamics_elem
    use element_ops,     only: get_temperature
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
@@ -357,21 +358,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
          !this call in theta can only be called after applycamforcing_tracers,
          !since fvtheta is computed there
-         applyCAMforcing_dynamics_elem(dyn_in%elem(ie),tl_f,dtime)
-                  enddo
-                  dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
-                  dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
-                  dtime*dyn_in%elem(ie)%derived%FT(i,j,k)    
-               end do
-            end do
-        end do
-#endif
-
-!                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
-!                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f) + &
-!                  dtime*dyn_in%elem(ie)%derived%FVTheta(i,j,k)
-
-
+         call applyCAMforcing_dynamics_elem(dyn_in%elem(ie),tl_f,dtime)
 
       endif !ftype=1 
 

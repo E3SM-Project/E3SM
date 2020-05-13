@@ -738,7 +738,7 @@ contains
   integer :: ie
 
   do ie=nets,nete
-     applyCAMforcing_dynamics_elem(elem(ie),np1,dt)
+     call applyCAMforcing_dynamics_elem(elem(ie),np1,dt)
   enddo
   
   end subroutine applyCAMforcing_dynamics
@@ -748,7 +748,7 @@ contains
 
   type (element_t)     ,  intent(inout) :: elem
   real (kind=real_kind),  intent(in)    :: dt
-  integer,                intent(in)    :: np1,nets,nete
+  integer,                intent(in)    :: np1
 
   elem%state%vtheta_dp(:,:,:,np1)    = elem%state%vtheta_dp(:,:,:,np1)    + dt*elem%derived%FVTheta(:,:,:)
   elem%state%phinh_i(:,:,1:nlev,np1) = elem%state%phinh_i(:,:,1:nlev,np1) + dt*elem%derived%FPHI(:,:,1:nlev)

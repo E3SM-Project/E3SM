@@ -162,7 +162,7 @@ contains
     use dimensions_mod, only: nlev, qsize
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
     use element_ops, only: get_temperature, get_field
-    use prim_driver_base, only: applyCAMforcing_tracers
+    use prim_driver_base, only: applyCAMforcing_tracers_elem
     use prim_advance_mod, only: applyCAMforcing_dynamics
     use parallel_mod, only: global_shared_buf, global_shared_sum
     use global_norms_mod, only: wrap_repro_sum
@@ -258,9 +258,9 @@ contains
 
     ! Apply the tendencies.
     do ie = nets,nete
-       call applyCAMforcing_tracers(elem(ie), hvcoord, nt2, nt2, dt, logical(ftype /= 0))
+       call applyCAMforcing_tracers_elem(elem(ie), hvcoord, nt2, nt2, dt, logical(ftype /= 0))
     end do
-    call applyCAMforcing_dynamics(elem, hvcoord, nt2, dt, nets, nete)
+    call applyCAMforcing_dynamics(elem, nt2, dt, nets, nete)
 
     ! Test GLL state nt2 vs the original state nt1.
     if (hybrid%masterthread) write(iulog, '(a,l2)') 'gfrt> tendency', tendency
