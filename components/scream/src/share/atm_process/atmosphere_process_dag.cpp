@@ -31,7 +31,6 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
   m_unmet_deps[end_ts.id].clear();
 
   // Next, check if some unmet deps are simply coming from previous time step.
-  m_has_unmet_deps = false;
   for (auto& it : m_unmet_deps) {
     int id = it.first;
     auto& unmet = it.second;
@@ -56,12 +55,52 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
     for (auto fid : to_be_erased) {
       util::erase(unmet,fid);
     }
-
-    m_has_unmet_deps |= (unmet.size()>0);
   }
+
+  update_unmet_deps ();
+}
+
+void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
+{
+  scream_require_msg (m_nodes.size()>0,
+    "Error! You need to create the dag before adding field initializers.\n");
+
+  const auto& inited_fields = initializer.get_inited_fields();
+
+  // Add a node
+  m_nodes.push_back(Node());
+  auto& n = m_nodes.back();
+  n.id = m_nodes.size()-1;
+  n.name = initializer.name();
+  m_unmet_deps[n.id].clear();
+
+  for (const auto& f : inited_fields) {
+    auto fid = add_fid(f);
+
+    // Add the fid to the list of 'computed' fields
+    n.computed.push_back(fid);
+
+    // Now, remove the unmet dependency (if any)
+    for (auto& it : m_unmet_deps) {
+      // Erase the unmet dependency (if any)
+      int erased = it.second.erase(fid);
+
+      if (erased==1) {
+        // Establish parent-child relationship
+        n.children.push_back(it.first);
+      }
+    }
+  }
+
+  // We need to re-check whether there are unmet deps
+  update_unmet_deps();
 }
 
 void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const {
+
+  if (verbosity<=0) {
+    return;
+  }
 
   // Handy lambda to print a fid with different degrees of verbosity
   auto print_fid = [] (const FieldIdentifier& fid, const int verbosity) -> std::string {
@@ -126,7 +165,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           << "  label=<\n"
           << "    <table border=\"0\">\n"
           << "      <tr><td><b>" << html_fix(n.name) << "</b></td></tr>";
-    if (verbosity>0) {
+    if (verbosity>1) {
       // FieldIntentifier prints bare min with verb 0.
       // DAG starts printing fids with verb 2, so fid verb is verb-2;
       int fid_verb = verbosity-2;
@@ -304,6 +343,18 @@ int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
     return m_fids.size()-1;
   } else {
     return std::distance(m_fids.cbegin(),it);
+  }
+}
+
+void AtmProcDAG::update_unmet_deps () {
+  m_has_unmet_deps = false;
+
+  for (const auto& it : m_unmet_deps) {
+    const auto& unmet = it.second;
+    m_has_unmet_deps |= (unmet.size()>0);
+    if (m_has_unmet_deps) {
+      break;
+    }
   }
 }
 

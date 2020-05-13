@@ -74,6 +74,7 @@ protected:
 #ifdef SCREAM_DEBUG
   FieldRepository<Real,device_type>           m_bkp_device_field_repo;
 #endif
+  std::set<std::weak_ptr<FieldInitializer>>   m_field_initializers;
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 

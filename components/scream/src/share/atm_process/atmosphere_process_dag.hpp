@@ -1,8 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 
-#include "share/atm_process/atmosphere_process.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
+#include "share/field/field_initializer.hpp"
 
 namespace scream {
 
@@ -13,10 +13,16 @@ public:
   static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs);
+  
+  void add_field_initializer (const FieldInitializer& initializer);
 
   void write_dag (const std::string& fname, const int verbosity = VERB_MAX) const;
 
   bool has_unmet_dependencies () const { return m_has_unmet_deps; }
+  const std::map<int,std::set<int>>& unmet_deps () const {
+    return m_unmet_deps;
+  }
+
 protected:
 
   void cleanup ();
@@ -26,6 +32,8 @@ protected:
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position
   int add_fid (const FieldIdentifier& fid);
+
+  void update_unmet_deps ();
 
   struct Node {
     std::vector<int>  children;
