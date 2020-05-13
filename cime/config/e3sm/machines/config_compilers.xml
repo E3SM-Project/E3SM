@@ -1453,6 +1453,14 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
+<compiler MACH="singularity" COMPILER="gnu">
+  <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH> $ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="mac" COMPILER="gnu">
   <LDFLAGS>
     <append>-framework Accelerate</append>
