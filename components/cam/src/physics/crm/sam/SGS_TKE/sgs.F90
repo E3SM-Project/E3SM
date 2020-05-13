@@ -7,7 +7,9 @@ module sgs
   use grid, only: nx,nxp1,ny,nyp1,YES3D,nzm,nz,dimx1_s,dimx2_s,dimy1_s,dimy2_s
   use params, only: dosgs, crm_rknd, asyncid
   use vars, only: tke2, tk2
+#if defined(_OPENACC)
   use openacc_utils
+#endif
   implicit none
 
   !----------------------------------------------------------------------
@@ -68,7 +70,9 @@ CONTAINS
 
 
   subroutine allocate_sgs(ncrms)
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd) :: zero
@@ -84,7 +88,7 @@ CONTAINS
     tke(dimx1_s:,dimy1_s:,1:,1:) => sgs_field     (:,:,:,:,1)
     tk (dimx1_d:,dimy1_d:,1:,1:) => sgs_field_diag(:,:,:,:,1)
     tkh(dimx1_d:,dimy1_d:,1:,1:) => sgs_field_diag(:,:,:,:,2)
-
+#if defined(_OPENACC)
     call prefetch( sgs_field  )
     call prefetch( sgs_field_diag  )
     call prefetch( grdf_x  )
@@ -93,6 +97,16 @@ CONTAINS
     call prefetch( tkesbbuoy  )
     call prefetch( tkesbshear  )
     call prefetch( tkesbdiss  )
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: sgs_field)
+    !$omp target enter data map(alloc: sgs_field_diag)
+    !$omp target enter data map(alloc: grdf_x)
+    !$omp target enter data map(alloc: grdf_y)
+    !$omp target enter data map(alloc: grdf_z)
+    !$omp target enter data map(alloc: tkesbbuoy)
+    !$omp target enter data map(alloc: tkesbshear)
+    !$omp target enter data map(alloc: tkesbdiss)
+#endif
 
     zero = 0
 
@@ -109,6 +123,16 @@ CONTAINS
 
   subroutine deallocate_sgs()
     implicit none
+#if defined(_OPENMP)
+    !$omp target enter data map(delete: sgs_field)
+    !$omp target enter data map(delete: sgs_field_diag)
+    !$omp target enter data map(delete: grdf_x)
+    !$omp target enter data map(delete: grdf_y)
+    !$omp target enter data map(delete: grdf_z)
+    !$omp target enter data map(delete: tkesbbuoy)
+    !$omp target enter data map(delete: tkesbshear)
+    !$omp target enter data map(delete: tkesbdiss)
+#endif
     deallocate( sgs_field  )
     deallocate( sgs_field_diag  )
     deallocate( grdf_x  )
@@ -119,6 +143,29 @@ CONTAINS
     deallocate( tkesbdiss  )
   end subroutine deallocate_sgs
 
+#if defined(_OPENMP)
+  subroutine update_device_sgs()
+    !$omp target update to( sgs_field  )
+    !$omp target update to( sgs_field_diag  )
+    !$omp target update to( grdf_x  )
+    !$omp target update to( grdf_y  )
+    !$omp target update to( grdf_z  )
+    !$omp target update to( tkesbbuoy  )
+    !$omp target update to( tkesbshear  )
+    !$omp target update to( tkesbdiss  )
+  end subroutine update_device_sgs
+
+  subroutine update_host_sgs()
+    !$omp target update from( sgs_field  )
+    !$omp target update from( sgs_field_diag  )
+    !$omp target update from( grdf_x  )
+    !$omp target update from( grdf_y  )
+    !$omp target update from( grdf_z  )
+    !$omp target update from( tkesbbuoy  )
+    !$omp target update from( tkesbshear  )
+    !$omp target update from( tkesbdiss  )
+  end subroutine update_host_sgs
+#endif
 
   ! required microphysics subroutines and function:
   !----------------------------------------------------------------------
@@ -453,7 +500,11 @@ subroutine sgs_proc(ncrms)
                           grdf_x, grdf_y, grdf_z, dosmagor,   &
                           tkesbdiss, tkesbshear, tkesbbuoy,   &
                           sgs_field(:,:,:,:,1), sgs_field_diag(:,:,:,:,1), sgs_field_diag(:,:,:,:,2))
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1 , nzm
     do j = dimy1_s,dimy2_s
       do i = dimx1_s,dimx2_s
@@ -463,7 +514,11 @@ subroutine sgs_proc(ncrms)
       enddo
     enddo
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1 , nzm
     do j = dimy1_d,dimy2_d
       do i = dimx1_d,dimx2_d

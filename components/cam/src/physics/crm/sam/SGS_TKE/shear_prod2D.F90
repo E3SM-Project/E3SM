@@ -16,8 +16,11 @@ contains
 
     rdx0=1./dx
     j=1
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do k=1,nzm
       do i=1,nx
         do icrm = 1 , ncrms

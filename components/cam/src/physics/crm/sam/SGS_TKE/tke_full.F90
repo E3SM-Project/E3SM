@@ -18,7 +18,9 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
 
   use vars
   use params
+#if defined(_OPENACC)
   use openacc_utils
+#endif
   implicit none
   integer, intent(in) :: ncrms
   !-----------------------------------------------------------------------
@@ -72,6 +74,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   real(crm_rknd) :: cy            ! correction factor for eddy visc CFL criteria
   real(crm_rknd) :: cz            ! correction factor for eddy visc CFL criteria
   real(crm_rknd) :: tkmax         ! Maximum TKE (CFL limiter)
+  real(crm_rknd) :: tke2_temp
 
   integer :: i,j,k,icrm
   integer :: kc      ! = k+1
@@ -90,10 +93,15 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   allocate( def2          (ncrms,nx,ny,nzm  ) )
   allocate( buoy_sgs_vert (ncrms,nx,ny,0:nzm) )
   allocate( a_prod_bu_vert(ncrms,nx,ny,0:nzm) )
+#if defined(_OPENACC)
   call prefetch( def2           )
   call prefetch( buoy_sgs_vert  )
   call prefetch( a_prod_bu_vert )
-
+#elif defined(_OPENMP)
+  !$omp target enter data map(alloc: def2 )
+  !$omp target enter data map(alloc: buoy_sgs_vert )
+  !$omp target enter data map(alloc: a_prod_bu_vert )
+#endif
   !-----------------------------------------------------------------------
   !-----------------------------------------------------------------------
 
@@ -113,7 +121,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   endif
 
   !!! initialize surface and top buoyancy flux to zero
+#if defined(_OPENACC)
   !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(3)
+#endif
   do j = 1 , ny
     do i = 1 , nx
       do icrm = 1 , ncrms
@@ -130,7 +142,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   !-----------------------------------------------------------------------
   !!! compute subgrid buoyancy flux assuming clear conditions
   !!! we will over-write this later if conditions are cloudy
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1,nzm-1
     do j = 1,ny
       do i = 1,nx
@@ -235,8 +251,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
       end do ! j
     enddo !k
   enddo !icrm
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = 1,nzm-1
     do icrm = 1 , ncrms
       tkelediss(icrm,k)  = 0.
@@ -245,8 +264,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
       tkesbbuoy(icrm,k)  = 0.
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1,nzm-1
     do j = 1,ny
       do i = 1,nx
@@ -270,6 +292,12 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
           Cee = Ce1+Ce2*ratio
           if(dosmagor) then
             tk(icrm,i,j,k) = sqrt(Ck**3/Cee*max(0._crm_rknd,def2(icrm,i,j,k)-Pr*buoy_sgs))*smix**2
+#if defined( SP_TK_LIM )
+              !!! put a hard lower limit on near-surface tk
+              if ( z(icrm,k).lt.tk_min_depth ) then
+                tk(icrm,i,j,k) = max( tk(icrm,i,j,k), tk_min_value )
+              end if
+#endif
             tke(icrm,i,j,k) = (tk(icrm,i,j,k)/(Ck*smix))**2
             a_prod_sh = (tk(icrm,i,j,k)+0.001)*def2(icrm,i,j,k)
             ! a_prod_bu=-(tk(icrm,i,j,k)+0.001)*Pr*buoy_sgs
@@ -281,26 +309,52 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
             a_prod_bu = 0.5*( a_prod_bu_vert(icrm,i,j,k-1) + a_prod_bu_vert(icrm,i,j,k) )
             !!! cap the diss rate (useful for large time steps)
             a_diss = min(tke(icrm,i,j,k)/(4.*dt),Cee/smix*tke(icrm,i,j,k)**1.5)
-            tke(icrm,i,j,k) = max(real(0.,crm_rknd),tke(icrm,i,j,k)+dtn*(max(0._crm_rknd,a_prod_sh+a_prod_bu)-a_diss))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
+            tke(icrm,i,j,k) = tke(icrm,i,j,k)+dtn*(max(0._crm_rknd,a_prod_sh+a_prod_bu)-a_diss)
+            tke(icrm,i,j,k) = max(real(0.,crm_rknd),tke(icrm,i,j,k))
             tk(icrm,i,j,k)  = Ck*smix*sqrt(tke(icrm,i,j,k))
           end if
           tk(icrm,i,j,k)  = min(tk(icrm,i,j,k),tkmax)
           tkh(icrm,i,j,k) = Pr*tk(icrm,i,j,k)
 
           tmp = a_prod_sh/float(nx*ny)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkelediss(icrm,k)  = tkelediss(icrm,k) - tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkesbdiss(icrm,k)  = tkesbdiss(icrm,k) + a_diss
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkesbshear(icrm,k) = tkesbshear(icrm,k)+ a_prod_sh
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkesbbuoy(icrm,k)  = tkesbbuoy(icrm,k) + a_prod_bu
         end do ! i
       end do ! j
     end do ! k
   enddo !icrm
-
+#if defined(_OPENMP)
+  !$omp target exit data map(delete: def2 )
+  !$omp target exit data map(delete: buoy_sgs_vert )
+  !$omp target exit data map(delete: a_prod_bu_vert )
+#endif
   deallocate( def2           )
   deallocate( buoy_sgs_vert  )
   deallocate( a_prod_bu_vert )
