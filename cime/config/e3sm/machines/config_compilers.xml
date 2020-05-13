@@ -1901,7 +1901,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <MPIFC> mpif90 </MPIFC>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SCC> xlc_r </SCC>
-  <SFC> xlf90_r </SFC>
+  <SFC> xlf2008_r </SFC>
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
