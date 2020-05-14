@@ -456,7 +456,7 @@ def summarize_suite(testcases):  # {{{
 # }}}
 
 
-if __name__ == "__main__":
+def main ():  # {{{
     # Define and process input arguments
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -573,5 +573,10 @@ if __name__ == "__main__":
         history_file.write('**************************************************'
                            '*********************\n')
         history_file.close()
+# }}}
+
+
+if __name__ == "__main__":
+    main()
 
 # vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python
