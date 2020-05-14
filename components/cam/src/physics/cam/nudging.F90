@@ -191,6 +191,8 @@ module nudging
 !                           The current nudging code only works for the nudging data file with one-day data.
 !                           It does not work correctly when the nudging data file contains multiple-day data.
 !                           Thus, Nudge_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
+!                           If there are multiple time slices per file, the revised nudging code assumes 
+!                           that the time slice in a file always starts from 00Z.
 !
 !                           Example: Nudge_File_Ntime = 1
 !
@@ -276,14 +278,14 @@ module nudging
 !      Nudge_File_Template = 'E3SM.cam.h1.%y-%m-%d-%s.nc'
 !      Nudge_File_Ntime    = 1
 !
-! More advanced example settings for the CONUS RRM simulation (i.e., Table 3 of Tang et al. (2019), 
+! More advanced example settings for the CONUS RRM nudged simulation (i.e., Table 3 of Tang et al. (2019), 
 ! using UV-only, tau=6h, four time slices per nudging input data file, nudging spatial window) 
 ! with this revised nudging code are:
 !
 !    &nudging_nl
 !      Nudge_Model         = .true.
 !      Nudge_Path          = 'PATH_TO_DATA'
-!      Nudge_File_Template = ‘interim_se_%y%m%d00_%y%m%d18_TQUV-%s.nc’
+!      Nudge_File_Template = ‘interim_se_%y%m%d00_%y%m%d18_TQUV.nc’
 !      Nudge_Times_Per_Day = 4
 !      Model_Times_Per_Day = 96 
 !      Nudge_Uprof         = 2 
