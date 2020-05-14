@@ -1623,10 +1623,17 @@ contains
                         cld_optics_sw%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
                         cld_optics_sw%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
                         cld_optics_sw%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
-                        aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
-                        aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
-                        aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
-                        aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
+                        if (do_aerosol_rad) then
+                           aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
+                           aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
+                           aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
+                           aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
+                        else
+                           aer_optics_lw%tau(j,ktop:kbot,:) = 0
+                           aer_optics_sw%tau(j,ktop:kbot,:) = 0
+                           aer_optics_sw%ssa(j,ktop:kbot,:) = 0
+                           aer_optics_sw%g  (j,ktop:kbot,:) = 0
+                        end if
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
                         j = j + 1
                      end do  ! ic = 1,ncol
@@ -1639,8 +1646,15 @@ contains
             ! Do shortwave stuff...
             if (radiation_do('sw')) then
 
-               ! Get orbital eccentricity factor to scale total sky irradiance
-               tsi_scaling = get_eccentricity_factor()
+               if (fixed_total_solar_irradiance<0) then
+                  ! Get orbital eccentricity factor to scale total sky irradiance
+                  tsi_scaling = get_eccentricity_factor()
+               else
+                  ! For fixed TSI we divide by the default solar constant of 1360.9
+                  ! At some point we will want to replace this with a method that 
+                  ! retrieves the solar constant
+                  tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
+               end if
 
                ! Allocate shortwave fluxes (allsky and clearsky)
                ! NOTE: fluxes defined at interfaces, so initialize to have vertical
