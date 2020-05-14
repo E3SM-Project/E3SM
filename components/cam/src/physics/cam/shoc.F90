@@ -909,7 +909,7 @@ subroutine compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, 
 
   real(rtype) :: taux, tauy !stresses (N/m2)
   real(rtype) :: ws         !wind speed (m/s)
-  real(rtype) :: rho, tau, ustar, tmpi, rdp, uw, vw, wtke_flux
+  real(rtype) :: rho, tau, ustar, fac, rdp, uw, vw, wtke_flux
 
   real(rtype), parameter :: wsmin   = 1._rtype    ! Minimum wind speed for ksrfturb computation [ m/s ]
   real(rtype), parameter :: ksrfmin = 1.e-4_rtype ! Minimum surface drag coefficient  [ kg/s/m^2 ]
@@ -930,11 +930,11 @@ subroutine compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, 
 
      ! Apply the surface fluxes explicitly for temperature and moisture
      rdp        = rdp_zt(icol,nlev)
-     tmpi       =  dtime * (ggr * rho * rdp)
+     fac       =  dtime * ggr * rho * rdp !a common factor for the following 3 equations
 
-     thetal(icol,nlev) = thetal(icol,nlev) + tmpi * wthl_sfc(icol)
-     qw(icol,nlev)     = qw(icol,nlev)     + tmpi * wqw_sfc(icol)
-     tke(icol,nlev)    = tke(icol,nlev)    + tmpi * wtke_flux
+     thetal(icol,nlev) = thetal(icol,nlev) + fac * wthl_sfc(icol)
+     qw(icol,nlev)     = qw(icol,nlev)     + fac * wqw_sfc(icol)
+     tke(icol,nlev)    = tke(icol,nlev)    + fac * wtke_flux
   enddo
 
 end subroutine compute_sfc_terms
