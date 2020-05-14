@@ -502,7 +502,7 @@ if __name__ == "__main__":
                 cmd = ['cat',
                        args.work_dir + '/manage_regression_suite.py.out']
                 print('\nCase setup output:')
-                print(subprocess.check_output(cmd))
+                print(subprocess.check_output(cmd).decode('utf-8'))
             write_history = True
 
     # Write the history of this command to the command_history file, for
