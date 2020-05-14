@@ -3,6 +3,7 @@ from .zonal_mean_2d_parameter import ZonalMean2dParameter
 from .meridional_mean_2d_parameter import MeridionalMean2dParameter
 from .area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
 from .enso_diags_parameter import EnsoDiagsParameter
+from .qbo_parameter import QboParameter
 
 SET_TO_PARAMETERS = {
     'zonal_mean_xy': CoreParameter,
@@ -13,4 +14,5 @@ SET_TO_PARAMETERS = {
     'cosp_histogram': CoreParameter,
     'area_mean_time_series': AreaMeanTimeSeriesParameter,
     'enso_diags': EnsoDiagsParameter,
+    'qbo': QboParameter
 }

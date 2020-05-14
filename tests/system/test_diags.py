@@ -219,6 +219,19 @@ class TestAllSets(unittest.TestCase):
     def test_polar(self):
         self.check_plots_plevs('polar', 'polar_S', [850.0])
 
+    def test_qbo(self):
+        case_id = 'qbo-test'
+        case_id_lower = case_id.lower()
+        set_name = 'qbo'
+        png_path = '{}/{}/qbo_diags.png'.format(set_name, case_id)
+        full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+        print(full_png_path)
+        self.assertTrue(os.path.exists(full_png_path))
+        # viewer/qbo/variable/era-interim/plot.html
+        html_path = '{}viewer/{}/variable/{}/plot.html'.format(
+            TestAllSets.results_dir, set_name, case_id_lower)
+        self.check_html_image(html_path, png_path)
+
     def test_zonal_mean_2d(self):
         self.check_plots_2d('zonal_mean_2d')
 
