@@ -4,7 +4,7 @@ module dshr_strdata_mod
 
   use ESMF
 
-  use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx, r4=>shr_kind_r4 
+  use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx, r4=>shr_kind_r4
   use shr_sys_mod      , only : shr_sys_abort
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_file_mod     , only : shr_file_getunit, shr_file_freeunit
@@ -71,7 +71,7 @@ module dshr_strdata_mod
      ! real(r8)                          :: dtlimit                  ! stream dt max/min limit
      ! character(CS)                     :: tintalgo                 ! stream time interpolation algorithm
      ! character(CS)                     :: readmode                 ! stream file(s) read mode
-     
+
      character(CL)                       :: stream_vectors            ! stream vectors names from shr_strdata_nml
      character(CL)                       :: stream_meshfile           ! stream mesh file from stream txt file
      type(ESMF_Mesh)                     :: stream_mesh               ! stream mesh created from stream mesh file
@@ -610,6 +610,9 @@ contains
            dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (allocated(fldList_model)) then
+          deallocate(fldList_model, fldList_stream)
+       endif
 
     end do ! end of loop over streams
 
@@ -1198,7 +1201,7 @@ contains
              if (debug > 0) then
                 write(logunit,F01) trim(subname),' interp = ',ns,flb,fub
              endif
-             
+
              do nf = 1,fieldcount
                 call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , fieldNameList(nf), dataptr   , rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1706,7 +1709,7 @@ contains
     logical                       :: first_time = .true.
     real(r4), allocatable         :: data_real(:)
     integer                       :: lsize
-    integer                       :: n 
+    integer                       :: n
     character(*), parameter       :: subname = '(shr_strdata_readstrm) '
     character(*), parameter       :: F00   = "('(shr_strdata_readstrm) ',8a)"
     character(*), parameter       :: F02   = "('(shr_strdata_readstrm) ',2a,i8)"

@@ -64,7 +64,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     config['dlnd_mode'] = dlnd_mode
     nmlgen.init_defaults(infile, config)
 
-    # Set model mesh to the xml variable 
+    # Set model mesh to the xml variable
     model_meshfile = case.get_value("ATM_DOMAIN_MESH")
     if model_meshfile == 'create_mesh':
         nmlgen.set_value("model_createmesh_fromfile",os.path.join(atm_domain_path,atm_domain_file))
@@ -77,7 +77,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
 
     streams = nmlgen.get_streams()
-    stream_path = os.path.join(confdir, "dlnd.streams01"+inst_string+".xml" )
+    stream_path = os.path.join(confdir, "dlnd.streams"+inst_string+".xml" )
     nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 
 ###############################################################################

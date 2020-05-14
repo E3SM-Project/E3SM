@@ -70,7 +70,7 @@ module lnd_comp_nuopc
   logical                  :: force_prognostic_true = .false.     ! if true set prognostic true
   character(CL)            :: restfilm = nullstr                  ! model restart file namelist
   character(CL)            :: restfils = nullstr                  ! stream restart file namelist
-  integer                  :: nx_global                           ! global nx dimension of model mesh 
+  integer                  :: nx_global                           ! global nx dimension of model mesh
   integer                  :: ny_global                           ! global ny dimension of model mesh
   character(CL)            :: stream_fracname = nullstr           ! name of fraction field in first stream file
 
@@ -153,7 +153,7 @@ contains
     integer       :: shrlogunit ! original log unit
     integer       :: nu         ! unit number
     integer       :: ierr       ! error code
-    logical           :: exists     ! check for file existence  
+    logical           :: exists     ! check for file existence
     character(len=*) , parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     character(*)     , parameter :: F00 = "('(lnd_comp_nuopc) ',8a)"
     character(*)     , parameter :: F01 = "('(lnd_comp_nuopc) ',a,2x,i8)"
@@ -162,7 +162,7 @@ contains
 
     namelist / dlnd_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
          nx_global, ny_global, restfilm, restfils, force_prognostic_true, stream_fracname
-    
+
     rc = ESMF_SUCCESS
 
     ! Obtain flds_scalar values, mpi values, multi-instance values and
@@ -523,7 +523,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain fractional land from first stream
-    call shr_strdata_get_stream_domain(sdat, 1, stream_fracname, lfrac, rc=rc) 
+    call shr_strdata_get_stream_domain(sdat, 1, stream_fracname, lfrac, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Create stream-> export state mapping

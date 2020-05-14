@@ -231,25 +231,13 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value datm_mode="CORE2_NYF">
-	$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc
-      </value>
-      <value datm_mode="CORE2_IAF">
-	$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc
-      </value>
-      <value datm_mode="CORE2_IAF_JRA">
-	$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc
-      </value>
-      <value datm_mode="CORE2_IAF" atm_grid="01col">
-	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/domains/domain.ocn.01col.SOFS.20150828.nc -->
-      </value>
       <value stream="CLMGSWP3v1">
 	$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh_c20191210.nc
 	<!-- the lons in the data is 0->360, but in the mesh are -180->180 -->
-      </value> 
+      </value>
       <value stream="Anomaly.Forcing">
 	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc
-      </value> <!-- TODO: what is this mesh? --> 
+      </value> <!-- TODO: what is this mesh? -->
       <value stream="CLM1PT.1x1_mexicocityMEX">
 	<!-- TODO: generate_mesh_from: $DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc -->
       </value>
@@ -261,7 +249,7 @@
       </value>
       <value stream="co2tseries">
 	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/atm/datm7/CO2/  -->
-      </value> 
+      </value>
       <value stream="presaero.clim_1850">
 	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
       </value>
@@ -290,6 +278,18 @@
       <!-- <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value> -->
       <!-- <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value> -->
       <!-- <value stream="topo.cplhist">null</value> -->
+      <value datm_mode="CORE2_NYF">
+	$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc
+      </value>
+      <value datm_mode="CORE2_IAF">
+	$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc
+      </value>
+      <value datm_mode="CORE2_IAF_JRA">
+	$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc
+      </value>
+      <value datm_mode="CORE2_IAF" atm_grid="01col">
+	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/domains/domain.ocn.01col.SOFS.20150828.nc -->
+      </value>
     </values>
   </entry>
 
@@ -412,9 +412,9 @@
 	$DIN_LOC_ROOT/atm/datm7/NYF/nyf.ncep.T62.050923.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.DENS.SOFS">
-	$DIN_LOC_ROOT/ocn/iaf/ncep.SOFS.2010.nc  
+	$DIN_LOC_ROOT/ocn/iaf/ncep.SOFS.2010.nc
       </value>
-      <value  stream="CORE2_IAF.NCEP.PSLV.SOFS"> 
+      <value  stream="CORE2_IAF.NCEP.PSLV.SOFS">
 	$DIN_LOC_ROOT/ocn/iaf/ncep.SOFS.2010.nc
       </value>
       <value  stream="CORE2_IAF.PREC.SOFS.DAILY">
@@ -2603,7 +2603,7 @@
       <value>$ATM_NY</value>
     </values>
   </entry>
-  
+
   <entry id="bias_correct" skip_default_entry="true"> <!--- anomaly forcing - bias correction -->
     <type>char</type>
     <category>datm</category>

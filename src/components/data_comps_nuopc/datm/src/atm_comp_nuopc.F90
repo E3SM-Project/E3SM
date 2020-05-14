@@ -77,6 +77,7 @@ module atm_comp_nuopc
 
   ! datm_in namelist input
   character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
+  character(CL)                :: xmlfilename = nullstr                ! filename to obtain namelist info from
   character(CL)                :: dataMode = nullstr                  ! flags physics options wrt input data
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
@@ -288,7 +289,7 @@ contains
     integer           :: shrlogunit ! original log unit
     integer           :: nu         ! unit number
     integer           :: ierr       ! error code
-    logical           :: exists     ! check for file existence  
+    logical           :: exists     ! check for file existence
     character(len=*),parameter :: subname='(atm_comp_nuopc):(InitializeAdvertise) '
     character(*)    ,parameter :: F00 = "('(atm_comp_nuopc) ',8a)"
     character(*)    ,parameter :: F01 = "('(atm_comp_nuopc) ',a,2x,i8)"
@@ -323,6 +324,7 @@ contains
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
     end if
+
     call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
     call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
     call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
@@ -473,7 +475,9 @@ contains
 
     ! Initialize sdat
     call t_startf('datm_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'atm', &
+    xmlfilename = 'datm.streams.xml'
+
+    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'atm', &
          model_meshfile, model_maskfile, model_mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')

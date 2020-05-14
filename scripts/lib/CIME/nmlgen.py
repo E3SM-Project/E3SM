@@ -579,10 +579,10 @@ class NamelistGenerator(object):
                 stream_file.write('<?xml version="1.0"?>\n')
                 stream_file.write('<file id="stream" version="2.0">\n')
 
-
             for stream in streams:
+                if stream is None:
+                    continue
                 config["stream"] = stream
-
                 stream_meshfile = self.get_default("strm_mesh", config)
                 stream_datafiles = self.get_default("strm_datfil", config)
                 stream_variables = self._sub_fields(self.get_default("strm_datvar", config))
@@ -609,6 +609,7 @@ class NamelistGenerator(object):
                 stream_offset = self.get_default("strm_offset", config)
                 stream_datafiles_delimited = self._add_xml_delimiter(stream_datafiles.split("\n"), "file")
                 stream_variables = self._add_xml_delimiter(stream_variables.split("\n"), "var")
+
                 # create stream txt file
                 stream_file_text = _stream_nuopc_file_template.format(
                     data_meshfile=stream_meshfile,
