@@ -317,6 +317,8 @@ end function shoc_implements_cnst
       call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, fice_idx, 0.0_r8)
       call pbuf_set_field(pbuf2d, tke_idx, tke_tol)
+      call pbuf_set_field(pbuf2d, alst_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d, aist_idx, 0.0_r8)
       
       call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
       
@@ -721,6 +723,10 @@ end function shoc_implements_cnst
        thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
  
        tke_zt(i,k) = max(tke_tol,state1%q(i,k,ixtke))
+       
+       ! Cloud fraction needs to be initialized for first 
+       !  PBL height calculation call
+       cloud_frac(i,k) = alst(i,k) 
      
      enddo
    enddo         
@@ -792,8 +798,9 @@ end function shoc_implements_cnst
 	exner(:ncol,:),state1%phis(:ncol), & ! Input
 	shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
 	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
-	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), rcm(:ncol,:), & ! Input/Output
-        cloud_frac(:ncol,:), pblh(:ncol), & ! Output
+	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
+	cloud_frac(:ncol,:), rcm(:ncol,:), & ! Input/Output
+        pblh(:ncol), & ! Output
         shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
         w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)   
         wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
