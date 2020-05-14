@@ -181,8 +181,6 @@ def run_diag_map(parameter):
         ref_nino_index = calculate_nino_index(nino_region_str, parameter, ref=True)
     else:
         raise Exception('Invalid run_type={}'.format(run_type))
-    test_data = utils.dataset.Dataset(parameter, test=True)
-    ref_data = utils.dataset.Dataset(parameter, ref=True)
 
     for season in seasons:
         if parameter.print_statements:
