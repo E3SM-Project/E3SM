@@ -28,7 +28,16 @@ module nudging
 !         Nudge_Curr = .False.
 !         Nudge_File_Ntime = 1
 !         Nudge_Method = ‘Step’
-
+!
+! The revised nudging code has been evaluated by Sun et al. (2019).
+! 
+! Reference:
+!
+!    Sun, J., Zhang, K., Wan, H., Ma, P.‐L., Tang, Q., & Zhang, S. ( 2019).
+!    Impact of nudging strategy on the climate representativeness and hindcast
+!    skill of constrained EAMv1 simulations. Journal of Advances in Modeling
+!    Earth Systems, 11, 3911– 3933. https://doi.org/10.1029/2019MS001831
+!
 !=====================================================================
 !
 ! Purpose: Implement Nudging of the model state of U,V,T,Q, and/or PS
@@ -65,6 +74,14 @@ module nudging
 !               now it can only read in 1D arrays from netCDF files.
 !               To eliminate errors from future meddling of this sort, all
 !               refenences to the 'wrap_nf' module were removed and replaced
+!               with direct nf90 calls.
+!
+! Input/Output Values:
+!    Forcing contributions are available for history file output by
+!    the names:    {'Nudge_U','Nudge_V','Nudge_T',and 'Nudge_Q'}
+!
+!    The nudging of the model toward the analyses data is controlled by
+!    the 'nudging_nl' namelist in 'user_nl_cam'; whose variables control the
 !               with direct nf90 calls.
 !
 ! Input/Output Values:
@@ -181,14 +198,6 @@ module nudging
 !      Nudge_Model         - LOGICAL toggle to activate nudging.
 !      Nudge_Path          - CHAR path to the analyses files.
 !      Nudge_File_Template - CHAR Analyses filename with year, month, day, and second
-!                                 values replaced by %y, %m, %d, and %s respectively.
-!      Nudge_Times_Per_Day - INT Number of analyses files available per day.
-!      Model_Times_Per_Day - INT Number of times to update the model state (used for nudging) 
-!                                each day. The value is restricted to be longer than the 
-!                                current model timestep and shorter than the analyses 
-!                                timestep. As this number is increased, the nudging
-!                                force has the form of newtonian cooling.
-!      Nudge_Uprof         - INT index of profile structure to use for U.  [0,1,2]
 !      Nudge_Vprof         - INT index of profile structure to use for V.  [0,1,2]
 !      Nudge_Tprof         - INT index of profile structure to use for T.  [0,1,2]
 !      Nudge_Qprof         - INT index of profile structure to use for Q.  [0,1,2]
@@ -230,6 +239,97 @@ module nudging
 !                                    or future model time step
 !      Nudge_File_Ntime    - INT  Number of time slices per nudging data file
 !    /
+!
+! A typical namelist setting of nudged global simulation (UV-only, tau = 6h) 
+! with this revised nudging code is provided below:
+!
+!    &nudging_nl
+!      Nudge_Model         = .True.
+!      Nudge_Path          = 'PATH_TO_DATA'
+!      Nudge_File_Template = 'E3SM.cam.h1.%y-%m-%d-00000.nc'
+!      Nudge_Times_Per_Day = 4            ! nudging input data frequency
+!      Model_Times_Per_Day = 48           ! should not be larger than 48 if dtime = 1800s
+!      Nudge_Uprof         = 1
+!      Nudge_Ucoef         = 1.
+!      Nudge_Vprof         = 1
+!      Nudge_Vcoef         = 1.
+!      Nudge_Tprof         = 0
+!      Nudge_Tcoef         = 0.
+!      Nudge_Qprof         = 0
+!      Nudge_Qcoef         = 0.
+!      Nudge_PSprof        = 0
+!      Nudge_PScoef        = 0.
+!      Nudge_Beg_Year      = 0000         ! begin year of nudged simulation
+!      Nudge_Beg_Month     = 1            ! begin month of nudged simulation
+!      Nudge_Beg_Day       = 1            ! begin day of nudged simulation
+!      Nudge_End_Year      = 9999         ! end year of nudged simulation
+!      Nudge_End_Month     = 1            ! end month of nudged simulation
+!      Nudge_End_Day       = 1            ! end day of nudged simulation
+!      Nudge_Method        = 'Linear'     ! use linear-interpolation nudging
+!      Nudge_File_Ntime    = 4            ! if there are four time slices per nudging input data file 
+!      Nudge_Loc_Same      = .TRUE.
+!    /
+!
+! If a user prefers one time slice per nudging input data file, simply change
+! two settings above to the following settings:
+!
+!      Nudge_File_Template = 'E3SM.cam.h1.%y-%m-%d-%s.nc'
+!      Nudge_File_Ntime    = 1
+!
+! More advanced example settings for the CONUS RRM simulation (i.e., Table 3 of Tang et al. (2019), 
+! using UV-only, tau=6h, four time slices per nudging input data file, nudging spatial window) 
+! with this revised nudging code are:
+!
+!    &nudging_nl
+!      Nudge_Model         = .true.
+!      Nudge_Path          = 'PATH_TO_DATA'
+!      Nudge_File_Template = ‘interim_se_%y%m%d00_%y%m%d18_TQUV-%s.nc’
+!      Nudge_Times_Per_Day = 4
+!      Model_Times_Per_Day = 96 
+!      Nudge_Uprof         = 2 
+!      Nudge_Ucoef         = 1.00 
+!      Nudge_Vprof         = 2 
+!      Nudge_Vcoef         = 1.00 
+!      Nudge_Tprof         = 0 
+!      Nudge_Tcoef         = 0.00 
+!      Nudge_Qprof         = 0 
+!      Nudge_Qcoef         = 0.00 
+!      Nudge_PSprof        = 0 
+!      Nudge_PScoef        = 0.00 
+!      Nudge_Beg_Year      = 2011 
+!      Nudge_Beg_Month     = 1 
+!      Nudge_Beg_Day       = 1
+!      Nudge_End_Year      = 2011 
+!      Nudge_End_Month     = 12 
+!      Nudge_End_Day       = 31 
+!      Nudge_Hwin_lo       = 1.0
+!      Nudge_Hwin_hi       = 0.0 
+!      Nudge_Hwin_lat0     = 38.0 
+!      Nudge_Hwin_latWidth = 34.0
+!      Nudge_Hwin_latDelta = 3.8 
+!      Nudge_Hwin_lon0     = 254.0 
+!      Nudge_Hwin_lonWidth = 44.0
+!      Nudge_Hwin_lonDelta = 3.8 
+!      Nudge_Vwin_lo       = 0.0 
+!      Nudge_Vwin_hi       = 1.0 
+!      Nudge_Vwin_Hindex   = 73.0 
+!      Nudge_Vwin_Hdelta   = 0.1 
+!      Nudge_Vwin_Lindex   = 0.0 
+!      Nudge_Vwin_Ldelta   = 0.1
+!      Nudge_Method        = 'Linear'
+!      Nudge_File_Ntime    = 4
+!      Nudge_Loc_Same      = .TRUE.
+!    /
+!
+! Reference:
+!
+!    Tang, Q., Klein, S. A., Xie, S., Lin, W., Golaz, J.-C., Roesler, E. L.,
+!    Taylor, M. A., Rasch, P. J., Bader, D. C., Berg, L. K., Caldwell, P.,
+!    Giangrande, S. E., Neale, R. B., Qian, Y., Riihimaki, L. D., Zender, C. S.,
+!    Zhang, Y., and Zheng, X.: Regionally refined test bed in E3SM atmosphere
+!    model version 1 (EAMv1) and applications for high-resolution modeling,
+!    Geosci. Model Dev., 12, 2679–2706,
+!    https://doi.org/10.5194/gmd-12-2679-2019, 2019.
 !
 !================
 !  DIAG NOTE:
@@ -2738,69 +2838,6 @@ contains
 
         ! check whether the time slice is read in correctly
         istat = nf90_inq_varid(ncid,'time',varid1)
-        if (istat .ne. NF90_NOERR) then
-            write(iulog,*) nf90_strerror(istat)
-            call endrun ('ANALYSES_SE_INQ_VARID')
-        end if
-        istat = nf90_get_var(ncid,varid1,tinfo,start=(/strt3(3)/))
-        if (istat .ne. NF90_NOERR) then
-            write(iulog,*) nf90_strerror(istat)
-            call endrun ('ANALYSES_SE_GET_VAR')
-        end if
-        write(iulog,*) 'NUDGING: Current time slice is: ', tinfo
-     end if
-     call t_startf ('distribute_data')
-     call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal,out_x)
-     call t_stopf ('distribute_data')
-  end if
-
-  end subroutine
-
-  !-----------------------------
-  ! Get and scatter nudging data
-  !-----------------------------
-  subroutine read_and_scatter_fv (ncid, vname, ndg_prof, strt4, cnt4, out_x)
-  use ppgrid, only                 : pver,pcols,begchunk,endchunk
-  use cam_abortutils, only         : endrun
-  use perf_mod
-  use netcdf
-
-  integer, intent(in)             :: ncid, ndg_prof
-  integer, intent(in)             :: strt4(4), cnt4(4)
-  character (len = *), intent(in) :: vname
-  real(r8), intent(out)           :: out_x(pcols,pver,begchunk:endchunk)
-
-  ! local variables
-  real(r8)                        :: Xanal(Nudge_nlon,Nudge_nlat,Nudge_nlev)
-  real(r8)                        :: Xtrans(Nudge_nlon,Nudge_nlev,Nudge_nlat)
-  real(r8)                        :: tinfo
-  integer                         :: istat, varid, varid1, &
-                                     ilat, ilon, ilev
-
-  if (ndg_prof .ne. 0) then
-     if (masterproc) then
-        call t_startf ('read_nudging_data')
-        istat = nf90_inq_varid(ncid,vname,varid)
-        if (istat .ne. NF90_NOERR) then
-            write(iulog,*) nf90_strerror(istat)
-            call endrun ('ANALYSES_FV_INQ_VARID')
-        end if
-        istat = nf90_get_var(ncid,varid,Xanal,strt4,cnt4)
-        if (istat .ne. NF90_NOERR) then
-            write(iulog,*) nf90_strerror(istat)
-            call endrun ('ANALYSES_FV_GET_VAR')
-        end if
-        call t_stopf ('read_nudging_data')
-
-        ! check whether the time slice is read in correctly
-        istat = nf90_inq_varid(ncid,'time',varid1)
-        if (istat .ne. NF90_NOERR) then
-            write(iulog,*) nf90_strerror(istat)
-            call endrun ('ANALYSES_FV_INQ_VARID')
-        end if
-        istat = nf90_get_var(ncid,varid1,tinfo,start=(/strt4(4)/))
-        if (istat .ne. NF90_NOERR) then
-            write(iulog,*) nf90_strerror(istat)
             call endrun ('ANALYSES_FV_GET_VAR')
         end if
         write(iulog,*) 'NUDGING: Current time slice is: ', tinfo
