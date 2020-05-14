@@ -1,5 +1,5 @@
 #include <mpi.h>
-//#include "gptl.h"
+#include "gptl.h"
 
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
@@ -3846,7 +3846,7 @@ void copy_q (CslMpi& cm, const Int& nets,
   }
 }
 
-#if 0
+#if 1
 struct Timer {
   Timer (const std::string& name_) : name("SLMM_isl_" + name_) { GPTLstart(name.c_str()); }
   ~Timer () { GPTLstop(name.c_str()); }
@@ -3880,7 +3880,7 @@ void step (
     q_min(q_min_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd),
     q_max(q_max_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd);
 
-#if 1
+#if 0
   // Partition my elements that communicate with remotes among threads, if I
   // haven't done that yet.
   if (cm.mylid_with_comm_tid_ptr.n() == 0)
