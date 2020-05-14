@@ -23,13 +23,13 @@ module histFileMod
   use ncdio_pio 
   use EDTypesMod        , only : nclmax_fates     => nclmax
   use EDTypesMod        , only : nlevleaf_fates   => nlevleaf
-  use FatesInterfaceMod , only : nlevsclass_fates => nlevsclass
-  use FatesInterfaceMod , only : nlevage_fates    => nlevage
-  use FatesInterfaceMod , only : nlevheight_fates => nlevheight
-  use FatesInterfaceMod , only : nlevcoage
+  use FatesInterfaceTypesMod , only : nlevsclass_fates => nlevsclass
+  use FatesInterfaceTypesMod , only : nlevage_fates    => nlevage
+  use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
+  use FatesInterfaceTypesMod , only : nlevcoage
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
-  use FatesInterfaceMod , only : numpft_fates     => numpft
+  use FatesInterfaceTypesMod , only : numpft_fates     => numpft
   use EDTypesMod        , only : nelements_fates  => num_elements
 
   !
@@ -2304,37 +2304,37 @@ contains
     use domainMod       , only : ldomain, lon1d, lat1d
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
-    use FatesInterfaceMod, only : fates_hdim_levsclass
-    use FatesInterfaceMod, only : fates_hdim_pfmap_levscpf
-    use FatesInterfaceMod, only : fates_hdim_scmap_levscpf
-    use FatesInterfaceMod, only : fates_hdim_levcoage
-    use FatesInterfaceMod, only : fates_hdim_pfmap_levcapf
-    use FatesInterfaceMod, only : fates_hdim_camap_levcapf
-    use FatesInterfaceMod, only : fates_hdim_levage
-    use FatesInterfaceMod, only : fates_hdim_levpft
-    use FatesInterfaceMod, only : fates_hdim_scmap_levscag
-    use FatesInterfaceMod, only : fates_hdim_agmap_levscag
-    use FatesInterfaceMod, only : fates_hdim_levfuel
-    use FatesInterfaceMod, only : fates_hdim_levcwdsc
-    use FatesInterfaceMod, only : fates_hdim_levcan
-    use FatesInterfaceMod, only : fates_hdim_canmap_levcnlf
-    use FatesInterfaceMod, only : fates_hdim_lfmap_levcnlf
-    use FatesInterfaceMod, only : fates_hdim_canmap_levcnlfpf
-    use FatesInterfaceMod, only : fates_hdim_lfmap_levcnlfpf
-    use FatesInterfaceMod, only : fates_hdim_pftmap_levcnlfpf
-    use FatesInterfaceMod, only : fates_hdim_levheight
-    use FatesInterfaceMod, only : fates_hdim_scmap_levscagpft
-    use FatesInterfaceMod, only : fates_hdim_agmap_levscagpft
-    use FatesInterfaceMod, only : fates_hdim_pftmap_levscagpft
-    use FatesInterfaceMod, only : fates_hdim_agmap_levagepft
-    use FatesInterfaceMod, only : fates_hdim_pftmap_levagepft
-    use FatesInterfaceMod, only : fates_hdim_levelem
-    use FatesInterfaceMod, only : fates_hdim_elmap_levelpft
-    use FatesInterfaceMod, only : fates_hdim_pftmap_levelpft
-    use FatesInterfaceMod, only : fates_hdim_elmap_levelcwd
-    use FatesInterfaceMod, only : fates_hdim_cwdmap_levelcwd
-    use FatesInterfaceMod, only : fates_hdim_elmap_levelage
-    use FatesInterfaceMod, only : fates_hdim_agemap_levelage
+    use FatesInterfaceTypesMod, only : fates_hdim_levsclass
+    use FatesInterfaceTypesMod, only : fates_hdim_pfmap_levscpf
+    use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscpf
+    use FatesInterfaceTypesMod, only : fates_hdim_levcoage
+    use FatesInterfaceTypesMod, only : fates_hdim_pfmap_levcapf
+    use FatesInterfaceTypesMod, only : fates_hdim_camap_levcapf
+    use FatesInterfaceTypesMod, only : fates_hdim_levage
+    use FatesInterfaceTypesMod, only : fates_hdim_levpft
+    use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscag
+    use FatesInterfaceTypesMod, only : fates_hdim_agmap_levscag
+    use FatesInterfaceTypesMod, only : fates_hdim_levfuel
+    use FatesInterfaceTypesMod, only : fates_hdim_levcwdsc
+    use FatesInterfaceTypesMod, only : fates_hdim_levcan
+    use FatesInterfaceTypesMod, only : fates_hdim_canmap_levcnlf
+    use FatesInterfaceTypesMod, only : fates_hdim_lfmap_levcnlf
+    use FatesInterfaceTypesMod, only : fates_hdim_canmap_levcnlfpf
+    use FatesInterfaceTypesMod, only : fates_hdim_lfmap_levcnlfpf
+    use FatesInterfaceTypesMod, only : fates_hdim_pftmap_levcnlfpf
+    use FatesInterfaceTypesMod, only : fates_hdim_levheight
+    use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscagpft
+    use FatesInterfaceTypesMod, only : fates_hdim_agmap_levscagpft
+    use FatesInterfaceTypesMod, only : fates_hdim_pftmap_levscagpft
+    use FatesInterfaceTypesMod, only : fates_hdim_agmap_levagepft
+    use FatesInterfaceTypesMod, only : fates_hdim_pftmap_levagepft
+    use FatesInterfaceTypesMod, only : fates_hdim_levelem
+    use FatesInterfaceTypesMod, only : fates_hdim_elmap_levelpft
+    use FatesInterfaceTypesMod, only : fates_hdim_pftmap_levelpft
+    use FatesInterfaceTypesMod, only : fates_hdim_elmap_levelcwd
+    use FatesInterfaceTypesMod, only : fates_hdim_cwdmap_levelcwd
+    use FatesInterfaceTypesMod, only : fates_hdim_elmap_levelage
+    use FatesInterfaceTypesMod, only : fates_hdim_agemap_levelage
 
 
 

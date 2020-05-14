@@ -79,7 +79,7 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-    use CLMFatesInterfaceMod     , only : ELMFatesGlobalElements
+    use CLMFatesInterfaceMod      , only: ELMFatesGlobals
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -265,7 +265,7 @@ contains
     ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
     ! to allocate space, determined in this routine)
     ! ------------------------------------------------------------------------
-    call ELMFATESGlobalElements()
+    call ELMFATESGlobals()
     
 
     ! ------------------------------------------------------------------------
