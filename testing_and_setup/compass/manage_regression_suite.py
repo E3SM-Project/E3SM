@@ -308,11 +308,9 @@ def clean_suite(suite_tag, work_dir):  # {{{
 # }}}
 
 
-def summarize_suite(suite_tag):  # {{{
+def get_test_case_procs(suite_tag):  # {{{
 
-    max_procs = 1
-    max_threads = 1
-    max_cores = 1
+    testcases = {}
 
     for child in suite_tag:
         if child.tag == 'test':
@@ -370,6 +368,8 @@ def summarize_suite(suite_tag):  # {{{
             del config_root
             del config_tree
 
+            procs = 1
+            threads = 1
             # Loop over all files in test_path that have the .xml extension.
             for file in os.listdir('{}'.format(test_path)):
                 if fnmatch.fnmatch(file, '*.xml'):
@@ -395,19 +395,31 @@ def summarize_suite(suite_tag):  # {{{
                                 except (KeyError, ValueError):
                                     threads = 1
 
-                                cores = threads * procs
-
-                                if procs > max_procs:
-                                    max_procs = procs
-
-                                if threads > max_threads:
-                                    max_threads = threads
-
-                                if cores > max_cores:
-                                    max_cores = cores
-
                     del config_root
                     del config_tree
+            testcases[test_name] = {'core': test_core,
+                                    'configuration': test_configuration,
+                                    'resolution': test_resolution,
+                                    'test': test_test,
+                                    'path': test_path,
+                                    'procs': procs,
+                                    'threads': threads}
+    return testcases  # }}}
+
+
+def summarize_suite(testcases):  # {{{
+
+    max_procs = 1
+    max_threads = 1
+    max_cores = 1
+    for name in testcases:
+        procs = testcases[name]['procs']
+        threads = testcases[name]['threads']
+        cores = threads * procs
+
+        max_procs = max(max_procs, procs)
+        max_threads = max(max_threads, threads)
+        max_cores = max(max_cores, cores)
 
     print("\n")
     print(" Summary of test cases:")
@@ -495,9 +507,10 @@ if __name__ == "__main__":
         if args.setup:
             print("\n")
             print("Setting Up Test Cases:")
+            testcases = get_test_case_procs(suite_root)
             setup_suite(suite_root, args.work_dir, args.model_runtime,
                         args.config_file, args.baseline_dir, args.verbose)
-            summarize_suite(suite_root)
+            summarize_suite(testcases)
             if args.verbose:
                 cmd = ['cat',
                        args.work_dir + '/manage_regression_suite.py.out']
