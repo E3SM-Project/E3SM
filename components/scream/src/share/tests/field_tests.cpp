@@ -47,7 +47,7 @@ TEST_CASE("field_identifier", "") {
 TEST_CASE("field_tracking", "") {
   using namespace scream;
 
-  FieldTracking track;
+  FieldTracking track("track");
   util::TimeStamp time1(0,0,10);
   util::TimeStamp time2(0,0,20);
   REQUIRE_NOTHROW (track.update_time_stamp(time2));

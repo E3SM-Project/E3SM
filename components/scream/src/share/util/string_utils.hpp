@@ -8,6 +8,24 @@
 namespace scream {
 namespace util {
 
+// Trim leading/trailing whitespaces
+inline std::string trim (const std::string& s) {
+  if (s=="") {
+    return s;
+  }
+  int nl = 0;
+  while (s[nl] == ' ') {
+    ++nl;
+  }
+  int size = s.size();
+  int nt = 0;
+  while (nt<size && s[size-nt-1] == ' ') {
+    ++nt;
+  }
+
+  return s.substr(nl,size-nl-nt);
+}
+
 // Small utility that cats a space and an integer to an input string.
 inline std::string strint (const std::string& s, const int i) {
   std::stringstream ss;

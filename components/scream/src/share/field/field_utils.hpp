@@ -1,7 +1,29 @@
+#ifndef SCREAM_FIELD_UTILS_HPP
+#define SCREAM_FIELD_UTILS_HPP
+
 #include "field_tag.hpp"
 #include "share/util/scream_std_utils.hpp"
 
 namespace scream {
+
+// How a field has to be init-ed
+enum class InitType {
+  Zero,         // Should be zero-ed out
+  Initializer,  // A FieldInitializer object should take care of this
+  None          // No initialization is needed/expected
+};
+
+inline std::string e2str (const InitType e) {
+  std::string s;
+  switch (e) {
+    case InitType::None:        s = "None";         break;
+    case InitType::Zero:        s = "Zero";         break;
+    case InitType::Initializer: s = "Initializer";  break;
+    default: s = "INVALID";
+  }
+
+  return s;
+}
 
 // The type of the layout, that is, the kind of field it represent.
 enum class LayoutType {
@@ -100,3 +122,4 @@ inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
 
 } // namespace scream
 
+#endif // SCREAM_FIELD_UTILS_HPP

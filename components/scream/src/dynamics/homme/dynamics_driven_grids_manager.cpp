@@ -3,7 +3,7 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 
 #include "share/grid/se_grid.hpp"
-#include "share/remap/inverse_remapper.hpp"
+#include "share/grid/remap/inverse_remapper.hpp"
 
 // Get all Homme's config properties
 #include "hommexx_dimensions.hpp"

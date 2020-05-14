@@ -16,7 +16,20 @@ namespace scream
 
 class AtmosphereProcess;
 
-// A small class to hold info about a field (everything except the actual field values)
+/*
+ * A small class to contain meta-data about a field
+ *
+ * The FieldHeader class is itself a container of other
+ * more speicific classes, such as FieldIdentifier
+ * (which contains information used to uniquely identify
+ * the field) or FieldTracking (which contains info used
+ * to track access to the field).
+ * There is also 'extra_data', which is a sort of fall-back
+ * option, for the meta-data that does not follow under
+ * any pre-defined category, and that is not general enough
+ * to warrant a new sub-object or a specific named member/method.
+ */
+
 class FieldHeader {
 public:
 
@@ -53,7 +66,6 @@ public:
   // Get the tracking
   const FieldTracking& get_tracking () const { return m_tracking; }
         FieldTracking& get_tracking ()       { return m_tracking; }
-
 
   // Get the allocation properties
   const FieldAllocProp& get_alloc_properties () const { return m_alloc_prop; }
