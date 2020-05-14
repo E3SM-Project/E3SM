@@ -365,6 +365,31 @@ def get_test_case_procs(suite_tag):  # {{{
                 name = case.attrib['name']
                 cases.append(name)
 
+            prereqs = list()
+            for config_prereq in config_root.iter('prerequisite'):
+                prereq = dict()
+                for tag in ['core', 'configuration', 'resolution', 'test']:
+                    prereq[tag] = config_prereq.attrib[tag]
+
+                # Make sure the prerequisite is already in the test suite
+                found = False
+                for other_name, other_test in testcases.items():
+                    match = [prereq[tag] == other_test[tag] for tag in
+                             ['core', 'configuration', 'resolution', 'test']]
+                    if all(match):
+                        found = True
+                        prereq['name'] = other_name
+                        break
+
+                if not found:
+                    raise ValueError(
+                        'Prerequisite of {} does not precede it in the test '
+                        'suite: {} {} {} {}'.format(
+                            test_name, prereq['core'], prereq['configuration'],
+                            prereq['resolution'], prereq['test']))
+
+                prereqs.append(prereq)
+
             del config_root
             del config_tree
 
@@ -403,7 +428,9 @@ def get_test_case_procs(suite_tag):  # {{{
                                     'test': test_test,
                                     'path': test_path,
                                     'procs': procs,
-                                    'threads': threads}
+                                    'threads': threads,
+                                    'prereqs': prereqs}
+
     return testcases  # }}}
 
 
