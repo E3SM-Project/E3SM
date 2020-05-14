@@ -12,20 +12,11 @@
       are: grid, docn_presaero and all configuration
       attributes from the config_cache.xml file (with keys converted to upper-case).
 
-      strm_year_first is the first year of the stream data that will be used
-      strm_year_last  is the last  year of the stream data that will be used
-      strm_year_align is the model year that will be aligned with stream data for year_first
-
       Replace any instance of the following substring indicators with the appropriate values:
       %y    = year from the range yearfirst to yearlast
       %ym   = year-month from the range yearfirst to yearlast with all 12 months
       %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
 
-      In docn_in,  streams namelist input has the form
-      streams = 'stream1.txt year_align year_first year_last ',
-      'stream2.txt year_align year_first year_last ',
-      ...
-      'streamN.txt year_align year_first year_last '
       Each mode below, except for presaero, has a set of streams associated with it
       The presaero stream, is associated with all modes
 
@@ -36,7 +27,7 @@
   -->
 
   <!-- ========================================================================================  -->
-  <!-- Stream file variables                                                                     -->
+  <!-- Stream xml file variables                                                                 -->
   <!-- ========================================================================================  -->
 
   <entry id="streamslist">
@@ -73,13 +64,25 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value grid=".+"				>$DIN_LOC_ROOT/share/meshes/rx1_nomask_181022_newareas_ESMFmesh.nc</value>
-      <value grid="a%T31.*_oi%T31"		>$DIN_LOC_ROOT/share/meshes/T31_040122_ESMFmesh.nc</value>
-      <value grid="a%1.9x2.5.*_oi%1.9x2.5"	>$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc</value>
-      <value grid="a%0.9x1.25.*_oi%0.9x1.25"	>$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc</value>
-      <value grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc</value>
+      <value grid=".+"				>
+	$DIN_LOC_ROOT/share/meshes/rx1_nomask_181022_newareas_ESMFmesh.nc
+      </value>
+      <value grid="a%T31.*_oi%T31"		>
+	$DIN_LOC_ROOT/share/meshes/T31_040122_ESMFmesh.nc
+      </value>
+      <value grid="a%1.9x2.5.*_oi%1.9x2.5"	>
+	$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc
+      </value>
+      <value grid="a%0.9x1.25.*_oi%0.9x1.25"	>
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
+      <value grid="a%0.47x0.63.*_oi%0.47x0.63"	>
+	$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc
+      </value>
       <!-- <value grid="a%0.23x0.31.*_oi%0.23x0.31"	>fill this in</value> -->
-      <value grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc</value>
+      <value grid="a%4x5.*_m%gx3v7"	        >
+	$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc
+      </value>
     </values>
   </entry>
 
@@ -89,10 +92,18 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="prescribed" >$SSTICE_DATA_FILENAME</value>
-      <value stream="aquapfile"  >$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/$DOCN_AQP_FILENAME</value>
-      <value stream="som"        >$DIN_LOC_ROOT/ocn/docn7/SOM/$DOCN_SOM_FILENAME</value>
-      <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
+      <value stream="prescribed" >
+	$SSTICE_DATA_FILENAME
+      </value>
+      <value stream="aquapfile"  >
+	$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/$DOCN_AQP_FILENAME
+      </value>
+      <value stream="som"        >
+	$DIN_LOC_ROOT/ocn/docn7/SOM/$DOCN_SOM_FILENAME
+      </value>
+      <value stream="interannual">
+	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2014_c150416.nc
+      </value>
     </values>
   </entry>
 
@@ -179,25 +190,13 @@
     </values>
   </entry>
 
-  <!-- ========================================================================================  -->
-  <!-- DOCN Namelists                                                                            -->
-  <!-- ========================================================================================  -->
-
-  <!-- =========================================  -->
-  <!--- shr_strmdata_nml       -->
-  <!-- =========================================  -->
-
   <entry id="mapalgo" per_stream_entry="true">
-    <type>char(30)</type>
+    <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
     <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are copy by index, set to special value,
-      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-      in "j" direction, or bilinear.
-      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      type of mapping from stream mesh -> model mesh
     </desc>
     <values>
       <value>bilinear</value>
@@ -205,13 +204,12 @@
   </entry>
 
   <entry id="tintalgo" per_stream_entry="true">
-    <type>char(30)</type>
+    <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
-      array (up to 30 elements) of time interpolation options associated with the array of
-      streams.
+      time interpolation options of stream time to model time
       valid values: lower,upper,nearest,linear,coszen
       lower   = Use lower time-value
       upper   = Use upper time-value
@@ -225,38 +223,36 @@
   </entry>
 
   <entry id="taxmode" per_stream_entry="true">
-    <type>char(30)</type>
+    <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>
     <desc>
-      array of time axis modes associated with the array of streams for
-      handling data outside the specified stream time axis.
-      valid options are to cycle the data based on the first, last, and
-      align settings associated with the stream dataset, to extend the first
-      and last valid value indefinitely, or to limit the interpolated data
-      to fall only between the least and greatest valid value of the time array.
-      valid values: cycle,extend,limit
-      extend = extrapolate before and after the period by using the first or last value.
-      cycle  = cycle between the range of data
-      limit  = restrict to the period for which the data is valid
+      specifies how to handle data outside the specified stream time
+      axis.  valid options are to cycle the data based on the first,
+      last, and align settings associated with the stream dataset, to
+      extend the first and last valid value indefinitely, or to limit
+      the interpolated data to fall only between the least and
+      greatest valid value of the time array.  
+      valid values: cycle,extend,limit 
+      ==> extend = extrapolate before and after the period by using the first or last value.  
+      ==> cycle = cycle between the range of data 
+      ==> limit = restrict to the period for which the data is valid
     </desc>
     <values>
       <value>cycle</value>
-      <value stream="prescribed" sstice_stream="WRFDATA">limit</value>
     </values>
   </entry>
 
   <entry id="readmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
-      array (up to 30 elements) of reading mode associated with the array of
-      streams.  specifies the mode of reading temporal stream dataset.
-      valid options are "single" (read temporal dataset one at a time) or
-      "full_file" (read all entires of temporal dataset in a given netcdf file)
+      mode of reading temporal stream dataset.  valid options are
+      "single" (read temporal dataset one at a time) or "full_file"
+      (read all entires of temporal dataset in a given netcdf file)
       valid values: single,full_file
     </desc>
     <values>
@@ -267,10 +263,10 @@
   <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
-      array (up to 30 elements) of delta time ratio limits placed on the
-      time interpolation associated with the array of streams.  this real
+      delta time ratio limits placed on the  time interpolation associated 
+      with the array of streams.  this real
       value causes the model to stop if the ratio of the running maximum
       delta time divided by the minimum delta time is greater than the
       dtlimit for that stream.  for instance, with daily data, the delta
@@ -290,7 +286,7 @@
   <entry id="vectors">
     <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       list of paired colon delimited field names that should be treated as
       vectors when carrying out spatial interpolation.  unlike other
@@ -302,25 +298,6 @@
     </desc>
     <values>
       <value>null</value>
-    </values>
-  </entry>
-
-  <entry id="streams" skip_default_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      character array (up to 30 elements) of stream input files.  this
-      string is actually parsed by a stream method and so the format is
-      specified by the stream module.  this string consists of a
-      "stream_input_filename year_align year_first year_last".  the
-      stream_input_filename is a stream text input file and the format and
-      options are described elsewhere.  year_align, year_first, and
-      year_last provide information about the time axis of the file and how
-      to relate the input time axis to the model time axis.
-    </desc>
-    <values>
-      <value></value>
     </values>
   </entry>
 

@@ -547,9 +547,9 @@ class NamelistGenerator(object):
                     input_data_list.write(string)
         self.update_shr_strdata_nml(config, stream, stream_path)
 
-    def create_nuopc_stream_file_and_update_shr_strdata_nml(self, config, caseroot, #pylint:disable=too-many-locals
-                                                            streams, stream_path, data_list_path):
-        """Write the XML file for all component streams.
+    def create_nuopc_stream_files(self, config, caseroot, #pylint:disable=too-many-locals
+                                  streams, stream_path, data_list_path):
+        """Write the XML files for all component streams.
 
         Arguments:
         `config` - Used to look up namelist defaults. This is used *in addition*
@@ -638,15 +638,12 @@ class NamelistGenerator(object):
                 for i, filename in enumerate(stream_datafiles.split("\n")):
                     if filename.strip() == '':
                         continue
-                    #filepath = os.path.join(stream_data_filepath, filename.strip())
                     string = "file{:d} = {}\n".format(i+1, filename)
                     hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
                     if hashValue not in lines_hash:
                         input_data_list.write(string)
         with open(stream_path, 'a') as stream_file:
             stream_file.write("</file>\n")
-
-#        self.update_shr_strdata_nml(config, stream, stream_path)
 
     def update_shr_strdata_nml(self, config, stream, stream_path):
         """Updates values for the `shr_strdata_nml` namelist group.

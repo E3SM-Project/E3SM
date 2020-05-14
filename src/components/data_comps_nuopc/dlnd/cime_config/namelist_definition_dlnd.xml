@@ -147,21 +147,13 @@
     </values>
   </entry>
 
-  <!-- ========================================================================================  -->
-  <!-- DLND Namelists                                                                            -->
-  <!-- ========================================================================================  -->
-
-  <!-- =========================================  -->
-  <!--- shr_strmdata_nml -->
-  <!-- =========================================  -->
-
   <entry id="mapmask"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
-      array (up to 30 elements) of masking algorithms for mapping input data
+      masking algorithms for mapping input data
       associated with the array of streams.  valid options are map only from
       valid src points, map only to valid destination points, ignore all
       masks, map only from valid src points to valid destination points.
@@ -177,7 +169,7 @@
     <group>streams_file</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
     <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
+      fill algorithms associated with the array
       of streams.  valid options are copy by index, set to special value,
       nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
       in "j" direction, or bilinear.
@@ -194,7 +186,7 @@
     <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
-      array (up to 30 elements) of time interpolation options associated with the array of
+      time interpolation options associated with the array of
       streams.
       valid values: lower,upper,nearest,linear,coszen
       lower   = Use lower time-value
@@ -237,7 +229,7 @@
     <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
-      array (up to 30 elements) of reading mode associated with the array of
+      reading mode associated with the array of
       streams.  specifies the mode of reading temporal stream dataset.
       valid options are "single" (read temporal dataset one at a time) or
       "full_file" (read all entires of temporal dataset in a given netcdf file)
@@ -253,7 +245,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <desc>
-      array (up to 30 elements) of delta time ratio limits placed on the
+      delta time ratio limits placed on the
       time interpolation associated with the array of streams.  this real
       value causes the model to stop if the ratio of the running maximum
       delta time divided by the minimum delta time is greater than the
@@ -286,25 +278,6 @@
     </desc>
     <values>
       <value>null</value>
-    </values>
-  </entry>
-
-  <entry id="streams"  skip_default_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      character array (up to 30 elements) of stream input files.  this
-      string is actually parsed by a stream method and so the format is
-      specified by the stream module.  this string consists of a
-      "stream_input_filename year_align year_first year_last".  the
-      stream_input_filename is a stream text input file and the format and
-      options are described elsewhere.  year_align, year_first, and
-      year_last provide information about the time axis of the file and how
-      to relate the input time axis to the model time axis.
-    </desc>
-    <values>
-      <value></value>
     </values>
   </entry>
 

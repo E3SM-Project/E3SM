@@ -20,12 +20,6 @@
     %ym   => year-month from the range yearfirst to yearlast with all 12 months
     %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
 
-    In datm_in, streams namelist input has the form
-     streams = 'stream1.txt year_align year_first year_last ',
-               'stream2.txt year_align year_first year_last ',
-                ...
-               'streamN.txt year_align year_first year_last '
-
     Each mode below, except for presaero, has a set of streams associated with it
     The presaero stream, is associated with all modes
 
@@ -179,7 +173,7 @@
   -->
 
   <!-- ========================================================================================  -->
-  <!-- Stream file variables                                                                     -->
+  <!-- Stream xml file variables                                                                 -->
   <!-- ========================================================================================  -->
 
   <entry id="streamslist">
@@ -268,6 +262,21 @@
       <value stream="co2tseries">
 	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/atm/datm7/CO2/  -->
       </value> 
+      <value stream="presaero.clim_1850">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
+      <value stream="presaero.clim_2000">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
+      <value stream="presaero.clim_2010">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
+      <value stream="presaero.clim_1850-2000">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
+      <value stream="presaero.SSP">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
       <!-- <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value> -->
       <!-- <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
       <!-- <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value> -->
@@ -279,11 +288,6 @@
       <!-- <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value> -->
       <!-- <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value> -->
       <!-- <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value> -->
-      <!-- <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value> -->
-      <!-- <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value> -->
-      <!-- <value stream="presaero.clim_2010">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value> -->
-      <!-- <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value> -->
-      <!-- <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value> -->
       <!-- <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value> -->
       <!-- <value stream="topo.cplhist">null</value> -->
     </values>
@@ -2264,18 +2268,10 @@
     </values>
   </entry>
 
-  <!-- ========================================================================================  -->
-  <!-- DATM Namelists                                                                            -->
-  <!-- ========================================================================================  -->
-
-  <!-- =========================================  -->
-  <!--- shr_strmdata_nml                          -->
-  <!-- =========================================  -->
-
   <entry id="mapmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
       array (up to 30 elements) of masking algorithms for mapping input data
@@ -2292,7 +2288,7 @@
   <entry id="mapalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
     <desc>
       array (up to 30 elements) of fill algorithms associated with the array
@@ -2314,7 +2310,7 @@
   <entry id="tintalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
       array (up to 30 elements) of time interpolation options associated with the array of
@@ -2373,7 +2369,7 @@
   <entry id="taxmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>
     <desc>
       array of time axis modes associated with the array of streams for
@@ -2396,7 +2392,7 @@
   <entry id="readmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
       array (up to 30 elements) of reading mode associated with the array of
@@ -2413,7 +2409,7 @@
   <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       array (up to 30 elements) of delta time ratio limits placed on the
       time interpolation associated with the array of streams.  this real
@@ -2444,7 +2440,7 @@
   <entry id="vectors">
     <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       list of paired colon delimited field names that should be treated as
       vectors when carrying out spatial interpolation.  unlike other
@@ -2465,7 +2461,7 @@
   <entry id="streams" skip_default_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       character array (up to 30 elements) of stream input files.  this
       string is actually parsed by a stream method and so the format is
