@@ -147,7 +147,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
 # }}}
 
 
-def process_test_clean(test_tag, work_dir, suite_script):  # {{{
+def process_test_clean(test_tag, work_dir):  # {{{
     dev_null = open('/dev/null', 'a')
 
     # Process test attributes
@@ -304,7 +304,7 @@ def clean_suite(suite_tag, work_dir):  # {{{
     for child in suite_tag:
         # Process <test> children within the <regression_suite>
         if child.tag == 'test':
-            process_test_clean(child, work_dir, regression_script)
+            process_test_clean(child, work_dir)
 # }}}
 
 
