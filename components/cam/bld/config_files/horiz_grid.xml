@@ -69,6 +69,7 @@
 <!-- Spectral Element w/ Regional Refinement -->
 <horiz_grid dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           ncol="92558"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         ncol="89147"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_conus_x4v1_lowcon.pg2"     ncol="39620"  csne="0" csnp="4" npg="2" />
 <horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1"          ncol="130088" csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1.pg2"      ncol="57816"  csne="0" csnp="4" npg="2" />
 <horiz_grid dyn="se" hgrid="ne0np4_antarcticax4v1"            ncol="109883" csne="0" csnp="4" npg="0" />
