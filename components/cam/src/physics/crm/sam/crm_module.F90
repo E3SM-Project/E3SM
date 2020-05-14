@@ -245,6 +245,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !$omp target enter data map(alloc: colprec  )
   !$omp target enter data map(alloc: colprecs )
 
+  !$omp target enter data map(alloc: crm_rad_temperature )
+  !$omp target enter data map(alloc: crm_rad_qv )
+  !$omp target enter data map(alloc: crm_rad_qc )
+  !$omp target enter data map(alloc: crm_rad_qi )
+  !$omp target enter data map(alloc: crm_rad_cld )
+  !$omp target enter data map(alloc: crm_rad_qrad )
+
+  !$omp target enter data map(alloc: crm_state_u_wind )
+  !$omp target enter data map(alloc: crm_state_v_wind )
+  !$omp target enter data map(alloc: crm_state_w_wind )
+  !$omp target enter data map(alloc: crm_state_temperature )
+  !$omp target enter data map(alloc: crm_state_qt )
+  !$omp target enter data map(alloc: crm_state_qp )
+  !$omp target enter data map(alloc: crm_state_qn )
+
   !$omp target update to(crm_input)
   !$omp target update to(crm_output)
   !$omp target update to(crm_rad)
@@ -374,9 +389,24 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
   call t_startf('crm_gpu_region')
+#if defined(_OPENACC)
+  !$acc wait(asyncid)
+#elif defined(_OPENMP)
+  !$omp taskwait
+  ! update data at device 
+  call update_device_crm()
+  call update_device_grid()
+  call update_device_params()
+  call update_device_vars()
+#endif
+
 
   !  Initialize CRM fields:
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4) 
+#endif
   do k = 1 , nzm
     do j = 1 , ny
       do i = 1 , nx
@@ -397,7 +427,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   ! limit the velocity at the very first step:
   if(u(1,1,1,1).eq.u(1,2,1,1).and.u(1,3,1,2).eq.u(1,4,1,2)) then
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp taraget teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
@@ -423,7 +457,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
 
   ! Populate microphysics array from crm_state
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1 , nzm
     do j = 1 , ny
       do i = 1 , nx
@@ -478,12 +516,20 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   ! initialize sgs fields
   call sgs_init(ncrms)
 
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do 
+#endif
   do icrm = 1 , ncrms
     colprec (icrm)=0
     colprecs(icrm)=0
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = 1 , nzm
     do icrm = 1 , ncrms
       u0   (icrm,k)=0.
@@ -498,8 +544,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       tke0 (icrm,k)=0.0
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k=1,nzm
     do j=1,ny
       do i=1,nx
@@ -508,57 +557,158 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                                                         -fac_cond*qpl(icrm,i,j,k)-fac_sub*qpi(icrm,i,j,k)
 
           tmp = (qpl(icrm,i,j,k)+qpi(icrm,i,j,k))*crm_input%pdel(icrm,plev-k+1)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           colprec (icrm)=colprec (icrm)+tmp
 
           tmp = qpi(icrm,i,j,k)*crm_input%pdel(icrm,plev-k+1)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           colprecs(icrm)=colprecs(icrm)+tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           u0   (icrm,k)=u0   (icrm,k)+u(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           v0   (icrm,k)=v0   (icrm,k)+v(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           t0   (icrm,k)=t0   (icrm,k)+t(icrm,i,j,k)
 
           tmp = t(icrm,i,j,k)+fac_cond*qpl(icrm,i,j,k)+fac_sub*qpi(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           t00  (icrm,k)=t00  (icrm,k)+tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tabs0(icrm,k)=tabs0(icrm,k)+tabs(icrm,i,j,k)
 
           tmp = qv(icrm,i,j,k)+qcl(icrm,i,j,k)+qci(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           q0   (icrm,k)=q0   (icrm,k)+tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           qv0  (icrm,k)=qv0  (icrm,k)+qv(icrm,i,j,k)
 
           tmp = qcl(icrm,i,j,k) + qci(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           qn0  (icrm,k)=qn0  (icrm,k)+tmp
 
           tmp = qpl(icrm,i,j,k) + qpi(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           qp0  (icrm,k)=qp0  (icrm,k)+tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tke0 (icrm,k)=tke0 (icrm,k)+sgs_field(icrm,i,j,k,1)
         enddo
       enddo
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k=1,nzm
     do icrm = 1 , ncrms
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       u0   (icrm,k) = u0   (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       v0   (icrm,k) = v0   (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       t0   (icrm,k) = t0   (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       t00  (icrm,k) = t00  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       tabs0(icrm,k) = tabs0(icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       q0   (icrm,k) = q0   (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       qv0  (icrm,k) = qv0  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       qn0  (icrm,k) = qn0  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       qp0  (icrm,k) = qp0  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+     !$acc atomic update
+#elif defined(_OPENMP)
+     !$omp atomic update
+#endif
       tke0 (icrm,k) = tke0 (icrm,k) * factor_xy
       l = plev-k+1
       uln  (icrm,l) = min( umax, max(-umax,crm_input%ul(icrm,l)) )
@@ -578,8 +728,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       qg0  (icrm,k) = crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)
     end do ! k
   end do ! icrm
-
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do
+#endif
   do icrm = 1 , ncrms
     uhl(icrm) = u0(icrm,1)
     vhl(icrm) = v0(icrm,1)
@@ -616,7 +769,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   dep1a  = 0.
   con1a  = 0.
 #endif /* m2005 */
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp taraget teams distribute parallel do collapse(2)
+#endif
   do k = 1 , plev+1
     do icrm = 1 , ncrms
       if (k <= plev) then
@@ -661,7 +818,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       mdi_crm(icrm,k) = 0.
     enddo
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do 
+#endif
   do icrm = 1 , ncrms
     crm_output%jt_crm(icrm) = 0.
     crm_output%mx_crm(icrm) = 0.
@@ -726,8 +887,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   nstep = 0
   do while (nstep < nstop)
     nstep = nstep + 1
-
+#if defined(_OPENACC)
     !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do
+#endif
     do icrm = 1 , ncrms
       crm_output%timing_factor(icrm) = crm_output%timing_factor(icrm)+1
     enddo
@@ -737,7 +901,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !  to handle the cases when the flow being locally linearly unstable
     !------------------------------------------------------------------
     call kurant(ncrms)
+#if defined(_OPENACC)
     !$acc wait(asyncid)
+#elif defined(_OPENMP)
+    !$omp taskwait
+#endif
 
     do icyc=1,ncycle
       icycle = icyc
@@ -762,13 +930,22 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       call forcing(ncrms)
 
       ! Apply radiative tendency
+#if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(4)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
             do icrm = 1 , ncrms
               i_rad = (i-1) / (nx/crm_nx_rad) + 1
               j_rad = (j-1) / (ny/crm_ny_rad) + 1
+#if defined(_OPENACC)
+              !$acc atomic update
+#elif defined(_OPENMP)
+              !$omp atomic update
+#endif
               t(icrm,i,j,k) = t(icrm,i,j,k) + crm_rad_qrad(icrm,i_rad,j_rad,k)*dtn
             enddo
           enddo
@@ -882,7 +1059,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ! every subcycle time step??? +++mhwang
     call ecpp_crm_stat(ncrms)
 #endif
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j = 1 , ny
       do i = 1 , nx
         do icrm = 1 , ncrms
@@ -898,8 +1079,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop gang vector collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
@@ -909,7 +1093,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             cwp(icrm,i,j) = cwp(icrm,i,j)+tmp1
             cttemp(icrm,i,j) = max(cf3d(icrm,i,j,nz-k), cttemp(icrm,i,j))
             if(cwp(icrm,i,j).gt.cwp_threshold.and.flag_top(icrm,i,j)) then
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 crm_output%cldtop(icrm,l) = crm_output%cldtop(icrm,l) + 1
                 flag_top(icrm,i,j) = .false.
             endif
@@ -925,47 +1113,85 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             endif
             tmp1 = rho(icrm,k)*adz(icrm,k)*dz(icrm)
             if(tmp1*(qcl(icrm,i,j,k)+qci(icrm,i,j,k)).gt.cwp_threshold) then
+#if defined(_OPENACC)
                  !$acc atomic update
+#elif defined(_OPENMP)
+                 !$omp atomic update
+#endif
                  crm_output%cld(icrm,l) = crm_output%cld(icrm,l) + cf3d(icrm,i,j,k)
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).gt.2*wmin) then
                    tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * cf3d(icrm,i,j,k)
+#if defined(_OPENACC)
                    !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
+#endif
                    crm_output%mcup (icrm,l) = crm_output%mcup (icrm,l) + tmp
                    tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * (1.0 - cf3d(icrm,i,j,k))
+#if defined(_OPENACC)
                    !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
+#endif
                    crm_output%mcuup(icrm,l) = crm_output%mcuup(icrm,l) + tmp
                  endif
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).lt.-2*wmin) then
                    tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * cf3d(icrm,i,j,k)
+#if defined(_OPENACC)
                    !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
+#endif
                    crm_output%mcdn (icrm,l) = crm_output%mcdn (icrm,l) + tmp
                    tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * (1. - cf3d(icrm,i,j,k))
+#if defined(_OPENACC)
                    !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
+#endif
                    crm_output%mcudn(icrm,l) = crm_output%mcudn(icrm,l) + tmp
                  endif
             else
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).gt.2*wmin) then
                    tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k))
+#if defined(_OPENACC)
                    !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
+#endif
                    crm_output%mcuup(icrm,l) = crm_output%mcuup(icrm,l) + tmp
                  endif
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).lt.-2*wmin) then
                     tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k))
+#if defined(_OPENACC)
                    !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
+#endif
                    crm_output%mcudn(icrm,l) = crm_output%mcudn(icrm,l) + tmp
                  endif
             endif
-
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_output%gliqwp(icrm,l) = crm_output%gliqwp(icrm,l) + qcl(icrm,i,j,k)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_output%gicewp(icrm,l) = crm_output%gicewp(icrm,l) + qci(icrm,i,j,k)
           enddo
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop gang vector collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
@@ -974,28 +1200,63 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             ! by collecting statistics and doing radiation over column groups
             i_rad = (i-1) / (nx/crm_nx_rad) + 1
             j_rad = (j-1) / (ny/crm_ny_rad) + 1
-
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad_temperature(icrm,i_rad,j_rad,k) = crm_rad_temperature(icrm,i_rad,j_rad,k) + tabs(icrm,i,j,k)
             tmp = max(real(0.,crm_rknd),qv(icrm,i,j,k))
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad_qv         (icrm,i_rad,j_rad,k) = crm_rad_qv         (icrm,i_rad,j_rad,k) + tmp
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad_qc         (icrm,i_rad,j_rad,k) = crm_rad_qc         (icrm,i_rad,j_rad,k) + qcl(icrm,i,j,k)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad_qi         (icrm,i_rad,j_rad,k) = crm_rad_qi         (icrm,i_rad,j_rad,k) + qci(icrm,i,j,k)
             if (qcl(icrm,i,j,k) + qci(icrm,i,j,k) > 0) then
+#if defined(_OPENACC)
                !$acc atomic update
+#elif defined(_OPENMP)
+               !$omp atomic update
+#endif
                crm_rad_cld     (icrm,i_rad,j_rad,k) = crm_rad_cld        (icrm,i_rad,j_rad,k) + cf3d(icrm,i,j,k)
             endif
 #ifdef m2005
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad%nc         (icrm,i_rad,j_rad,k) = crm_rad%nc         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,incl)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad%ni         (icrm,i_rad,j_rad,k) = crm_rad%ni         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,inci)
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad%qs         (icrm,i_rad,j_rad,k) = crm_rad%qs         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,iqs )
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_rad%ns         (icrm,i_rad,j_rad,k) = crm_rad%ns         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,ins )
 #endif
           enddo
@@ -1005,7 +1266,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
     ! Diagnose mass fluxes to drive CAM's convective transport of tracers.
     ! definition of mass fluxes is taken from Xu et al., 2002, QJRMS.
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j=1, ny
       do i=1, nx
         do icrm = 1 , ncrms
@@ -1016,7 +1281,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
               qsat = qsatw_crm(tabs(icrm,i,j,kx),pres(icrm,kx))
               if(qcl(icrm,i,j,kx)+qci(icrm,i,j,kx).gt.min(real(1.e-5,crm_rknd),0.01*qsat)) then
                 tmp = rhow(icrm,k)*w(icrm,i,j,k)
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 mui_crm(icrm,l) = mui_crm(icrm,l)+tmp
               endif
             else if (w(icrm,i,j,k).lt.0.) then
@@ -1024,11 +1293,19 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
               qsat = qsatw_crm(tabs(icrm,i,j,kx),pres(icrm,kx))
               if(qcl(icrm,i,j,kx)+qci(icrm,i,j,kx).gt.min(real(1.e-5,crm_rknd),0.01*qsat)) then
                 tmp = rhow(icrm,k)*w(icrm,i,j,k)
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 mdi_crm(icrm,l) = mdi_crm(icrm,l)+tmp
               else if(qpl(icrm,i,j,kx)+qpi(icrm,i,j,kx).gt.1.0e-4) then
                 tmp = rhow(icrm,k)*w(icrm,i,j,k)
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 mdi_crm(icrm,l) = mdi_crm(icrm,l)+tmp
               endif
             endif
@@ -1036,25 +1313,44 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         enddo
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
           if(cwp(icrm,i,j).gt.cwp_threshold) then
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_output%cltot(icrm) = crm_output%cltot(icrm) + cttemp(icrm,i,j)
           endif
           if(cwph(icrm,i,j).gt.cwp_threshold) then
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_output%clhgh(icrm) = crm_output%clhgh(icrm) + chtemp(icrm,i,j)
           endif
           if(cwpm(icrm,i,j).gt.cwp_threshold) then
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_output%clmed(icrm) = crm_output%clmed(icrm) + cmtemp(icrm,i,j)
           endif
           if(cwpl(icrm,i,j).gt.cwp_threshold) then
+#if defined(_OPENACC)
             !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             crm_output%cllow(icrm) = crm_output%cllow(icrm) + cltemp(icrm,i,j)
           endif
         enddo
@@ -1073,8 +1369,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !========================================================================================
 
   tmp1 = crm_nx_rad_fac * crm_ny_rad_fac / real(nstop,crm_rknd)
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k=1,nzm
     do j=1,crm_ny_rad
       do i=1,crm_nx_rad
@@ -1096,7 +1395,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
   ! no CRM tendencies above its top
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = 1 , ptop-1
     do icrm = 1 , ncrms
       tln  (icrm,k) = crm_input%tl  (icrm,k)
@@ -1109,7 +1412,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
   !  Compute tendencies due to CRM:
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = ptop,plev
     do icrm = 1 , ncrms
       tln  (icrm,k) = 0.
@@ -1120,7 +1427,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       vln  (icrm,k) = 0.
     enddo
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do 
+#endif
   do icrm = 1 , ncrms
     colprec (icrm)=0
     colprecs(icrm)=0
@@ -1132,8 +1443,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   uln_esmt(ptop:plev,:) = 0.
   vln_esmt(ptop:plev,:) = 0.
 #endif /* MMF_ESMT */
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1,nzm
     do i=1,nx
       do j=1,ny
@@ -1141,29 +1455,69 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
           l = plev-k+1
 
           tmp = (qpl(icrm,i,j,k)+qpi(icrm,i,j,k))*crm_input%pdel(icrm,plev-k+1)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           colprec (icrm)= colprec (icrm)+tmp
 
           tmp = qpi(icrm,i,j,k)*crm_input%pdel(icrm,plev-k+1)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           colprecs(icrm)= colprecs(icrm)+tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic upate
+#endif
           tln(icrm,l)  = tln(icrm,l)  +tabs(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           qln(icrm,l)  = qln(icrm,l)  +qv(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           qccln(icrm,l)= qccln(icrm,l)+qcl(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           qiiln(icrm,l)= qiiln(icrm,l)+qci(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           uln(icrm,l)  = uln(icrm,l)  +u(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           vln(icrm,l)  = vln(icrm,l)  +v(icrm,i,j,k)
 
 #if defined(MMF_ESMT)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           uln_esmt(l,icrm) = uln_esmt(l,icrm)+u_esmt(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           vln_esmt(l,icrm) = vln_esmt(l,icrm)+v_esmt(icrm,i,j,k)
 #endif
         enddo ! j
@@ -1199,20 +1553,56 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 #endif /* MMF_MOMENTUM_FEEDBACK */
 
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = ptop , plev
     do icrm = 1 , ncrms
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       tln  (icrm,k) = tln  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       qln  (icrm,k) = qln  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       qccln(icrm,k) = qccln(icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       qiiln(icrm,k) = qiiln(icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       uln  (icrm,k) = uln  (icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       vln  (icrm,k) = vln  (icrm,k) * factor_xy
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = 1 , plev
     do icrm = 1 , ncrms
       crm_output%sltend (icrm,k) = cp * (tln  (icrm,k) - crm_input%tl  (icrm,k)) * icrm_run_time
@@ -1221,7 +1611,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%qiltend(icrm,k) =      (qiiln(icrm,k) - crm_input%qiil(icrm,k)) * icrm_run_time
     enddo
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do 
+#endif
   do icrm = 1 , ncrms
     crm_output%prectend (icrm) = (colprec (icrm)-crm_output%prectend (icrm))/ggr*factor_xy * icrm_run_time
     crm_output%precstend(icrm) = (colprecs(icrm)-crm_output%precstend(icrm))/ggr*factor_xy * icrm_run_time
@@ -1229,7 +1623,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   ! don't use CRM tendencies from two crm top levels
   ! radiation tendencies are added back after the CRM call (see crm_physics_tend)
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = ptop,ptop+1
     do icrm = 1 , ncrms
       crm_output%sltend (icrm,k) = 0.
@@ -1242,7 +1640,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !-------------------------------------------------------------
   !
   ! Save the last step to the permanent core:
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1 , nzm
     do j = 1 , ny
       do i = 1 , nx
@@ -1289,7 +1691,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
     enddo
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do 
+#endif
   do icrm = 1 , ncrms
     crm_output%z0m (icrm) = z0   (icrm)
     crm_output%taux(icrm) = taux0(icrm) / dble(nstop)
@@ -1300,67 +1706,182 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !  Diagnostics:
 
   ! hm add 9/7/11, change from GCM-time step avg to end-of-timestep
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4) 
+#endif
   do k=1,nzm
     do j=1,ny
       do i=1,nx
         do icrm=1,ncrms
           l = plev-k+1
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qc_mean(icrm,l) = crm_output%qc_mean(icrm,l) + qcl(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qi_mean(icrm,l) = crm_output%qi_mean(icrm,l) + qci(icrm,i,j,k)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qr_mean(icrm,l) = crm_output%qr_mean(icrm,l) + qpl(icrm,i,j,k)
 #ifdef sam1mom
           omg = max(real(0.,crm_rknd),min(real(1.,crm_rknd),(tabs(icrm,i,j,k)-tgrmin)*a_gr))
 
           tmp = qpi(icrm,i,j,k)*omg
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qg_mean(icrm,l) = crm_output%qg_mean(icrm,l) + tmp
 
           tmp = qpi(icrm,i,j,k)*(1.-omg)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qs_mean(icrm,l) = crm_output%qs_mean(icrm,l) + tmp
 #else
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qg_mean(icrm,l) = crm_output%qg_mean(icrm,l) + micro_field(icrm,i,j,k,iqg)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%qs_mean(icrm,l) = crm_output%qs_mean(icrm,l) + micro_field(icrm,i,j,k,iqs)
 
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%nc_mean(icrm,l) = crm_output%nc_mean(icrm,l) + micro_field(icrm,i,j,k,incl)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%ni_mean(icrm,l) = crm_output%ni_mean(icrm,l) + micro_field(icrm,i,j,k,inci)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%nr_mean(icrm,l) = crm_output%nr_mean(icrm,l) + micro_field(icrm,i,j,k,inr )
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%ng_mean(icrm,l) = crm_output%ng_mean(icrm,l) + micro_field(icrm,i,j,k,ing )
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           crm_output%ns_mean(icrm,l) = crm_output%ns_mean(icrm,l) + micro_field(icrm,i,j,k,ins )
 #endif /* sam1mom */
         enddo
       enddo
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = 1 , plev
     do icrm = 1 , ncrms
       crm_output%cld   (icrm,k) = min( 1._r8, crm_output%cld   (icrm,k) * factor_xyt )
       crm_output%cldtop(icrm,k) = min( 1._r8, crm_output%cldtop(icrm,k) * factor_xyt )
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%gicewp(icrm,k) = crm_output%gicewp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%gliqwp(icrm,k) = crm_output%gliqwp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%mcup  (icrm,k) = crm_output%mcup (icrm,k) * factor_xyt
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%mcdn  (icrm,k) = crm_output%mcdn (icrm,k) * factor_xyt
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%mcuup (icrm,k) = crm_output%mcuup(icrm,k) * factor_xyt
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%mcudn (icrm,k) = crm_output%mcudn(icrm,k) * factor_xyt
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%mctot (icrm,k) = crm_output%mcup(icrm,k) + crm_output%mcdn(icrm,k) + crm_output%mcuup(icrm,k) + crm_output%mcudn(icrm,k)
 
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%qc_mean(icrm,k) = crm_output%qc_mean(icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%qi_mean(icrm,k) = crm_output%qi_mean(icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%qs_mean(icrm,k) = crm_output%qs_mean(icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%qg_mean(icrm,k) = crm_output%qg_mean(icrm,k) * factor_xy
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       crm_output%qr_mean(icrm,k) = crm_output%qr_mean(icrm,k) * factor_xy
     enddo
   enddo
@@ -1402,16 +1923,22 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     crm_output%con_a (icrm,:) = crm_output%con_a (icrm,:) * factor_xyt / dt
   enddo
 #endif /* m2005 */
-
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do 
+#endif
   do icrm = 1 , ncrms
     crm_output%precc (icrm) = 0.
     crm_output%precl (icrm) = 0.
     crm_output%precsc(icrm) = 0.
     crm_output%precsl(icrm) = 0.
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(3)
+#endif
   do j=1,ny
     do i=1,nx
       do icrm = 1 , ncrms
@@ -1431,21 +1958,40 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
 
         if(precsfc(icrm,i,j).gt.10./86400.) then
+#if defined(_OPENACC)
            !$acc atomic update
+#elif defined(_OPENMP)
+           !$omp atomic update
+#endif
            crm_output%precc (icrm) = crm_output%precc (icrm) + precsfc(icrm,i,j)
+#if defined(_OPENACC)
            !$acc atomic update
+#elif defined(_OPENMP)
+           !$omp atomic update
+#endif
            crm_output%precsc(icrm) = crm_output%precsc(icrm) + precssfc(icrm,i,j)
         else
+#if defined(_OPENACC)
            !$acc atomic update
+#elif defined(_OPENMP)
+           !$omp atomic update
+#endif
            crm_output%precl (icrm) = crm_output%precl (icrm) + precsfc(icrm,i,j)
+#if defined(_OPENACC)
            !$acc atomic update
+#elif defined(_OPENMP)
+           !$omp atomic update
+#endif
            crm_output%precsl(icrm) = crm_output%precsl(icrm) + precssfc(icrm,i,j)
         endif
       enddo
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(3)
+#endif
   do j = 1 , ny
     do i = 1 , nx
       do icrm = 1 , ncrms
@@ -1453,8 +1999,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do
+#endif
   do icrm = 1 , ncrms
     crm_output%precc (icrm) = crm_output%precc (icrm)*factor_xy/1000.
     crm_output%precl (icrm) = crm_output%precl (icrm)*factor_xy/1000.
@@ -1469,8 +2018,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     crm_output%jt_crm(icrm) = plev * 1.0
     crm_output%mx_crm(icrm) = 1.0
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k=1, plev
     do icrm = 1 , ncrms
       crm_output%mu_crm(icrm,k)=0.5*(mui_crm(icrm,k)+mui_crm(icrm,k+1))
@@ -1490,11 +2042,19 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       endif
       if(abs(crm_output%mu_crm(icrm,k)).gt.1.0e-15.or.abs(crm_output%md_crm(icrm,k)).gt.1.0e-15) then
         tmp = k
+#if defined(_OPENACC)
         !$acc atomic update
+#elif defined(_OPENMP)
+        !$omp atomic update
+#endif
         crm_output%jt_crm(icrm) = min( tmp , crm_output%jt_crm(icrm) )
 
         tmp = k
+#if defined(_OPENACC)
         !$acc atomic update
+#elif defined(_OPENMP)
+        !$omp atomic update
+#endif
         crm_output%mx_crm(icrm) = max( tmp , crm_output%mx_crm(icrm) )
       endif
     enddo
@@ -1503,7 +2063,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !-------------------------------------------------------------
   !       Fluxes and other stat:
   !-------------------------------------------------------------
+#if defined(_OPENACC) 
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k=1,nzm
     do icrm = 1 , ncrms
       u2z = 0.
@@ -1582,8 +2146,14 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%t_ls      (icrm,l) = ttend(icrm,k)
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc wait(asyncid)
+#elif defined(_OPENMP)
+  !$omp target update from(crm_output)
+  !$omp target update from(crm_state)
+  !$omp target update from(crm_rad)
+  !$omp taskwait
+#endif
 
   call t_stopf('crm_gpu_region')
 
@@ -1692,6 +2262,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !$omp target exit data map(delete: qtot     )
   !$omp target exit data map(delete: colprec  )
   !$omp target exit data map(delete: colprecs )
+
+  !$omp target exit data map(delete: crm_rad_temperature )
+  !$omp target exit data map(delete: crm_rad_qv )
+  !$omp target exit data map(delete: crm_rad_qc )
+  !$omp target exit data map(delete: crm_rad_qi )
+  !$omp target exit data map(delete: crm_rad_cld )
+  !$omp target exit data map(delete: crm_rad_qrad )
+
+  !$omp target exit data map(delete: crm_state_u_wind )
+  !$omp target exit data map(delete: crm_state_v_wind )
+  !$omp target exit data map(delete: crm_state_w_wind )
+  !$omp target exit data map(delete: crm_state_temperature )
+  !$omp target exit data map(delete: crm_state_qt )
+  !$omp target exit data map(delete: crm_state_qp )
+  !$omp target exit data map(delete: crm_state_qn )
 #endif
   deallocate( t00)
   deallocate( tln)
@@ -1751,6 +2336,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !$omp target update to( qtot     )
     !$omp target update to( colprec  )
     !$omp target update to( colprecs )
+
+    !$omp target update to( crm_rad_temperature )
+    !$omp target update to( crm_rad_qv )
+    !$omp target update to( crm_rad_qc )
+    !$omp target update to( crm_rad_qi )
+    !$omp target update to( crm_rad_cld )
+    !$omp target update to( crm_rad_qrad )
+
+    !$omp target update to( crm_state_u_wind )
+    !$omp target update to( crm_state_v_wind )
+    !$omp target update to( crm_state_w_wind )
+    !$omp target update to( crm_state_temperature )
+    !$omp target update to( crm_state_qt )
+    !$omp target update to( crm_state_qp )
+    !$omp target update to( crm_state_qn )
   end subroutine update_device_crm
   ! update host from device
   subroutine update_host_crm()
@@ -1780,6 +2380,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !$omp target update from( qtot     )
     !$omp target update from( colprec  )
     !$omp target update from( colprecs )
+
+    !$omp target update from( crm_rad_temperature )
+    !$omp target update from( crm_rad_qv )
+    !$omp target update from( crm_rad_qc )
+    !$omp target update from( crm_rad_qi )
+    !$omp target update from( crm_rad_cld )
+    !$omp target update from( crm_rad_qrad )
+
+    !$omp target update from( crm_state_u_wind )
+    !$omp target update from( crm_state_v_wind )
+    !$omp target update from( crm_state_w_wind )
+    !$omp target update from( crm_state_temperature )
+    !$omp target update from( crm_state_qt )
+    !$omp target update from( crm_state_qp )
+    !$omp target update from( crm_state_qn )
   end subroutine update_host_crm
 #endif
 end subroutine crm
