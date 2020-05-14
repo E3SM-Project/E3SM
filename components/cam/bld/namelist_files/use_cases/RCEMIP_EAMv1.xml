@@ -4,83 +4,81 @@
 <!-- Orbital parameters cannot be set here, they need to be in drv_in -->
 <!-- see CAM_USER_MODS in cam/cime_config/config_component.xml -->
 
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <!-- Set Aquaplanet to True -->
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <aqua_planet>.true.</aqua_planet>
 
-<!-- ------------------------------------------------------------------------------------------ -->
-<!-- Solar data (insolation of 1365) -->
-<!-- ------------------------------------------------------------------------------------------ -->
-<!-- <solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1976-2007_ave_c20160517.nc</solar_data_file> -->
-<!-- <solar_data_ymd>20000101</solar_data_ymd> -->
-<!-- <solar_data_type>FIXED</solar_data_type> -->
-
+<!-- ======================================================================= -->
+<!-- Solar data -->
+<!-- ======================================================================= -->
 <solar_data_file      >atm/cam/solar/ape_solar_ave_tsi_1365.nc </solar_data_file>
 <solar_htng_spctrl_scl>.true. </solar_htng_spctrl_scl>
 <solar_data_type      >FIXED  </solar_data_type>
 
-<!-- ------------------------------------------------------------------------------------------ -->
-<!-- Revised physics constants for ape experiments (from CAM5/6 use case) -->
-<!-- ------------------------------------------------------------------------------------------ -->
-<!-- <sday>   86164.10063718943  </sday> -->
-<!-- <rearth> 6.37100e6          </rearth> -->
-<!-- <gravit> 9.79764         </gravit> -->
-<!-- <mwdry>  28.96623324623746  </mwdry> -->
-<!-- <mwh2o>  18.01618112892741  </mwh2o> -->
-<!-- <cpwv>   1.846e3         </cpwv> -->
+<!-- ======================================================================= -->
+<!-- Special settings for RCE mode -->
+<!-- ======================================================================= -->
 
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- slightly different values of basic parameter -->
+<rearth> 6.37100e6 </rearth>   	<!-- Earth radius [m] -->
+<gravit> 9.79764   </gravit> 	<!-- gravity [m/s^2] -->
+<cpwv>   1.846e3   </cpwv> 		<!-- specific heat of water vap [J/kg/K] -->
+
+<!-- Use reduced solar constant (i.e. TSI) - only works with RRTMGP -->
+<fixed_total_solar_irradiance>551.58</fixed_total_solar_irradiance>
+
+<!-- disable aerosol radiative calculations - only works with RRTMGP -->
+<do_aerosol_rad>.false.</do_aerosol_rad>
+
+<!-- Disable rotation effects -->
+<omega>0.0</omega>
+
+<!-- NOTE: solar zenith angle, sfc albedo, and min sfc wind are set via user mods -->
+<!-- see: cam/cime_config/usermods_dirs/rcemip/user_nl_cpl -->
+
+<!-- ======================================================================= -->
 <!-- Constant hydrometeor number -->
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <micro_do_nccons > .true.     </micro_do_nccons>
 <micro_do_nicons > .true.     </micro_do_nicons>
-<micro_nccons    > 70.0D6     </micro_nccons>
-<micro_nicons    > 0.0001D6   </micro_nicons>
+<micro_nccons    > 100.0D6    </micro_nccons>
+<micro_nicons    >   0.1D6    </micro_nicons>
 
 <ext_frc_specifier    > '' </ext_frc_specifier>
 <srf_emis_specifier   > '' </srf_emis_specifier>
 <tracer_cnst_specifier> '' </tracer_cnst_specifier>
 
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <!-- GHG values - co2 set by CCSM_CO2_PPMV in config_compset.xml -->
-<!-- ------------------------------------------------------------------------------------------ -->
-<ch4vmr>1.650e-6 </ch4vmr>
-<n2ovmr>0.306e-6 </n2ovmr>
-<f11vmr>0.0      </f11vmr>
-<f12vmr>0.0      </f12vmr>
+<!-- ======================================================================= -->
+<scenario_ghg> FIXED </scenario_ghg>
+<co2vmr>  348.0e-6 </co2vmr> 
+<n2ovmr>  306.0e-9 </n2ovmr>
+<ch4vmr> 1650.0e-9 </ch4vmr>
+<f11vmr> 0.0      </f11vmr>
+<f12vmr> 0.0      </f12vmr>
 
-<!-- 2000 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) -->
-<!-- <co2vmr>368.865e-6</co2vmr> Set by CCSM_CO2_PPMV in config_compset.xml -->
-<!-- <ch4vmr>1751.022e-9</ch4vmr> -->
-<!-- <n2ovmr>315.85e-9</n2ovmr> -->
-<!-- <f11vmr>676.0526e-12</f11vmr> -->
-<!-- <f12vmr>537.05e-12</f12vmr> -->
-
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <!-- zonally symmetric prescribed ozone -->
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <prescribed_ozone_type    > CYCLICAL              </prescribed_ozone_type>
 <prescribed_ozone_datapath> atm/cam/ozone         </prescribed_ozone_datapath>
 
-<!-- Zonally symmetric -->
-<prescribed_ozone_file    > apeozone_cam3_5_54.nc </prescribed_ozone_file>
-<prescribed_ozone_name    > OZONE                 </prescribed_ozone_name>
-<prescribed_ozone_cycle_yr> 1990                  </prescribed_ozone_cycle_yr>
+<!-- <prescribed_ozone_file    > apeozone_cam3_5_54.nc </prescribed_ozone_file> -->
+<!-- <prescribed_ozone_name    > OZONE                 </prescribed_ozone_name> -->
+<!-- <prescribed_ozone_cycle_yr> 1990                  </prescribed_ozone_cycle_yr> -->
 
-<!-- Realistic ozone distribution -->
-<!-- <prescribed_ozone_file    > ozone_1.9x2.5_L26_2000clim_c091112.nc </prescribed_ozone_file> -->
-<!-- <prescribed_ozone_name    > O3                    </prescribed_ozone_name> -->
-<!-- <prescribed_ozone_cycle_yr> 2000                  </prescribed_ozone_cycle_yr> -->
+<prescribed_ozone_file    > RCEMIP_ozone.c200211.nc </prescribed_ozone_file>
+<prescribed_ozone_name    > O3                 </prescribed_ozone_name>
+<prescribed_ozone_cycle_yr> 2000               </prescribed_ozone_cycle_yr>
 
-<!-- ========================================================================================== -->
-<!-- ------------------------------------------------------------------------------------------ -->
+<!-- ======================================================================= -->
 <!-- Non-aqua-planet specific settings -->
-<!-- ------------------------------------------------------------------------------------------ -->
-<!-- ========================================================================================== -->
+<!-- ======================================================================= -->
 
 <!-- Ice nucleation mods-->
-<use_hetfrz_classnuc       >.true.  </use_hetfrz_classnuc>
+<!-- <use_hetfrz_classnuc       >.true.  </use_hetfrz_classnuc> -->
 <use_preexisting_ice       >.false. </use_preexisting_ice>
 <hist_hetfrz_classnuc      >.false. </hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep         >.true.  </micro_mg_dcs_tdep>
@@ -126,9 +124,8 @@
 <zmconv_ke               >1.5E-6    </zmconv_ke>
 <effgw_oro               >0.25      </effgw_oro>
 <seasalt_emis_scale      >0.85      </seasalt_emis_scale>
-<dust_emis_fact          >0.95D0    </dust_emis_fact>
+<dust_emis_fact          >2.05D0    </dust_emis_fact>
 <clubb_gamma_coef        >0.32      </clubb_gamma_coef>
-<clubb_gamma_coefb        >0.32      </clubb_gamma_coefb>
 <clubb_C8                >4.3       </clubb_C8>
 <cldfrc2m_rhmaxi         >1.05D0    </cldfrc2m_rhmaxi>
 <clubb_c_K10             >0.3       </clubb_c_K10>
@@ -142,31 +139,22 @@
 <zmconv_mx_bot_lyr_adj   >2         </zmconv_mx_bot_lyr_adj>
 <taubgnd                 >2.5D-3    </taubgnd>
 <clubb_C1                >1.335     </clubb_C1>
-<clubb_C1b               >1.335     </clubb_C1b>
 <raytau0                 >5.0D0     </raytau0>
 <prc_coef1               >30500.0D0 </prc_coef1>
 <prc_exp                 >3.19D0    </prc_exp>
 <prc_exp1                >-1.2D0    </prc_exp1>
+<se_ftype                >2         </se_ftype>
 <clubb_C14               >1.3D0     </clubb_C14>
 <relvar_fix              >.true.    </relvar_fix>
 <mg_prc_coeff_fix        >.true.    </mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.    </rrtmg_temp_fix>
 
-<!-- External forcing for BAM or MAM -->
-<soag_ext_file ver="mam" >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc </soag_ext_file>
-
-<!-- Surface emissions for MAM4 -->
-<dms_emis_file          >atm/cam/chem/trop_mozart_aero/emis/DMSflux.2000.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160226.nc </dms_emis_file>
-
-<!-- Marine organic aerosol namelist settings -->
-<mam_mom_mixing_state   >3          </mam_mom_mixing_state>
-<mam_mom_cycle_yr       >1          </mam_mom_cycle_yr>
-<mam_mom_fixed_tod      >0          </mam_mom_fixed_tod>
-<mam_mom_fixed_ymd      >0          </mam_mom_fixed_ymd>
-<mam_mom_datatype       >'CYCLICAL' </mam_mom_datatype>
-<mam_mom_datapath       >'atm/cam/chem/trop_mam/marine_BGC/' </mam_mom_datapath>
-<mam_mom_filename       >'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc' </mam_mom_filename> 
-<mam_mom_specifier      >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'      </mam_mom_specifier>
+<!-- Prescribed aerosols -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file>mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<prescribed_aero_type>CYCLICAL</prescribed_aero_type>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
 <!-- Stratospheric ozone (Linoz) -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>

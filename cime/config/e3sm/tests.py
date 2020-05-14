@@ -37,15 +37,14 @@ _TESTS = {
         },
 
     "e3sm_atm_developer" : {
+        "inherit" : ("eam_theta_pg2"),
         "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.cam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
-            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L",
-            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
-            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2",
+            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L"
             )
         },
 
@@ -54,6 +53,7 @@ _TESTS = {
         "tests" : (
             "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
             "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
+            "ERP_Ln9.ne4_ne4.F-EAMv1-RCEMIP",
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
@@ -113,8 +113,6 @@ _TESTS = {
             "ERS.ne30_g16_rx1.A",
             "SEQ.f19_g16.X",
             "ERIO.ne30_g16_rx1.A",
-            "HOMME_P24.f19_g16_rx1.A",
-            "HOMMEBFB_P24.f19_g16_rx1.A",
             "NCK.f19_g16_rx1.A",
             "SMS.ne30_f19_g16_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
@@ -126,6 +124,14 @@ _TESTS = {
             )
         },
 
+    "homme_integration" : {
+        "time"    : "0:45:00",
+        "tests"   : (
+            "HOMME_P24.f19_g16_rx1.A",
+            "HOMMEBFB_P24.f19_g16_rx1.A",
+            )
+        },    
+    
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
@@ -229,6 +235,15 @@ _TESTS = {
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
                  "ERS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
                  "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
+                 )
+    },
+    "eam_theta_pg2" : {
+        "share"    : True,
+        "time"     : "02:00:00",
+        "tests"    : (
+                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
+                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2",
+                 "ERS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2"
                  )
     },
     "e3sm_bench_hires_g" : {

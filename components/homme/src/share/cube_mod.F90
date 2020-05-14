@@ -1897,7 +1897,7 @@ contains
 !  equi-angular cubed-sphere mapping for non-cubed sphere grids, hence the 
 !  need for a new map)
 !
-  function ref2sphere_double(a,b, corners3D, ref_map, corners, facenum) result(sphere)
+  function ref2sphere_double(a,b, corners3D, ref_map, corners, facenum, cart) result(sphere)
     real(kind=real_kind)    :: a,b
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)            :: corners3D(4)
@@ -1905,6 +1905,7 @@ contains
     ! only needed for gnominic maps
     type (cartesian2d_t), optional  :: corners(4)  
     integer, optional               :: facenum    
+    type (cartesian3D_t), optional  :: cart ! cartesian equivalent of 'sphere'
 
 
     if (ref_map==0) then
@@ -1915,19 +1916,20 @@ contains
 !       sphere = ref2sphere_gnomonic_double(a,b,corners,face_no)
        call abortmp('gnomonic map not yet coded')
     elseif (ref_map==2) then
-       sphere = ref2sphere_elementlocal_double(a,b,corners3D)
+       sphere = ref2sphere_elementlocal_double(a,b,corners3D,cart)
     else
        call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
   end function
 
-  function ref2sphere_longdouble(a,b, corners3D, ref_map, corners, facenum) result(sphere)
+  function ref2sphere_longdouble(a,b, corners3D, ref_map, corners, facenum, cart) result(sphere)
     real(kind=longdouble_kind)    :: a,b
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)          :: corners3D(4)
     type (cartesian2d_t), optional  :: corners(4)
     integer, optional               :: facenum
     integer :: ref_map
+    type (cartesian3D_t), optional  :: cart
 
     if (ref_map==0) then
        if (.not. present(corners) ) &
@@ -1937,7 +1939,7 @@ contains
 !       sphere = ref2sphere_gnomonic_longdouble(a,b,corners,face_no)
        call abortmp('gnomonic map not yet coded')
     elseif (ref_map==2) then
-       sphere = ref2sphere_elementlocal_longdouble(a,b,corners3D)
+       sphere = ref2sphere_elementlocal_longdouble(a,b,corners3D,cart)
     else
        call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
@@ -1975,7 +1977,6 @@ contains
          + pi*qj*corners(4)%y 
     ! map from [pi/2,pi/2] equ angular cube face to sphere:   
     sphere=projectpoint(cart,face_no)
-
   end function ref2sphere_equiangular_double
 
 
@@ -2011,7 +2012,6 @@ contains
          + pi*qj*corners(4)%y 
     ! map from [pi/2,pi/2] equ angular cube face to sphere:   
     sphere=projectpoint(cart,face_no)
-
   end function ref2sphere_equiangular_longdouble
 
 
@@ -2033,36 +2033,39 @@ contains
 ! is to utilize a map (X,Y,X) --> (X,Y,Z)/SQRT(X**2+Y**2+Z**2) to
 ! project the quad to the unit sphere.
 ! -----------------------------------------------------------------------------------------
-  function ref2sphere_elementlocal_double(a,b, corners3D) result(sphere)
+  function ref2sphere_elementlocal_double(a,b, corners3D, cart) result(sphere)
     use element_mod, only : element_t
     implicit none
     real(kind=real_kind)    :: a,b
     type (cartesian3d_t)          :: corners3D(4)
     type (spherical_polar_t)      :: sphere
+    type (cartesian3D_t), optional  :: cart
     real(kind=real_kind)               ::  q(4) ! local
 
     q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
     q=q/4.0d0;
-    sphere=ref2sphere_elementlocal_q(q,corners3D)
+    sphere=ref2sphere_elementlocal_q(q,corners3D,cart)
   end function 
-  function ref2sphere_elementlocal_longdouble(a,b, corners3D) result(sphere)
+  function ref2sphere_elementlocal_longdouble(a,b, corners3D, cart) result(sphere)
     use element_mod, only : element_t
     implicit none
     real(kind=longdouble_kind)    :: a,b
     type (cartesian3d_t)          :: corners3D(4)
     type (spherical_polar_t)      :: sphere
+    type (cartesian3D_t), optional  :: cart
     real(kind=real_kind)               ::  q(4) ! local
 
     q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
     q=q/4.0d0;
-    sphere=ref2sphere_elementlocal_q(q,corners3D)
+    sphere=ref2sphere_elementlocal_q(q,corners3D,cart)
   end function 
 
-  function ref2sphere_elementlocal_q(q, corners) result(sphere)
+  function ref2sphere_elementlocal_q(q, corners, cart_out) result(sphere)
     implicit none
     real(kind=real_kind)          :: q(4)
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)          :: corners(4)
+    type (cartesian3D_t), optional  :: cart_out
     ! local
     type (cartesian3d_t)                 :: cart   
     real(kind=real_kind)               ::  c(3,4),  xx(3), r
@@ -2088,6 +2091,7 @@ contains
 !XYZ coords of the point to lon/lat
     sphere=change_coordinates(cart)
 
+    if (present(cart_out)) cart_out = cart
   end function 
 
 

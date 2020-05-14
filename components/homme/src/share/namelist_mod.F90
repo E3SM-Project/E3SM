@@ -108,9 +108,9 @@ module namelist_mod
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
   use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
 #ifdef CAM
-  use time_mod,       only: tstep, nsplit, smooth, phys_tscale
+  use time_mod,       only: tstep, nsplit, smooth
 #else
-  use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit, phys_tscale
+  use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit
 #endif
   use parallel_mod,   only: parallel_t,  iam, abortmp, &
        partitionfornodes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
@@ -178,7 +178,7 @@ module namelist_mod
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
     integer :: se_ftype, se_limiter_option
-    integer :: se_phys_tscale, se_nsplit
+    integer :: se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
     integer :: i, ii, j
     integer  :: ierr
@@ -273,7 +273,6 @@ module namelist_mod
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
-      se_phys_tscale, &
       se_tstep
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
@@ -351,32 +350,16 @@ module namelist_mod
     ! Set the default partmethod
     ! ==========================
     PARTMETHOD    = SFCURVE
-!    PARTMETHOD    = RECURSIVE
     COORD_TRANSFORM_METHOD = SPHERE_COORDS
     Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
     uselapi       = .TRUE.
-#ifdef CAM
-    ! set all CAM defaults
-    ! CAM requires forward-in-time, subcycled dynamics
-    ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type              = 1      ! forward-in-time RK methods
-    qsplit=4; rk_stage_user=3
-    se_limiter_option=4
-    se_ftype = 2
-    se_partmethod = -1
-    se_ne       = -1
-    se_topology = 'none'
-    se_phys_tscale=0
-    se_nsplit = 1
-    se_tstep = -1
-    qsize = qsize_d
-#else
+    se_tstep=-1
+#ifndef CAM
     ndays         = 0
     nmax          = 12
     nthreads = 1
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
-    phys_tscale=0
     nsplit = 1
     pertlim = 0.0_real_kind
 #endif
@@ -394,10 +377,10 @@ module namelist_mod
     mesh_file='none'
     ne              = 0
     transport_alg = 0
-    semi_lagrange_cdr_alg = 2
+    semi_lagrange_cdr_alg = 3
     semi_lagrange_cdr_check = .false.
-    semi_lagrange_hv_q = 0
-    semi_lagrange_nearest_point_lev = 0
+    semi_lagrange_hv_q = 1
+    semi_lagrange_nearest_point_lev = 256
     disable_diagnostics = .false.
     se_fv_phys_remap_alg = 1
 
@@ -628,13 +611,26 @@ module namelist_mod
 ! ^ ifndef CAM
        ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
             dt_remap_factor, dt_tracer_factor)
-    end if
 
 #ifdef CAM
-    if(se_partmethod /= -1) partmethod = se_partmethod
-    if(se_ne /= -1) ne = se_ne
-    if(se_topology .ne. 'none') topology = se_topology
+       limiter_option=se_limiter_option
+       partmethod = se_partmethod
+       ne         = se_ne
+       topology   = se_topology
+       qsize      = qsize_d
+       nsplit     = se_nsplit
+       tstep      = se_tstep
+       if (tstep > 0) then
+          if (par%masterproc .and. nsplit > 0) then
+             write(iulog,'(a,i3,a)') &
+                  'se_tstep and se_nsplit were specified; changing se_nsplit from ', &
+                  nsplit, ' to -1.'
+          end if
+          nsplit = -1
+       end if
 #endif
+    end if
+
 
     call MPI_barrier(par%comm,ierr)
 
@@ -655,21 +651,7 @@ module namelist_mod
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
 
-#ifdef CAM
-    phys_tscale     = se_phys_tscale
-    limiter_option  = se_limiter_option
-    nsplit          = se_nsplit
-    tstep           = se_tstep
-    if (se_tstep > 0) then
-       if (par%masterproc .and. se_nsplit > 0) then
-          write(iulog,'(a,i3,a)') &
-               'se_tstep and se_nsplit were specified; changing se_nsplit from ', &
-               se_nsplit, ' to -1.'
-       end if
-       se_nsplit = -1
-       nsplit = -1
-    end if
-#else
+#ifndef CAM
     if(test_case == "dcmip2012_test4") then
        rearth = rearth/dcmip4_X
        omega = omega*dcmip4_X
@@ -697,7 +679,6 @@ module namelist_mod
 #endif
     call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
@@ -869,11 +850,8 @@ module namelist_mod
 #else
        cubed_sphere_map=0  ! default is equi-angle gnomonic
 #endif
-       if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
-#ifdef CAM
-       if (fv_nphys.gt.0) cubed_sphere_map=2  ! must use element_local for FV physics grid
-#endif
     endif
+    if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
 !logic around different hyperviscosity options
@@ -891,7 +869,6 @@ module namelist_mod
     ftype = se_ftype
 
 #ifdef _PRIM
-    rk_stage_user=3  ! 3d PRIM code only supports 3 stage RK tracer advection
     if (limiter_option==8 .or. limiter_option==84 .or. limiter_option == 9) then
        if (hypervis_subcycle_q/=1 .and. transport_alg == 0) then
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
@@ -951,6 +928,13 @@ module namelist_mod
     if(nu_s<0)    nu_s  = nu
     if(nu_q<0)    nu_q  = nu
     if(nu_div<0)  nu_div= nu
+    if(nu_p<0) then                                                                           
+       if (rsplit==0) then                                                                    
+          nu_p=0  ! eulerian code traditionally run with nu_p=0                               
+       else                                                                                   
+          nu_p=nu                                                                             
+       endif                                                                                  
+    endif 
     if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
     if(dcmip16_mu_q<0)    dcmip16_mu_q  = dcmip16_mu_s
 
@@ -1043,7 +1027,6 @@ module namelist_mod
        write(iulog,*)"hypervis_subcycle     = ",hypervis_subcycle
        write(iulog,*)"hypervis_subcycle_tom = ",hypervis_subcycle_tom
        write(iulog,*)"hypervis_subcycle_q   = ",hypervis_subcycle_q
-       !write(iulog,*)"psurf_vis: ",psurf_vis
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q

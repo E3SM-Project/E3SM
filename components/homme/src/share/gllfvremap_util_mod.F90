@@ -34,8 +34,12 @@ module gllfvremap_util_mod
   public :: &
        ! Test gllfvremap's main API.
        gfr_check_api, &
-       ! Convert a topography file from pure GLL to physgrid format.
-       gfr_convert_topo
+       ! Convert a topography file from pure GLL to physgrid format, as a
+       ! convenience to avoid going through the full tool chain; see next
+       ! function.
+       gfr_convert_topo, &
+       ! One part of the full physgrid from-scratch topography tool chain.
+       gfr_pgn_to_smoothed_topo
 
 contains
   
@@ -300,11 +304,14 @@ contains
                 !  True omega on GLL and FV grids.
                 call get_field(elem(ie), 'omega', wr1, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, wr1, wr2)
-                !  Convert omega_p on FV grid to omega. When omega_p
-                !  is removed, remove the pressure calculations here.
+                !  Convert omega_p on FV grid to omega for preqx
                 call get_field(elem(ie), 'p', pressure, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, pressure, p_fv)
+#ifdef MODEL_THETA_L
+                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))
+#else                
                 wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))*p_fv(:nf,:nf,:)
+#endif                
                 !  Compare.
                 global_shared_buf(ie,1) = sum((wr1(:nf,:nf,:) - wr2(:nf,:nf,:))**2)
                 global_shared_buf(ie,2) = sum(wr2(:nf,:nf,:)**2)
@@ -449,10 +456,10 @@ contains
                 call get_temperature(elem(ie), wr1, hvcoord, nt1)
                 global_shared_buf(ie,1) = sum(wr*(elem(ie)%derived%FT - wr1)**2)
                 global_shared_buf(ie,2) = sum(wr*wr1**2)                
-                wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
+                wr1 = wr1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
                 global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
                 wr1 = elem(ie)%derived%FT
-                wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
+                wr1 = wr1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
                 global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
              end if
           else
@@ -569,7 +576,7 @@ contains
 #ifndef CAM
     use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_dyn_to_fv_phys_topo_data, gfr_f_get_latlon
-    use interpolate_driver_mod, only: pio_read_gll_topo_file, pio_write_physgrid_topo_file
+    use interpolate_driver_mod, only: read_gll_topo_file, write_physgrid_topo_file
     use physical_constants, only: dd_pi
 #endif
     use parallel_mod, only: parallel_t
@@ -586,11 +593,11 @@ contains
     character(len=varname_len) :: fieldnames(5)
 
     nf2 = nphys*nphys
-    call gfr_init(par, elem, nphys, check=.true.)
+    call gfr_init(par, elem, nphys)
 
     allocate(gll_fields(np,np,nelemd,5), pg_fields(nf2,nelemd,5), latlon(nf2,nelemd,2))
 
-    call pio_read_gll_topo_file(intopofn, elem, par, gll_fields, fieldnames)
+    call read_gll_topo_file(intopofn, elem, par, gll_fields, fieldnames)
 
     do vari = 1,size(fieldnames)
        if (trim(fieldnames(vari)) == 'PHIS') then
@@ -622,11 +629,112 @@ contains
 
     call gfr_finish()
 
-    call pio_write_physgrid_topo_file(intopofn, outtopoprefix, elem, par, &
+    call write_physgrid_topo_file(intopofn, outtopoprefix, elem, par, &
          gll_fields, pg_fields, latlon, fieldnames, nphys, &
          'Converted from '// trim(intopofn) // ' by HOMME gfr_convert_topo')
 
     deallocate(gll_fields, pg_fields, latlon)
 #endif
   end subroutine gfr_convert_topo
+
+  function gfr_pgn_to_smoothed_topo(par, elem, output_nphys, intopofn, outtopoprefix) result(stat)
+#ifndef CAM
+    use common_io_mod, only: varname_len
+    use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_fv_phys_to_dyn_topo, &
+         gfr_dyn_to_fv_phys_topo, gfr_f_get_latlon
+    use interpolate_driver_mod, only: read_physgrid_topo_file, write_physgrid_smoothed_phis_file
+    use physical_constants, only: dd_pi
+    use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
+    use bndry_mod, only: bndry_exchangev
+    use prim_driver_base, only: smooth_topo_datasets
+    use hybrid_mod, only: hybrid_t, hybrid_create
+#endif
+    use parallel_mod, only: parallel_t
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: output_nphys
+    character(*), intent(in) :: intopofn, outtopoprefix
+    integer :: stat
+
+#ifndef CAM
+    real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:)
+    integer :: intopo_nphys, ie, i, j, k, nvar, nf2
+    character(len=varname_len) :: fieldnames(1)
+    real(real_kind) :: rad2deg
+    logical :: write_latlon
+    type(hybrid_t) :: hybrid
+
+    write_latlon = .false.
+
+    nvar = 1
+    if (write_latlon) nvar = 3
+
+    allocate(gll_fields(np,np,nelemd,nvar), pg_fields(np*np,nelemd,nvar))
+
+    ! Read the unsmoothed physgrid topo data from cube_to_target's first
+    ! run. Here, pg4 will give the best quality.
+    fieldnames(1) = 'PHIS'
+    call read_physgrid_topo_file(intopofn, elem, par, fieldnames, intopo_nphys, pg_fields, stat)
+    if (stat /= 0) return
+
+    ! Map this topo field to GLL.
+    call gfr_init(par, elem, intopo_nphys)
+    call gfr_fv_phys_to_dyn_topo(par, elem, pg_fields(:,:,1))
+    do ie = 1,nelemd
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+    end do
+    call bndry_exchangeV(par, edge_g)
+    do ie = 1,nelemd
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+    end do
+    call gfr_finish()
+
+    ! Smooth on the GLL grid.
+    hybrid = hybrid_create(par, 0, 1)
+    call smooth_topo_datasets(elem, hybrid, 1, nelemd)
+    do ie = 1,nelemd
+       gll_fields(:,:,ie,1) = elem(ie)%state%phis
+    end do
+
+    ! Map the GLL data to the target physgrid, e.g., pg2.
+    call gfr_init(par, elem, output_nphys)
+    call gfr_dyn_to_fv_phys_topo(par, elem, pg_fields(:,:,1))
+    if (write_latlon) then
+       rad2deg = 180.0_real_kind/dd_pi
+       do ie = 1,nelemd
+          do j = 1,output_nphys
+             do i = 1,output_nphys
+                k = output_nphys*(j-1) + i
+                call gfr_f_get_latlon(ie, i, j, pg_fields(k,ie,2), pg_fields(k,ie,3))
+             end do
+          end do
+       end do
+       nf2 = output_nphys*output_nphys
+       pg_fields(:nf2,:,2:3) = pg_fields(:nf2,:,2:3)*rad2deg
+       do ie = 1,nelemd
+          do j = 1,np
+             do i = 1,np
+                gll_fields(i,j,ie,2) = elem(ie)%spherep(i,j)%lat*rad2deg
+                gll_fields(i,j,ie,3) = elem(ie)%spherep(i,j)%lon*rad2deg
+             end do
+          end do
+       end do
+    end if
+    call gfr_finish()
+
+    ! Write the netcdf file that will be used as the --smoothed-topography file
+    ! in the second run of cube_to_target. Only ncol, PHIS are needed for
+    ! this. We include PHIS_d for use in the final assembled GLL-physgrid topo
+    ! file. Optionally, we also include physgrid and GLL lat-lon data for easy
+    ! visualization using just this file.
+    call write_physgrid_smoothed_phis_file(outtopoprefix, elem, par, &
+         gll_fields, pg_fields, output_nphys, &
+         'Created from '// trim(intopofn) // ' by HOMME gfr_pgn_to_smoothed_topo', &
+         write_latlon)
+
+    deallocate(gll_fields, pg_fields)
+    stat = 0
+#endif
+  end function gfr_pgn_to_smoothed_topo
 end module gllfvremap_util_mod

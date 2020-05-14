@@ -61,17 +61,17 @@
     <OS>CNL</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
-    <PROJECT>acme</PROJECT>
-    <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
+    <PROJECT>e3sm</PROJECT>
+    <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_HTML_ROOT>/global/cfs/cdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
     <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/global/cfs/cdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/global/cfs/cdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/global/cfs/cdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -126,6 +126,7 @@
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
         <command name="rm">craype-hugepages2M</command>
+        <command name="rm">darshan</command>
         
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
@@ -196,8 +197,6 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-
-      <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -211,17 +210,17 @@
     <OS>CNL</OS>
     <COMPILERS>intel,gnu,intel19</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
-    <PROJECT>acme</PROJECT>
-    <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
+    <PROJECT>e3sm</PROJECT>
+    <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_HTML_ROOT>/global/cfs/cdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
     <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/global/cfs/cdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/global/cfs/cdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/global/cfs/cdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -275,7 +274,8 @@
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
         <command name="rm">craype-hugepages2M</command>
-
+        <command name="rm">darshan</command>
+        
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
         <command name="load">PrgEnv-intel</command>
@@ -357,8 +357,6 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-
-      <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
     </environment_variables>
 
     <environment_variables mpilib="mpt">
@@ -713,31 +711,28 @@
         <command name="add">+cmake-3.12.4</command>
       </modules>
       <modules compiler="gnu">
-        <command name="add">+gcc-6.2.0</command>
-        <command name="add">+szip-2.1-gcc-6.2.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mpi-serial">
-        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-serial-gcc6.2.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="add">+mpich-3.2-gcc-6.2.0</command>
-        <command name="add">+hdf5-1.8.16-gcc-6.2.0-mpich-3.2-parallel</command>
-        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-parallel-gcc6.2.0-mpich-3.2</command>
+        <command name="add">+gcc-8.2.0</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables>
-      <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
-    </environment_variables>
     <environment_variables mpilib="mpi-serial">
-      <!-- We currently don't have a soft env for serial hdf5 -->
-      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-6.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <!-- We currently don't have a soft env for serial hdf5 and szip built with gcc 8.2.0 -->
+      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <!-- We currently don't have a soft env for netcdf serial built with gcc 8.2.0 -->
+      <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-serial/gcc-8.2.0</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5dump))}</env>
-      <!-- We currently don't have a soft env for pnetcdf 1.8.1 -->
-      <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.8.1/gcc-6.2.0</env>
+      <!-- We currently don't have a soft env for parallel hdf5 and szip built with gcc 8.2.0 -->
+      <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <!-- We currently don't have a soft env for mpich 3.3.2 built with gcc 8.2.0 -->
+      <env name="PATH">/soft/apps/packages/climate/mpich/3.3.2/gcc-8.2.0/bin:$ENV{PATH}</env>
+      <!-- We currently don't have a soft env for parallel hdf5 built with mpich 3.3.2 and gcc 8.2.0 -->
+      <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0</env>
+      <!-- We currently don't have a soft env for netcdf parallel built with mpich 3.3.2 and gcc 8.2.0 -->
+      <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/mpich-3.3.2/gcc-8.2.0</env>
+      <!-- We currently don't have a soft env for pnetcdf built with mpich 3.3.2 and gcc 8.2.0 -->
+      <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.12.0/mpich-3.3.2/gcc-8.2.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
@@ -1443,7 +1438,7 @@
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_3,ClimateEnergy_4,OceanClimate_2</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_4</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1517,6 +1512,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
@@ -1927,7 +1923,7 @@
         <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
-        <command name="load">pgi/18.10</command>
+        <command name="load">pgi/19.10</command>
       </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
@@ -3052,6 +3048,7 @@
     <!-- <RUNDIR>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/$CASE/run</RUNDIR> -->
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <!-- Ref: https://www.olcf.ornl.gov/for-users/system-user-guides/summit/ -->
     <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
 
@@ -3067,7 +3064,6 @@
     <environment_variables>
       <env name="COMPILER">$COMPILER</env>
       <env name="MPILIB">$MPILIB</env>
-      <env name="OMP_STACKSIZE">128M</env>
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="NETCDF_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
@@ -3076,7 +3072,7 @@
       <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="OMP_NUM_THREADS">$ENV{OMP_NUM_THREADS}</env>
+      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
@@ -3085,6 +3081,68 @@
     <environment_variables mpilib="!mpi-serial" compiler="pgiacc">
       <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env>
     </environment_variables>
+  </machine>
+
+  <machine MACH="modex">
+      <DESC>Medium sized linux cluster at BNL, torque scheduler.</DESC>
+      <OS>LINUX</OS>
+      <COMPILERS>gnu</COMPILERS>
+      <MPILIBS>openmpi,mpi-serial</MPILIBS>
+      <CIME_OUTPUT_ROOT>/data/$ENV{USER}</CIME_OUTPUT_ROOT>
+      <DIN_LOC_ROOT>/data/Model_Data/cesm_input_datasets/</DIN_LOC_ROOT>
+      <DIN_LOC_ROOT_CLMFORC>/data/Model_Data/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+      <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+      <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+      <CCSM_CPRNC>/data/software/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+      <GMAKE_J>4</GMAKE_J>
+      <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+      <SUPPORTED_BY>sserbin@bnl.gov</SUPPORTED_BY>
+      <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+      <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
+      <COSTPES_PER_NODE>12</COSTPES_PER_NODE>
+      <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+      <mpirun mpilib="mpi-serial">
+      		<executable></executable>
+      </mpirun>
+      <mpirun mpilib="default">
+          <executable>mpirun</executable>
+          <arguments>
+              <arg name="num_tasks">-np {{ total_tasks }}</arg>
+              <arg name="tasks_per_node">-npernode $MAX_TASKS_PER_NODE</arg>
+          </arguments>
+      </mpirun>
+      <module_system type="module">
+          <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+          <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+          <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+          <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+          <cmd_path lang="sh">module</cmd_path>
+          <cmd_path lang="csh">module</cmd_path>
+          <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+          <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+          <modules>
+              <command name="purge"/>
+              <command name="load">perl/5.22.1</command>
+              <command name="load">libxml2/2.9.2</command>
+              <command name="load">maui/3.3.1</command>
+              <command name="load">python/2.7.15</command>
+              <command name="load">python/3.6.2</command> 
+          </modules>
+          <modules compiler="gnu">
+              <command name="load">gcc/5.4.0</command>
+              <command name="load">gfortran/5.4.0</command>
+              <command name="load">hdf5/1.8.19fates</command>
+              <command name="load">netcdf/4.4.1.1-gnu540-fates</command>
+              <command name="load">openmpi/2.1.1-gnu540</command>
+          </modules>
+          <modules compiler="gnu" mpilib="!mpi-serial">
+              <command name="load">openmpi/2.1.1-gnu540</command>
+          </modules>
+       </module_system>
+       <environment_variables>
+         <env name="HDF5_HOME">/data/software/hdf5/1.8.19fates</env>
+         <env name="NETCDF_PATH">/data/software/netcdf/4.4.1.1-gnu540-fates</env>
+       </environment_variables>
   </machine>
 
   <default_run_suffix>

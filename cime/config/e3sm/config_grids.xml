@@ -582,6 +582,15 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="r0125_r0125_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">r0125</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS15to5</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS15to5</mask>
+    </model_grid>
     <!--  spectral element grids -->
 
     <model_grid alias="ne4_oQU480">
@@ -1014,9 +1023,9 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30pg2_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30pg2_r05_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4.pg2</grid>
-      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
       <grid name="ocnice">oEC60to30v3_ICG</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
@@ -1227,6 +1236,26 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
+    <model_grid alias="ne256pg2_r0125_oRRS18to6v3">
+      <grid name="atm">ne256np4.pg2</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne512pg2_r0125_oRRS18to6v3">
+      <grid name="atm">ne512np4.pg2</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <model_grid alias="ne512np4_360x720cru_ne512np4">
       <grid name="atm">ne512np4</grid>
       <grid name="lnd">360x720cru</grid>
@@ -1255,6 +1284,16 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oRRS15to5</mask>
+    </model_grid>
+
+    <model_grid alias="ne1024pg2_r0125_oRRS18to6v3">
+      <grid name="atm">ne1024np4.pg2</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
     </model_grid>
 
     <model_grid alias="ne1024np4_360x720cru_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -1579,6 +1618,26 @@
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r05_oECv3">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r05_ne30pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">ne30np4.pg2</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -2002,8 +2061,8 @@
     <domain name="ne30np4.pg2">
       <nx>21600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_oECv3.190806.nc</file>
-      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_oECv3.190806.nc</file>
+      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_oEC60to30v3.200220.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_oEC60to30v3.200220.nc</file>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_gx1v6.190806.nc</file>
       <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_gx1v6.190806.nc</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
@@ -2083,6 +2142,34 @@
       <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024np4_oRRS15to5.190514.nc</file>
       <desc>ne1024np4 is Spectral Elem 3km grid:</desc>
     </domain>
+
+    <domain name="ne256np4.pg2">
+      <nx>1572864</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne256pg2_oRRS18to6v3.200212.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne256pg2_oRRS18to6v3.200212.nc</file>
+      <desc>ne256np4.pg2 is Spectral Elem 12km grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne512np4.pg2">
+      <nx>6291456</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne512pg2_oRRS18to6v3.200212.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne512pg2_oRRS18to6v3.200212.nc</file>
+      <desc>ne512np4.pg2 is Spectral Elem 6km grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne1024np4.pg2">
+      <nx>25165824</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne1024pg2_oRRS18to6v3.200212.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne1024pg2_oRRS18to6v3.200212.nc</file>
+      <desc>ne1024np4.pg2 is Spectral Elem 3km grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+
+
+    
 
     <!--=====================================================================-->
     <!--=====================================================================-->
@@ -2257,7 +2344,9 @@
       <ny>1440</ny>
       <file grid="atm" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
+      <file grid="atm" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
       <file grid="lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
+      <file grid="lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
@@ -2557,11 +2646,19 @@
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="oEC60to30v3_ICG">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_oEC60to30v3_aave.161222.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_oEC60to30v3_conserve.161222.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_oEC60to30v3_conserve.161222.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30np4_aave.161222.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30np4_aave.161222.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_mono.200220.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4.pg2" ocn_grid="oEC60to30v3">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_mono.200220.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_oEC60to30v3_bilin.200220.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne30pg2_mono.200220.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4" ocn_grid="oEC60to30wLI">
@@ -2623,6 +2720,13 @@
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_mono.191016.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_mono.191016.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_mono.191016.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4.pg2" lnd_grid="r05">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_mono.200220.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_bilin.200220.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_mono.200220.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_mono.200220.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4" lnd_grid="r0125">
@@ -2720,6 +2824,59 @@
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/360x720cru/map_360x720cru_to_ne1024np4_mono.190508.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/360x720cru/map_360x720cru_to_ne1024np4_mono.190508.nc</map>
     </gridmap>
+
+    <gridmap atm_grid="ne256np4.pg2" ocn_grid="oRRS18to6v3">
+      <!-- 13km atm /  18to6 ocean, so use bilin for state -->
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_oRRS18to6v3_nco.200212.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_oRRS18to6v3_bilin.200212.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_oRRS18to6v3_bilin.200212.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ne256pg2/map_oRRS18to6v3_to_ne256pg2_nco.200212.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ne256pg2/map_oRRS18to6v3_to_ne256pg2_nco.200212.nc</map>
+    </gridmap>
+    
+    <gridmap atm_grid="ne256np4.pg2" lnd_grid="r0125">
+      <!-- 13km atm /  13km land, so use bilin for state -->
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_r0125_mono.200212.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_r0125_bilin.200212.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne256pg2/map_r0125_to_ne256pg2_mono.200212.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne256pg2/map_r0125_to_ne256pg2_bilin.200212.nc</map>
+    </gridmap>
+
+
+    <gridmap atm_grid="ne512np4.pg2" ocn_grid="oRRS18to6v3">
+      <!-- 6km atm /  18to6 ocean, so use bilin for state -->
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne512pg2/map_ne512pg2_to_oRRS18to6v3_nco.200212.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne512pg2/map_ne512pg2_to_oRRS18to6v3_bilin.200212.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne512pg2/map_ne512pg2_to_oRRS18to6v3_bilin.200212.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ne512pg2/map_oRRS18to6v3_to_ne512pg2_nco.200212.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ne512pg2/map_oRRS18to6v3_to_ne512pg2_nco.200212.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne512np4.pg2" lnd_grid="r0125">
+      <!-- 6km atm /  13km land.  downscale atm->land, land->atm use bilinear -->
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne512pg2/map_ne512pg2_to_r0125_mono.200212.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne512pg2/map_ne512pg2_to_r0125_mono.200212.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne512pg2/map_r0125_to_ne512pg2_mono.200212.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne512pg2/map_r0125_to_ne512pg2_bilin.200212.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne1024np4.pg2" ocn_grid="oRRS18to6v3">
+      <!-- 3km atm /  18to6 ocean.  downscale atm->ocn -->
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_oRRS18to6v3_nco.200212.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_oRRS18to6v3_nco.200212.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_oRRS18to6v3_nco.200212.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_oRRS18to6v3_to_ne1024pg2_nco.200212.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_oRRS18to6v3_to_ne1024pg2_nco.200212.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne1024np4.pg2" lnd_grid="r0125">
+      <!-- 3km atm /  13km land.  downscale atm->land.  land->atm use bilinear-->
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
+    </gridmap>
+
 
     <gridmap atm_grid="ne0np4_enax4v1" lnd_grid="ne30np4">
       <map name="ATM2LND_FMAPNAME">cpl/cpl6/map_enax4v1_TO_ne30np4_aave.170517.nc</map>
@@ -3015,6 +3172,11 @@
     <gridmap atm_grid="ne30np4" rof_grid="r05">
       <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
       <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4.pg2" rof_grid="r05">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_mono.200220.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_mono.200220.nc</map>
     </gridmap>
 
     <gridmap atm_grid="0.9x1.25" rof_grid="r05">

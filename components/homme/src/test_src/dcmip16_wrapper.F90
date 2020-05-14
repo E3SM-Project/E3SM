@@ -10,7 +10,8 @@ module dcmip16_wrapper
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
-use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode
+use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
+     sub_case
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -304,6 +305,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
+        if (sub_case==2) lon=mod(lon+pi,2*pi)  ! shift initial condition
 
         ! get surface pressure ps(i,j) at lat, lon, z=0, ignore all other output
         z_i(i,j,k)=0; call supercell_test(lon,lat,p(i,j,1),z_i(i,j,k),1,u(i,j,1),v(i,j,1),&
@@ -326,7 +328,8 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
-
+        if (sub_case==2) lon=mod(lon+pi,2*pi)  ! shift initial condition
+        
         ! get surface pressure ps(i,j) at lat, lon, z=0
         z(i,j,k)=0; call supercell_test(lon,lat,p(i,j,k),z(i,j,k),1,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),ps(i,j),rho(i,j,k),q(i,j,k,1),pert)
 
@@ -647,7 +650,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   call t_stopf('gfr_dyn_to_fv_phys')
 
   do ie = nets,nete
-     precl(:,:,ie) = -one
      ! for max_w
      call get_field(elem(ie), 'w', w, hvcoord, nt, ntQ)
 
@@ -687,8 +689,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      rho_dry_fv(:nf,:nf,:) = (1 - Q_fv(:nf,:nf,:,iqv))*rho_fv(:nf,:nf,:)
 
      ! Compute form of exner pressure expected by Kessler physics.
-     exner_kess_fv = (p_fv/p0)**(Rgas/Cp)
-     theta_kess_fv = T_fv/exner_kess_fv
+     exner_kess_fv(:nf,:nf,:) = (p_fv(:nf,:nf,:)/p0)**(Rgas/Cp)
+     theta_kess_fv(:nf,:nf,:) = T_fv(:nf,:nf,:)/exner_kess_fv(:nf,:nf,:)
 
      u0(:nf,:nf,:) = u_fv(:nf,:nf,:); v0(:nf,:nf,:) = v_fv(:nf,:nf,:); T0(:nf,:nf,:) = T_fv(:nf,:nf,:)
      Q0_fv(:nf,:nf,:,:) = Q_fv(:nf,:nf,:,:);
@@ -711,6 +713,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
            zi_c = zi_fv(i,j,nlevp:1:-1)
            th_c = theta_kess_fv(i,j,nlev:1:-1)
 
+           call gfr_f_get_latlon(ie, i, j, lat, lon)
+
            ! Get forced versions of u,v,p,qv,qc,qr. rho is constant.
            call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, &
                 z_c, zi_c, lat, nlev, precl_fv(i,j,1), pbl_type, prec_type)
@@ -722,7 +726,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
            Q_fv(i,j,:,3) = qr_c(nlev:1:-1)
            theta_kess_fv(i,j,:) = th_c(nlev:1:-1)
 
-           call gfr_f_get_latlon(ie, i, j, lat, lon)
            do k=1,nlev
               call tendency_terminator(lat*rad2dg, lon*rad2dg, Q_fv(i,j,k,4), Q_fv(i,j,k,5), &
                    dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))

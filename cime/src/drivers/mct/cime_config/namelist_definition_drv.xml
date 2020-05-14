@@ -513,6 +513,21 @@
     </values>
   </entry>
 
+  <entry id="constant_zenith_deg">
+    <type>real</type>
+    <category>orbital</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Constant solar zenith angle value in degrees for idealized configurations
+      such as radiative-convective equilibrium experiments. This is disabled when 
+      the value is less than 0
+      Default: -1
+    </desc>
+    <values>
+      <value>-1</value>
+    </values>
+  </entry>
+
   <entry id="wv_sat_scheme">
     <type>char</type>
     <category>wv_sat</category>

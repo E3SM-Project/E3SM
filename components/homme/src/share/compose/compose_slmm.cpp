@@ -1,4 +1,5 @@
 #include <mpi.h>
+//#include "gptl.h"
 
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
@@ -3646,6 +3647,27 @@ void calc_q_extrema (CslMpi& cm, const Int& nets, const Int& nete) {
   }  
 }
 
+static inline Real
+calc_q_use_q (const Real rx[4], const Real ry[4], const Real* const qs) {
+  return (ry[0]*(rx[0]*qs[ 0] + rx[1]*qs[ 1] + rx[2]*qs[ 2] + rx[3]*qs[ 3]) +
+          ry[1]*(rx[0]*qs[ 4] + rx[1]*qs[ 5] + rx[2]*qs[ 6] + rx[3]*qs[ 7]) +
+          ry[2]*(rx[0]*qs[ 8] + rx[1]*qs[ 9] + rx[2]*qs[10] + rx[3]*qs[11]) +
+          ry[3]*(rx[0]*qs[12] + rx[1]*qs[13] + rx[2]*qs[14] + rx[3]*qs[15]));
+}
+
+static inline Real
+calc_q_use_qdp (const Real rx[4], const Real ry[4],
+                const Real* const dp, const Real* const qdp) {
+  return (ry[0]*(rx[0]*(qdp[ 0]/dp[ 0]) + rx[1]*(qdp[ 1]/dp[ 1])  +
+                 rx[2]*(qdp[ 2]/dp[ 2]) + rx[3]*(qdp[ 3]/dp[ 3])) +
+          ry[1]*(rx[0]*(qdp[ 4]/dp[ 4]) + rx[1]*(qdp[ 5]/dp[ 5])  +
+                 rx[2]*(qdp[ 6]/dp[ 6]) + rx[3]*(qdp[ 7]/dp[ 7])) +
+          ry[2]*(rx[0]*(qdp[ 8]/dp[ 8]) + rx[1]*(qdp[ 9]/dp[ 9])  +
+                 rx[2]*(qdp[10]/dp[10]) + rx[3]*(qdp[11]/dp[11])) +
+          ry[3]*(rx[0]*(qdp[12]/dp[12]) + rx[1]*(qdp[13]/dp[13])  +
+                 rx[2]*(qdp[14]/dp[14]) + rx[3]*(qdp[15]/dp[15])));
+}
+
 template <Int np>
 void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
              const Real* const dep_point, Real* const q_tgt, const bool use_q) {
@@ -3677,36 +3699,55 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
   const auto& ed = cm.ed(src_lid);
   const Int levos = np*np*lev;
   const Int np2nlev = np*np*cm.nlev;
+  const Int qsize = cm.qsize;
+  static const Int blocksize = 8;
   if (use_q) {
     // We can use q from calc_q_extrema.
     const Real* const qs0 = ed.q + levos;
     // It was found that Intel 18 produced code that was not BFB between runs
     // due to this pragma.
     //#pragma ivdep
-    for (Int iq = 0; iq < cm.qsize; ++iq) {
-      const Real* const qs = qs0 + iq*np2nlev;
-      q_tgt[iq] =
-        (ry[0]*(rx[0]*qs[ 0] + rx[1]*qs[ 1] + rx[2]*qs[ 2] + rx[3]*qs[ 3]) +
-         ry[1]*(rx[0]*qs[ 4] + rx[1]*qs[ 5] + rx[2]*qs[ 6] + rx[3]*qs[ 7]) +
-         ry[2]*(rx[0]*qs[ 8] + rx[1]*qs[ 9] + rx[2]*qs[10] + rx[3]*qs[11]) +
-         ry[3]*(rx[0]*qs[12] + rx[1]*qs[13] + rx[2]*qs[14] + rx[3]*qs[15]));
+    for (Int iqo = 0; iqo < qsize; iqo += blocksize) {
+      // So, instead, provide the compiler with a clear view of
+      // ivdep-ness. Write to tmp here in chunks of blocksize, then
+      // move tmp to q_tgt later.
+      if (iqo + blocksize <= qsize) {
+        Real tmp[blocksize];
+        for (Int iqi = 0; iqi < blocksize; ++iqi) {
+          const Real* const qs = qs0 + (iqo + iqi)*np2nlev;
+          tmp[iqi] = calc_q_use_q(rx, ry, qs);
+        }
+        for (Int iqi = 0; iqi < blocksize; ++iqi)
+          q_tgt[iqo + iqi] = tmp[iqi];
+      } else {
+        for (Int iq = iqo; iq < qsize; ++iq) {
+          const Real* const qs = qs0 + iq*np2nlev;
+          q_tgt[iq] = calc_q_use_q(rx, ry, qs);
+        }
+      }
     }
   } else {
     // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
     const Real* const dp = ed.dp + levos;
     const Real* const qdp0 = ed.qdp + levos;
-    // I'm commented out this pragma, too, to be safe.
+    // I'm commenting out this pragma, too, to be safe.
     //#pragma ivdep
-    for (Int iq = 0; iq < cm.qsize; ++iq) {
-      const Real* const qdp = qdp0 + iq*np2nlev;
-      q_tgt[iq] = (ry[0]*(rx[0]*(qdp[ 0]/dp[ 0]) + rx[1]*(qdp[ 1]/dp[ 1])  +
-                          rx[2]*(qdp[ 2]/dp[ 2]) + rx[3]*(qdp[ 3]/dp[ 3])) +
-                   ry[1]*(rx[0]*(qdp[ 4]/dp[ 4]) + rx[1]*(qdp[ 5]/dp[ 5])  +
-                          rx[2]*(qdp[ 6]/dp[ 6]) + rx[3]*(qdp[ 7]/dp[ 7])) +
-                   ry[2]*(rx[0]*(qdp[ 8]/dp[ 8]) + rx[1]*(qdp[ 9]/dp[ 9])  +
-                          rx[2]*(qdp[10]/dp[10]) + rx[3]*(qdp[11]/dp[11])) +
-                   ry[3]*(rx[0]*(qdp[12]/dp[12]) + rx[1]*(qdp[13]/dp[13])  +
-                          rx[2]*(qdp[14]/dp[14]) + rx[3]*(qdp[15]/dp[15])));
+    for (Int iqo = 0; iqo < qsize; iqo += blocksize) {
+      // And I'm using the same technique as above.
+      if (iqo + blocksize <= qsize) {
+        Real tmp[blocksize];
+        for (Int iqi = 0; iqi < blocksize; ++iqi) {
+          const Real* const qdp = qdp0 + (iqo + iqi)*np2nlev;
+          tmp[iqi] = calc_q_use_qdp(rx, ry, dp, qdp);
+        }
+        for (Int iqi = 0; iqi < blocksize; ++iqi)
+          q_tgt[iqo + iqi] = tmp[iqi];
+      } else {
+        for (Int iq = iqo; iq < qsize; ++iq) {
+          const Real* const qdp = qdp0 + iq*np2nlev;
+          q_tgt[iq] = calc_q_use_qdp(rx, ry, dp, qdp);
+        }
+      }
     }
   }
 }
@@ -3805,6 +3846,19 @@ void copy_q (CslMpi& cm, const Int& nets,
   }
 }
 
+#if 0
+struct Timer {
+  Timer (const std::string& name_) : name("SLMM_isl_" + name_) { GPTLstart(name.c_str()); }
+  ~Timer () { GPTLstop(name.c_str()); }
+private:
+  const std::string name;
+};
+#else
+struct Timer {
+  Timer (const std::string&) {}
+};
+#endif
+
 /* dep_points is const in principle, but if lev <=
    semi_lagrange_nearest_point_lev, a departure point may be altered if the
    winds take it outside of the comm halo.
@@ -3826,6 +3880,7 @@ void step (
     q_min(q_min_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd),
     q_max(q_max_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd);
 
+#if 1
   // Partition my elements that communicate with remotes among threads, if I
   // haven't done that yet.
   if (cm.mylid_with_comm_tid_ptr.n() == 0)
@@ -3860,6 +3915,57 @@ void step (
   copy_q(cm, nets, q_min, q_max);
   // Wait on send buffer so it's free to be used by others.
   wait_on_send(cm, true /* skip_if_empty */);
+#else
+  // Partition my elements that communicate with remotes among threads, if I
+  // haven't done that yet.
+  { Timer t("01_mylid");
+    if (cm.mylid_with_comm_tid_ptr.capacity() == 0)
+      init_mylid_with_comm_threaded(cm, nets, nete); }
+  // Set up to receive departure point requests from remotes.
+  { Timer t("02_setup_irecv");
+    setup_irecv(cm); }
+  // Determine where my departure points are, and set up requests to remotes as
+  // well as to myself to fulfill these.
+  { Timer t("03_adp");
+    analyze_dep_points(cm, nets, nete, dep_points); }
+  { Timer t("04_pack_pass1");
+    pack_dep_points_sendbuf_pass1(cm); }
+  { Timer t("05_pack_pass2");
+    pack_dep_points_sendbuf_pass2(cm, dep_points); }
+  // Send requests.
+  { Timer t("06_isend");
+    isend(cm); }
+  // While waiting, compute q extrema in each of my elements.
+  { Timer t("07_q_extrema");
+    calc_q_extrema<np>(cm, nets, nete); }
+  // Wait for the departure point requests. Since this requires a thread
+  // barrier, at the same time make sure the send buffer is free for use.
+  { Timer t("08_recv_and_wait");
+    recv_and_wait_on_send(cm); }
+  // Compute the requested q for departure points from remotes.
+  { Timer t("09_rmt_q");
+    calc_rmt_q<np>(cm); }
+  // Send q data.
+  { Timer t("10_isend");
+    isend(cm, true /* want_req */, true /* skip_if_empty */); }
+  // Set up to receive q for each of my departure point requests sent to
+  // remotes. We can't do this until the OpenMP barrier in isend assures that
+  // all threads are done with the receive buffer's departure points.
+  { Timer t("11_setup_irecv");
+    setup_irecv(cm, true /* skip_if_empty */); }
+  // While waiting to get my data from remotes, compute q for departure points
+  // that have remained in my elements.
+  { Timer t("12_own_q");
+    calc_own_q<np>(cm, nets, nete, dep_points, q_min, q_max); }
+  // Receive remote q data and use this to fill in the rest of my fields.
+  { Timer t("13_recv");
+    recv(cm, true /* skip_if_empty */); }
+  { Timer t("14_copy_q");
+    copy_q(cm, nets, q_min, q_max); }
+  // Wait on send buffer so it's free to be used by others.
+  { Timer t("15_wait_on_send");
+    wait_on_send(cm, true /* skip_if_empty */); }
+#endif
 }
 } // namespace cslmpi
 } // namespace homme
@@ -3976,5 +4082,10 @@ void slmm_csl (
     std::cerr << e.what();
     *info = -1;
   }
+}
+
+void slmm_finalize () {
+  g_csl_mpi = nullptr;
+  homme::g_advecter = nullptr;
 }
 } // extern "C"
