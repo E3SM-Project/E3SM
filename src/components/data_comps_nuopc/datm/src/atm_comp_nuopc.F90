@@ -28,7 +28,6 @@ module atm_comp_nuopc
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
-  use dshr_mod         , only : dshr_create_mesh_from_grid
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
@@ -60,46 +59,52 @@ module atm_comp_nuopc
   !--------------------------------------------------------------------------
 
   type(shr_strdata_type)       :: sdat
-  type(ESMF_Mesh)              :: mesh                      ! model mesh
+  type(ESMF_Mesh)              :: model_mesh                ! model mesh
   character(len=128)           :: flds_scalar_name = ''
   integer                      :: flds_scalar_num = 0
   integer                      :: flds_scalar_index_nx = 0
   integer                      :: flds_scalar_index_ny = 0
   integer                      :: flds_scalar_index_nextsw_cday = 0
-  integer                      :: compid                    ! mct comp id
+  integer                      :: compid                    ! component id (needed by pio)
   integer                      :: mpicom                    ! mpi communicator
   integer                      :: my_task                   ! my task in mpi communicator mpicom
   logical                      :: masterproc                ! true of my_task == master_task
+  integer                      :: inst_index                ! number of current instance (ie. 1)
   character(len=16)            :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer                      :: logunit                   ! logging unit number
   logical                      :: read_restart              ! start from restart
   character(len=*) , parameter :: nullstr = 'undefined'
 
   ! datm_in namelist input
-  character(CL)                :: nlfilename            ! filename to obtain namelist info from
-  character(CL)                :: dataMode              ! flags physics options wrt input data
-  integer                      :: iradsw                ! radiation interval (input namelist)
-  character(CL)                :: factorFn_mesh         ! file containing correction factors mesh
-  character(CL)                :: factorFn_data         ! file containing correction factors data
-  logical                      :: presaero              ! true => send valid prescribe aero fields to coupler
-  character(CL)                :: bias_correct          ! true => send bias correction fields to coupler (not used here)
-  character(CL)                :: anomaly_forcing(8)    ! true => send anomaly forcing fields to coupler (not used here)
-  logical                      :: force_prognostic_true ! if true set prognostic true
-  logical                      :: wiso_datm = .false.   ! expect isotopic forcing from file?
-  character(CL)                :: restfilm = nullstr    ! model restart file namelist
-  character(CL)                :: restfils = nullstr    ! stream restart file namelist
+  character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
+  character(CL)                :: dataMode = nullstr                  ! flags physics options wrt input data
+  character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
+  character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
+  character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
+  integer                      :: iradsw = 0                          ! radiation interval (input namelist)
+  character(CL)                :: factorFn_mesh = 'null'              ! file containing correction factors mesh
+  character(CL)                :: factorFn_data = 'null'              ! file containing correction factors data
+  logical                      :: presaero = .false.                  ! true => send valid prescribe aero fields to coupler
+  character(CL)                :: bias_correct = nullstr              ! send bias correction fields to coupler (not used here)
+  character(CL)                :: anomaly_forcing(8) = nullstr        ! send anomaly forcing fields to coupler (not used here)
+  logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
+  logical                      :: wiso_datm = .false.                 ! expect isotopic forcing from file?
+  character(CL)                :: restfilm = nullstr                  ! model restart file namelist
+  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
+  integer                      :: nx_global
+  integer                      :: ny_global
+                                                                      ! config attribute intput
+  character(len=CL)            :: orb_mode                            ! attribute - orbital mode (nuopc attribute)
+  integer                      :: orb_iyear                           ! attribute - orbital year (nuopc attribute)
+  integer                      :: orb_iyear_align                     ! attribute - associated with model year (nuopc attribute)
+  real(R8)                     :: orb_obliq                           ! attribute - obliquity in degrees (nuopc attribute)
+  real(R8)                     :: orb_mvelp                           ! attribute - moving vernal equinox longitude (nuopc attribute)
+  real(R8)                     :: orb_eccen                           ! attribute and update-  orbital eccentricity (nuopc attribute)
 
-  ! config attribute intput
-  character(len=CL)            :: orb_mode              ! attribute - orbital mode (nuopc attribute)
-  integer                      :: orb_iyear             ! attribute - orbital year (nuopc attribute)
-  integer                      :: orb_iyear_align       ! attribute - associated with model year (nuopc attribute)
-  real(R8)                     :: orb_obliq             ! attribute - obliquity in degrees (nuopc attribute)
-  real(R8)                     :: orb_mvelp             ! attribute - moving vernal equinox longitude (nuopc attribute)
-  real(R8)                     :: orb_eccen             ! attribute and update-  orbital eccentricity (nuopc attribute)
-  logical                      :: flds_co2a             ! use case
-  logical                      :: flds_co2b             ! use case
-  logical                      :: flds_co2c             ! use case
-  logical                      :: flds_wiso             ! use case
+  logical                      :: flds_co2a                           ! use case
+  logical                      :: flds_co2b                           ! use case
+  logical                      :: flds_co2c                           ! use case
+  logical                      :: flds_wiso                           ! use case
 
   ! linked lists
   type(fldList_type) , pointer :: fldsImport => null()
@@ -115,8 +120,8 @@ module atm_comp_nuopc
   real(R8), pointer            :: qsatFactor(:)
 
   ! constants
+  logical                      :: diagnose_data= .true.
   integer                      :: idt                        ! integer model timestep
-  logical                      :: diagnose_data= .false.
   integer          , parameter :: master_task  = 0           ! task number of master task
   character(len=*) , parameter :: rpfile       = 'rpointer.atm'
   character(*)     , parameter :: modName      = "(atm_comp_nuopc)"
@@ -279,18 +284,21 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer           :: inst_index            ! number of current instance (ie. 1)
-    character(len=CL) :: cvalue                ! temporary
-    integer           :: shrlogunit            ! original log unit
-    integer           :: nu                    ! unit number
-    integer           :: ierr                  ! error code
-    character(len=CL) :: fileName              ! generic file name
+    character(len=CL) :: cvalue     ! temporary
+    integer           :: shrlogunit ! original log unit
+    integer           :: nu         ! unit number
+    integer           :: ierr       ! error code
+    logical           :: exists     ! check for file existence  
     character(len=*),parameter :: subname='(atm_comp_nuopc):(InitializeAdvertise) '
-    character(*)    ,parameter :: F00 = "('(atm_comp_nuopc) ',a) "
+    character(*)    ,parameter :: F00 = "('(atm_comp_nuopc) ',8a)"
+    character(*)    ,parameter :: F01 = "('(atm_comp_nuopc) ',a,2x,i8)"
+    character(*)    ,parameter :: F02 = "('(atm_comp_nuopc) ',a,l6)"
     !-------------------------------------------------------------------------------
 
-    namelist / datm_nml / datamode, iradsw, factorFn_data, factorFn_mesh, &
-         restfilm, restfils, presaero, bias_correct, anomaly_forcing, force_prognostic_true, wiso_datm
+    namelist / datm_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
+         nx_global, ny_global, restfilm, restfils, &
+         iradsw, factorFn_data, factorFn_mesh, presaero, bias_correct, &
+         anomaly_forcing, force_prognostic_true, wiso_datm
 
     rc = ESMF_SUCCESS
 
@@ -301,21 +309,12 @@ contains
          logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Determine namelist filename
-    nlfilename = "datm_in"//trim(inst_suffix)
-
     ! Determine logical masterproc
     masterproc = (my_task == master_task)
 
     ! Read atm_nml from nlfilename
-    iradsw = 0
-    factorFn_data = 'null'
-    factorFn_mesh = 'null'
-    restfilm = trim(nullstr)
-    restfils = trim(nullstr)
-    presaero = .false.
-    force_prognostic_true = .false.
     if (my_task == master_task) then
+       nlfilename = "datm_in"//trim(inst_suffix)
        open (newunit=nu,file=trim(nlfilename),status="old",action="read")
        read (nu,nml=datm_nml,iostat=ierr)
        close(nu)
@@ -323,27 +322,70 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
-       write(logunit,*)' datamode              = ',datamode
-       write(logunit,*)' iradsw                = ',iradsw
-       write(logunit,*)' factorFn_data         = ',trim(factorFn_data)
-       write(logunit,*)' factorFn_mesh         = ',trim(factorFn_mesh)
-       write(logunit,*)' restfilm              = ',trim(restfilm)
-       write(logunit,*)' restfils              = ',trim(restfils)
-       write(logunit,*)' presaero              = ',presaero
-       write(logunit,*)' force_prognostic_true = ',force_prognostic_true
-       write(logunit,*)' wiso_datm             = ',wiso_datm
-    endif
-    call shr_mpi_bcast(datamode              ,mpicom, 'datamode')
-    call shr_mpi_bcast(iradsw                ,mpicom, 'iradsw')
-    call shr_mpi_bcast(factorFn_data         ,mpicom, 'factorFn_data')
-    call shr_mpi_bcast(factorFn_mesh         ,mpicom, 'factorFn_mesh')
-    call shr_mpi_bcast(restfilm              ,mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils              ,mpicom, 'restfils')
-    call shr_mpi_bcast(presaero              ,mpicom, 'presaero')
-    call shr_mpi_bcast(wiso_datm             ,mpicom, 'wiso_datm')
-    call shr_mpi_bcast(force_prognostic_true ,mpicom, 'force_prognostic_true')
+    end if
+    call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
+    call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
+    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
+    call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
+    call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
+    call shr_mpi_bcast(iradsw                    , mpicom, 'iradsw')
+    call shr_mpi_bcast(factorFn_data             , mpicom, 'factorFn_data')
+    call shr_mpi_bcast(factorFn_mesh             , mpicom, 'factorFn_mesh')
+    call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
+    call shr_mpi_bcast(presaero                  , mpicom, 'presaero')
+    call shr_mpi_bcast(wiso_datm                 , mpicom, 'wiso_datm')
+    call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
 
-    ! Call advertise phase
+    ! write namelist input to standard out
+    if (my_task == master_task) then
+       write(logunit,F00)' datamode = ',trim(datamode)
+       if (model_createmesh_fromfile /= nullstr) then
+          write(logunit,F00)' model_create_meshfile_fromfile = ',trim(model_createmesh_fromfile)
+       else
+          write(logunit,F00)' model_meshfile = ',trim(model_meshfile)
+          write(logunit,F00)' model_maskfile = ',trim(model_maskfile)
+       end if
+       write(logunit,F01)' nx_global = ',nx_global
+       write(logunit,F01)' ny_global = ',ny_global
+       write(logunit,F00)' restfilm = ',trim(restfilm)
+       write(logunit,F00)' restfils = ',trim(restfils)
+       write(logunit,F02)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,F01)' iradsw = ',iradsw
+       write(logunit,F00)' factorFn_data = ',trim(factorFn_data)
+       write(logunit,F00)' factorFn_mesh = ',trim(factorFn_mesh)
+       write(logunit,F00)' restfilm = ',trim(restfilm)
+       write(logunit,F00)' restfils = ',trim(restfils)
+       write(logunit,F02)' presaero  = ',presaero
+       write(logunit,F02)' wiso_datm = ',wiso_datm
+    end if
+
+    ! check that files exists
+    if (my_task == master_task) then
+       if (model_createmesh_fromfile /= nullstr) then
+          inquire(file=trim(model_createmesh_fromfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist')
+          end if
+       else
+          inquire(file=trim(model_meshfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist')
+          end if
+          inquire(file=trim(model_maskfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist')
+          end if
+       end if
+    endif
+
+    ! Validate sdat datamode
     if (masterproc) write(logunit,*) ' datm datamode = ',trim(datamode)
     if (trim(datamode) == 'NULL'      .or. trim(datamode) == 'CORE2_NYF'    .or. &
         trim(datamode) == 'CORE2_IAF' .or. trim(datamode) == 'CORE_IAF_JRA' .or. &
@@ -377,7 +419,10 @@ contains
        if (wiso_datm /= flds_wiso) then
           call shr_sys_abort(subName//': datm namelist wiso_datm must match nuopc attribute flds_wiso')
        end if
+    end if
 
+    ! Advertise the export fields
+    if (trim(datamode) /= 'NULL') then
        call datm_comp_advertise(importState, exportState, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -428,8 +473,8 @@ contains
 
     ! Initialize sdat
     call t_startf('datm_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'atm', mesh, read_restart, sdat, &
-         reset_mask=.true., rc=rc)
+    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'atm', &
+         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
 
@@ -440,8 +485,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
-            logunit, my_task, mpicom, sdat)
+       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
     end if
 
     ! Get the time to interpolate the stream data to
@@ -466,9 +510,9 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
-    call dshr_state_SetScalar(dble(sdat%nxg), flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_state_SetScalar(dble(sdat%nyg), flds_scalar_index_ny, exportState,  flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxNextSwCday", value=cvalue, &
@@ -479,7 +523,7 @@ contains
     else
        call shr_sys_abort(subname//'Need to set attribute ScalarFieldIdxNextSwCday')
     endif
-    nextsw_cday = getNextRadCDay( current_ymd, current_tod, stepno, idt, iradsw, sdat%calendar )
+    nextsw_cday = getNextRadCDay( current_ymd, current_tod, stepno, idt, iradsw, sdat%model_calendar )
     call dshr_state_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -558,11 +602,12 @@ contains
     ! Run datm
     call t_startf('datm_run')
     call datm_comp_run(next_ymd, next_tod, mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_run')
 
     ! Update nextsw_cday for scalar data
     ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
-    nextsw_cday = getNextRadCDay( next_ymd, next_tod, stepno, idt, iradsw, sdat%calendar )
+    nextsw_cday = getNextRadCDay( next_ymd, next_tod, stepno, idt, iradsw, sdat%model_calendar )
     call dshr_state_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -977,10 +1022,10 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     ! -------------------------------------
 
-    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, model_mesh, &
          subname//':datmExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, mesh, &
+    call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, model_mesh, &
          subname//':datmImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1113,41 +1158,72 @@ contains
     ! initialize dfields for stream fields that have no corresponding import or export fields
     !-----------------------------
 
-    call dshr_dfield_add(dfields, sdat, 'wind'  , strm_wind   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'tdew'  , strm_tdew   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'tbot'  , strm_tbot   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'pbot'  , strm_pbot   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'shum'  , strm_shum   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'lwdn'  , strm_lwdn   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'rh'    , strm_rh     , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'swdn'  , strm_swdn   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'swdndf', strm_swdndf , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'swdndr', strm_swdndr , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'prec'  , strm_prec   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'precc' , strm_precc  , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'precl' , strm_precl  , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'precn' , strm_precn  , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'swup'  , strm_swup   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'tarcf' , strm_tarcf  , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(dfields, sdat, 'wind'  , strm_wind   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'tdew'  , strm_tdew   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'tbot'  , strm_tbot   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'pbot'  , strm_pbot   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'shum'  , strm_shum   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'lwdn'  , strm_lwdn   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'rh'    , strm_rh     , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'swdn'  , strm_swdn   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'swdndf', strm_swdndf , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'swdndr', strm_swdndr , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'prec'  , strm_prec   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'precc' , strm_precc  , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'precl' , strm_precl  , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'precn' , strm_precn  , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'swup'  , strm_swup   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'tarcf' , strm_tarcf  , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! water isotopes
-    call dshr_dfield_add(dfields, sdat, 'rh_16O'   , strm_rh_16O    , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'rh_18O'   , strm_rh_18O    , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'rh_HDO'   , strm_rh_HDO    , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'precn_16O', strm_precn_16O , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'precn_18O', strm_precn_18O , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'precn_HDO', strm_precn_HDO , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(dfields, sdat, 'rh_16O'   , strm_rh_16O    , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'rh_18O'   , strm_rh_18O    , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'rh_HDO'   , strm_rh_HDO    , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'precn_16O', strm_precn_16O , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'precn_18O', strm_precn_18O , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'precn_HDO', strm_precn_HDO , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! values for optionalcorrection / anomaly forcing (add Sa_precsf for precip scale factor)
-    call dshr_dfield_add(dfields, sdat, 'precsf'   , strm_precsf    , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'prec_af'  , strm_prec_af   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'u_af'     , strm_u_af      , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'v_af'     , strm_v_af      , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'tbot_af'  , strm_tbot_af   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'pbot_af'  , strm_pbot_af   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'shum_af'  , strm_shum_af   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'swdn_af'  , strm_swdn_af   , logunit=logunit, masterproc=masterproc)
-    call dshr_dfield_add(dfields, sdat, 'lwdn_af'  , strm_lwdn_af   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(dfields, sdat, 'precsf'   , strm_precsf    , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'prec_af'  , strm_prec_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'u_af'     , strm_u_af      , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'v_af'     , strm_v_af      , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'tbot_af'  , strm_tbot_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'pbot_af'  , strm_pbot_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'shum_af'  , strm_shum_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'swdn_af'  , strm_swdn_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, 'lwdn_af'  , strm_lwdn_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine datm_comp_realize
 
@@ -1201,7 +1277,8 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('datm_BARRIER',mpicom)
     call t_startf('datm_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'datm')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'datm', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_advance')
 
     !--------------------
@@ -1219,7 +1296,7 @@ contains
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
 
-    lsize = sdat%lsize
+    lsize = sdat%model_lsize
 
     if (first_time) then
        ! allocate module arrays
@@ -1227,11 +1304,11 @@ contains
        allocate(winddFactor(lsize))
        allocate(qsatFactor(lsize))
 
-       call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+       call ESMF_MeshGet(model_mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        allocate(ownedElemCoords(spatialDim*numOwnedElements))
        allocate(yc(numOwnedElements))
-       call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+       call ESMF_MeshGet(model_mesh, ownedElemCoords=ownedElemCoords)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        do n = 1,numOwnedElements
           yc(n) = ownedElemCoords(2*n)
@@ -1257,7 +1334,7 @@ contains
           call datm_get_adjustment_factors(factorFn_mesh, factorFn_data, windFactor, winddFactor, qsatFactor, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-       call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
+       call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%model_calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
 
@@ -1270,7 +1347,7 @@ contains
           Sa_u(n) = uprime*cos(winddFactor(n)*degtorad) - vprime*sin(winddFactor(n)*degtorad)
           Sa_v(n) = uprime*sin(winddFactor(n)*degtorad) + vprime*cos(winddFactor(n)*degtorad)
 
-          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
+          !--- density and pslv taken directly from input stream, set pbot ---
           Sa_pbot(n) = Sa_pslv(n)
 
           !--- correction to NCEP Arctic & Antarctic air T & potential T ---
@@ -1365,7 +1442,7 @@ contains
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
        endif
-       call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
+       call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%model_calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
 
@@ -1717,17 +1794,17 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     fldbun_dst = ESMF_FieldBundleCreate(rc=rc) ! output field bundle
-    field_dst = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name='windFactor', &
+    field_dst = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_R8, name='windFactor', &
          meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_FieldBundleAdd(fldbun_dst, (/field_dst/), rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    field_dst = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name='winddFactor', &
+    field_dst = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_R8, name='winddFactor', &
          meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_FieldBundleAdd(fldbun_dst, (/field_dst/), rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    field_dst = ESMF_FieldCreate(sdat%mesh_model, ESMF_TYPEKIND_R8, name='qsatFactor', &
+    field_dst = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_R8, name='qsatFactor', &
          meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_FieldBundleAdd(fldbun_dst, (/field_dst/), rc=rc)
@@ -1771,7 +1848,7 @@ contains
     rcode = pio_inq_varid(pioid, 'qsatFactor', varid)
     call pio_read_darray(pioid, varid, pio_iodesc, data, rcode)
 
-    if (nxg*nyg /= sdat%gsize) then
+    if (nxg*nyg /= sdat%model_gsize) then
        ! TODO: this needs a mask that needs to be read in to have the mapping be accurate
        ! create bilinear route handle -
        call ESMF_FieldRegridStore(field_src, field_dst, routehandle=route_handle, &

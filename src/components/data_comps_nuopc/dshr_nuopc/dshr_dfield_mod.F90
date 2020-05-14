@@ -51,8 +51,8 @@ module dshr_dfield_mod
 contains
 !===============================================================================
 
-  subroutine dshr_dfield_add_strmfld(dfields, sdat, strm_fld, strm_ptr, logunit, masterproc)
-
+  subroutine dshr_dfield_add_strmfld(dfields, sdat, strm_fld, strm_ptr, logunit, masterproc, rc)
+    
     ! Add a dfields element with just stream data info
 
     ! input/output variables
@@ -62,9 +62,9 @@ contains
     real(r8)               , pointer       :: strm_ptr(:)
     integer                , intent(in)    :: logunit
     logical                , intent(in)    :: masterproc
+    integer                , intent(out)   :: rc 
 
     ! local variables
-    integer                         :: rc
     type(dfield_type), pointer      :: dfield_new
     integer                         :: ns, nf
     integer                         :: lsize, num
@@ -76,6 +76,8 @@ contains
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     character(len=*), parameter :: subname='(dfield_add_strmfld)'
     ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
 
     allocate(dfield_new, stat=status)
     if (status /= 0) then

@@ -128,8 +128,7 @@
     CORE2_NYF.NCEP
 
     Note for CORE2_IAF:
-    The most current versions of forcing files(those recommended for use) are duplicated
-    below and stored at /ccsm/ocn/iaf/):
+    The most current versions of forcing files(those recommended for use) are duplicated below and stored at /ccsm/ocn/iaf/):
     gcgcs.prec.T62.current, giss.lwdn.T62.current, giss.swdn.T62.current, giss.swup.T62.current,
     ncep.dn10.T62.current, ncep.q_10.T62.current ncep.slp_.T62.current,
     ncep.t_10.T62.current, ncep.u_10.T62.current, ncep.v_10.T62.current
@@ -189,40 +188,86 @@
     <group>streams_file</group>
     <desc>List of streams used for the given datm_mode</desc>
     <values>
-      <value datm_mode="CLM_QIAN$">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
-      <value datm_mode="CLM_QIAN_WISO">CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW</value>
-      <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID</value>
-      <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
-      <value datm_mode="CLMCRUNCEPv7">CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW</value>
-      <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>
-      <value datm_mode="CLMMOSARTTEST">CLMMOSARTTEST</value>
-      <value datm_mode="CLMNLDAS2">CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW</value>
-      <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
-      <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
-      <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.PREC,CORE_IAF_JRA.LWDN,CORE_IAF_JRA.SWDN,CORE_IAF_JRA.Q_10,CORE_IAF_JRA.SLP_,CORE_IAF_JRA.T_10,CORE_IAF_JRA.U_10,CORE_IAF_JRA.V_10,CORE_IAF_JRA.CORE2.ArcFactor</value>
-      <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
-      <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
+      <value datm_mode="CLM_QIAN$">
+	CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW
+      </value>
+      <value datm_mode="CLM_QIAN_WISO">
+	CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW
+      </value>
+      <value datm_mode="CLM1PT">
+	CLM1PT.$ATM_GRID
+      </value>
+      <value datm_mode="CLMCRUNCEP$">
+	CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW
+      </value>
+      <value datm_mode="CLMCRUNCEPv7">
+	CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW
+      </value>
+      <value datm_mode="CLMGSWP3v1">
+	CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW
+      </value>
+      <value datm_mode="CLMMOSARTTEST">
+	CLMMOSARTTEST
+      </value>
+      <value datm_mode="CLMNLDAS2">
+	CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW
+      </value>
+      <value datm_mode="CORE2_NYF" >
+	CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP
+      </value>
+      <value datm_mode="CORE2_IAF" >
+	CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor
+      </value>
+      <value datm_mode="CORE_IAF_JRA" >
+	CORE_IAF_JRA.PREC,CORE_IAF_JRA.LWDN,CORE_IAF_JRA.SWDN,CORE_IAF_JRA.Q_10,CORE_IAF_JRA.SLP_,CORE_IAF_JRA.T_10,CORE_IAF_JRA.U_10,CORE_IAF_JRA.V_10,CORE_IAF_JRA.CORE2.ArcFactor
+      </value>
+      <value datm_mode="CORE2_IAF" atm_grid="01col" >
+	CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor
+      </value>
+      <value datm_mode="CPLHIST">
+	CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr
+      </value>
     </values>
   </entry>
 
-  <entry id="strm_meshfile">
-        <type>char</type>
+  <entry id="strm_mesh">
+    <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value datm_mode="CORE2_NYF">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc</value>
-      <value datm_mode="CORE2_IAF">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc</value>
-      <value datm_mode="CORE2_IAF_JRA">$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc</value>
-      <value datm_mode="CORE2_IAF" atm_grid="01col">generate_mesh_from:$DIN_LOC_ROOT/domains/domain.ocn.01col.SOFS.20150828.nc</value>
-      <value stream="CLMGSWP3v1">$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh_c20191210.nc</value> <!-- the lons in the data is 0->360, but in the mesh are -180->180 -->
-      <value stream="Anomaly.Forcing">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc</value> <!-- what is this mesh? --> 
-      <value stream="CLM1PT.1x1_mexicocityMEX">generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</value>
-      <value stream="CLM1PT.1x1_vancouverCAN" >generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
-      <value stream="CLM1PT.1x1_urbanc_alpha" >generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </value>
-      <value stream="co2tseries">generate_mesh_from:$DIN_LOC_ROOT/atm/datm7/CO2/ </value> -->
-
+      <value datm_mode="CORE2_NYF">
+	$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc
+      </value>
+      <value datm_mode="CORE2_IAF">
+	$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh_c20190714.nc
+      </value>
+      <value datm_mode="CORE2_IAF_JRA">
+	$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc
+      </value>
+      <value datm_mode="CORE2_IAF" atm_grid="01col">
+	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/domains/domain.ocn.01col.SOFS.20150828.nc -->
+      </value>
+      <value stream="CLMGSWP3v1">
+	$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh_c20191210.nc
+	<!-- the lons in the data is 0->360, but in the mesh are -180->180 -->
+      </value> 
+      <value stream="Anomaly.Forcing">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc
+      </value> <!-- TODO: what is this mesh? --> 
+      <value stream="CLM1PT.1x1_mexicocityMEX">
+	<!-- TODO: generate_mesh_from: $DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc -->
+      </value>
+      <value stream="CLM1PT.1x1_vancouverCAN" >
+	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc  -->
+      </value>
+      <value stream="CLM1PT.1x1_urbanc_alpha" >
+	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc  -->
+      </value>
+      <value stream="co2tseries">
+	<!-- TODO: generate_mesh_from:$DIN_LOC_ROOT/atm/datm7/CO2/  -->
+      </value> 
       <!-- <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value> -->
       <!-- <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
       <!-- <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value> -->
@@ -241,69 +286,6 @@
       <!-- <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value> -->
       <!-- <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value> -->
       <!-- <value stream="topo.cplhist">null</value> -->
-
-    </values>
-  </entry>
-
-  <entry id="strm_datdir">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file directory.</desc>
-    <values>
-      <value>null</value>
-      <value stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/mexicocityMEX.c080124</value>
-      <value stream="CLM1PT.1x1_vancouverCAN">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/vancouverCAN.c080124 </value>
-      <value stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416 </value>
-      <value stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data</value>
-      <value stream="CPLHISTForcing">$DATM_CPLHIST_DIR</value>
-      <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly</value>
-      <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly</value>
-      <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
-      <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Solar6Hrly</value>
-      <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Precip6Hrly</value>
-      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
-      <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly</value>
-      <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly</value>
-      <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly</value>
-      <value stream="CLMCRUNCEPv7.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Solar6Hrly</value>
-      <value stream="CLMCRUNCEPv7.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Precip6Hrly</value>
-      <value stream="CLMCRUNCEPv7.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/TPHWL6Hrly</value>
-      <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar</value>
-      <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip</value>
-      <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL</value>
-      <value stream="CLMCRUNCEP_V5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Solar6Hrly</value>
-      <value stream="CLMCRUNCEP_V5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Precip6Hrly</value>
-      <value stream="CLMCRUNCEP_V5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/TPHWL6Hrly</value>
-      <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar3Hrly</value>
-      <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip3Hrly</value>
-      <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL3Hrly</value>
-      <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
-      <value stream="CLMNLDAS2.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Solar</value>
-      <value stream="CLMNLDAS2.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Precip</value>
-      <value stream="CLMNLDAS2.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/TPQWL</value>
-      <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
-      <value stream="CORE2_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE_IAF_JRA.PREC">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.LWDN">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.SWDN">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.Q_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.SLP_">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.T_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.U_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.V_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
-      <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
-      <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
-      <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
-      <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
-      <value stream="presaero.SSP5-3.4">null</value>
-      <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
-      <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
     </values>
   </entry>
 
@@ -314,1256 +296,1437 @@
     <desc>Stream data file path(s).</desc>
     <values match="first">
       <value>null</value>
-      <value  stream="CLM1PT.1x1_mexicocityMEX">clm1pt-1993-12.nc</value>
-      <value  stream="CLM1PT.1x1_vancouverCAN">clm1pt-1992-08.nc</value>
-      <value  stream="CLM1PT.1x1_urbanc_alpha">
-        clm1pt-0001-08.nc
-        clm1pt-0001-09.nc
-        clm1pt-0001-10.nc
-        clm1pt-0001-11.nc
-        clm1pt-0001-12.nc
-        clm1pt-0002-01.nc
-        clm1pt-0002-02.nc
-        clm1pt-0002-03.nc
-        clm1pt-0002-04.nc
-        clm1pt-0002-05.nc
-        clm1pt-0002-06.nc
-        clm1pt-0002-07.nc
-        clm1pt-0002-08.nc
-        clm1pt-0002-09.nc
-        clm1pt-0002-10.nc
-        clm1pt-0002-11.nc
+      <value  stream="CLM1PT.1x1_mexicocityMEX">
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/mexicocityMEX.c080124/clm1pt-1993-12.nc
       </value>
-      <value  stream="CLM1PT.CLM_USRDAT">%ym.nc</value>
-      <value  stream="CPLHISTForcing.Solar">$DATM_CPLHIST_CASE.cpl.ha2x1hi.%ym.nc</value>
-      <value  stream="CPLHISTForcing.nonSolarFlux">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
-      <value  stream="CPLHISTForcing.State3hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
-      <value  stream="CPLHISTForcing.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x1h.%ym.nc</value>
-      <value  stream="presaero.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x1d.%ym.nc</value>
-      <value  stream="topo.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
-      <value  stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
-      <value  stream="CLM_QIAN.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
-      <value  stream="CLM_QIAN.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
-      <value  stream="CLM_QIAN_WISO.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
-      <value  stream="CLM_QIAN_WISO.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
-      <value  stream="CLM_QIAN_WISO.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
-      <value  stream="CLMCRUNCEP.Solar">clmforc.cruncep.V4.c2011.0.5d.Solr.%ym.nc</value>
-      <value  stream="CLMCRUNCEP.Precip">clmforc.cruncep.V4.c2011.0.5d.Prec.%ym.nc</value>
-      <value  stream="CLMCRUNCEP.TPQW">clmforc.cruncep.V4.c2011.0.5d.TPQWL.%ym.nc</value>
-      <value  stream="CLMCRUNCEPv7.Solar">clmforc.cruncep.V7.c2016.0.5d.Solr.%ym.nc</value>
-      <value  stream="CLMCRUNCEPv7.Precip">clmforc.cruncep.V7.c2016.0.5d.Prec.%ym.nc</value>
-      <value  stream="CLMCRUNCEPv7.TPQW">clmforc.cruncep.V7.c2016.0.5d.TPQWL.%ym.nc</value>
-      <value  stream="CLMGSWP3v1.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</value>
-      <value  stream="CLMGSWP3v1.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</value>
-      <value  stream="CLMGSWP3v1.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</value>
-      <value  stream="CLMMOSARTTEST">clmforc.nldas.%ym.nc</value>
-      <value  stream="CLMNLDAS2.Solar">ctsmforc.NLDAS2.0.125d.v1.Solr.%ym.nc</value>
-      <value  stream="CLMNLDAS2.Precip">ctsmforc.NLDAS2.0.125d.v1.Prec.%ym.nc</value>
-      <value  stream="CLMNLDAS2.TPQW">ctsmforc.NLDAS2.0.125d.v1.TPQWL.%ym.nc</value>
-      <value  stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
-      <value  stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</value>
-      <value  stream="CORE2_NYF.NCEP">nyf.ncep.T62.050923.nc</value>
-      <value  stream="CORE2_IAF.NCEP.DENS.SOFS">ncep.SOFS.2010.nc</value>
-      <value  stream="CORE2_IAF.NCEP.PSLV.SOFS">ncep.SOFS.2010.nc</value>
-      <value  stream="CORE2_IAF.PREC.SOFS.DAILY">SOFS.daily.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.LWDN.SOFS.DAILY">SOFS.daily.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.SWDN.SOFS.DAILY">SOFS.daily.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.SWUP.SOFS.DAILY">SOFS.daily.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.SHUM.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.TBOT.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.U.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
-      <value  stream="CORE2_IAF.V.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
-
-      <!-- TODO: if necessary, update the file names: -->
+      <value  stream="CLM1PT.1x1_vancouverCAN">
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/vancouverCAN.c080124/clm1pt-1992-08.nc
+      </value>
+      <value  stream="CLM1PT.1x1_urbanc_alpha">
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0001-08.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0001-09.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0001-10.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0001-11.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0001-12.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-01.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-02.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-03.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-04.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-05.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-06.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-07.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-08.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-09.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-10.nc
+	$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416/clm1pt-0002-11.nc
+      </value>
+      <value  stream="CLM1PT.CLM_USRDAT">
+	$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data/%ym.nc
+      </value>
+      <value  stream="CPLHISTForcing.Solar">
+	$DATM_CPLHIST_DIR/$DATM_CPLHIST_CASE.cpl.ha2x1hi.%ym.nc
+      </value>
+      <value  stream="CPLHISTForcing.nonSolarFlux">
+	$DATM_CPLHIST_DIR/$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc
+      </value>
+      <value  stream="CPLHISTForcing.State3hr">
+	$DATM_CPLHIST_DIR/$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc
+      </value>
+      <value  stream="CPLHISTForcing.State1hr">
+	$DATM_CPLHIST_DIR/$DATM_CPLHIST_CASE.cpl.ha2x1h.%ym.nc
+      </value>
+      <value  stream="presaero.cplhist">
+	$DATM_CPLHIST_DIR/$DATM_CPLHIST_CASE.cpl.ha2x1d.%ym.nc
+      </value>
+      <value  stream="topo.cplhist">
+	$DATM_CPLHIST_DIR/$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc
+      </value>
+      <value  stream="CLM_QIAN.Solar">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly/clmforc.Qian.c2006.T62.Solr.%ym.nc
+      </value>
+      <value  stream="CLM_QIAN.Precip">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly/clmforc.Qian.c2006.T62.Prec.%ym.nc
+      </value>
+      <value  stream="CLM_QIAN.TPQW">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly/clmforc.Qian.c2006.T62.TPQW.%ym.nc
+      </value>
+      <value  stream="CLM_QIAN_WISO.Solar">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Solar6Hrly/clmforc.Qian.c2006.T62.Solr.%ym.nc
+      </value>
+      <value  stream="CLM_QIAN_WISO.Precip">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Precip6Hrly/clmforc.Qian.c2006.T62.Prec.%ym.nc
+      </value>
+      <value  stream="CLM_QIAN_WISO.TPQW">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly/clmforc.Qian.c2006.T62.TPQW.%ym.nc
+      </value>
+      <value  stream="CLMCRUNCEP.Solar">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly/clmforc.cruncep.V4.c2011.0.5d.Solr.%ym.nc
+      </value>
+      <value  stream="CLMCRUNCEP.Precip">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly/clmforc.cruncep.V4.c2011.0.5d.Prec.%ym.nc
+      </value>
+      <value  stream="CLMCRUNCEP.TPQW">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly/clmforc.cruncep.V4.c2011.0.5d.TPQWL.%ym.nc
+      </value>
+      <value  stream="CLMCRUNCEPv7.Solar">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Solar6Hrly/clmforc.cruncep.V7.c2016.0.5d.Solr.%ym.nc
+      </value>
+      <value  stream="CLMCRUNCEPv7.Precip">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Precip6Hrly/clmforc.cruncep.V7.c2016.0.5d.Prec.%ym.nc
+      </value>
+      <value  stream="CLMCRUNCEPv7.TPQW">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/TPHWL6Hrly/clmforc.cruncep.V7.c2016.0.5d.TPQWL.%ym.nc
+      </value>
+      <value  stream="CLMGSWP3v1.Solar">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar/clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc
+      </value>
+      <value  stream="CLMGSWP3v1.Precip">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip/clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc
+      </value>
+      <value  stream="CLMGSWP3v1.TPQW">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc
+      </value>
+      <value  stream="CLMMOSARTTEST">
+	$DIN_LOC_ROOT/atm/datm7/NLDAS/clmforc.nldas.%ym.nc
+      </value>
+      <value  stream="CLMNLDAS2.Solar">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Solar/ctsmforc.NLDAS2.0.125d.v1.Solr.%ym.nc
+      </value>
+      <value  stream="CLMNLDAS2.Precip">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Precip/ctsmforc.NLDAS2.0.125d.v1.Prec.%ym.nc
+      </value>
+      <value  stream="CLMNLDAS2.TPQW">
+	$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/TPQWL/ctsmforc.NLDAS2.0.125d.v1.TPQWL.%ym.nc
+      </value>
+      <value  stream="CORE2_NYF.GISS">
+	$DIN_LOC_ROOT/atm/datm7/NYF/nyf.giss.T62.051007.nc
+      </value>
+      <value  stream="CORE2_NYF.GXGXS">
+	$DIN_LOC_ROOT/atm/datm7/NYF/nyf.gxgxs.T62.051007.nc
+      </value>
+      <value  stream="CORE2_NYF.NCEP">
+	$DIN_LOC_ROOT/atm/datm7/NYF/nyf.ncep.T62.050923.nc
+      </value>
+      <value  stream="CORE2_IAF.NCEP.DENS.SOFS">
+	$DIN_LOC_ROOT/ocn/iaf/ncep.SOFS.2010.nc  
+      </value>
+      <value  stream="CORE2_IAF.NCEP.PSLV.SOFS"> 
+	$DIN_LOC_ROOT/ocn/iaf/ncep.SOFS.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.PREC.SOFS.DAILY">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.daily.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.LWDN.SOFS.DAILY">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.daily.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.SWDN.SOFS.DAILY">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.daily.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.SWUP.SOFS.DAILY">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.daily.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.SHUM.SOFS.6HOUR">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.6hour.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.TBOT.SOFS.6HOUR">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.6hour.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.U.SOFS.6HOUR">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.6hour.03-09.2010.nc
+      </value>
+      <value  stream="CORE2_IAF.V.SOFS.6HOUR">
+	$DIN_LOC_ROOT/ocn/iaf/SOFS.6hour.03-09.2010.nc
+      </value>
       <value  stream="CORE2_IAF.GCGCS.PREC">
-        gcgcs.prec.T62.1948.nc
-        gcgcs.prec.T62.1949.nc
-        gcgcs.prec.T62.1950.nc
-        gcgcs.prec.T62.1951.nc
-        gcgcs.prec.T62.1952.nc
-        gcgcs.prec.T62.1953.nc
-        gcgcs.prec.T62.1954.nc
-        gcgcs.prec.T62.1955.nc
-        gcgcs.prec.T62.1956.nc
-        gcgcs.prec.T62.1957.nc
-        gcgcs.prec.T62.1958.nc
-        gcgcs.prec.T62.1959.nc
-        gcgcs.prec.T62.1960.nc
-        gcgcs.prec.T62.1961.nc
-        gcgcs.prec.T62.1962.nc
-        gcgcs.prec.T62.1963.nc
-        gcgcs.prec.T62.1964.nc
-        gcgcs.prec.T62.1965.nc
-        gcgcs.prec.T62.1966.nc
-        gcgcs.prec.T62.1967.nc
-        gcgcs.prec.T62.1968.nc
-        gcgcs.prec.T62.1969.nc
-        gcgcs.prec.T62.1970.nc
-        gcgcs.prec.T62.1971.nc
-        gcgcs.prec.T62.1972.nc
-        gcgcs.prec.T62.1973.nc
-        gcgcs.prec.T62.1974.nc
-        gcgcs.prec.T62.1975.nc
-        gcgcs.prec.T62.1976.nc
-        gcgcs.prec.T62.1977.nc
-        gcgcs.prec.T62.1978.nc
-        gcgcs.prec.T62.1979.nc
-        gcgcs.prec.T62.1980.nc
-        gcgcs.prec.T62.1981.nc
-        gcgcs.prec.T62.1982.nc
-        gcgcs.prec.T62.1983.nc
-        gcgcs.prec.T62.1984.nc
-        gcgcs.prec.T62.1985.nc
-        gcgcs.prec.T62.1986.nc
-        gcgcs.prec.T62.1987.nc
-        gcgcs.prec.T62.1988.nc
-        gcgcs.prec.T62.1989.nc
-        gcgcs.prec.T62.1990.nc
-        gcgcs.prec.T62.1991.nc
-        gcgcs.prec.T62.1992.nc
-        gcgcs.prec.T62.1993.nc
-        gcgcs.prec.T62.1994.nc
-        gcgcs.prec.T62.1995.nc
-        gcgcs.prec.T62.1996.nc
-        gcgcs.prec.T62.1997.nc
-        gcgcs.prec.T62.1998.nc
-        gcgcs.prec.T62.1999.nc
-        gcgcs.prec.T62.2000.nc
-        gcgcs.prec.T62.2001.nc
-        gcgcs.prec.T62.2002.nc
-        gcgcs.prec.T62.2003.nc
-        gcgcs.prec.T62.2004.nc
-        gcgcs.prec.T62.2005.nc
-        gcgcs.prec.T62.2006.nc
-        gcgcs.prec.T62.2007.nc
-        gcgcs.prec.T62.2008.20120412.nc
-        gcgcs.prec.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2005.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/gcgcs.prec.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.GISS.LWDN">
-        giss.lwdn.T62.1948.nc
-        giss.lwdn.T62.1949.nc
-        giss.lwdn.T62.1950.nc
-        giss.lwdn.T62.1951.nc
-        giss.lwdn.T62.1952.nc
-        giss.lwdn.T62.1953.nc
-        giss.lwdn.T62.1954.nc
-        giss.lwdn.T62.1955.nc
-        giss.lwdn.T62.1956.nc
-        giss.lwdn.T62.1957.nc
-        giss.lwdn.T62.1958.nc
-        giss.lwdn.T62.1959.nc
-        giss.lwdn.T62.1960.nc
-        giss.lwdn.T62.1961.nc
-        giss.lwdn.T62.1962.nc
-        giss.lwdn.T62.1963.nc
-        giss.lwdn.T62.1964.nc
-        giss.lwdn.T62.1965.nc
-        giss.lwdn.T62.1966.nc
-        giss.lwdn.T62.1967.nc
-        giss.lwdn.T62.1968.nc
-        giss.lwdn.T62.1969.nc
-        giss.lwdn.T62.1970.nc
-        giss.lwdn.T62.1971.nc
-        giss.lwdn.T62.1972.nc
-        giss.lwdn.T62.1973.nc
-        giss.lwdn.T62.1974.nc
-        giss.lwdn.T62.1975.nc
-        giss.lwdn.T62.1976.nc
-        giss.lwdn.T62.1977.nc
-        giss.lwdn.T62.1978.nc
-        giss.lwdn.T62.1979.nc
-        giss.lwdn.T62.1980.nc
-        giss.lwdn.T62.1981.nc
-        giss.lwdn.T62.1982.nc
-        giss.lwdn.T62.1983.nc
-        giss.lwdn.T62.1984.nc
-        giss.lwdn.T62.1985.nc
-        giss.lwdn.T62.1986.nc
-        giss.lwdn.T62.1987.nc
-        giss.lwdn.T62.1988.nc
-        giss.lwdn.T62.1989.nc
-        giss.lwdn.T62.1990.nc
-        giss.lwdn.T62.1991.nc
-        giss.lwdn.T62.1992.nc
-        giss.lwdn.T62.1993.nc
-        giss.lwdn.T62.1994.nc
-        giss.lwdn.T62.1995.nc
-        giss.lwdn.T62.1996.nc
-        giss.lwdn.T62.1997.nc
-        giss.lwdn.T62.1998.nc
-        giss.lwdn.T62.1999.nc
-        giss.lwdn.T62.2000.nc
-        giss.lwdn.T62.2001.nc
-        giss.lwdn.T62.2002.nc
-        giss.lwdn.T62.2003.nc
-        giss.lwdn.T62.2004.nc
-        giss.lwdn.T62.2005.nc
-        giss.lwdn.T62.2006.nc
-        giss.lwdn.T62.2007.nc
-        giss.lwdn.T62.2008.20120412.nc
-        giss.lwdn.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2005.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.lwdn.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.GISS.SWDN">
-        giss.swdn.T62.1948.nc
-        giss.swdn.T62.1949.nc
-        giss.swdn.T62.1950.nc
-        giss.swdn.T62.1951.nc
-        giss.swdn.T62.1952.nc
-        giss.swdn.T62.1953.nc
-        giss.swdn.T62.1954.nc
-        giss.swdn.T62.1955.nc
-        giss.swdn.T62.1956.nc
-        giss.swdn.T62.1957.nc
-        giss.swdn.T62.1958.nc
-        giss.swdn.T62.1959.nc
-        giss.swdn.T62.1960.nc
-        giss.swdn.T62.1961.nc
-        giss.swdn.T62.1962.nc
-        giss.swdn.T62.1963.nc
-        giss.swdn.T62.1964.nc
-        giss.swdn.T62.1965.nc
-        giss.swdn.T62.1966.nc
-        giss.swdn.T62.1967.nc
-        giss.swdn.T62.1968.nc
-        giss.swdn.T62.1969.nc
-        giss.swdn.T62.1970.nc
-        giss.swdn.T62.1971.nc
-        giss.swdn.T62.1972.nc
-        giss.swdn.T62.1973.nc
-        giss.swdn.T62.1974.nc
-        giss.swdn.T62.1975.nc
-        giss.swdn.T62.1976.nc
-        giss.swdn.T62.1977.nc
-        giss.swdn.T62.1978.nc
-        giss.swdn.T62.1979.nc
-        giss.swdn.T62.1980.nc
-        giss.swdn.T62.1981.nc
-        giss.swdn.T62.1982.nc
-        giss.swdn.T62.1983.nc
-        giss.swdn.T62.1984.nc
-        giss.swdn.T62.1985.nc
-        giss.swdn.T62.1986.nc
-        giss.swdn.T62.1987.nc
-        giss.swdn.T62.1988.nc
-        giss.swdn.T62.1989.nc
-        giss.swdn.T62.1990.nc
-        giss.swdn.T62.1991.nc
-        giss.swdn.T62.1992.nc
-        giss.swdn.T62.1993.nc
-        giss.swdn.T62.1994.nc
-        giss.swdn.T62.1995.nc
-        giss.swdn.T62.1996.nc
-        giss.swdn.T62.1997.nc
-        giss.swdn.T62.1998.nc
-        giss.swdn.T62.1999.nc
-        giss.swdn.T62.2000.nc
-        giss.swdn.T62.2001.nc
-        giss.swdn.T62.2002.nc
-        giss.swdn.T62.2003.nc
-        giss.swdn.T62.2004.nc
-        giss.swdn.T62.2005.nc
-        giss.swdn.T62.2006.nc
-        giss.swdn.T62.2007.nc
-        giss.swdn.T62.2008.20120412.nc
-        giss.swdn.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2005.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swdn.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.GISS.SWUP">
-        giss.swup.T62.1948.nc
-        giss.swup.T62.1949.nc
-        giss.swup.T62.1950.nc
-        giss.swup.T62.1951.nc
-        giss.swup.T62.1952.nc
-        giss.swup.T62.1953.nc
-        giss.swup.T62.1954.nc
-        giss.swup.T62.1955.nc
-        giss.swup.T62.1956.nc
-        giss.swup.T62.1957.nc
-        giss.swup.T62.1958.nc
-        giss.swup.T62.1959.nc
-        giss.swup.T62.1960.nc
-        giss.swup.T62.1961.nc
-        giss.swup.T62.1962.nc
-        giss.swup.T62.1963.nc
-        giss.swup.T62.1964.nc
-        giss.swup.T62.1965.nc
-        giss.swup.T62.1966.nc
-        giss.swup.T62.1967.nc
-        giss.swup.T62.1968.nc
-        giss.swup.T62.1969.nc
-        giss.swup.T62.1970.nc
-        giss.swup.T62.1971.nc
-        giss.swup.T62.1972.nc
-        giss.swup.T62.1973.nc
-        giss.swup.T62.1974.nc
-        giss.swup.T62.1975.nc
-        giss.swup.T62.1976.nc
-        giss.swup.T62.1977.nc
-        giss.swup.T62.1978.nc
-        giss.swup.T62.1979.nc
-        giss.swup.T62.1980.nc
-        giss.swup.T62.1981.nc
-        giss.swup.T62.1982.nc
-        giss.swup.T62.1983.nc
-        giss.swup.T62.1984.nc
-        giss.swup.T62.1985.nc
-        giss.swup.T62.1986.nc
-        giss.swup.T62.1987.nc
-        giss.swup.T62.1988.nc
-        giss.swup.T62.1989.nc
-        giss.swup.T62.1990.nc
-        giss.swup.T62.1991.nc
-        giss.swup.T62.1992.nc
-        giss.swup.T62.1993.nc
-        giss.swup.T62.1994.nc
-        giss.swup.T62.1995.nc
-        giss.swup.T62.1996.nc
-        giss.swup.T62.1997.nc
-        giss.swup.T62.1998.nc
-        giss.swup.T62.1999.nc
-        giss.swup.T62.2000.nc
-        giss.swup.T62.2001.nc
-        giss.swup.T62.2002.nc
-        giss.swup.T62.2003.nc
-        giss.swup.T62.2004.nc
-        giss.swup.T62.2005.nc
-        giss.swup.T62.2006.nc
-        giss.swup.T62.2007.nc
-        giss.swup.T62.2008.20120412.nc
-        giss.swup.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2005.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/giss.swup.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.DN10">
-        ncep.dn10.T62.1948.nc
-        ncep.dn10.T62.1949.nc
-        ncep.dn10.T62.1950.nc
-        ncep.dn10.T62.1951.nc
-        ncep.dn10.T62.1952.nc
-        ncep.dn10.T62.1953.nc
-        ncep.dn10.T62.1954.nc
-        ncep.dn10.T62.1955.nc
-        ncep.dn10.T62.1956.nc
-        ncep.dn10.T62.1957.nc
-        ncep.dn10.T62.1958.nc
-        ncep.dn10.T62.1959.nc
-        ncep.dn10.T62.1960.nc
-        ncep.dn10.T62.1961.nc
-        ncep.dn10.T62.1962.nc
-        ncep.dn10.T62.1963.nc
-        ncep.dn10.T62.1964.nc
-        ncep.dn10.T62.1965.nc
-        ncep.dn10.T62.1966.nc
-        ncep.dn10.T62.1967.nc
-        ncep.dn10.T62.1968.nc
-        ncep.dn10.T62.1969.nc
-        ncep.dn10.T62.1970.nc
-        ncep.dn10.T62.1971.nc
-        ncep.dn10.T62.1972.nc
-        ncep.dn10.T62.1973.nc
-        ncep.dn10.T62.1974.nc
-        ncep.dn10.T62.1975.nc
-        ncep.dn10.T62.1976.nc
-        ncep.dn10.T62.1977.nc
-        ncep.dn10.T62.1978.nc
-        ncep.dn10.T62.1979.nc
-        ncep.dn10.T62.1980.nc
-        ncep.dn10.T62.1981.nc
-        ncep.dn10.T62.1982.nc
-        ncep.dn10.T62.1983.nc
-        ncep.dn10.T62.1984.nc
-        ncep.dn10.T62.1985.nc
-        ncep.dn10.T62.1986.nc
-        ncep.dn10.T62.1987.nc
-        ncep.dn10.T62.1988.nc
-        ncep.dn10.T62.1989.nc
-        ncep.dn10.T62.1990.nc
-        ncep.dn10.T62.1991.nc
-        ncep.dn10.T62.1992.nc
-        ncep.dn10.T62.1993.nc
-        ncep.dn10.T62.1994.nc
-        ncep.dn10.T62.1995.nc
-        ncep.dn10.T62.1996.nc
-        ncep.dn10.T62.1997.nc
-        ncep.dn10.T62.1998.nc
-        ncep.dn10.T62.1999.nc
-        ncep.dn10.T62.2000.nc
-        ncep.dn10.T62.2001.nc
-        ncep.dn10.T62.2002.nc
-        ncep.dn10.T62.2003.nc
-        ncep.dn10.T62.2004.nc
-        ncep.dn10.T62.2005.20120414.nc
-        ncep.dn10.T62.2006.nc
-        ncep.dn10.T62.2007.nc
-        ncep.dn10.T62.2008.20120412.nc
-        ncep.dn10.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2005.20120414.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.dn10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.Q_10">
-        ncep.q_10.T62.1948.nc
-        ncep.q_10.T62.1949.nc
-        ncep.q_10.T62.1950.nc
-        ncep.q_10.T62.1951.nc
-        ncep.q_10.T62.1952.nc
-        ncep.q_10.T62.1953.nc
-        ncep.q_10.T62.1954.nc
-        ncep.q_10.T62.1955.nc
-        ncep.q_10.T62.1956.nc
-        ncep.q_10.T62.1957.nc
-        ncep.q_10.T62.1958.nc
-        ncep.q_10.T62.1959.nc
-        ncep.q_10.T62.1960.nc
-        ncep.q_10.T62.1961.nc
-        ncep.q_10.T62.1962.nc
-        ncep.q_10.T62.1963.nc
-        ncep.q_10.T62.1964.nc
-        ncep.q_10.T62.1965.nc
-        ncep.q_10.T62.1966.nc
-        ncep.q_10.T62.1967.nc
-        ncep.q_10.T62.1968.nc
-        ncep.q_10.T62.1969.nc
-        ncep.q_10.T62.1970.nc
-        ncep.q_10.T62.1971.nc
-        ncep.q_10.T62.1972.nc
-        ncep.q_10.T62.1973.nc
-        ncep.q_10.T62.1974.nc
-        ncep.q_10.T62.1975.nc
-        ncep.q_10.T62.1976.nc
-        ncep.q_10.T62.1977.nc
-        ncep.q_10.T62.1978.nc
-        ncep.q_10.T62.1979.nc
-        ncep.q_10.T62.1980.nc
-        ncep.q_10.T62.1981.nc
-        ncep.q_10.T62.1982.nc
-        ncep.q_10.T62.1983.nc
-        ncep.q_10.T62.1984.nc
-        ncep.q_10.T62.1985.nc
-        ncep.q_10.T62.1986.nc
-        ncep.q_10.T62.1987.nc
-        ncep.q_10.T62.1988.nc
-        ncep.q_10.T62.1989.nc
-        ncep.q_10.T62.1990.nc
-        ncep.q_10.T62.1991.nc
-        ncep.q_10.T62.1992.nc
-        ncep.q_10.T62.1993.nc
-        ncep.q_10.T62.1994.nc
-        ncep.q_10.T62.1995.nc
-        ncep.q_10.T62.1996.nc
-        ncep.q_10.T62.1997.nc
-        ncep.q_10.T62.1998.nc
-        ncep.q_10.T62.1999.nc
-        ncep.q_10.T62.2000.nc
-        ncep.q_10.T62.2001.nc
-        ncep.q_10.T62.2002.nc
-        ncep.q_10.T62.2003.nc
-        ncep.q_10.T62.2004.nc
-        ncep.q_10.T62.2005.20120414.nc
-        ncep.q_10.T62.2006.nc
-        ncep.q_10.T62.2007.nc
-        ncep.q_10.T62.2008.20120412.nc
-        ncep.q_10.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2005.20120414.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.q_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.SLP_">
-        ncep.slp_.T62.1948.nc
-        ncep.slp_.T62.1949.nc
-        ncep.slp_.T62.1950.nc
-        ncep.slp_.T62.1951.nc
-        ncep.slp_.T62.1952.nc
-        ncep.slp_.T62.1953.nc
-        ncep.slp_.T62.1954.nc
-        ncep.slp_.T62.1955.nc
-        ncep.slp_.T62.1956.nc
-        ncep.slp_.T62.1957.nc
-        ncep.slp_.T62.1958.nc
-        ncep.slp_.T62.1959.nc
-        ncep.slp_.T62.1960.nc
-        ncep.slp_.T62.1961.nc
-        ncep.slp_.T62.1962.nc
-        ncep.slp_.T62.1963.nc
-        ncep.slp_.T62.1964.nc
-        ncep.slp_.T62.1965.nc
-        ncep.slp_.T62.1966.nc
-        ncep.slp_.T62.1967.nc
-        ncep.slp_.T62.1968.nc
-        ncep.slp_.T62.1969.nc
-        ncep.slp_.T62.1970.nc
-        ncep.slp_.T62.1971.nc
-        ncep.slp_.T62.1972.nc
-        ncep.slp_.T62.1973.nc
-        ncep.slp_.T62.1974.nc
-        ncep.slp_.T62.1975.nc
-        ncep.slp_.T62.1976.nc
-        ncep.slp_.T62.1977.nc
-        ncep.slp_.T62.1978.nc
-        ncep.slp_.T62.1979.nc
-        ncep.slp_.T62.1980.nc
-        ncep.slp_.T62.1981.nc
-        ncep.slp_.T62.1982.nc
-        ncep.slp_.T62.1983.nc
-        ncep.slp_.T62.1984.nc
-        ncep.slp_.T62.1985.nc
-        ncep.slp_.T62.1986.nc
-        ncep.slp_.T62.1987.nc
-        ncep.slp_.T62.1988.nc
-        ncep.slp_.T62.1989.nc
-        ncep.slp_.T62.1990.nc
-        ncep.slp_.T62.1991.nc
-        ncep.slp_.T62.1992.nc
-        ncep.slp_.T62.1993.nc
-        ncep.slp_.T62.1994.nc
-        ncep.slp_.T62.1995.nc
-        ncep.slp_.T62.1996.nc
-        ncep.slp_.T62.1997.nc
-        ncep.slp_.T62.1998.nc
-        ncep.slp_.T62.1999.nc
-        ncep.slp_.T62.2000.nc
-        ncep.slp_.T62.2001.nc
-        ncep.slp_.T62.2002.nc
-        ncep.slp_.T62.2003.nc
-        ncep.slp_.T62.2004.nc
-        ncep.slp_.T62.2005.20120414.nc
-        ncep.slp_.T62.2006.nc
-        ncep.slp_.T62.2007.nc
-        ncep.slp_.T62.2008.20120412.nc
-        ncep.slp_.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2005.20120414.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.slp_.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.T_10">
-        ncep.t_10.T62.1948.nc
-        ncep.t_10.T62.1949.nc
-        ncep.t_10.T62.1950.nc
-        ncep.t_10.T62.1951.nc
-        ncep.t_10.T62.1952.nc
-        ncep.t_10.T62.1953.nc
-        ncep.t_10.T62.1954.nc
-        ncep.t_10.T62.1955.nc
-        ncep.t_10.T62.1956.nc
-        ncep.t_10.T62.1957.nc
-        ncep.t_10.T62.1958.nc
-        ncep.t_10.T62.1959.nc
-        ncep.t_10.T62.1960.nc
-        ncep.t_10.T62.1961.nc
-        ncep.t_10.T62.1962.nc
-        ncep.t_10.T62.1963.nc
-        ncep.t_10.T62.1964.nc
-        ncep.t_10.T62.1965.nc
-        ncep.t_10.T62.1966.nc
-        ncep.t_10.T62.1967.nc
-        ncep.t_10.T62.1968.nc
-        ncep.t_10.T62.1969.nc
-        ncep.t_10.T62.1970.nc
-        ncep.t_10.T62.1971.nc
-        ncep.t_10.T62.1972.nc
-        ncep.t_10.T62.1973.nc
-        ncep.t_10.T62.1974.nc
-        ncep.t_10.T62.1975.nc
-        ncep.t_10.T62.1976.nc
-        ncep.t_10.T62.1977.nc
-        ncep.t_10.T62.1978.nc
-        ncep.t_10.T62.1979.nc
-        ncep.t_10.T62.1980.nc
-        ncep.t_10.T62.1981.nc
-        ncep.t_10.T62.1982.nc
-        ncep.t_10.T62.1983.nc
-        ncep.t_10.T62.1984.nc
-        ncep.t_10.T62.1985.nc
-        ncep.t_10.T62.1986.nc
-        ncep.t_10.T62.1987.nc
-        ncep.t_10.T62.1988.nc
-        ncep.t_10.T62.1989.nc
-        ncep.t_10.T62.1990.nc
-        ncep.t_10.T62.1991.nc
-        ncep.t_10.T62.1992.nc
-        ncep.t_10.T62.1993.nc
-        ncep.t_10.T62.1994.nc
-        ncep.t_10.T62.1995.nc
-        ncep.t_10.T62.1996.nc
-        ncep.t_10.T62.1997.nc
-        ncep.t_10.T62.1998.nc
-        ncep.t_10.T62.1999.nc
-        ncep.t_10.T62.2000.nc
-        ncep.t_10.T62.2001.nc
-        ncep.t_10.T62.2002.nc
-        ncep.t_10.T62.2003.nc
-        ncep.t_10.T62.2004.nc
-        ncep.t_10.T62.2005.20120414.nc
-        ncep.t_10.T62.2006.nc
-        ncep.t_10.T62.2007.nc
-        ncep.t_10.T62.2008.20120412.nc
-        ncep.t_10.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2005.20120414.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.t_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.U_10">
-        ncep.u_10.T62.1948.nc
-        ncep.u_10.T62.1949.nc
-        ncep.u_10.T62.1950.nc
-        ncep.u_10.T62.1951.nc
-        ncep.u_10.T62.1952.nc
-        ncep.u_10.T62.1953.nc
-        ncep.u_10.T62.1954.nc
-        ncep.u_10.T62.1955.nc
-        ncep.u_10.T62.1956.nc
-        ncep.u_10.T62.1957.nc
-        ncep.u_10.T62.1958.nc
-        ncep.u_10.T62.1959.nc
-        ncep.u_10.T62.1960.nc
-        ncep.u_10.T62.1961.nc
-        ncep.u_10.T62.1962.nc
-        ncep.u_10.T62.1963.nc
-        ncep.u_10.T62.1964.nc
-        ncep.u_10.T62.1965.nc
-        ncep.u_10.T62.1966.nc
-        ncep.u_10.T62.1967.nc
-        ncep.u_10.T62.1968.nc
-        ncep.u_10.T62.1969.nc
-        ncep.u_10.T62.1970.nc
-        ncep.u_10.T62.1971.nc
-        ncep.u_10.T62.1972.nc
-        ncep.u_10.T62.1973.nc
-        ncep.u_10.T62.1974.nc
-        ncep.u_10.T62.1975.nc
-        ncep.u_10.T62.1976.nc
-        ncep.u_10.T62.1977.nc
-        ncep.u_10.T62.1978.nc
-        ncep.u_10.T62.1979.nc
-        ncep.u_10.T62.1980.nc
-        ncep.u_10.T62.1981.nc
-        ncep.u_10.T62.1982.nc
-        ncep.u_10.T62.1983.nc
-        ncep.u_10.T62.1984.nc
-        ncep.u_10.T62.1985.nc
-        ncep.u_10.T62.1986.nc
-        ncep.u_10.T62.1987.nc
-        ncep.u_10.T62.1988.nc
-        ncep.u_10.T62.1989.nc
-        ncep.u_10.T62.1990.nc
-        ncep.u_10.T62.1991.nc
-        ncep.u_10.T62.1992.nc
-        ncep.u_10.T62.1993.nc
-        ncep.u_10.T62.1994.nc
-        ncep.u_10.T62.1995.nc
-        ncep.u_10.T62.1996.nc
-        ncep.u_10.T62.1997.nc
-        ncep.u_10.T62.1998.nc
-        ncep.u_10.T62.1999.nc
-        ncep.u_10.T62.2000.nc
-        ncep.u_10.T62.2001.nc
-        ncep.u_10.T62.2002.nc
-        ncep.u_10.T62.2003.nc
-        ncep.u_10.T62.2004.nc
-        ncep.u_10.T62.2005.20120414.nc
-        ncep.u_10.T62.2006.nc
-        ncep.u_10.T62.2007.nc
-        ncep.u_10.T62.2008.20120412.nc
-        ncep.u_10.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2005.20120414.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.u_10.T62.2009.20120412.nc
       </value>
       <value  stream="CORE2_IAF.NCEP.V_10">
-        ncep.v_10.T62.1948.nc
-        ncep.v_10.T62.1949.nc
-        ncep.v_10.T62.1950.nc
-        ncep.v_10.T62.1951.nc
-        ncep.v_10.T62.1952.nc
-        ncep.v_10.T62.1953.nc
-        ncep.v_10.T62.1954.nc
-        ncep.v_10.T62.1955.nc
-        ncep.v_10.T62.1956.nc
-        ncep.v_10.T62.1957.nc
-        ncep.v_10.T62.1958.nc
-        ncep.v_10.T62.1959.nc
-        ncep.v_10.T62.1960.nc
-        ncep.v_10.T62.1961.nc
-        ncep.v_10.T62.1962.nc
-        ncep.v_10.T62.1963.nc
-        ncep.v_10.T62.1964.nc
-        ncep.v_10.T62.1965.nc
-        ncep.v_10.T62.1966.nc
-        ncep.v_10.T62.1967.nc
-        ncep.v_10.T62.1968.nc
-        ncep.v_10.T62.1969.nc
-        ncep.v_10.T62.1970.nc
-        ncep.v_10.T62.1971.nc
-        ncep.v_10.T62.1972.nc
-        ncep.v_10.T62.1973.nc
-        ncep.v_10.T62.1974.nc
-        ncep.v_10.T62.1975.nc
-        ncep.v_10.T62.1976.nc
-        ncep.v_10.T62.1977.nc
-        ncep.v_10.T62.1978.nc
-        ncep.v_10.T62.1979.nc
-        ncep.v_10.T62.1980.nc
-        ncep.v_10.T62.1981.nc
-        ncep.v_10.T62.1982.nc
-        ncep.v_10.T62.1983.nc
-        ncep.v_10.T62.1984.nc
-        ncep.v_10.T62.1985.nc
-        ncep.v_10.T62.1986.nc
-        ncep.v_10.T62.1987.nc
-        ncep.v_10.T62.1988.nc
-        ncep.v_10.T62.1989.nc
-        ncep.v_10.T62.1990.nc
-        ncep.v_10.T62.1991.nc
-        ncep.v_10.T62.1992.nc
-        ncep.v_10.T62.1993.nc
-        ncep.v_10.T62.1994.nc
-        ncep.v_10.T62.1995.nc
-        ncep.v_10.T62.1996.nc
-        ncep.v_10.T62.1997.nc
-        ncep.v_10.T62.1998.nc
-        ncep.v_10.T62.1999.nc
-        ncep.v_10.T62.2000.nc
-        ncep.v_10.T62.2001.nc
-        ncep.v_10.T62.2002.nc
-        ncep.v_10.T62.2003.nc
-        ncep.v_10.T62.2004.nc
-        ncep.v_10.T62.2005.20120414.nc
-        ncep.v_10.T62.2006.nc
-        ncep.v_10.T62.2007.nc
-        ncep.v_10.T62.2008.20120412.nc
-        ncep.v_10.T62.2009.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1948.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1949.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1950.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1951.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1952.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1953.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1954.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1955.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1956.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1957.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1958.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1959.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1960.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1961.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1962.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1963.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1964.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1965.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1966.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1967.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1968.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1969.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1970.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1971.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1972.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1973.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1974.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1975.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1976.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1977.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1978.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1979.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1980.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1981.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1982.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1983.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1984.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1985.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1986.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1987.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1988.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1989.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1990.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1991.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1992.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1993.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1994.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1995.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1996.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1997.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1998.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.1999.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2000.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2001.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2002.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2003.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2004.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2005.20120414.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2006.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2007.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2008.20120412.nc
+        $DIN_LOC_ROOT/ocn/iaf/ncep.v_10.T62.2009.20120412.nc
       </value>
-      <value stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
+      <value stream="CORE2_IAF.CORE2.ArcFactor">
+	$DIN_LOC_ROOT/atm/datm7/CORE2/CORE2.t_10.ArcFactor.T62.1997-2004.nc
+      </value>
       <value  stream="CORE_IAF_JRA.PREC">
-        JRA.v1.3.prec.TL319.1958.171019.nc
-        JRA.v1.3.prec.TL319.1959.171019.nc
-        JRA.v1.3.prec.TL319.1960.171019.nc
-        JRA.v1.3.prec.TL319.1961.171019.nc
-        JRA.v1.3.prec.TL319.1962.171019.nc
-        JRA.v1.3.prec.TL319.1963.171019.nc
-        JRA.v1.3.prec.TL319.1964.171019.nc
-        JRA.v1.3.prec.TL319.1965.171019.nc
-        JRA.v1.3.prec.TL319.1966.171019.nc
-        JRA.v1.3.prec.TL319.1967.171019.nc
-        JRA.v1.3.prec.TL319.1968.171019.nc
-        JRA.v1.3.prec.TL319.1969.171019.nc
-        JRA.v1.3.prec.TL319.1970.171019.nc
-        JRA.v1.3.prec.TL319.1971.171019.nc
-        JRA.v1.3.prec.TL319.1972.171019.nc
-        JRA.v1.3.prec.TL319.1973.171019.nc
-        JRA.v1.3.prec.TL319.1974.171019.nc
-        JRA.v1.3.prec.TL319.1975.171019.nc
-        JRA.v1.3.prec.TL319.1976.171019.nc
-        JRA.v1.3.prec.TL319.1977.171019.nc
-        JRA.v1.3.prec.TL319.1978.171019.nc
-        JRA.v1.3.prec.TL319.1979.171019.nc
-        JRA.v1.3.prec.TL319.1980.171019.nc
-        JRA.v1.3.prec.TL319.1981.171019.nc
-        JRA.v1.3.prec.TL319.1982.171019.nc
-        JRA.v1.3.prec.TL319.1983.171019.nc
-        JRA.v1.3.prec.TL319.1984.171019.nc
-        JRA.v1.3.prec.TL319.1985.171019.nc
-        JRA.v1.3.prec.TL319.1986.171019.nc
-        JRA.v1.3.prec.TL319.1987.171019.nc
-        JRA.v1.3.prec.TL319.1988.171019.nc
-        JRA.v1.3.prec.TL319.1989.171019.nc
-        JRA.v1.3.prec.TL319.1990.171019.nc
-        JRA.v1.3.prec.TL319.1991.171019.nc
-        JRA.v1.3.prec.TL319.1992.171019.nc
-        JRA.v1.3.prec.TL319.1993.171019.nc
-        JRA.v1.3.prec.TL319.1994.171019.nc
-        JRA.v1.3.prec.TL319.1995.171019.nc
-        JRA.v1.3.prec.TL319.1996.171019.nc
-        JRA.v1.3.prec.TL319.1997.171019.nc
-        JRA.v1.3.prec.TL319.1998.171019.nc
-        JRA.v1.3.prec.TL319.1999.171019.nc
-        JRA.v1.3.prec.TL319.2000.171019.nc
-        JRA.v1.3.prec.TL319.2001.171019.nc
-        JRA.v1.3.prec.TL319.2002.171019.nc
-        JRA.v1.3.prec.TL319.2003.171019.nc
-        JRA.v1.3.prec.TL319.2004.171019.nc
-        JRA.v1.3.prec.TL319.2005.171019.nc
-        JRA.v1.3.prec.TL319.2006.171019.nc
-        JRA.v1.3.prec.TL319.2007.171019.nc
-        JRA.v1.3.prec.TL319.2008.171019.nc
-        JRA.v1.3.prec.TL319.2009.171019.nc
-        JRA.v1.3.prec.TL319.2010.171019.nc
-        JRA.v1.3.prec.TL319.2011.171019.nc
-        JRA.v1.3.prec.TL319.2012.171019.nc
-        JRA.v1.3.prec.TL319.2013.171019.nc
-        JRA.v1.3.prec.TL319.2014.171019.nc
-        JRA.v1.3.prec.TL319.2015.171019.nc
-        JRA.v1.3.prec.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.prec.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.LWDN">
-        JRA.v1.3.lwdn.TL319.1958.171019.nc
-        JRA.v1.3.lwdn.TL319.1959.171019.nc
-        JRA.v1.3.lwdn.TL319.1960.171019.nc
-        JRA.v1.3.lwdn.TL319.1961.171019.nc
-        JRA.v1.3.lwdn.TL319.1962.171019.nc
-        JRA.v1.3.lwdn.TL319.1963.171019.nc
-        JRA.v1.3.lwdn.TL319.1964.171019.nc
-        JRA.v1.3.lwdn.TL319.1965.171019.nc
-        JRA.v1.3.lwdn.TL319.1966.171019.nc
-        JRA.v1.3.lwdn.TL319.1967.171019.nc
-        JRA.v1.3.lwdn.TL319.1968.171019.nc
-        JRA.v1.3.lwdn.TL319.1969.171019.nc
-        JRA.v1.3.lwdn.TL319.1970.171019.nc
-        JRA.v1.3.lwdn.TL319.1971.171019.nc
-        JRA.v1.3.lwdn.TL319.1972.171019.nc
-        JRA.v1.3.lwdn.TL319.1973.171019.nc
-        JRA.v1.3.lwdn.TL319.1974.171019.nc
-        JRA.v1.3.lwdn.TL319.1975.171019.nc
-        JRA.v1.3.lwdn.TL319.1976.171019.nc
-        JRA.v1.3.lwdn.TL319.1977.171019.nc
-        JRA.v1.3.lwdn.TL319.1978.171019.nc
-        JRA.v1.3.lwdn.TL319.1979.171019.nc
-        JRA.v1.3.lwdn.TL319.1980.171019.nc
-        JRA.v1.3.lwdn.TL319.1981.171019.nc
-        JRA.v1.3.lwdn.TL319.1982.171019.nc
-        JRA.v1.3.lwdn.TL319.1983.171019.nc
-        JRA.v1.3.lwdn.TL319.1984.171019.nc
-        JRA.v1.3.lwdn.TL319.1985.171019.nc
-        JRA.v1.3.lwdn.TL319.1986.171019.nc
-        JRA.v1.3.lwdn.TL319.1987.171019.nc
-        JRA.v1.3.lwdn.TL319.1988.171019.nc
-        JRA.v1.3.lwdn.TL319.1989.171019.nc
-        JRA.v1.3.lwdn.TL319.1990.171019.nc
-        JRA.v1.3.lwdn.TL319.1991.171019.nc
-        JRA.v1.3.lwdn.TL319.1992.171019.nc
-        JRA.v1.3.lwdn.TL319.1993.171019.nc
-        JRA.v1.3.lwdn.TL319.1994.171019.nc
-        JRA.v1.3.lwdn.TL319.1995.171019.nc
-        JRA.v1.3.lwdn.TL319.1996.171019.nc
-        JRA.v1.3.lwdn.TL319.1997.171019.nc
-        JRA.v1.3.lwdn.TL319.1998.171019.nc
-        JRA.v1.3.lwdn.TL319.1999.171019.nc
-        JRA.v1.3.lwdn.TL319.2000.171019.nc
-        JRA.v1.3.lwdn.TL319.2001.171019.nc
-        JRA.v1.3.lwdn.TL319.2002.171019.nc
-        JRA.v1.3.lwdn.TL319.2003.171019.nc
-        JRA.v1.3.lwdn.TL319.2004.171019.nc
-        JRA.v1.3.lwdn.TL319.2005.171019.nc
-        JRA.v1.3.lwdn.TL319.2006.171019.nc
-        JRA.v1.3.lwdn.TL319.2007.171019.nc
-        JRA.v1.3.lwdn.TL319.2008.171019.nc
-        JRA.v1.3.lwdn.TL319.2009.171019.nc
-        JRA.v1.3.lwdn.TL319.2010.171019.nc
-        JRA.v1.3.lwdn.TL319.2011.171019.nc
-        JRA.v1.3.lwdn.TL319.2012.171019.nc
-        JRA.v1.3.lwdn.TL319.2013.171019.nc
-        JRA.v1.3.lwdn.TL319.2014.171019.nc
-        JRA.v1.3.lwdn.TL319.2015.171019.nc
-        JRA.v1.3.lwdn.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.lwdn.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.SWDN">
-        JRA.v1.3.swdn.TL319.1958.171019.nc
-        JRA.v1.3.swdn.TL319.1959.171019.nc
-        JRA.v1.3.swdn.TL319.1960.171019.nc
-        JRA.v1.3.swdn.TL319.1961.171019.nc
-        JRA.v1.3.swdn.TL319.1962.171019.nc
-        JRA.v1.3.swdn.TL319.1963.171019.nc
-        JRA.v1.3.swdn.TL319.1964.171019.nc
-        JRA.v1.3.swdn.TL319.1965.171019.nc
-        JRA.v1.3.swdn.TL319.1966.171019.nc
-        JRA.v1.3.swdn.TL319.1967.171019.nc
-        JRA.v1.3.swdn.TL319.1968.171019.nc
-        JRA.v1.3.swdn.TL319.1969.171019.nc
-        JRA.v1.3.swdn.TL319.1970.171019.nc
-        JRA.v1.3.swdn.TL319.1971.171019.nc
-        JRA.v1.3.swdn.TL319.1972.171019.nc
-        JRA.v1.3.swdn.TL319.1973.171019.nc
-        JRA.v1.3.swdn.TL319.1974.171019.nc
-        JRA.v1.3.swdn.TL319.1975.171019.nc
-        JRA.v1.3.swdn.TL319.1976.171019.nc
-        JRA.v1.3.swdn.TL319.1977.171019.nc
-        JRA.v1.3.swdn.TL319.1978.171019.nc
-        JRA.v1.3.swdn.TL319.1979.171019.nc
-        JRA.v1.3.swdn.TL319.1980.171019.nc
-        JRA.v1.3.swdn.TL319.1981.171019.nc
-        JRA.v1.3.swdn.TL319.1982.171019.nc
-        JRA.v1.3.swdn.TL319.1983.171019.nc
-        JRA.v1.3.swdn.TL319.1984.171019.nc
-        JRA.v1.3.swdn.TL319.1985.171019.nc
-        JRA.v1.3.swdn.TL319.1986.171019.nc
-        JRA.v1.3.swdn.TL319.1987.171019.nc
-        JRA.v1.3.swdn.TL319.1988.171019.nc
-        JRA.v1.3.swdn.TL319.1989.171019.nc
-        JRA.v1.3.swdn.TL319.1990.171019.nc
-        JRA.v1.3.swdn.TL319.1991.171019.nc
-        JRA.v1.3.swdn.TL319.1992.171019.nc
-        JRA.v1.3.swdn.TL319.1993.171019.nc
-        JRA.v1.3.swdn.TL319.1994.171019.nc
-        JRA.v1.3.swdn.TL319.1995.171019.nc
-        JRA.v1.3.swdn.TL319.1996.171019.nc
-        JRA.v1.3.swdn.TL319.1997.171019.nc
-        JRA.v1.3.swdn.TL319.1998.171019.nc
-        JRA.v1.3.swdn.TL319.1999.171019.nc
-        JRA.v1.3.swdn.TL319.2000.171019.nc
-        JRA.v1.3.swdn.TL319.2001.171019.nc
-        JRA.v1.3.swdn.TL319.2002.171019.nc
-        JRA.v1.3.swdn.TL319.2003.171019.nc
-        JRA.v1.3.swdn.TL319.2004.171019.nc
-        JRA.v1.3.swdn.TL319.2005.171019.nc
-        JRA.v1.3.swdn.TL319.2006.171019.nc
-        JRA.v1.3.swdn.TL319.2007.171019.nc
-        JRA.v1.3.swdn.TL319.2008.171019.nc
-        JRA.v1.3.swdn.TL319.2009.171019.nc
-        JRA.v1.3.swdn.TL319.2010.171019.nc
-        JRA.v1.3.swdn.TL319.2011.171019.nc
-        JRA.v1.3.swdn.TL319.2012.171019.nc
-        JRA.v1.3.swdn.TL319.2013.171019.nc
-        JRA.v1.3.swdn.TL319.2014.171019.nc
-        JRA.v1.3.swdn.TL319.2015.171019.nc
-        JRA.v1.3.swdn.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.swdn.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.Q_10">
-        JRA.v1.3.q_10.TL319.1958.171019.nc
-        JRA.v1.3.q_10.TL319.1959.171019.nc
-        JRA.v1.3.q_10.TL319.1960.171019.nc
-        JRA.v1.3.q_10.TL319.1961.171019.nc
-        JRA.v1.3.q_10.TL319.1962.171019.nc
-        JRA.v1.3.q_10.TL319.1963.171019.nc
-        JRA.v1.3.q_10.TL319.1964.171019.nc
-        JRA.v1.3.q_10.TL319.1965.171019.nc
-        JRA.v1.3.q_10.TL319.1966.171019.nc
-        JRA.v1.3.q_10.TL319.1967.171019.nc
-        JRA.v1.3.q_10.TL319.1968.171019.nc
-        JRA.v1.3.q_10.TL319.1969.171019.nc
-        JRA.v1.3.q_10.TL319.1970.171019.nc
-        JRA.v1.3.q_10.TL319.1971.171019.nc
-        JRA.v1.3.q_10.TL319.1972.171019.nc
-        JRA.v1.3.q_10.TL319.1973.171019.nc
-        JRA.v1.3.q_10.TL319.1974.171019.nc
-        JRA.v1.3.q_10.TL319.1975.171019.nc
-        JRA.v1.3.q_10.TL319.1976.171019.nc
-        JRA.v1.3.q_10.TL319.1977.171019.nc
-        JRA.v1.3.q_10.TL319.1978.171019.nc
-        JRA.v1.3.q_10.TL319.1979.171019.nc
-        JRA.v1.3.q_10.TL319.1980.171019.nc
-        JRA.v1.3.q_10.TL319.1981.171019.nc
-        JRA.v1.3.q_10.TL319.1982.171019.nc
-        JRA.v1.3.q_10.TL319.1983.171019.nc
-        JRA.v1.3.q_10.TL319.1984.171019.nc
-        JRA.v1.3.q_10.TL319.1985.171019.nc
-        JRA.v1.3.q_10.TL319.1986.171019.nc
-        JRA.v1.3.q_10.TL319.1987.171019.nc
-        JRA.v1.3.q_10.TL319.1988.171019.nc
-        JRA.v1.3.q_10.TL319.1989.171019.nc
-        JRA.v1.3.q_10.TL319.1990.171019.nc
-        JRA.v1.3.q_10.TL319.1991.171019.nc
-        JRA.v1.3.q_10.TL319.1992.171019.nc
-        JRA.v1.3.q_10.TL319.1993.171019.nc
-        JRA.v1.3.q_10.TL319.1994.171019.nc
-        JRA.v1.3.q_10.TL319.1995.171019.nc
-        JRA.v1.3.q_10.TL319.1996.171019.nc
-        JRA.v1.3.q_10.TL319.1997.171019.nc
-        JRA.v1.3.q_10.TL319.1998.171019.nc
-        JRA.v1.3.q_10.TL319.1999.171019.nc
-        JRA.v1.3.q_10.TL319.2000.171019.nc
-        JRA.v1.3.q_10.TL319.2001.171019.nc
-        JRA.v1.3.q_10.TL319.2002.171019.nc
-        JRA.v1.3.q_10.TL319.2003.171019.nc
-        JRA.v1.3.q_10.TL319.2004.171019.nc
-        JRA.v1.3.q_10.TL319.2005.171019.nc
-        JRA.v1.3.q_10.TL319.2006.171019.nc
-        JRA.v1.3.q_10.TL319.2007.171019.nc
-        JRA.v1.3.q_10.TL319.2008.171019.nc
-        JRA.v1.3.q_10.TL319.2009.171019.nc
-        JRA.v1.3.q_10.TL319.2010.171019.nc
-        JRA.v1.3.q_10.TL319.2011.171019.nc
-        JRA.v1.3.q_10.TL319.2012.171019.nc
-        JRA.v1.3.q_10.TL319.2013.171019.nc
-        JRA.v1.3.q_10.TL319.2014.171019.nc
-        JRA.v1.3.q_10.TL319.2015.171019.nc
-        JRA.v1.3.q_10.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.q_10.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.SLP_">
-        JRA.v1.3.slp.TL319.1958.171019.nc
-        JRA.v1.3.slp.TL319.1959.171019.nc
-        JRA.v1.3.slp.TL319.1960.171019.nc
-        JRA.v1.3.slp.TL319.1961.171019.nc
-        JRA.v1.3.slp.TL319.1962.171019.nc
-        JRA.v1.3.slp.TL319.1963.171019.nc
-        JRA.v1.3.slp.TL319.1964.171019.nc
-        JRA.v1.3.slp.TL319.1965.171019.nc
-        JRA.v1.3.slp.TL319.1966.171019.nc
-        JRA.v1.3.slp.TL319.1967.171019.nc
-        JRA.v1.3.slp.TL319.1968.171019.nc
-        JRA.v1.3.slp.TL319.1969.171019.nc
-        JRA.v1.3.slp.TL319.1970.171019.nc
-        JRA.v1.3.slp.TL319.1971.171019.nc
-        JRA.v1.3.slp.TL319.1972.171019.nc
-        JRA.v1.3.slp.TL319.1973.171019.nc
-        JRA.v1.3.slp.TL319.1974.171019.nc
-        JRA.v1.3.slp.TL319.1975.171019.nc
-        JRA.v1.3.slp.TL319.1976.171019.nc
-        JRA.v1.3.slp.TL319.1977.171019.nc
-        JRA.v1.3.slp.TL319.1978.171019.nc
-        JRA.v1.3.slp.TL319.1979.171019.nc
-        JRA.v1.3.slp.TL319.1980.171019.nc
-        JRA.v1.3.slp.TL319.1981.171019.nc
-        JRA.v1.3.slp.TL319.1982.171019.nc
-        JRA.v1.3.slp.TL319.1983.171019.nc
-        JRA.v1.3.slp.TL319.1984.171019.nc
-        JRA.v1.3.slp.TL319.1985.171019.nc
-        JRA.v1.3.slp.TL319.1986.171019.nc
-        JRA.v1.3.slp.TL319.1987.171019.nc
-        JRA.v1.3.slp.TL319.1988.171019.nc
-        JRA.v1.3.slp.TL319.1989.171019.nc
-        JRA.v1.3.slp.TL319.1990.171019.nc
-        JRA.v1.3.slp.TL319.1991.171019.nc
-        JRA.v1.3.slp.TL319.1992.171019.nc
-        JRA.v1.3.slp.TL319.1993.171019.nc
-        JRA.v1.3.slp.TL319.1994.171019.nc
-        JRA.v1.3.slp.TL319.1995.171019.nc
-        JRA.v1.3.slp.TL319.1996.171019.nc
-        JRA.v1.3.slp.TL319.1997.171019.nc
-        JRA.v1.3.slp.TL319.1998.171019.nc
-        JRA.v1.3.slp.TL319.1999.171019.nc
-        JRA.v1.3.slp.TL319.2000.171019.nc
-        JRA.v1.3.slp.TL319.2001.171019.nc
-        JRA.v1.3.slp.TL319.2002.171019.nc
-        JRA.v1.3.slp.TL319.2003.171019.nc
-        JRA.v1.3.slp.TL319.2004.171019.nc
-        JRA.v1.3.slp.TL319.2005.171019.nc
-        JRA.v1.3.slp.TL319.2006.171019.nc
-        JRA.v1.3.slp.TL319.2007.171019.nc
-        JRA.v1.3.slp.TL319.2008.171019.nc
-        JRA.v1.3.slp.TL319.2009.171019.nc
-        JRA.v1.3.slp.TL319.2010.171019.nc
-        JRA.v1.3.slp.TL319.2011.171019.nc
-        JRA.v1.3.slp.TL319.2012.171019.nc
-        JRA.v1.3.slp.TL319.2013.171019.nc
-        JRA.v1.3.slp.TL319.2014.171019.nc
-        JRA.v1.3.slp.TL319.2015.171019.nc
-        JRA.v1.3.slp.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.slp.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.T_10">
-        JRA.v1.3.t_10.TL319.1958.171019.nc
-        JRA.v1.3.t_10.TL319.1959.171019.nc
-        JRA.v1.3.t_10.TL319.1960.171019.nc
-        JRA.v1.3.t_10.TL319.1961.171019.nc
-        JRA.v1.3.t_10.TL319.1962.171019.nc
-        JRA.v1.3.t_10.TL319.1963.171019.nc
-        JRA.v1.3.t_10.TL319.1964.171019.nc
-        JRA.v1.3.t_10.TL319.1965.171019.nc
-        JRA.v1.3.t_10.TL319.1966.171019.nc
-        JRA.v1.3.t_10.TL319.1967.171019.nc
-        JRA.v1.3.t_10.TL319.1968.171019.nc
-        JRA.v1.3.t_10.TL319.1969.171019.nc
-        JRA.v1.3.t_10.TL319.1970.171019.nc
-        JRA.v1.3.t_10.TL319.1971.171019.nc
-        JRA.v1.3.t_10.TL319.1972.171019.nc
-        JRA.v1.3.t_10.TL319.1973.171019.nc
-        JRA.v1.3.t_10.TL319.1974.171019.nc
-        JRA.v1.3.t_10.TL319.1975.171019.nc
-        JRA.v1.3.t_10.TL319.1976.171019.nc
-        JRA.v1.3.t_10.TL319.1977.171019.nc
-        JRA.v1.3.t_10.TL319.1978.171019.nc
-        JRA.v1.3.t_10.TL319.1979.171019.nc
-        JRA.v1.3.t_10.TL319.1980.171019.nc
-        JRA.v1.3.t_10.TL319.1981.171019.nc
-        JRA.v1.3.t_10.TL319.1982.171019.nc
-        JRA.v1.3.t_10.TL319.1983.171019.nc
-        JRA.v1.3.t_10.TL319.1984.171019.nc
-        JRA.v1.3.t_10.TL319.1985.171019.nc
-        JRA.v1.3.t_10.TL319.1986.171019.nc
-        JRA.v1.3.t_10.TL319.1987.171019.nc
-        JRA.v1.3.t_10.TL319.1988.171019.nc
-        JRA.v1.3.t_10.TL319.1989.171019.nc
-        JRA.v1.3.t_10.TL319.1990.171019.nc
-        JRA.v1.3.t_10.TL319.1991.171019.nc
-        JRA.v1.3.t_10.TL319.1992.171019.nc
-        JRA.v1.3.t_10.TL319.1993.171019.nc
-        JRA.v1.3.t_10.TL319.1994.171019.nc
-        JRA.v1.3.t_10.TL319.1995.171019.nc
-        JRA.v1.3.t_10.TL319.1996.171019.nc
-        JRA.v1.3.t_10.TL319.1997.171019.nc
-        JRA.v1.3.t_10.TL319.1998.171019.nc
-        JRA.v1.3.t_10.TL319.1999.171019.nc
-        JRA.v1.3.t_10.TL319.2000.171019.nc
-        JRA.v1.3.t_10.TL319.2001.171019.nc
-        JRA.v1.3.t_10.TL319.2002.171019.nc
-        JRA.v1.3.t_10.TL319.2003.171019.nc
-        JRA.v1.3.t_10.TL319.2004.171019.nc
-        JRA.v1.3.t_10.TL319.2005.171019.nc
-        JRA.v1.3.t_10.TL319.2006.171019.nc
-        JRA.v1.3.t_10.TL319.2007.171019.nc
-        JRA.v1.3.t_10.TL319.2008.171019.nc
-        JRA.v1.3.t_10.TL319.2009.171019.nc
-        JRA.v1.3.t_10.TL319.2010.171019.nc
-        JRA.v1.3.t_10.TL319.2011.171019.nc
-        JRA.v1.3.t_10.TL319.2012.171019.nc
-        JRA.v1.3.t_10.TL319.2013.171019.nc
-        JRA.v1.3.t_10.TL319.2014.171019.nc
-        JRA.v1.3.t_10.TL319.2015.171019.nc
-        JRA.v1.3.t_10.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.t_10.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.U_10">
-        JRA.v1.3.u_10.TL319.1958.171019.nc
-        JRA.v1.3.u_10.TL319.1959.171019.nc
-        JRA.v1.3.u_10.TL319.1960.171019.nc
-        JRA.v1.3.u_10.TL319.1961.171019.nc
-        JRA.v1.3.u_10.TL319.1962.171019.nc
-        JRA.v1.3.u_10.TL319.1963.171019.nc
-        JRA.v1.3.u_10.TL319.1964.171019.nc
-        JRA.v1.3.u_10.TL319.1965.171019.nc
-        JRA.v1.3.u_10.TL319.1966.171019.nc
-        JRA.v1.3.u_10.TL319.1967.171019.nc
-        JRA.v1.3.u_10.TL319.1968.171019.nc
-        JRA.v1.3.u_10.TL319.1969.171019.nc
-        JRA.v1.3.u_10.TL319.1970.171019.nc
-        JRA.v1.3.u_10.TL319.1971.171019.nc
-        JRA.v1.3.u_10.TL319.1972.171019.nc
-        JRA.v1.3.u_10.TL319.1973.171019.nc
-        JRA.v1.3.u_10.TL319.1974.171019.nc
-        JRA.v1.3.u_10.TL319.1975.171019.nc
-        JRA.v1.3.u_10.TL319.1976.171019.nc
-        JRA.v1.3.u_10.TL319.1977.171019.nc
-        JRA.v1.3.u_10.TL319.1978.171019.nc
-        JRA.v1.3.u_10.TL319.1979.171019.nc
-        JRA.v1.3.u_10.TL319.1980.171019.nc
-        JRA.v1.3.u_10.TL319.1981.171019.nc
-        JRA.v1.3.u_10.TL319.1982.171019.nc
-        JRA.v1.3.u_10.TL319.1983.171019.nc
-        JRA.v1.3.u_10.TL319.1984.171019.nc
-        JRA.v1.3.u_10.TL319.1985.171019.nc
-        JRA.v1.3.u_10.TL319.1986.171019.nc
-        JRA.v1.3.u_10.TL319.1987.171019.nc
-        JRA.v1.3.u_10.TL319.1988.171019.nc
-        JRA.v1.3.u_10.TL319.1989.171019.nc
-        JRA.v1.3.u_10.TL319.1990.171019.nc
-        JRA.v1.3.u_10.TL319.1991.171019.nc
-        JRA.v1.3.u_10.TL319.1992.171019.nc
-        JRA.v1.3.u_10.TL319.1993.171019.nc
-        JRA.v1.3.u_10.TL319.1994.171019.nc
-        JRA.v1.3.u_10.TL319.1995.171019.nc
-        JRA.v1.3.u_10.TL319.1996.171019.nc
-        JRA.v1.3.u_10.TL319.1997.171019.nc
-        JRA.v1.3.u_10.TL319.1998.171019.nc
-        JRA.v1.3.u_10.TL319.1999.171019.nc
-        JRA.v1.3.u_10.TL319.2000.171019.nc
-        JRA.v1.3.u_10.TL319.2001.171019.nc
-        JRA.v1.3.u_10.TL319.2002.171019.nc
-        JRA.v1.3.u_10.TL319.2003.171019.nc
-        JRA.v1.3.u_10.TL319.2004.171019.nc
-        JRA.v1.3.u_10.TL319.2005.171019.nc
-        JRA.v1.3.u_10.TL319.2006.171019.nc
-        JRA.v1.3.u_10.TL319.2007.171019.nc
-        JRA.v1.3.u_10.TL319.2008.171019.nc
-        JRA.v1.3.u_10.TL319.2009.171019.nc
-        JRA.v1.3.u_10.TL319.2010.171019.nc
-        JRA.v1.3.u_10.TL319.2011.171019.nc
-        JRA.v1.3.u_10.TL319.2012.171019.nc
-        JRA.v1.3.u_10.TL319.2013.171019.nc
-        JRA.v1.3.u_10.TL319.2014.171019.nc
-        JRA.v1.3.u_10.TL319.2015.171019.nc
-        JRA.v1.3.u_10.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.u_10.TL319.2016.171019.nc
       </value>
       <value  stream="CORE_IAF_JRA.V_10">
-        JRA.v1.3.v_10.TL319.1958.171019.nc
-        JRA.v1.3.v_10.TL319.1959.171019.nc
-        JRA.v1.3.v_10.TL319.1960.171019.nc
-        JRA.v1.3.v_10.TL319.1961.171019.nc
-        JRA.v1.3.v_10.TL319.1962.171019.nc
-        JRA.v1.3.v_10.TL319.1963.171019.nc
-        JRA.v1.3.v_10.TL319.1964.171019.nc
-        JRA.v1.3.v_10.TL319.1965.171019.nc
-        JRA.v1.3.v_10.TL319.1966.171019.nc
-        JRA.v1.3.v_10.TL319.1967.171019.nc
-        JRA.v1.3.v_10.TL319.1968.171019.nc
-        JRA.v1.3.v_10.TL319.1969.171019.nc
-        JRA.v1.3.v_10.TL319.1970.171019.nc
-        JRA.v1.3.v_10.TL319.1971.171019.nc
-        JRA.v1.3.v_10.TL319.1972.171019.nc
-        JRA.v1.3.v_10.TL319.1973.171019.nc
-        JRA.v1.3.v_10.TL319.1974.171019.nc
-        JRA.v1.3.v_10.TL319.1975.171019.nc
-        JRA.v1.3.v_10.TL319.1976.171019.nc
-        JRA.v1.3.v_10.TL319.1977.171019.nc
-        JRA.v1.3.v_10.TL319.1978.171019.nc
-        JRA.v1.3.v_10.TL319.1979.171019.nc
-        JRA.v1.3.v_10.TL319.1980.171019.nc
-        JRA.v1.3.v_10.TL319.1981.171019.nc
-        JRA.v1.3.v_10.TL319.1982.171019.nc
-        JRA.v1.3.v_10.TL319.1983.171019.nc
-        JRA.v1.3.v_10.TL319.1984.171019.nc
-        JRA.v1.3.v_10.TL319.1985.171019.nc
-        JRA.v1.3.v_10.TL319.1986.171019.nc
-        JRA.v1.3.v_10.TL319.1987.171019.nc
-        JRA.v1.3.v_10.TL319.1988.171019.nc
-        JRA.v1.3.v_10.TL319.1989.171019.nc
-        JRA.v1.3.v_10.TL319.1990.171019.nc
-        JRA.v1.3.v_10.TL319.1991.171019.nc
-        JRA.v1.3.v_10.TL319.1992.171019.nc
-        JRA.v1.3.v_10.TL319.1993.171019.nc
-        JRA.v1.3.v_10.TL319.1994.171019.nc
-        JRA.v1.3.v_10.TL319.1995.171019.nc
-        JRA.v1.3.v_10.TL319.1996.171019.nc
-        JRA.v1.3.v_10.TL319.1997.171019.nc
-        JRA.v1.3.v_10.TL319.1998.171019.nc
-        JRA.v1.3.v_10.TL319.1999.171019.nc
-        JRA.v1.3.v_10.TL319.2000.171019.nc
-        JRA.v1.3.v_10.TL319.2001.171019.nc
-        JRA.v1.3.v_10.TL319.2002.171019.nc
-        JRA.v1.3.v_10.TL319.2003.171019.nc
-        JRA.v1.3.v_10.TL319.2004.171019.nc
-        JRA.v1.3.v_10.TL319.2005.171019.nc
-        JRA.v1.3.v_10.TL319.2006.171019.nc
-        JRA.v1.3.v_10.TL319.2007.171019.nc
-        JRA.v1.3.v_10.TL319.2008.171019.nc
-        JRA.v1.3.v_10.TL319.2009.171019.nc
-        JRA.v1.3.v_10.TL319.2010.171019.nc
-        JRA.v1.3.v_10.TL319.2011.171019.nc
-        JRA.v1.3.v_10.TL319.2012.171019.nc
-        JRA.v1.3.v_10.TL319.2013.171019.nc
-        JRA.v1.3.v_10.TL319.2014.171019.nc
-        JRA.v1.3.v_10.TL319.2015.171019.nc
-        JRA.v1.3.v_10.TL319.2016.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1958.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1959.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1960.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1961.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1962.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1963.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1964.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1965.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1966.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1967.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1968.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1969.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1970.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1971.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1972.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1973.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1974.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1975.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1976.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1977.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1978.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1979.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1980.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1981.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1982.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1983.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1984.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1985.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1986.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1987.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1988.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1989.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1990.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1991.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1992.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1993.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1994.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1995.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1996.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1997.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1998.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.1999.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2000.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2001.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2002.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2003.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2004.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2005.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2006.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2007.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2008.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2009.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2010.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2011.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2012.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2013.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2014.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2015.171019.nc
+	$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap/JRA.v1.3.v_10.TL319.2016.171019.nc
       </value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
-      <value stream="co2tseries.SSP1-1.9.latbnd">fco2_datm_lat-bandsSSP1-1.9_simyr_2014-2500_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP1-2.6.latbnd">fco2_datm_lat-bandsSSP1-2.6__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP2-4.5.latbnd">fco2_datm_lat-bandsSSP2-4.5__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP3-7.0.latbnd">fco2_datm_lat-bandsSSP3-7.0__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP4-3.4.latbnd">fco2_datm_lat-bandsSSP4-3.4_simyr_2014-2500_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP4-6.0.latbnd">fco2_datm_lat-bandsSSP4-6.0__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-3.4.latbnd">fco2_datm_lat-bandsSSP5-3.4__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-8.5.latbnd">fco2_datm_lat-bandsSSP5-8.5__simyr_2014-2500_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP1-1.9">fco2_datm_globalSSP1-1.9_simyr_2014-2501_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP1-2.6">fco2_datm_globalSSP1-2.6__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP2-4.5">fco2_datm_globalSSP2-4.5__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP3-7.0">fco2_datm_globalSSP3-7.0__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP4-3.4">fco2_datm_globalSSP4-3.4_simyr_2014-2501_CMIP6_c190514.nc</value>
-      <value stream="co2tseries.SSP4-6.0">fco2_datm_globalSSP4-6.0__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-3.4">fco2_datm_globalSSP5-3.4__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="co2tseries.SSP5-8.5">fco2_datm_globalSSP5-8.5__simyr_2014-2501_CMIP6_c190506.nc</value>
-      <value stream="BC.QIAN.Precip">bias_correction.Prec.%y.nc</value>
-      <value stream="BC.CRUNCEP.GPCP.Precip">bias_correction.Prec.%y.nc</value>
-      <value stream="BC.CRUNCEP.CMAP.Precip">bias_correction.Prec.%y.nc</value>
-      <value stream="Anomaly.Forcing.Precip">af.pr.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Temperature">af.tas.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Pressure">af.ps.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Humidity">af.huss.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Uwind">af.uas.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Vwind">af.vas.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Shortwave">af.rsds.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="Anomaly.Forcing.Longwave">af.rlds.ccsm4.rcp45.2006-2300.nc</value>
-
-      <value stream="presaero.clim_1850" cime_model="e3sm">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.clim_2000" cime_model="e3sm">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
-      <value stream="presaero.clim_1850" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.clim_2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.trans_1850-2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-
-      <value stream="presaero.clim_1850">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.clim_2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.clim_2010">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.trans_1850-2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-
-      <value stream="presaero.SSP1-1.9" atm_grid="CLM_USRDAT">aerosoldep_SSP1-1.9_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP1-2.6" atm_grid="CLM_USRDAT">aerosoldep_SSP1-2.6_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP2-4.5" atm_grid="CLM_USRDAT">aerosoldep_SSP2-4.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP3-7.0" atm_grid="CLM_USRDAT">aerosoldep_SSP3-7.0_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP4-3.4" atm_grid="CLM_USRDAT">aerosoldep_SSP4-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP4-6.0" atm_grid="CLM_USRDAT">aerosoldep_SSP4-6.0_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP5-3.4" atm_grid="CLM_USRDAT">aerosoldep_SSP5-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.SSP5-8.5" atm_grid="CLM_USRDAT">aerosoldep_SSP5-8.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
-
-      <value stream="presaero.SSP1-2.6">aerodep_clm_SSP126_b.e21.BSSP126cmip6.f09_g17.CMIP6-SSP1-2.6.001_2014-2101_monthly_0.9x1.25_c190523.nc</value>
-      <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
-      <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
-      <value stream="presaero.SSP5-3.4">null</value>
-      <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
-      <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">
+	$DIN_LOC_ROOT/atm/datm7/CORE2/CORE2.t_10.ArcFactor.T62.1997-2004.nc
+      </value>
+      <value stream="co2tseries.20tr.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc
+      </value>
+      <value stream="co2tseries.20tr" cime_model="cesm">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc
+      </value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_1765-2007_c100614.nc
+      </value>
+      <value stream="co2tseries.SSP1-1.9.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP1-1.9_simyr_2014-2500_CMIP6_c190514.nc
+      </value>
+      <value stream="co2tseries.SSP1-2.6.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP1-2.6__simyr_2014-2500_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP2-4.5.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP2-4.5__simyr_2014-2500_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP3-7.0.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/co2_datm_lat-bandsSSP3-7.0__simyr_2014-2500_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP4-3.4.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP4-3.4_simyr_2014-2500_CMIP6_c190514.nc
+      </value>
+      <value stream="co2tseries.SSP4-6.0.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP4-6.0__simyr_2014-2500_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP5-3.4.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP5-3.4__simyr_2014-2500_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP5-8.5.latbnd">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_lat-bandsSSP5-8.5__simyr_2014-2500_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP1-1.9">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP1-1.9_simyr_2014-2501_CMIP6_c190514.nc
+      </value>
+      <value stream="co2tseries.SSP1-2.6">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP1-2.6__simyr_2014-2501_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP2-4.5">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP2-4.5__simyr_2014-2501_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP3-7.0">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP3-7.0__simyr_2014-2501_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP4-3.4">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP4-3.4_simyr_2014-2501_CMIP6_c190514.nc
+      </value>
+      <value stream="co2tseries.SSP4-6.0">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP4-6.0__simyr_2014-2501_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP5-3.4">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP5-3.4__simyr_2014-2501_CMIP6_c190506.nc
+      </value>
+      <value stream="co2tseries.SSP5-8.5">
+	$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_globalSSP5-8.5__simyr_2014-2501_CMIP6_c190506.nc
+      </value>
+      <value stream="BC.QIAN.Precip">
+	$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian/bias_correction.Prec.%y.nc
+      </value>
+      <value stream="BC.CRUNCEP.GPCP.Precip">
+	$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction/bias_correction.Prec.%y.nc
+      </value>
+      <value stream="BC.CRUNCEP.CMAP.Precip">
+	$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep/bias_correction.Prec.%y.nc
+      </value>
+      <value stream="Anomaly.Forcing.Precip">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.pr.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Temperature">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.tas.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Pressure">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.ps.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Humidity">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.huss.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Uwind">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.uas.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Vwind">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.vas.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Shortwave">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.rsds.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="Anomaly.Forcing.Longwave">
+	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/af.rlds.ccsm4.rcp45.2006-2300.nc
+      </value>
+      <value stream="presaero.clim_1850">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.clim_2000">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.clim_2010">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.trans_1850-2000">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.clim_1850">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.clim_2000">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.clim_2010">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.trans_1850-2000">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc
+      </value>
+      <value stream="presaero.SSP1-1.9" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP1-1.9_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP1-2.6" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP1-2.6_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP2-4.5" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP2-4.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP3-7.0" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP3-7.0_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP4-3.4" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP4-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP4-6.0" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP4-6.0_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP5-3.4" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP5-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP5-8.5" atm_grid="CLM_USRDAT">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_SSP5-8.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc
+      </value>
+      <value stream="presaero.SSP1-2.6">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerodep_clm_SSP126_b.e21.BSSP126cmip6.f09_g17.CMIP6-SSP1-2.6.001_2014-2101_monthly_0.9x1.25_c190523.nc
+      </value>
+      <value stream="presaero.SSP2-4.5">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc
+      </value>
+      <value stream="presaero.SSP3-7.0">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc
+      </value>
+      <value stream="presaero.SSP5-3.4">
+	null
+      </value>
+      <value stream="presaero.SSP5-8.5">
+	$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc
+      </value>
+      <value stream="topo.observed">
+	$DIN_LOC_ROOT/atm/datm7/topo_forcing/topodata_0.9x1.25_USGS_070110_stream_c151201.nc
+      </value>
     </values>
   </entry>
 
@@ -1942,12 +2105,9 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
-
-      <value stream="presaero.clim" cime_model="e3sm">1</value>
-      <value stream="presaero.clim_1850" cime_model="cesm">1</value>
-      <value stream="presaero.clim_2000" cime_model="cesm">1</value>
-      <value stream="presaero.clim_2010" cime_model="cesm">1</value>
-
+      <value stream="presaero.clim_1850">1</value>
+      <value stream="presaero.clim_2000">1</value>
+      <value stream="presaero.clim_2010">1</value>
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.SSP">2015</value>
       <value stream="topo.observed">1</value>
@@ -2010,12 +2170,10 @@
       <value stream="BC.CRUNCEP">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_START</value>
-
       <value stream="presaero.clim" cime_model="e3sm">1</value>
       <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
       <value stream="presaero.clim_2000" cime_model="cesm">2000</value>
       <value stream="presaero.clim_2010" cime_model="cesm">2010</value>
-
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.SSP">2015</value>
       <value stream="topo.observed">1</value>
@@ -2072,22 +2230,17 @@
       <value stream="CORE_IAF_JRA.U_10">2016</value>
       <value stream="CORE_IAF_JRA.V_10">2016</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">2016</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">2007</value>
-      <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
+      <value stream="co2tseries.20tr">2014</value>
       <value stream="co2tseries.SSP">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">2012</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">2010</value>
       <value stream="Anomaly.Forcing">2300</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_END</value>
-
-      <value stream="presaero.clim" cime_model="e3sm">1</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">2006</value>
-      <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
-      <value stream="presaero.clim_2000" cime_model="cesm">2000</value>
-      <value stream="presaero.clim_2010" cime_model="cesm">2010</value>
-      <value stream="presaero.trans_1850-2000" cime_model="cesm">2014</value>
-
+      <value stream="presaero.clim_1850">1850</value>
+      <value stream="presaero.clim_2000">2000</value>
+      <value stream="presaero.clim_2010">2010</value>
+      <value stream="presaero.trans_1850-2000">2014</value>
       <value stream="presaero.SSP">2101</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
@@ -2118,62 +2271,6 @@
   <!-- =========================================  -->
   <!--- shr_strmdata_nml                          -->
   <!-- =========================================  -->
-
-
-  <entry id="nx_global" modify_via_xml="ATM_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$ATM_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="ATM_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$ATM_NY</value>
-    </values>
-  </entry>
-
-  <entry id="fillalgo" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
-    <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are just copy (ie. no fill), special value,
-      nearest neighbor, nearest neighbor in "i" direction, or nearest
-      neighbor in "j" direction.
-      valid values:  'copy','spval','nn','nnoni','nnonj'
-    </desc>
-    <values>
-      <value>nn</value>
-    </values>
-  </entry>
-
-  <entry id="fillmask" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      plays no role is fill algorithm at the present time.
-      valid values: "nomask,srcmask,dstmask,bothmask"
-    </desc>
-    <values>
-      <value>nomask</value>
-    </values>
-  </entry>
 
   <entry id="mapmask" per_stream_entry="true">
     <type>char(30)</type>
@@ -2448,8 +2545,70 @@
     </values>
   </entry>
 
-  <!--- anomaly forcing - bias correction -->
-  <entry id="bias_correct" skip_default_entry="true">
+  <entry id="model_meshfile" modify_via_xml="ATM_DOMAIN_MESH">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>datm_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$ATM_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_maskfile">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>datm_nml</group>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
+    <values>
+      <value>$ATM_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>datm_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$ATM_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="ATM_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>datm_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$ATM_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="ATM_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>datm_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$ATM_NY</value>
+    </values>
+  </entry>
+  
+  <entry id="bias_correct" skip_default_entry="true"> <!--- anomaly forcing - bias correction -->
     <type>char</type>
     <category>datm</category>
     <group>datm_nml</group>
@@ -2462,7 +2621,7 @@
     </values>
   </entry>
 
-  <entry id="anomaly_forcing" skip_default_entry="true">
+  <entry id="anomaly_forcing" skip_default_entry="true"> <!--- for anomaly forcing -->
     <type>char(10)</type>
     <category>datm</category>
     <group>datm_nml</group>
@@ -2474,7 +2633,6 @@
       <value/>
     </values>
   </entry>
-  <!--- for anomaly forcing -->
 
   <entry id="factorfn_data">
     <type>char</type>

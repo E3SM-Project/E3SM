@@ -23,7 +23,6 @@ module ice_comp_nuopc
   use dshr_mod             , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
   use dshr_mod             , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod             , only : dshr_restart_read, dshr_restart_write
-  use dshr_mod             , only : dshr_create_mesh_from_grid
   use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod      , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod     , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -49,34 +48,38 @@ module ice_comp_nuopc
   !--------------------------------------------------------------------------
 
   type(shr_strdata_type)       :: sdat
-  type(ESMF_Mesh)              :: mesh                        ! model mesh
+  type(ESMF_Mesh)              :: model_mesh
   character(len=CS)            :: flds_scalar_name = ''
   integer                      :: flds_scalar_num = 0
   integer                      :: flds_scalar_index_nx = 0
   integer                      :: flds_scalar_index_ny = 0
-  integer                      :: compid                      ! mct comp id
-  integer                      :: mpicom                      ! mpi communicator
-  integer                      :: my_task                     ! my task in mpi communicator mpicom
-  logical                      :: masterproc                  ! true of my_task == master_task
-  character(len=16)            :: inst_suffix = ""            ! char string associated with instance (ie. "_0001" or "")
-  integer                      :: logunit                     ! logging unit number
-  logical                      :: read_restart                ! start from restart
+  integer                      :: compid                              ! mct comp id
+  integer                      :: mpicom                              ! mpi communicator
+  integer                      :: my_task                             ! my task in mpi communicator mpicom
+  logical                      :: masterproc                          ! true of my_task == master_task
+  character(len=16)            :: inst_suffix = ""                    ! char string associated with instance (ie. "_0001" or "")
+  integer                      :: logunit                             ! logging unit number
+  logical                      :: read_restart                        ! start from restart
   character(*) , parameter     :: nullstr = 'undefined'
 
   ! dice_in namelist input
-  character(CL)                :: nlfilename                  ! filename to obtain namelist info from
-  character(CL)                :: dataMode                    ! flags physics options wrt input data
-  character(CL)                :: model_maskfile = nullstr    ! full pathname to obtain mask from
-  real(R8)                     :: flux_swpf                   ! short-wave penatration factor
-  real(R8)                     :: flux_Qmin                   ! bound on melt rate
-  logical                      :: flux_Qacc                   ! activates water accumulation/melt wrt Q
-  real(R8)                     :: flux_Qacc0                  ! initial water accumulation value
-  character(CL)                :: restfilm = nullstr          ! model restart file namelist
-  character(CL)                :: restfils = nullstr          ! stream restart file namelist
+  character(CL)                :: nlfilename                          ! filename to obtain namelist info from
+  character(CL)                :: dataMode                            ! flags physics options wrt input data
+  character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
+  character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
+  character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
+  real(R8)                     :: flux_swpf                           ! short-wave penatration factor
+  real(R8)                     :: flux_Qmin                           ! bound on melt rate
+  logical                      :: flux_Qacc                           ! activates water accumulation/melt wrt Q
+  real(R8)                     :: flux_Qacc0                          ! initial water accumulation value
+  character(CL)                :: restfilm = nullstr                  ! model restart file namelist
+  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
+  integer                      :: nx_global
+  integer                      :: ny_global
 
   ! nuopc attributes
-  logical                      :: flds_i2o_per_cat            ! .true. if select per ice thickness
-  character(CS)                :: calendar                    ! calendar name
+  logical                      :: flds_i2o_per_cat                    ! .true. if select per ice thickness
+  character(CS)                :: calendar                            ! calendar name
 
   ! linked lists
   type(fldList_type) , pointer :: fldsImport => null()
@@ -84,13 +87,13 @@ module ice_comp_nuopc
   type(dfield_type)  , pointer :: dfields    => null()
 
   ! constants
-  real(R8)                     :: dt                          ! real model timestep
-  real(R8)     , parameter     :: pi       = shr_const_pi     ! pi
-  real(r8)     , parameter     :: spval    = shr_const_spval  ! flags invalid data
-  real(r8)     , parameter     :: tFrz     = shr_const_tkfrz  ! temp of freezing
-  real(r8)     , parameter     :: latice   = shr_const_latice ! latent heat of fusion
-  real(r8)     , parameter     :: waterMax = 1000.0_r8        ! wrt iFrac comp & frazil ice (kg/m^2)
-  integer      , parameter     :: master_task=0               ! task number of master task
+  real(R8)                     :: dt                                  ! real model timestep
+  real(R8)     , parameter     :: pi       = shr_const_pi             ! pi
+  real(r8)     , parameter     :: spval    = shr_const_spval          ! flags invalid data
+  real(r8)     , parameter     :: tFrz     = shr_const_tkfrz          ! temp of freezing
+  real(r8)     , parameter     :: latice   = shr_const_latice         ! latent heat of fusion
+  real(r8)     , parameter     :: waterMax = 1000.0_r8                ! wrt iFrac comp & frazil ice (kg/m^2)
+  integer      , parameter     :: master_task=0                       ! task number of master task
   character(*) , parameter     :: rpfile = 'rpointer.ice'
   character(*) , parameter     :: modName =  "(ice_comp_nuopc)"
 
@@ -232,10 +235,14 @@ contains
     integer           :: ierr               ! error code
     logical           :: exists             ! check for file existence  
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
+    character(*)    ,parameter :: F00 = "('(ice_comp_nuopc) ',8a)"
+    character(*)    ,parameter :: F01 = "('(ice_comp_nuopc) ',a,2x,i8)"
+    character(*)    ,parameter :: F02 = "('(ice_comp_nuopc) ',a,l6)"
+    character(*)    ,parameter :: F03 = "('(ice_comp_nuopc) ',a,d13.5)"
     !-------------------------------------------------------------------------------
 
-    namelist / dice_nml / datamode, model_maskfile, restfilm, restfils, &
-         flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0 
+    namelist / dice_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
+         restfilm, restfils, nx_global, ny_global, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0 
 
     rc = ESMF_SUCCESS
 
@@ -261,36 +268,65 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
-       write(logunit,*)' flux_swpf  = ',flux_swpf
-       write(logunit,*)' flux_Qmin  = ',flux_Qmin
-       write(logunit,*)' flux_Qacc  = ',flux_Qacc
-       write(logunit,*)' flux_Qacc0 = ',flux_Qacc0
-       write(logunit,*)' restfilm   = ',trim(restfilm)
-       write(logunit,*)' restfils   = ',trim(restfils)
-       if (trim(model_maskfile) == nullstr) then
-          write(logunit,*)' obtaining model mask from model mesh'
+
+       ! write namelist input to standard out
+       write(logunit,F00)' datamode = ',trim(datamode)
+       if (model_createmesh_fromfile /= nullstr) then
+          write(logunit,F00)' model_create_meshfile_fromfile = ',trim(model_createmesh_fromfile)
        else
-          ! obtain model mask from model_maskfile
+          write(logunit,F00)' model_meshfile = ',trim(model_meshfile)
+          write(logunit,F00)' model_maskfile = ',trim(model_maskfile)
+       end if
+       write(logunit,F01)' nx_global  = ',nx_global
+       write(logunit,F01)' ny_global  = ',ny_global
+       write(logunit,F03)' flux_swpf  = ',flux_swpf
+       write(logunit,F03)' flux_Qmin  = ',flux_Qmin
+       write(logunit,F03)' flux_Qacc  = ',flux_Qacc
+       write(logunit,F03)' flux_Qacc0 = ',flux_Qacc0
+       write(logunit,F00)' restfilm = ',trim(restfilm)
+       write(logunit,F00)' restfils = ',trim(restfils)
+
+       ! check that files exists
+       if (model_createmesh_fromfile /= nullstr) then
+          inquire(file=trim(model_createmesh_fromfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist')
+          end if
+       else
+          inquire(file=trim(model_meshfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist')
+          end if
           inquire(file=trim(model_maskfile), exist=exists)
           if (.not.exists) then
              write(logunit, *)' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist'
              call shr_sys_abort(trim(subname)//' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist')
-          else
-             write(logunit,*)' obtaining model mask from ',trim(model_maskfile)
           end if
        end if
     endif
-    call shr_mpi_bcast(datamode       , mpicom, 'datamode')
-    call shr_mpi_bcast(model_maskfile , mpicom, 'model_maskfile')
-    call shr_mpi_bcast(restfilm       , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils       , mpicom, 'restfils')
-    call shr_mpi_bcast(flux_swpf      , mpicom, 'flux_swpf')
-    call shr_mpi_bcast(flux_Qmin      , mpicom, 'flux_Qmin')
-    call shr_mpi_bcast(flux_Qacc      , mpicom, 'flux_Qacc')
-    call shr_mpi_bcast(flux_Qacc0     , mpicom, 'flux_Qacc0')
+
+    ! broadcast namelist input
+    call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
+    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
+    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
+    call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
+    call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
+    call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
+    call shr_mpi_bcast(flux_swpf                 , mpicom, 'flux_swpf')
+    call shr_mpi_bcast(flux_Qmin                 , mpicom, 'flux_Qmin')
+    call shr_mpi_bcast(flux_Qacc                 , mpicom, 'flux_Qacc')
+    call shr_mpi_bcast(flux_Qacc0                , mpicom, 'flux_Qacc0')
 
     ! Validate datamode
-    if (trim(datamode) == 'NULL' .or. trim(datamode) == 'SSTDATA' .or. trim(datamode) == 'COPYALL') then
+    if ( trim(datamode) == 'null' .or. trim(datamode) == 'ssmi' .or. trim(datamode) == 'ssmi_iaf' .or. &
+         trim(datamode) == 'copyall') then
        if (my_task == master_task) write(logunit,*) ' dice datamode = ',trim(datamode)
     else
        call shr_sys_abort(' ERROR illegal dice datamode = '//trim(datamode))
@@ -351,17 +387,11 @@ contains
 
     ! Initialize sdat
     call t_startf('dice_strdata_init')
-    if (trim(model_maskfile) /= nullstr) then 
-       call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', mesh, read_restart, sdat, &
-            model_maskfile=model_maskfile, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', mesh, read_restart, sdat, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', &
+         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, rc=rc)
     call t_stopf('dice_strdata_init')
 
-    ! Realize the actively coupled fields, now that a mesh is established and
+    ! Realize the actively coupled fields, now that a model_mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
     call dice_comp_realize(importState, exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -385,17 +415,17 @@ contains
     dt = model_dt * 1.0_r8
 
     ! Get cosarg
-    call shr_cal_ymd2julian(0, current_mon, current_day, current_tod, jDay , sdat%calendar) ! julian day for model
-    call shr_cal_ymd2julian(0, 9,           1,           0,           jDay0, sdat%calendar) ! julian day for Sept 1
+    call shr_cal_ymd2julian(0, current_mon, current_day, current_tod, jDay , sdat%model_calendar) ! julian day for model
+    call shr_cal_ymd2julian(0, 9,           1,           0,           jDay0, sdat%model_calendar) ! julian day for Sept 1
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
     ! Run dice
     call dice_comp_run(current_ymd, current_tod, cosarg, rc)
 
     ! Add scalars to export state
-    call dshr_state_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(nx_global), flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_state_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(ny_global), flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Diagnostics
@@ -461,8 +491,8 @@ contains
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
 
     ! Get cosarg
-    call shr_cal_ymd2julian(0, mon, day, next_tod, jDay , sdat%calendar)    ! julian day for model
-    call shr_cal_ymd2julian(0, 9,   1,   0,        jDay0, sdat%calendar)    ! julian day for Sept 1
+    call shr_cal_ymd2julian(0, mon, day, next_tod, jDay , sdat%model_calendar)    ! julian day for model
+    call shr_cal_ymd2julian(0, 9,   1,   0,        jDay0, sdat%model_calendar)    ! julian day for Sept 1
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
     ! Run dice
@@ -619,7 +649,7 @@ contains
     type(var_desc_t)        :: varid
     type(io_desc_t)         :: pio_iodesc
     integer                 :: numOwnedElements   ! number of elements owned by this PET
-    type(ESMF_DistGrid)     :: distGrid           ! mesh distGrid
+    type(ESMF_DistGrid)     :: distGrid           ! model_mesh distGrid
     type(ESMF_Array)        :: elemMaskArray
     integer                 :: rcode
     character(*), parameter :: subName = "(dice_comp_realize) "
@@ -632,10 +662,10 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     ! -------------------------------------
 
-    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, model_mesh, &
          subname//':diceExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, mesh, &
+    call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, model_mesh, &
          subname//':diceImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -706,26 +736,26 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Set Si_imask (this corresponds to the ocean mask)
-    allocate(imask(sdat%lsize))
-    if (trim(model_maskfile) /= nullstr) then 
+    allocate(imask(sdat%model_lsize))
+    if (trim(model_maskfile) /= trim(model_meshfile)) then 
        ! Read in the ocean fraction from the input namelist ocean mask file and assume 'mask' name on domain file
        rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
        rcode = pio_inq_varid(pioid, 'mask', varid) 
-       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%nxg, sdat%nyg/), sdat%gindex, pio_iodesc)
+       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/nx_global, ny_global/), sdat%model_gindex, pio_iodesc)
        call pio_read_darray(pioid, varid, pio_iodesc, imask, rcode)
        call pio_closefile(pioid)
        call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
        ! now set the mask as just the real mask
        Si_imask(:) = real(imask(:), kind=r8)
     else
-       ! Obtain the ice mask in the ice mesh file
-       call ESMF_MeshGet(mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
+       ! Obtain the ice mask in the ice model_mesh file
+       call ESMF_MeshGet(model_mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        ! the following call sets the varues of imask
-       call ESMF_MeshGet(mesh, elemMaskArray=elemMaskArray, rc=rc)
+       call ESMF_MeshGet(model_mesh, elemMaskArray=elemMaskArray, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        ! now set the mask as just the real mask
        Si_imask(:) = real(imask(:), kind=r8)
@@ -822,9 +852,9 @@ contains
     ! local variables
     integer           :: n, lsize
     real(r8)          :: jday, jday0        ! elapsed day counters
-    integer           :: spatialDim         ! number of dimension in mesh
-    integer           :: numOwnedElements   ! size of mesh
-    real(r8), pointer :: ownedElemCoords(:) ! mesh lat and lons
+    integer           :: spatialDim         ! number of dimension in model_mesh
+    integer           :: numOwnedElements   ! size of model_mesh
+    real(r8), pointer :: ownedElemCoords(:) ! model_mesh lat and lons
     real(r8)          :: qmeltall          ! q that would melt all accumulated water
     logical           :: first_time = .true.
     character(*), parameter :: subName = "(dice_comp_run) "
@@ -841,7 +871,7 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('dice_BARRIER',mpicom)
     call t_startf('dice_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'dice')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'dice', rc=rc)
     call t_stopf('dice_strdata_advance')
 
     !--------------------
@@ -864,10 +894,11 @@ contains
     call t_startf('dice_datamode')
     select case (trim(datamode))
 
-    case('COPYALL')
+    case('copyall')
        ! do nothing extra
 
-    case('SSTDATA')
+    case default
+       ! this corresponds to ssmi or ssmi_iaf
        if (first_time) then
           if (.not. read_restart) then
              do n = 1,lsize
@@ -880,10 +911,10 @@ contains
              ! iFrac0 = iFrac  ! previous step's ice fraction
           endif
 
-          call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+          call ESMF_MeshGet(model_mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           allocate(ownedElemCoords(spatialDim*numOwnedElements))
-          call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+          call ESMF_MeshGet(model_mesh, ownedElemCoords=ownedElemCoords)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           do n = 1,numOwnedElements
              yc(n) = ownedElemCoords(2*n)

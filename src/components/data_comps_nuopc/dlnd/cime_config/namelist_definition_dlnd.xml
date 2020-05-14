@@ -335,6 +335,57 @@
     </values>
   </entry>
 
+  <entry id="model_meshfile" modify_via_xml="LND_DOMAIN_MESH">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dlnd_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$LND_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_maskfile">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dlnd_nml</group>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
+    <values>
+      <value>$LND_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dlnd_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$LND_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="stream_fracname">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <desc>
+      Name of the fraction field on the first stream file
+    </desc>
+    <values>
+      <value>doml_frac</value>
+    </values>
+  </entry>
+
   <entry id="nx_global" modify_via_xml="LND_NX">
     <type>integer</type>
     <category>streams</category>
@@ -390,19 +441,6 @@
     <desc>If TRUE, prognostic is forced to true.</desc>
     <values>
       <value>.false.</value>
-    </values>
-  </entry>
-
-  <entry id="domain_fracname">
-    <type>char</type>
-    <category>dlnd</category>
-    <group>dlnd_nml</group>
-    <desc>
-      Name of the fraction field on the first stream file (i.e., the
-      file from which domain information is read.)
-    </desc>
-    <values>
-      <value>doml_frac</value>
     </values>
   </entry>
 

@@ -38,6 +38,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
+    caseroot = case.get_value("CASEROOT")
     datm_mode = case.get_value("DATM_MODE")
     datm_topo = case.get_value("DATM_TOPO")
     datm_presaero = case.get_value("DATM_PRESAERO")
@@ -45,15 +46,18 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     atm_grid = case.get_value("ATM_GRID")
     grid = case.get_value("GRID")
     clm_usrdat_name = case.get_value("CLM_USRDAT_NAME")
+    comp_lnd = case.get_value("COMP_LND")
 
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
-    if "CLM" in datm_mode:
+    
+    if "CLM" in datm_mode and comp_lnd == "clm":
         expect(datm_presaero != "none",
                "A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none.")
         expect(datm_topo != "none",
                "A DATM_MODE for CLM is incompatible with DATM_TOPO=none.")
+
     expect(grid != "CLM_USRDAT" or clm_usrdat_name in ("", "UNSET"),
            "GRID=CLM_USRDAT and CLM_USRDAT_NAME is NOT set.")
 
@@ -80,6 +84,11 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
+
+    # Determine if will create mesh by reading in a domain file
+    model_meshfile = case.get_value("ATM_DOMAIN_MESH")
+    if model_meshfile == 'create_mesh':
+        nmlgen.set_value("model_createmesh_fromfile",os.path.join(atm_domain_path,atm_domain_file))
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -120,8 +129,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         inst_stream = stream + inst_string
         logger.debug("DATM stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "datm.streams.txt." + inst_stream)
-        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, case.get_value("CASEROOT"),
-                                                             stream, stream_path, data_list_path)
+        nmlgen.create_nuopc_stream_file_and_update_shr_strdata_nml(config, caseroot, 
+                                                                   stream, stream_path, data_list_path)
 
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.

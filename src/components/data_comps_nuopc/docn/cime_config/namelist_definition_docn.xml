@@ -43,7 +43,10 @@
     <type>char(100)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>List of streams used for the given docn_mode.</desc>
+    <desc>
+      List of streams that docn supports.
+      Currently 5 streams are supported: prescribed, aquapfile, som, interannual, and blank.
+    </desc>
     <values>
       <value docn_mode="prescribed">prescribed</value>
       <value docn_mode="sst_aquap1">''</value>
@@ -56,109 +59,40 @@
       <value docn_mode="sst_aquap8">''</value>
       <value docn_mode="sst_aquap9">''</value>
       <value docn_mode="sst_aquap10">''</value>
-      <value docn_mode="sst_aquapfile">aquapfile</value>
       <value docn_mode="sst_aquap_constant">''</value>
+      <value docn_mode="sst_aquapfile">aquapfile</value>
       <value docn_mode="som">som</value>
       <value docn_mode="som_aquap">som</value>
       <value docn_mode="interannual">interannual</value>
     </values>
   </entry>
 
-  <entry id="strm_grid_file" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>derived</group>
-    <desc>does not appear in namelist - only used to set domain and data information</desc>
-    <values>
-      <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
-    </values>
-  </entry>
-
-  <entry id="strm_data_file" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>derived</group>
-    <desc>does not appear in namelist - only used to set domain and data information</desc>
-    <values>
-      <value stream="prescribed">$SSTICE_DATA_FILENAME</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domdir" skip_default_entry="true">
+  <entry id="strm_mesh" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value>null</value>
-      <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/</value>
-      <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
-      <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
+      <value grid=".+"				>$DIN_LOC_ROOT/share/meshes/rx1_nomask_181022_newareas_ESMFmesh.nc</value>
+      <value grid="a%T31.*_oi%T31"		>$DIN_LOC_ROOT/share/meshes/T31_040122_ESMFmesh.nc</value>
+      <value grid="a%1.9x2.5.*_oi%1.9x2.5"	>$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc</value>
+      <value grid="a%0.9x1.25.*_oi%0.9x1.25"	>$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc</value>
+      <value grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc</value>
+      <!-- <value grid="a%0.23x0.31.*_oi%0.23x0.31"	>fill this in</value> -->
+      <value grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc</value>
     </values>
   </entry>
 
-  <entry id="strm_domfil" skip_default_entry="true">
+  <entry id="strm_datfil" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file path(s).</desc>
+    <group>derived</group>
+    <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value>null</value>
-      <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
-      <value stream="som">$DOCN_SOM_FILENAME</value>
-      <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domvar" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain variable name(s).</desc>
-    <values>
-      <value>
-        time    time
-        xc      lon
-        yc      lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="interannual">
-        time    time
-        lon     lon
-        lat     lat
-      </value>
-      <value stream="aquapfile">
-        time    time
-        lon     lon
-        lat     lat
-      </value>
-    </values>
-  </entry>
-
-  <entry id="strm_datdir">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file directory.</desc>
-    <values>
-      <value>null</value>
-      <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET</value>
-      <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
-      <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
-    </values>
-  </entry>
-
-  <entry id="strm_datfil">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file path(s).</desc>
-    <values>
-      <value>null</value>
-      <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
-      <value stream="som">$DOCN_SOM_FILENAME</value>
-      <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
+      <value stream="prescribed" >$SSTICE_DATA_FILENAME</value>
+      <value stream="aquapfile"  >$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/$DOCN_AQP_FILENAME</value>
+      <value stream="som"        >$DIN_LOC_ROOT/ocn/docn7/SOM/$DOCN_SOM_FILENAME</value>
+      <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
   </entry>
 
@@ -252,78 +186,6 @@
   <!-- =========================================  -->
   <!--- shr_strmdata_nml       -->
   <!-- =========================================  -->
-
-  <entry id="nx_global" modify_via_xml="OCN_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$OCN_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="OCN_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$OCN_NY</value>
-    </values>
-  </entry>
-
-  <entry id="fillalgo" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,none,bilinear,nn,nnoni,nnonj,spval</valid_values>
-    <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are just copy (ie. no fill), special value,
-      nearest neighbor, nearest neighbor in "i" direction, or nearest
-      neighbor in "j" direction.
-      valid values:  'copy','none','spval','nn','nnoni','nnonj'
-    </desc>
-    <values>
-      <value>nn</value>
-    </values>
-  </entry>
-
-  <entry id="fillmask" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      plays no role is fill algorithm at the present time.
-      valid values: "nomask,srcmask,dstmask,bothmask"
-    </desc>
-    <values>
-      <value>nomask</value>
-    </values>
-  </entry>
-
-  <entry id="mapmask" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      array (up to 30 elements) of masking algorithms for mapping input data
-      associated with the array of streams.  valid options are map only from
-      valid src points, map only to valid destination points, ignore all
-      masks, map only from valid src points to valid destination points.
-      valid values: srcmask, dstmask, nomask,bothmask
-    </desc>
-    <values>
-      <value>dstmask</value>
-    </values>
-  </entry>
 
   <entry id="mapalgo" per_stream_entry="true">
     <type>char(30)</type>
@@ -544,7 +406,20 @@
     </values>
   </entry>
 
-  <entry id="model_maskfile" skip_default_entry="true">
+  <entry id="model_meshfile" modify_via_xml="OCN_DOMAIN_MESH">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>docn_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$OCN_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_maskfile">
     <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
@@ -553,7 +428,44 @@
       file specifying model mask if not obtained from input model mesh
     </desc>
     <values>
-      <value>null</value>
+      <value>$OCN_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>docn_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$OCN_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="OCN_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>docn_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$OCN_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="OCN_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>docn_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$OCN_NY</value>
     </values>
   </entry>
 
@@ -596,7 +508,7 @@
     <category>docn</category>
     <group>docn_nml</group>
     <desc>
-      Value of globally uniform SST (K) for idealized experiments 
+      Value of globally uniform SST (K) for idealized experiments
       when data ocean mode is sst_aquap_constant
     </desc>
     <values>

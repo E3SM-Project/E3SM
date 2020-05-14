@@ -20,7 +20,7 @@ module lnd_comp_nuopc
   use dshr_methods_mod  , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_sdat_init, dshr_state_setscalar
-  use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance, dshr_create_mesh_from_grid
+  use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod          , only : dshr_restart_read, dshr_restart_write
   use dshr_dfield_mod   , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod  , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -44,33 +44,35 @@ module lnd_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type)       :: sdat                            ! instantiation of shr_strdata_type
-  type(ESMF_Mesh)              :: mesh                            ! model mesh
-  character(len=CS)            :: flds_scalar_name = ''
-  integer                      :: flds_scalar_num = 0
-  integer                      :: flds_scalar_index_nx = 0
-  integer                      :: flds_scalar_index_ny = 0
-  integer                      :: compid                          ! mct comp id
-  integer                      :: mpicom                          ! mpi communicator
-  integer                      :: my_task                         ! my task in mpi communicator mpicom
-  logical                      :: masterproc                      ! true of my_task == master_task
-  integer                      :: inst_index                      ! number of current instance (ie. 1)
-  character(len=16)            :: inst_name                       ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)            :: inst_suffix = ""                ! char string associated with instance (ie. "_0001" or "")
-  integer                      :: logunit                         ! logging unit number
-  logical                      :: read_restart                    ! start from restart
-  character(*) , parameter     :: nullstr = 'undefined'
+  type(shr_strdata_type)   :: sdat                                ! instantiation of shr_strdata_type
+  type(ESMF_Mesh)          :: model_mesh                          ! model mesh
+  character(len=CS)        :: flds_scalar_name = ''
+  integer                  :: flds_scalar_num = 0
+  integer                  :: flds_scalar_index_nx = 0
+  integer                  :: flds_scalar_index_ny = 0
+  integer                  :: compid                              ! mct comp id
+  integer                  :: mpicom                              ! mpi communicator
+  integer                  :: my_task                             ! my task in mpi communicator mpicom
+  logical                  :: masterproc                          ! true of my_task == master_task
+  integer                  :: inst_index                          ! number of current instance (ie. 1)
+  character(len=16)        :: inst_suffix = ""                    ! char string associated with instance (ie. "_0001" or "")
+  integer                  :: logunit                             ! logging unit number
+  logical                  :: read_restart                        ! start from restart
+  character(*) , parameter :: nullstr = 'undefined'
 
-  ! dlnd_in namelist input
-  character(CL)                :: nlfilename                      ! filename to obtain namelist info from
-  character(CL)                :: xmlfilename                      ! filename to obtain stream info from
-  character(CL)                :: dataMode                        ! flags physics options wrt input data
-  character(CL)                :: domain_fracname = 'undefined'   ! name of fraction field on first stream file
-  logical                      :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL)                :: restfilm = nullstr              ! model restart file namelist
-  character(CL)                :: restfils = nullstr              ! stream restart file namelist
-  integer                      :: nx_global
-  integer                      :: ny_global
+                                                                  ! dlnd_in namelist input
+  character(CL)            :: dataMode = nullstr                  ! flags physics options wrt input data
+  character(CL)            :: model_meshfile = nullstr            ! full pathname to model meshfile
+  character(CL)            :: model_maskfile = nullstr            ! full pathname to obtain mask from
+  character(CL)            :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
+  character(CL)            :: xmlfilename                         ! filename to obtain stream info from
+  character(CL)            :: nlfilename = nullstr                ! filename to obtain namelist info from
+  logical                  :: force_prognostic_true = .false.     ! if true set prognostic true
+  character(CL)            :: restfilm = nullstr                  ! model restart file namelist
+  character(CL)            :: restfils = nullstr                  ! stream restart file namelist
+  integer                  :: nx_global                           ! global nx dimension of model mesh 
+  integer                  :: ny_global                           ! global ny dimension of model mesh
+  character(CL)            :: stream_fracname = nullstr           ! name of fraction field in first stream file
 
   ! linked lists
   type(fldList_type) , pointer :: fldsImport => null()
@@ -148,15 +150,19 @@ contains
 
     ! local variables
     character(CL) :: cvalue
-    integer       :: shrlogunit                      ! original log unit
-    integer       :: nu                              ! unit number
-    integer       :: ierr                            ! error code
-    character(len=*), parameter :: subname=trim(modName)//':(InitializeAdvertise) '
+    integer       :: shrlogunit ! original log unit
+    integer       :: nu         ! unit number
+    integer       :: ierr       ! error code
+    logical           :: exists     ! check for file existence  
+    character(len=*) , parameter :: subname=trim(modName)//':(InitializeAdvertise) '
+    character(*)     , parameter :: F00 = "('(lnd_comp_nuopc) ',8a)"
+    character(*)     , parameter :: F01 = "('(lnd_comp_nuopc) ',a,2x,i8)"
+    character(*)     , parameter :: F02 = "('(lnd_comp_nuopc) ',a,l6)"
     !-------------------------------------------------------------------------------
 
-    namelist / dlnd_nml / datamode, restfilm, restfils, force_prognostic_true, domain_fracname, &
-         nx_global, ny_global
-
+    namelist / dlnd_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
+         nx_global, ny_global, restfilm, restfils, force_prognostic_true, stream_fracname
+    
     rc = ESMF_SUCCESS
 
     ! Obtain flds_scalar values, mpi values, multi-instance values and
@@ -166,14 +172,12 @@ contains
          logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Determine namelist filename
-    nlfilename = "dlnd_in"//trim(inst_suffix)
-
     ! Determine logical masterproc
     masterproc = (my_task == master_task)
 
     ! Read dlnd_nml from nlfilename
     if (my_task == master_task) then
+       nlfilename = "dlnd_in"//trim(inst_suffix)
        open (newunit=nu, file=trim(nlfilename), status="old", action="read")
        read (nu,nml=dlnd_nml,iostat=ierr)
        close(nu)
@@ -181,21 +185,59 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
-       write(logunit,*)' datamode   = ',datamode
-       write(logunit,*)' domain_fracname = ',trim(domain_fracname)
-       write(logunit,*)' nx_global  = ',nx_global
-       write(logunit,*)' ny_global  = ',ny_global
-       write(logunit,*)' restfilm   = ',trim(restfilm)
-       write(logunit,*)' restfils   = ',trim(restfils)
-       write(logunit,*)' force_prognostic_true = ',force_prognostic_true
+    end if
+    call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
+    call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
+    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
+    call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
+    call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
+    call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
+    call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
+    call shr_mpi_bcast(stream_fracname           , mpicom, 'stream_fracname')
+
+    ! write namelist input to standard out
+    if (my_task == master_task) then
+       if (model_createmesh_fromfile /= nullstr) then
+          write(logunit,F00)' model_create_meshfile_fromfile = ',trim(model_createmesh_fromfile)
+       else
+          write(logunit,F00)' model_meshfile = ',trim(model_meshfile)
+          write(logunit,F00)' model_maskfile = ',trim(model_maskfile)
+       end if
+       write(logunit ,*)' datamode              = ',datamode
+       write(logunit ,*)' model_meshfile        = ',trim(model_meshfile)
+       write(logunit ,*)' stream_fracname       = ',trim(stream_fracname)
+       write(logunit ,*)' nx_global             = ',nx_global
+       write(logunit ,*)' ny_global             = ',ny_global
+       write(logunit ,*)' restfilm              = ',trim(restfilm)
+       write(logunit ,*)' restfils              = ',trim(restfils)
+       write(logunit ,*)' force_prognostic_true = ',force_prognostic_true
     endif
-    call shr_mpi_bcast(datamode        , mpicom, 'datamode')
-    call shr_mpi_bcast(domain_fracname , mpicom, 'domain_fracname')
-    call shr_mpi_bcast(nx_global       , mpicom, 'nx_global')
-    call shr_mpi_bcast(ny_global       , mpicom, 'ny_global')
-    call shr_mpi_bcast(restfilm        , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils        , mpicom, 'restfils')
-    call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
+
+    ! Check that files exists
+    if (my_task == master_task) then
+       if (model_createmesh_fromfile /= nullstr) then
+          inquire(file=trim(model_createmesh_fromfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist')
+          end if
+       else
+          inquire(file=trim(model_meshfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist')
+          end if
+          inquire(file=trim(model_maskfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist')
+          end if
+       end if
+    endif
 
     ! Validate sdat datamode
     if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
@@ -203,14 +245,15 @@ contains
     else
        call shr_sys_abort(' ERROR illegal dlnd datamode = '//trim(datamode))
     end if
-
-    ! Advertise the export fields
     if (trim(datamode) /= 'NULL') then
        call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) glc_nec
        call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO)
+    end if
 
+    ! Advertise the export fields
+    if (trim(datamode) /= 'NULL') then
        call dlnd_comp_advertise(importState, exportState, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -251,8 +294,11 @@ contains
 
     ! Initialize sdat
     call t_startf('dlnd_strdata_init')
+
     xmlfilename = 'dlnd.streams.xml'
-    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'lnd', mesh, read_restart, sdat, rc=rc)
+    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'lnd', &
+         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, &
+         model_createmesh_fromfile=model_createmesh_fromfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_init')
 
@@ -468,7 +514,7 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     ! -------------------------------------
 
-    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  mesh, &
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  model_mesh, &
          subname//':dlndExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -477,7 +523,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain fractional land from first stream
-    call shr_strdata_get_stream_domain(sdat, 1, domain_fracname, lfrac, rc=rc)
+    call shr_strdata_get_stream_domain(sdat, 1, stream_fracname, lfrac, rc=rc) 
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Create stream-> export state mapping

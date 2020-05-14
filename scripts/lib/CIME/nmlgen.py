@@ -572,8 +572,8 @@ class NamelistGenerator(object):
             # user stream file is specified - use an already created stream txt file
             safe_copy(user_stream_path, stream_path)
             strmobj = Stream(infile=stream_path)
-            stream_meshfile = strmobj.get_value("streaminfo/stream_mesh_file")
-            stream_datafiles = strmobj.get_value("streaminfo/streama-data_files")
+            stream_meshfile = strmobj.get_value("stream_info/stream_mesh_file")
+            stream_datafiles = strmobj.get_value("stream_info/stream_data_files")
         else:
             with open(stream_path, 'w') as stream_file:
                 stream_file.write('<?xml version="1.0"?>\n')
