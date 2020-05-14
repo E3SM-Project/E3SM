@@ -1,7 +1,7 @@
 IF (NOT DEFINED PROJECT_NAME)
   # Best practice to put cmake required version at the top
   CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
-  PROJECT(HOMME C Fortran)
+  PROJECT(HOMME C CXX Fortran)
 
   # Print the sha of the last commit,
   # useful to double check which version was build in the build folder.
