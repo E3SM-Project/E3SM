@@ -4,15 +4,15 @@
 #include <string>
 #include <set>
 
-#include "share/atmosphere_process_utils.hpp"
+#include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/scream_assert.hpp"
 #include "share/mpi/scream_comm.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/field/field.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/util/scream_factory.hpp"
 #include "share/util/string_utils.hpp"
-#include "share/grid/grids_manager.hpp"
 #include "share/util/scream_std_enable_shared_from_this.hpp"
 #include "share/util/scream_std_utils.hpp"
 
@@ -20,15 +20,28 @@ namespace scream
 {
 
 /*
- *  The abstract interface of a process of the atmosphere 
+ *  The abstract interface of a process of the atmosphere (AP)
  *
  *  The process will handle a particular part of the atmosphere component.
- *  This includes both physics (i.e., parametrizations) and dynamics.
- *  The atmosphere driver will take care of calling init/run/finalize
- *  methods of each process, in an order that the driver
- *  establishes. A concrete process must implement all the purely virtual
+ *  This includes physics (i.e., parametrizations), dynamics, as well
+ *  as the surface coupling.
+ *  The atmosphere driver (AD) will take care of calling init/run/finalize
+ *  methods of each process, in an order that the AD establishes
+ *  based on the user input options.
+ *  A concrete process must implement all the purely virtual
  *  methods of this interface; for instance, it must provide a list of fields
  *  that it needs as input, together with a list of fields that are computed.
+ *
+ *  Notes to developers:
+ *   - If an AP 'updates' a field (i.e., f = f + delta), then it should make
+ *     sure that f is listed both as required and computed field. This helps
+ *     the AD to check that all the AP's dependencies are met.
+ *   - Most AP's will require a single grid. However, the special concrete
+ *     class AtmosphereProcessGroup can store AP's running on different grids.
+ *   - When a derived class implements the set methods for required/computed
+ *     fields, it should make sure to set itself as customer/provider of
+ *     the field. The methods add_me_as_provider/customer can be used on the
+ *     input field to achieve this result.
  */
 
 class AtmosphereProcess : public util::enable_shared_from_this<AtmosphereProcess>
@@ -52,7 +65,8 @@ public:
 
   // Give the grids manager to the process, so it can grab its grid
   // IMPORTANT: the process is *expected* to have valid field ids for
-  //            required/computed fields once this method returns
+  //            required/computed fields once this method returns.
+  //            This means that all tags/dims must be set upon return.
   virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
 
   // These are the three main interfaces:
@@ -107,6 +121,15 @@ public:
   bool computes (const FieldIdentifier& id) const { return util::contains(get_computed_fields(),id); }
 
 protected:
+
+  void add_me_as_provider (const Field<Real, device_type>& f) {
+    f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
+  }
+
+  void add_me_as_customer (const Field<const Real, device_type>& f) {
+    f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
+  }
+
   virtual void set_required_field_impl (const Field<const Real, device_type>& f) = 0;
   virtual void set_computed_field_impl (const Field<      Real, device_type>& f) = 0;
 };

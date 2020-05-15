@@ -181,8 +181,9 @@ subroutine shoc_main ( &
      exner,phis, &                        ! Input
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
-     wthv_sec,tkh,tk,shoc_ql,&            ! Input/Output
-     shoc_cldfrac,pblh,&                  ! Output
+     wthv_sec,tkh,tk,&                    ! Input/Output
+     shoc_cldfrac,shoc_ql,&               ! Input/Output
+     pblh,&                               ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
@@ -261,13 +262,13 @@ subroutine shoc_main ( &
   real(rtype), intent(inout) :: tk(shcol,nlev)
   ! eddy coefficent for heat [m2/s]
   real(rtype), intent(inout) :: tkh(shcol,nlev)
+  ! Cloud fraction [-]
+  real(rtype), intent(inout) :: shoc_cldfrac(shcol,nlev)  
   ! cloud liquid mixing ratio [kg/kg]
   real(rtype), intent(inout) :: shoc_ql(shcol,nlev)
 
   ! OUTPUT VARIABLES
 
-  ! Cloud fraction [-]
-  real(rtype), intent(out) :: shoc_cldfrac(shcol,nlev)
   ! planetary boundary layer depth [m]
   real(rtype), intent(out) :: pblh(shcol)
 
@@ -2049,7 +2050,7 @@ subroutine shoc_length(&
   !   the planetary boundary layer
   conv_vel(:)=0._rtype
 
-  do k=nlev-1,1,-1
+  do k=nlev,1,-1
     do i=1,shcol
       if (zt_grid(i,k) .lt. pblh(i)) then
         conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)

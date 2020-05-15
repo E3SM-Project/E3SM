@@ -1,7 +1,7 @@
 #ifndef SCREAM_IDENTITY_REMAPPER_HPP
 #define SCREAM_IDENTITY_REMAPPER_HPP
 
-#include "share/remap/abstract_remapper.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 
 namespace scream
 {

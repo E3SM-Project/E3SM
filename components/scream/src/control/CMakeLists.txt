@@ -1,11 +1,9 @@
 set(SCREAM_CONTROL_SOURCES
   atmosphere_driver.cpp
-  surface_coupling.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS
   atmosphere_driver.hpp
-  surface_coupling.hpp
 )
 
 link_directories(${SCREAM_TPL_LIBRARY_DIRS})

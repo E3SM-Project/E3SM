@@ -58,6 +58,12 @@ public:
   // Creates a concrete object using the proper creator
   obj_ptr_type create (const key_type& label, ConstructorArgs&& ...args);
 
+
+  // Cleans up the factory
+  // This can be useful during unit tests, where several tests in the same
+  // execution will try to register the same product(s).
+  void clean_up () { m_register.clear(); }
+
 private:
   std::string print_registered_products () const {
     return print_registered_products_impl<check_overloads::StreamExists<key_type>::value>();
