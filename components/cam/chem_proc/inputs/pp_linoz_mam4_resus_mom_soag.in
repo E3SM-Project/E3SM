@@ -1,12 +1,3 @@
-BEGSIM
-output_unit_number = 7
-output_file        = linoz_mam4_resus_mom_soag.doc
-procout_path       = ../output/
-src_path           = ../bkend/
-procfiles_path     = ../procfiles/cam/
-sim_dat_path       = ../output/
-sim_dat_filename   = linoz_mam4_resus_mom_soag.dat
-
 Comments
      E3SMv1 DECK chemistry.
 End Comments
