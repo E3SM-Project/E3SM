@@ -1,4 +1,5 @@
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
+include_directories (${CMAKE_CURRENT_BINARY_DIR}
+  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
 if (ENABLE_HORIZ_OPENMP)
   add_definitions(-DHORIZ_OPENMP)
 endif ()

@@ -32,11 +32,21 @@ namespace impl {
 template <typename View>
 struct MemoryTraitsMask {
   enum : unsigned int {
+#ifndef KOKKOS_VERSION
+    // pre-v3
     value = ((View::traits::memory_traits::RandomAccess ? Kokkos::RandomAccess : 0) |
              (View::traits::memory_traits::Atomic ? Kokkos::Atomic : 0) |
              (View::traits::memory_traits::Restrict ? Kokkos::Restrict : 0) |
              (View::traits::memory_traits::Aligned ? Kokkos::Aligned : 0) |
              (View::traits::memory_traits::Unmanaged ? Kokkos::Unmanaged : 0))
+#else
+    // >= v3
+    value = ((View::traits::memory_traits::is_random_access ? Kokkos::RandomAccess : 0) |
+             (View::traits::memory_traits::is_atomic ? Kokkos::Atomic : 0) |
+             (View::traits::memory_traits::is_restrict ? Kokkos::Restrict : 0) |
+             (View::traits::memory_traits::is_aligned ? Kokkos::Aligned : 0) |
+             (View::traits::memory_traits::is_unmanaged ? Kokkos::Unmanaged : 0))
+#endif
       };
 };
 
@@ -3875,6 +3885,15 @@ calc_Qm_scalars (const RealList& d, const IntList& probs,
   Qm_clip = cedr::impl::min(Qm_max, cedr::impl::max(Qm_min, Qm));
 }
 
+template <typename Func>
+void homme_parallel_for (const Int& beg, const Int& end, const Func& f) {
+#ifdef HORIZ_OPENMP
+# pragma omp for
+#endif
+  for (Int i = beg; i < end; ++i)
+    f(i);
+}
+
 template <typename ES>
 void CAAS<ES>::reduce_locally () {
   const bool user_reduces = user_reducer_ != nullptr;
@@ -3902,7 +3921,7 @@ void CAAS<ES>::reduce_locally () {
       send(nlclaccum*      k  + bi) = accum_clip;
       send(nlclaccum*(nt + k) + bi) = accum_term;
     };
-    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclaccum), calc_Qm_clip);
+    homme_parallel_for(0, nt*nlclaccum, calc_Qm_clip);
     const auto set_Qm_minmax = KOKKOS_LAMBDA (const Int& j) {
       const auto k = 2*nt + j / nlclaccum;
       const auto bi = j % nlclaccum;
@@ -3914,7 +3933,7 @@ void CAAS<ES>::reduce_locally () {
       }
       send(nlclaccum*k + bi) = accum_ext;
     };
-    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, 2*nt*nlclaccum), set_Qm_minmax);
+    homme_parallel_for(0, 2*nt*nlclaccum, set_Qm_minmax);
   } else {
     using ESU = cedr::impl::ExeSpaceUtils<ES>;
     const auto calc_Qm_clip = KOKKOS_LAMBDA (const typename ESU::Member& t) {
@@ -3963,8 +3982,7 @@ void CAAS<ES>::finish_locally () {
   ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
   const auto recv = recv_;
   const auto d = d_;
-  const auto adjust_Qm = KOKKOS_LAMBDA (const typename ESU::Member& t) {
-    const auto k = t.league_rank();
+  const auto adjust_Qm = KOKKOS_LAMBDA (const Int& k) {
     const auto os = (k+1)*nlclcells;
     const auto Qm_clip_sum = recv(     k);
     const auto Qm_sum      = recv(nt + k);
@@ -3974,31 +3992,28 @@ void CAAS<ES>::finish_locally () {
       auto fac = Qm_clip_sum - Qm_min_sum;
       if (fac > 0) {
         fac = m/fac;
-        const auto adjust = [&] (const Int& i) {
+        for (Int i = 0; i < nlclcells; ++i) {
           const auto Qm_min = d(os + nlclcells * nt + i);
           auto& Qm = d(os+i);
           Qm += fac*(Qm - Qm_min);
           Qm = impl::max(Qm_min, Qm);
         };
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(t, nlclcells), adjust);
       }
     } else if (m > 0) {
       const auto Qm_max_sum = recv(3*nt + k);
       auto fac = Qm_max_sum - Qm_clip_sum;
       if (fac > 0) {
         fac = m/fac;
-        const auto adjust = [&] (const Int& i) {
+        for (Int i = 0; i < nlclcells; ++i) {
           const auto Qm_max = d(os + nlclcells*2*nt + i);
           auto& Qm = d(os+i);
           Qm += fac*(Qm_max - Qm);
           Qm = impl::min(Qm_max, Qm);
         };
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(t, nlclcells), adjust);
       }
     }
   };
-  Kokkos::parallel_for(ESU::get_default_team_policy(nt, nlclcells),
-                       adjust_Qm);
+  homme_parallel_for(0, nt, adjust_Qm);
 }
 
 template <typename ES>
@@ -5436,12 +5451,7 @@ struct CAAS : public cedr::caas::CAAS<Kokkos::Serial> {
   {}
 
   void run () override {
-#if defined HORIZ_OPENMP
-#   pragma omp master
-#endif
-    {
-      Super::run();
-    }
+    Super::run();
   }
 };
 
@@ -5807,7 +5817,14 @@ struct ReproSumReducer :
   int operator() (const cedr::mpi::Parallel& p, Real* sendbuf, Real* rcvbuf,
                   int nlocal, int count, MPI_Op op) const override {
     cedr_assert(op == MPI_SUM);
+#ifdef HORIZ_OPENMP
+#   pragma omp barrier
+#   pragma omp master
+#endif
     compose_repro_sum(sendbuf, rcvbuf, nlocal, count, fcomm_);
+#ifdef HORIZ_OPENMP
+#   pragma omp barrier
+#endif
     return 0;
   }
 
