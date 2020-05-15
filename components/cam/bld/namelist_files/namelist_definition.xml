@@ -287,7 +287,7 @@
        Default: -999
        </entry>
 
-<entry id="Nudge_Loc_Same" type="logical" category="nudging"
+<entry id="Nudge_Loc_PhysOut" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, change the location of calculation of nudging tendency to 
        the same location where the nudging data is written out.
@@ -296,7 +296,7 @@
        Default: TRUE
        </entry>
 
-<entry id="Nudge_Curr" type="logical" category="nudging"
+<entry id="Nudge_CurrentStep" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        Linearly interpolate nudging data to current (set to TRUE) or future 
        (set to FALSE, used by the default model) model time step.
