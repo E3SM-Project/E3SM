@@ -2606,6 +2606,8 @@ struct CslMpi {
   ListOfLists<Real> sendbuf, recvbuf;
   FixedCapList<Int> sendcount;
   FixedCapList<mpi::Request> sendreq, recvreq;
+  FixedCapList<Int> rmt_xs, rmt_qs_extrema, x_bulkdata_offset;
+  Int nrmt_xs, nrmt_qs_extrema;
 
   bool horiz_openmp;
 #ifdef HORIZ_OPENMP
@@ -3174,6 +3176,7 @@ void set_idx2_maps (CslMpi& cm, const Rank2Gids& rank2rmtgids,
   cm.sendcount.reset_capacity(i, true);
   cm.sendreq.reset_capacity(i, true);
   cm.recvreq.reset_capacity(i, true);
+  cm.x_bulkdata_offset.reset_capacity(i, true);
 
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   std::vector<std::map<Int, Int> > lor2idx(nrmtrank);
@@ -3242,6 +3245,7 @@ void size_mpi_buffers (CslMpi& cm, const Rank2Gids& rank2rmtgids,
   cm.nlid_per_rank.resize(nrmtrank);
   cm.sendsz.resize(nrmtrank);
   cm.recvsz.resize(nrmtrank);
+  Int rmt_xs_sz = 0, rmt_qse_sz = 0;
   for (Int ri = 0; ri < nrmtrank; ++ri) {
     const auto& rmtgids = rank2rmtgids.at(cm.ranks(ri));
     const auto& owngids = rank2owngids.at(cm.ranks(ri));
@@ -3250,7 +3254,11 @@ void size_mpi_buffers (CslMpi& cm, const Rank2Gids& rank2rmtgids,
                                         qbufcnt(owngids, rmtgids)));
     cm.recvsz[ri] = bytes2real(std::max(xbufcnt(owngids, rmtgids),
                                         qbufcnt(rmtgids, owngids)));
+    rmt_xs_sz  += 5*cm.np2*cm.nlev*rmtgids.size();
+    rmt_qse_sz += 4       *cm.nlev*rmtgids.size();
   }
+  cm.rmt_xs.reset_capacity(rmt_xs_sz, true);
+  cm.rmt_qs_extrema.reset_capacity(rmt_qse_sz, true);
 }
 
 void alloc_mpi_buffers (CslMpi& cm, Real* sendbuf = nullptr, Real* recvbuf = nullptr) {
@@ -3518,17 +3526,18 @@ Int getbuf (Buffer& buf, const Int& os, Int& i1, Int& i2) {
 }
 
 /* Pack the departure points (x). We use two passes. We also set up the q
-   metadata. Two passes lets us do some efficient tricks that are not available
+   metadata. Two passes let us do some efficient tricks that are not available
    with one pass. Departure point and q messages are formatted as follows:
-    xs: (#x-in-rank    int
-         pad           i
-         (lid-on-rank  i     only packed if #x in lid > 0
-          #x-in-lid    i     > 0
-          (lev         i     only packed if #x in (lid,lev) > 0
-           #x          i     > 0
-           x         3 real
-            *#x) *#lev) *#lid) *#rank
-    qs: (q-extrema    2 qsize r    (min, max) packed together
+    xs: (#x-in-rank         int                                     <-
+         x-bulk-data-offset i                                        |
+         (lid-on-rank       i     only packed if #x in lid > 0       |
+          #x-in-lid         i     > 0                                |- meta data
+          (lev              i     only packed if #x in (lid,lev) > 0 |
+           #x)              i     > 0                                |
+              *#lev) *#lid                                          <-
+         x                  3 real                                  <-- bulk data
+          *#x-in-rank) *#rank
+    qs: (q-extrema    2 qsize r   (min, max) packed together
          q              qsize r
           *#x) *#lev *#lid *#rank
  */
@@ -3540,17 +3549,24 @@ void pack_dep_points_sendbuf_pass1 (CslMpi& cm) {
   for (Int ri = 0; ri < nrmtrank; ++ri) {
     auto&& sendbuf = cm.sendbuf(ri);
     const auto&& lid_on_rank = cm.lid_on_rank(ri);
-    Int xos = 0, qos = 0;
-    xos += setbuf(sendbuf, xos, cm.nx_in_rank(ri), 0 /* empty space for alignment */);
+    // metadata offset, x bulk data offset, q bulk data offset
+    Int mos = 0, xos = 0, qos = 0, sendcount = 0, cnt;
+    cnt = setbuf(sendbuf, mos, 0, 0); // empty space for later
+    mos += cnt;
+    sendcount += cnt;
     if (cm.nx_in_rank(ri) == 0) {
-      cm.sendcount(ri) = xos;
+      setbuf(sendbuf, 0, mos, 0);
+      cm.x_bulkdata_offset(ri) = mos;
+      cm.sendcount(ri) = sendcount;
       continue;
     }
     auto&& bla = cm.bla(ri);
-    for (Int lidi = 0, lidn = cm.lid_on_rank(ri).n(); lidi < lidn; ++lidi) {
+    for (Int lidi = 0, lidn = lid_on_rank.n(); lidi < lidn; ++lidi) {
       auto nx_in_lid = cm.nx_in_lid(ri,lidi);
       if (nx_in_lid == 0) continue;
-      xos += setbuf(sendbuf, xos, lid_on_rank(lidi), nx_in_lid);
+      cnt = setbuf(sendbuf, mos, lid_on_rank(lidi), nx_in_lid);
+      mos += cnt;
+      sendcount += cnt;
       for (Int lev = 0; lev < cm.nlev; ++lev) {
         auto& t = bla(lidi,lev);
         t.qptr = qos;
@@ -3561,15 +3577,19 @@ void pack_dep_points_sendbuf_pass1 (CslMpi& cm) {
           continue;
         }
         slmm_assert_high(nx > 0);
-        const auto dos = setbuf(sendbuf, xos, lev, nx);
-        t.xptr = xos + dos;
-        xos += dos + 3*nx;
+        const auto dos = setbuf(sendbuf, mos, lev, nx);
+        mos += dos;
+        sendcount += dos + 3*nx;
+        t.xptr = xos;
+        xos += 3*nx;
         qos += 2 + nx;
         nx_in_lid -= nx;
       }
       slmm_assert(nx_in_lid == 0);
     }
-    cm.sendcount(ri) = xos;
+    setbuf(sendbuf, 0, mos /* offset to x bulk data */, cm.nx_in_rank(ri));
+    cm.x_bulkdata_offset(ri) = mos;
+    cm.sendcount(ri) = sendcount;
   }
 }
 
@@ -3601,7 +3621,7 @@ void pack_dep_points_sendbuf_pass2 (CslMpi& cm, const FA4<const Real>& dep_point
           auto& t = cm.bla(ri,lidi,lev);
           qptr = t.qptr;
           cnt = t.cnt;
-          xptr = t.xptr + 3*cnt;
+          xptr = cm.x_bulkdata_offset(ri) + t.xptr + 3*cnt;
           ++t.cnt;
         }
 #ifdef HORIZ_OPENMP
@@ -3753,48 +3773,100 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
 }
 
 template <Int np>
-void calc_rmt_q (CslMpi& cm) {
-  const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+void calc_rmt_q_pass1 (CslMpi& cm) {
+#ifdef HORIZ_OPENMP
+# pragma omp master
+#endif
+  {
+    const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+    Int cnt = 0, qcnt = 0;
+    for (Int ri = 0; ri < nrmtrank; ++ri) {
+      const auto&& xs = cm.recvbuf(ri);
+      Int mos = 0, qos = 0, nx_in_rank, xos;
+      mos += getbuf(xs, mos, xos, nx_in_rank);
+      if (nx_in_rank == 0) {
+        cm.sendcount(ri) = 0;
+        continue; 
+      }
+      // The upper bound is to prevent an inf loop if the msg is corrupted.
+      for (Int lidi = 0; lidi < cm.nelemd; ++lidi) {
+        Int lid, nx_in_lid;
+        mos += getbuf(xs, mos, lid, nx_in_lid);
+        for (Int levi = 0; levi < cm.nlev; ++levi) { // same re: inf loop
+          Int lev, nx;
+          mos += getbuf(xs, mos, lev, nx);
+          slmm_assert(nx > 0);
+          {
+            cm.rmt_qs_extrema(4*qcnt + 0) = ri;
+            cm.rmt_qs_extrema(4*qcnt + 1) = lid;
+            cm.rmt_qs_extrema(4*qcnt + 2) = lev;
+            cm.rmt_qs_extrema(4*qcnt + 3) = qos;
+            ++qcnt;
+            qos += 2;
+          }
+          for (Int xi = 0; xi < nx; ++xi) {
+            cm.rmt_xs(5*cnt + 0) = ri;
+            cm.rmt_xs(5*cnt + 1) = lid;
+            cm.rmt_xs(5*cnt + 2) = lev;
+            cm.rmt_xs(5*cnt + 3) = xos;
+            cm.rmt_xs(5*cnt + 4) = qos;
+            ++cnt;
+            xos += 3;
+            ++qos;
+          }
+          nx_in_lid -= nx;
+          nx_in_rank -= nx;
+          if (nx_in_lid == 0) break;
+        }
+        slmm_assert(nx_in_lid == 0);
+        if (nx_in_rank == 0) break;
+      }
+      slmm_assert(nx_in_rank == 0);
+      cm.sendcount(ri) = cm.qsize*qos;
+    }
+    cm.nrmt_xs = cnt;
+    cm.nrmt_qs_extrema = qcnt;
+  }
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+#endif  
+}
+
+template <Int np>
+void calc_rmt_q_pass2 (CslMpi& cm) {
+  const Int qsize = cm.qsize;
+
 #ifdef HORIZ_OPENMP
 # pragma omp for
 #endif
-  for (Int ri = 0; ri < nrmtrank; ++ri) {
+  for (Int it = 0; it < cm.nrmt_qs_extrema; ++it) {
+    const Int
+      ri = cm.rmt_qs_extrema(4*it), lid = cm.rmt_qs_extrema(4*it + 1),
+      lev = cm.rmt_qs_extrema(4*it + 2), qos = qsize*cm.rmt_qs_extrema(4*it + 3);  
+    auto&& qs = cm.sendbuf(ri);
+    const auto& ed = cm.ed(lid);
+    for (Int iq = 0; iq < qsize; ++iq)
+      for (int i = 0; i < 2; ++i)
+        qs(qos + 2*iq + i) = ed.q_extrema(iq, lev, i);
+  }
+
+#ifdef HORIZ_OPENMP
+# pragma omp for
+#endif
+  for (Int it = 0; it < cm.nrmt_xs; ++it) {
+    const Int
+      ri = cm.rmt_xs(5*it), lid = cm.rmt_xs(5*it + 1), lev = cm.rmt_xs(5*it + 2),
+      xos = cm.rmt_xs(5*it + 3), qos = qsize*cm.rmt_xs(5*it + 4);
     const auto&& xs = cm.recvbuf(ri);
     auto&& qs = cm.sendbuf(ri);
-    Int xos = 0, qos = 0, nx_in_rank, padding;
-    xos += getbuf(xs, xos, nx_in_rank, padding);
-    if (nx_in_rank == 0) {
-      cm.sendcount(ri) = 0;
-      continue; 
-    }
-    // The upper bound is to prevent an inf loop if the msg is corrupted.
-    for (Int lidi = 0; lidi < cm.nelemd; ++lidi) {
-      Int lid, nx_in_lid;
-      xos += getbuf(xs, xos, lid, nx_in_lid);
-      const auto& ed = cm.ed(lid);
-      for (Int levi = 0; levi < cm.nlev; ++levi) { // same re: inf loop
-        Int lev, nx;
-        xos += getbuf(xs, xos, lev, nx);
-        slmm_assert(nx > 0);
-        for (Int iq = 0; iq < cm.qsize; ++iq)
-          for (int i = 0; i < 2; ++i)
-            qs(qos + 2*iq + i) = ed.q_extrema(iq, lev, i);
-        qos += 2*cm.qsize;
-        for (Int ix = 0; ix < nx; ++ix) {
-          calc_q<np>(cm, lid, lev, &xs(xos), &qs(qos), true);
-          xos += 3;
-          qos += cm.qsize;
-        }
-        nx_in_lid -= nx;
-        nx_in_rank -= nx;
-        if (nx_in_lid == 0) break;
-      }
-      slmm_assert(nx_in_lid == 0);
-      if (nx_in_rank == 0) break;
-    }
-    slmm_assert(nx_in_rank == 0);
-    cm.sendcount(ri) = qos;
+    calc_q<np>(cm, lid, lev, &xs(xos), &qs(qos), true);
   }
+}
+
+template <Int np>
+void calc_rmt_q (CslMpi& cm) {
+  calc_rmt_q_pass1<np>(cm);
+  calc_rmt_q_pass2<np>(cm);
 }
 
 template <Int np>
