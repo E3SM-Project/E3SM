@@ -1201,7 +1201,6 @@ contains
    use dycore       ,only: dycore_is
    use ppgrid       ,only: pver,pcols,begchunk,endchunk
    use filenames    ,only: interpret_filename_spec
-   use physconst    ,only: cpair
 
    ! Arguments
    !-----------
@@ -1491,7 +1490,6 @@ contains
    use physics_types,only: physics_state
    use constituents ,only: cnst_get_ind
    use ppgrid       ,only: pver,pcols
-   use physconst    ,only: cpair
 
    ! Arguments
    !-----------
@@ -1583,6 +1581,7 @@ contains
    use constituents ,only: cnst_get_ind,pcnst
    use ppgrid       ,only: pver,pcols,begchunk,endchunk
    use cam_history  ,only: outfld
+   use physconst    ,only: cpair
 
    ! Arguments
    !-------------
@@ -1636,7 +1635,7 @@ contains
 
      call outfld('Nudge_U',phys_tend%u          ,pcols,lchnk)
      call outfld('Nudge_V',phys_tend%v          ,pcols,lchnk)
-     call outfld('Nudge_T',phys_tend%s/*cpair   ,pcols,lchnk)
+     call outfld('Nudge_T',phys_tend%s/cpair    ,pcols,lchnk)
      call outfld('Nudge_Q',phys_tend%q(1,1,indw),pcols,lchnk)
    endif
 
@@ -3207,7 +3206,7 @@ contains
   use perf_mod         
   use netcdf           
                
-  integer, intent(in)             :: ncid, ndg_prof            
+  integer, intent(in)             :: ncid 
   integer, intent(in)             :: strt4(4), cnt4(4)         
   character (len = *), intent(in) :: vname             
   real(r8), intent(out)           :: out_x(pcols,pver,begchunk:endchunk)               

@@ -290,7 +290,7 @@
 <entry id="Nudge_Loc_PhysOut" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, change the location of calculation of nudging tendency to 
-       the same location where the nudging data is written out.
+       the same location where the model state variables are written out.
        If FALSE, calculate the nudging tendency at the beginning of 
        tphysbc (the same as the default model).
        Default: TRUE
