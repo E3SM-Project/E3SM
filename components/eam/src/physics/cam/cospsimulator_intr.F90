@@ -96,28 +96,10 @@ module cospsimulator_intr
   real(r8), target :: reffLIQ_binCenters_cosp(numMODISReffLiqBins)
 
   real(r8) :: htmlmid_cosp(nhtml_cosp)                     ! Model level height midpoints for output
-  integer  :: prstau_cosp(nprs_cosp*ntau_cosp)             ! ISCCP mixed output dimension index
-  integer  :: prstau_cosp_modis(nprs_cosp*ntau_cosp_modis) ! MODIS mixed output dimension index
-  integer  :: htmisrtau_cosp(nhtmisr_cosp*ntau_cosp)       ! MISR mixed output dimension index
-  real(r8) :: prstau_prsmid_cosp(nprs_cosp*ntau_cosp)
-  real(r8) :: prstau_taumid_cosp(nprs_cosp*ntau_cosp)
-  real(r8) :: prstau_prsmid_cosp_modis(nprs_cosp*ntau_cosp_modis)
-  real(r8) :: prstau_taumid_cosp_modis(nprs_cosp*ntau_cosp_modis)
-  real(r8) :: htmisrtau_htmisrmid_cosp(nhtmisr_cosp*ntau_cosp)
-  real(r8) :: htmisrtau_taumid_cosp(nhtmisr_cosp*ntau_cosp)
-  real(r8),allocatable, public :: htdbze_dbzemid_cosp(:)   ! (nht_cosp*CLOUDSAT_DBZE_BINS)
   real(r8),allocatable, target :: htlim_cosp(:,:)          ! height limits for COSP outputs (nht_cosp+1)
   real(r8),allocatable, target :: htmid_cosp(:)            ! height midpoints of COSP radar/lidar output (nht_cosp)
   real(r8),allocatable         :: htlim_cosp_1d(:)         ! height limits for COSP outputs (nht_cosp+1)
-  real(r8),allocatable         :: htdbze_htmid_cosp(:)     ! (nht_cosp*CLOUDSAT_DBZE_BINS)
-  real(r8),allocatable         :: htsr_htmid_cosp(:)       ! (nht_cosp*nsr_cosp)
-  real(r8),allocatable         :: htsr_srmid_cosp(:)       ! (nht_cosp*nsr_cosp)
-  real(r8),allocatable         :: htmlscol_htmlmid_cosp(:) ! (nhtml_cosp*nscol_cosp)
-  real(r8),allocatable         :: htmlscol_scol_cosp(:)    ! (nhtml_cosp*nscol_cosp) 
   integer, allocatable, target :: scol_cosp(:)             ! sub-column number (nscol_cosp)
-  integer, allocatable         :: htdbze_cosp(:)           ! radar CFAD mixed output dimension index (nht_cosp*CLOUDSAT_DBZE_BINS)
-  integer, allocatable         :: htsr_cosp(:)             ! lidar CFAD mixed output dimension index (nht_cosp*nsr_cosp)
-  integer, allocatable         :: htmlscol_cosp(:)         ! html-subcolumn mixed output dimension index (nhtml_cosp*nscol_cosp)
 
   ! ######################################################################################
   ! Default namelists
@@ -330,7 +312,7 @@ CONTAINS
     ! Set number of sub-columns, from namelist
     nscol_cosp = Ncolumns_in
     
-    if (use_vgrid_in) then		!! using fixed vertical grid
+    if (use_vgrid_in) then    !! using fixed vertical grid
        if (csat_vgrid_in)       then
           nht_cosp = 40
        else
@@ -345,11 +327,7 @@ CONTAINS
     !          Above I just assign them accordingly in the USE statement. Other bin bounds needed by CAM 
     !          are calculated here.
     ! Allocate
-    allocate(htlim_cosp(2,nht_cosp),htlim_cosp_1d(nht_cosp+1),htmid_cosp(nht_cosp),scol_cosp(nscol_cosp),       &
-             htdbze_cosp(nht_cosp*CLOUDSAT_DBZE_BINS),htsr_cosp(nht_cosp*nsr_cosp),htmlscol_cosp(nhtml_cosp*nscol_cosp),&
-             htdbze_htmid_cosp(nht_cosp*CLOUDSAT_DBZE_BINS),htdbze_dbzemid_cosp(nht_cosp*CLOUDSAT_DBZE_BINS),                   &
-             htsr_htmid_cosp(nht_cosp*nsr_cosp),htsr_srmid_cosp(nht_cosp*nsr_cosp),                             &
-             htmlscol_htmlmid_cosp(nhtml_cosp*nscol_cosp),htmlscol_scol_cosp(nhtml_cosp*nscol_cosp))
+    allocate(htlim_cosp(2,nht_cosp),htlim_cosp_1d(nht_cosp+1),htmid_cosp(nht_cosp),scol_cosp(nscol_cosp))
     
     ! DJS2017: Just pull from cosp_config
     if (use_vgrid_in) then
@@ -364,56 +342,6 @@ CONTAINS
     
     !  Just using an index here, model height is a prognostic variable
     htmlmid_cosp(:) = (/(k,k=1,nhtml_cosp)/)
-    
-    ! assign mixed dimensions an integer index for cam_history.F90
-    do k=1,nprs_cosp*ntau_cosp
-       prstau_cosp(k) = k
-    end do
-    do k=1,nprs_cosp*ntau_cosp_modis
-       prstau_cosp_modis(k) = k
-    end do
-    do k=1,nht_cosp*CLOUDSAT_DBZE_BINS
-       htdbze_cosp(k) = k
-    end do
-    do k=1,nht_cosp*nsr_cosp
-       htsr_cosp(k) = k
-    end do
-    do k=1,nhtml_cosp*nscol_cosp
-       htmlscol_cosp(k) = k
-    end do
-    do k=1,nhtmisr_cosp*ntau_cosp
-       htmisrtau_cosp(k) = k
-    end do
-    
-    ! next, assign collapsed reference vectors for cam_history.F90
-    ! convention for saving output = prs1,tau1 ... prs1,tau7 ; prs2,tau1 ... prs2,tau7 etc.
-    ! actual output is specified in cospsimulator1_intr.F90
-    do k=1,nprs_cosp
-       prstau_taumid_cosp(ntau_cosp*(k-1)+1:k*ntau_cosp)=taumid_cosp(1:ntau_cosp)
-       prstau_prsmid_cosp(ntau_cosp*(k-1)+1:k*ntau_cosp)=prsmid_cosp(k)
-       prstau_taumid_cosp_modis(ntau_cosp_modis*(k-1)+1:k*ntau_cosp_modis)=taumid_cosp_modis(1:ntau_cosp_modis)
-       prstau_prsmid_cosp_modis(ntau_cosp_modis*(k-1)+1:k*ntau_cosp_modis)=prsmid_cosp(k)
-    enddo
-    
-    do k=1,nht_cosp
-       htdbze_dbzemid_cosp(CLOUDSAT_DBZE_BINS*(k-1)+1:k*CLOUDSAT_DBZE_BINS)=dbzemid_cosp(1:CLOUDSAT_DBZE_BINS)
-       htdbze_htmid_cosp(CLOUDSAT_DBZE_BINS*(k-1)+1:k*CLOUDSAT_DBZE_BINS)=htmid_cosp(k)
-    enddo
-    
-    do k=1,nht_cosp
-       htsr_srmid_cosp(nsr_cosp*(k-1)+1:k*nsr_cosp)=srmid_cosp(1:nsr_cosp)
-       htsr_htmid_cosp(nsr_cosp*(k-1)+1:k*nsr_cosp)=htmid_cosp(k)
-    enddo
-    
-    do k=1,nhtml_cosp
-       htmlscol_scol_cosp(nscol_cosp*(k-1)+1:k*nscol_cosp)=scol_cosp(1:nscol_cosp)
-       htmlscol_htmlmid_cosp(nscol_cosp*(k-1)+1:k*nscol_cosp)=htmlmid_cosp(k)
-    enddo
-    
-    do k=1,nhtmisr_cosp
-       htmisrtau_taumid_cosp(ntau_cosp*(k-1)+1:k*ntau_cosp)=taumid_cosp(1:ntau_cosp)
-       htmisrtau_htmisrmid_cosp(ntau_cosp*(k-1)+1:k*ntau_cosp)=htmisrmid_cosp(k)
-    enddo
     
   end subroutine setcosp2values
 #endif    
@@ -2003,14 +1931,11 @@ CONTAINS
       real(r8) :: cld_cal_tmpliq(pcols,nht_cosp)           ! CAM (time,height,profile)
       real(r8) :: cld_cal_tmpice(pcols,nht_cosp)           ! CAM (time,height,profile)
       real(r8) :: cld_cal_tmpun(pcols,nht_cosp)            ! CAM (time,height,profile) !+cosp1.4
-      real(r8) :: cfad_dbze94_cs(pcols,nht_cosp*CLOUDSAT_DBZE_BINS)! CAM cfad_dbze94 (time,height,dbze,profile)
-      real(r8) :: cfad_sr532_cal(pcols,nht_cosp*nsr_cosp)  ! CAM cfad_lidarsr532 (time,height,scat_ratio,profile)
       real(r8) :: tau_isccp(pcols,nscol_cosp)              ! CAM boxtauisccp (time,column,profile)
       real(r8) :: cldptop_isccp(pcols,nscol_cosp)          ! CAM boxptopisccp (time,column,profile)
       real(r8) :: meantau_isccp(pcols)                     ! CAM tauisccp (time,profile)
       real(r8) :: meantb_isccp(pcols)                      ! CAM meantbisccp (time,profile)
       real(r8) :: meantbclr_isccp(pcols)                   ! CAM meantbclrisccp (time,profile)     
-      real(r8) :: dbze_cs(pcols,nhtml_cosp*nscol_cosp)     ! CAM dbze94 (time,height_mlev,column,profile)
       real(r8) :: cldtot_calcs(pcols)                      ! CAM cltlidarradar (time,profile)
       real(r8) :: cldtot_cs(pcols)                         ! CAM cltradar (time,profile)
       real(r8) :: cldtot_cs2(pcols)                        ! CAM cltradar2 (time,profile)
@@ -2026,11 +1951,8 @@ CONTAINS
       real(r8) :: ptcloudsatflag9(pcols)
       real(r8) :: cloudsatpia(pcols)
       real(r8) :: cld_cal_notcs(pcols,nht_cosp)            ! CAM clcalipso2 (time,height,profile)
-      real(r8) :: atb532_cal(pcols,nhtml_cosp*nscol_cosp)  ! CAM atb532 (time,height_mlev,column,profile)
       real(r8) :: mol532_cal(pcols,nhtml_cosp)             ! CAM beta_mol532 (time,height_mlev,profile)
-      real(r8) :: cld_misr(pcols,nhtmisr_cosp*ntau_cosp)   ! CAM clMISR (time,tau,CTH_height_bin,profile)
       real(r8) :: refl_parasol(pcols,nsza_cosp)            ! CAM parasol_refl (time,sza,profile)
-      real(r8) :: scops_out(pcols,nhtml_cosp*nscol_cosp)   ! CAM frac_out (time,height_mlev,column,profile)
       real(r8) :: cltmodis(pcols)
       real(r8) :: clwmodis(pcols)
       real(r8) :: climodis(pcols)
@@ -2048,11 +1970,8 @@ CONTAINS
       real(r8) :: pctmodis(pcols)
       real(r8) :: lwpmodis(pcols)
       real(r8) :: iwpmodis(pcols)
-      real(r8) :: clmodis_cam(pcols,ntau_cosp_modis*nprs_cosp)
       real(r8) :: clmodis(pcols,ntau_cosp_modis,nprs_cosp)
-      real(r8) :: clrimodis_cam(pcols,ntau_cosp*numMODISReffIceBins)
       real(r8) :: clrimodis(pcols,ntau_cosp,numMODISReffIceBins)
-      real(r8) :: clrlmodis_cam(pcols,ntau_cosp*numMODISReffLiqBins)
       real(r8) :: clrlmodis(pcols,ntau_cosp,numMODISReffLiqBins)
       !real(r8) :: tau067_out(pcols,nhtml_cosp*nscol_cosp),emis11_out(pcols,nhtml_cosp*nscol_cosp)
       real(r8),dimension(pcols,nhtml_cosp*nscol_cosp) :: &
@@ -2104,14 +2023,11 @@ CONTAINS
       cld_cal_tmpliq(1:pcols,1:nht_cosp)               = R_UNDEF
       cld_cal_tmpice(1:pcols,1:nht_cosp)               = R_UNDEF
       cld_cal_tmpun(1:pcols,1:nht_cosp)                = R_UNDEF
-      cfad_dbze94_cs(1:pcols,1:nht_cosp*CLOUDSAT_DBZE_BINS)    = R_UNDEF
-      cfad_sr532_cal(1:pcols,1:nht_cosp*nsr_cosp)      = R_UNDEF
       tau_isccp(1:pcols,1:nscol_cosp)                  = R_UNDEF
       cldptop_isccp(1:pcols,1:nscol_cosp)              = R_UNDEF
       meantau_isccp(1:pcols)                           = R_UNDEF
       meantb_isccp(1:pcols)                            = R_UNDEF
       meantbclr_isccp(1:pcols)                         = R_UNDEF     
-      dbze_cs(1:pcols,1:nhtml_cosp*nscol_cosp)         = R_UNDEF
       ptcloudsatflag0(1:pcols)                         = R_UNDEF 
       ptcloudsatflag1(1:pcols)                         = R_UNDEF 
       ptcloudsatflag2(1:pcols)                         = R_UNDEF 
@@ -2127,11 +2043,8 @@ CONTAINS
       cldtot_cs(1:pcols)                               = R_UNDEF
       cldtot_cs2(1:pcols)                              = R_UNDEF
       cld_cal_notcs(1:pcols,1:nht_cosp)                = R_UNDEF
-      atb532_cal(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF
       mol532_cal(1:pcols,1:nhtml_cosp)                 = R_UNDEF
-      cld_misr(1:pcols,1:nhtmisr_cosp*ntau_cosp)       = R_UNDEF
       refl_parasol(1:pcols,1:nsza_cosp)                = R_UNDEF
-      scops_out(1:pcols,1:nhtml_cosp*nscol_cosp)       = R_UNDEF
       cltmodis(1:pcols)                                = R_UNDEF
       clwmodis(1:pcols)                                = R_UNDEF
       climodis(1:pcols)                                = R_UNDEF
@@ -2149,11 +2062,8 @@ CONTAINS
       pctmodis(1:pcols)                                = R_UNDEF
       lwpmodis(1:pcols)                                = R_UNDEF
       iwpmodis(1:pcols)                                = R_UNDEF
-      clmodis_cam(1:pcols,1:ntau_cosp_modis*nprs_cosp) = R_UNDEF
       clmodis(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF
-      clrimodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffIceBins) = R_UNDEF ! +cosp2
       clrimodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffIceBins)   = R_UNDEF ! +cosp2
-      clrlmodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffLiqBins) = R_UNDEF ! +cosp2
       clrlmodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffLiqBins)   = R_UNDEF ! +cosp2
       tau067_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
       emis11_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
@@ -2207,25 +2117,25 @@ CONTAINS
          cldmed_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,2)                          ! CAM version of clmcalipso (time,profile)
          cldhgh_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,3)                          ! CAM version of clhcalipso (time,profile)
          cldtot_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,4)                          ! CAM version of cltcalipso (time,profile)
-         cldlow_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,1,1)	           ! CAM version of cllcalipsoice !+cosp1.4
-         cldmed_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,2,1)	           ! CAM version of clmcalipsoice
-         cldhgh_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,3,1)   	           ! CAM version of clhcalipsoice
-         cldtot_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,4,1)	           ! CAM version of cltcalipsoice
-         cldlow_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,1,2)	           ! CAM version of cllcalipsoliq
-         cldmed_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,2,2)	           ! CAM version of clmcalipsoliq
-         cldhgh_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,3,2)	           ! CAM version of clhcalipsoliq
-         cldtot_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,4,2)	           ! CAM version of cltcalipsoliq
-         cldlow_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,1,3)	           ! CAM version of cllcalipsoun
-         cldmed_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,2,3)	           ! CAM version of clmcalipsoun
-         cldhgh_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,3,3)	           ! CAM version of clhcalipsoun
+         cldlow_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,1,1)              ! CAM version of cllcalipsoice !+cosp1.4
+         cldmed_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,2,1)              ! CAM version of clmcalipsoice
+         cldhgh_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,3,1)                 ! CAM version of clhcalipsoice
+         cldtot_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,4,1)              ! CAM version of cltcalipsoice
+         cldlow_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,1,2)              ! CAM version of cllcalipsoliq
+         cldmed_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,2,2)              ! CAM version of clmcalipsoliq
+         cldhgh_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,3,2)              ! CAM version of clhcalipsoliq
+         cldtot_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,4,2)              ! CAM version of cltcalipsoliq
+         cldlow_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,1,3)              ! CAM version of cllcalipsoun
+         cldmed_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,2,3)              ! CAM version of clmcalipsoun
+         cldhgh_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,3,3)              ! CAM version of clhcalipsoun
          cldtot_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,4,3)                   ! CAM version of cltcalipsoun, !+cosp1.4
-         cld_cal_ice(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,1)	   ! CAM version of clcalipsoice !+cosp1.4
+         cld_cal_ice(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,1)      ! CAM version of clcalipsoice !+cosp1.4
          cld_cal_liq(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,2)       ! CAM version of clcalipsoliq
-         cld_cal_un(1:ncol,1:nht_cosp)     = cospOUT%calipso_lidarcldphase(:,:,3)	   ! CAM version of clcalipsoun
-         cld_cal_tmp(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldtmp(:,:,1)           	   ! CAM version of clcalipsotmp
-         cld_cal_tmpliq(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,2)	                   ! CAM version of clcalipsotmpice
-         cld_cal_tmpice(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,3)	                   ! CAM version of clcalipsotmpliq
-         cld_cal_tmpun(1:ncol,1:nht_cosp)  = cospOUT%calipso_lidarcldtmp(:,:,4)	                   ! CAM version of clcalipsotmpun, !+cosp1.4
+         cld_cal_un(1:ncol,1:nht_cosp)     = cospOUT%calipso_lidarcldphase(:,:,3)      ! CAM version of clcalipsoun
+         cld_cal_tmp(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldtmp(:,:,1)                 ! CAM version of clcalipsotmp
+         cld_cal_tmpliq(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,2)                     ! CAM version of clcalipsotmpice
+         cld_cal_tmpice(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,3)                     ! CAM version of clcalipsotmpliq
+         cld_cal_tmpun(1:ncol,1:nht_cosp)  = cospOUT%calipso_lidarcldtmp(:,:,4)                     ! CAM version of clcalipsotmpun, !+cosp1.4
          cld_cal(1:ncol,1:nht_cosp)                    = cospOUT%calipso_lidarcld(:,1:nht_cosp)  ! CAM version of clcalipso (time,height,profile)
          mol532_cal(1:ncol,1:nhtml_cosp)               = cospOUT%calipso_beta_mol                   ! CAM version of beta_mol532 (time,height_mlev,profile)
          atb532(1:ncol,1:nscol_cosp,1:nhtml_cosp)      = cospOUT%calipso_beta_tot                   ! atb532 (time,height_mlev,column,profile)
@@ -2275,87 +2185,6 @@ CONTAINS
          clrimodis(1:ncol,1:ntau_cosp_modis,1:numMODISReffIceBins) = cospOUT%modis_Optical_Thickness_vs_ReffICE
          clrlmodis(1:ncol,1:ntau_cosp_modis,1:numMODISReffLiqBins) = cospOUT%modis_Optical_Thickness_vs_ReffLIQ
       endif
-      
-      ! Use high-dimensional output to populate CAM collapsed output variables
-      ! see above for mixed dimension definitions
-      ! i am using the convention of starting vertical coordinates at the surface, up to down, COSP convention, not CAM.
-      do i=1,ncol
-         if (lradar_sim) then
-            ! CAM cfad_dbze94 (time,height,dbze,profile) 
-            do ih=1,nht_cosp
-               do id=1,CLOUDSAT_DBZE_BINS
-                  ihd=(ih-1)*CLOUDSAT_DBZE_BINS+id                     
-                  cfad_dbze94_cs(i,ihd) = cfad_dbze94(i,id,ih)         ! cfad_dbze94_cs(pcols,nht_cosp*CLOUDSAT_DBZE_BINS)
-               end do
-            end do
-            ! CAM dbze94 (time,height_mlev,column,profile)
-            do ihml=1,nhtml_cosp
-               do isc=1,nscol_cosp
-                  ihsc=(ihml-1)*nscol_cosp+isc                 
-                  dbze_cs(i,ihsc) = dbze94(i,isc,ihml)                 ! dbze_cs(pcols,pver*nscol_cosp) 
-               end do
-            end do
-         endif
-         
-         if (llidar_sim) then
-            ! CAM cfad_lidarsr532 (time,height,scat_ratio,profile)
-            do ih=1,nht_cosp
-               do is=1,nsr_cosp
-                  ihs=(ih-1)*nsr_cosp+is                       
-                  cfad_sr532_cal(i,ihs) = cfad_lidarsr532(i,is,ih)     ! cfad_sr532_cal(pcols,nht_cosp*nsr_cosp)
-               end do
-            end do
-            ! CAM atb532 (time,height_mlev,column,profile)  FIX
-            do ihml=1,nhtml_cosp
-               do isc=1,nscol_cosp
-                  ihsc=(ihml-1)*nscol_cosp+isc                 
-                  atb532_cal(i,ihsc) = atb532(i,isc,ihml)              ! atb532_cal(pcols,nht_cosp*nscol_cosp)
-               end do
-            end do
-         endif
-         
-         if (lmisr_sim) then
-            ! CAM clMISR (time,tau,CTH_height_bin,profile)
-            do ihm=1,nhtmisr_cosp
-               do it=1,ntau_cosp
-                  ihmt=(ihm-1)*ntau_cosp+it                    
-                  cld_misr(i,ihmt) = clMISR(i,it,ihm) 
-               end do
-            end do
-         endif
-         
-         if (lmodis_sim) then
-            ! CAM clmodis
-            do ip=1,nprs_cosp
-               do it=1,ntau_cosp_modis
-                  ipt=(ip-1)*ntau_cosp_modis+it
-                  clmodis_cam(i,ipt) = clmodis(i,it,ip)
-               end do
-            end do
-            ! CAM clrimodis
-            do ip=1,numMODISReffIceBins
-               do it=1,ntau_cosp_modis
-                  ipt=(ip-1)*ntau_cosp_modis+it
-                  clrimodis_cam(i,ipt) = clrimodis(i,it,ip)
-               end do
-            end do
-            ! CAM clrlmodis
-            do ip=1,numMODISReffLiqBins
-               do it=1,ntau_cosp_modis
-                  ipt=(ip-1)*ntau_cosp_modis+it
-                  clrlmodis_cam(i,ipt) = clrlmodis(i,it,ip)
-               end do
-            end do
-         endif
-         
-         ! Subcolums 
-         do ihml=1,nhtml_cosp
-            do isc=1,nscol_cosp
-               ihsc=(ihml-1)*nscol_cosp+isc                 
-               scops_out(i,ihsc) = frac_out(i,isc,ihml)             ! scops_out(pcols,nht_cosp*nscol_cosp)
-            end do
-         end do   
-      end do
       
       ! ######################################################################################
       ! OUTPUT
@@ -2412,12 +2241,11 @@ CONTAINS
          call outfld('CLD_CAL',        cld_cal,       pcols,lchnk)  !! fails check_accum if 'A'
          call outfld('MOL532_CAL',     mol532_cal,    pcols,lchnk)
          
-         where (cfad_sr532_cal(:ncol,:nht_cosp*nsr_cosp) .eq. R_UNDEF)
+         where (cfad_lidarsr532(:ncol,:,:) .eq. R_UNDEF)
             !! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue
-            !!            cfad_sr532_cal(:ncol,:nht_cosp*nsr_cosp) = R_UNDEF
-            cfad_sr532_cal(:ncol,:nht_cosp*nsr_cosp) = 0.0_r8
+            cfad_lidarsr532(:ncol,:,:) = 0.0_r8
          end where
-         call outfld('CFAD_SR532_CAL',cfad_sr532_cal    ,pcols,lchnk)
+         call outfld('CFAD_SR532_CAL',cfad_lidarsr532,pcols,lchnk)
          
          where (refl_parasol(:ncol,:nsza_cosp) .eq. R_UNDEF)
             !! setting missing values to 0 (clear air).  
@@ -2471,12 +2299,11 @@ CONTAINS
       
       ! RADAR SIMULATOR OUTPUTS
       if (lradar_sim) then
-         where (cfad_dbze94_cs(:ncol,:nht_cosp*CLOUDSAT_DBZE_BINS) .eq. R_UNDEF)
+         where (cfad_dbze94(:ncol,:,:) .eq. R_UNDEF)
             !! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue 
-            !           cfad_dbze94_cs(:ncol,:nht_cosp*CLOUDSAT_DBZE_BINS) = R_UNDEF
-            cfad_dbze94_cs(:ncol,:nht_cosp*CLOUDSAT_DBZE_BINS) = 0.0_r8
+            cfad_dbze94(:ncol,:,:) = 0.0_r8
          end where
-         call outfld('CFAD_DBZE94_CS',cfad_dbze94_cs,   pcols, lchnk)
+         call outfld('CFAD_DBZE94_CS',cfad_dbze94,   pcols, lchnk)
          call outfld('CLDTOT_CALCS',  cldtot_calcs,     pcols, lchnk)
          call outfld('CLDTOT_CS',     cldtot_cs,        pcols, lchnk)
          call outfld('CLDTOT_CS2',    cldtot_cs2,       pcols, lchnk)
@@ -2496,7 +2323,7 @@ CONTAINS
       
       ! MISR SIMULATOR OUTPUTS
       if (lmisr_sim) then
-         call outfld('CLD_MISR',cld_misr    ,pcols,lchnk)
+         call outfld('CLD_MISR',clMISR,pcols,lchnk)
       end if
       
       ! MODIS SIMULATOR OUTPUTS
@@ -2598,23 +2425,23 @@ CONTAINS
          end where
          call outfld('IWPMODIS',iwpmodis    ,pcols,lchnk)
          
-         call outfld('CLMODIS',clmodis_cam  ,pcols,lchnk) 
-         call outfld('CLRIMODIS',clrimodis_cam  ,pcols,lchnk) 
-         call outfld('CLRLMODIS',clrlmodis_cam  ,pcols,lchnk) 
+         call outfld('CLMODIS',clmodis,pcols,lchnk) 
+         call outfld('CLRIMODIS',clrimodis,pcols,lchnk) 
+         call outfld('CLRLMODIS',clrlmodis,pcols,lchnk) 
       end if
       
       ! SUB-COLUMN OUTPUT
       if (lfrac_out) then
-         call outfld('SCOPS_OUT',scops_out   ,pcols,lchnk)!!!-1.00000E+30 !! fails check_accum if 'A'
+         call outfld('SCOPS_OUT',frac_out,pcols,lchnk)!!!-1.00000E+30 !! fails check_accum if 'A'
          if (lisccp_sim) then
             call outfld('TAU_ISCCP',    tau_isccp,    pcols,lchnk) !! fails check_accum if 'A'
             call outfld('CLDPTOP_ISCCP',cldptop_isccp,pcols,lchnk) !! fails check_accum if 'A'
          end if
          if (llidar_sim) then
-            call outfld('ATB532_CAL',atb532_cal,pcols,lchnk) !! fails check_accum if 'A'
+            call outfld('ATB532_CAL',atb532,pcols,lchnk) !! fails check_accum if 'A'
          end if
          if (lradar_sim) then
-            call outfld('DBZE_CS',dbze_cs,pcols,lchnk) !! fails check_accum if 'A'
+            call outfld('DBZE_CS',dbze94,pcols,lchnk) !! fails check_accum if 'A'
          end if
       end if
    end subroutine cosp_write_outputs
@@ -3110,7 +2937,7 @@ CONTAINS
        call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
             Reff(:,:,:,I_CVCICE),Reff(:,:,:,I_LSCICE),MODIS_iceSize)
        
-       ! Cloud snow and size	
+       ! Cloud snow and size  
        MODIS_snowSize(:,:,:)  = Reff(:,:,:,I_LSSNOW)
        do j=1,nColumns
           where((frac_prec(:,j,:) .eq. 1 .or. frac_prec(:,j,:) .eq. 3) .and. &
