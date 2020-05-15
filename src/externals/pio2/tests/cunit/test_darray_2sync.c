@@ -72,7 +72,7 @@ int darray_fill_test(int iosysid, int my_rank, int num_iotypes, int *iotype,
             long long default_fill_int64 = PIO_FILL_INT64;
             unsigned long long default_fill_uint64 = PIO_FILL_UINT64;
 #endif /* _NETCDF4 */
-
+            
             /* Some incorrect fill values. */
             signed char wrong_fill_byte = TEST_VAL_42;
             unsigned char wrong_fill_char = TEST_VAL_42;
@@ -229,7 +229,7 @@ int darray_fill_test(int iosysid, int my_rank, int num_iotypes, int *iotype,
              * fixed.) */
             if (PIOc_write_darray(ncid, varid, ioid, LEN2, test_data, wrong_fillvalue) != PIO_EINVAL)
                 ERR(ERR_WRONG);
-
+            
             /* Write the data. There are 3 procs with data, each writes 2
              * values. */
             if ((ret = PIOc_write_darray(ncid, varid, ioid, LEN2, test_data, default_fillvalue)))

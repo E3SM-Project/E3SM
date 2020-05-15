@@ -2300,78 +2300,28 @@
   <!--- shr_strmdata_nml                          -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
-    <type>char</type>
+
+  <entry id="nx_global" modify_via_xml="ATM_NX">
+    <type>integer</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,NULL</valid_values>
     <desc>
-      general method that operates on the data.  this is generally
-      implemented in the data models but is set in the strdata method for
-      convenience.  valid options are dependent on the data model and will
-      be described elsewhere.  NULL is always a valid option and means no
-      data will be generated.  default='NULL'
-
-      datamode = "NULL"
-      turns off the data model as a provider of data to the coupler.
-      The atm_present flag will be set to false
-      and the coupler will assume no exchange of data to or from the data model.
-      datamode = "COPYALL"
-      The default science mode of the data model is the COPYALL mode.
-      COPYALL mode will examine the fields found in all input data streams,
-      if any input field names match the field names used internally, they
-      are copied into the export array and passed directly to the coupler
-      without any special user code.  Any required fields not found on an
-      input stream will be set to zero except for aerosol deposition fields
-      which will be set to a special value.  There are several other
-      scientific modes supported by the model, they are listed below.  The
-      mode is selected by a character string set in the strdata namelist
-      variable dataMode.
-      datamode = "CORE2_NYF"
-      Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing.
-      datamode = "CORE2_IAF"
-      In conjunction with with CORE Version 2 atmospheric forcing data,
-      provides the atmosphere forcing favored by the Ocean Model Working
-      Group when coupling an active ocean model with observed atmospheric
-      forcing.  This mode and associated data sets implement the CORE-IAF
-      Version 2 forcing data, as developed by Large and Yeager (2008) at
-      NCAR.  See the documentation for CORE version 2 datasets at
-      http://data1.gfdl.noaa.gov/nomads/forms/mom4/COREv2.html Also see
-      W.G.Large, S.G.Yeager (2008), The global climatology of an
-      interannually varying air-sea flux data set.
-      Clm Dyn doi 10.1007/s00382-008-0441-3.
-      datamode = "CORE_IAF_JRA"
-      JRA55 intra-annual year forcing
-      datamode = "CLMNCEP"
-      In conjunction with NCEP climatological atmosphere data, provides the
-      atmosphere forcing favored by the Land Model Working Group when
-      coupling an active land model with observed atmospheric forcing.  This
-      mode replicates code previously found in CLM (circa 2005), before the
-      LMWG started using the CCSM flux coupler and data models to do
-      active-land-only simulations.
+      global size of nx
     </desc>
     <values>
-      <value>NULL</value>
-      <value datm_mode="CLM">CLMNCEP</value>
-      <value datm_mode="CORE2_NYF">CORE2_NYF</value>
-      <value datm_mode="CORE2_IAF">CORE2_IAF</value>
-      <value datm_mode="CORE_IAF_JRA">CORE_IAF_JRA</value>
-      <value datm_mode="CPLHIST">COPYALL</value>
+      <value>$ATM_NX</value>
     </values>
   </entry>
 
-  <entry id="domainfile" skip_default_entry="true">
-    <type>char</type>
+  <entry id="ny_global" modify_via_xml="ATM_NY">
+    <type>integer</type>
     <category>streams</category>
-    <input_pathname>abs</input_pathname>
     <group>shr_strdata_nml</group>
     <desc>
-      model spatial gridfile associated with the strdata.  grid information will
-      be read from this file and that grid will serve as the target grid
-      for all input data for this strdata input.
+      global size of ny
     </desc>
     <values>
-      <value/>
+      <value>$ATM_NY</value>
     </values>
   </entry>
 
@@ -2403,36 +2353,6 @@
     </desc>
     <values>
       <value>nomask</value>
-    </values>
-  </entry>
-
-  <entry id="fillread" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to read in instead of computing the
-      weights on the fly for the fill operation.  if this is set, fillalgo
-      and fillmask are ignored.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
-  <entry id="fillwrite" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements)  of filenames associated with the array of
-      streams.  specifies the weights file to generate after weights are
-      computed on the fly for the fill operation.  this allows a user to
-      save and reuse a set of weights later.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -2472,36 +2392,6 @@
       <value stream="CLMGSWP3" atm_grid="hcru">copy</value>
       <value stream="CLMNLDAS2" atm_grid="0.125nldas2">copy</value>
       <value stream="co2tseries">nn</value>
-    </values>
-  </entry>
-
-  <entry id="mapread" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to read instead of computing
-      weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
-  <entry id="mapwrite" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to generate after weights are
-      computed on the fly for the mapping (interpolation) operation.  this
-      allows a user to save and reuse a set of weights later.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -2679,6 +2569,66 @@
   <!--- datm_nml                                  -->
   <!-- =========================================  -->
 
+  <entry id="datamode">
+    <type>char</type>
+    <category>datm</category>
+    <group>datm_nml</group>
+    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,NULL</valid_values>
+    <desc>
+      general method that operates on the data.  this is generally
+      implemented in the data models but is set in the strdata method for
+      convenience.  valid options are dependent on the data model and will
+      be described elsewhere.  NULL is always a valid option and means no
+      data will be generated.  default='NULL'
+
+      datamode = "NULL"
+      turns off the data model as a provider of data to the coupler.
+      The atm_present flag will be set to false
+      and the coupler will assume no exchange of data to or from the data model.
+      datamode = "COPYALL"
+      The default science mode of the data model is the COPYALL mode.
+      COPYALL mode will examine the fields found in all input data streams,
+      if any input field names match the field names used internally, they
+      are copied into the export array and passed directly to the coupler
+      without any special user code.  Any required fields not found on an
+      input stream will be set to zero except for aerosol deposition fields
+      which will be set to a special value.  There are several other
+      scientific modes supported by the model, they are listed below.  The
+      mode is selected by a character string set in the strdata namelist
+      variable dataMode.
+      datamode = "CORE2_NYF"
+      Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing.
+      datamode = "CORE2_IAF"
+      In conjunction with with CORE Version 2 atmospheric forcing data,
+      provides the atmosphere forcing favored by the Ocean Model Working
+      Group when coupling an active ocean model with observed atmospheric
+      forcing.  This mode and associated data sets implement the CORE-IAF
+      Version 2 forcing data, as developed by Large and Yeager (2008) at
+      NCAR.  See the documentation for CORE version 2 datasets at
+      http://data1.gfdl.noaa.gov/nomads/forms/mom4/COREv2.html Also see
+      W.G.Large, S.G.Yeager (2008), The global climatology of an
+      interannually varying air-sea flux data set.
+      Clm Dyn doi 10.1007/s00382-008-0441-3.
+      datamode = "CORE_IAF_JRA"
+      JRA55 intra-annual year forcing
+      datamode = "CLMNCEP"
+      In conjunction with NCEP climatological atmosphere data, provides the
+      atmosphere forcing favored by the Land Model Working Group when
+      coupling an active land model with observed atmospheric forcing.  This
+      mode replicates code previously found in CLM (circa 2005), before the
+      LMWG started using the CCSM flux coupler and data models to do
+      active-land-only simulations.
+    </desc>
+    <values>
+      <value>NULL</value>
+      <value datm_mode="CLM">CLMNCEP</value>
+      <value datm_mode="CORE2_NYF">CORE2_NYF</value>
+      <value datm_mode="CORE2_IAF">CORE2_IAF</value>
+      <value datm_mode="CORE_IAF_JRA">CORE_IAF_JRA</value>
+      <value datm_mode="CPLHIST">COPYALL</value>
+    </values>
+  </entry>
+
   <!--- anomaly forcing - bias correction -->
   <entry id="bias_correct" skip_default_entry="true">
     <type>char</type>
@@ -2706,23 +2656,6 @@
     </values>
   </entry>
   <!--- for anomaly forcing -->
-
-  <entry id="decomp">
-    <type>char</type>
-    <category>datm</category>
-    <group>datm_nml</group>
-    <valid_values>1d,root</valid_values>
-    <desc>
-      Set the decomposition option for the data model.  valid options are
-      placing the global array on the root task or a simple stride-one
-      load balanced one-dimensional decomposition.  other decompositions
-      may be added in the future. valid values are ['root','1d'].
-      1d = Vector decomposition, root = run only on the master task
-    </desc>
-    <values>
-      <value>1d</value>
-    </values>
-  </entry>
 
   <entry id="factorfn">
     <type>char</type>

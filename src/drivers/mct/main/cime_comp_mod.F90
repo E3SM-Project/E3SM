@@ -3017,8 +3017,6 @@ contains
              if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
                 write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
                 write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
-                write(logunit,*) 'One possible reason is that you are running with a stub glc model.'
-                write(logunit,*) '(It only works to request histaux_l2x1yrg if running with a prognostic glc model.)'
                 call shr_sys_abort(subname// &
                      ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
              end if
@@ -3326,7 +3324,6 @@ contains
 
     use shr_pio_mod, only : shr_pio_finalize
     use shr_wv_sat_mod, only: shr_wv_sat_final
-    character(len=cs)        :: cime_model
 
     !------------------------------------------------------------------------
     ! Finalization of all models
@@ -3356,7 +3353,6 @@ contains
     !------------------------------------------------------------------------
 
     call shr_wv_sat_final()
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
     call shr_pio_finalize( )
 
     call shr_mpi_min(msize ,msize0,mpicom_GLOID,' driver msize0', all=.true.)
@@ -3432,6 +3428,7 @@ contains
     character        :: date*8, time*10, zone*5
 
     !-------------------------------------------------------------------------------
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
 
     call date_and_time (date, time, zone, values)
     cdate(1:2) = date(5:6)
@@ -3451,7 +3448,7 @@ contains
     write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
     write(logunit,F00) '     License information is available as a link from above  '
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '                     MODEL ',cime_model
+    write(logunit,F00) '                     MODEL ',trim(cime_model)
     write(logunit,F00) '------------------------------------------------------------'
     write(logunit,F00) '                DATE ',cdate, ' TIME ', ctime
     write(logunit,F00) '------------------------------------------------------------'
@@ -3903,7 +3900,7 @@ contains
 
        ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
        if (ocn_prognostic) then
-#if COMPARE_TO_NUOPC          
+#if COMPARE_TO_NUOPC
           !This is need to compare to nuopc
           if (.not. skip_ocean_run) then
              ! ocn prep-merge
@@ -3913,7 +3910,7 @@ contains
              ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
              call prep_ocn_accum(timer='CPL:atmocnp_accum')
           end if
-#else 
+#else
           ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
