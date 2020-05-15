@@ -1,29 +1,20 @@
-! !MODULE: shr_stream_mod -- Data type and methods to manage input data streams.
-!
-! !DESCRIPTION:
-!    A "data stream" is a sequence of input files where each file contains the
-!    same set of data fields and all the data fields are on the same grid.
-!    The sequence of input data files provides an uninterupted time series of
-!    data.
-!
-!    A stream data type stores information about one data stream, including the
-!    range of data date years to use and how data dates align with model dates.
-!
-!    Given a model date, this module can return data dates that are upper and
-!    lower time bounds around the given model date and the names of the files
-!    containing those dates.
-!
-! !REMARKS:
-!
-! !REVISION HISTORY:
-!     2005-Apr-13 - B. Kauffman - moved code from dshr to shr
-!     2005-Apr-01 - B. Kauffman - first functional version of findBounds
-!     2004-Dec-xx - B. Kauffman - initial module
-!
-! !INTERFACE: ------------------------------------------------------------------
+module dshr_stream_mod
 
-module shr_stream_mod
-
+  ! ---------------------------------------------------------------------------
+  !  Data type and methods to manage input data streams.
+  !    A "data stream" is a sequence of input files where each file contains the
+  !    same set of data fields and all the data fields are on the same grid.
+  !    The sequence of input data files provides an uninterupted time series of
+  !    data.
+  !
+  !    A stream data type stores information about one data stream, including the
+  !    range of data date years to use and how data dates align with model dates.
+  !
+  !    Given a model date, this module can return data dates that are upper and
+  !    lower time bounds around the given model date and the names of the files
+  !    containing those dates.
+  ! ---------------------------------------------------------------------------
+  
   use shr_sys_mod    ! shared system calls
   use shr_kind_mod   ! kinds for strong typing
   use shr_const_mod  ! shared constants (including seconds per day)
@@ -43,29 +34,23 @@ module shr_stream_mod
 
   private ! default private
 
-  ! !PUBLIC TYPES:
-
+  !public types:
   public :: shr_stream_streamType        ! stream data type with private components
   public :: shr_stream_fileType
 
-  ! !PUBLIC MEMBER FUNCTIONS:
-
-  public :: shr_stream_init              ! set stream values by reading a stream text file
-  public :: shr_stream_set               ! set stream values directly from a fortran interfrace
-
+  !public member functions:
+  public :: shr_stream_init_from_infiles ! initial stream type
+  public :: shr_stream_init_from_fortran ! initial stream type
   public :: shr_stream_default           ! set default values
-  public :: shr_stream_parseInput        ! extract fileName,yearAlign, etc. from a string
   public :: shr_stream_findBounds        ! return lower/upper bounding date info
-  public :: shr_stream_getFileFieldList  ! return input-file field name list
   public :: shr_stream_getModelFieldList ! return model      field name list
   public :: shr_stream_getFileFieldName  ! return k-th input-file field name
   public :: shr_stream_getModelFieldName ! return k-th model      field name list
-  public :: shr_stream_getFirstFileName  ! return the 1st file name in stream
   public :: shr_stream_getNextFileName   ! return next file in sequence
   public :: shr_stream_getPrevFileName   ! return previous file in sequence
   public :: shr_stream_getFilePath       ! return file path
-  public :: shr_stream_getDataSource     ! return the stream's meta data
   public :: shr_stream_getDomainInfo     ! return the stream's domain info data
+  public :: shr_stream_getDomainFile     ! return the stream's domain file
   public :: shr_stream_getFile           ! acquire file, return name of file to open
   public :: shr_stream_getNFiles         ! get the number of files in a stream
   public :: shr_stream_getCalendar       ! get the stream calendar
@@ -78,13 +63,6 @@ module shr_stream_mod
   public :: shr_stream_setAbort          ! set internal shr_stream abort flag
   public :: shr_stream_getDebug          ! get internal shr_stream debug level
   public :: shr_stream_isInit            ! check if stream is initialized
-  !   public :: shr_stream_bcast             ! broadcast a stream (untested)
-
-  ! !PUBLIC DATA MEMBERS:
-
-  ! none
-
-  !EOP
 
   character(SHR_KIND_CS),parameter,public :: shr_stream_taxis_cycle  = 'cycle'
   character(SHR_KIND_CS),parameter,public :: shr_stream_taxis_extend = 'extend'
@@ -96,13 +74,8 @@ module shr_stream_mod
      character(SHR_KIND_CL)             :: name = shr_stream_file_null ! the file name
      logical                            :: haveData = .false. ! has t-coord data been read in?
      integer  (SHR_KIND_IN)             :: nt = 0             ! size of time dimension
-#ifdef CPRCRAY
-     integer  (SHR_KIND_IN),pointer :: date(:)            ! t-coord date: yyyymmdd
-     integer  (SHR_KIND_IN),pointer :: secs(:)            ! t-coord secs: elapsed on date
-#else
      integer  (SHR_KIND_IN),allocatable :: date(:)            ! t-coord date: yyyymmdd
      integer  (SHR_KIND_IN),allocatable :: secs(:)            ! t-coord secs: elapsed on date
-#endif
   end type shr_stream_fileType
 
   ! Define a dynamic vector for shr_stream_fileType
@@ -113,55 +86,55 @@ module shr_stream_mod
 #include "dynamic_vector_typedef.inc"
 
   type shr_stream_streamType
-     !private                                    ! no public access to internal components
+     !private  ! no public access to internal components
      !--- input data file names and data ---
-     logical                   :: init           ! has stream been initialized?
-     integer  (SHR_KIND_IN),pointer :: initarr(:) => null()! surrogate for init flag
-     integer  (SHR_KIND_IN)    :: nFiles         ! number of data files
-     character(SHR_KIND_CS)    :: dataSource     ! meta data identifying data source
-     character(SHR_KIND_CL)    :: filePath       ! remote location of data files
-     type(shr_stream_fileType), allocatable :: file(:) ! data specific to each file
+     logical                                :: init                 ! has stream been initialized?
+     integer  (SHR_KIND_IN),pointer         :: initarr(:) => null() ! surrogate for init flag
+     integer  (SHR_KIND_IN)                 :: nFiles               ! number of data files
+     character(SHR_KIND_CS)                 :: dataSource           ! meta data identifying data source
+     character(SHR_KIND_CL)                 :: filePath             ! remote location of data files
+     type(shr_stream_fileType), allocatable :: file(:)              ! data specific to each file
 
      !--- specifies how model dates align with data dates ---
-     integer(SHR_KIND_IN)      :: yearFirst      ! first year to use in t-axis (yyyymmdd)
-     integer(SHR_KIND_IN)      :: yearLast       ! last  year to use in t-axis (yyyymmdd)
-     integer(SHR_KIND_IN)      :: yearAlign      ! align yearFirst with this model year
-     integer(SHR_KIND_IN)      :: offset         ! offset in seconds of stream data
-     character(SHR_KIND_CS)    :: taxMode        ! cycling option for time axis
+     integer(SHR_KIND_IN)                   :: yearFirst            ! first year to use in t-axis (yyyymmdd)
+     integer(SHR_KIND_IN)                   :: yearLast             ! last  year to use in t-axis (yyyymmdd)
+     integer(SHR_KIND_IN)                   :: yearAlign            ! align yearFirst with this model year
+     integer(SHR_KIND_IN)                   :: offset               ! offset in seconds of stream data
+     character(SHR_KIND_CS)                 :: taxMode              ! cycling option for time axis
 
      !--- useful for quicker searching ---
-     integer(SHR_KIND_IN) :: k_lvd,n_lvd         ! file/sample of least valid date
-     logical              :: found_lvd           ! T <=> k_lvd,n_lvd have been set
-     integer(SHR_KIND_IN) :: k_gvd,n_gvd         ! file/sample of greatest valid date
-     logical              :: found_gvd           ! T <=> k_gvd,n_gvd have been set
+     integer(SHR_KIND_IN)                   :: k_lvd,n_lvd          ! file/sample of least valid date
+     logical                                :: found_lvd            ! T <=> k_lvd,n_lvd have been set
+     integer(SHR_KIND_IN)                   :: k_gvd,n_gvd          ! file/sample of greatest valid date
+     logical                                :: found_gvd            ! T <=> k_gvd,n_gvd have been set
 
      !---- for keeping files open
-     logical                 :: fileopen         ! is current file open
-     character(SHR_KIND_CL)  :: currfile         ! current filename
-     type(file_desc_t)       :: currpioid        ! current pio file desc
+     logical                                :: fileopen             ! is current file open
+     character(SHR_KIND_CL)                 :: currfile             ! current filename
+     type(file_desc_t)                      :: currpioid            ! current pio file desc
 
      !--- stream data not used by stream module itself ---
-     character(SHR_KIND_CXX):: fldListFile       ! field list: file's  field names
-     character(SHR_KIND_CXX):: fldListModel      ! field list: model's field names
-     character(SHR_KIND_CL) :: domFilePath       ! domain file: file path of domain file
-     character(SHR_KIND_CL) :: domFileName       ! domain file: name
-     character(SHR_KIND_CS) :: domTvarName       ! domain file: time-dim var name
-     character(SHR_KIND_CS) :: domXvarName       ! domain file: x-dim var name
-     character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var name
-     character(SHR_KIND_CS) :: domZvarName       ! domain file: z-dim var name
-     character(SHR_KIND_CS) :: domAreaName       ! domain file: area  var name
-     character(SHR_KIND_CS) :: domMaskName       ! domain file: mask  var name
+     character(SHR_KIND_CXX)                :: fldListFile          ! field list: file's  field names
+     character(SHR_KIND_CXX)                :: fldListModel         ! field list: model's field names
+     character(SHR_KIND_CL)                 :: domFilePath          ! domain file: file path of domain file
+     character(SHR_KIND_CL)                 :: domFileName          ! domain file: name
+     character(SHR_KIND_CS)                 :: domTvarName          ! domain file: time-dim var name
+     character(SHR_KIND_CS)                 :: domXvarName          ! domain file: x-dim var name
+     character(SHR_KIND_CS)                 :: domYvarName          ! domain file: y-dim var name
+     character(SHR_KIND_CS)                 :: domZvarName          ! domain file: z-dim var name
+     character(SHR_KIND_CS)                 :: domAreaName          ! domain file: area  var name
+     character(SHR_KIND_CS)                 :: domMaskName          ! domain file: mask  var name
 
-     character(SHR_KIND_CS) :: tInterpAlgo       ! Algorithm to use for time interpolation
-     character(SHR_KIND_CL) :: calendar          ! stream calendar
+     character(SHR_KIND_CS)                 :: tInterpAlgo          ! Algorithm to use for time interpolation
+     character(SHR_KIND_CL)                 :: calendar             ! stream calendar
   end type shr_stream_streamType
 
   !----- parameters -----
   real(SHR_KIND_R8)   ,parameter :: spd = SHR_CONST_CDAY ! seconds per day
   integer(SHR_KIND_IN),parameter :: initarr_size = 3     ! size of initarr
-  integer(SHR_KIND_IN),save :: debug = 0        ! edit/turn-on for debug write statements
-  logical             ,save :: doabort = .true. ! flag if abort on error
-  character(len=*), parameter :: sourcefile = &
+  integer(SHR_KIND_IN)           :: debug = 0            ! edit/turn-on for debug write statements
+  logical                        :: doabort = .true.     ! flag if abort on error
+  character(len=*), parameter    :: sourcefile = &
        __FILE__
 !===============================================================================
 contains
@@ -170,10 +143,10 @@ contains
   ! Complete the dynamic vector definition.
 #include "dynamic_vector_procdef.inc"
 
-  subroutine shr_stream_init(strm, infoFile, yearFirst, yearLast, yearAlign, taxMode, rc)
+  subroutine shr_stream_init_from_infiles(strm, infoFile, yearFirst, yearLast, yearAlign, taxMode, rc)
 
     ! --------------------------------------------------------
-    ! initialize stream datatype by reading a stream text file
+    ! initialize stream datatype by reading a description text file
     ! --------------------------------------------------------
 
     ! input/output variables
@@ -186,23 +159,23 @@ contains
     integer  (SHR_KIND_IN),optional,intent(out) :: rc        ! return code
 
     ! local variables
-    integer  (SHR_KIND_IN) :: n             ! generic index
-    character(SHR_KIND_CL) :: str           ! string to parse from input data file
-    integer  (SHR_KIND_IN) :: int           ! integer to parse from input data file
-    character(SHR_KIND_CL) :: subStr        ! sub-string of interest
-    integer  (SHR_KIND_IN) :: nUnit         ! file i/o unit number
-    character(SHR_KIND_CS) :: startTag      ! input file start tag
-    character(SHR_KIND_CS) :: endTag        ! input file   end tag
-    character(SHR_KIND_CS) :: fldNameFile   ! field name in data file field list
-    character(SHR_KIND_CS) :: fldNameModel  ! field name in model     field list
-    character(SHR_KIND_CXX):: fldListFile   ! list of data file fields, colon delim list
-    character(SHR_KIND_CXX):: fldListModel  ! list of model     fields, colon delim list
-    character(SHR_KIND_CL) :: calendar      ! stream calendar
-    integer  (SHR_KIND_IN) :: rCode, rCode2 ! return code
-    type(shr_stream_fileType) :: tempFile   ! File being constructed.
-    type(fileVector)       :: fileVec       ! Vector used to construct file array.
-    character(*),parameter :: subName = '(shr_stream_init) '
-    character(*),parameter :: F00   = "('(shr_stream_init) ',8a)"
+    integer  (SHR_KIND_IN)    :: n             ! generic index
+    character(SHR_KIND_CL)    :: str           ! string to parse from input data file
+    integer  (SHR_KIND_IN)    :: int           ! integer to parse from input data file
+    character(SHR_KIND_CL)    :: subStr        ! sub-string of interest
+    integer  (SHR_KIND_IN)    :: nUnit         ! file i/o unit number
+    character(SHR_KIND_CS)    :: startTag      ! input file start tag
+    character(SHR_KIND_CS)    ::   endTag      ! input file   end tag
+    character(SHR_KIND_CS)    :: fldNameFile   ! field name in data file field list
+    character(SHR_KIND_CS)    :: fldNameModel  ! field name in model     field list
+    character(SHR_KIND_CXX)   :: fldListFile   ! list of data file fields, colon delim list
+    character(SHR_KIND_CXX)   :: fldListModel  ! list of model     fields, colon delim list
+    character(SHR_KIND_CL)    :: calendar      ! stream calendar
+    integer  (SHR_KIND_IN)    :: rCode, rCode2 ! return code
+    type(shr_stream_fileType) :: tempFile      ! File being constructed.
+    type(fileVector)          :: fileVec       ! Vector used to construct file array.
+    character(*),parameter    :: subName = '(shr_stream_init_from_infiles) '
+    character(*),parameter    :: F00   = "('(shr_stream_init_from_infiles) ',8a)"
     ! --------------------------------------------------------
 
     rCode = 0
@@ -217,37 +190,35 @@ contains
        strm%taxMode       = trim(taxMode)
     endif
 
+    !-----------------------------------------------------------------------------
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading data source'
+    !-----------------------------------------------------------------------------
 
-    nUnit = shr_file_getUnit() ! get unused unit number
+    ! !--- find start tag ---
+    ! startTag =  "<dataSource>"
+    ! endTag = "</dataSource>"
+    ! open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ',iostat=rCode)
+    ! if (rCode /= 0) goto 999
+    ! call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
+    ! if (rCode /= 0) goto 999
 
-    !--- find start tag ---
-    startTag =  "<dataSource>"
-    endTag = "</dataSource>"
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ',iostat=rCode)
-    if (rCode /= 0) goto 999
-    call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
-    if (rCode /= 0) goto 999
-
-    !--- read data ---
-    read(nUnit,'(a)',END=999) str
-    call shr_string_leftalign_and_convert_tabs(str)
-    if(len_trim(str)<= len(strm%dataSource)) then
-       strm%dataSource = str(1:len(strm%dataSource))
-    else
-       call shr_sys_abort('dataSource too long for variable ' // errMsg(sourcefile, __LINE__))
-    endif
-    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * format = ', trim(strm%dataSource)
-
-    close(nUnit)
-    call shr_file_freeUnit(nUnit)
+    ! !--- read data ---
+    ! read(nUnit,'(a)',END=999) str
+    ! call shr_string_leftalign_and_convert_tabs(str)
+    ! if(len_trim(str)<= len(strm%dataSource)) then
+    !    strm%dataSource = str(1:len(strm%dataSource))
+    ! else
+    !    call shr_sys_abort('dataSource too long for variable ' // errMsg(sourcefile, __LINE__))
+    ! endif
+    ! if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * format = ', trim(strm%dataSource)
+    ! close(nUnit)
 
     !-----------------------------------------------------------------------------
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading field data variable names'
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<fieldInfo>"
     endTag = "</fieldInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode)
@@ -289,7 +260,6 @@ contains
        write(s_logunit,F00) "ERROR: no input field names"
        call shr_stream_abort(subName//"ERROR: no input field names")
     end if
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -297,7 +267,7 @@ contains
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<fieldInfo>"
     endTag = "</fieldInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
@@ -305,7 +275,6 @@ contains
        rCode = rCode2
        goto 999
     end if
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -313,7 +282,7 @@ contains
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<fieldInfo>"
     endTag = "</fieldInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
@@ -332,7 +301,6 @@ contains
        strm%offset = 0
     end if
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * offset ',strm%offset
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -340,7 +308,7 @@ contains
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<fieldInfo>"
     endTag = "</fieldInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
@@ -364,7 +332,6 @@ contains
     if (n==0) str = "./ "                              ! null path => ./
     strm%FilePath = str
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * data file path = ', trim(strm%FilePath)
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -372,7 +339,7 @@ contains
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<fieldInfo>"
     endTag = "</fieldInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
@@ -406,7 +373,6 @@ contains
        write(s_logunit,F00) "ERROR: no input file names"
        call shr_stream_abort(subName//"ERROR: no input file names")
     end if
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -414,7 +380,7 @@ contains
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<domainInfo>"
     endTag = "</domainInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
@@ -508,9 +474,6 @@ contains
        !--- get vertical variable name ---
        n = shr_string_listGetIndexF(fldListModel,"hgt")
        if (n==0) then
-          !         rCode = 1
-          !         write(s_logunit,F00) "ERROR: no input field names"
-          !         call shr_stream_abort(subName//"ERROR: no lat variable name")
           strm%domZvarName = 'unknownname'
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
@@ -523,9 +486,6 @@ contains
        !--- get area variable name ---
        n = shr_string_listGetIndexF(fldListModel,"area")
        if (n==0) then
-          !         rCode = 1
-          !         write(s_logunit,F00) "ERROR: no input field names"
-          !         call shr_stream_abort(subName//"ERROR: no area variable name")
           strm%domAreaName = 'unknownname'
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
@@ -538,9 +498,6 @@ contains
        !--- get mask variable name ---
        n = shr_string_listGetIndexF(fldListModel,"mask")
        if (n==0) then
-          !         rCode = 1
-          !         write(s_logunit,F00) "ERROR: no input field names"
-          !         call shr_stream_abort(subName//"ERROR: no mask variable name")
           strm%domMaskName = 'unknownname'
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
@@ -551,7 +508,6 @@ contains
           endif
        endif
     end if
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -561,7 +517,7 @@ contains
     !--- find start tag ---
     startTag =  "<domainInfo>"
     endTag = "</domainInfo>"
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
     if (rCode2 /= 0)then
        rCode = rCode2
@@ -590,7 +546,7 @@ contains
     !-----------------------------------------------------------------------------
 
     !--- find start tag ---
-    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
+    open(newunit=nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
     startTag =  "<domainInfo>"
     endTag = "</domainInfo>"
     call shr_stream_readUpToTag(nUnit,startTag,rc=rCode2)
@@ -611,7 +567,6 @@ contains
     call shr_string_leftalign_and_convert_tabs(str)
     strm%domFileName = str
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * ',trim(strm%domFileName)
-
     close(nUnit)
 
     !-----------------------------------------------------------------------------
@@ -625,7 +580,6 @@ contains
     !-----------------------------------------------------------------------------
     call shr_stream_setInit(strm)
     if ( present(rc) ) rc = rCode
-    call shr_file_freeUnit(nUnit)
     return
 
 999 continue
@@ -634,16 +588,15 @@ contains
     call shr_stream_abort(subName//"ERROR: unexpected end-of-file")
     close(nUnit)
     if ( present(rc) ) rc = rCode
-    call shr_file_freeUnit(nUnit)
 
-  end subroutine shr_stream_init
+  end subroutine shr_stream_init_from_infiles
 
   !===============================================================================
-  subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
-       fldListFile,fldListModel,domFilePath,domFileName, &
-       domTvarName,domXvarName,domYvarName,domZvarName,  &
-       domAreaName,domMaskName, &
-       filePath,filename,dataSource,rc)
+
+  subroutine shr_stream_init_from_fortran(strm,                                   &
+       yearFirst, yearLast, yearAlign, offset, taxmode, domFilePath, domFileName, &
+       domTvarName, domXvarName, domYvarName, domMaskName, domZvarName, nzg,      &
+       fldlistFile, fldListModel, filepath, fileName)
 
     ! --------------------------------------------------------
     ! set values of stream datatype independent of a reading in a stream text file
@@ -651,113 +604,79 @@ contains
     ! --------------------------------------------------------
 
     ! input/output variables
-    type(shr_stream_streamType)    ,intent(inout) :: strm      ! data stream
-    integer  (SHR_KIND_IN),optional,intent(in)    :: yearFirst ! first year to use
-    integer  (SHR_KIND_IN),optional,intent(in)    :: yearLast  ! last  year to use
-    integer  (SHR_KIND_IN),optional,intent(in)    :: yearAlign ! align yearFirst with this model year
-    integer  (SHR_KIND_IN),optional,intent(in)    :: offset    ! offset in seconds of stream data
-    character(*)          ,optional,intent(in)    :: taxMode   ! time axis mode
-    character(*)          ,optional,intent(in)    :: fldListFile  ! file field names, colon delim list
-    character(*)          ,optional,intent(in)    :: fldListModel ! model field names, colon delim list
-    character(*)          ,optional,intent(in)    :: domFilePath  ! domain file path
-    character(*)          ,optional,intent(in)    :: domFileName  ! domain file name
-    character(*)          ,optional,intent(in)    :: domTvarName  ! domain time dim name
-    character(*)          ,optional,intent(in)    :: domXvarName  ! domain x dim name
-    character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim name
-    character(*)          ,optional,intent(in)    :: domZvarName  ! domain z dim name
-    character(*)          ,optional,intent(in)    :: domAreaName  ! domain area name
-    character(*)          ,optional,intent(in)    :: domMaskName  ! domain mask name
-    character(*)          ,optional,intent(in)    :: filePath   ! path for filenames
-    character(*)          ,optional,intent(in)    :: filename(:)  ! input filenames
-    character(*)          ,optional,intent(in)    :: dataSource ! comment line
-    integer  (SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
+    type(shr_stream_streamType) ,intent(inout) :: strm         ! data stream
+    integer            ,intent(in)    :: yearFirst    ! first year to use
+    integer            ,intent(in)    :: yearLast     ! last  year to use
+    integer            ,intent(in)    :: yearAlign    ! align yearFirst with this model year
+    integer            ,intent(in)    :: offset       ! offset in seconds of stream data
+    character(*)       ,intent(in)    :: taxMode      ! time axis mode
+    character(*)       ,intent(in)    :: domFilePath  ! domain file path
+    character(*)       ,intent(in)    :: domFileName  ! domain file name
+    character(*)       ,intent(in)    :: domTvarName  ! domain time dim name
+    character(*)       ,intent(in)    :: domXvarName  ! domain x dim name
+    character(*)       ,intent(in)    :: domYvarName  ! domain y dim name
+    character(*)       ,intent(in)    :: domMaskName  ! domain mask name
+    character(*)       ,intent(in)    :: domZvarName  ! domain z dim name
+    integer            ,intent(in)    :: nzg          ! number of vertical leves
+    character(*)       ,intent(in)    :: fldListFile  ! file field names, colon delim list
+    character(*)       ,intent(in)    :: fldListModel ! model field names, colon delim list
+    character(*)       ,intent(in)    :: filePath     ! path for filenames
+    character(*)       ,intent(in)    :: filename(:)  ! input filenames
 
     ! local variables
-    integer(SHR_KIND_IN)      :: n
+    integer                   :: n
     character(SHR_KIND_CL)    :: calendar ! stream calendar
     type(shr_stream_fileType) :: tempFile ! File being constructed.
     type(fileVector)          :: fileVec  ! Vector used to construct file array.
-    character(*),parameter    :: subName = '(shr_stream_set) '
-    character(*),parameter    :: F00   = "('(shr_stream_set) ',8a)"
-    character(*),parameter    :: F01   = "('(shr_stream_set) ',1a,i6)"
+    character(*),parameter    :: subName = '(shr_stream_init_from_fortran) '
     ! --------------------------------------------------------
 
+    ! set default values for stream
     call shr_stream_default(strm)
 
-    if ( present(rc) ) rc = 0
+    ! overwrite default values 
+    strm%yearFirst    = yearFirst
+    strm%yearLast     = yearLast
+    strm%yearAlign    = yearAlign
+    strm%offset       = offset
+    strm%taxMode      = trim(taxMode)
+    strm%domFilePath  = trim(domFilePath)
+    strm%domFileName  = trim(domFileName)
+    strm%domTvarName  = trim(domTvarName)
+    strm%domXvarName  = trim(domXvarName)
+    strm%domYvarName  = trim(domYvarName)
+    strm%domZvarName  = trim(domZvarName)
+    strm%domMaskName  = trim(domMaskName)
+    strm%fldListFile  = trim(fldListFile)
+    strm%fldListModel = trim(fldListModel)
 
-    if (present(yearFirst)) then
-       strm%yearFirst = yearFirst
-    endif
-    if (present(yearLast)) then
-       strm%yearLast = yearLast
-    endif
-    if (present(yearAlign)) then
-       strm%yearAlign = yearAlign
-    endif
-    if (present(offset)) then
-       strm%offset = offset
-    endif
-    if (present(taxMode)) then
-       strm%taxMode = trim(taxMode)
-    endif
-    if (present(fldListFile)) then
-       strm%fldListFile = trim(fldListFile)
-    endif
-    if (present(fldListModel)) then
-       strm%fldListModel = trim(fldListModel)
-    endif
-    if (present(domFilePath)) then
-       strm%domFilePath = trim(domFilePath)
-    endif
-    if (present(domFileName)) then
-       strm%domFileName = trim(domFileName)
-    endif
-    if (present(domTvarName)) then
-       strm%domTvarName = trim(domTvarName)
-    endif
-    if (present(domXvarName)) then
-       strm%domXvarName = trim(domXvarName)
-    endif
-    if (present(domYvarName)) then
-       strm%domYvarName = trim(domYvarName)
-    endif
-    if (present(domZvarName)) then
-       strm%domZvarName = trim(domZvarName)
-    endif
-    if (present(domAreaName)) then
-       strm%domAreaName = trim(domAreaName)
-    endif
-    if (present(domMaskName)) then
-       strm%domMaskName = trim(domMaskName)
-    endif
-    if (present(filePath)) then
-       strm%filePath = trim(filePath)
-    endif
-    if (present(filename)) then
-       do n = 1,size(filename)
-          ! Ignore null file names.
-          if (trim(filename(n)) /= trim(shr_stream_file_null)) then
-             tempFile%name = trim(filename(n))
-             call fileVec%push_back(tempFile)
-          endif
-       enddo
-       ! True size after throwing out null names.
-       strm%nFiles = fileVec%vsize()
-       call fileVec%move_out(strm%file)
-    endif
+    ! determine path for stream data files
+    strm%filePath = trim(filePath)
 
-    !-----------------------------------------------------------------------------
+    ! create a linked list of data files in stream
+    do n = 1,size(filename)
+       ! Ignore null file names.
+       if (trim(filename(n)) /= trim(shr_stream_file_null)) then
+          tempFile%name = trim(filename(n))
+          call fileVec%push_back(tempFile)
+       endif
+    enddo
+
+    ! True size after throwing out null names.
+    strm%nFiles = fileVec%vsize()
+    call fileVec%move_out(strm%file)
+
     ! get initial calendar value
-    !-----------------------------------------------------------------------------
     call shr_stream_getCalendar(strm,1,calendar)
     strm%calendar = trim(calendar)
 
+    ! initialize flag that stream has been set
     call shr_stream_setInit(strm)
 
-  end subroutine shr_stream_set
+  end subroutine shr_stream_init_from_fortran
 
   !===============================================================================
+
   subroutine shr_stream_default(strm,rc)
 
     ! --------------------------------------------------------
@@ -803,6 +722,7 @@ contains
     strm%domAreaName      = ' '
     strm%domMaskName      = ' '
     strm%calendar         = shr_cal_noleap
+
     if ( present(rc) ) rc = 0
 
   end subroutine shr_stream_default
@@ -851,91 +771,16 @@ contains
   end subroutine shr_stream_readUpToTag
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_parseInput -- extract fileName,yearAlign, etc. from a string
-  !
-  ! !DESCRIPTION:
-  !     shr_stream_parseInput -- extract fileName,yearAlign, etc. from a string
-  !
-  ! !REMARKS:
-  !    should input be via standard Fortran namelist?
-  !
-  ! !REVISION HISTORY:
-  !     2007-Aug-01 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine shr_stream_parseInput(str,fileName,yearAlign,yearFirst,yearLast,rc)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
-    character(*)                   ,intent(in)  :: str       ! string to parse
-    character(*)                   ,intent(out) :: fileName  ! file name
-    integer  (SHR_KIND_IN)         ,intent(out) :: yearFirst ! first year to use
-    integer  (SHR_KIND_IN)         ,intent(out) :: yearLast  ! last  year to use
-    integer  (SHR_KIND_IN)         ,intent(out) :: yearAlign ! align yearFirst with this model year
-    integer  (SHR_KIND_IN),optional,intent(out) :: rc        ! return code
-
-    !EOP
-
-    !----- local -----
-    integer  (SHR_KIND_IN) :: n        ! generic index
-    character(SHR_KIND_CL) :: str2     ! temp work string
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_parseInput) '
-    character(*),parameter :: F00   = "('(shr_stream_parseInput) ',8a)"
-    character(*),parameter :: F01   = "('(shr_stream_parseInput) ',a,3i10)"
-
-    !-------------------------------------------------------------------------------
-    ! notes:
-    ! - this routine exists largely because of the difficulty of reading file names
-    !   that include dir paths, ie. containing "/", from char strings
-    !   because the "/" is interpreted as an end-of-record.
-    !-------------------------------------------------------------------------------
-
-    if (debug>1 .and. s_loglev > 0) write(s_logunit,F00) "str       = ",trim(str)
-
-    str2 = adjustL(str)
-    n    = index(str2," ")
-    fileName = str2(:n)
-    read(str2(n:),*) yearAlign,yearFirst,yearLast
-
-    if (debug>1 .and. s_loglev > 0) then
-       write(s_logunit,F00) "fileName  = ",trim(fileName)
-       write(s_logunit,F01) "yearAlign = ",yearAlign
-       write(s_logunit,F01) "yearFirst = ",yearFirst
-       write(s_logunit,F01) "yearLast  = ",yearLast
-    end if
-
-    if (present(rc)) rc = 0
-
-  end subroutine shr_stream_parseInput
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_findBounds -- find stream data bounding a model date
-  !
-  ! !DESCRIPTION:
-  !    Given a stream and a model date, find time coordinates of the upper and
-  !    lower time bounds surrounding the models date.  Returns the model date,
-  !    data date, elasped seconds, time index, and file names associated with
-  !    these upper and lower time bounds.
-  !
-  ! !REVISION HISTORY:
-  !     2009-Sep-01 - T. Craig - modified
-  !     2005-Apr-01 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine shr_stream_findBounds(strm,mDateIn,        secIn,               &
+  subroutine shr_stream_findBounds(strm,mDateIn, secIn, &
        &   mDateLB,dDateLB,secLB,n_lb,fileLB,   &
        &   mDateUB,dDateUB,secUB,n_ub,fileUB    )
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! Given a stream and a model date, find time coordinates of the upper and
+    ! lower time bounds surrounding the models date.  Returns the model date,
+    ! data date, elasped seconds, time index, and file names associated with
+    ! these upper and lower time bounds.
 
+    ! input/output parameters:
     type(shr_stream_streamType),intent(inout):: strm    ! data stream to query
     integer(SHR_KIND_IN)       ,intent(in)   :: mDateIn ! model date (yyyymmdd)
     integer(SHR_KIND_IN)       ,intent(in)   ::   secIn ! elapsed sec on model date
@@ -1389,8 +1234,6 @@ contains
                    call shr_cal_ymd2date(yy,mm,dd,mDateUB)
                    secUB = strm%file(k_ub)%secs(n_ub)
                    fileUB = strm%file(k_ub)%name
-                   !                  write(s_logunit,*)'tcx fb7 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                   !                  call shr_sys_flush(s_logunit)
                    return
                 endif
              enddo
@@ -1404,32 +1247,16 @@ contains
   end subroutine shr_stream_findBounds
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_readTCoord -- read in time coordinates with possible offset
-  !
-  ! !DESCRIPTION:
-  !    verify time coordinate data is OK
-  !
-  ! !REVISION HISTORY:
-  !     2009-Sep-01 - T. Craig - modified
-  !     2005-Apr-18 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_readTCoord(strm,k,rc)
 
     use netcdf
 
-    implicit none
+    ! read in time coordinates with possible offset and verify time coordinate data is OK
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output parameters:
     type(shr_stream_streamType)  ,intent(inout) :: strm ! data stream to query
     integer(SHR_KIND_IN)         ,intent(in)    :: k    ! stream index
     integer(SHR_KIND_IN),optional,intent(out)   :: rc   ! return code
-
-    !EOP
 
     !----- local -----
     character(SHR_KIND_CL) :: fileName    ! filename to read
@@ -1439,24 +1266,22 @@ contains
     integer(SHR_KIND_IN)   :: sin,sout,offin
     integer(SHR_KIND_IN)   :: lrc
     integer(SHR_KIND_IN)   :: fid,vid,ndims,rcode
-    integer(SHR_KIND_IN),allocatable :: dids(:)
     character(SHR_KIND_CS) :: units,calendar
     character(SHR_KIND_CS) :: bunits        ! time units (days,secs,...)
     integer(SHR_KIND_IN)   :: bdate         ! base date: calendar date
     real(SHR_KIND_R8)      :: bsec          ! base date: elapsed secs
     integer(SHR_KIND_IN)   :: ndate         ! calendar date of time value
     real(SHR_KIND_R8)      :: nsec          ! elapsed secs on calendar date
-    real(SHR_KIND_R8),allocatable :: tvar(:)
-    !----- formats -----
+    integer(SHR_KIND_IN),allocatable :: dids(:)
+    real(SHR_KIND_R8)   ,allocatable :: tvar(:)
     character(*),parameter :: subname = '(shr_stream_readTCoord) '
     character(*),parameter :: F01   = "('(shr_stream_readTCoord) ',a,2i7)"
-
     !-------------------------------------------------------------------------------
 
     lrc = 0
 
     !--- need to read in this data ---
-    call shr_stream_getFile(strm%filePath,strm%file(k)%name,fileName)
+    call shr_stream_getFile(strm%filePath, strm%file(k)%name, localfile=fileName)
     rCode = nf90_open(fileName,nf90_nowrite,fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
     rCode = nf90_inq_varid(fid,trim(strm%domTvarName),vid)
@@ -1659,215 +1484,57 @@ contains
   end subroutine shr_stream_verifyTCoord
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getFileFieldList -- Get list of file fields
-  !
-  ! !DESCRIPTION:
-  !     Get list of file fields
-  !     \newline
-  !     call shr\_stream\_getFileFieldList(stream,list,rc)
-  !
-  ! !REVISION HISTORY:
-  !     2005-May-10 - B. Kauffman
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getModelFieldList(stream,list)
 
-  subroutine shr_stream_getFileFieldList(stream,list,rc)
+    ! Get list of file fields
 
-    implicit none
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output parameters:
     type(shr_stream_streamType)  ,intent(in)  :: stream  ! stream in question
     character(*)                 ,intent(out) :: list    ! field list
-    integer(SHR_KIND_IN),optional,intent(out) :: rc      ! return code
-
-    !EOP
-
-    !----- local -----
-    integer(SHR_KIND_IN)   :: rCode   ! return code
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_getFileFieldList) '
-    character(*),parameter :: F00   = "('(shr_stream_getFileFieldList) ',4a)"
-
     !-------------------------------------------------------------------------------
-    ! Notes:
-    !-------------------------------------------------------------------------------
-
-    rCode = 0
-
-    list = stream%fldListFile
-
-    if (present(rc)) rc = rCode
-
-  end subroutine shr_stream_getFileFieldList
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getModelFieldList -- Get list of file fields
-  !
-  ! !DESCRIPTION:
-  !     Get list of file fields
-  !     \newline
-  !     call shr\_stream\_getModelFieldList(stream,list,rc)
-  !
-  ! !REVISION HISTORY:
-  !     2005-May-10 - B. Kauffman
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine shr_stream_getModelFieldList(stream,list,rc)
-
-    implicit none
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
-    type(shr_stream_streamType)  ,intent(in)  :: stream  ! stream in question
-    character(*)                 ,intent(out) :: list    ! field list
-    integer(SHR_KIND_IN),optional,intent(out) :: rc      ! return code
-
-    !EOP
-
-    !----- local -----
-    integer(SHR_KIND_IN)   :: rCode   ! return code
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_getModelFieldList) '
-    character(*),parameter :: F00   = "('(shr_stream_getModelFieldList) ',4a)"
-
-    !-------------------------------------------------------------------------------
-    ! Notes:
-    !-------------------------------------------------------------------------------
-
-    rCode = 0
 
     list = stream%fldListModel
-
-    if (present(rc)) rc = rCode
 
   end subroutine shr_stream_getModelFieldList
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getFileFieldName -- Get name of k-th field in list
-  !
-  ! !DESCRIPTION:
-  !     Get name of k-th field in list
-  !     \newline
-  !     call shr\_stream\_getFileFieldName(stream,k,name,rc)
-  !
-  ! !REVISION HISTORY:
-  !     2005-May-05 - B. Kauffman
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getFileFieldName(stream,k,name)
 
-  subroutine shr_stream_getFileFieldName(stream,k,name,rc)
+    ! Get name of k-th field in list
 
-    implicit none
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output parameters:
     type(shr_stream_streamType)  ,intent(in)  :: stream  ! stream in question
     integer(SHR_KIND_IN)         ,intent(in)  :: k       ! index of field
     character(*)                 ,intent(out) :: name    ! k-th name in list
-    integer(SHR_KIND_IN),optional,intent(out) :: rc      ! return code
-
-    !EOP
-
-    !----- local -----
-    integer(SHR_KIND_IN)   :: rCode   ! return code
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_getFileFieldName) '
-    character(*),parameter :: F00   = "('(shr_stream_getFileFieldName) ',4a)"
-
-    !-------------------------------------------------------------------------------
-    ! Notes:
     !-------------------------------------------------------------------------------
 
-    rCode = 0
-
-    call shr_string_listGetName(stream%fldListFile,k,name,rCode)
-
-    if (present(rc)) rc = rCode
+    call shr_string_listGetName(stream%fldListFile,k,name)
 
   end subroutine shr_stream_getFileFieldName
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getModelFieldName -- Get name of k-th field in list
-  !
-  ! !DESCRIPTION:
-  !     Get name of k-th field in list
-  !     \newline
-  !     call shr\_stream\_getModelFieldName(stream,k,name,rc)
-  !
-  ! !REVISION HISTORY:
-  !     2005-May-05 - B. Kauffman
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getModelFieldName(stream,k,name)
 
-  subroutine shr_stream_getModelFieldName(stream,k,name,rc)
+    ! Get name of k-th field in list
 
-    implicit none
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output parameters:
     type(shr_stream_streamType)  ,intent(in)  :: stream  ! stream in question
     integer(SHR_KIND_IN)         ,intent(in)  :: k       ! index of field
     character(*)                 ,intent(out) :: name    ! k-th name in list
-    integer(SHR_KIND_IN),optional,intent(out) :: rc      ! return code
-
-    !EOP
-
-    !----- local -----
-    integer(SHR_KIND_IN)   :: rCode   ! return code
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_getModelFieldName) '
-    character(*),parameter :: F00   = "('(shr_stream_getModelFieldName) ',4a)"
-
-    !-------------------------------------------------------------------------------
-    ! Notes:
     !-------------------------------------------------------------------------------
 
-    rCode = 0
-
-    call shr_string_listGetName(stream%fldListModel,k,name,rCode)
-
-    if (present(rc)) rc = rCode
+    call shr_string_listGetName(stream%fldListModel,k,name)
 
   end subroutine shr_stream_getModelFieldName
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getFilePath -- return file path
-  !
-  ! !DESCRIPTION:
-  !    Returns file path.
-  !
-  ! !REVISION HISTORY:
-  !     2005-Nov-23 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_getFilepath(strm,path)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! return file path
 
+    ! input/output parameters:
     type(shr_stream_streamType),intent(in)  :: strm      ! data stream
     character(*)               ,intent(out) :: path      ! file path
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     path = strm%filePath
@@ -1875,74 +1542,28 @@ contains
   end subroutine shr_stream_getFilePath
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getDataSource -- return data source meta data
-  !
-  ! !DESCRIPTION:
-  !    Returns data source meta data.
-  !
-  ! !REVISION HISTORY:
-  !     2005-Feb-18 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine shr_stream_getDataSource(strm,str)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
-    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
-    character(*)               ,intent(out) :: str       ! meta data
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    str = strm%dataSource
-
-  end subroutine shr_stream_getDataSource
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getCalendar -- return calendar name
-  !
-  ! !DESCRIPTION:
-  !    Returns calendar name
-  !
-  ! !REVISION HISTORY:
-  !     2010-Oct-11 - T. Craig - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_getCalendar(strm,k,calendar)
 
+    ! Returns calendar name
     use netcdf
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output parameters:
     type(shr_stream_streamType),intent(in)  :: strm     ! data stream
     integer(SHR_KIND_IN)       ,intent(in)  :: k        ! file to query
     character(*)               ,intent(out) :: calendar ! calendar name
 
-    !EOP
-
+    ! local variables
     integer(SHR_KIND_IN)   :: fid, vid, n
     character(SHR_KIND_CL) :: fileName,strmfile,lcal
     integer(SHR_KIND_IN)   :: rCode
     character(*),parameter :: subName = '(shr_stream_getCalendar) '
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     lcal = ' '
     calendar = ' '
     if (k > strm%nfiles) call shr_sys_abort(subname//' ERROR: k gt nfiles')
     strmfile = strm%file(k)%name
-    call shr_stream_getFile(strm%filePath,strmfile,fileName)
+    call shr_stream_getFile(strm%filePath, strmfile, localfile=fileName)
     rCode = nf90_open(fileName,nf90_nowrite,fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
     rCode = nf90_inq_varid(fid,trim(strm%domTvarName),vid)
@@ -1961,107 +1582,49 @@ contains
     rCode = nf90_close(fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
 
-    return
-
   end subroutine shr_stream_getCalendar
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getCurrFile -- return open file information
-  !
-  ! !DESCRIPTION:
-  !    returns current file information
-  !
-  ! !REVISION HISTORY:
-  !     2015-Nov-24 - T. Craig
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_getCurrFile(strm,fileopen,currfile,currpioid)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    !  returns current file information
 
+    ! input/output parameters:
     type(shr_stream_streamType),intent(in)  :: strm     ! data stream
     logical           ,optional,intent(out) :: fileopen ! file open flag
     character(*)      ,optional,intent(out) :: currfile ! current filename
     type(file_desc_t) ,optional,intent(out) :: currpioid ! current pioid
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
-    if (present(fileopen)) then
-       fileopen = strm%fileopen
-    endif
-    if (present(currfile)) then
-       currfile = strm%currfile
-    endif
-    if (present(currpioid)) then
-       currpioid = strm%currpioid
-    endif
+    if (present(fileopen)) fileopen = strm%fileopen
+    if (present(currfile)) currfile = strm%currfile
+    if (present(currpioid)) currpioid = strm%currpioid
 
   end subroutine shr_stream_getCurrFile
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_setCurrFile -- return open file information
-  !
-  ! !DESCRIPTION:
-  !    returns current file information
-  !
-  ! !REVISION HISTORY:
-  !     2015-Nov-24 - T. Craig
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_setCurrFile(strm,fileopen,currfile,currpioid)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! sets current file information
 
     type(shr_stream_streamType),intent(inout) :: strm     ! data stream
     logical           ,optional,intent(in) :: fileopen ! file open flag
     character(*)      ,optional,intent(in) :: currfile ! current filename
     type(file_desc_t) ,optional,intent(in) :: currpioid ! current pioid
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
-    if (present(fileopen)) then
-       strm%fileopen = fileopen
-    endif
-    if (present(currfile)) then
-       strm%currfile = currfile
-    endif
-    if (present(currpioid)) then
-       strm%currpioid = currpioid
-    endif
+    if (present(fileopen)) strm%fileopen = fileopen
+    if (present(currfile)) strm%currfile = currfile
+    if (present(currpioid)) strm%currpioid = currpioid
 
   end subroutine shr_stream_setCurrFile
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getDomainInfo -- return domain information
-  !
-  ! !DESCRIPTION:
-  !    Returns domain information data.
-  !
-  ! !REVISION HISTORY:
-  !     2005-Mar-13 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName)
 
-  subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
+    ! return stream domain information
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output variabes
     type(shr_stream_streamType),intent(in)  :: strm     ! data stream
     character(*)               ,intent(out) :: filePath ! domain file path
     character(*)               ,intent(out) :: fileName ! domain file name
@@ -2070,12 +1633,6 @@ contains
     character(*)               ,intent(out) ::  latName ! domain lat  var name
     character(*)               ,intent(out) ::  hgtName ! domain hgt  var name
     character(*)               ,intent(out) :: maskName ! domain mask var name
-    character(*)               ,intent(out) :: areaName ! domain area var name
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     filePath = strm%domFilePath
@@ -2085,157 +1642,63 @@ contains
     latName = strm%domYvarName
     hgtName = strm%domZvarName
     maskName = strm%domMaskName
-    areaName = strm%domAreaName
 
   end subroutine shr_stream_getDomainInfo
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getFile -- Acquire file, return name of file to open
-  !
-  ! !DESCRIPTION:
-  !     Acquire file (if necessary) and return name of file to open
-  !     \newline
-  !     call shr\_stream\_getFile(path,fileName,localFileName,rc)
-  !
-  ! !REVISION HISTORY:
-  !     2007-Aug-24 - B. Kauffman
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getDomainFile(strm,domainfile)
 
-  subroutine shr_stream_getFile(filePath,fileName,localFile,rc)
+    ! return stream domain file
 
-    use shr_file_mod, only: shr_file_queryPrefix, shr_file_noPrefix
+    ! input/output variabes
+    type(shr_stream_streamType),intent(in)  :: strm     ! data stream
+    character(len=*), intent(out) :: domainfile
+    !-------------------------------------------------------------------------------
 
-    implicit none
+    domainfile = trim(strm%domFilePath) // adjustl(strm%domFileName)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+  end subroutine shr_stream_getDomainFile
 
-    character(*)                 ,intent(in)    :: filePath  ! file path
-    character(*)                 ,intent(inout) :: fileName  ! file name
-    character(*)        ,optional,intent(out)   :: localFile ! name of acquired file
-    integer(SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
+  !===============================================================================
+  subroutine shr_stream_getFile(filePath, fileName, localFile)
 
-    !EOP
+    ! Notes: read the file without making a local copy: read path/file
 
-    !----- local -----
+    ! input/output parameters:
+    character(*)          ,intent(in)    :: filePath  ! file path
+    character(*)          ,intent(inout) :: fileName  ! file name
+    character(*),optional ,intent(out)   :: localFile ! name of acquired file
+
+    ! local variables
     character(SHR_KIND_CL) :: localFn ! name of acquired file
-    integer  (SHR_KIND_IN) :: rCode   ! return code
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_getFile) '
-    character(*),parameter :: F00   = "('(shr_stream_getFile) ',4a)"
-
-    !-------------------------------------------------------------------------------
-    ! Notes:
-    ! - this routine reflects an added stream file handling requirement:
-    !   for files on an nfs-mounted file system (available via unix cp),
-    !   there are two options...
-    !   1) read the file without making a local copy: read path/file
-    !   2) copy path/file to file, and then read file
-    ! - the shr_file_get/put file name format is used to select the option:
-    !   using shr_file_queryPrefix -- if recognized prefix found -- do shr_file_get
-    !   otherwise use the file in place.
-    ! - if   optional argument localFile is present
-    !   then fileName is unaltered and localFile is the file to be read
-    !   else fileName is altered and contains the name of the file to be read
-    ! - this routine is somewhat awkward but reduces redundant code
     !-------------------------------------------------------------------------------
 
-    rCode = 0
-
-    if ( shr_file_queryPrefix(filePath) /= shr_file_noPrefix ) then
-       localFn = adjustl(fileName)
-       call shr_file_get(rCode,localFn, trim(filePath)//adjustl(fileName))
-    else                              ! don't copy file, read original file
-       localFn = trim(filePath)//adjustl(fileName)
-    end if
-
-    if (debug>0 .and. s_loglev > 0) then
-       write(s_logunit,F00) "DEBUG: remote file : ",trim(filePath)//trim(fileName)
-       write(s_logunit,F00) "DEBUG: local  file : ",trim(localFn)
-    end if
-
+    localFn = trim(filePath)//adjustl(fileName)
     if (.not. present(localFile)) fileName  = localFn ! clobber input fileName
     if (      present(localFile)) localFile = localFn ! don't clobber fileName
-
-    if (present(rc)) rc = rCode
 
   end subroutine shr_stream_getFile
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getFirstFileName -- returns first file name
-  !
-  ! !DESCRIPTION:
-  !    Returns first file name in stream.
-  !
-  ! !REVISION HISTORY:
-  !     2005-Feb-18 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getNextFileName(strm,fn,fnNext,path)
 
-  subroutine shr_stream_getFirstFileName(strm,file,path)
+    ! Returns next file name in sequence
+    ! Note: will wrap-around data loop if lvd & gvd are known
+    ! otherwise may return file name = "unknown"
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
-    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
-    character(*)               ,intent(out) :: file      ! file name
-    character(*),optional      ,intent(out) :: path      ! file path
-
-    !EOP
-
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    if (present(path)) path = strm%filePath
-    file = strm%file(1)%name
-
-  end subroutine shr_stream_getFirstFileName
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getNextFileName -- returns next file name in sequence
-  !
-  ! !DESCRIPTION:
-  !    Returns next file name in sequence
-  !
-  ! !REVISION HISTORY:
-  !     2005-Nov-18 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine shr_stream_getNextFileName(strm,fn,fnNext,path,rc)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output variables
     type(shr_stream_streamType),intent(in)    :: strm   ! data stream
     character(*)               ,intent(in)    :: fn     ! file name
     character(*)               ,intent(out)   :: fnNext ! next file name
     character(*),optional      ,intent(out)   :: path   ! file path
-    integer(SHR_KIND_IN),optional,intent(out) :: rc     ! return code
 
-    !EOP
-
-    !--- local ---
-    integer  (SHR_KIND_IN) :: rCode   ! return code
+    ! local varaibles
     integer(SHR_KIND_IN) :: n      ! loop index
     logical              :: found  ! file name found?
-
-    !--- formats ---
-    character(*),parameter :: subName = '(shr_stream_getNextFileName) '
     character(*),parameter :: F00   = "('(shr_stream_getNextFileName) ',8a)"
-
-    !-------------------------------------------------------------------------------
-    ! Note: will wrap-around data loop if lvd & gvd are known
-    ! otherwise may return file name = "unknown"
+    character(*),parameter :: subName = '(shr_stream_getNextFileName) '
     !-------------------------------------------------------------------------------
 
-    rCode = 0
     if (present(path)) path = strm%filePath
 
     !--- locate input file in the stream's list of files ---
@@ -2247,7 +1710,6 @@ contains
        end if
     end do
     if (.not. found) then
-       rCode = 1
        write(s_logunit,F00) "ERROR: input file name is not in stream: ",trim(fn)
        call shr_stream_abort(subName//"ERROR: file name not in stream: "//trim(fn))
     end if
@@ -2263,50 +1725,29 @@ contains
     end if
 
     fnNext = trim(strm%file(n)%name)
-    if ( present(rc) ) rc = rCode
 
   end subroutine shr_stream_getNextFileName
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_getPrevFileName -- returns previous file name in sequence
-  !
-  ! !DESCRIPTION:
-  !    Returns previous file name in sequence
-  !
-  ! !REVISION HISTORY:
-  !     2005-Nov-18 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_getPrevFileName(strm,fn,fnPrev,path)
 
-  subroutine shr_stream_getPrevFileName(strm,fn,fnPrev,path,rc)
+    ! Returns previous file name in sequence
+    ! Note: will wrap-around data loop if lvd & gvd are known
+    ! otherwise may return file name = "unknown"
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output parameters:
     type(shr_stream_streamType)  ,intent(in)  :: strm   ! data stream
     character(*)                 ,intent(in)  :: fn     ! file name
     character(*)                 ,intent(out) :: fnPrev ! preciding file name
     character(*),optional        ,intent(out) :: path   ! file path
-    integer(SHR_KIND_IN),optional,intent(out) :: rc     ! return code
 
-    !EOP
-
-    !--- local ---
-    integer  (SHR_KIND_IN) :: rCode ! return code
+    ! local variables
     integer(SHR_KIND_IN)   :: n     ! loop index
     logical                :: found ! file name found?
-
-    !--- formats ---
     character(*),parameter :: subName = '(shr_stream_getPrevFileName) '
     character(*),parameter :: F00   = "('(shr_stream_getPrevFileName) ',8a)"
-
-    !-------------------------------------------------------------------------------
-    ! Note: will wrap-around data loop if lvd & gvd are known
-    ! otherwise may return file name = "unknown"
     !-------------------------------------------------------------------------------
 
-    rCode = 0
     if (present(path)) path = strm%filePath
 
     !--- locate input file in the stream's list of files ---
@@ -2318,7 +1759,6 @@ contains
        end if
     end do
     if (.not. found) then
-       rCode = 1
        write(s_logunit,F00) "ERROR: input file name is not in stream: ",trim(fn)
        call shr_stream_abort(subName//"ERROR: file name not in stream: "//trim(fn))
     end if
@@ -2333,7 +1773,6 @@ contains
     else
        fnPrev = "unknown "
     end if
-    if ( present(rc) ) rc = rCode
 
   end subroutine shr_stream_getPrevFileName
 
@@ -2444,8 +1883,7 @@ contains
     ! write the  data
     !----------------------------------------------------------------------------
 
-    nUnit = shr_file_getUnit() ! get an unused unit number
-    open(nUnit,file=trim(fileName),form="unformatted",action="write")
+    open(newunit=nUnit,file=trim(fileName),form="unformatted",action="write")
 
     str =        "case name        : "//caseName
     write(nUnit) str
@@ -2516,7 +1954,6 @@ contains
     end do
 
     close(nUnit)
-    call shr_file_freeUnit(nUnit)
     if ( present(rc) ) rc = rCode
 
   end subroutine  shr_stream_restWrite
@@ -2591,10 +2028,8 @@ contains
     ! read the  data
     !----------------------------------------------------------------------------
 
-    nUnit = shr_file_getUnit() ! get an unused unit number
-    open(nUnit,file=trim(fileName),form="unformatted",status="old",action="read", iostat=rCode)
+    open(newunit=nUnit,file=trim(fileName),form="unformatted",status="old",action="read", iostat=rCode)
     if ( rCode /= 0 )then
-       call shr_file_freeUnit(nUnit)
        call shr_stream_abort(subName//": ERROR: error opening file: "//trim(fileName) )
        if ( present(rc) ) rc = rCode
        return
@@ -2675,33 +2110,15 @@ contains
                strm(k)%file(1)%date(nt),strm(k)%file(1)%secs(nt)
        endif
 
-       ! tcraig, apr 2 2012, offset is the only field that should not change here for time axis
-       !      read(nUnit) strm(k)%yearFirst     ! last  year to use in t-axis (yyyymmdd)
-       !      read(nUnit) strm(k)%yearLast     ! last  year to use in t-axis (yyyymmdd)
-       !      read(nUnit) strm(k)%yearAlign    ! align yearFirst with this model year
-       !      read(nUnit) strm(k)%offset       ! time axis offset
+       ! offset is the only field that should not change here for time axis
        read(nUnit) inpi   ! first year to use in t-axis (yyyymmdd)
-       !      if (inpi /= strm(k)%yearFirst) then
-       !         write(s_logunit,F04) " ERROR: yearFirst disagrees ",k,strm(k)%yearFirst,inpi
-       !         abort=.true.
-       !      endif
        read(nUnit) inpi   ! last year to use in t-axis (yyyymmdd)
-       !      if (inpi /= strm(k)%yearLast) then
-       !         write(s_logunit,F04) " ERROR: yearLast disagrees ",k,strm(k)%yearLast,inpi
-       !         abort=.true.
-       !      endif
        read(nUnit) inpi   ! align year to use in t-axis (yyyymmdd)
-       !      if (inpi /= strm(k)%yearAlign) then
-       !         write(s_logunit,F04) " ERROR: yearAlign disagrees ",k,strm(k)%yearAlign,inpi
-       !         abort=.true.
-       !      endif
        read(nUnit) inpi   ! time axis offset
        if (inpi /= strm(k)%offset) then
           write(s_logunit,F04) " ERROR: offset disagrees ",k,strm(k)%offset,inpi
           abort=.true.
        endif
-
-       !     read(nUnit) strm(k)%taxMode      ! time axis cycling mode
 
        read(nUnit) k_lvd        ! file        of least valid date
        read(nUnit) n_lvd        !      sample of least valid date
@@ -2709,7 +2126,7 @@ contains
        read(nUnit) k_gvd        ! file        of greatest valid date
        read(nUnit) n_gvd        !      sample of greatest valid date
        read(nUnit) found_gvd    ! T <=> k_gvd,n_gvd have been set
-       ! tcraig, april 2012, only overwrite if restart read is ok
+       ! only overwrite if restart read is ok
        if (readok) then
           write(s_logunit,F05) "setting k n and found lvd gvd on restart ",k,n,' ',trim(name)
           strm(k)%k_lvd     = k_lvd
@@ -2720,7 +2137,7 @@ contains
           strm(k)%found_gvd = found_gvd
        endif
 
-       ! tcraig, april 2012, don't overwrite these from input
+       ! don't overwrite these from input
        read(nUnit) inpcx !  fldListFile  ! field list: file's  field names
        read(nUnit) inpcx !  fldListModel ! field list: model's field names
        read(nUnit) inpcs !  tInterpAlgo          ! unused
@@ -2741,7 +2158,6 @@ contains
     endif
 
     close(nUnit)
-    call shr_file_freeUnit(nUnit)
     if ( present(rc) ) rc = rCode
 
   end subroutine  shr_stream_restRead
@@ -2895,35 +2311,12 @@ contains
   end subroutine shr_stream_getDebug
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_setAbort -- Set abort level
-  !
-  ! !DESCRIPTION:
-  !    Set local/internal abort level, .true. = production
-  !    \newline
-  !    General Usage: call shr\_stream\_setAbort(.false.)
-  !
-  ! !REVISION HISTORY:
-  !     2008-May-28  - E. Kluzek - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_setAbort(flag)
 
-    implicit none
+    ! Set abort level
 
     ! !INPUT/OUTPUT PARAMETERS:
-
     logical,intent(in) :: flag
-
-    !EOP
-
-    !--- formats ---
-    character(*),parameter :: subName = '(shr_stream_setAbort) '
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     doabort = flag
@@ -2931,36 +2324,16 @@ contains
   end subroutine shr_stream_setAbort
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_abort -- Call abort and end
-  !
-  ! !DESCRIPTION:
-  !    Local interface for shr_stream abort calls
-  !    General Usage: call shr\_stream\_abort(msg)
-  !
-  ! !REVISION HISTORY:
-  !     2008-May-28  - E. Kluzek - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_abort( msg )
 
-    implicit none
+    ! Call abort and end
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*), optional, intent(IN) :: msg  ! Message to describe error
 
-    !EOP
-
     character(SHR_KIND_CL) :: lmsg
-
-    !--- formats ---
     character(*),parameter :: subName = '(shr_stream_abort) '
     character(*),parameter :: F00   = "('(shr_stream_abort) ',a) "
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     lmsg = ' '
@@ -2975,34 +2348,15 @@ contains
   end subroutine shr_stream_abort
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_isInit - checks if stream is initialized
-  !
-  ! !DESCRIPTION:
-  !    Checks if stream is initialized
-  !
-  ! !REVISION HISTORY:
-  !     2010-Oct-22 - T. Craig - initial version
-  !
-  ! !INTERFACE:  -----------------------------------------------------------------
+  logical function shr_stream_isInit(strm)
 
-  logical function shr_stream_isInit(strm,rc)
-
-    implicit none
+    ! Checks if stream is initialized
 
     ! !INPUT/OUTPUT PARAMETERS:
-
     type(shr_stream_streamType),  intent(in)    :: strm
-    integer(SHR_KIND_IN),optional,intent(out)   :: rc
-
-    !EOP
 
     !--- local ---
     character(*),parameter :: subName = "(shr_stream_isInit)"
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     shr_stream_isInit = .false.
@@ -3010,40 +2364,20 @@ contains
        shr_stream_isInit = .true.
     endif
 
-    if (present(rc)) rc = 0
-
   end function shr_stream_isInit
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_setInit - Sets stream init flag to TRUE
-  !
-  ! !DESCRIPTION:
-  !    Checks if stream is initialized
-  !
-  ! !REVISION HISTORY:
-  !     2010-Oct-22 - T. Craig - initial version
-  !
-  ! !INTERFACE:  -----------------------------------------------------------------
-
   subroutine shr_stream_setInit(strm,rc)
 
-    implicit none
+    ! Sets stream init flag to TRUE
 
     ! !INPUT/OUTPUT PARAMETERS:
-
     type(shr_stream_streamType),  intent(inout) :: strm
     integer(SHR_KIND_IN),optional,intent(out)   :: rc
-
-    !EOP
 
     !--- local ---
     integer(SHR_KIND_IN) :: ier
     character(*),parameter :: subName = "(shr_stream_setInit)"
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     strm%init = .true.
@@ -3055,129 +2389,22 @@ contains
   end subroutine shr_stream_setInit
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_clearInit - Sets stream init flag to TRUE
-  !
-  ! !DESCRIPTION:
-  !    Checks if stream is initialized
-  !
-  ! !REVISION HISTORY:
-  !     2010-Oct-22 - T. Craig - initial version
-  !
-  ! !INTERFACE:  -----------------------------------------------------------------
+  subroutine shr_stream_clearInit(strm)
 
-  subroutine shr_stream_clearInit(strm,rc)
-
-    implicit none
+    ! Checks if stream is initialized and sets stream init flag to TRUE
 
     ! !INPUT/OUTPUT PARAMETERS:
-
     type(shr_stream_streamType),  intent(inout) :: strm
-    integer(SHR_KIND_IN),optional,intent(out)   :: rc
-
-    !EOP
 
     !--- local ---
     integer(SHR_KIND_IN) :: ier
     character(*),parameter :: subName = "(shr_stream_clearInit)"
-
-    !-------------------------------------------------------------------------------
-    !
     !-------------------------------------------------------------------------------
 
     strm%init = .true.
     deallocate(strm%initarr,stat=ier)
     allocate(strm%initarr(initarr_size + 5))
 
-    if (present(rc)) rc = 0
-
   end subroutine shr_stream_clearInit
 
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_bcast -- bcast stream
-  !
-  ! !DESCRIPTION:
-  !    Return internal debug level, 0 = production
-  !    \newline
-  !    General Usage: call shr\_stream\_bcast(level)
-  !
-  ! !REVISION HISTORY:
-  !     2005-May-10  - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine shr_stream_bcast(stream,comm,rc)
-
-    implicit none
-
-    ! !INPUT/OUTPUT PARAMETERS:
-
-    type(shr_stream_streamType),  intent(inout) :: stream
-    integer(SHR_KIND_IN),         intent(in)    :: comm
-    integer(SHR_KIND_IN),optional,intent(out)   :: rc
-
-    !EOP
-
-    !--- locals ---
-    integer :: n,nt
-    integer :: pid
-
-    !--- formats ---
-    character(*),parameter :: subName = '(shr_stream_bcast) '
-    character(*),parameter :: F00   = "('(shr_stream_bcast) ',a) "
-
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    if ( present(rc) ) rc = 0
-    call shr_mpi_commRank(comm,pid,subName)
-
-    call shr_mpi_bcast(stream%init        ,comm,subName)
-    call shr_mpi_bcast(stream%nFiles      ,comm,subName)
-    call shr_mpi_bcast(stream%dataSource  ,comm,subName)
-    call shr_mpi_bcast(stream%filePath    ,comm,subName)
-    call shr_mpi_bcast(stream%yearFirst   ,comm,subName)
-    call shr_mpi_bcast(stream%yearLast    ,comm,subName)
-    call shr_mpi_bcast(stream%yearAlign   ,comm,subName)
-    call shr_mpi_bcast(stream%offset      ,comm,subName)
-    call shr_mpi_bcast(stream%taxMode     ,comm,subName)
-    call shr_mpi_bcast(stream%k_lvd       ,comm,subName)
-    call shr_mpi_bcast(stream%n_lvd       ,comm,subName)
-    call shr_mpi_bcast(stream%found_lvd   ,comm,subName)
-    call shr_mpi_bcast(stream%k_gvd       ,comm,subName)
-    call shr_mpi_bcast(stream%n_gvd       ,comm,subName)
-    call shr_mpi_bcast(stream%found_gvd   ,comm,subName)
-    call shr_mpi_bcast(stream%fileopen    ,comm,subName)
-    call shr_mpi_bcast(stream%currfile    ,comm,subName)
-    call shr_mpi_bcast(stream%fldListFile ,comm,subName)
-    call shr_mpi_bcast(stream%fldListModel,comm,subName)
-    call shr_mpi_bcast(stream%domFileName ,comm,subName)
-    call shr_mpi_bcast(stream%domFilePath ,comm,subName)
-    call shr_mpi_bcast(stream%domTvarName ,comm,subName)
-    call shr_mpi_bcast(stream%domXvarName ,comm,subName)
-    call shr_mpi_bcast(stream%domYvarName ,comm,subName)
-    call shr_mpi_bcast(stream%domZvarName ,comm,subName)
-    call shr_mpi_bcast(stream%domMaskName ,comm,subName)
-    call shr_mpi_bcast(stream%calendar    ,comm,subName)
-
-    if (pid /= 0) allocate(stream%file(stream%nFiles))
-
-    do n = 1,stream%nFiles
-       call shr_mpi_bcast(stream%file(n)%name    ,comm,subName)
-       call shr_mpi_bcast(stream%file(n)%haveData,comm,subName)
-       call shr_mpi_bcast(stream%file(n)%nt      ,comm,subName)
-       nt = stream%file(n)%nt
-       if (pid /= 0) allocate(stream%file(n)%date(nt),stream%file(n)%secs(nt))
-       call shr_mpi_bcast(stream%file(n)%date    ,comm,subName)
-       call shr_mpi_bcast(stream%file(n)%secs    ,comm,subName)
-    enddo
-
-  end subroutine shr_stream_bcast
-
-  !===============================================================================
-end module shr_stream_mod
-!===============================================================================
+end module dshr_stream_mod
