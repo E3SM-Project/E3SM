@@ -6,6 +6,7 @@ module cospsimulator_intr
   !                       GCM inputs
   !         Version:      v2.1.4 (August 2019)
   !         Authors:      Dustin Swales (dustin.swales@noaa.gov)
+  !                       Ben Hillman (bhillma@sandia.gov)
   !
   ! Modifications:
   !
