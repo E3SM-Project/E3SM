@@ -53,6 +53,8 @@
           This is an optional attribute that is mainly useful for variables
           that have only a small number of allowed values.
                                                                         -->
+<!-- There is a duplicated nml definitions for nudging parameters 
+     in the current master branch, and it is removed in the PR          -->
 <!-- Nudging Parameters -->
 
 <entry id="Nudge_Model" type="logical" category="nudging"
