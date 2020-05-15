@@ -1223,65 +1223,12 @@ CONTAINS
     ! ######################################################################################
     integer :: lchnk                             ! chunk identifier
     integer :: ncol                              ! number of active atmospheric columns
-    integer :: i,k,ip,it,ipt,ih,id,ihd,is,ihs,isc,ihsc,ihm,ihmt,ihml,itim_old,ifld 
-    
-    ! Variables for day/nite and orbital subsetting
-    ! Gathered indicies of day and night columns 
-    ! chunk_column_index = IdxDay(daylight_column_index)
-    integer :: Nday                              ! Number of daylight columns
-    integer :: Nno                               ! Number of columns not using for simulator
-    integer, dimension(pcols) :: IdxDay          ! Indices of daylight columns
-    integer, dimension(pcols) :: IdxNo           ! Indices of columns not using for simulator
-    real(r8) :: tmp(pcols)                       ! tempororary variable for array expansion
-    real(r8) :: tmp1(pcols,pver)                 ! tempororary variable for array expansion
-    real(r8) :: tmp2(pcols,pver)                 ! tempororary variable for array expansion
-    real(r8) :: lon_cosp_day(pcols)              ! tempororary variable for sunlit lons
-    real(r8) :: lat_cosp_day(pcols)              ! tempororary variable for sunlit lats
-    real(r8) :: ptop_day(pcols,pver)             ! tempororary variable for sunlit ptop
-    real(r8) :: pmid_day(pcols,pver)             ! tempororary variable for sunlit pmid
-    real(r8) :: ztop_day(pcols,pver)             ! tempororary variable for sunlit ztop
-    real(r8) :: zmid_day(pcols,pver)             ! tempororary variable for sunlit zmid
-    real(r8) :: t_day(pcols,pver)                ! tempororary variable for sunlit t
-    real(r8) :: rh_day(pcols,pver)               ! tempororary variable for sunlit rh
-    real(r8) :: q_day(pcols,pver)                ! tempororary variable for sunlit q
-    real(r8) :: concld_day(pcols,pver)           ! tempororary variable for sunlit concld
-    real(r8) :: cld_day(pcols,pver)              ! tempororary variable for sunlit cld
-    real(r8) :: ps_day(pcols)                    ! tempororary variable for sunlit ps
-    real(r8) :: ts_day(pcols)                    ! tempororary variable for sunlit ts
-    real(r8) :: landmask_day(pcols)              ! tempororary variable for sunlit landmask
-    real(r8) :: o3_day(pcols,pver)               ! tempororary variable for sunlit o3
-    real(r8) :: us_day(pcols)                    ! tempororary variable for sunlit us
-    real(r8) :: vs_day(pcols)                    ! tempororary variable for sunlit vs
-    real(r8) :: mr_lsliq_day(pcols,pver)         ! tempororary variable for sunlit mr_lsliq
-    real(r8) :: mr_lsice_day(pcols,pver)         ! tempororary variable for sunlit mr_lsice
-    real(r8) :: mr_ccliq_day(pcols,pver)         ! tempororary variable for sunlit mr_ccliq
-    real(r8) :: mr_ccice_day(pcols,pver)         ! tempororary variable for sunlit mr_ccice
-    real(r8) :: rain_ls_interp_day(pcols,pver)   ! tempororary variable for sunlit rain_ls_interp
-    real(r8) :: snow_ls_interp_day(pcols,pver)   ! tempororary variable for sunlit snow_ls_interp
-    real(r8) :: grpl_ls_interp_day(pcols,pver)   ! tempororary variable for sunlit grpl_ls_interp
-    real(r8) :: rain_cv_interp_day(pcols,pver)   ! tempororary variable for sunlit rain_cv_interp
-    real(r8) :: snow_cv_interp_day(pcols,pver)   ! tempororary variable for sunlit snow_cv_interp
-    real(r8) :: reff_cosp_day(pcols,pver,nhydro) ! tempororary variable for sunlit reff_cosp(:,:,:)
-    real(r8) :: dtau_s_day(pcols,pver)           ! tempororary variable for sunlit dtau_s
-    real(r8) :: dtau_c_day(pcols,pver)           ! tempororary variable for sunlit dtau_c
-    real(r8) :: dtau_s_snow_day(pcols,pver)      ! tempororary variable for sunlit dtau_s_snow
-    real(r8) :: dem_s_day(pcols,pver)            ! tempororary variable for sunlit dem_s
-    real(r8) :: dem_c_day(pcols,pver)            ! tempororary variable for sunlit dem_c
-    real(r8) :: dem_s_snow_day(pcols,pver)       ! tempororary variable for sunlit dem_s_snow
-    
-    ! Constants for optical depth calculation (from radcswmx.F90)
-    real(r8), parameter :: abarl = 2.817e-02_r8          ! A coefficient for extinction optical depth
-    real(r8), parameter :: bbarl = 1.305_r8              ! b coefficient for extinction optical depth
-    real(r8), parameter :: abari = 3.448e-03_r8          ! A coefficient for extinction optical depth
-    real(r8), parameter :: bbari = 2.431_r8              ! b coefficient for extinction optical depth
-    real(r8), parameter :: cldmin = 1.0e-80_r8           ! note: cldmin much less than cldmin from cldnrh
-    real(r8), parameter :: cldeps = 0.0_r8 
+    integer :: i, k, itim_old
     
     ! Microphysics variables
     integer, parameter :: ncnstmax=4                      ! number of constituents
     character(len=8), dimension(ncnstmax), parameter :: & ! constituent names
          cnst_names = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE'/)
-    integer :: ncnst                                      ! number of constituents (can vary)
     integer :: ixcldliq                                   ! cloud liquid amount index for state%q
     integer :: ixcldice                                   ! cloud ice amount index
     integer :: ixnumliq                                   ! cloud liquid number index
@@ -1356,9 +1303,7 @@ CONTAINS
                          'CS_NOPRECIP   ', 'CS_RAINPOSS   ', 'CS_RAINPROB   ', &
                          'CS_RAINCERT   ', 'CS_SNOWPOSS   ', 'CS_SNOWCERT   ', &
                          'CS_MIXPOSS    ', 'CS_MIXCERT    ', 'CS_RAINHARD   ', &
-                         'CS_UN         ', 'CS_PIA        '/)!, 'CAM_MP_CVRAIN ', &
-                         !'CAM_MP_CVSNOW ', 'CAM_MP_LSRAIN ', 'CAM_MP_LSSNOW ', &
-                         !'CAM_MP_LSGRPL '/)
+                         'CS_UN         ', 'CS_PIA        '/)
 
     ! CALIPSO outputs
     character(len=max_fieldname_len),dimension(nf_calipso),parameter :: &
@@ -1367,11 +1312,7 @@ CONTAINS
                          'CLD_CAL_ICE    ','CLD_CAL_UN     ','CLD_CAL_TMP    ','CLD_CAL_TMPLIQ ','CLD_CAL_TMPICE ',&
                          'CLD_CAL_TMPUN  ','CLDTOT_CAL_ICE ','CLDTOT_CAL_LIQ ','CLDTOT_CAL_UN  ','CLDHGH_CAL_ICE ',&
                          'CLDHGH_CAL_LIQ ','CLDHGH_CAL_UN  ','CLDMED_CAL_ICE ','CLDMED_CAL_LIQ ','CLDMED_CAL_UN  ',&
-                         'CLDLOW_CAL_ICE ','CLDLOW_CAL_LIQ ','CLDLOW_CAL_UN  '/)!,                                    &
-!                         'CLDOPQ_CAL     ','CLDTHN_CAL     ','CLDZOPQ_CAL    ','CLDOPQ_CAL_2D  ','CLDTHN_CAL_2D  ',&
-!                         'CLDZOPQ_CAL_2D ','OPACITY_CAL_2D ','CLDOPQ_CAL_TMP ','CLDTHN_CAL_TMP ','CLDZOPQ_CAL_TMP',&
-!                         'CLDOPQ_CAL_Z   ','CLDTHN_CAL_Z   ','CLDTHN_CAL_EMIS','CLDOPQ_CAL_SE  ','CLDTHN_CAL_SE  ',&
-!                         'CLDZOPQ_CAL_SE' /)
+                         'CLDLOW_CAL_ICE ','CLDLOW_CAL_LIQ ','CLDLOW_CAL_UN  '/)
     ! ISCCP outputs
     character(len=max_fieldname_len),dimension(nf_isccp),parameter :: &
          fname_isccp=(/'FISCCP1_COSP    ','CLDTOT_ISCCP    ','MEANCLDALB_ISCCP',&
