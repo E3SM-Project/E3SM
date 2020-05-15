@@ -883,7 +883,6 @@ contains
 #endif
   end subroutine pio_read_phis
   
-<<<<<<< HEAD
   subroutine pio_read_gll_topo_file(filename, elem, par, fields, fieldnames)
     ! fields(:np,:np,:nelemd,i) is field i in the list
     !     PHIS, SGH, SGH30, LANDM_COSLAT, LANDFRAC
@@ -1496,9 +1495,9 @@ contains
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
     use common_io_mod, only: varname_len, io_stride, num_io_procs, num_agg
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use control_mod, only: max_string_len
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use pio, only: pio_init, pio_openfile, pio_rearr_box, pio_inquire, pio_inq_dimname, &
          pio_inq_dimlen, pio_initdecomp
 #endif
