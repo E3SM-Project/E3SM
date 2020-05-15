@@ -4834,7 +4834,7 @@
        Surface albedo for diffuse radiation
     </desc>
     <values>
-      <value>0.07</value>
+      <value>0.07D0</value>
     </values>
   </entry>
 
