@@ -3957,7 +3957,7 @@ void step (
     q_min(q_min_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd),
     q_max(q_max_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd);
 
-#if 0
+#if 1
   // Partition my elements that communicate with remotes among threads, if I
   // haven't done that yet.
   if (cm.mylid_with_comm_tid_ptr.n() == 0)
