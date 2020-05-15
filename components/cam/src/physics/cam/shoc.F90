@@ -1121,16 +1121,6 @@ subroutine diag_third_shoc_moments(&
   real(rtype), intent(out) :: w3(shcol,nlevi)
 
 ! LOCAL VARIABLES
-  integer i, j, k, kb, kc
-  real(rtype) :: omega0, omega1, omega2
-  real(rtype) :: X0, Y0, X1, Y1, AA0, AA1
-  real(rtype) :: zvar, x5var, iso, thedz, thedz2
-  real(rtype) :: theterm, cond, tsign
-  real(rtype) :: isosqrt, dthl2, dwthl, dtke, dw2, aw2
-  real(rtype) :: a0, a1, a2, a3, a4, a5
-  real(rtype) :: buoy_sgs2, c, grd, bet2, bet
-  real(rtype) :: f0, f1, f2, f3, f4, f5
-
   real(rtype) :: w_sec_zi(shcol,nlevi)    ! second order vertical velocity
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: brunt_zi(shcol,nlevi)
@@ -1146,6 +1136,84 @@ subroutine diag_third_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,wthv_sec,wthv_sec_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
 
+  !Diagnose the third moment of the vertical-velocity
+  call compute_diag_third_shoc_moment(&
+          shcol,nlev,nlevi, &                 ! Input
+          w_sec,thl_sec, qw_sec, qwthl_sec,&  ! Input
+          wthl_sec, tke, dz_zt, dz_zi,&       ! Input
+          zt_grid,zi_grid, isotropy_zi,&      ! Input
+          brunt_zi,w_sec_zi,thetal_zi,&       ! Input
+          wthv_sec_zi,shoc_mix_zi,&           ! Input
+          w3)                                 ! Output
+
+
+
+  ! perform clipping to prevent unrealistically large values from occuring
+  call clipping_diag_third_shoc_momnets(&
+          nlevi,shcol,w_sec_zi,&    !Input 
+          w3)                       !Output
+  
+  return
+
+end subroutine diag_third_shoc_moments
+
+subroutine compute_diag_third_shoc_moment(&
+          shcol,nlev,nlevi, &                 ! Input
+          w_sec,thl_sec, qw_sec, qwthl_sec,&  ! Input
+          wthl_sec, tke, dz_zt, dz_zi,&       ! Input
+          zt_grid,zi_grid, isotropy_zi,&      ! Input
+          brunt_zi,w_sec_zi,thetal_zi,&       ! Input
+          wthv_sec_zi,shoc_mix_zi,&           ! Input
+          w3)                                 ! Output
+
+  implicit none
+! INPUT VARIABLES
+  ! number of SHOC columns
+  integer, intent(in) :: shcol
+  ! number of midpoint levels
+  integer, intent(in) :: nlev
+  ! number of interface levels
+  integer, intent(in) :: nlevi
+  ! second order vertical velocity [m2/s2]
+  real(rtype), intent(in) :: w_sec(shcol,nlev)
+  ! second order liquid wat. potential temperature [K^2]
+  real(rtype), intent(in) :: thl_sec(shcol,nlevi)
+  ! second order total water mixing ratio [kg2/kg2]
+  real(rtype), intent(in) :: qw_sec(shcol,nlevi)
+  ! covariance of temp and moisture [K kg/kg]
+  real(rtype), intent(in) :: qwthl_sec(shcol,nlevi)
+  ! vertical flux of heat [K m/s]
+  real(rtype), intent(in) :: wthl_sec(shcol,nlevi)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+  ! thickness centered on thermodynamic grid [m]
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  ! thickness centered on interface grid [m]
+  real(rtype), intent(in) :: dz_zi(shcol,nlevi)
+  ! heights of thermodynamics points [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! heights of interface points [m]
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
+
+  !Interpolated varaibles  
+  real(rtype), intent(in) :: isotropy_zi(shcol,nlevi)
+  real(rtype), intent(in) :: brunt_zi(shcol,nlevi)
+  real(rtype), intent(in) :: w_sec_zi(shcol,nlevi)
+  real(rtype), intent(in) :: thetal_zi(shcol,nlevi)
+  real(rtype), intent(in) :: wthv_sec_zi(shcol,nlevi)
+  real(rtype), intent(in) :: shoc_mix_zi(shcol,nlevi)
+  ! third moment of vertical velocity
+  real(rtype), intent(out) :: w3(shcol,nlevi)
+! LOCAL VARIABLES
+  integer i, j, k, kb, kc
+  real(rtype) :: omega0, omega1, omega2
+  real(rtype) :: X0, Y0, X1, Y1, AA0, AA1
+  real(rtype) :: zvar, x5var, iso, thedz, thedz2
+  real(rtype) :: theterm, cond, tsign
+  real(rtype) :: isosqrt, dthl2, dwthl, dtke, dw2, aw2
+  real(rtype) :: a0, a1, a2, a3, a4, a5
+  real(rtype) :: buoy_sgs2, c, grd, bet2, bet
+  real(rtype) :: f0, f1, f2, f3, f4, f5
   c=7.0_rtype
   a0=(0.52_rtype*c**(-2))/(c-2._rtype)
   a1=0.87_rtype/(c**2)
@@ -1172,6 +1240,7 @@ subroutine diag_third_shoc_moments(&
       isosqrt=iso**2
       buoy_sgs2=isosqrt*brunt_zi(i,k)
       bet2=ggr/thetal_zi(i,k)
+ 
 
       f0=thedz2 * bet2**3 * iso**4 * wthl_sec(i,k) * &
          (thl_sec(i,kc)-thl_sec(i,kb))
@@ -1226,25 +1295,8 @@ subroutine diag_third_shoc_moments(&
   ! set upper condition
   w3(:,1) = 0._rtype
 
-  call clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
-  ! perform clipping to prevent unrealistically large values from occuring
-  !do k=1,nlevi
-  !  do i=1,shcol
-  !
-  !    tsign = 1._rtype
-  !    theterm = w_sec_zi(i,k)
-  !    cond = w3clip * sqrt(2._rtype * theterm**3)
-  !    if (w3(i,k) .lt. 0) tsign = -1._rtype
-  !    if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
-  !
-  !    enddo ! end i loop (column loop)
-  !enddo ! end k loop (vertical loop)
-
-  return
-
-end subroutine diag_third_shoc_moments
-
-
+end subroutine compute_diag_third_shoc_moment
+ 
 subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
 
   ! perform clipping to prevent unrealistically large values from occuring
