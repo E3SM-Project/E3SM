@@ -1313,7 +1313,7 @@ CONTAINS
     character(len=256),dimension(100) :: cosp_status
     integer :: nerror
 
-    call t_startf("init_and_stuff")
+    call t_startf('cosp_translate_variables')
     ! ######################################################################################
     ! Initialization
     ! ######################################################################################
@@ -1684,7 +1684,7 @@ CONTAINS
           endif
        enddo
     endif
-    call t_stopf("init_and_stuff")
+    call t_stopf('cosp_translate_variables')
 
     ! ######################################################################################
     ! ######################################################################################
@@ -1692,18 +1692,13 @@ CONTAINS
     ! ######################################################################################
     ! ######################################################################################
     
-    ! ######################################################################################
     ! Construct COSP output derived type.
-    ! ######################################################################################
-    call t_startf("construct_cosp_outputs")
+    call t_startf('cosp_construct_cosp_outputs')
     call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUT)
-    call t_stopf("construct_cosp_outputs")
+    call t_stopf('cosp_construct_cosp_outputs')
     
-    ! ######################################################################################
-    ! Construct and populate COSP input types
-    ! ######################################################################################
-    ! Model state
-    call t_startf("construct_cospstateIN")
+    ! Model state inputs
+    call t_startf('cosp_construct_cospstateIN')
     call construct_cospstateIN(ncol,pver,0,cospstateIN)      
     cospstateIN%lat                            = lat_cosp(1:ncol)
     cospstateIN%lon                            = lon_cosp(1:ncol) 
@@ -1720,22 +1715,22 @@ CONTAINS
     cospstateIN%hgt_matrix_half(1:ncol,pver+1) = 0._r8
     cospstateIN%hgt_matrix_half(1:ncol,1:pver) = zbot(1:ncol,pver:1:-1) 
     cospstateIN%surfelev(1:ncol)               = zbot(1:ncol,1)
-    call t_stopf("construct_cospstateIN")
+    call t_stopf('cosp_construct_cospstateIN')
 
     ! Optical inputs
-    call t_startf("construct_cospIN")
+    call t_startf('cosp_construct_cospIN')
     call construct_cospIN(ncol,nscol_cosp,pver,cospIN)
     cospIN%emsfc_lw      = emsfc_lw
     if (lradar_sim) then 
        cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
        sd_wk = sd_cs(lchnk)
     end if
-    call t_stopf("construct_cospIN")
+    call t_stopf('cosp_construct_cospIN')
 
     ! *NOTE* Fields passed into subsample_and_optics are ordered from TOA-2-SFC.
-    call t_startf("subsample_and_optics")
+    call t_startf('cosp_subsample_and_optics')
     call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
-         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),&
+         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),     &
          concld(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
          snow_ls_interp(1:ncol,1:pver),grpl_ls_interp(1:ncol,1:pver),          &
          rain_cv_interp(1:ncol,1:pver),snow_cv_interp(1:ncol,1:pver),          &
@@ -1746,12 +1741,10 @@ CONTAINS
          dem_s(1:ncol,1:pver),dtau_s_snow(1:ncol,1:pver),                      &
          dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
     if (lradar_sim) sd_cs(lchnk) = sd_wk
-    call t_stopf("subsample_and_optics")
+    call t_stopf('cosp_subsample_and_optics')
     
-    ! ######################################################################################
-    ! Call COSP
-    ! ######################################################################################
-    call t_startf("cosp_simulator")
+    ! Call COSP and check status
+    call t_startf('cosp_simulator')
     cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.)
 
     ! Check status flags
@@ -1765,7 +1758,7 @@ CONTAINS
     if (nerror > 0) then
        call endrun('cospsimulator_intr_run: error return from cosp_simulator')
     end if
-    call t_stopf("cosp_simulator")
+    call t_stopf('cosp_simulator')
   
     ! Write COSP inputs to output file for offline use.
     if (cosp_histfile_aux) then
@@ -1773,6 +1766,7 @@ CONTAINS
        call cosp_histfile_aux_out(state, cospstateIN, cospIN)
        call t_stopf("cosp_histfile_aux")
     end if
+
     ! Set dark-scenes to fill value. Only done for passive simulators and when cosp_runall=F
     ! TODO: revisit this! We should NOT have to do this here! The simulators
     ! should be masking night values for us.
@@ -1788,15 +1782,11 @@ CONTAINS
     call t_stopf('cosp_write_outputs')
 
     ! Clean up
-    call t_startf("destroy_cospIN")
+    call t_startf('cosp_finalize')
     call destroy_cospIN(cospIN)
-    call t_stopf("destroy_cospIN")
-    call t_startf("destroy_cospstateIN")
     call destroy_cospstateIN(cospstateIN)
-    call t_stopf("destroy_cospstateIN")
-    call t_startf("destroy_cospOUT")
     call destroy_cosp_outputs(cospOUT) 
-    call t_stopf("destroy_cospOUT")
+    call t_stopf('cosp_finalize')
 #endif /* USE_COSP */
   end subroutine cospsimulator_intr_run
 
@@ -1904,6 +1894,7 @@ CONTAINS
       integer :: ncol, lchnk
       integer :: i,k,ip,it,ipt,ih,id,ihd,is,ihs,isc,ihsc,ihm,ihmt,ihml,itim_old,ifld 
       ! Local copies of output variables
+      ! TODO: these should not be necessary; remove.
       real(r8) :: clisccp2(pcols,ntau_cosp,nprs_cosp)      ! clisccp2 (time,tau,plev,profile)
       real(r8) :: cfad_dbze94(pcols,CLOUDSAT_DBZE_BINS,nht_cosp)   ! cfad_dbze94 (time,height,dbze,profile)
       real(r8) :: cfad_lidarsr532(pcols,nsr_cosp,nht_cosp) ! cfad_lidarsr532 (time,height,scat_ratio,profile)
