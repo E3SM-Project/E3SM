@@ -1767,110 +1767,27 @@ CONTAINS
     end if
     call t_stopf("cosp_simulator")
   
-    ! ######################################################################################
     ! Write COSP inputs to output file for offline use.
-    ! ######################################################################################
     if (cosp_histfile_aux) then
        call t_startf("cosp_histfile_aux")
        call cosp_histfile_aux_out(state, cospstateIN, cospIN)
        call t_stopf("cosp_histfile_aux")
     end if
-    ! ######################################################################################
     ! Set dark-scenes to fill value. Only done for passive simulators and when cosp_runall=F
-    ! ######################################################################################
-    call t_startf("sunlit_passive")
+    ! TODO: revisit this! We should NOT have to do this here! The simulators
+    ! should be masking night values for us.
     if (.not. cosp_runall) then
-       ! ISCCP simulator
-       if (lisccp_sim) then
-          ! 1D
-          where(cam_sunlit(1:ncol) .eq. 0)
-             cospOUT%isccp_totalcldarea(1:ncol)  = R_UNDEF
-             cospOUT%isccp_meanptop(1:ncol)      = R_UNDEF
-             cospOUT%isccp_meantaucld(1:ncol)    = R_UNDEF
-             cospOUT%isccp_meanalbedocld(1:ncol) = R_UNDEF
-             cospOUT%isccp_meantb(1:ncol)        = R_UNDEF
-             cospOUT%isccp_meantbclr(1:ncol)     = R_UNDEF
-          end where
-          ! 2D
-          do i=1,nscol_cosp
-             where (cam_sunlit(1:ncol) .eq. 0)
-                cospOUT%isccp_boxtau(1:ncol,i)  = R_UNDEF
-                cospOUT%isccp_boxptop(1:ncol,i) = R_UNDEF
-             end where
-          enddo
-          ! 3D
-          do i=1,nprs_cosp
-             do k=1,ntau_cosp
-                where(cam_sunlit(1:ncol) .eq. 0)
-                   cospOUT%isccp_fq(1:ncol,k,i) = R_UNDEF
-                end where
-             end do
-          end do
-       endif
-
-       ! MISR simulator
-       if (lmisr_sim) then
-          do i=1,nhtmisr_cosp
-             do k=1,ntau_cosp
-                where(cam_sunlit(1:ncol) .eq. 0)
-                   cospOUT%misr_fq(1:ncol,k,i) = R_UNDEF
-                end where
-             end do
-          end do
-       end if
-
-       ! MODIS simulator
-       if (lmodis_sim) then
-          ! 1D
-          where(cam_sunlit(1:ncol) .eq. 0)
-             cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol)       = R_UNDEF
-             cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol)       = R_UNDEF
-             cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol)         = R_UNDEF
-             cospOUT%modis_Cloud_Fraction_High_Mean(1:ncol)        = R_UNDEF
-             cospOUT%modis_Cloud_Fraction_Mid_Mean(1:ncol)         = R_UNDEF
-             cospOUT%modis_Cloud_Fraction_Low_Mean(1:ncol)         = R_UNDEF
-             cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol)    = R_UNDEF
-             cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol)    = R_UNDEF
-             cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol)      = R_UNDEF
-             cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol) = R_UNDEF
-             cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol) = R_UNDEF
-             cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol)   = R_UNDEF
-             cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol)  = R_UNDEF
-             cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol)    = R_UNDEF
-             cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol)   = R_UNDEF
-             cospOUT%modis_Liquid_Water_Path_Mean(1:ncol)          = R_UNDEF
-             cospOUT%modis_Ice_Water_Path_Mean(1:ncol)             = R_UNDEF
-          endwhere
-          ! 3D
-          do i=1,ntau_cosp_modis
-             do k=1,nprs_cosp
-                where(cam_sunlit(1:ncol) .eq. 0)
-                   cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,i,k) = R_UNDEF 
-                end where
-             enddo
-             do k=1,numMODISReffIceBins
-                where(cam_sunlit(1:ncol) .eq. 0)
-                   cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,i,k) = R_UNDEF
-                end where
-             end do
-             do k=1,numMODISReffLiqBins
-                where(cam_sunlit(1:ncol) .eq. 0)
-                   cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,i,k) = R_UNDEF
-                end where
-             enddo
-          enddo
-       end if
+       call t_startf('cosp_remask_passive')
+       call cosp_remask_passive(cospstateIN, cospOUT)
+       call t_stopf('cosp_remask_passive')
     end if
-    call t_stopf("sunlit_passive")
 
     ! Write COSP outputs to history files
     call t_startf('cosp_write_outputs')
     call cosp_write_outputs(state, cospIN, cospOUT)
     call t_stopf('cosp_write_outputs')
 
-    ! ######################################################################################
     ! Clean up
-    ! ######################################################################################
     call t_startf("destroy_cospIN")
     call destroy_cospIN(cospIN)
     call t_stopf("destroy_cospIN")
@@ -1880,10 +1797,100 @@ CONTAINS
     call t_startf("destroy_cospOUT")
     call destroy_cosp_outputs(cospOUT) 
     call t_stopf("destroy_cospOUT")
-    
-
-#endif
+#endif /* USE_COSP */
   end subroutine cospsimulator_intr_run
+
+#ifdef USE_COSP
+   ! Remask passive simulator output after call to COSP. This should NOT be necessary, and if it is
+   ! we need to look into the version of COSP we are using and probably update. I've pushed some
+   ! PRs to the COSP repo to fix this stuff in the past, so I think we are probably using a really
+   ! old version of COSP here that does not include those fixes.
+   ! TODO: revisit this
+   subroutine cosp_remask_passive(cospstateIN, cospOUT)
+      use mod_cosp, only: cosp_column_inputs, cosp_outputs
+      type(cosp_column_inputs), intent(in) :: cospstateIN
+      type(cosp_outputs), intent(in) :: cospOUT
+      integer :: ncol, i, k
+
+      ncol = size(cospstateIN%sunlit)
+
+      ! ISCCP simulator
+      if (lisccp_sim) then
+         where(cospstateIN%sunlit(1:ncol) .eq. 0)
+            cospOUT%isccp_totalcldarea(1:ncol)  = R_UNDEF
+            cospOUT%isccp_meanptop(1:ncol)      = R_UNDEF
+            cospOUT%isccp_meantaucld(1:ncol)    = R_UNDEF
+            cospOUT%isccp_meanalbedocld(1:ncol) = R_UNDEF
+            cospOUT%isccp_meantb(1:ncol)        = R_UNDEF
+            cospOUT%isccp_meantbclr(1:ncol)     = R_UNDEF
+         end where
+         do i=1,nscol_cosp
+            where (cospstateIN%sunlit(1:ncol) .eq. 0)
+               cospOUT%isccp_boxtau(1:ncol,i)  = R_UNDEF
+               cospOUT%isccp_boxptop(1:ncol,i) = R_UNDEF
+            end where
+         end do
+         do i=1,nprs_cosp
+            do k=1,ntau_cosp
+               where(cospstateIN%sunlit(1:ncol) .eq. 0)
+                  cospOUT%isccp_fq(1:ncol,k,i) = R_UNDEF
+               end where
+            end do
+         end do
+      end if
+
+      ! MISR simulator
+      if (lmisr_sim) then
+         do i=1,nhtmisr_cosp
+            do k=1,ntau_cosp
+               where(cospstateIN%sunlit(1:ncol) .eq. 0)
+                  cospOUT%misr_fq(1:ncol,k,i) = R_UNDEF
+               end where
+            end do
+         end do
+      end if
+
+      ! MODIS simulator
+      if (lmodis_sim) then
+         where(cospstateIN%sunlit(1:ncol) .eq. 0)
+            cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol)       = R_UNDEF
+            cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol)       = R_UNDEF
+            cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol)         = R_UNDEF
+            cospOUT%modis_Cloud_Fraction_High_Mean(1:ncol)        = R_UNDEF
+            cospOUT%modis_Cloud_Fraction_Mid_Mean(1:ncol)         = R_UNDEF
+            cospOUT%modis_Cloud_Fraction_Low_Mean(1:ncol)         = R_UNDEF
+            cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol)    = R_UNDEF
+            cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol)    = R_UNDEF
+            cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol)      = R_UNDEF
+            cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol) = R_UNDEF
+            cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol) = R_UNDEF
+            cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol)   = R_UNDEF
+            cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol)  = R_UNDEF
+            cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol)    = R_UNDEF
+            cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol)   = R_UNDEF
+            cospOUT%modis_Liquid_Water_Path_Mean(1:ncol)          = R_UNDEF
+            cospOUT%modis_Ice_Water_Path_Mean(1:ncol)             = R_UNDEF
+         end where
+         do i=1,ntau_cosp_modis
+            do k=1,nprs_cosp
+               where(cospstateIN%sunlit(1:ncol) .eq. 0)
+                  cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,i,k) = R_UNDEF 
+               end where
+            end do
+            do k=1,numMODISReffIceBins
+               where(cospstateIN%sunlit(1:ncol) .eq. 0)
+                  cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,i,k) = R_UNDEF
+               end where
+            end do
+            do k=1,numMODISReffLiqBins
+               where(cospstateIN%sunlit(1:ncol) .eq. 0)
+                  cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,i,k) = R_UNDEF
+               end where
+            end do
+         end do
+      end if
+   end subroutine cosp_remask_passive
+#endif
 
 #ifdef USE_COSP
    subroutine cosp_write_outputs(state, cospIN, cospOUT)
