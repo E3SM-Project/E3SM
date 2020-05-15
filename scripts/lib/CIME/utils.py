@@ -366,7 +366,7 @@ def check_for_python(filepath, funcname=None):
         has_function = False
         with open(filepath, 'r') as fd:
             for line in fd.readlines():
-                if re.search(r"^def\s*{}\(".format(funcname), line) or re.search(r"^from.*import.*\s{}".format(funcname), line):
+                if re.search(r"^def\s+{}\(".format(funcname), line) or re.search(r"^from.+import.+\s{}".format(funcname), line):
                     has_function = True
                     break
 
