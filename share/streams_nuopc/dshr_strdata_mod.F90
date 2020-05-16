@@ -1,4 +1,5 @@
 module dshr_strdata_mod
+
   ! holds data and methods to advance data models
   ! Obtain the model domain and the stream domain for each stream
 
@@ -85,10 +86,11 @@ module dshr_strdata_mod
      type(ESMF_RouteHandle)              :: routehandle               ! stream n -> model mesh mapping
 
      ! field bundles
-     type(ESMF_FieldBundle)              :: fldbun_stream_input_lb    ! stream input n field bundle for lb of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_stream_input_ub    ! stream input n field bundle for ub of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_stream_model_lb    ! stream n field bundle for lb of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_stream_model_ub    ! stream n field bundle for ub of time period (stream grid)
+     ! note that the fields in fldbun_stream_lb and fldbun_stream_ub contain the the names fldlist_model
+     character(CS), allocatable          :: fldlist_stream(:)         ! names of fields read in from stream
+     character(CS), allocatable          :: fldlist_model(:)          ! names of fields in model (1/1 correspondence with fldlist_stream)
+     type(ESMF_FieldBundle)              :: fldbun_stream_lb          ! stream n field bundle for lb of time period (stream grid)
+     type(ESMF_FieldBundle)              :: fldbun_stream_ub          ! stream n field bundle for ub of time period (stream grid)
      type(ESMF_FieldBundle)              :: fldbun_model_lb           ! stream n field bundle for lb of time period (model grid)
      type(ESMF_FieldBundle)              :: fldbun_model_ub           ! stream n field bundle for ub of time period (model grid)
      type(ESMF_FieldBundle)              :: fldbun_model              ! stream n field bundle for model time (model grid)
@@ -448,8 +450,6 @@ contains
     integer                 :: n,m,k           ! generic index
     character(CL)           :: fileName        ! generic file name
     integer                 :: nfiles          ! number of data files for a given stream
-    character(CS), allocatable :: fldList_stream(:)  ! list of fields in stream
-    character(CS), allocatable :: fldList_model(:)   ! list of fields in model
     character(CS)           :: uname           ! u vector field name
     character(CS)           :: vname           ! v vector field name
     integer                 :: nu, nv          ! vector indices
@@ -498,13 +498,15 @@ contains
        sdat%pstrm(ns)%stream_mesh = ESMF_MeshCreate(trim(filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       ! Determine field name string for stream fields with model names
+       ! Determine field names for stream fields with both stream file names and data model names
        nvars = sdat%stream(ns)%nvars
-       allocate(fldList_model(nvars), fldList_stream(nvars))
-       call shr_stream_getModelFieldList(sdat%stream(ns), fldList_model)
-
-       ! Determine field name string for stream fields with stream names
-       call shr_stream_getStreamFieldList(sdat%stream(ns), fldList_stream)
+       allocate(sdat%pstrm(ns)%fldList_model(nvars))
+       call shr_stream_getModelFieldList(sdat%stream(ns), sdat%pstrm(ns)%fldlist_model)
+       allocate(sdat%pstrm(ns)%fldlist_stream(nvars))
+       call shr_stream_getStreamFieldList(sdat%stream(ns), sdat%pstrm(ns)%fldlist_stream)
+       write(6,*)'DEBUG: ns = ',ns
+       write(6,*)'DEBUG: ns,fldlist_stream= ',ns,sdat%pstrm(ns)%fldlist_stream(:)
+       write(6,*)'DEBUG: ns,fldlist_model=  ',ns,sdat%pstrm(ns)%fldlist_model(:)
 
        ! Create field bundles on model mesh
        sdat%pstrm(ns)%fldbun_model_lb = ESMF_FieldBundleCreate(rc=rc) ! spatial interpolation to model mesh
@@ -512,72 +514,53 @@ contains
        sdat%pstrm(ns)%fldbun_model    = ESMF_FieldBundleCreate(rc=rc) ! time interpolation on model mesh
        do nfld = 1, nvars
           ! create temporary fields on model mesh and add the fields to the field bundle
-          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(fldList_model(nfld)), &
+          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(fldList_model(nfld)), &
+          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
           call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_model_lb, (/lfield/), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(fldList_model(nfld)), &
+          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
           call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_model_ub, (/lfield/), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(fldList_model(nfld)), &
+          lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
           call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_model   , (/lfield/), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end do
 
        ! Create field bundles on stream mesh but with fldlist_model names
-       sdat%pstrm(ns)%fldbun_stream_model_lb = ESMF_FieldBundleCreate(rc=rc) ! stream mesh at lower time bound
-       sdat%pstrm(ns)%fldbun_stream_model_ub = ESMF_FieldBundleCreate(rc=rc) ! stream mesh at upper time bound
+       sdat%pstrm(ns)%fldbun_stream_lb = ESMF_FieldBundleCreate(rc=rc) ! stream mesh at lower time bound
+       sdat%pstrm(ns)%fldbun_stream_ub = ESMF_FieldBundleCreate(rc=rc) ! stream mesh at upper time bound
        if (masterproc) then
           write(logunit,F00)' initializing fldbun_stream_model_lb and fldbun_stream_model_up on stream mesh'
        end if
        do nfld = 1, nvars
           ! create temporary fields on stream mesh and add the fields to the field bundle
-          lfield = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name=trim(fldlist_model(nfld)), &
+          lfield = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_stream_model_lb, (/lfield/), rc=rc)
+          call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_stream_lb, (/lfield/), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-          lfield = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name=trim(fldlist_model(nfld)), &
+          lfield = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_stream_model_ub, (/lfield/), rc=rc)
+          call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_stream_ub, (/lfield/), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           if (masterproc) then
-             write(logunit,F00)' adding field '//trim(fldlist_model(nfld))//&
-                  ' to fldbun_stream_model_lb and fldbun_stream_model_ub'
+             write(logunit,F00)' adding field '//trim(sdat%pstrm(ns)%fldlist_model(nfld))//&
+                  ' to fldbun_stream_lb and fldbun_stream_ub'
           end if
        end do ! end of loop over streams (ns)
 
-       ! Create field bundles on stream mesh but with fldlist_stream input file names
-       sdat%pstrm(ns)%fldbun_stream_input_lb = ESMF_FieldBundleCreate(rc=rc)
-       sdat%pstrm(ns)%fldbun_stream_input_ub = ESMF_FieldBundleCreate(rc=rc)
-
-       do nfld = 1, nvars
-          ! create temporary fields on model mesh and add the fields to the field bundle
-          lfield = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name=trim(fldlist_stream(nfld)), &
-               meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_stream_input_lb, (/lfield/), rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-          lfield = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name=trim(fldlist_stream(nfld)), &
-               meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_stream_input_ub, (/lfield/), rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       end do
-
-       ! create a field for coszen time interpolation for this stream if needed
+       ! Create a field for coszen time interpolation for this stream if needed
        if (trim(sdat%stream(ns)%tinterpalgo) == 'coszen') then
           sdat%pstrm(ns)%field_coszen = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, ESMF_TYPEKIND_r8, name='tavCosz', &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
@@ -595,7 +578,7 @@ contains
        ! TODO: Determine if mask was reset - and if so if the masks are the same - if they are not do the bilinear
        ! interpolation below -
 
-       call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_stream_model_lb, 1, lfield_src, rc=rc)
+       call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_stream_lb, 1, lfield_src, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_model_lb, 1, lfield_dst, rc=rc)
@@ -610,9 +593,6 @@ contains
            dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       if (allocated(fldList_model)) then
-          deallocate(fldList_model, fldList_stream)
-       endif
 
     end do ! end of loop over streams
 
@@ -644,9 +624,9 @@ contains
        nu = 0
        nv = 0
        do ns = 1,sdat%nstreams
-          if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_stream_model_lb, trim(uname), rc=rc)) nu = n
+          if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_stream_lb, trim(uname), rc=rc)) nu = n
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_stream_model_lb, trim(vname), rc=rc)) nv = n
+          if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_stream_lb, trim(vname), rc=rc)) nv = n
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        enddo
 
@@ -843,10 +823,8 @@ contains
     real(r8)                            :: coslon, coslat
     real(r8)                            :: ux, uy
     logical                             :: checkflag = .false.
-    integer                             :: fieldCount
     integer                             :: npes
     integer                             :: my_task
-    character(ESMF_MAXSTR), allocatable :: fieldNameList(:)
     real(r8)         ,parameter         :: solZenMin = 0.001_r8 ! minimum solar zenith angle
     integer          ,parameter         :: tadj = 2
     character(len=*) ,parameter         :: timname = "_strd_adv"
@@ -924,7 +902,7 @@ contains
 
           ! ---------------------------------------------------------
           ! Determine if new data is read in - if so then copy
-          ! fldbun_stream_model_ub to fldbun_stream_model_lb and read in new fldbun_stream_model_ub data
+          ! fldbun_stream_ub to fldbun_stream_lb and read in new fldbun_stream_ub data
           ! ---------------------------------------------------------
 
           call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
@@ -933,10 +911,9 @@ contains
           select case(sdat%stream(ns)%readmode)
           case ('single')
              call shr_strdata_readLBUB(sdat%mpicom, sdat%my_task, sdat%stream(ns), sdat%pstrm(ns)%stream_mesh, &
-                  sdat%pstrm(ns)%fldbun_stream_input_lb, sdat%pstrm(ns)%fldbun_stream_input_ub, &
-                  sdat%pstrm(ns)%fldbun_stream_model_lb, sdat%pstrm(ns)%fldbun_stream_model_ub, &
-                  sdat%pio_subsystem, sdat%io_type, &
-                  sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, &
+                  sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
+                  sdat%pstrm(ns)%fldbun_stream_lb, sdat%pstrm(ns)%fldbun_stream_ub, &
+                  sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, &
                   ymdmod(ns), todmod, sdat%pstrm(ns)%ymdLB, sdat%pstrm(ns)%todLB, &
                   sdat%pstrm(ns)%ymdUB, sdat%pstrm(ns)%todUB, &
                   newData(ns), trim(lstr)//'_readLBUB', rc=rc)
@@ -983,17 +960,17 @@ contains
              ! If new data was read in, spatially interpolate the lower and upper bound data to the model grid
              call t_startf(trim(lstr)//trim(timname)//'_map')
              if (debug > 0) then
-                call dshr_fldbun_diagnose(sdat%pstrm(ns)%fldbun_stream_model_lb, subname//':fldbun_stream_model_lb',rc=rc)
+                call dshr_fldbun_diagnose(sdat%pstrm(ns)%fldbun_stream_lb, subname//':fldbun_stream_lb',rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_diagnose(sdat%pstrm(ns)%fldbun_stream_model_ub, subname//':fldbun_stream_model_ub',rc=rc)
+                call dshr_fldbun_diagnose(sdat%pstrm(ns)%fldbun_stream_ub, subname//':fldbun_stream_ub',rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
              endif
 
              ! regrid
-             call dshr_fldbun_regrid(sdat%pstrm(ns)%fldbun_stream_model_lb, sdat%pstrm(ns)%fldbun_model_lb, &
+             call dshr_fldbun_regrid(sdat%pstrm(ns)%fldbun_stream_lb, sdat%pstrm(ns)%fldbun_model_lb, &
                   sdat%pstrm(ns)%routehandle, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_regrid(sdat%pstrm(ns)%fldbun_stream_model_ub, sdat%pstrm(ns)%fldbun_model_ub, &
+             call dshr_fldbun_regrid(sdat%pstrm(ns)%fldbun_stream_ub, sdat%pstrm(ns)%fldbun_model_ub, &
                   sdat%pstrm(ns)%routehandle, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1057,13 +1034,13 @@ contains
              call shr_string_listGetName(sdat%pstrm(m)%stream_vectors, 2, vname)
 
              ! map lower bs: rotate source data, regrid, then rotate back
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_model_lb, trim(uname), data_u_src, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_lb, trim(uname), data_u_src, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_model_lb, trim(uname), data_u_dst, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_lb, trim(uname), data_u_dst, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_model_lb, trim(vname), data_v_src, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_lb, trim(vname), data_v_src, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_model_lb, trim(vname), data_v_dst, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_lb, trim(vname), data_v_dst, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              do i = 1,size(data_u_src)
                 lon = nu_coords(2*i-1)
@@ -1088,13 +1065,13 @@ contains
              enddo
 
              ! map upper bs: rotate source data, regrid, then rotate back
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_model_ub, trim(uname), data_u_src, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_ub, trim(uname), data_u_src, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_model_ub, trim(uname), data_u_dst, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_stream_ub, trim(uname), data_u_dst, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_model_ub, trim(vname), data_v_src, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_ub, trim(vname), data_v_src, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_model_ub, trim(vname), data_v_dst, rc=rc)
+             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_stream_ub, trim(vname), data_v_dst, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              do i = 1,size(data_u_src)
                 lon = nu_coords(2*i-1)
@@ -1132,15 +1109,6 @@ contains
 
        do ns = 1,sdat%nstreams
 
-          ! Get field namelist
-          call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
-               call ESMF_Finalize(endflag=ESMF_END_ABORT)
-          allocate(fieldnamelist(fieldCount))
-          call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=fieldnamelist, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
-               call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
           if (trim(sdat%stream(ns)%tinterpalgo) == 'coszen') then
 
              ! ------------------------------------------
@@ -1171,10 +1139,10 @@ contains
              endif
 
              ! compute time interperpolate value - LB data normalized with this factor: cosz/tavCosz
-             do nf = 1,fieldcount
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , fieldNameList(nf), dataptr   , rc=rc)
+             do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , sdat%pstrm(ns)%fldlist_model(nf), dataptr   , rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_lb, fieldNameList(nf), dataptr_lb, rc=rc)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_lb, sdat%pstrm(ns)%fldlist_model(nf), dataptr_lb, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 do i = 1,lsize
                    if (coszen(i) > solZenMin) then
@@ -1202,12 +1170,12 @@ contains
                 write(logunit,F01) trim(subname),' interp = ',ns,flb,fub
              endif
 
-             do nf = 1,fieldcount
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , fieldNameList(nf), dataptr   , rc=rc)
+             do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , sdat%pstrm(ns)%fldlist_model(nf), dataptr   , rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_lb, fieldNameList(nf), dataptr_lb, rc=rc)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_lb, sdat%pstrm(ns)%fldlist_model(nf), dataptr_lb, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_ub, fieldNameList(nf), dataptr_ub, rc=rc)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_ub, sdat%pstrm(ns)%fldlist_model(nf), dataptr_ub, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 dataptr(:) = dataptr_lb(:) * flb + dataptr_ub(:) * fub
              end do
@@ -1220,8 +1188,8 @@ contains
              ! ------------------------------------------
 
              call t_startf(trim(lstr)//trim(timname)//'_zero')
-             do nf = 1,fieldcount
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model, fieldNameList(nf), dataptr, rc=rc)
+             do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model, sdat%pstrm(ns)%fldlist_model(nf), dataptr, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 dataptr(:) = 0._r8
              end do
@@ -1229,7 +1197,6 @@ contains
 
           endif
 
-          deallocate(fieldNameList)
        end do  ! loop over ns (number of streams)
 
        deallocate(newData)
@@ -1516,8 +1483,7 @@ contains
   !===============================================================================
 
   subroutine shr_strdata_readLBUB(mpicom, my_task, stream, stream_mesh, &
-       fldbun_stream_input_lb, fldbun_stream_input_ub, &
-       fldbun_stream_model_lb, fldbun_stream_model_ub, &
+       fldlist_stream, fldlist_model, fldbun_stream_lb, fldbun_stream_ub, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, &
        mDate, mSec, mDateLB, mSecLB, mDateUB, mSecUB, newData, istr, rc)
 
@@ -1530,10 +1496,10 @@ contains
     integer                       ,intent(in)    :: my_task
     type(shr_stream_streamType)   ,intent(inout) :: stream
     type(ESMF_Mesh)               ,intent(in)    :: stream_mesh
-    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_input_lb
-    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_input_ub
-    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_model_lb
-    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_model_ub
+    character(len=*)              ,intent(in)    :: fldlist_stream(:)  
+    character(len=*)              ,intent(in)    :: fldlist_model(:)  
+    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_lb
+    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_ub
     type(iosystem_desc_t), target ,intent(inout) :: pio_subsystem
     integer                       ,intent(in)    :: pio_iotype
     logical                       ,intent(inout) :: pio_iodesc_set
@@ -1560,8 +1526,6 @@ contains
     character(CL)                       :: filename_prev
     real(r8), pointer                   :: dataptr_lb(:)
     real(r8), pointer                   :: dataptr_ub(:)
-    integer                             :: fieldcount
-    character(ESMF_MAXSTR), allocatable :: fieldNameList(:)
     character(*), parameter             :: subname = '(shr_strdata_readLBUB) '
     character(*), parameter             :: F00   = "('(shr_strdata_readLBUB) ',8a)"
     character(*), parameter             :: F01   = "('(shr_strdata_readLBUB) ',a,5i8)"
@@ -1613,26 +1577,20 @@ contains
     if (mDateLB /= oDateLB .or. mSecLB /= oSecLB) then
        newdata = .true.
        if (mDateLB == oDateUB .and. mSecLB == oSecUB) then
-          ! copy fldbun_stream_model_ub to fldbun_stream_model_lb
+          ! copy fldbun_stream_ub to fldbun_stream_lb
           call t_startf(trim(istr)//'_LB_copy')
-          call ESMF_FieldBundleGet(fldbun_stream_model_ub, fieldCount=fieldCount, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          allocate(fieldNameList(fieldCount))
-          call ESMF_FieldBundleGet(fldbun_stream_model_ub, fieldNameList=fieldNameList, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          do nf = 1,fieldCount
-             call dshr_fldbun_getfldptr(fldbun_stream_model_ub, trim(fieldnamelist(nf)), fldptr1=dataptr_ub, rc=rc)
+          do nf = 1,size(fldlist_stream)
+             call dshr_fldbun_getfldptr(fldbun_stream_ub, trim(fldlist_stream(nf)), fldptr1=dataptr_ub, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getfldptr(fldbun_stream_model_lb, trim(fieldnamelist(nf)), fldptr1=dataptr_lb, rc=rc)
+             call dshr_fldbun_getfldptr(fldbun_stream_lb, trim(fldlist_stream(nf)), fldptr1=dataptr_lb, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              dataptr_lb(:) = dataptr_ub(:)
           end do
-          deallocate(fieldNameList)
           call t_stopf(trim(istr)//'_LB_copy')
        else
           ! read lower bound of data
           call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
-               fldbun_stream_input_lb, fldbun_stream_model_lb, &
+               fldlist_stream, fldlist_model, fldbun_stream_lb, &
                pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, filename_lb, n_lb, &
                istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -1642,9 +1600,9 @@ contains
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
        call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
-            fldbun_stream_input_ub, fldbun_stream_model_ub, &
+            fldlist_stream, fldlist_model, fldbun_stream_ub, &
             pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, filename_ub, n_ub, &
-            istr=trim(istr)//'_UB', boundstr='ub', debug_flag=.true., rc=rc)
+            istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -1665,9 +1623,9 @@ contains
 
   !===============================================================================
   subroutine shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
-       fldbun_stream_input, fldbun_stream_model, &
+       fldlist_stream, fldlist_model, fldbun_stream, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, &
-       filename, nt, istr, boundstr, debug_flag, rc)
+       filename, nt, istr, boundstr, rc)
 
     ! Read the stream data and initialize the strea pio_iodesc the first time
     ! the stream is read
@@ -1677,8 +1635,9 @@ contains
     integer                     , intent(in)            :: my_task
     type(shr_stream_streamType) , intent(inout)         :: stream
     type(ESMF_Mesh)             , intent(in)            :: stream_mesh
-    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream_input ! field bundle stream with file fieldnames
-    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream_model ! field bundle stream with model fieldnames
+    character(len=*)            , intent(in)            :: fldlist_stream(:)
+    character(len=*)            , intent(in)            :: fldlist_model(:)
+    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream 
     type(iosystem_desc_t)       , intent(inout), target :: pio_subsystem
     integer                     , intent(in)            :: pio_iotype
     logical                     , intent(inout)         :: pio_iodesc_set
@@ -1687,7 +1646,6 @@ contains
     integer                     , intent(in)            :: nt
     character(len=*)            , intent(in)            :: istr
     character(len=*)            , intent(in)            :: boundstr
-    logical, optional           , intent(in)            :: debug_flag
     integer                     , intent(out)           :: rc
 
     ! local variables
@@ -1699,17 +1657,9 @@ contains
     integer(kind=pio_offset_kind) :: frame
     integer                       :: nf
     integer                       :: rCode
-    integer                       :: fieldcount
-    real(r8), pointer             :: dataptr_stream_input(:)
-    real(r8), pointer             :: dataptr_stream_model(:)
-    character(CL)                 :: fldname_stream_input
-    character(CL)                 :: fldname_stream_model
-    character(CL), allocatable    :: fieldnameList_stream_input(:)
-    character(cl), allocatable    :: fieldnameList_stream_model(:)
-    logical                       :: first_time = .true.
     real(r4), allocatable         :: data_real(:)
+    real(r8), pointer             :: dataptr(:)
     integer                       :: lsize
-    integer                       :: n
     character(*), parameter       :: subname = '(shr_strdata_readstrm) '
     character(*), parameter       :: F00   = "('(shr_strdata_readstrm) ',8a)"
     character(*), parameter       :: F02   = "('(shr_strdata_readstrm) ',2a,i8)"
@@ -1742,71 +1692,42 @@ contains
        call shr_stream_setCurrFile(stream, fileopen=.true., currfile=trim(filename), currpioid=pioid)
     endif
 
-    ! Always use pio to read in stream data
-    call t_startf(trim(istr)//'_readpio')
-    if (my_task == master_task) then
-       write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
-    endif
-
-    ! Determine the number of fields in fldbun_stream_input and fldbun_model_input (they are the same)
-    call ESMF_FieldBundleGet(fldbun_stream_input, fieldCount=fieldCount, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine the field names in the fldbun_stream_input
-    allocate(fieldNameList_stream_input(fieldCount))
-    call ESMF_FieldBundleGet(fldbun_stream_input, fieldNameList=fieldnameList_stream_input, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine the field names in the fldbun_stream_model
-    allocate(fieldNameList_stream_model(fieldCount))
-    call ESMF_FieldBundleGet(fldbun_stream_model, fieldNameList=fieldnameList_stream_model, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
     ! ******************************************************************************
     ! Determine the pio io descriptor for the stream from the first data field in the stream
     ! ******************************************************************************
 
     if (.not. pio_iodesc_set) then
-       call shr_strdata_set_stream_iodesc(pio_subsystem, pioid, &
-            trim(fieldnamelist_stream_input(1)), stream_mesh, pio_iodesc, rc=rc)
+       call shr_strdata_set_stream_iodesc(pio_subsystem, pioid, trim(fldlist_stream(1)), stream_mesh, pio_iodesc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-
        pio_iodesc_set = .true.
     end if
 
     ! ******************************************************************************
-    ! Read in the stream data into fldbun_stream_input and fill in the values for fldbun_stream_model
+    ! Read in the stream data for field names in fldname_stream_input - but fill in 
+    ! the data for fldbun_stream with the field names fldname_stream_model
     ! ******************************************************************************
 
+    call t_startf(trim(istr)//'_readpio')
+    if (my_task == master_task) then
+       write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
+    endif
     call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    do nf = 1,fieldCount
-       fldname_stream_input = trim(fieldnamelist_stream_input(nf))
-       fldname_stream_model = trim(fieldnamelist_stream_model(nf))
-
-       ! set pointers into field bundles
-       ! call dshr_fldbun_getfldptr(fldbun_stream_input, trim(fldname_stream_input), fldptr1=dataptr_stream_input, rc=rc)
-       ! if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_fldbun_getfldptr(fldbun_stream_model, trim(fldname_stream_model), fldptr1=dataptr_stream_model, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       rcode = pio_inq_varid(pioid, trim(fldname_stream_input), varid) ! get varid of field nf in input stream file
+    do nf = 1,size(fldlist_stream)
+       rcode = pio_inq_varid(pioid, trim(fldlist_stream(nf)), varid)
        frame = nt ! set frame to time index
        call pio_setframe(pioid, varid, int(nt,kind=Pio_Offset_Kind))
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-
-       lsize = size(dataptr_stream_model)
+       call dshr_fldbun_getfldptr(fldbun_stream, trim(fldlist_model(nf)), fldptr1=dataptr, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       lsize = size(dataptr)
        allocate(data_real(lsize))
        call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
        if ( rcode /= PIO_NOERR ) then
-          call shr_sys_abort(' ERROR: reading in variable: '// trim(fldname_stream_input))
+          call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
        end if
-       dataptr_stream_model(:) = real(data_real(:), kind=r8)
+       dataptr(:) = real(data_real(:), kind=r8)
        deallocate(data_real)
     enddo
-
-    deallocate(fieldnameList_stream_input)
-    deallocate(fieldnameList_stream_model)
-
     call t_stopf(trim(istr)//'_readpio')
 
   end subroutine shr_strdata_readstrm
