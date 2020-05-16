@@ -23,13 +23,11 @@ def buildlib(case, libroot, bldroot, compname=None):
             compname = dir2
         else:
             compname = dir1.split('.')[1]
-    print("hello world")
     build_cime_component_lib(case, compname, libroot, bldroot)
 
 def _main_func(args):
     caseroot, libroot, bldroot = parse_input(args)
     with Case(caseroot) as case:
-        print("hello world main func")
         buildlib(case, libroot, bldroot)
 
 if __name__ == "__main__":

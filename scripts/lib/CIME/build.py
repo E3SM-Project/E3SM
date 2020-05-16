@@ -168,7 +168,6 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
     gmake_j    = case.get_value("GMAKE_J")
     gmake      = case.get_value("GMAKE")
 
-    logger.info("wpc0cmake. Building {} with output to {}".format(complist, buildlist))
     # make sure bldroot and libroot exist
     for build_dir in [bldroot, libroot]:
         if not os.path.exists(build_dir):
@@ -411,7 +410,6 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
                         thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
-    logger.info("wpc1. Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
     cmd = os.path.join(caseroot, "SourceMods", "src." + compname, "buildlib")
     if os.path.isfile(cmd):
@@ -424,17 +422,11 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         format(compclass=compclass, compname=compname, cmd=cmd, caseroot=caseroot, libroot=libroot, bldroot=bldroot)
     if get_model() != "ufs":
         compile_cmd = "SMP={} {}".format(stringify_bool(smp), compile_cmd)
-    logger.info("wpc2. cmd is {} with compile_cmd is {}".format(cmd, compile_cmd))
-    helpfile2 = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
-    #logger = logging.getLogger(__name__)
-    logger.info("wpc3. helpfile for --debug flag is file {}. logger.getEffectLevel() is {} ".format(helpfile2, logger.getEffectiveLevel()))
+
     if (check_for_python(cmd)):
-        logger.info("wpc5. logger is {}. logger.getEffectLevel() is {} ".format(logger, logger.getEffectiveLevel()))
         if (logger.getEffectiveLevel() == 10):
             compile_cmd = compile_cmd + "--debug"
-        
-    else:
-        logger.info("wpc6. logger is {}. logger.getEffectLevel() is {} ".format(logger, logger.getEffectiveLevel()))
+
     with open(file_build, "w") as fd:
         stat = run_cmd(compile_cmd,
                        from_dir=bldroot,  arg_stdout=fd,

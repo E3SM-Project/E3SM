@@ -69,10 +69,6 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
     with open(os.path.join(confdir, "CCSM_cppdefs"), "w") as out:
         out.write("")
 
-    helpfile2 = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
-    #logger = logging.getLogger(__name__)
-    logger.info("wpc4.buildlib.py helpfile for --debug flag is file {}. logger.getEffectLevel() is {} ".format(helpfile2, logger.getEffectiveLevel()))
-    
     # Build the component
     if get_model() != "e3sm" or use_old:
         safe_copy(os.path.join(confdir, "Filepath"), bldroot)

@@ -384,7 +384,11 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
 
     # Before attempting to load the script make sure it contains the subroutine
     # we are expecting
-    do_run_cmd = not check_for_python(cmd, subname)
+    with open(cmd, 'r') as fd:
+        for line in fd.readlines():
+            if re.search(r"^def {}\(".format(subname), line):
+                do_run_cmd = False
+                break
 
     if not do_run_cmd:
         try:
