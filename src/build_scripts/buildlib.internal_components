@@ -25,8 +25,6 @@ def buildlib(case, libroot, bldroot, compname=None):
             compname = dir2
         else:
             compname = dir1.split('.')[1]
-    
-    logger.debug("wpc7.buildlib HERE I AM logger.getEffectiveLevel() is {}. logger.getEffectLevel() is {} ".format(logger.getEffectiveLevel(), logger.getEffectiveLevel()))
     build_cime_component_lib(case, compname, libroot, bldroot)
 
 def _main_func(args):

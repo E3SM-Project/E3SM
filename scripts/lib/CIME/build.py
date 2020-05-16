@@ -425,9 +425,6 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
 
     if (check_for_python(cmd)):
         logging_options = get_logging_options()
-        logger.warn("wpc0.build.py get_logging_options() is {}. logger.getEffectLevel() is {} ".format(logging_options, logger.getEffectiveLevel()))
-        logger.debug("wpc3.build.py HERE I AM get_logging_options() is {}. logger.getEffectLevel() is {} ".format(logging_options, logger.getEffectiveLevel()))
-
         if (logging_options != ""):
             compile_cmd = compile_cmd + logging_options
 

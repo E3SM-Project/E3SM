@@ -1137,8 +1137,6 @@ def parse_args_and_handle_standard_logging_options(args, parser=None):
         root_logger.addHandler(debug_log_handler)
 
         root_logger.setLevel(logging.DEBUG)
-
-        logger.warn("wpc5.utils.py log_file is is {}. logger.getEffectLevel() is {} ".format(log_file, logger.getEffectiveLevel()))
     elif args.silent:
         root_logger.setLevel(logging.WARN)
     else:
