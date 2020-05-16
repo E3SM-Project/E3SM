@@ -359,9 +359,7 @@ _hack=object()
 
 def check_for_python(filepath, funcname=None):
     is_python = is_python_executable(filepath)
-
     has_function = True
-
     if funcname is not None:
         has_function = False
         with open(filepath, 'r') as fd:
