@@ -3,7 +3,7 @@ functions for building CIME models
 """
 import glob, shutil, time, threading, subprocess, imp
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
+from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy, check_for_python
 from CIME.provenance            import save_build_provenance as save_build_provenance_sub
 from CIME.locked_files          import lock_file, unlock_file
 
@@ -168,6 +168,7 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
     gmake_j    = case.get_value("GMAKE_J")
     gmake      = case.get_value("GMAKE")
 
+    logger.info("wpc0cmake. Building {} with output to {}".format(complist, buildlist))
     # make sure bldroot and libroot exist
     for build_dir in [bldroot, libroot]:
         if not os.path.exists(build_dir):
@@ -410,6 +411,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
                         thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
+    logger.info("wpc1. Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
     cmd = os.path.join(caseroot, "SourceMods", "src." + compname, "buildlib")
     if os.path.isfile(cmd):
@@ -422,7 +424,17 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         format(compclass=compclass, compname=compname, cmd=cmd, caseroot=caseroot, libroot=libroot, bldroot=bldroot)
     if get_model() != "ufs":
         compile_cmd = "SMP={} {}".format(stringify_bool(smp), compile_cmd)
-
+    logger.info("wpc2. cmd is {} with compile_cmd is {}".format(cmd, compile_cmd))
+    helpfile2 = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
+    #logger = logging.getLogger(__name__)
+    logger.info("wpc3. helpfile for --debug flag is file {}. logger.getEffectLevel() is {} ".format(helpfile2, logger.getEffectiveLevel()))
+    if (check_for_python(cmd)):
+        logger.info("wpc5. logger is {}. logger.getEffectLevel() is {} ".format(logger, logger.getEffectiveLevel()))
+        if (logger.getEffectiveLevel() == 10):
+            compile_cmd = compile_cmd + "--debug"
+        
+    else:
+        logger.info("wpc6. logger is {}. logger.getEffectLevel() is {} ".format(logger, logger.getEffectiveLevel()))
     with open(file_build, "w") as fd:
         stat = run_cmd(compile_cmd,
                        from_dir=bldroot,  arg_stdout=fd,
