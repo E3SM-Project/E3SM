@@ -61,8 +61,8 @@ contains
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
-    real(kind=c_real), intent(inout) :: q(pcols,pver,9)      ! State array  kg/kg
-    real(kind=c_real), intent(inout) :: T(pcols,pver)        ! 
+    real(kind=c_real), intent(inout) :: q(pcols,pver,qsize)  ! State array  kg/kg Pa
+    real(kind=c_real), intent(inout) :: T(pcols,pver)        !
     real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     ! 
     real(kind=c_real), intent(inout) :: pmid(pcols,pver)     ! 
     real(kind=c_real), intent(inout) :: pdel(pcols,pver)     ! 
@@ -76,7 +76,6 @@ contains
     logical(kind=c_bool) :: masterproc
 
     ! READ inputs from SCM for p3-stand-alone:
-    q(:,:,:) = 0.0_rtype
     open(unit=981,file='./data/p3_universal_constants.inp',status='old',action='read')
     read(981,'(A)') case_title
     read(981,'(2I8)') ncol, nlev
@@ -96,29 +95,19 @@ contains
     end do
     close(981)
 
-    !q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
-    !q(:,:,2) = 1.0e-6_rtype!state%q(:,:,ixcldliq)
-    !q(:,:,3) = 1.0e-7_rtype!state%q(:,:,ixcldice)
-    !q(:,:,4) = 1.0e6_rtype!state%q(:,:,ixnumliq)
-    !q(:,:,5) = 1.0e5_rtype!state%q(:,:,ixnumice)
-    !q(:,:,6) = 1.0e-5_rtype!state%q(:,:,ixrain)
-    !q(:,:,7) = 1.0e5_rtype!state%q(:,:,ixnumrain)
-    !q(:,:,8) = 1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
-    !q(:,:,9) = 1.0e4_rtype!state%q(:,:,ixrimvol)
     masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,0,masterproc)
     print *, 'P3-Standalone-Init Finished'
   end subroutine p3_standalone_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,qdp,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
+  subroutine p3_main_f90 (dtime,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
     real(kind=c_real), intent(in)    :: dtime ! Timestep 
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
     real(kind=c_real), intent(inout) :: FQ(pcols,4,pver)    ! Tracer mass tendency for physics
-    real(kind=c_real), intent(in)    :: qdp(pcols,2,4,pver) ! Tracer mass concentrations from Dynamics
     real(kind=c_real), intent(inout) :: T(pcols,pver)       ! temperature
     real(kind=c_real), intent(in)    :: zi(pcols,pver+1)    ! vertical level interfaces
     real(kind=c_real), intent(in)    :: pmid(pcols,pver)    ! pressure mid-levels
@@ -331,7 +320,7 @@ contains
       end do
     end do  
 
-    print '(a15,f16.8,5e16.8)', 'P3 run = ', test, qtest, sum(q), sum(qv), sum(FQ(:,:,:)), sum(qdp)
+    print '(a15,f16.8,4e16.8)', 'P3 run = ', test, qtest, sum(q), sum(qv), sum(FQ(:,:,:))
   end subroutine p3_main_f90
   !====================================================================!
   subroutine p3_finalize_f90 () bind(c)

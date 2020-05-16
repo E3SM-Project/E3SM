@@ -6,7 +6,7 @@ elseif (KOKKOS_DIR)
 else ()
   # Build kokkos submodule if user did not specify Kokkos_DIR.
   set(KOKKOS_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
-  set(KOKKOS_BINARY ${CMAKE_CURRENT_BINARY_DIR}/kokkos/build)
+  set(KOKKOS_BINARY ${CMAKE_CURRENT_BINARY_DIR}/externals/kokkos)
 
   # We want Kokkos to be in debug mode if scream is in debug mode. This is a bit hacky
   # since we can't use KOKKOS_GMAKE_DEVICES yet.
@@ -17,7 +17,7 @@ else ()
 
   add_subdirectory(${KOKKOS_SRC} ${KOKKOS_BINARY})
 
-  set (Kokkos_INCLUDE_DIR "${KOKKOS_SRC}/core/src;${KOKKOS_BINARY}")
+  set (Kokkos_INCLUDE_DIR "${KOKKOS_SRC}/core/src;${KOKKOS_SRC}/algorithms/src;${KOKKOS_BINARY}")
   list(APPEND KOKKOS_LDFLAGS "-L${KOKKOS_BINARY}")
   list(REMOVE_ITEM KOKKOS_LDFLAGS "-lkokkos")
   list(APPEND LDFLAGS ${KOKKOS_LDFLAGS})

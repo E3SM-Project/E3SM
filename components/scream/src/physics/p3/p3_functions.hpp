@@ -639,7 +639,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void p3_main_pre_main_loop(
     const MemberType& team,
-    const Int& nk_pack,
+    const Int& nk,
     const bool& log_predictNc,
     const Scalar& dt,
     const uview_1d<const Spack>& opres,
@@ -651,6 +651,9 @@ struct Functions
     const uview_1d<const Spack>& inv_lcldm,
     const uview_1d<const Spack>& inv_icldm,
     const uview_1d<const Spack>& inv_rcldm,
+    const uview_1d<const Spack>& oxxlv,
+    const uview_1d<const Spack>& oxxls,
+    const uview_1d<const Spack>& oxlf,
     const uview_1d<Spack>& t,
     const uview_1d<Spack>& rho,
     const uview_1d<Spack>& inv_rho,
@@ -671,9 +674,6 @@ struct Functions
     const uview_1d<Spack>& onitot,
     const uview_1d<Spack>& oqirim,
     const uview_1d<Spack>& obirim,
-    const uview_1d<Spack>& oxxlv,
-    const uview_1d<Spack>& oxxls,
-    const uview_1d<Spack>& oxlf,
     const uview_1d<Spack>& qc_incld,
     const uview_1d<Spack>& qr_incld,
     const uview_1d<Spack>& qitot_incld,

@@ -2,11 +2,11 @@
 #define SCREAM_GRIDS_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/remap/abstract_remapper.hpp"
-#include "share/remap/identity_remapper.hpp"
+#include "share/grid//remap/abstract_remapper.hpp"
+#include "share/grid//remap/identity_remapper.hpp"
 #include "share/util/scream_factory.hpp"
-#include "share/scream_parameter_list.hpp"
 #include "share/util/string_utils.hpp"
+#include "share/scream_parameter_list.hpp"
 #include "share/scream_assert.hpp"
 
 #include <map>
