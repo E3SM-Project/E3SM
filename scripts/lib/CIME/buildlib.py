@@ -4,7 +4,7 @@ common utilities for buildlib
 
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
-from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options, get_model, safe_copy
+from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options, get_model, safe_copy, get_logging_options
 from CIME.build import get_standard_makefile_args
 
 import sys, os, argparse
@@ -68,6 +68,10 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
 
     with open(os.path.join(confdir, "CCSM_cppdefs"), "w") as out:
         out.write("")
+
+    logging_options = get_logging_options()
+    logger.warn("wpc1.buildlib.py get_logging_options() is {}. logger.getEffectLevel() is {} ".format(logging_options, logger.getEffectiveLevel()))
+    logger.debug("wpc2.buildlib.py HERE I AM get_logging_options() is {}. logger.getEffectLevel() is {} ".format(logging_options, logger.getEffectiveLevel()))
 
     # Build the component
     if get_model() != "e3sm" or use_old:
