@@ -197,15 +197,15 @@ contains
     character(32) :: msg
 
     type (cartesian3D_t) :: p
-    real(kind=real_kind) :: wr(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
+    real(kind=real_kind) :: wg(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
          qmin1(qsize+3), qmax1(qsize+3), qmin2, qmax2, mass1, mass2, &
-         wr1(np,np,nlev), wr2(np,np,nlev), dt, wr3(np*np), pressure(np,np,nlev), &
-         p_fv(np,np,nlev)
-    integer :: nf, ncol, nt1, nt2, ie, i, j, k, d, q, qi, tl, col
+         wg1(np,np,nlev), wg2(np,np,nlev), dt, pressure(np,np,nlev), &
+         p_fv(np*np,nlev), wf1(np*np,nlev), wf2(np*np,nlev), wf3(np*np)
+    integer :: nf, nf2, nt1, nt2, ie, i, j, k, d, q, qi, tl, col
     logical :: domass
 
     nf = nphys
-    ncol = nf*nf
+    nf2 = nf*nf
     nt1 = 1
     nt2 = 2
     dt = 0.42_real_kind
@@ -236,7 +236,7 @@ contains
        do ie = nets,nete
           if (ftype == 0) then
              do k = 1,nlev
-                wr(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                      (hvcoord%hybi(k+1) - hvcoord%hybi(k))*reshape(pg_data%ps(:,ie), (/nf,nf/))
              end do
           end if
@@ -251,7 +251,7 @@ contains
                 if (ftype == 0) then
                    pg_data%q(col,:,1,ie) = zero
                    do q = 2,qsize
-                      pg_data%q(col,:,q,ie) = f*wr(i,j,:)/dt
+                      pg_data%q(col,:,q,ie) = f*wg(i,j,:)/dt
                    end do
                 else
                    pg_data%q(col,:,2:qsize,ie) = pg_data%q(col,:,2:qsize,ie) + f
@@ -287,7 +287,7 @@ contains
     do q = 1, qsize+4
        do ie = nets,nete
           do k = 1,nlev
-             wr(:,:,k) = elem(ie)%spheremp
+             wg(:,:,k) = elem(ie)%spheremp
           end do
           if (tendency .and. q > 1) then
              do j = 1,np
@@ -301,16 +301,16 @@ contains
              qi = q - qsize
              if (qi < 3) then
                 global_shared_buf(ie,1) = &
-                     sum(wr*( &
+                     sum(wg*( &
                      elem(ie)%state%v(:,:,qi,:,nt2) - &
                      (elem(ie)%state%v(:,:,qi,:,nt1) + tend))**2)
                 global_shared_buf(ie,2) = &
-                     sum(wr*(elem(ie)%state%v(:,:,qi,:,nt1) + tend)**2)
+                     sum(wg*(elem(ie)%state%v(:,:,qi,:,nt1) + tend)**2)
              elseif (qi == 3) then
-                call get_temperature(elem(ie), wr1, hvcoord, nt1)
-                call get_temperature(elem(ie), wr2, hvcoord, nt2)
-                global_shared_buf(ie,1) = sum(wr*(wr2 - (wr1 + tend))**2)
-                global_shared_buf(ie,2) = sum(wr*(wr1 + tend)**2)
+                call get_temperature(elem(ie), wg1, hvcoord, nt1)
+                call get_temperature(elem(ie), wg2, hvcoord, nt2)
+                global_shared_buf(ie,1) = sum(wg*(wg2 - (wg1 + tend))**2)
+                global_shared_buf(ie,2) = sum(wg*(wg1 + tend)**2)
              else
                 ! Test omega_p, phis, ps. These were remapped to FV
                 ! but don't get remapped to GLL. Make sure they all
@@ -318,41 +318,41 @@ contains
                 ! machine precision.
                 !  omega_p
                 !  True omega on GLL and FV grids.
-                call get_field(elem(ie), 'omega', wr1, hvcoord, nt1, -1)
-                call gfr_g2f_scalar(ie, elem(ie)%metdet, wr1, wr2)
+                call get_field(elem(ie), 'omega', wg1, hvcoord, nt1, -1)
+                call gfr_g2f_scalar(ie, elem(ie)%metdet, wg1, wf1)
                 !  Convert omega_p on FV grid to omega for preqx
                 call get_field(elem(ie), 'p', pressure, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, pressure, p_fv)
 #ifdef MODEL_THETA_L
-                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))
+                wf2(:nf2,:) = pg_data%omega_p(:,:,ie)
 #else                
-                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))*p_fv(:nf,:nf,:)
+                wf2(:nf2,:) = pg_data%omega_p(:,:,ie)*p_fv(:nf2,:)
 #endif                
                 !  Compare.
-                global_shared_buf(ie,1) = sum((wr1(:nf,:nf,:) - wr2(:nf,:nf,:))**2)
-                global_shared_buf(ie,2) = sum(wr2(:nf,:nf,:)**2)
+                global_shared_buf(ie,1) = sum((wf2(:nf2,:) - wf1(:nf2,:))**2)
+                global_shared_buf(ie,2) = sum(wf1(:nf2,:)**2)
                 !  phis
-                call gfr_dyn_to_fv_phys_topo_elem(elem, ie, wr3)
+                call gfr_dyn_to_fv_phys_topo_elem(elem, ie, wf3)
                 global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
-                     sum((wr3(:ncol) - pg_data%zs(:,ie))**2)
+                     sum((wf3(:nf2) - pg_data%zs(:,ie))**2)
                 global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
                      sum(pg_data%zs(:,ie)**2)
                 !  ps
-                wr(:,:,1) = elem(ie)%state%ps_v(:,:,nt1)
-                wr(:nf,:nf,2) = reshape(pg_data%ps(:,ie), (/nf,nf/))
-                call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,1:1), wr(:,:,3:3))
+                wg(:,:,1) = elem(ie)%state%ps_v(:,:,nt1)
+                wf1(:nf2,2) = pg_data%ps(:,ie)
+                call gfr_g2f_scalar(ie, elem(ie)%metdet, wg(:,:,1:1), wf1(:,3:3))
                 global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
-                     sum((wr(:nf,:nf,2) - wr(:nf,:nf,3))**2)
+                     sum((wf1(:nf2,2) - wf1(:nf2,3))**2)
                 global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
-                     sum(wr(:nf,:nf,2)**2)
+                     sum(wf1(:nf2,2)**2)
              end if
           else
              global_shared_buf(ie,1) = &
-                  sum(wr*( &
+                  sum(wg*( &
                   elem(ie)%state%Q(:,:,:,q) - &
                   (elem(ie)%state%Qdp(:,:,:,q,nt1)/elem(ie)%state%dp3d(:,:,:,nt1) + tend))**2)
              global_shared_buf(ie,2) = &
-                  sum(wr*( &
+                  sum(wg*( &
                   elem(ie)%state%Qdp(:,:,:,q,nt1)/elem(ie)%state%dp3d(:,:,:,nt1) + tend)**2)
           end if
        end do
@@ -422,19 +422,19 @@ contains
     do ie = nets,nete
        if (ftype == 0) then
           do k = 1,nlev
-             wr(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+             wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                   (hvcoord%hybi(k+1) - hvcoord%hybi(k))*reshape(pg_data%ps(:,ie), (/nf,nf/))
           end do
        end if
-       pg_data%q(:ncol,:,:,ie) = two*pg_data%q(:ncol,:,:,ie)
+       pg_data%q(:nf2,:,:,ie) = two*pg_data%q(:nf2,:,:,ie)
        do q = 2,qsize
           qmin1(q) = min(qmin1(q), minval(elem(ie)%state%Q(:,:,1,q)))
           qmax1(q) = max(qmax1(q), maxval(elem(ie)%state%Q(:,:,1,q)))
-          qmin1(q) = min(qmin1(q), minval(pg_data%q(:ncol,1,q,ie)))
-          qmax1(q) = max(qmax1(q), maxval(pg_data%q(:ncol,1,q,ie)))
+          qmin1(q) = min(qmin1(q), minval(pg_data%q(:nf2,1,q,ie)))
+          qmax1(q) = max(qmax1(q), maxval(pg_data%q(:nf2,1,q,ie)))
           if (ftype == 0) then
-             pg_data%q(:ncol,:,q,ie) = &
-                  half*reshape(wr(:nf,:nf,:), (/ncol,nlev/))*pg_data%q(:ncol,:,q,ie)/dt
+             pg_data%q(:nf2,:,q,ie) = &
+                  half*reshape(wg(:nf,:nf,:), (/nf2,nlev/))*pg_data%q(:nf2,:,q,ie)/dt
           end if
        end do
     end do
@@ -450,7 +450,7 @@ contains
        qmin2 = one; qmax2 = -one
        do ie = nets,nete
           do k = 1,nlev
-             wr(:,:,k) = elem(ie)%spheremp
+             wg(:,:,k) = elem(ie)%spheremp
           end do
           if (q > qsize) then
              qi = q - qsize
@@ -458,25 +458,25 @@ contains
                 ! With contravariant-velocity approach, we don't
                 ! expect mass conservation.
                 domass = .false.
-                global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+                global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                      elem(ie)%derived%FM(:,:,qi,1))
-                global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+                global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                      elem(ie)%state%v(:,:,qi,1,nt1))
                 global_shared_buf(ie,1) = &
-                     sum(wr*( &
+                     sum(wg*( &
                      elem(ie)%derived%FM(:,:,qi,:) - &
                      elem(ie)%state%v(:,:,qi,:,nt1))**2)
                 global_shared_buf(ie,2) = &
-                     sum(wr*elem(ie)%state%v(:,:,qi,:,nt1)**2)
+                     sum(wg*elem(ie)%state%v(:,:,qi,:,nt1)**2)
              else
-                call get_temperature(elem(ie), wr1, hvcoord, nt1)
-                global_shared_buf(ie,1) = sum(wr*(elem(ie)%derived%FT - wr1)**2)
-                global_shared_buf(ie,2) = sum(wr*wr1**2)                
-                wr1 = wr1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
-                global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
-                wr1 = elem(ie)%derived%FT
-                wr1 = wr1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
-                global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
+                call get_temperature(elem(ie), wg1, hvcoord, nt1)
+                global_shared_buf(ie,1) = sum(wg*(elem(ie)%derived%FT - wg1)**2)
+                global_shared_buf(ie,2) = sum(wg*wg1**2)                
+                wg1 = wg1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
+                global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
+                wg1 = elem(ie)%derived%FT
+                wg1 = wg1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
+                global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
              end if
           else
              if (ftype == 0) then
@@ -488,17 +488,17 @@ contains
              qmin2 = min(qmin2, minval(elem(ie)%derived%FQ(:,:,1,q)))
              qmax2 = max(qmax2, maxval(elem(ie)%derived%FQ(:,:,1,q)))
              ! Mass in level 1.
-             global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+             global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                   elem(ie)%derived%FQ(:,:,1,q))
-             global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+             global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                   two*elem(ie)%state%Q(:,:,1,q))
              ! l2 error in volume.
              global_shared_buf(ie,1) = &
-                  sum(wr*( &
+                  sum(wg*( &
                   elem(ie)%derived%FQ(:,:,:,q) - &
                   two*elem(ie)%state%Q(:,:,:,q))**2)
              global_shared_buf(ie,2) = &
-                  sum(wr*elem(ie)%state%Q(:,:,:,q)**2)
+                  sum(wg*elem(ie)%state%Q(:,:,:,q)**2)
           end if
        end do
        call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
