@@ -1,3 +1,956 @@
+5/13/2020
+
+* Ah, I think I know how to set environment variables - it's hidden in the
+  xml stuff, which you modify with ./xmlchange:
+
+    ./xmlchange --id STOP_N --val 1
+    ./xmlchange --id DEBUG --val TRUE
+    ./xmlchange --id ROOTPE_CPL --val 2
+    ./xmlchange --id NTASKS --val 4
+    ./xmlchange --id NTASKS_ATM --val 2
+    ./xmlchange --id NTASKS_CPL --val 2
+    ./xmlchange --id NTASKS_ESP --val 1
+    ./xmlchange --id NTASKS_OCN --val 2
+
+* This was under the "debugging on a workstation with ddd" in the
+  confluence page, but tihs does sound familiar.  So, this is how you set
+  up the ntasks and stuff like that, but (mainly), how to turn on DEBUG and
+  a few other things.  My guess is "STOP_N" tells you how many steps to
+  run, so limiting it to one makes a lot of sense in a debugging context.
+
+5/11/2020
+
+* Confluence page on debugging with totalview on NERSC:
+  
+  https://acme-climate.atlassian.net/wiki/spaces/ED/pages/185008204/Debugging+with+Totalview+on+NERSC
+
+@ Need to figure out the interactive queue on Anvil, if there is one.  So,
+  I need an anvil web page.
+
+5/8/2020
+
+* Need to modify the .../cime/scripts/Tools/Makefile to deal with dynamic libraries
+
+* To add a shared library directory to the compile line, you need both
+  -L$(DIR) and to send $(DIR) to the linker via the -rpath command.  The
+  arcane incantation to make this happen is either of these:
+
+  GLIBS := -Wl,-rpath,$(XDIR) -L$(XDIR) -lxerces-c 
+  GLIBS := -Xlinker -rpath -Xlinker $(XDIR) -L$(XDIR) -lxerces-c -lstdc++
+
+* The other possiblity is to force static linking for xerces, which makes
+  sense now with my local build:
+
+  GLIBS := $(XDIR)/libxerces-c.a 
+  GLIBS := -Wl,-Bstatic -L$(XDIR) -lxerces-c -Wl,-Bdynamic
+
+* To keep the ldd from having netcdf not found, you have to do something
+  similar to the dynamic linking:
+
+  SLIBS += -Xlinker -rpath -Xlinker $(LIB_NETCDF_FORTRAN)  -Xlinker -rpath -Xlinker $(LIB_NETCDF_C)
+
+  I'm not sure if we need these different fortran and C links, but it
+  worked, so there you go.
+
+  I was unable to statically link netcdf - it apparently dynamically links
+  with HDF libraries so it can't find them if you statically link.
+
+* At any rate, I'm not sure why we don't have the dynamic load path already
+  by default when setting things up - I think that may be a failing of the
+  machine configuration for anvil.
+
+* Regardless, after all that we still have these errors:
+
+  [shippert@blueslogin4 bld]$ ldd e3sm.exe | grep found
+  ./e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by ./e3sm.exe)
+  ./e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by ./e3sm.exe)
+  ./e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by ./e3sm.exe)
+  ./e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by ./e3sm.exe)
+  ./e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /blues/gpfs/home/shippert/local/lib/libxerces-c-3.2.so)
+  ./e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /blues/gpfs/home/shippert/local/lib/libxerces-c-3.2.so)
+
+  I don't know what this means or if it's a problem, but it doesn't stop
+  e3sm.exe from trying to run.
+
+* I turned USE_CXX to TRUE as part of all this, so it's possible both the
+  error and the solutions above might be linked to that.  I'm testing what
+  happens if you turn it off again.
+
+  Well, if you turn both USE_CXX off and remove the -lstdc++ argument then
+  it definitely fails, as it kind find the standard libraries.
+
+  If you turn USE_CXX on and remove -lstdc++, it has no effect - the thing
+  compiles and runs the same way.  If you add -lstdc++ and remove USE_CXX,
+  it also compiles and seems to run the same way.  
+
+  So, at least one of: -lstdc++ or USE_CXX; probably USE_CXX, which will be
+  most portable and standardized.
+
+! I need to figure out how to set these options I'm seeing - things like
+  USE_TRILIONOS and DEBUG.  It looks like they are environment variables
+  set by whatever calls the make - which is probably, ultimately,
+  case.build.  Maybe one of those env_*.xml files - DEBUG is set in
+  env_build.xml, but just reading the inline documentation there are a lot
+  of variables set there that they say DO NOT EDIT.  Well, DEBUG isn't one
+  of them, so I guess I can force it that way, but I feel like there is a
+  configuration even further upstream that I need to set.  Probably one or
+  more of those config*.xml files scattered about - possibly in the compset
+  definition?
+
+  Obviously, I need to set USE_GCAM somewhere in here, too.  
+
+5/6/2020
+
+* Can't find libxerces-c, and some other stuff:
+
+[shippert@blueslogin4 iac_ZLND_case]$ ldd /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe | grep found
+/lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.8' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe)
+/lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe)
+/lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe)
+/lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /lcrc/group/acme/shippert/acme_scratch/anvil/iac_ZLND_case/bld/e3sm.exe)
+	libnetcdff.so.6 => not found
+	libnetcdf.so.11 => not found
+	libxerces-c-3.2.so => not found
+
+  Working through the Makefile now to see how these shared libraries are loaded.
+	
+4/21/2020
+
+* Finally merged in Xioying's compsets:
+
+  $ git merge remotes/origin/acme-y9s/gcam_compset
+  
+  ...modified this file
+  
+    cime/config/e3sm/allactive/config_compsets.xml
+
+* It looks like the GCAM compsets are:
+
+  BGCEXP_BCRC_CNPRDCTC_20TR_GCAM
+  G_BG1850CN
+
+4/17/2020
+
+* Input files on compy corresponding to iac runs:
+
+  /compyfs/dtn/divi553/iac_16apr2020.tar
+
+  From Alan's email on 4/17/2020:
+
+---
+     I have updated the NERSC e3sm/inputdata/iac directory to include the
+     new iESM files and all of the original iESM files. So this directory
+     should be able to support runs from the original iESM V1. I also tried
+     to make sure the needed files outside of the iac directory are also
+     present in the e3sm/inputdata directory tree (the only ones of these I
+     could find that were not gcam files are the
+     …/lnd/clm2mappingdata/maps/<grid>/ mapping files). 
+
+     I then zipped the iac folder and transferred it to compy and unzipped
+     it in place. The iac tarball on compy is:
+     /compyfs/dtn/divi553/iac_16apr2020.tar. It is about 270GB. My dtn
+     directory is readable  - let me know if globus doesn’t let you access
+     it. 
+
+     If you only need to cherry-pick the new files the best place to
+     identify these would be in the iac_glm_namelist_items.txt file (there
+     is a list at the end of the file), which is attached because I had to
+     update two lines (it is also updated on giac/aldivi/glm-update). The
+     updated lines are now: 
+
+     gcam2glm_baselu = "\$DIN_LOC_ROOT/iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc"
+
+     I also transferred the relevant mapping files for 0.9x1.25 from NERSC
+     to compy, as the needed ones were not there. There are already newer
+     half-degree mapping fiiles on compy that may work, but so far it
+     doesn’t seem like we are going to support half-degree iESM in V2; we
+     never really supported it previously, except for historical runs,
+     which we can now do outside of iESM.
+---
+
+4/15/2020
+
+* The new compsets are in branch:
+
+     remotes/origin/acme-y9s/gcam_compset
+
+  I'm tempted to simply merge:
+
+     $ git merge remotes/origin/acme-y9s/gcam_compset
+
+  ...but let me review this a little more to make sure it won't fubar
+  anything up.  I can always revert, but I don't really trust git (which is
+  dumb, git is a lot smarter than I am - I actually don't trust myself 
+  not to defeat git's idiot-proofing).
+
+* Merged in Alan's giac branch - go to component/gcam/src/iac, and:
+
+     $ git merge remotes/origin/aldivi/glm-update
+
+  It worked well - no conflicts, so it merged directly and launched an
+  autocommit.  There were a couple bugs to fix before it would build under
+  ZLND, mostly mixing up the 1-D gcam variables with 2-D glm variables.
+  (Actually, both have one more dimension, since we have a time dim for
+  next year vs. this year, since everything depends on the gradiant between
+  the two.)
+
+4/13/2020
+
+* Notes from gcam/atm phone call:
+
+* Kate will provide 12 surface values (into cam_in(c)%fco2_iac, as before)
+  and 24 two-level vertical co2 flux values (which will require adding new
+  elements to cam_in(c) to carry them forward).
+
+  To use this then:
+
+1 split into 36 separate fields to couple in iac
+2 in atm_import_export.F90 (probably), reconsitute into a 2D fco2_iac(i,t)
+  array and a 3D fco2_iac_vertical(i,t,2) array, to putin cam_in(c).
+3 In atm_import_export.F90, or somewhere else, figure out how to extract
+  given values for the given month (i.e. figure out what month index t to
+  use).
+4 Modify existing cam code to take fco2_iac_vertical() rather than read
+  from input file as we currently do.
+5 Figure out what additional steps we need to make fco2_iac_vertical()
+  consistent and to error-check it, and to (maybe) interpolate onto the cam
+  vertical co2 grid in a reasonable way.
+
+3/25/2020
+
+* The issue is building with hector - I've tried the trick of putting all
+  the source and include directories in the buildlib, but I *think*, after
+  a bunch of flailing around, that the problem is that some of the include
+  files within hector are named the same as those within other parts of
+  gcam - in particular, logger.hpp.  If you put both directories where
+  these conflicting versions of logger.hpp live into the buildlib, then
+  either the gcam one or the hector one includes the wrong file, and that
+  causes a build clash.
+
+* I believe this comes about because of the buildlib method.  If you build
+  hector into its own library, and then build gcam while linking with
+  -lhector, then this whole include file things takes care of itself.  But
+  since I'm putting all the source code into one big dumb libiac.a, then we
+  have this potential for include file clashing.
+
+XXXXXXXXXXXX
+* An added complication is that (for hector, at least, and probably
+  elsewhere) there are partial paths included - so, things like
+
+  #include core/logger.hpp
+
+  This means that I have to include the directory *above* core into the
+  buildlib, which means I have to add a whole bunch of directories into
+  buildlib and thus increase the likelihood of a clash.
+XXXXXXXXXXXX
+
+* Okay, let's at least check on this - find on logger.hpp and see if I can
+  make sure of the clash...as you can see, I've xxxed it out, so we do NOT
+  have a conflict with logger.hpp.  But we *do* have multiple logger.cpp.
+  Maybe that's the problem, you can't link with two files with the same
+  name?  I would think the namespace calling would prevent the actual
+  functions from conflicting - maybe we build all the .o in one place, so
+  we end up overwriting and/or not compiling one version?
+
+  Rename the hector logger.cpp to hector_logger.cpp and see if that fixes
+  things. 
+
+* Okay, as far as I can tell, other than main.cpp for test routines, these
+  are the only filename clashes:
+
+  ./cvs/objects/util/logger/source/logger.cpp
+  ./cvs/objects/containers/source/dependency_finder.cpp
+
+  ./cvs/objects/climate/source/hector/source/core/logger.cpp
+  ./cvs/objects/climate/source/hector/source/core/dependency_finder.cpp
+
+* This really doesn't make any sense to me, but I'm going to try just
+  renaming these files and hoping for the best.
+
+3/24/2020
+
+* WTH!
+  
+  This is in ~/iac_Z_case - building the straight Z case, which *just*
+  *worked* last week!
+
+------------------------
+Building e3sm with output to /lcrc/group/acme/shippert/acme_scratch/anvil/iac_gcam_submod/bld/e3sm.bldlog.200324-122658 
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/coupling/gcam_comp_mod.F90:309: undefined reference to `deleteccsminterface_'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/coupling/gcam_comp_mod.F90:167: undefined reference to `initccsminterface_'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:456: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Hector::message_data const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:538: undefined reference to `Hector::Core::run(double)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:803: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:804: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:805: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:747: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:750: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:706: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Hector::message_data const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:707: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Hector::message_data const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:708: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Hector::message_data const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:709: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:348: undefined reference to `Hector::Core::shutDown()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:362: undefined reference to `Hector::Core::Core()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:363: undefined reference to `Hector::Core::init()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:365: undefined reference to `Hector::INIToCoreReader::INIToCoreReader(Hector::Core*)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:366: undefined reference to `Hector::INIToCoreReader::parse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:367: undefined reference to `Hector::Core::addVisitor(Hector::AVisitor*)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:368: undefined reference to `Hector::Core::prepareToRun()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:404: undefined reference to `Hector::Core::run(double)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:404: undefined reference to `Hector::INIToCoreReader::~INIToCoreReader()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:365: undefined reference to `Hector::INIToCoreReader::~INIToCoreReader()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:353: undefined reference to `Hector::CSVOutputStreamVisitor::CSVOutputStreamVisitor(std::ostream&, bool)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:665: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, Hector::message_data const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:803: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:804: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:805: undefined reference to `Hector::Core::sendMessage(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:188: undefined reference to `Hector::Logger::getGlobalLogger()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:188: undefined reference to `Hector::Logger::open(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool, bool, Hector::Logger::LogLevel)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:194: undefined reference to `Hector::Core::shutDown()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:196: undefined reference to `Hector::Core::Core()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:197: undefined reference to `Hector::Core::init()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:199: undefined reference to `Hector::INIToCoreReader::INIToCoreReader(Hector::Core*)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:200: undefined reference to `Hector::INIToCoreReader::parse(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:201: undefined reference to `Hector::INIToCoreReader::~INIToCoreReader()'
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector_model.cpp:199: undefined reference to `Hector::INIToCoreReader::~INIToCoreReader()'
+
+ERROR: BUILD FAIL: buildexe failed, cat /lcrc/group/acme/shippert/acme_scratch/anvil/iac_gcam_submod/bld/e3sm.bldlog.200324-122658
+---------------
+
+* Okay, a bunch of hector stuff, which I guess we'll figure out.  But the
+  gcam_comp_mod.F90 stuff?  What happened here?
+
+3/18/2020 2020-03-18 10:27:14
+
+? in clm_varctl.F90, I define a logical 'iac_active', which I use to
+  determine whether clm knows to link with an iac component.  I think
+  that's the best place to define this, but this means I need to set it in
+  a namelist somewhere.
+
+3/18/2020
+
+* Working from home, so more junk in here as I try to keep track of things.
+
+  From clm build, ZLND compset, E3SM_gcam_submod branch
+======================================
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(72): error #6562: A data initialization-expr is not valid for this object.   [INDEX_L2X_SL_HR]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(73): error #6562: A data initialization-expr is not valid for this object.   [INDEX_L2X_SL_NPP]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(74): error #6562: A data initialization-expr is not valid for this object.   [INDEX_L2X_SL_PFTWGT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(25): error #6279: A specification expression object must be a dummy argument, a COMMON block object, or an object accessible through host or use association.   [IAC_NPFT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(72): error #6841: An automatic object must not appear in the specification part of a module.   [INDEX_L2X_SL_HR]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(73): error #6841: An automatic object must not appear in the specification part of a module.   [INDEX_L2X_SL_NPP]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(74): error #6841: An automatic object must not appear in the specification part of a module.   [INDEX_L2X_SL_PFTWGT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(317): error #6402: prPromoteSym : Illegal KIND & CLASS mix   [IAC_NPFT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(319): error #6404: This name does not have a type, and must have an explicit type.   [P]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(319): error #6063: An INTEGER or REAL data type is required in this context.   [P]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(319): error #6402: prPromoteSym : Illegal KIND & CLASS mix   [IAC_NPFT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(320): error #6404: This name does not have a type, and must have an explicit type.   [CPFT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(321): error #6362: The data types of the argument(s) are invalid.   [TRIM]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(321): error #6303: The assignment operation or the binary expression operation is invalid for the data types of the two operands.   [TRIM]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(322): error #6054: A CHARACTER data type is required in this context.   [CPFT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(323): error #6054: A CHARACTER data type is required in this context.   [CPFT]
+
+/blues/gpfs/home/shippert/E3SM_gcam_core_submodule/components/clm/src/cpl/clm_cpl_indices.F90(324): error #6054: A CHARACTER data type is required in this context.   [CPFT]
+=================================
+
+3/10/2020
+
+* Made a new branch from Gautam's latest:
+
+  git checkout -b shippert/gcam/active-gcam-submod
+
+* The submodules and submodules of that submodule are listed as "HEAD
+  detached at a20adf2", whatever that means.  I don't know if I can push up
+  to the gcam repo like this - need to ask Gautam what is going on.
+
+* Anyway, turned back on wrapper function in gcam_comp_mod.F90; there were
+  just some typos to cleanup (gcamoemis, elm2gcam_mapping_file).
+
+* Now, I need to copy back in my glm updates and try to compile with those.
+
+* Then, build with ZLND to compile and fix the lnd model builds.  
+
+* Finally, merge with Xiaoying's atm branches and build to fix THAT.
+
+* Also, update Kate with luc.xml/glumap incompatibilities, mentioned
+  somewhere below (or in my python script.)
+
+! Need to revisit the iac_cdata%i and %c structures in gcam_comp_mod.F90 -
+  should be filled from namelist variables in gcam_init_mod().  I hacked a
+  lot of these out in the initial port, but we need to review what is
+  needed by gcam2glm_mod.F90, especially.
+
+  Maybe do a find/grep for all cases where we (a) use iac_cdata%{c,l,i},
+  and then look for all cases where we (b) set iac_cdata%{c,l,i}, and find
+  some way of cross-referencing.
+
+* Need to initialize things like nlon and lat
+
+3/4/2020
+
+* Gautam has been working on getting the libraries and build scripts
+  working on Anvil - he found some compile errors that he "fixed", but
+  mostly by commenting things out and mucking with argument lists, so it
+  probably won't work.
+
+* Anyway:
+
+===========
+   git clone git@github.com:E3SM-Project/E3SM.git E3SM_gcam_core_submodule
+   cd E3SM_gcam_core_submodule/
+   git checkout bishtgautam/gcam/gcam-core-submodule-2
+   git submodule update --init --recursive
+
+   cd cime/scripts
+   ./create_newcase --case ~/iac_gcam_submod --compset Z --res f19_g16
+
+   cd ~/iac_gcam_submod/
+   ./case.setup
+   ./case.build 
+
+===========
+
+* (I still don't quite grok git - it looks like the examples below (search
+  for git clone) are all about cloning a branch, then renaming or something
+  back to shippert/gcam/active-gcam-coupled.  Whatever)
+
+! Ah, some of the below may be wrong if I haven't cleaned it up - you need
+  to have the --recursive tag on the submodule update to actually get the
+  gcam code.  Apparently, gcam-core (probably now just called gcam) is now
+  a submodule within the iac submodule, so, I guess, you need --recursive
+  to check it out.  Sheesh!
+
+XXXXXXXXXXXXXX
+* This gives me Gautam's branch, and builds.  And it works.
+
+* But! Gautam wanted me to test a new Macro.make file, a la this (from his
+  3/3/20, 11:38 AM email):
+
+  cp /home/gbisht/Macros.make .
+
+  This Macros.make differs from the one in ~/iac_gcam_submod mostly by
+  including the xerces   
+XXXXXXXXXXXXXXXX
+
+  I think the raw make worked originally because there was no gcam code!
+  With the --recursive tag.  So:
+
+1 try the case.setup and build with it as it is.
+
+  We get a build fail - 
+
+  /lcrc/group/acme/shippert/acme_scratch/anvil/iac_gcam_submod/bld/iac.bldlog.200304-115708:
+
+    ...
+    catastrophic error: cannot open source file "jni.h
+    ...
+
+2 try it with Gautam's /home/gbisht/Macros.make
+
+  (original to Macros.make.orig)
+
+  Same build fail...can't find "jni.h".
+
+  lcrc/group/acme/shippert/acme_scratch/anvil/iac_gcam_submod/bld/iac.bldlog.200304-121336
+
+* Gautam had an issue with __HAVE_JAVA__ vs. _HAVE_JAVA_ vs. HAVE_JAVA
+  yesterday - that's probably it, given the "j" in the name.  I was
+  confused by the discussion, but it appears you need to have one of them
+  (I don't know why macros aren't working with the others via
+
+  CXXBASEOPTS += -DHAVE_JAVA=0
+
+  in ...build/linux/configure.gcam).
+
+  Anyway, .../gcam/src/iac/gcam/cvs/objects/util/base/include/definitions.h
+
+  is where it's defined, so for this test define it as HAVE_JAVA 0
+
+* Okay, the new Macros.make works - successful build.  The original, with
+  HAVE_JAVA 0, ...
+
+2/17/2020
+
+* It appears the lon/lat grid goes [0,360] in longitude, and [-90,90] in
+  latitude, starting at the lower left corner ([0,-90]).
+
+  I'm trying to mock up some test data to check my glumap read code, and I
+  need to get a lat/lon array so I can use findloc to give the right
+  index.  The problem is, I don't know if we go [0,359] or [1,360] -
+  probably the former.  But [-90,90] or [-90,89]?
+
+  The landuse code solves this problem by cutting to the middle of the
+  grid, so it actually got from [0.5,359.5] and [-89.5,89.5].
+
+! But, regionmap_1x1.csv seems to go from [0,359] and [0,179]!  So, that's
+  a mess - we may need to shift to match whatever lat/lon we read from the
+  input file in gcam2glm_mod.F90.
+
+2/16/2020
+
+* Unfortunately, I have to do more refactoring of gcam2glm_mod.F90 - it
+  looks like the aezmap it used before had a one-to-one correspondence
+  between (lat,lon) and (reg,aez) - thus, the weights were all 1, and they
+  could use rAEZ_sites and/or raezs as the weights.
+
+  Instead, I have to build something like this:
+
+  glu_weights(g,lonx,latx)
+
+  ...so that glu_weights(g,:,:) functions as the weights for calculating
+  cell areas for this particular g.
+
+* I've been working this through, and I *think* the refactor isn't that
+  bad:
+
+1 change double loop r,aez into single loop over g
+2 replace rAEZ_sites/raezs with glu_weights(g,:,:)
+3 Rework the reassignment section to deal with regions.
+
+4 Write ingest functions for glumap_1x1.csv that builds the arrays I need
+  for this - glu_weights(:,:,:) in particular, also some kind of g->r
+  mapping.   
+
+  Obviously, number 3 is the hard one.  Number 2 actually involves a lot of
+  deleting, because I no longer need to do this:
+
+       where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+
+  stuff - if I do (4) right, then glu_weights will automatically function
+  as both a zeroing mask for lat,lon outside of this g, and as the weights
+  for lat,lon inside this g.
+
+* Of course (4) is quite hard - I have actual lats and lons in
+  glumap_1x1.csv, so I need to convert those to indeces.  There's probably
+  a smart way to do that, but right now I don't know what it is - start at
+  -180,-90 and count up?
+
+* Remember, we are looping over all g's and analyzing each one separately.
+  That's similar to the double loop over region and aez's within that
+  region, except now each individual g implies a region, and some regions
+  have just one g and some have lots.
+
+
+
+
+12/17/2019
+
+* Well, duh - Alan suggested just using the regions in the regionmap.csv
+  file to do the reassign.  That clearly makes sense.
+
+  The indexing will still need to be refactored - the nested loop will
+  because a single glu loop, but we'll have to loop over regions for the
+  reassign block, and then extract the glus that are part of that region.
+  Each region will have a variable number of sub-glus, so we have to do
+  something like:
+
+    do r=1,nreg
+       do g=1,nglu(r)
+
+  Or maybe do a logical subsetting (where (regions .eq. r)) to count or
+  loop or mask the glus we are working with.
+
+* Kate says the gcam index is in the order of lux.xml.  So I've extracted
+  the region column (i.e. glus) from that xml file into glus.ordered.txt.
+  From there, we extract the regions (up to the final underscore), and uniq
+  and count them:
+
+    perl -pe 's/_\S+$//g' glus.ordered.txt | uniq | wc
+
+  This returns 26 regions, and 392 total glus.
+
+* But, I *think* I'm seeing region/glu pairs in region map that are not
+  listed in luc.xml - test that now.
+
+   perl -ne 'if (/^\d+.*\"(.*)\".\"(.*)\"\,\d+/) { print "$1_$2\n"}' regionmap.csv
+
+  ...seems to extract the region-qualified glu names in the same format.
+  This leads to 427 unique region qualified names, so there are some
+  missing from luc.xml.
+
+* Okay, that gives 52 region/glus in regionmap.csv that do not correspond with
+  anything in luc.xml.
+
+  Is this a problem?  I need to think about this - if gcam does not output
+  to these glus, then what does that do to grid cells that have weights in
+  gcam output space that do not sum to 1.0?
+
+* More importantly, here are the glus from luc.xml that do NOT show up
+  anywhere in regionmap.csv:
+
+  Africa_Northern_DeadSea
+  Argentina_ChileCstN
+  Brazil_OrinocoR
+  China_AmuDaryaR
+  China_SyrDaryaR
+  EU-12_DniesterR
+  EU-12_DnkGrmCst
+  EU-15_MeditE
+  Europe_Non_EU_EJrdnSyr
+  Pakistan_Tamir
+  Russia_BlackSeaS
+  Russia_CaspianSW
+  South Africa_AfrCstSW
+  South America_Northern_MagdalenaR
+  South America_Southern_Salinas
+  Southeast Asia_IdnE
+  USA_FraserR
+
+  I can kind of understand regionmap.csv entries not being in luc.xml, if
+  those glus do not concern themselves with gcam landuse.
+
+  I'm having a hard time figuring out what a region in luc.xml that is not
+  being mapped to any grid cell might mean.  And, in particular, I'm not
+  sure how to use these glus inside of gcam2glm - just ignore them when
+  looping over our 392 glus?
+
+  Maybe they are glus that have very small overlaps with meaningful grid
+  cells, and thus have been trimmed out of the mapping somehow?
+
+12/13/2019
+
+* Trying to review what gcam2glm does.  
+
+  Here's what the sorting does: for a given region/aez (let's call that an
+  raez) set of indices, we sort by the potential vegetation from the
+  "biomass" field of an input config file - so it's a property of our grid
+  point.   We use that to find a sorted list of indices (lat,lons), based on
+  potential vegetation, that our raez contributes to.
+
+  We then take those sorted indices (v1/2d, v1/2u, depending on
+  whether they are sorted highest to lowest or lowest to highest in
+  pot_veg), and, if our crop_neg_f>0 (i.e. some crop land is recovered by
+  forest?  At least, crop land is shrinking), we take the cumulative sum of
+  glm_crop(old)*cellarea_forest, until that value hits crop_neg_f.
+
+  Technically, we cumsum, then find the location of the minimum index of
+  the raez where the total exceeds crop_neg_f - that's the point where,
+  adding from cells with most pot_veg to least, we hit the crop_neg_f
+  threshold. 
+
+  Then, for all the grid cells at or above that point, we subtract from our
+  current glm_crop(:,:,np1) value the glm_crop(old)*fnfforest.
+
+  Then, we finally make another adjustment right at the threshold point to
+  make sure everything adds up (I think).
+
+  Well, that doesn't seem right, because fnfforest looks to be another mask
+  (value 1 on points where pot_veg > 1), this line (c.697):
+
+      where(sortsitesdn>0)
+         glm_crop(:,:,np1)= glm_crop(:,:,np1) - glm_crop(:,:,n) * fnfforest
+      end where
+
+  seems to be saying: subtract the old crop value from the new crop value
+  everywhere that we have any potential vegetation (at least, whatever
+  pot_veg > 1 means) and where we need to remove crops to get to our
+  crop_neg_f. 
+
+  I dunno - we are removing *all* the crop values in these grid cells?  I
+  mean, we must be scaling by raez weights somewhere that I missed, but,
+  still, we count down from highest pot_veg values and just subtract crops
+  in those raezs until we get there?
+
+  Whatever, let's assume that part works - we sort so we can use the
+  regions with the most potential vegetation to recover crop land.
+
+* Now, let's look at the sort inside the rassign block, the one where we
+  actually deal with aezs inside of regions, rather than raezs as atomic
+  units. 
+
+  ...whew, that's really complicated.  We appear to be selecting which
+  aezs inside each reagion we are going to decrease crops and pasture in.
+  We sort by "reassign_ag", which is the minimum of avail_ag_farea,
+  avail_nfarea, and regional_farea_needed.  I want to say: available
+  agricultural forest area, available non-forest area, and forest area
+  needed for this region.  I guess the minimum of that is how much forest
+  area we need to move to forest - either what we got or what we need.
+
+  And then we run only over those raezs that we need to hit our limit, to
+  do the same kind of calculation as before - rank by pot_veg and take the
+  ones at the top you need to fill a limit.
+
+* Okay, so let's just cut out that interior raez calculation.  We'll just
+  run over nglus, turning our two loops:
+
+  do r=1,nreg
+    ...
+    do zz=1,nreduced_aezs
+
+  ...into just a simple nglu loop, and don't worry about restricting our
+  aezs since we don't have any more of them.
+
+* Some stats on the GLUs: no grid cell has more than four glus, and
+  no glus as a weight of less than 0.25 for any grid cell.  I'm wondering
+  if some of this sort and cutoff stuff is extraneous - if it's designed to
+  deal with raezs that have a very minor weight in a grid cell having too
+  much influence over it.
+
+  Perl/cli calls to do this:
+
+    perl -ne 'if (/^(\d+,\d+)/) { $count{$1}++ ; }; END {foreach $k (keys(%count)) { print($k, "  ", $count{$k},"\n")}}' regionmap.csv
+
+  ...gives the nglus for each lon,lat.  Flip $k and $count{$k} and you can
+  sort to find the max and min counts.
+
+    perl -ne '@foo=split(/,/); print($foo[4],)' regionmap.csv | sort -nr
+
+  ...gives the weights, ordered from top to bottom, to determine min and
+  max. 
+
+12/11/2019
+
+* Digging through Kate's original gcam-core to try and find some mapping
+  and initialization files - most of the gcam stuff is xml and/or .csv
+  files, rather than netCDF.  Hmm.
+
+  (She says she had trouble with the c++ netcdf libaries.  Whatev.)
+
+* This stuff is superceded by the comment following:
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+* Anyway, in gcam-core/cpl/mappings/regionmap.csv, there seems to be a
+  mapping between coordinates (given as "x" an1 "y" - "lon" and "lat"
+  indeces?), followed by "GCAM_ID", "GCAM_AEZ", and "Weight".
+
+  My supposition is that GCAM_ID is the region id; for each region we have
+  multiple AEZs, so GCAM_AEZ lists that index, and finally the weight is
+  the fraction of that grid cell that holds that AEZ.  Note that gcam
+  regions do overlap grid cells
+
+  	  $ egrep 200,148 regionmap.csv
+	  200,148,1,7,0.497278816
+	  200,148,1,8,0.211327696
+	  200,148,1,14,0.285951158
+	  200,148,2,7,0.000551974
+	  200,148,2,8,0.00488998
+
+  This finds all the weights for gridcell x=200, y=148.  The weights do sum
+  to 1, but note that we repeat AEZ's 7 and 8, because apparently a small
+  part of this grid cell is in gcam region 2, while most in region 1.
+
+  So - gridcell (200,148) maps to regions 1 and 2, and contains AEZ 7,8,
+  and 14.  (I'm assuming aez and glu are interchangable here, at least as
+  far as mapping is concerned.)
+
+  This file seems to be ordered by GCAM_ID, so looking at the end we see 14
+  regions.  This doesn't jive with NUM_GCAM_LAND_REGIONS = 384 in main.cpp,
+  since 14 is not a factdor of 384.  But if there are 16 AEZs, then 384/16
+  = 24.  Could there be 24 regions, and ~10 of them basically have no
+  landuse?  (Ocean, antartica?).  Hmm.
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+* Okay, so what has happened with gcam5 is that the GCAM vector
+  representation has moved from nreg/naez to a single vector nglu - a
+  combined regional index, that encapsulates both location and land use
+  type.  (Similar to, say, "patches" in lnd - a big honking index that you
+  can decompose to find which grid cell and pft it represents).
+
+  Which means that, unfortunately, I have to refactor gcam2glm_mod.F90 to
+  use this generalized GCAM vector index, and not do nested looping over
+  nreg/naez.
+
+  It would be great if it were simply a matter of changing a nested loop to
+  a single loop, but unfortunately there are a number of variables who are
+  dimensioned by just [aez], and one dimensioned by [reg] in gcam2glm_mod -
+  c. line 431.
+
+* So what this all means is that I can't black box this glm stuff - I have
+  to figure out what gcam2glm is doing so I can properly modify it to work
+  with the new gcam vector index.
+
+* Hmm - the region.csv file for gcam5 is just a mapping from x,y to "region
+  name" and "GLU_name".  Using
+
+    tail +2 regionmap.csv |  awk -F, '{print $3}'  | sort | uniq| wc
+
+  we see that there are 33 regions and 235 glus listed.  I don't know how
+  this maps to the 384 values we get in main.cpp.
+
+  If we look at luc.xml, we get 391 region names, that seem to be some kind
+  of combination of the "region name" and "GLU_name" in regionmap.csv: 
+
+     Africa_Northern_MeditS
+
+     vs. "Africa_Northern","MeditS"
+
+  So if we do something like {print $3,4} in my awk script, I get 427 combo
+  region_glu values.
+
+  Some of these are unclassified regions, though, so that takes us down to
+  409.  Man, I'm just not quite getting it...
+
+* Some other notes from the call: 
+
+  Kate will generate a 2015 baseline gcam file, that I can use to delta
+  off.
+
+  We are probably going to run gcam every five years, and then interpolate
+  onto one year values for glm.  So, I need to work out how to do that -
+  call iac yearly, store the coupled inputs internally, run gcam for year+5
+  if necessary, then run gcam2glm to interpolate onto our target year using
+  the bracketing five years, and couple back to lnd.
+
+  So, we'll need an alarm or some other mechanism for knowing when we need
+  another bracketing gcam run, and we need to store up our current lnd
+  inputs for use with the five year gcam run.
+
+  Co2 coupling should be straightforward - just interpolate the flux values
+  from [year0,year5] to our target year.
+
+* I mean, with interpolation we could update things at a faster rate,
+  right?  Monthly or daily?  If we ran iac monthly we could reconstruct our
+  "mean of monthly maxes" calculation (or was that the max of monthly means?)
+  
+12/10/2019
+
+* Here is the bones of an email I need to edit down to send to Kate and
+  Alan, about how gcam2glm works.
+
+---
+  The gcam output is on this regionalized grid, with zones further broken
+  up into agro-ecological zones for GCAM3.  The online docs say that for
+  GCAM5 we've replaced AEZs with a water-basin defined GLUs.  We have this
+  piece of code in iESM in gcam2glm_mod.F90 that is designed to take the
+  gcam nreg*naez output values onto a spatial [lon,lat] grid.  I'm assuming
+  that for this purpose the GLU subgrids are functionally the same as the
+  old AEZ subgrids  - we have our GCAM5 nreg*nglu output values, and want
+  to map them to [lon,lat]; presumably the mapping files Alan generated
+  facilitates this in the same way as before, and the gcam2glm regridding
+  code will work for that purpose without too much refactoring. 
+
+  But gcam2glm does something else, to - it interpolates the gcam outputs
+  in time, as well.  So it currently expects *two* different set of gcamo
+  values, one for the start year and one for the end year, across which it
+  will interpolate.  My understanding of how this worked in iESM goes
+  something like this (my example will start in 2010 and assumes we are
+  past dealing with initialization issues - we are a couple time steps in): 
+
+1 For model year 2010 (on January 1st), we decide we need to run gcam
+  again.  We use the 20100101 lnd model inputs to generate gcam outputs for
+  five years in the future, 2015. 
+2 We then send both the 2010 and 2015 GCAM outputs to gcam2glm, which
+  interpolates onto 20100101 and regrids them to [lat,lon] 
+3 We then run glm using the regridded [lat,lon] output, and send that back
+  through the coupler to the lnd model 
+4 We step forward to 2011 - we do *not* run gcam5 again, but instead send
+  the 2010 and 2015 GCAM runs to gcam2glm, which interpolates onto 20110101
+  and regrids, and use that to run glm. 
+5 Repeat with 2012, 2013, 2014
+6 For 2015, we run gcam for 2020, and repeat this loop.
+
+  This assumes we actually run gcam every 5 years, but we want to update
+  land use every one year. 
+
+  Is that still the plan?  I have it in my head that we were going to run
+  gcam5 every year, which means we don't need this kind of yearly
+  interpolation.  And I get a little confused thinking about whether we are
+  running gcam in the future or not, and what that really means. 
+
+  Anyway, looking through the (rather extensive) gcam2glm code, it seems
+  like the *change* in crop, pasture, and forest area from gcam run to gcam
+  run is the only way the gcam outputs are used.  There's some complicated
+  (and not particularly well commented) calculations involving reclaiming
+  shrinking pasture and crop lands, and it's all intertwined in with the
+  regridding code.  So to use gcam2glm as is, we really need to give it
+  gcam values for year1 and year2 and let it do it's thing. 
+
+  So, would something like this work for E3SM?
+
+1 On 20100101, we run gcam using 2010 lnd inputs
+2 We send gcam 2009 and 2010 outputs to gcam2glm, and "interpolate" onto
+  20100101 and regrid 
+3 run glm and send back landuse output to coupler
+
+---
+
+* Too much detail for an email - I need to hit the high points first.
+
+* Also, I need to ask about initalizing gcamo for our initial run
+  (i.e. 2005, I Think), so we have a year1 to apply to our year 2.
+
+12/6/2019
+
+* Here's a newish clone call:
+
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_active_gcam_coupled
+  cd E3SM_active_gcam_coupled
+  git checkout bishtgautam/gcam/add-submodule-2
+  git submodule update --init
+  git checkout -b shippert/gcam/active-gcam-coupled
+  git pull origin shippert/gcam/active-gcam-coupled
+  cd components/gcam/src
+  git pull origin master
+
+* Apparently, I need to checkout the add-submodule-2 branch before I can
+  get the submodules, and then I may need to do the pulls, especially if
+  I've just pushed things up.  I'm not sure I understand all this, but it
+  seems to have worked to get my latest updates to the local machine on
+  ~/anvil2 in prep for blues to go down this afternoon.
+
+* The idea here is to do something like this, once blues is down:
+
+    mv anvil anvil.orig #(should be empty, anyway)
+    mv anvil2 anvil
+
+  ...and then my emacs buffers that grab ~/anvil should still work.  I can
+  modify locally, and then when blues is back up next week, I can push back
+  up, mv anvil back to anvil2, mv anvil.orig to anvil, resetup the sshfs
+  mount, and then I'm back to normal.
+
 12/6/2019
 
 * Checklist time for iac_run_mct() in iac_comp_mct.F90:
