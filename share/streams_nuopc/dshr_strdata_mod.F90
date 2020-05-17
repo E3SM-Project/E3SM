@@ -505,9 +505,6 @@ contains
        call shr_stream_getModelFieldList(sdat%stream(ns), sdat%pstrm(ns)%fldlist_model)
        allocate(sdat%pstrm(ns)%fldlist_stream(nvars))
        call shr_stream_getStreamFieldList(sdat%stream(ns), sdat%pstrm(ns)%fldlist_stream)
-       write(6,*)'DEBUG: ns = ',ns
-       write(6,*)'DEBUG: ns,fldlist_stream= ',ns,sdat%pstrm(ns)%fldlist_stream(:)
-       write(6,*)'DEBUG: ns,fldlist_model=  ',ns,sdat%pstrm(ns)%fldlist_model(:)
 
        ! Create field bundles on model mesh
        sdat%pstrm(ns)%fldbun_model_lb = ESMF_FieldBundleCreate(rc=rc) ! spatial interpolation to model mesh
