@@ -8,8 +8,7 @@
 	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
 
 	<run_script name="run.py">
-		<step executable="python">
-			<argument flag="-m">jigsaw_to_MPAS.build_mesh</argument>
+		<step executable="build_mesh">
 			<argument flag="--inject_bathymetry"></argument>
 			<argument flag="--preserve_floodplain"></argument>
 			<argument flag="--floodplain_elevation">20.0</argument>

@@ -17,8 +17,7 @@
 	<add_link source_path="script_test_dir" source="region_Central_America.geojson" dest="region_Central_America.geojson"/>
 
 	<run_script name="run.py">
-		<step executable="python">
-			<argument flag="-m">jigsaw_to_MPAS.build_mesh</argument>
+		<step executable="build_mesh">
 		</step>
 	</run_script>
 
