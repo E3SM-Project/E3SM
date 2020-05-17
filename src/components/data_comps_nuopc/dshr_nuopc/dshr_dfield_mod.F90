@@ -16,7 +16,6 @@ module dshr_dfield_mod
   interface dshr_dfield_add
      module procedure dshr_dfield_add_1d
      module procedure dshr_dfield_add_2d
-     module procedure dshr_dfield_add_strmfld
   end interface dshr_dfield_add
 
   ! Note that whereas the data model export state field bundle might have fields
@@ -51,87 +50,7 @@ module dshr_dfield_mod
 contains
 !===============================================================================
 
-  subroutine dshr_dfield_add_strmfld(dfields, sdat, strm_fld, strm_ptr, logunit, masterproc, rc)
-    
-    ! Add a dfields element with just stream data info
-
-    ! input/output variables
-    type(dfield_type)      , pointer       :: dfields
-    type(shr_strdata_type) , intent(in)    :: sdat
-    character(len=*)       , intent(in)    :: strm_fld
-    real(r8)               , pointer       :: strm_ptr(:)
-    integer                , intent(in)    :: logunit
-    logical                , intent(in)    :: masterproc
-    integer                , intent(out)   :: rc 
-
-    ! local variables
-    type(dfield_type), pointer      :: dfield_new
-    integer                         :: ns, nf
-    integer                         :: lsize, num
-    integer                         :: status
-    integer                         :: fieldCount
-    character(cl)                   :: msgstr
-    type(ESMF_Field)                :: lfield
-    type(ESMF_FieldBundle)          :: fldbun
-    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    character(len=*), parameter :: subname='(dfield_add_strmfld)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    allocate(dfield_new, stat=status)
-    if (status /= 0) then
-       write(msgstr,*) subname,' allocation error ',__LINE__,':',__FILE__
-       call shr_sys_abort(msgstr)
-    end if
-    dfield_new%next => dfields
-    dfields => dfield_new
-
-    ! determine local size
-    lsize = sdat%model_lsize
-
-    ! initialize dfield_new values
-    dfield_new%sdat_stream_index = iunset  ! stream index
-    dfield_new%sdat_fldbun_index = iunset  ! index into field bundle for stream(stream_index)
-    dfield_new%stream_data1d => null()     ! pointer to stream data
-
-    ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
-    do ns = 1, sdat%nstreams
-       ! determine if the strm_fld is in the fb_model of stream ns
-       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
-       allocate(lfieldnamelist(fieldCount))
-       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) &
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       do nf = 1,fieldcount
-          if (trim(strm_fld) == trim(lfieldnamelist(nf))) then
-             dfield_new%sdat_stream_index = ns
-             dfield_new%sdat_fldbun_index = nf
-             allocate(dfield_new%stream_data1d(lsize), stat=status)
-
-             if (status /= 0) then
-                call shr_sys_abort(msgstr)
-                write(msgstr,*) subname, ' allocation error ',__LINE__,':',__FILE__
-             end if
-             strm_ptr => dfield_new%stream_data1d
-             if (masterproc) then
-                write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
-             end if
-             exit
-          end if
-       end do
-       deallocate(lfieldnamelist)
-    end do
-
-  end subroutine dshr_dfield_add_strmfld
-
-!===============================================================================
-
-  subroutine dshr_dfield_add_1d(dfields, sdat, state_fld, strm_fld, state, &
-       state_ptr, strm_ptr, logunit, masterproc, rc)
+  subroutine dshr_dfield_add_1d(dfields, sdat, state_fld, strm_fld, state, state_ptr, logunit, masterproc, rc)
 
     ! Set 1d dfield values
 
@@ -140,8 +59,7 @@ contains
     character(len=*)       , intent(in)    :: state_fld
     character(len=*)       , intent(in)    :: strm_fld
     type(ESMF_State)       , intent(inout) :: state
-    real(r8), optional     , pointer       :: state_ptr(:)
-    real(r8), optional     , pointer       :: strm_ptr(:)
+    real(r8)               , pointer       :: state_ptr(:)
     integer                , intent(in)    :: logunit
     logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
@@ -153,7 +71,6 @@ contains
     character(cl)                   :: msgstr
     integer                         :: fieldcount
     type(ESMF_Field)                :: lfield
-    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     character(len=*), parameter :: subname='(dfield_add_1d)'
     ! ----------------------------------------------
 
@@ -168,13 +85,8 @@ contains
     ! determine local size
     lsize = sdat%model_lsize
 
-    ! Initialize strm_ptr and state_ptr if it is present.
-    ! These will be set to valid values if the relevant fields are
-    ! found strm_ptr points to the data in the stream field bundle
-    ! that has been spatially and time interpolated to the model mesh
-
-    if (present(strm_ptr )) strm_ptr => null()
-    if (present(state_ptr)) state_ptr => null()
+    ! Initialize state_ptr.
+    state_ptr => null()
     dfield_new%sdat_stream_index = iunset
     dfield_new%sdat_fldbun_index = iunset
 
@@ -183,13 +95,8 @@ contains
 
     ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
     do ns = 1, sdat%nstreams
-       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       allocate(lfieldnamelist(fieldCount))
-       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       do nf = 1,fieldcount
-          if (trim(strm_fld) == trim(lfieldnamelist(nf))) then
+       do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
+          if (trim(strm_fld) == trim(sdat%pstrm(ns)%fldlist_model(nf))) then
 
              ! if strm_fld is in the field bundle of stream ns then
              ! set the field index of the field with the name strm_fld
@@ -202,9 +109,6 @@ contains
              write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
              if (status /= 0) call shr_sys_abort(msgstr)
              dfield_new%stream_data1d(:) = 0._r8
-             if (present(strm_ptr)) then
-                strm_ptr => dfield_new%stream_data1d
-             end if
 
              ! write output
              if (masterproc) then
@@ -214,7 +118,6 @@ contains
 
           end if
        end do
-       deallocate(lfieldnamelist)
     end do
 
     ! Set export state array pointer
@@ -224,11 +127,7 @@ contains
     if (masterproc) then
        write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
     end if
-
-    ! Return array pointer if argument is present
-    if (present(state_ptr)) then
-       state_ptr => dfield_new%state_data1d
-    end if
+    state_ptr => dfield_new%state_data1d
 
   end subroutine dshr_dfield_add_1d
 
@@ -395,17 +294,6 @@ contains
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              dfield%state_data2d(nf,:) = data1d(:)
           end do
-
-       else if (associated(dfield%stream_data1d)) then
-          stream_index = dfield%sdat_stream_index
-          fldbun_index = dfield%sdat_fldbun_index
-          if (stream_index /= iunset .and. fldbun_index /= iunset) then
-             call dshr_fldbun_getfieldn(sdat%pstrm(stream_index)%fldbun_model, fldbun_index, lfield, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             dfield%stream_data1d(:) = data1d(:)
-          end if
        end if
        dfield => dfield%next
 

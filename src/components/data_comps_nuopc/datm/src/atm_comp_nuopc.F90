@@ -25,6 +25,7 @@ module atm_comp_nuopc
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_regrid
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
+  use dshr_strdata_mod , only : shr_strdata_get_stream_pointer
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
@@ -188,7 +189,7 @@ module atm_comp_nuopc
   real(r8), pointer :: Sx_avsdf(:) => null()
   real(r8), pointer :: Sx_anidf(:) => null()
 
-  ! stream internal data
+  ! stream internal data 
   real(r8), pointer :: strm_z(:)         => null()
   real(r8), pointer :: strm_wind(:)      => null()
   real(r8), pointer :: strm_tdew(:)      => null()
@@ -1133,21 +1134,17 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    !-----------------------------
-    ! initialize dfields for export fields that have a corresponding stream field AND that have a corresponding module field
-    !-----------------------------
-
     call dshr_dfield_add( dfields, sdat, state_fld='Sa_tbot'   , strm_fld='tbot', &
-         state=exportState, state_ptr=Sa_tbot, strm_ptr=strm_tbot, logunit=logunit, masterproc=masterproc, rc=rc)
+         state=exportState, state_ptr=Sa_tbot, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add( dfields, sdat, state_fld='Sa_pbot'   , strm_fld='pbot', &
-         state=exportState, state_ptr=Sa_pbot, strm_ptr=strm_pbot, logunit=logunit, masterproc=masterproc, rc=rc)
+         state=exportState, state_ptr=Sa_pbot, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add( dfields, sdat, state_fld='Sa_shum'   , strm_fld='shum', &
-         state=exportState, state_ptr=Sa_shum, strm_ptr=strm_shum, logunit=logunit, masterproc=masterproc, rc=rc)
+         state=exportState, state_ptr=Sa_shum, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add( dfields, sdat, state_fld='Faxa_lwdn' , strm_fld='lwdn', &
-         state=exportState, state_ptr=Faxa_lwdn, strm_ptr=strm_lwdn, logunit=logunit, masterproc=masterproc, rc=rc)
+         state=exportState, state_ptr=Faxa_lwdn, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
        call dshr_dfield_add( dfields, sdat, state_fld='Sa_co2prog', strm_fld='co2prog', &
@@ -1159,74 +1156,78 @@ contains
     end if
 
     !-----------------------------
-    ! initialize dfields for stream fields that have no corresponding import or export fields
+    ! initialize pointers for stream fields that have no corresponding import or export fields
+    ! the following calls initialize the pointers like strm_wind below, which effectively initialize the memory
+    ! for these fields
+    ! if a field is not in the any of the streams that is read in, then no pointer will be set and the 
+    ! module array will not be associate
     !-----------------------------
 
-    call dshr_dfield_add(dfields, sdat, 'wind'  , strm_wind   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'wind'  , strm_wind  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'tdew'  , strm_tdew   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'tdew'  , strm_tdew  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'tbot'  , strm_tbot   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'tbot'  , strm_tbot  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'pbot'  , strm_pbot   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'pbot'  , strm_pbot  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'shum'  , strm_shum   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'shum'  , strm_shum  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'lwdn'  , strm_lwdn   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'lwdn'  , strm_lwdn  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'rh'    , strm_rh     , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'rh'    , strm_rh    , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'swdn'  , strm_swdn   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'swdndf', strm_swdndf , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'swdndf', strm_swdndf, logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'swdndr', strm_swdndr , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'swdndr', strm_swdndr, logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'prec'  , strm_prec   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'precc' , strm_precc  , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precc' , strm_precc , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'precl' , strm_precl  , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precl' , strm_precl , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'precn' , strm_precn  , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precn' , strm_precn , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'swup'  , strm_swup   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'swup'  , strm_swup  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'tarcf' , strm_tarcf  , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! water isotopes
-    call dshr_dfield_add(dfields, sdat, 'rh_16O'   , strm_rh_16O    , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'rh_16O'   , strm_rh_16O   , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'rh_18O'   , strm_rh_18O    , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'rh_18O'   , strm_rh_18O   , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'rh_HDO'   , strm_rh_HDO    , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'rh_HDO'   , strm_rh_HDO   , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'precn_16O', strm_precn_16O , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precn_16O', strm_precn_16O, logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'precn_18O', strm_precn_18O , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precn_18O', strm_precn_18O, logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'precn_HDO', strm_precn_HDO , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precn_HDO', strm_precn_HDO, logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! values for optionalcorrection / anomaly forcing (add Sa_precsf for precip scale factor)
-    call dshr_dfield_add(dfields, sdat, 'precsf'   , strm_precsf    , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'precsf'   , strm_precsf   , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'prec_af'  , strm_prec_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'prec_af'  , strm_prec_af  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'u_af'     , strm_u_af      , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'u_af'     , strm_u_af     , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'v_af'     , strm_v_af      , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'v_af'     , strm_v_af     , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'tbot_af'  , strm_tbot_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'tbot_af'  , strm_tbot_af  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'pbot_af'  , strm_pbot_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'pbot_af'  , strm_pbot_af  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'shum_af'  , strm_shum_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'shum_af'  , strm_shum_af  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'swdn_af'  , strm_swdn_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'swdn_af'  , strm_swdn_af  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, 'lwdn_af'  , strm_lwdn_af   , logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'lwdn_af'  , strm_lwdn_af  , logunit, masterproc, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine datm_comp_realize
