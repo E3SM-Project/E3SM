@@ -53,7 +53,8 @@ module dshr_strdata_mod
   public  :: shr_strdata_restWrite
   public  :: shr_strdata_setOrbs
   public  :: shr_strdata_advance
-  public  :: shr_strdata_get_stream_domain ! public since needed by dshr_mod
+  public  :: shr_strdata_get_stream_domain  ! public since needed by dshr_mod
+  public  :: shr_strdata_get_stream_pointer ! get a pointer into a stream's fldbun_model field bundle
   public  :: shr_strdata_print
 
   private :: shr_strdata_readnml_from_infiles
@@ -1817,6 +1818,48 @@ contains
     deallocate(dimlens)
 
   end subroutine shr_strdata_set_stream_iodesc
+
+  !===============================================================================
+  subroutine shr_strdata_get_stream_pointer(sdat, strm_fld, strm_ptr, logunit, masterproc, rc)
+    
+    ! Set a pointer, strm_ptr, for field, strm_fld, into sdat fldbun_model field bundle
+
+    ! input/output variables
+    type(shr_strdata_type) , intent(in)    :: sdat
+    character(len=*)       , intent(in)    :: strm_fld
+    real(r8)               , pointer       :: strm_ptr(:)
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
+    integer                , intent(out)   :: rc 
+
+    ! local variables
+    integer :: ns, nf
+    logical :: found
+    character(len=*), parameter :: subname='(shr_strdata_get_stream_pointer)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! loop over all input streams and determine if the strm_fld is in the field bundle of the target stream
+    do ns = 1, sdat%nstreams
+       found = .false.
+       ! Check if requested stream field is read in - and if it is then point into the stream field bundle
+       do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
+          if (trim(strm_fld) == trim(sdat%pstrm(ns)%fldlist_model(nf))) then
+             call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model, trim(sdat%pstrm(ns)%fldlist_model(nf)), &
+                  strm_ptr, rc=rc)
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
+             if (masterproc) then
+                write(logunit,*)'(dshr_addfield_add) strm_ptr is allocated for stream field strm_'//trim(strm_fld)
+             end if
+             found = .true.
+             exit
+          end if
+       end do
+       if (found) exit
+    end do
+
+  end subroutine shr_strdata_get_stream_pointer
 
   !===============================================================================
   subroutine shr_strdata_handle_error(ierr, errorstr)
