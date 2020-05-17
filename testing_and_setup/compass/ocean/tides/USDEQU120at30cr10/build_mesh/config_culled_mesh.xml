@@ -12,8 +12,7 @@
 		<step executable="./cull_mesh.py">
 			<argument flag="--with_critical_passages"></argument>
 		</step>
-		<step executable="python">
-			<argument flag="-m">jigsaw_to_MPAS.inject_bathymetry</argument>
+		<step executable="inject_bathymetry">
 			<argument flag="">culled_mesh.nc</argument>
 		</step>
 
