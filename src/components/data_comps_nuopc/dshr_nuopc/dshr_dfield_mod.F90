@@ -4,7 +4,7 @@ module dshr_dfield_mod
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
   use dshr_strdata_mod , only : shr_strdata_type
-  use dshr_methods_mod , only : dshr_state_getfldptr, dshr_fldbun_getfieldn, dshr_field_getfldptr
+  use dshr_methods_mod , only : dshr_state_getfldptr, dshr_fldbun_getfieldn, dshr_field_getfldptr, dshr_fldbun_getFldPtr
   use dshr_methods_mod , only : chkerr
 
   implicit none
@@ -24,19 +24,15 @@ module dshr_dfield_mod
 
   ! Linked list node
   type, public :: dfield_type
-     ! state data
+     ! state data with no ungridded dimensions
      real(r8), pointer          :: state_data1d(:) => null()
-     real(r8), pointer          :: state_data2d(:,:) => null()
-     ! stream data input (always assumed to be 1d for now)
      real(r8), pointer          :: stream_data1d(:) => null()
-     ! stream data pointers for 1d export state data
-     integer                    :: sdat_stream_index = 0
-     integer                    :: sdat_fldbun_index = 0
-     ! stream data pointers for 2d export state data
-     integer, pointer           :: sdat_stream_indices(:) => null()
-     integer, pointer           :: sdat_fldbun_indices(:) => null()
-     integer                    :: stream_nflds = 0 ! number of stream field names
-     character(CS), allocatable :: stream_fldnames(:)
+     integer                    :: stream_index = 0
+     integer                    :: fldbun_index = 0
+     ! state data with ungridded dimensions
+     real(r8), pointer          :: state_data2d(:,:) => null()
+     integer, pointer           :: stream_indices(:) => null()
+     integer, pointer           :: fldbun_indices(:) => null()
      ! linked list pointer
      type(dfield_type), pointer :: next => null()
   end type dfield_type
@@ -65,12 +61,11 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(dfield_type), pointer      :: dfield_new
-    integer                         :: ns, nf, lsize
-    integer                         :: status
-    character(cl)                   :: msgstr
-    integer                         :: fieldcount
-    type(ESMF_Field)                :: lfield
+    type(dfield_type), pointer :: dfield_new
+    integer                    :: ns, nf
+    integer                    :: status
+    character(cl)              :: msgstr
+    logical                    :: found
     character(len=*), parameter :: subname='(dfield_add_1d)'
     ! ----------------------------------------------
 
@@ -81,46 +76,40 @@ contains
     if (status /= 0) call shr_sys_abort(msgstr)
     dfield_new%next => dfields
     dfields => dfield_new
-
-    ! determine local size
-    lsize = sdat%model_lsize
-
-    ! Initialize state_ptr.
-    state_ptr => null()
-    dfield_new%sdat_stream_index = iunset
-    dfield_new%sdat_fldbun_index = iunset
-
-    ! always allocate memory for stream_data and initialize it to 0
-    ! note that if the attribute vector is not found in the streams
+    dfield_new%stream_index = iunset
+    dfield_new%fldbun_index = iunset
 
     ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
+    ! if strm_fld is in the field bundle of stream ns, set the field index of the field with the name strm_fld
+    ! and set the index of the stream
+
+    found = .false.
     do ns = 1, sdat%nstreams
        do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
           if (trim(strm_fld) == trim(sdat%pstrm(ns)%fldlist_model(nf))) then
-
-             ! if strm_fld is in the field bundle of stream ns then
-             ! set the field index of the field with the name strm_fld
-             ! and set the index of the stream
-             dfield_new%sdat_fldbun_index = nf
-             dfield_new%sdat_stream_index = ns
-
-             ! set the pointer to the stream data
-             allocate(dfield_new%stream_data1d(lsize), stat=status)
-             write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-             if (status /= 0) call shr_sys_abort(msgstr)
-             dfield_new%stream_data1d(:) = 0._r8
-
-             ! write output
-             if (masterproc) then
-                write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
-             end if
-             exit
-
+             found = .true.
+             ! set indices
+             dfield_new%fldbun_index = nf
+             dfield_new%stream_index = ns
+             ! set pointer to the stream data
+             call dshr_fldbun_getFldPtr(sdat%pstrm(ns)%fldbun_model, trim(strm_fld), dfield_new%stream_data1d, rc=rc)
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
           end if
+          if (found) exit
        end do
+       if (found) exit
     end do
 
+    if (masterproc) then
+       if (found) then
+          write(logunit,*)'(dshr_addfield_add) set pointer for stream field strm_'//trim(strm_fld)
+       else
+          write(logunit,*)'(dshr_addfield_add) no pointer set for for stream field strm_'//trim(strm_fld)
+       end if
+    end if
+
     ! Set export state array pointer
+    state_ptr => null()
     call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfield_new%state_data1d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data1d = 0.0_r8
@@ -167,29 +156,16 @@ contains
     dfield_new%next => dfields
     dfields => dfield_new
 
-    ! determine local size
-    lsize = sdat%model_lsize
-
     ! determine stream fldnames array
     nflds = size(strm_flds)
 
-    dfield_new%stream_nflds = nflds
-    allocate(dfield_new%stream_fldnames(nflds), stat=status)
-    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-    do n = 1,nflds
-       dfield_new%stream_fldnames(n) = strm_flds(n)
-    end do
-
-    allocate(dfield_new%sdat_stream_indices(nflds), stat=status)
+    allocate(dfield_new%stream_indices(nflds), stat=status)
     write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
     if (status /= 0) call shr_sys_abort(msgstr)
 
-    allocate(dfield_new%sdat_fldbun_indices(nflds), stat=status)
+    allocate(dfield_new%fldbun_indices(nflds), stat=status)
     write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
     if (status /= 0) call shr_sys_abort(msgstr)
-
-    ! loop over all input streams and determine if the strm_flds name
-    ! is in the field bundle of stream ns
 
     ! loop through the field names in strm_flds
     do nf = 1, nflds
@@ -198,25 +174,26 @@ contains
        do ns = 1, sdat%nstreams
 
           ! determine which stream the field with name dfield%stream_fldnames(nf) is in
-          call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldName=trim(dfield_new%stream_fldnames(nf)), &
-               isPresent=isPresent, rc=rc)
+          call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldName=trim(strm_flds(nf)), isPresent=isPresent, rc=rc)
           if (ispresent) then
              ! if field is present in stream - determine the index in the field bundle of this field
-             dfield_new%sdat_stream_indices(nf) = ns
+             dfield_new%stream_indices(nf) = ns
              call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              allocate(lfieldnamelist(fieldCount))
              call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
+
              do n = 1,fieldcount
                 if (trim(strm_flds(nf)) == trim(lfieldnamelist(n))) then
-                   dfield_new%sdat_fldbun_indices(nf) = n
+                   dfield_new%fldbun_indices(nf) = n
                    if (masterproc) then
                       write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
-                           trim(strm_flds(nf))//' for 2d '//trim(state_fld)
+                           trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
                    end if
                 end if
              end do
+
              deallocate(lfieldnamelist)
              exit ! go to the next fld
           end if
@@ -226,12 +203,10 @@ contains
     ! Set export state array pointer
     call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfield_new%state_data2d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    dfield_new%state_data2d(nflds,lsize) = 0._r8
+    dfield_new%state_data2d(:,:) = 0._r8
     if (masterproc) then
        write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
     end if
-
-    ! Return array pointer if argument is present
     if (present(state_ptr)) then
        state_ptr => dfield_new%state_data2d
     end if
@@ -274,8 +249,8 @@ contains
 
        ! Map the stream data to the state data
        if (associated(dfield%state_data1d)) then
-          stream_index = dfield%sdat_stream_index
-          fldbun_index = dfield%sdat_fldbun_index
+          stream_index = dfield%stream_index
+          fldbun_index = dfield%fldbun_index
           if (stream_index /= iunset .and. fldbun_index /= iunset) then
              call dshr_fldbun_getfieldn(sdat%pstrm(stream_index)%fldbun_model, fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -285,9 +260,9 @@ contains
              dfield%state_data1d(:) = data1d(:)
           end if
        else if (associated(dfield%state_data2d)) then
-          do nf = 1,dfield%stream_nflds
-             stream_index = dfield%sdat_stream_indices(nf)
-             fldbun_index = dfield%sdat_fldbun_indices(nf)
+          do nf = 1,size(dfield%stream_indices)
+             stream_index = dfield%stream_indices(nf)
+             fldbun_index = dfield%fldbun_indices(nf)
              call dshr_fldbun_getfieldn(sdat%pstrm(stream_index)%fldbun_model, fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)
