@@ -63,6 +63,7 @@ endif
 # currently, C++ code is included if and only if we're linking to the
 # trilinos library or the Albany library.
 USE_CXX = FALSE
+#USE_CXX = TRUE
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
    USE_CXX = TRUE
 endif
@@ -81,11 +82,27 @@ ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
 
-USE_GCAM = TRUE
+USE_GCAM := TRUE
 # These are needed for GCAM - need to have a USE_GCAM kind of tag here.
 ifeq ($(strip $(USE_GCAM)), TRUE)
   # Hardcoded to my local directory on anvil.  Obviously not correct
-  GLIBS += -L/home/shippert/local/lib -lxerces-c -lxqilla -lstdc++
+  XDIR := /blues/gpfs/home/shippert/local/lib
+
+  #Does not work - cannot find a good dynamic option
+  #GLIBS := -R/blues/gpfs/home/shippert/local/lib -L/blues/gpfs/home/shippert/local/lib -lxerces-c -lstdc++ - ldd can't find
+  #GLIBS := -Wl,-Bstatic -L$(XDIR) -lxerces-c - I think cannot link system libraries statically, so we have to turn dynamic back on
+  #GLIBS := -Wl,-rpath,$(XDIR) -lxerces-c - cannot find xerces, so rpath doesn't work (need -L)
+
+  #Works 
+
+  # Static link options
+  #GLIBS := $(XDIR)/libxerces-c.a 
+  #GLIBS := -Wl,-Bstatic -L$(XDIR) -lxerces-c -Wl,-Bdynamic
+
+  #Dynamic link - need both rpath AND -L.  
+  GLIBS := -Wl,-rpath,$(XDIR) -L$(XDIR) -lxerces-c -lstdc++
+  #GLIBS := -Xlinker -rpath -Xlinker $(XDIR) -L$(XDIR) -lxerces-c -lstdc++
+
 endif
 
 
@@ -574,10 +591,21 @@ endif
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
   ifeq ($(NETCDF_SEPARATE), FALSE)
-    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf 
   else ifeq ($(NETCDF_SEPARATE), TRUE)
     SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
   endif
+endif
+
+# Need to add this here on anvil to find dynamic load directories for netcdf
+ifdef LIB_NETCDF_FORTRAN
+   SLIBS += -Xlinker -rpath -Xlinker $(LIB_NETCDF_FORTRAN)  
+endif
+ifdef LIB_NETCDF_C
+   SLIBS += -Xlinker -rpath -Xlinker $(LIB_NETCDF_C)
+endif
+ifdef LIB_NETCDF
+   SLIBS += -Xlinker -rpath -Xlinker $(LIB_NETCDF)
 endif
 
 ifdef LAPACK_LIBDIR
@@ -914,7 +942,7 @@ install_lib: $(COMPLIB)
 
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
-	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS) $(GLIBS)
+	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(GLIBS) $(F90_LDFLAGS) 
 
 $(COMPLIB): $(OBJS)
 	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)

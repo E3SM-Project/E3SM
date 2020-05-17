@@ -44,6 +44,25 @@ print file "$SRCROOT/components/gcam/src/iac/coupling \n";
 # all this stuff will probably be in a different set of directories
 print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/include \n";
+
+# Turn off hector - this currently doesn't work, but it's most of what you
+# need to do to turn it back on.
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/components \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/input \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/data \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/models \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/visitors \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/core \n";
+
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/components \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/core \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/data \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/input \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/models \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/visitors \n";
+
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/logger/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/database/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/base/source \n";
@@ -65,7 +84,6 @@ print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/marketplace/source
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/containers/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/technologies/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source \n";
-print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/util/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/emissions/source \n";
