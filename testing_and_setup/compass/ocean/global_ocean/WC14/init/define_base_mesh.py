@@ -2,9 +2,9 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
-import jigsaw_to_MPAS.mesh_definition_tools as mdt
-from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
-    mask_from_geojson, distance_from_geojson
+import mpas_tools.mesh.creation.mesh_definition_tools as mdt
+from mpas_tools.mesh.creation.coastal_tools import \
+    signed_distance_from_geojson, mask_from_geojson, distance_from_geojson
 from geometric_features import read_feature_collection
 import xarray
 import matplotlib
