@@ -1955,18 +1955,7 @@ subroutine shoc_length(&
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
   call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
-
-
-  do k=1,nlev
-    do i=1,shcol
-
-      shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
-      shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
-      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
-
-    enddo
-  enddo
-
+  
   return
 
 end subroutine shoc_length
