@@ -59,7 +59,7 @@ def buildlib(bldroot, installpath, case):
 
     # Append path for driver - currently only values of 'mct' and 'nuopc' are accepted
 
-    if comp_interface == "mct":
+    if comp_interface == "mct" or comp_interface == "moab":
         filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
     elif comp_interface == "nuopc":
         filepath.append(os.path.join(cimeroot,"src","share","nuopc"))
