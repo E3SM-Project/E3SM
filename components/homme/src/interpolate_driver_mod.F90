@@ -1191,14 +1191,14 @@ contains
 
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
+    use kinds, only: real_kind
+    use dimensions_mod, only: nelemd, nlev, np, npsq
+    use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dof_mod, only: putuniquepoints
-    use kinds, only: real_kind
     use edge_mod, only: edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
     use edgetype_mod, only: edgebuffer_t
-    use dimensions_mod, only: nelemd, nlev, np, npsq
     use bndry_mod, only: bndry_exchangeV
-    use common_io_mod, only: varname_len
 #endif
 
     character(len=*), intent(in) :: filename
@@ -1267,10 +1267,10 @@ contains
   subroutine read_physgrid_topo_file(infilename, elem, par, fieldnames, nphys, pg_fields, stat)
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use common_io_mod, only: varname_len, io_stride, num_io_procs, num_agg
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use control_mod, only: max_string_len
     use pio, only: pio_init, pio_openfile, pio_rearr_box, pio_inquire, pio_inq_dimname, &
          pio_inq_dimlen, pio_initdecomp
@@ -1355,10 +1355,10 @@ contains
 
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use kinds, only: real_kind
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use common_io_mod, only: varname_len
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
     use control_mod, only: max_string_len
 #endif
@@ -1440,9 +1440,9 @@ contains
        gll_fields, pg_fields, nphys, history, output_latlon)
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use kinds, only: real_kind
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use common_io_mod, only: varname_len
     use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
     use control_mod, only: max_string_len
