@@ -30,7 +30,8 @@ contains
    subroutine get_cloud_optics_sw( &
          ncol, nlev, nbnd, do_snow, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rel, rei, &
-         tau_out, ssa_out, asm_out)
+         tau_out, ssa_out, asm_out, &
+         liq_tau_out, ice_tau_out, snw_tau_out)
 
       use ppgrid, only: pcols
       use physics_types, only: physics_state
@@ -50,7 +51,8 @@ contains
       ! corresponding fields were defined for all indices of nlev. This
       ! isn't the case right now I don't think, as cloud_rad_props makes explicit
       ! assumptions about array sizes.
-      real(r8), intent(out), dimension(:,:,:) :: tau_out, ssa_out, asm_out
+      real(r8), intent(out), dimension(:,:,:) :: &
+         tau_out, ssa_out, asm_out, liq_tau_out, ice_tau_out, snw_tau_out
 
       ! Temporary variables to hold cloud optical properties before combining into
       ! output arrays. Same shape as output arrays, so get shapes from output.
@@ -63,23 +65,31 @@ contains
 
       integer :: iband, ilev, icol
 
-      ! Initialize
-      ice_tau = 0
-      ice_tau_ssa = 0
-      ice_tau_ssa_g = 0
-      ice_tau_ssa_f = 0
-      liq_tau = 0
-      liq_tau_ssa = 0
-      liq_tau_ssa_g = 0
-      liq_tau_ssa_f = 0
-      snow_tau = 0
-      snow_tau_ssa = 0
-      snow_tau_ssa_g = 0
-      snow_tau_ssa_f = 0
-      combined_tau = 0
-      combined_tau_ssa = 0
-      combined_tau_ssa_g = 0
-      combined_tau_ssa_f = 0
+      ! Initialize outputs
+      tau_out = 0._r8
+      ssa_out = 0._r8
+      asm_out = 0._r8
+      liq_tau_out = 0._r8
+      ice_tau_out = 0._r8
+      snw_tau_out = 0._r8
+
+      ! Initialize local variables
+      ice_tau = 0._r8
+      ice_tau_ssa = 0._r8
+      ice_tau_ssa_g = 0._r8
+      ice_tau_ssa_f = 0._r8
+      liq_tau = 0._r8
+      liq_tau_ssa = 0._r8
+      liq_tau_ssa_g = 0._r8
+      liq_tau_ssa_f = 0._r8
+      snow_tau = 0._r8
+      snow_tau_ssa = 0._r8
+      snow_tau_ssa_g = 0._r8
+      snow_tau_ssa_f = 0._r8
+      combined_tau = 0._r8
+      combined_tau_ssa = 0._r8
+      combined_tau_ssa_g = 0._r8
+      combined_tau_ssa_f = 0._r8
 
       ! Get ice cloud optics
       if (trim(icecldoptics) == 'mitchell') then
@@ -153,10 +163,10 @@ contains
       else
          ! We are not doing snow optics, so set these to zero so we can still use 
          ! the arrays without additional logic
-         snow_tau(:,:,:) = 0.0
-         snow_tau_ssa(:,:,:) = 0.0
-         snow_tau_ssa_g(:,:,:) = 0.0
-         snow_tau_ssa_f(:,:,:) = 0.0
+         snow_tau(:,:,:) = 0._r8
+         snow_tau_ssa(:,:,:) = 0._r8
+         snow_tau_ssa_g(:,:,:) = 0._r8
+         snow_tau_ssa_f(:,:,:) = 0._r8
       end if
 
       ! Combine all cloud optics from CAM routines
@@ -197,14 +207,19 @@ contains
             ssa_out(:ncol,:nlev,iband) &
                = combined_tau_ssa(iband,:ncol,:nlev) / combined_tau(iband,:ncol,:nlev)
          elsewhere
-            ssa_out(:ncol,:nlev,iband) = 1.0
+            ssa_out(:ncol,:nlev,iband) = 1._r8
          endwhere
          where (combined_tau_ssa(iband,:ncol,:nlev) > 0)
             asm_out(:ncol,:nlev,iband) &
                = combined_tau_ssa_g(iband,:ncol,:nlev) / combined_tau_ssa(iband,:ncol,:nlev)
          elsewhere
-            asm_out(:ncol,:nlev,iband) = 0.0
+            asm_out(:ncol,:nlev,iband) = 0._r8
          end where
+
+         ! Re-order diagnostics outputs
+         liq_tau_out(:ncol,:nlev,iband) = liq_tau(iband,:ncol,:nlev)
+         ice_tau_out(:ncol,:nlev,iband) = ice_tau(iband,:ncol,:nlev)
+         snw_tau_out(:ncol,:nlev,iband) = snow_tau(iband,:ncol,:nlev)
       end do
 
       ! Check values
@@ -221,7 +236,7 @@ contains
    subroutine get_cloud_optics_lw( &
          ncol, nlev, nbnd, do_snow, cld, cldfsnow, iclwp, iciwp, icswp, &
          lambdac, mu, dei, des, rei, &
-         tau_out)
+         tau_out, liq_tau_out, ice_tau_out, snw_tau_out)
 
       use ppgrid, only: pcols
       use cloud_rad_props, only: gammadist_liq_optics_lw, mitchell_ice_optics_lw
@@ -235,7 +250,7 @@ contains
          cld, cldfsnow, &
          iclwp, iciwp, icswp, &
          mu, lambdac, dei, des, rei
-      real(r8), intent(out), dimension(:,:,:) :: tau_out
+      real(r8), intent(out), dimension(:,:,:) :: tau_out, liq_tau_out, ice_tau_out, snw_tau_out
 
       ! Temporary variables to hold absorption optical depth
       real(r8), dimension(nbnd,pcols,nlev) :: &
@@ -243,12 +258,18 @@ contains
 
       integer :: iband
 
-      ! initialize
-      ice_tau(:,:,:) = 0.0
-      liq_tau(:,:,:) = 0.0
-      snow_tau(:,:,:) = 0.0
-      cld_tau(:,:,:) = 0.0
-      combined_tau(:,:,:) = 0.0
+      ! Initialize outputs
+      tau_out = 0._r8
+      liq_tau_out = 0._r8
+      ice_tau_out = 0._r8
+      snw_tau_out = 0._r8
+
+      ! Initialize local variables
+      ice_tau(:,:,:) = 0._r8
+      liq_tau(:,:,:) = 0._r8
+      snow_tau(:,:,:) = 0._r8
+      cld_tau(:,:,:) = 0._r8
+      combined_tau(:,:,:) = 0._r8
 
       ! Get ice optics
       if (trim(icecldoptics) == 'mitchell') then
@@ -286,6 +307,9 @@ contains
       ! Set output optics
       do iband = 1,nbnd
          tau_out(1:ncol,1:nlev,iband) = combined_tau(iband,1:ncol,1:nlev)
+         liq_tau_out(1:ncol,1:nlev,iband) = liq_tau(iband,1:ncol,1:nlev)
+         ice_tau_out(1:ncol,1:nlev,iband) = ice_tau(iband,1:ncol,1:nlev)
+         snw_tau_out(1:ncol,1:nlev,iband) = snow_tau(iband,1:ncol,1:nlev)
       end do
 
       ! Check values
@@ -327,7 +351,7 @@ contains
       combined_fraction = max(fraction1, fraction2)
 
       ! Combine optical properties by weighting by amount of cloud and snow
-      combined_property = 0
+      combined_property = 0._r8
       do ilev = 1,nlevs
          do icol = 1,ncols
             do iband = 1,nbands
@@ -337,7 +361,7 @@ contains
                    + fraction2(icol,ilev) * property2(iband,icol,ilev) &
                   ) / combined_fraction(icol,ilev)
                else
-                  combined_property(iband,icol,ilev) = 0
+                  combined_property(iband,icol,ilev) = 0._r8
                end if
             end do
          end do
@@ -386,9 +410,9 @@ contains
                   ssa_gpt(icol,ilev,igpt) = ssa_bnd(icol,ilev,gpt2bnd(igpt))
                   asm_gpt(icol,ilev,igpt) = asm_bnd(icol,ilev,gpt2bnd(igpt))
                else
-                  tau_gpt(icol,ilev,igpt) = 0
-                  ssa_gpt(icol,ilev,igpt) = 1
-                  asm_gpt(icol,ilev,igpt) = 0
+                  tau_gpt(icol,ilev,igpt) = 0._r8
+                  ssa_gpt(icol,ilev,igpt) = 1._r8
+                  asm_gpt(icol,ilev,igpt) = 0._r8
                end if
             end do
          end do
@@ -464,7 +488,7 @@ contains
                if (iscloudy(igpt,icol,ilev) .and. combined_cld(icol,ilev) > 0._r8) then
                   tau_gpt(icol,ilev,igpt) = tau_bnd(icol,ilev,gpt2bnd(igpt))
                else
-                  tau_gpt(icol,ilev,igpt) = 0
+                  tau_gpt(icol,ilev,igpt) = 0._r8
                end if
             end do
          end do
@@ -507,10 +531,10 @@ contains
       ncol = state%ncol
 
       ! Get aerosol absorption optical depth from CAM routine
-      tau = 0.0
-      tau_w = 0.0
-      tau_w_g = 0.0
-      tau_w_f = 0.0
+      tau = 0._r8
+      tau_w = 0._r8
+      tau_w_g = 0._r8
+      tau_w_f = 0._r8
       call aer_rad_props_sw(icall, state, pbuf, &
                             count(night_indices > 0), night_indices, is_cmip6_volc, &
                             tau, tau_w, tau_w_g, tau_w_f)
@@ -524,14 +548,14 @@ contains
             ssa_out(icol,1:pver,1:nswbands) &
                = tau_w(icol,1:pver,1:nswbands) / tau(icol,1:pver,1:nswbands)
          elsewhere
-            ssa_out(icol,1:pver,1:nswbands) = 1
+            ssa_out(icol,1:pver,1:nswbands) = 1._r8
          endwhere
          ! Extract assymmetry parameter from the product-defined fields
          where (tau_w(icol,1:pver,1:nswbands) > 0)
             asm_out(icol,1:pver,1:nswbands) &
                = tau_w_g(icol,1:pver,1:nswbands) / tau_w(icol,1:pver,1:nswbands)
          elsewhere
-            asm_out(icol,1:pver,1:nswbands) = 0
+            asm_out(icol,1:pver,1:nswbands) = 0._r8
          endwhere
       end do
 
@@ -569,7 +593,7 @@ contains
       character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_lw'
 
       ! Get aerosol absorption optical depth from CAM routine
-      tau = 0.0
+      tau = 0._r8
       call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, tau)
 
    end subroutine set_aerosol_optics_lw
