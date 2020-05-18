@@ -181,8 +181,9 @@ subroutine shoc_main ( &
      exner,phis, &                        ! Input
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
-     wthv_sec,tkh,tk,shoc_ql,&            ! Input/Output
-     shoc_cldfrac,pblh,&                  ! Output
+     wthv_sec,tkh,tk,&                    ! Input/Output
+     shoc_cldfrac,shoc_ql,&               ! Input/Output
+     pblh,&                               ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
@@ -261,13 +262,13 @@ subroutine shoc_main ( &
   real(rtype), intent(inout) :: tk(shcol,nlev)
   ! eddy coefficent for heat [m2/s]
   real(rtype), intent(inout) :: tkh(shcol,nlev)
+  ! Cloud fraction [-]
+  real(rtype), intent(inout) :: shoc_cldfrac(shcol,nlev)  
   ! cloud liquid mixing ratio [kg/kg]
   real(rtype), intent(inout) :: shoc_ql(shcol,nlev)
 
   ! OUTPUT VARIABLES
 
-  ! Cloud fraction [-]
-  real(rtype), intent(out) :: shoc_cldfrac(shcol,nlev)
   ! planetary boundary layer depth [m]
   real(rtype), intent(out) :: pblh(shcol)
 
@@ -1938,8 +1939,9 @@ subroutine shoc_length(&
   !=========================================================
   ! determine the convective velocity scale of
   !   the planetary boundary layer
-  call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
 
+  call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
+  
   ! computed quantity above is wstar3
   ! clip, to avoid negative values and take the cubed
   !   root to get the convective velocity scale

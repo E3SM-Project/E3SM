@@ -56,7 +56,7 @@ public:
   template<typename SrcDT>
   Field& operator= (const Field<SrcDT,device_type>& src);
 
-  // ---- Getters ---- //
+  // ---- Getters and const methods---- //
   const header_type& get_header () const { return *m_header; }
         header_type& get_header ()       { return *m_header; }
   const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
@@ -66,13 +66,18 @@ public:
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
 
+  // Allows to get the underlying view, reshaped for a different data type.
+  // The class will check that the requested data type is compatible with the
+  // allocation. This allows each field to be stored as a 1d array, but then
+  // be reshaped to the desired layout before being used.
   template<typename DT>
   ko::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
   get_reshaped_view () const;
 
+  // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_allocated; }
 
-  // ---- Setters ---- //
+  // ---- Setters and non-const methods ---- //
 
   // Allocate the actual view
   void allocate_view ();

@@ -1,8 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
-#include "share/remap/abstract_remapper.hpp"
-#include "share/atmosphere_process.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_parameter_list.hpp"
 
 #include <string>
@@ -27,12 +27,6 @@ public:
   using atm_proc_type     = AtmosphereProcess;
   using remapper_type     = AbstractRemapper<Real, device_type>;
   using remapper_ptr_type = std::shared_ptr<remapper_type>;
-
-  // Enum to specify whether processes in the group have to be run sequentially or in parallel.
-  enum class GroupScheduleType {
-    Sequential,
-    Parallel
-  };
 
   // Constructor(s)
   explicit AtmosphereProcessGroup (const Comm& comm, const ParameterList& params);
@@ -79,6 +73,14 @@ public:
 
   void setup_remappers (const FieldRepository<Real, device_type>& field_repo);
 
+  const std::vector<std::map<std::string,remapper_ptr_type>>&
+  get_inputs_remappers () const { return m_inputs_remappers; }
+
+  const std::vector<std::map<std::string,remapper_ptr_type>>&
+  get_outputs_remappers () const { return m_outputs_remappers; }
+
+  ScheduleType get_schedule_type () const { return m_group_schedule_type; }
+
 #ifdef SCREAM_DEBUG
   void set_field_repos (const FieldRepository<Real, device_type>& repo,
                         const FieldRepository<Real, device_type>& bkp_repo);
@@ -117,7 +119,7 @@ protected:
   std::string m_ref_grid_name;
 
   // The schedule type: Parallel vs Sequential
-  GroupScheduleType   m_group_schedule_type;
+  ScheduleType   m_group_schedule_type;
 
   // The cumulative set of required/computed fields of the atm processes in the group
   std::set<FieldIdentifier>      m_required_fields;
