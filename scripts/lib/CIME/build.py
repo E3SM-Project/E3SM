@@ -423,9 +423,9 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
     if get_model() != "ufs":
         compile_cmd = "SMP={} {}".format(stringify_bool(smp), compile_cmd)
 
-    if (check_for_python(cmd)):
+    if check_for_python(cmd):
         logging_options = get_logging_options()
-        if (logging_options != ""):
+        if logging_options != "":
             compile_cmd = compile_cmd + logging_options
 
     with open(file_build, "w") as fd:
