@@ -23,6 +23,7 @@ module ocn_comp_nuopc
   use shr_const_mod    , only : shr_const_zsrflyr, shr_const_pi
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
+  use dshr_strdata_mod , only : shr_strdata_get_stream_pointer
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write
@@ -66,8 +67,9 @@ module ocn_comp_nuopc
   character(*) , parameter     :: nullstr = 'undefined'
 
   ! docn_in namelist input
+  character(CL)                :: xmlfilename = nullstr               ! filename to obtain namelist info from
+  character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
   character(CL)                :: dataMode                            ! flags physics options wrt input data
-  character(CL)                :: nlfilename                          ! filename to obtain namelist info from
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
   character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
@@ -365,7 +367,8 @@ contains
 
     ! Initialize sdat
     call t_startf('docn_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ocn', &
+    xmlfilename = 'docn.streams.xml'
+    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ocn', &
          model_meshfile, model_maskfile, model_mesh, read_restart, sdat, reset_mask=reset_mask,  rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_init')
@@ -620,9 +623,9 @@ contains
     call dshr_state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Obtain So_omask (the ocean fraction)
+    ! Obtain the ocean fraction (So_omask)
     if (trim(model_maskfile) /= trim(model_meshfile)) then 
-       !TODO: check that the variable 'frac' is on the file and if not abort
+       ! TODO: check that the variable 'frac' is on the file and if not abort
        ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
        rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
@@ -676,10 +679,10 @@ contains
          state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Initialize dfields stream fields that have no corresponding export fields
-    call dshr_dfield_add(dfields, sdat,  strm_fld='qbot', strm_ptr=strm_qbot, logunit=logunit, masterproc=masterproc, rc=rc)
+    ! initialize pointers for stream fields that have no corresponding import or export fields
+    call shr_strdata_get_stream_pointer( sdat, 'qbot', strm_qbot, logunit, masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat,  strm_fld='h', strm_ptr=strm_h, logunit=logunit, masterproc=masterproc, rc=rc)
+    call shr_strdata_get_stream_pointer( sdat, 'h'   , strm_h   , logunit, masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and

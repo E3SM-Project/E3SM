@@ -477,7 +477,6 @@ contains
     ! Initialize sdat
     call t_startf('datm_strdata_init')
     xmlfilename = 'datm.streams.xml'
-
     call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'atm', &
          model_meshfile, model_maskfile, model_mesh, read_restart, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return

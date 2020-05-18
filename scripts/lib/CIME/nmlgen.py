@@ -82,6 +82,7 @@ _stream_nuopc_file_template = """
       {offset}
    </stream_offset>
  </stream_info>
+
 """
 
 class NamelistGenerator(object):

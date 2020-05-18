@@ -109,14 +109,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     anomaly_forcing = nmlgen.get_value("anomaly_forcing")
     streams += anomaly_forcing
 
-
-
-#    for stream in streams:
-#        if stream is None or stream in ("NULL", ""):
-#            continue
-#        inst_stream = stream + inst_string
-#        print "DEBUG: DATM stream is {}".format(inst_stream)
-#        logger.debug("DATM stream is {}".format(inst_stream))
     stream_path = os.path.join(confdir, "datm.streams"+inst_string+".xml" )
     nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 

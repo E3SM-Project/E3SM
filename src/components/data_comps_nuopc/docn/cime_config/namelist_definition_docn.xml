@@ -40,6 +40,7 @@
     </desc>
     <values>
       <value docn_mode="prescribed">prescribed</value>
+      <value docn_mode="interannual">interannual</value>
       <value docn_mode="sst_aquap1">''</value>
       <value docn_mode="sst_aquap2">''</value>
       <value docn_mode="sst_aquap3">''</value>
@@ -54,7 +55,6 @@
       <value docn_mode="sst_aquapfile">aquapfile</value>
       <value docn_mode="som">som</value>
       <value docn_mode="som_aquap">som</value>
-      <value docn_mode="interannual">interannual</value>
     </values>
   </entry>
 
@@ -64,23 +64,23 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value grid=".+"				>
-	$DIN_LOC_ROOT/share/meshes/rx1_nomask_181022_newareas_ESMFmesh.nc
+      <value grid=".+">
+	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029_ESMFmesh_120520.nc
       </value>
-      <value grid="a%T31.*_oi%T31"		>
+      <value grid="a%T31.*_oi%T31">
 	$DIN_LOC_ROOT/share/meshes/T31_040122_ESMFmesh.nc
       </value>
-      <value grid="a%1.9x2.5.*_oi%1.9x2.5"	>
+      <value grid="a%1.9x2.5.*_oi%1.9x2.5">
 	$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc
       </value>
-      <value grid="a%0.9x1.25.*_oi%0.9x1.25"	>
+      <value grid="a%0.9x1.25.*_oi%0.9x1.25">
 	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
       </value>
-      <value grid="a%0.47x0.63.*_oi%0.47x0.63"	>
+      <value grid="a%0.47x0.63.*_oi%0.47x0.63">
 	$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc
       </value>
-      <!-- <value grid="a%0.23x0.31.*_oi%0.23x0.31"	>fill this in</value> -->
-      <value grid="a%4x5.*_m%gx3v7"	        >
+      <!-- <value grid="a%0.23x0.31.*_oi%0.23x0.31">fill this in</value> -->
+      <value grid="a%4x5.*_m%gx3v7">
 	$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc
       </value>
     </values>
@@ -95,10 +95,10 @@
       <value stream="prescribed" >
 	$SSTICE_DATA_FILENAME
       </value>
-      <value stream="aquapfile"  >
+      <value stream="aquapfile">
 	$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/$DOCN_AQP_FILENAME
       </value>
-      <value stream="som"        >
+      <value stream="som">
 	$DIN_LOC_ROOT/ocn/docn7/SOM/$DOCN_SOM_FILENAME
       </value>
       <value stream="interannual">
@@ -190,8 +190,25 @@
     </values>
   </entry>
 
+  <entry id="mapmask" per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <desc>
+      masking algorithms for mapping input data associated with the
+      array of streams.  valid options are map only from valid src
+      points, map only to valid destination points, ignore all masks,
+      map only from valid src points to valid destination points.
+      valid values: srcmask, dstmask, nomask,bothmask
+    </desc>
+    <values>
+      <value>nomask</value>
+    </values>
+  </entry>
+
   <entry id="mapalgo" per_stream_entry="true">
-    <type>char</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
@@ -204,7 +221,7 @@
   </entry>
 
   <entry id="tintalgo" per_stream_entry="true">
-    <type>char</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
@@ -223,7 +240,7 @@
   </entry>
 
   <entry id="taxmode" per_stream_entry="true">
-    <type>char</type>
+    <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>

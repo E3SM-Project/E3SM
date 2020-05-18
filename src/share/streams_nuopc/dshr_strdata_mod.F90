@@ -404,26 +404,29 @@ contains
        sdat%model_lev(n) = shr_const_spval
     end do
 
-    ! initialize the model mask
-    ! allocate(elemMask(sdat%model_lsize))
-    ! if (len_trim(lmodel_maskfile) > 0) then
-    !    ! obtain model mask from separate model_maskfile
-    !    rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
-    !    call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
-    !    ! TODO: check that mask name is on file and if not abort
-    !    rcode = pio_inq_varid(pioid, 'mask', varid) ! assume mask name on domain file
-    !    call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%model_nxg, sdat%model_nyg/), sdat%model_gindex, pio_iodesc)
-    !    allocate(elemMask(sdat%model_lsize))
-    !    call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
-    !    call pio_closefile(pioid)
-    !    call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-    ! else if (lreset_mask) then
-    !    elemMask(:) = 1._r8
-    ! end if
-
-    ! ! TODO: reset the model mesh mask using the new elemMask values
-    ! ! THIS STILL NEEDS TO BE IMPLEMENTED WITH ESMF
-    ! deallocate(elemMask)
+    ! initialize the model mask if appropriate
+    if (present(model_maskfile)) then
+       allocate(elemMask(sdat%model_lsize))
+       ! obtain model mask from separate model_maskfile
+       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
+       call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+       ! TODO: check that mask name is on file and if not abort
+       rcode = pio_inq_varid(pioid, 'mask', varid) ! assume mask name on domain file
+       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%model_nxg, sdat%model_nyg/), sdat%model_gindex, pio_iodesc)
+       allocate(elemMask(sdat%model_lsize))
+       call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
+       call pio_closefile(pioid)
+       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+       call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       deallocate(elemMask)
+    else if (lreset_mask) then
+       allocate(elemMask(sdat%model_lsize))
+       elemMask(:) = 1._r8
+       call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       deallocate(elemMask)
+    end if
 
   end subroutine shr_strdata_init_model_domain
 

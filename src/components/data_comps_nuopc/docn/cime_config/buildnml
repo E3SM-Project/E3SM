@@ -99,15 +99,9 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
 
     streams = nmlgen.get_streams()
-    for stream in streams:
-        # TODO: For aquaplanet prescribed have no streams- is this accounted for here?
-        if stream is None or stream in ("NULL", ""):
-            continue
-        inst_stream = stream + inst_string
-        print " DEBUB: inst_stream is ",inst_stream
-        logger.debug("DOCN stream is {}".format(inst_stream))
-        stream_path = os.path.join(confdir, "docn.streams"+inst_string+".xml" )
-        nmlgen.create_nuopc_stream_files(config, caseroot, stream, stream_path, data_list_path)
+    skip_streams = False
+    stream_path = os.path.join(confdir, "docn.streams"+inst_string+".xml" )
+    nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
