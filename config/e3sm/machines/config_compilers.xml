@@ -1493,7 +1493,6 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>

@@ -574,8 +574,8 @@
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">acme-openmpi/2.1.5/acme</command>
-        <command name="load">acme-netcdf/4.4.1/acme</command>
+        <command name="load">acme-openmpi/2.1.5</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -588,9 +588,6 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
 
