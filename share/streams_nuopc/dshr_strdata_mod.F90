@@ -8,7 +8,6 @@ module dshr_strdata_mod
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx, r4=>shr_kind_r4
   use shr_sys_mod      , only : shr_sys_abort
   use shr_mpi_mod      , only : shr_mpi_bcast
-  use shr_file_mod     , only : shr_file_getunit, shr_file_freeunit
   use shr_const_mod    , only : shr_const_pi, shr_const_cDay, shr_const_spval
   use shr_log_mod      , only : logunit => shr_log_Unit
   use shr_cal_mod      , only : shr_cal_calendarname, shr_cal_timeSet
@@ -69,34 +68,33 @@ module dshr_strdata_mod
   integer          ,parameter          :: master_task = 0
 
   type shr_strdata_perstream
-     ! character(CS)                     :: taxMode                  ! stream time axis cycling mode
-     ! real(r8)                          :: dtlimit                  ! stream dt max/min limit
-     ! character(CS)                     :: tintalgo                 ! stream time interpolation algorithm
-     ! character(CS)                     :: readmode                 ! stream file(s) read mode
-
-     character(CL)                       :: stream_vectors            ! stream vectors names from shr_strdata_nml
-     character(CL)                       :: stream_meshfile           ! stream mesh file from stream txt file
-     type(ESMF_Mesh)                     :: stream_mesh               ! stream mesh created from stream mesh file
-     type(io_desc_t)                     :: stream_pio_iodesc         ! stream pio descriptor
-     logical                             :: stream_pio_iodesc_set =.false.  ! true=>pio iodesc has been set
-
-                                                                      ! stream-> model mapping info
+     ! character(CS)                     :: taxMode                        ! stream time axis cycling mode
+     ! real(r8)                          :: dtlimit                        ! stream dt max/min limit
+     ! character(CS)                     :: tintalgo                       ! stream time interpolation algorithm
+     ! character(CS)                     :: readmode                       ! stream file(s) read mode
+     character(CL)                       :: stream_vectors                 ! stream vectors names from shr_strdata_nml
+     character(CL)                       :: stream_meshfile                ! stream mesh file from stream txt file
+     type(ESMF_Mesh)                     :: stream_mesh                    ! stream mesh created from stream mesh file
+     type(io_desc_t)                     :: stream_pio_iodesc              ! stream pio descriptor
+     logical                             :: stream_pio_iodesc_set =.false. ! true=>pio iodesc has been set
+     integer                             :: stream_pio_iovartype           ! stream pio variable type
+     ! stream-> model mapping info
      logical                             :: domaps
-     ! character(CL)                     :: mapalgo                   ! scalar map algorithm
-     ! character(CL)                     :: mapmask                   ! scalar map mask
-     type(ESMF_RouteHandle)              :: routehandle               ! stream n -> model mesh mapping
-
+     ! character(CL)                     :: mapalgo                        ! scalar map algorithm
+     ! character(CL)                     :: mapmask                        ! scalar map mask
+     type(ESMF_RouteHandle)              :: routehandle                    ! stream n -> model mesh mapping
      ! field bundles
      ! note that the fields in fldbun_stream_lb and fldbun_stream_ub contain the the names fldlist_model
-     character(CS), allocatable          :: fldlist_stream(:)         ! names of fields read in from stream
-     character(CS), allocatable          :: fldlist_model(:)          ! names of fields in model (1/1 correspondence with fldlist_stream)
-     type(ESMF_FieldBundle)              :: fldbun_stream_lb          ! stream n field bundle for lb of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_stream_ub          ! stream n field bundle for ub of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_model_lb           ! stream n field bundle for lb of time period (model grid)
-     type(ESMF_FieldBundle)              :: fldbun_model_ub           ! stream n field bundle for ub of time period (model grid)
-     type(ESMF_FieldBundle)              :: fldbun_model              ! stream n field bundle for model time (model grid)
-     type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:) ! field bundle for stream n for all time slices for stream
-     integer                             :: ymdLB                     ! stream n ymd lower bound
+     character(CS), allocatable          :: fldlist_stream(:)              ! names of fields read in from stream
+     character(CS), allocatable          :: fldlist_model(:)               ! names of fields in model (1/1 correspondence with fldlist_stream)
+     type(ESMF_FieldBundle)              :: fldbun_stream_lb               ! stream n field bundle for lb of time period (stream grid)
+     type(ESMF_FieldBundle)              :: fldbun_stream_ub               ! stream n field bundle for ub of time period (stream grid)
+     type(ESMF_FieldBundle)              :: fldbun_model_lb                ! stream n field bundle for lb of time period (model grid)
+     type(ESMF_FieldBundle)              :: fldbun_model_ub                ! stream n field bundle for ub of time period (model grid)
+     type(ESMF_FieldBundle)              :: fldbun_model                   ! stream n field bundle for model time (model grid)
+     type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:)      ! field bundle for stream n for all time slices for stream
+     ! stream time interpolation info
+     integer                             :: ymdLB                          ! stream n ymd lower bound
      integer                             :: todLB
      integer                             :: ymdUB
      integer                             :: todUB
@@ -104,34 +102,29 @@ module dshr_strdata_mod
      integer                             :: vstrm
      real(r8)                            :: dtmin
      real(r8)                            :: dtmax
-     type(ESMF_Field)                    :: field_coszen              ! needed for coszen time interp
+     type(ESMF_Field)                    :: field_coszen                   ! needed for coszen time interp
   end type shr_strdata_perstream
 
 
   type shr_strdata_type
      type(shr_strdata_perstream), allocatable :: pstrm(:)
-
-     ! stream domain info
-     type(shr_stream_streamType), pointer :: stream(:)=> null()                    ! stream datatype
+     ! stream info
+     type(shr_stream_streamType), pointer :: stream(:)=> null()          ! stream datatype
      integer                        :: nstreams                          ! number of streams set in shr_strdata_readnml
      integer                        :: nvectors                          ! number of vectors set in shr_strdata_readnml
-
      ! mpi info
      integer                        :: mpicom
      integer                        :: my_task
-
      ! pio info
      integer                        :: io_type
      integer                        :: io_format
      type(iosystem_desc_t), pointer :: pio_subsystem => null()
-
      ! data required by stream  cosz t-interp method, set by user
      real(r8)                       :: eccen
      real(r8)                       :: mvelpp
      real(r8)                       :: lambm0
      real(r8)                       :: obliqr
      integer                        :: modeldt                           ! model dt in seconds
-
      ! model domain info
      type(ESMF_Mesh)                :: model_mesh                        ! model mesh
      real(r8), pointer              :: model_lon(:) => null()            ! model longitudes
@@ -143,7 +136,6 @@ module dshr_strdata_mod
      integer                        :: model_lsize                       ! model local domain size
      integer, pointer               :: model_gindex(:)                   ! model global index spzce
      integer                        :: model_gsize                       ! model global domain size
-
      ! time info
      type(ESMF_CLock)               :: model_clock
      integer                        :: ymd, tod                          ! model time
@@ -684,13 +676,16 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(var_desc_t)      :: varid
-    type(file_desc_t)     :: pioid
-    integer               :: rcode
-    character(CL)         :: filename
-    type(io_desc_t)       :: pio_iodesc
-    real(r4), allocatable :: data_real(:)
-    integer               :: lsize
+    type(var_desc_t)        :: varid
+    type(file_desc_t)       :: pioid
+    integer                 :: rcode
+    character(CL)           :: filename
+    type(io_desc_t)         :: pio_iodesc
+    real(r4), allocatable   :: data_real(:)
+    real(r8), allocatable   :: data_double(:)
+    integer                 :: pio_iovartype
+    integer                 :: lsize
+    character(*), parameter :: subname = '(shr_strdata_set_stream_domain) '
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -706,22 +701,29 @@ contains
 
     ! Create the pio iodesc for fldname
     call shr_strdata_set_stream_iodesc(sdat%pio_subsystem, pioid, &
-         trim(fldname), sdat%pstrm(stream_index)%stream_mesh, pio_iodesc, rc=rc)
+         trim(fldname), sdat%pstrm(stream_index)%stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Now read in the data for fldname
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     lsize = size(flddata)
-    allocate(data_real(lsize))
     rcode = pio_inq_varid(pioid, trim(fldname), varid)
-    call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
-    flddata(:) = real(data_real(:), kind=r8)
-    deallocate(data_real)
+    if (pio_iovartype == PIO_REAL) then
+       allocate(data_real(lsize))
+       call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
+       flddata(:) = real(data_real(:), kind=r8)
+       deallocate(data_real)
+    else if (pio_iovartype == PIO_DOUBLE) then
+       allocate(data_double(lsize))
+       call pio_read_darray(pioid, varid, pio_iodesc, data_double, rcode)
+       flddata(:) = data_double(:)
+       deallocate(data_double)
+    else
+       call shr_sys_abort(subName//"ERROR: only real and double types are subborted for stream domain read")
+    end if
 
-    ! Free the memory associate with the iodesc
+    ! Free the memory associate with the iodesc and close the file
     call pio_freedecomp(pioid, pio_iodesc)
-
-    ! Close the file
     call pio_closefile(pioid)
 
   end subroutine shr_strdata_get_stream_domain
@@ -911,10 +913,11 @@ contains
 
           select case(sdat%stream(ns)%readmode)
           case ('single')
-             call shr_strdata_readLBUB(sdat%mpicom, sdat%my_task, sdat%stream(ns), sdat%pstrm(ns)%stream_mesh, &
-                  sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
+             call shr_strdata_readLBUB(sdat%mpicom, sdat%my_task, logunit, sdat%stream(ns), &
+                  sdat%pstrm(ns)%stream_mesh, sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
                   sdat%pstrm(ns)%fldbun_stream_lb, sdat%pstrm(ns)%fldbun_stream_ub, &
-                  sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, &
+                  sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, &
+                  sdat%pstrm(ns)%stream_pio_iodesc, sdat%pstrm(ns)%stream_pio_iovartype, &
                   ymdmod(ns), todmod, sdat%pstrm(ns)%ymdLB, sdat%pstrm(ns)%todLB, &
                   sdat%pstrm(ns)%ymdUB, sdat%pstrm(ns)%todUB, &
                   newData(ns), trim(lstr)//'_readLBUB', rc=rc)
@@ -1454,7 +1457,6 @@ contains
     write(logunit,F90)
     write(logunit,F00) "name        = ",trim(lname)
     write(logunit,F00) "calendar    = ",trim(sdat%model_calendar)
-    write(logunit,F01) "io_type     = ",sdat%io_type
     write(logunit,F02) "eccen       = ",sdat%eccen
     write(logunit,F02) "mvelpp      = ",sdat%mvelpp
     write(logunit,F02) "lambm0      = ",sdat%lambm0
@@ -1483,9 +1485,9 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_readLBUB(mpicom, my_task, stream, stream_mesh, &
+  subroutine shr_strdata_readLBUB(mpicom, my_task, logunit, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_stream_lb, fldbun_stream_ub, &
-       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, &
+       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        mDate, mSec, mDateLB, mSecLB, mDateUB, mSecUB, newData, istr, rc)
 
     !-------------------------------------------------------------------------
@@ -1495,6 +1497,7 @@ contains
     ! input/output variables
     integer                       ,intent(in)    :: mpicom
     integer                       ,intent(in)    :: my_task
+    integer                       ,intent(in)    :: logunit 
     type(shr_stream_streamType)   ,intent(inout) :: stream
     type(ESMF_Mesh)               ,intent(in)    :: stream_mesh
     character(len=*)              ,intent(in)    :: fldlist_stream(:)  
@@ -1505,6 +1508,7 @@ contains
     integer                       ,intent(in)    :: pio_iotype
     logical                       ,intent(inout) :: pio_iodesc_set
     type(io_desc_t)               ,intent(inout) :: pio_iodesc
+    integer                       ,intent(inout) :: pio_iovartype 
     integer                       ,intent(in)    :: mDate  ,mSec
     integer                       ,intent(inout) :: mDateLB,mSecLB
     integer                       ,intent(inout) :: mDateUB,mSecUB
@@ -1590,20 +1594,20 @@ contains
           call t_stopf(trim(istr)//'_LB_copy')
        else
           ! read lower bound of data
-          call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
+          call shr_strdata_readstrm(mpicom, my_task, logunit, stream, stream_mesh, &
                fldlist_stream, fldlist_model, fldbun_stream_lb, &
-               pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, filename_lb, n_lb, &
-               istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
+               pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
+               filename_lb, n_lb, istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
     endif
 
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
-       call shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
+       call shr_strdata_readstrm(mpicom, my_task, logunit, stream, stream_mesh, &
             fldlist_stream, fldlist_model, fldbun_stream_ub, &
-            pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, filename_ub, n_ub, &
-            istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
+            pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
+            filename_ub, n_ub, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -1623,9 +1627,9 @@ contains
   end subroutine shr_strdata_readLBUB
 
   !===============================================================================
-  subroutine shr_strdata_readstrm(mpicom, my_task, stream, stream_mesh, &
+  subroutine shr_strdata_readstrm(mpicom, my_task, logunit, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_stream, &
-       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, &
+       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        filename, nt, istr, boundstr, rc)
 
     ! Read the stream data and initialize the strea pio_iodesc the first time
@@ -1634,6 +1638,7 @@ contains
     ! input/output variables
     integer                     , intent(in)            :: mpicom
     integer                     , intent(in)            :: my_task
+    integer                     , intent(in)            :: logunit
     type(shr_stream_streamType) , intent(inout)         :: stream
     type(ESMF_Mesh)             , intent(in)            :: stream_mesh
     character(len=*)            , intent(in)            :: fldlist_stream(:)
@@ -1643,6 +1648,7 @@ contains
     integer                     , intent(in)            :: pio_iotype
     logical                     , intent(inout)         :: pio_iodesc_set
     type(io_desc_t)             , intent(inout)         :: pio_iodesc
+    integer                     , intent(inout)         :: pio_iovartype
     character(len=*)            , intent(in)            :: filename
     integer                     , intent(in)            :: nt
     character(len=*)            , intent(in)            :: istr
@@ -1659,6 +1665,7 @@ contains
     integer                       :: nf
     integer                       :: rCode
     real(r4), allocatable         :: data_real(:)
+    real(r8), allocatable         :: data_double(:)
     real(r8), pointer             :: dataptr(:)
     integer                       :: lsize
     character(*), parameter       :: subname = '(shr_strdata_readstrm) '
@@ -1698,7 +1705,8 @@ contains
     ! ******************************************************************************
 
     if (.not. pio_iodesc_set) then
-       call shr_strdata_set_stream_iodesc(pio_subsystem, pioid, trim(fldlist_stream(1)), stream_mesh, pio_iodesc, rc=rc)
+       call shr_strdata_set_stream_iodesc(pio_subsystem, pioid, trim(fldlist_stream(1)), stream_mesh, &
+            pio_iodesc, pio_iovartype, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        pio_iodesc_set = .true.
     end if
@@ -1712,36 +1720,60 @@ contains
     if (my_task == master_task) then
        write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
     endif
-    call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    do nf = 1,size(fldlist_stream)
-       rcode = pio_inq_varid(pioid, trim(fldlist_stream(nf)), varid)
-       frame = nt ! set frame to time index
-       call pio_setframe(pioid, varid, int(nt,kind=Pio_Offset_Kind))
+
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+    do nf = 1,size(fldlist_stream)
        call dshr_fldbun_getfldptr(fldbun_stream, trim(fldlist_model(nf)), fldptr1=dataptr, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        lsize = size(dataptr)
-       allocate(data_real(lsize))
-       call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
+
+       rcode = pio_inq_varid(pioid, trim(fldlist_stream(nf)), varid)
        if ( rcode /= PIO_NOERR ) then
-          call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
+          call shr_sys_abort(' ERROR: setting varid for variable: '// trim(fldlist_stream(nf)))
        end if
-       dataptr(:) = real(data_real(:), kind=r8)
-       deallocate(data_real)
+       frame = nt ! set frame to time index
+       call pio_setframe(pioid, varid, int(nt,kind=Pio_Offset_Kind))
+       if ( rcode /= PIO_NOERR ) then
+          call shr_sys_abort(' ERROR: setting frame for variable: '// trim(fldlist_stream(nf)))
+       end if
+       if (pio_iovartype == PIO_REAL) then
+          allocate(data_real(lsize))
+          call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
+          if ( rcode /= PIO_NOERR ) then
+             call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
+          end if
+          dataptr(:) = real(data_real(:), kind=r8)
+          deallocate(data_real)
+       else if (pio_iovartype == PIO_DOUBLE) then
+          allocate(data_double(lsize))
+          call pio_read_darray(pioid, varid, pio_iodesc, data_double, rcode)
+          if ( rcode /= PIO_NOERR ) then
+             call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
+          end if
+          dataptr(:) = data_double(:)
+          deallocate(data_double)
+       else
+          call shr_sys_abort(subName//"ERROR: only real and double types are subborted for stream read")
+       end if
+
     enddo
     call t_stopf(trim(istr)//'_readpio')
 
   end subroutine shr_strdata_readstrm
 
   !===============================================================================
-  subroutine shr_strdata_set_stream_iodesc(pio_subsystem, pioid, fldname, stream_mesh, pio_iodesc, rc)
+  subroutine shr_strdata_set_stream_iodesc(my_task, logunit, &
+       pio_subsystem, pioid, fldname, stream_mesh, pio_iodesc, pio_iovartype, rc)
 
     ! input/output variables
+    integer               , intent(in)            :: my_task
+    integer               , intent(in)            :: logunit
     type(iosystem_desc_t) , intent(inout), target :: pio_subsystem
     type(file_desc_t)     , intent(inout)         :: pioid
     character(len=*)      , intent(in)            :: fldname
     type(ESMF_Mesh)       , intent(in)            :: stream_mesh
     type(io_desc_t)       , intent(inout)         :: pio_iodesc
+    integer               , intent(out)           :: pio_iovartype 
     integer               , intent(out)           :: rc
 
     ! local variables
@@ -1751,13 +1783,15 @@ contains
     integer, allocatable          :: dimids(:)
     integer, allocatable          :: dimlens(:)
     integer                       :: unlimdid
-    integer                       :: itype
     type(ESMF_DistGrid)           :: distGrid
     integer                       :: lsize
     integer, pointer              :: compdof(:)
     character(CS)                 :: dimname
     integer                       :: rCode      ! pio return code
     character(*), parameter       :: subname = '(shr_strdata_set_stream_iodesc) '
+    character(*), parameter       :: F00  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a)"
+    character(*), parameter       :: F01  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a,)"
+    character(*), parameter       :: F02  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,i8,2x,a,)"
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1787,7 +1821,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine type of the variable
-    rcode = pio_inq_vartype(pioid, varid, itype)
+    rcode = pio_inq_vartype(pioid, varid, pio_iovartype)
     call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring type for '//trim(fldname))
 
     ! now create the io descriptor
@@ -1799,14 +1833,28 @@ contains
        end if
     end if
     if (ndims == 2) then
-      !call pio_initdecomp(pio_subsystem, itype, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
-       call pio_initdecomp(pio_subsystem, pio_real, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
+       if (my_task == master_task) then
+          write(logunit,F00) 'setting iodesc for : '//trim(fldlist_stream(1))// &
+               ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),&
+               ' variable had no time dimension '
+       end if
+       call pio_initdecomp(pio_subsystem, pio_iovartype, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
     else if (ndims == 3) then
        rcode = pio_inq_dimname(pioid, dimids(ndims), dimname)
-       if (trim(dimname) == 'time') then
-          call pio_initdecomp(pio_subsystem, pio_real, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
+       if (trim(dimname) == 'time' .or. trim(dimname) == 'nt') then
+          if (my_task == master_task) then
+             write(logunit,F01) 'setting iodesc for : '//trim(fldlist_stream(1))// &
+                  ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),&
+                  ' variable had time dimension '//trim(dimname)
+          end if
+          call pio_initdecomp(pio_subsystem, pio_iovartype, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
        else
-          call pio_initdecomp(pio_subsystem, pio_real, (/dimlens(1),dimlens(2),dimlens(3)/), compdof, pio_iodesc)
+          if (my_task == master_task) then
+             write(logunit,F02) 'setting iodesc for : '//trim(fldlist_stream(1))// &
+                  ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),dimlens(3),&
+                  ' variable had no time dimension '
+          end if
+          call pio_initdecomp(pio_subsystem, pio_iovartype, (/dimlens(1),dimlens(2),dimlens(3)/), compdof, pio_iodesc)
        end if
     else
        write(6,*)'ERROR: dimlens= ',dimlens
