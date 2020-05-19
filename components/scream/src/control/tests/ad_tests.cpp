@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
 #include "control/atmosphere_driver.hpp"
-#include "share/scream_parameter_list.hpp"
-#include "share/scream_parse_yaml_file.hpp"
+#include "ekat/scream_parameter_list.hpp"
+#include "ekat/scream_parse_yaml_file.hpp"
 #include "dummy_atm_setup.hpp"
 
 namespace scream {

@@ -1,8 +1,8 @@
-#include "share/scream_session.hpp"
-#include "share/util/file_utils.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/scream_session.hpp"
+#include "ekat/util/file_utils.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"

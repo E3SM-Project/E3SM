@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 #include "share/grid/user_provided_grids_manager.hpp"
-#include "share/scream_parse_yaml_file.hpp"
+#include "ekat/scream_parse_yaml_file.hpp"
 #include "control/atmosphere_driver.hpp"
 
 #include "dummy_atm_setup.hpp"

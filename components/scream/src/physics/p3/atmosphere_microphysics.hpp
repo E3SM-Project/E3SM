@@ -2,7 +2,7 @@
 #define SCREAM_P3_MICROPHYSICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_parameter_list.hpp"
+#include "ekat/scream_parameter_list.hpp"
 
 #include <string>
 
@@ -11,11 +11,11 @@ namespace scream
 
 /*
  * The class responsible to handle the atmosphere microphysics
- * 
+ *
  * The AD should store exactly ONE instance of this class stored
  * in its list of subcomponents (the AD should make sure of this).
- * 
- *  Note: for now, scream is only going to accommodate P3 as microphysics 
+ *
+ *  Note: for now, scream is only going to accommodate P3 as microphysics
 */
 
 class P3Microphysics : public AtmosphereProcess
@@ -32,7 +32,7 @@ public:
 
   // The name of the subcomponent
   std::string name () const { return "Microphysics"; }
-  
+
   // The communicator used by subcomponent
   const Comm& get_comm () const { return m_p3_comm; }
 

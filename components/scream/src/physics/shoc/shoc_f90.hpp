@@ -1,8 +1,8 @@
 #ifndef SCREAM_SHOC_F90_HPP
 #define SCREAM_SHOC_F90_HPP
 
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
 
 #include <memory>
 #include <vector>

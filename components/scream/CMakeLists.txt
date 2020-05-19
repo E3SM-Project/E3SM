@@ -15,14 +15,13 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
 endif()
 
 # Add the ./cmake folder to cmake path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include (${CMAKE_CURRENT_SOURCE_DIR}/cmake/ScreamMpiUtils.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/src/ekat/cmake)
+include(ScreamMpiUtils)
 
 # We should avoid cxx bindings in mpi; they are already deprecated,
 # and can cause headaches at link time, cause they require -lmpi_cxx
 # (for openpmi; -lmpicxx for mpich) flag.
 DisableMpiCxxBindings()
-
 
 if (KOKKOS_ENABLE_CUDA)
   SetMpiCxxBackendCompilerVarName()
