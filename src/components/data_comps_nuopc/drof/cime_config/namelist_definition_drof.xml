@@ -5,7 +5,7 @@
 <entry_id version="2.0">
 
   <!--
-      Values to use by default for creation of DOCN model docn namelists.
+      Values to use by default for creation of DROF model drof namelists.
 
       strm_year_first is the first year of the stream data that will be used
       strm_year_last  is the last  year of the stream data that will be used
@@ -20,24 +20,20 @@
       %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
                obtained from values of <strm_year_start> -> <strm_year_end> below
 
-      Replace any instance of $VARNAME with the xml variable value obtained from any
-      of the $CASEROOT/env*xml files
-
-      In drof_in,  streams namelist input has the form
-      streams = 'stream1.txt year_align year_first year_last ',
-                'stream2.txt year_align year_first year_last ',
-                ...
-                'streamN.txt year_align year_first year_last '
+     Currently the following datamodes are supported
+        DIATREN_ANN_RX1, DIATREN_IAF_RX1, IAF_JRA, CPLHIST (and NULL)
 
      Currently the following streams are supported
-        rof.cplhist
         rof.diatren_ann_rx1
         rof.diatren_iaf_rx1
 	rof.iaf_jra
+        rof.cplhist
+
+     A good notation would be that datamodes are uppercase and streams are lower case
   -->
 
   <!-- ========================================================================================  -->
-  <!-- Stream file variables                                                                     -->
+  <!-- Stream xml file variables                                                                 -->
   <!-- ========================================================================================  -->
 
   <entry id="streamslist">
@@ -51,6 +47,27 @@
       <value drof_mode="DIATREN_IAF_RX1">rof.diatren_iaf_rx1</value>
       <value drof_mode="IAF_JRA">rof.iaf_jra</value>
       <value drof_mode="CPLHIST">rof.cplhist</value>
+    </values>
+  </entry>
+
+  <entry id="strm_mesh" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream domain file directory.</desc>
+    <values>
+      <value stream="rof.diatren_ann_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.iaf_jra">
+	TODO_FILL_THIS_IN
+      </value>
+      <value stream="rof.cplhist">
+	TODO_FILL_THIS_IN 
+      </value>
     </values>
   </entry>
 
@@ -147,6 +164,7 @@
       </value>
       <value stream="rof.diatren_iaf_rx1">
         runoff rofl
+      </value>
       <value stream="rof.iaf_jra">
         rofl  rofl
         rofi  rofi
@@ -209,42 +227,10 @@
     </values>
   </entry>
 
-  <!-- ========================================================================================  -->
-  <!-- DROF Namelists                                                                            -->
-  <!-- ========================================================================================  -->
-
-  <!-- =========================================  -->
-  <!--- shr_strmdata_nml       -->
-  <!-- =========================================  -->
-
-  <entry id="nx_global" modify_via_xml="ROF_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$ROF_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="ROF_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$ROF_NY</value>
-    </values>
-  </entry>
-
   <entry id="mapmask"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
       array (up to 30 elements) of masking algorithms for mapping input data
@@ -261,7 +247,7 @@
   <entry id="mapalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
     <desc>
       array (up to 30 elements) of fill algorithms associated with the array
@@ -278,7 +264,7 @@
   <entry id="tintalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
       array (up to 30 elements) of time interpolation options associated with the array of
@@ -302,7 +288,7 @@
   <entry id="taxmode"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>
     <desc>
       array of time axis modes associated with the array of streams for
@@ -324,7 +310,7 @@
   <entry id="readmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
       array (up to 30 elements) of reading mode associated with the array of
@@ -341,7 +327,7 @@
   <entry id="dtlimit"  per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       array (up to 30 elements) of delta time ratio limits placed on the
       time interpolation associated with the array of streams.  this real
@@ -364,7 +350,7 @@
   <entry id="vectors">
     <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       list of paired colon delimited field names that should be treated as
       vectors when carrying out spatial interpolation.  unlike other
@@ -379,27 +365,8 @@
     </values>
   </entry>
 
-  <entry id="streams" skip_default_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      character array (up to 30 elements) of stream input files.  this
-      string is actually parsed by a stream method and so the format is
-      specified by the stream module.  this string consists of a
-      "stream_input_filename year_align year_first year_last".  the
-      stream_input_filename is a stream text input file and the format and
-      options are described elsewhere.  year_align, year_first, and
-      year_last provide information about the time axis of the file and how
-      to relate the input time axis to the model time axis.
-    </desc>
-    <values>
-      <value></value>
-    </values>
-  </entry>
-
   <!-- =========================================  -->
-  <!--- drof_nml                -->
+  <!--- drof_nml                                  -->
   <!-- =========================================  -->
 
   <entry id="datamode">
@@ -424,13 +391,66 @@
     </values>
   </entry>
 
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>drof</category>
+  <entry id="model_meshfile" modify_via_xml="ROF_DOMAIN_MESH">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
     <group>drof_nml</group>
-    <desc>If true, prognostic is forced to true.</desc>
+    <desc>
+      file specifying model mesh
+    </desc>
     <values>
-      <value>.false.</value>
+      <value>$ROF_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_maskfile">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>drof_nml</group>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
+    <values>
+      <value>$ROF_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>drof_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$ROF_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="ROF_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>drof_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$ROF_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="ROF_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>drof_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$ROF_NY</value>
     </values>
   </entry>
 
@@ -451,6 +471,16 @@
     <desc>Stream restart file name for drof model, needed for branch simulations</desc>
     <values>
       <value>undefined</value>
+    </values>
+  </entry>
+
+  <entry id="force_prognostic_true">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <desc>If true, prognostic is forced to true.</desc>
+    <values>
+      <value>.false.</value>
     </values>
   </entry>
 

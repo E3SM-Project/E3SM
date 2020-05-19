@@ -19,10 +19,10 @@ module ice_comp_nuopc
   use shr_cal_mod          , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_ymd2date, shr_cal_ymd2julian
   use shr_mpi_mod          , only : shr_mpi_bcast
   use shr_frz_mod          , only : shr_frz_freezetemp
-  use dshr_methods_mod     , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_mod             , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
   use dshr_mod             , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod             , only : dshr_restart_read, dshr_restart_write
+  use dshr_methods_mod     , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod      , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod     , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -63,7 +63,8 @@ module ice_comp_nuopc
   character(*) , parameter     :: nullstr = 'undefined'
 
   ! dice_in namelist input
-  character(CL)                :: nlfilename                          ! filename to obtain namelist info from
+  character(CL)                :: xmlfilename = nullstr               ! filename to obtain namelist info from
+  character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
   character(CL)                :: dataMode                            ! flags physics options wrt input data
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
@@ -387,7 +388,8 @@ contains
 
     ! Initialize sdat
     call t_startf('dice_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'ice', &
+    xmlfilename = 'dice.streams.xml'
+    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ice', &
          model_meshfile, model_maskfile, model_mesh, read_restart, sdat, rc=rc)
     call t_stopf('dice_strdata_init')
 
@@ -678,14 +680,8 @@ contains
          state=exportState, state_ptr=Si_ifrac, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (flds_i2o_per_cat) then
-       call dshr_state_getfldptr(exportState, fldname='Si_ifrac_n'        , fldptr2=Si_ifrac_n        , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(exportState, fldname='Fioi_swpen_ifrac_n', fldptr2=Fioi_swpen_ifrac_n, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-    end if
-
     ! Set pointers to exportState fields that have no corresponding stream field
+
     call dshr_state_getfldptr(exportState, fldname='Si_imask'    , fldptr1=Si_imask    , rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call dshr_state_getfldptr(exportState, fldname='Si_t'        , fldptr1=Si_t        , rc=rc)
@@ -734,6 +730,12 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call dshr_state_getfldptr(exportState, fldname='Fioi_flxdst' , fldptr1=Fioi_flxdst , rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (flds_i2o_per_cat) then
+       call dshr_state_getfldptr(exportState, fldname='Si_ifrac_n'        , fldptr2=Si_ifrac_n        , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call dshr_state_getfldptr(exportState, fldname='Fioi_swpen_ifrac_n', fldptr2=Fioi_swpen_ifrac_n, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     ! Set Si_imask (this corresponds to the ocean mask)
     allocate(imask(sdat%model_lsize))

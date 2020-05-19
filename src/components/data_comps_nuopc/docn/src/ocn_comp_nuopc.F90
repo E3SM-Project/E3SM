@@ -69,7 +69,7 @@ module ocn_comp_nuopc
   ! docn_in namelist input
   character(CL)                :: xmlfilename = nullstr               ! filename to obtain namelist info from
   character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
-  character(CL)                :: dataMode                            ! flags physics options wrt input data
+  character(CL)                :: dataMode = nullstr                  ! flags physics options wrt input data
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
   character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
@@ -357,19 +357,18 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    ! Initialize sdat and set the model domain mask in sdat if appropriate
-    reset_mask = .false.
-    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-       reset_mask = .true.
-    end if
-
     ! TODO: need a check that the mask file has the same grid as the model mesh
 
     ! Initialize sdat
     call t_startf('docn_strdata_init')
     xmlfilename = 'docn.streams.xml'
-    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ocn', &
-         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, reset_mask=reset_mask,  rc=rc)
+    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+       call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ocn', &
+            model_meshfile, model_maskfile, model_mesh, read_restart, sdat, reset_mask=.true.,  rc=rc)
+    else
+       call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ocn', &
+            model_meshfile, model_maskfile, model_mesh, read_restart, sdat,  rc=rc)
+    end if
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_init')
 

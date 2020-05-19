@@ -154,8 +154,7 @@ def buildnml(case, caseroot, compname):
     #----------------------------------------------------
     # Clear out old data.
     #----------------------------------------------------
-    data_list_path = os.path.join(case.get_case_root(), "Buildconf",
-                                  "datm.input_data_list")
+    data_list_path = os.path.join(case.get_case_root(), "Buildconf", "datm.input_data_list")
     if os.path.exists(data_list_path):
         os.remove(data_list_path)
 

@@ -22,8 +22,7 @@ module rof_comp_nuopc
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_restart_read, dshr_restart_write
-  use dshr_mod         , only : dshr_create_mesh_from_grid
+  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_create_mesh_from_grid
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
@@ -46,29 +45,34 @@ module rof_comp_nuopc
   !--------------------------------------------------------------------------
 
   type(shr_strdata_type)       :: sdat
-  type(ESMF_Mesh)              :: mesh                            ! model mesh
+  type(ESMF_Mesh)              :: model_mesh                          ! model mesh
   character(len=CS)            :: flds_scalar_name = ''
   integer                      :: flds_scalar_num = 0
   integer                      :: flds_scalar_index_nx = 0
   integer                      :: flds_scalar_index_ny = 0
-  integer                      :: compid                          ! mct comp id
-  integer                      :: mpicom                          ! mpi communicator
-  integer                      :: my_task                         ! my task in mpi communicator mpicom
-  logical                      :: masterproc                      ! true of my_task == master_task
-  character(len=16)            :: inst_suffix = ""                ! char string associated with instance (ie. "_0001" or "")
-  integer                      :: logunit                         ! logging unit number
+  integer                      :: compid                              ! mct comp id
+  integer                      :: mpicom                              ! mpi communicator
+  integer                      :: my_task                             ! my task in mpi communicator mpicom
+  logical                      :: masterproc                          ! true of my_task == master_task
+  character(len=16)            :: inst_suffix = ""                    ! char string associated with instance (ie. "_0001" or "")
+  integer                      :: logunit                             ! logging unit number
   logical                      :: read_restart
   character(*) , parameter     :: nullstr = 'undefined'
+                                                                      ! drof_in namelist input
+  character(CL)                :: xmlfilename = nullstr               ! filename to obtain namelist info from
+  character(CL)                :: nlfilename = nullstr                ! filename to obtain namelist info from
+  character(CL)                :: dataMode = nullstr                  ! flags physics options wrt input data
+  character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
+  character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
+  character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
+  logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
+  character(CL)                :: restfilm = nullstr                  ! model restart file namelist
+  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
+  integer                      :: nx_global
+  integer                      :: ny_global
 
-  ! drof_in namelist input
-  character(CL)                :: nlfilename                      ! filename to obtain namelist info from
-  character(CL)                :: dataMode                        ! flags physics options wrt input data
-  logical                      :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL)                :: restfilm = nullstr              ! model restart file namelist
-  character(CL)                :: restfils = nullstr              ! stream restart file namelist
-
-  ! constants
-  integer      , parameter     :: master_task=0                   ! task number of master task
+                                                                      ! constants
+  integer      , parameter     :: master_task=0                       ! task number of master task
   character(*) , parameter     :: rpfile = 'rpointer.rof'
   character(*) , parameter     :: modName =  "(rof_comp_nuopc)"
 
@@ -148,10 +152,15 @@ contains
     integer           :: shrlogunit ! original log unit
     integer           :: nu         ! unit number
     integer           :: ierr       ! error code
-    character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
+    logical           :: exists     ! check for file existence  
+    character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
+    character(*)    ,parameter :: F00 = "('(rof_comp_nuopc) ',8a)"
+    character(*)    ,parameter :: F01 = "('(rof_comp_nuopc) ',a,2x,i8)"
+    character(*)    ,parameter :: F02 = "('(rof_comp_nuopc) ',a,l6)"
     !-------------------------------------------------------------------------------
 
-    namelist / drof_nml / datamode, restfilm, restfils, force_prognostic_true
+    namelist / drof_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
+         restfilm, restfils, force_prognostic_true, nx_global, ny_global
 
     rc = ESMF_SUCCESS
 
@@ -162,14 +171,12 @@ contains
          logunit, shrlogunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Determine namelist filename
-    nlfilename = "drof_in"//trim(inst_suffix)
-
     ! determine logical masterproc
     masterproc = (my_task == master_task)
 
     ! Read drof_nml from nlfilename
     if (masterproc) then
+       nlfilename = "drof_in"//trim(inst_suffix)
        open (newunit=nu,file=trim(nlfilename),status="old",action="read")
        read (nu,nml=drof_nml,iostat=ierr)
        close(nu)
@@ -177,14 +184,54 @@ contains
           write(logunit,*) 'ERROR: reading input namelist, '//trim(nlfilename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(nlfilename))
        end if
-       write(logunit,*)' restfilm   = ',trim(restfilm)
-       write(logunit,*)' restfils   = ',trim(restfils)
-       write(logunit,*)' force_prognostic_true = ',force_prognostic_true
+
+       ! write namelist input to standard out
+       write(logunit,F00)' datamode = ',trim(datamode)
+       if (model_createmesh_fromfile /= nullstr) then
+          write(logunit,F00)' model_create_meshfile_fromfile = ',trim(model_createmesh_fromfile)
+       else
+          write(logunit,F00)' model_meshfile = ',trim(model_meshfile)
+          write(logunit,F00)' model_maskfile = ',trim(model_maskfile)
+       end if
+       write(logunit,F01)' nx_global = ',nx_global
+       write(logunit,F01)' ny_global = ',ny_global
+       write(logunit,F00)' restfilm = ',trim(restfilm)
+       write(logunit,F00)' restfils = ',trim(restfils)
+       write(logunit,F02)' force_prognostic_true = ',force_prognostic_true
+
+       ! check that files exists
+       if (model_createmesh_fromfile /= nullstr) then
+          inquire(file=trim(model_createmesh_fromfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_createmesh_fromfile '//&
+                  trim(model_createmesh_fromfile)//' does not exist')
+          end if
+       else
+          inquire(file=trim(model_meshfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_meshfile '//trim(model_meshfile)//' does not exist')
+          end if
+          inquire(file=trim(model_maskfile), exist=exists)
+          if (.not.exists) then
+             write(logunit, *)' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: model_maskfile '//trim(model_maskfile)//' does not exist')
+          end if
+       end if
     endif
-    call shr_mpi_bcast(datamode ,mpicom, 'datamode')
-    call shr_mpi_bcast(restfilm ,mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils ,mpicom, 'restfils')
-    call shr_mpi_bcast(force_prognostic_true, mpicom, 'force_prognostic_true')
+
+    ! broadcast namelist input
+    call shr_mpi_bcast(datamode                  , mpicom, 'datamode')
+    call shr_mpi_bcast(model_meshfile            , mpicom, 'model_meshfile')
+    call shr_mpi_bcast(model_maskfile            , mpicom, 'model_maskfile')
+    call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
+    call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
+    call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
+    call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
+    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
+    call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
 
     ! Validate datamode
     if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
@@ -236,7 +283,9 @@ contains
 
     ! Initialize sdat
     call t_startf('drof_strdata_init')
-    call dshr_sdat_init(gcomp, clock, nlfilename, compid, logunit, 'rof', mesh, read_restart, sdat, rc=rc)
+    xmlfilename = 'drof.streams.xml'
+    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'rof', &
+         model_meshfile, model_maskfile, model_mesh, read_restart, sdat,  rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('drof_strdata_init')
 
@@ -263,9 +312,9 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
-    call dshr_state_setscalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_state_setscalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call dshr_state_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Diagnostics
@@ -420,7 +469,7 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    character(*), parameter   :: subName = "(drof_comp_realize) "
+    character(*), parameter :: subName = "(drof_comp_realize) "
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -430,7 +479,7 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     ! -------------------------------------
 
-    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, model_mesh, &
          subname//':drofExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -474,7 +523,7 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('drof_BARRIER',mpicom)
     call t_startf('drof_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'drof')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'drof', rc=rc)
     call t_stopf('drof_strdata_advance')
 
     !--------------------
