@@ -13,7 +13,7 @@ try:
    from CIME.case import Case
    from CIME.utils import symlink_force
 except:
-   print("ERROR: {} does not appear to be a valid CIMEROOT directory\n".format(caseroot))
+   print("ERROR: {} does not appear to be a valid CIMEROOT directory\n".format(cimeroot))
    exit
 
 # simple way to verify we are in a caseroot
