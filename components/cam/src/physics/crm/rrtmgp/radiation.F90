@@ -475,7 +475,7 @@ contains
       ! methods).
       type(ty_gas_concs) :: available_gases
 
-      real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
+      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
       character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
@@ -588,11 +588,13 @@ contains
       !
       
       ! Register new dimensions
+      allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
       sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
       lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
+      deallocate(sw_band_midpoints, lw_band_midpoints)
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
