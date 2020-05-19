@@ -70,6 +70,7 @@ module micro_p3_interface
       prain_idx,          &
       nevapr_idx,         &
       dei_idx,            &
+      rate1_cw2pr_st_idx, &
       mu_idx,             &
       lambdac_idx,        &
       rei_idx,            &
