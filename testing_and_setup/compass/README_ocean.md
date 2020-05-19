@@ -6,11 +6,11 @@ To set up and run ocean test cases from COMPASS, you will need a conda
 environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
-conda create -n compass_0.1.4 -c conda-forge -c e3sm python=3.7 compass=0.1.4
+conda create -n compass_0.1.5 -c conda-forge -c e3sm python=3.7 compass=0.1.5
 ```
 Each time you want to work with COMPASS, you will need to run:
 ```
-conda activate compass_0.1.4
+conda activate compass_0.1.5
 ```
 
 An appropriate conda environment is already available on Los Alamos National
