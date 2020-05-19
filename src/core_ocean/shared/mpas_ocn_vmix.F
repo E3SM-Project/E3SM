@@ -758,7 +758,7 @@ contains
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2.0 * &
-           0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))**(-1.0_RKIND/3.0_RKIND)
+          (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
 
          ! A is lower diagonal term
          do k = 2, N
