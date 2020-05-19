@@ -37,7 +37,7 @@ module dshr_mod
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
   use shr_cal_mod      , only : shr_cal_datetod2string
   use shr_const_mod    , only : shr_const_spval
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_infiles
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml
   use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
   use dshr_methods_mod , only : chkerr
   use perf_mod         , only : t_startf, t_stopf
@@ -283,7 +283,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
-    ! Obtain the data model mesh 
+    ! Obtain the data model mesh
     ! (1) if asked to create the mesh - create mesh from input file given by model_createmesh_fromfile
     ! (2) if single column - read in the data model domain file - and find the nearest neighbor
     ! (3) if not single column - obtain the mesh directly from the mesh input
@@ -336,11 +336,11 @@ contains
     ! Initialize sdat from data model input files
     if (trim(model_meshfile) == trim(model_maskfile)) then
        ! do not read in a separate mask
-       call shr_strdata_init_from_infiles(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
+       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
             reset_mask=reset_mask, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-       call shr_strdata_init_from_infiles(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
+       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
             reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if

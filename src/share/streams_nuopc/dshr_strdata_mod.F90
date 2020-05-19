@@ -44,8 +44,8 @@ module dshr_strdata_mod
   private
 
   public  :: shr_strdata_type
-  public  :: shr_strdata_init_from_infiles
-  public  :: shr_strdata_init_from_fortran
+  public  :: shr_strdata_init_from_xml
+  public  :: shr_strdata_init_from_inline
   public  :: shr_strdata_restRead
   public  :: shr_strdata_restWrite
   public  :: shr_strdata_setOrbs
@@ -67,67 +67,62 @@ module dshr_strdata_mod
   ! note that the fields in fldbun_stream_lb and fldbun_stream_ub contain the the names fldlist_model
 
   type shr_strdata_perstream
-     ! character(CS)                     :: taxMode                        ! stream time axis cycling mode
-     ! real(r8)                          :: dtlimit                        ! stream dt max/min limit
-     ! character(CS)                     :: tintalgo                       ! stream time interpolation algorithm
-     ! character(CS)                     :: readmode                       ! stream file(s) read mode
-     character(CL)                       :: stream_vectors                 ! stream vectors names
-     character(CL)                       :: stream_meshfile                ! stream mesh file from stream txt file
-     type(ESMF_Mesh)                     :: stream_mesh                    ! stream mesh created from stream mesh file
-     type(io_desc_t)                     :: stream_pio_iodesc              ! stream pio descriptor
-     logical                             :: stream_pio_iodesc_set =.false. ! true=>pio iodesc has been set
-     integer                             :: stream_pio_iovartype           ! stream pio variable type
-     ! character(CL)                     :: mapalgo                        ! scalar map algorithm
-     type(ESMF_RouteHandle)              :: routehandle                    ! stream n -> model mesh mapping
-     character(CS), allocatable          :: fldlist_stream(:)              ! names of fields read in from stream
-     character(CS), allocatable          :: fldlist_model(:)               ! names of fields in model (1/1 correspondence with fldlist_stream)
-     type(ESMF_FieldBundle)              :: fldbun_stream_lb               ! stream n field bundle for lb of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_stream_ub               ! stream n field bundle for ub of time period (stream grid)
-     type(ESMF_FieldBundle)              :: fldbun_model_lb                ! stream n field bundle for lb of time period (model grid)
-     type(ESMF_FieldBundle)              :: fldbun_model_ub                ! stream n field bundle for ub of time period (model grid)
-     type(ESMF_FieldBundle)              :: fldbun_model                   ! stream n field bundle for model time (model grid)
-     type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:)      ! field bundle for stream n for all time slices for stream
-     integer                             :: ymdLB                          ! stream ymd lower bound
-     integer                             :: todLB                          ! stream tod lower bound
-     integer                             :: ymdUB                          ! stream ymd upper bound
-     integer                             :: todUB                          ! stream tod upper bound
-     integer                             :: ustrm                          ! index of vector u in stream
-     integer                             :: vstrm                          ! index of vector v in stream 
-     real(r8)                            :: dtmin
-     real(r8)                            :: dtmax
-     type(ESMF_Field)                    :: field_coszen                   ! needed for coszen time interp
+     character(CL)                       :: stream_vectors                  ! stream vectors names
+     character(CL)                       :: stream_meshfile                 ! stream mesh file from stream txt file
+     type(ESMF_Mesh)                     :: stream_mesh                     ! stream mesh created from stream mesh file
+     type(io_desc_t)                     :: stream_pio_iodesc               ! stream pio descriptor
+     logical                             :: stream_pio_iodesc_set =.false.  ! true=>pio iodesc has been set
+     integer                             :: stream_pio_iovartype = PIO_REAL ! stream pio variable type
+     type(ESMF_RouteHandle)              :: routehandle                     ! stream n -> model mesh mapping
+     character(CS), allocatable          :: fldlist_stream(:)               ! names of fields read in from stream
+     character(CS), allocatable          :: fldlist_model(:)                ! names of fields in model (1/1 correspondence with fldlist_stream)
+     type(ESMF_FieldBundle)              :: fldbun_stream_lb                ! stream n field bundle for lb of time period (stream grid)
+     type(ESMF_FieldBundle)              :: fldbun_stream_ub                ! stream n field bundle for ub of time period (stream grid)
+     type(ESMF_FieldBundle)              :: fldbun_model_lb                 ! stream n field bundle for lb of time period (model grid)
+     type(ESMF_FieldBundle)              :: fldbun_model_ub                 ! stream n field bundle for ub of time period (model grid)
+     type(ESMF_FieldBundle)              :: fldbun_model                    ! stream n field bundle for model time (model grid)
+     type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:)       ! field bundle for stream n for all time slices for stream
+     integer                             :: ustrm                           ! index of vector u in stream
+     integer                             :: vstrm                           ! index of vector v in stream 
+     integer                             :: ymdLB = -1                      ! stream ymd lower bound
+     integer                             :: todLB = -1                      ! stream tod lower bound
+     integer                             :: ymdUB = -1                      ! stream ymd upper bound
+     integer                             :: todUB = -1                      ! stream tod upper bound
+     real(r8)                            :: dtmin = 1.0e30_r8
+     real(r8)                            :: dtmax = 0.0_r8
+     type(ESMF_Field)                    :: field_coszen                    ! needed for coszen time interp
   end type shr_strdata_perstream
 
   type shr_strdata_type
-     type(shr_strdata_perstream), allocatable :: pstrm(:)       ! stream info
-     type(shr_stream_streamType), pointer :: stream(:)=> null() ! stream datatype
-     integer                        :: nstreams                 ! number of streams
-     integer                        :: nvectors                 ! number of vectors
-     integer                        :: logunit                  ! stdout unit
-     integer                        :: mpicom                   ! mpi info
-     integer                        :: my_task                  ! mpi info
-     integer                        :: io_type                  ! pio info
-     integer                        :: io_format                ! pio info
-     integer                        :: modeldt                  ! model dt in seconds
-     type(ESMF_Mesh)                :: model_mesh               ! model mesh
-     real(r8), pointer              :: model_lon(:) => null()   ! model longitudes
-     real(r8), pointer              :: model_lat(:) => null()   ! model latitudes
-     real(r8), pointer              :: model_lev(:) => null()   ! model levels (if needed)
-     integer                        :: model_nxg                ! model global domain lon size
-     integer                        :: model_nyg                ! model global domain lat size
-     integer                        :: model_nzg                ! model global domain vertical size
-     integer                        :: model_lsize              ! model local domain size
-     integer, pointer               :: model_gindex(:)          ! model global index spzce
-     integer                        :: model_gsize              ! model global domain size
-     type(ESMF_CLock)               :: model_clock              ! model clock
-     character(CL)                  :: model_calendar           ! model calendar for ymd,tod
-     integer                        :: ymd, tod                 ! model time
-     type(iosystem_desc_t), pointer :: pio_subsystem => null()  ! pio info
-     real(r8)                       :: eccen                    ! cosz t-interp info
-     real(r8)                       :: mvelpp                   ! cosz t-interp info
-     real(r8)                       :: lambm0                   ! cosz t-interp info
-     real(r8)                       :: obliqr                   ! cosz t-interp info
-     real(r8), allocatable          :: tavCoszen(:)             ! cosz t-interp data
+     type(shr_strdata_perstream), allocatable :: pstrm(:)              ! stream info
+     type(shr_stream_streamType), pointer :: stream(:)=> null()        ! stream datatype
+     integer                        :: nstreams                        ! number of streams
+     integer                        :: nvectors                        ! number of vectors
+     integer                        :: logunit                         ! stdout unit
+     integer                        :: mpicom                          ! mpi info
+     integer                        :: my_task                         ! mpi info
+     integer                        :: io_type                         ! pio info
+     integer                        :: io_format                       ! pio info
+     integer                        :: modeldt = 0                     ! model dt in seconds
+     type(ESMF_Mesh)                :: model_mesh                      ! model mesh
+     real(r8), pointer              :: model_lon(:) => null()          ! model longitudes
+     real(r8), pointer              :: model_lat(:) => null()          ! model latitudes
+     real(r8), pointer              :: model_lev(:) => null()          ! model levels (if needed)
+     integer                        :: model_nxg                       ! model global domain lon size
+     integer                        :: model_nyg                       ! model global domain lat size
+     integer                        :: model_nzg                       ! model global domain vertical size
+     integer                        :: model_lsize                     ! model local domain size
+     integer, pointer               :: model_gindex(:)                 ! model global index spzce
+     integer                        :: model_gsize                     ! model global domain size
+     type(ESMF_CLock)               :: model_clock                     ! model clock
+     character(CL)                  :: model_calendar = shr_cal_noleap ! model calendar for ymd,tod
+     integer                        :: ymd, tod                        ! model time
+     type(iosystem_desc_t), pointer :: pio_subsystem => null()         ! pio info
+     real(r8)                       :: eccen  = SHR_ORB_UNDEF_REAL     ! cosz t-interp info
+     real(r8)                       :: mvelpp = SHR_ORB_UNDEF_REAL     ! cosz t-interp info
+     real(r8)                       :: lambm0 = SHR_ORB_UNDEF_REAL     ! cosz t-interp info
+     real(r8)                       :: obliqr = SHR_ORB_UNDEF_REAL     ! cosz t-interp info
+     real(r8), allocatable          :: tavCoszen(:)                    ! cosz t-interp data
   end type shr_strdata_type
 
   integer          ,parameter :: iotype_std_netcdf = -99 ! non pio option
@@ -139,7 +134,7 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_from_infiles(sdat, xmlfilename, mesh, clock, mpicom, &
+  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, mesh, clock, mpicom, &
        compid, logunit, reset_mask, model_maskfile, rc)
 
     ! input/output variables
@@ -156,13 +151,6 @@ contains
 
     ! local variables
     logical       :: masterproc
-    integer       :: ns ! stream index
-    integer       :: i  ! generic index
-    character(CL) :: str
-    integer       :: yearFirst     ! first year to use
-    integer       :: yearLast      ! last  year to use
-    integer       :: yearAlign     ! align yearFirst with this model year
-    character(CL) :: filename
     integer       :: ierr
     character(len=*), parameter  :: subname='(shr_strdata_mod:dshr_sdat_init_from_infiles)'
     character(*)    , parameter  :: F01="('(shr_init_strdata) ',a,2f10.4)"
@@ -173,7 +161,6 @@ contains
     ! Initialize sdat mpi info
     sdat%mpicom = mpicom
     call mpi_comm_rank(sdat%mpicom, sdat%my_task, ierr)
-    masterproc = (sdat%my_task == master_task)
 
     ! Initialize log unit
     sdat%logunit = logunit
@@ -184,115 +171,45 @@ contains
     sdat%io_format     =  shr_pio_getioformat(compid)
 
     ! Read xml file
+    masterproc = (sdat%my_task == master_task)
     call shr_stream_init_from_xml(xmlfilename, sdat%stream, masterproc, rc=rc)
     sdat%nstreams = size(sdat%stream)
     allocate(sdat%pstrm(sdat%nstreams))
 
-    ! Initialize the sdat model domain info
-    sdat%pstrm(:)%ymdLB = -1
-    sdat%pstrm(:)%todLB = -1
-    sdat%pstrm(:)%ymdUB = -1
-    sdat%pstrm(:)%todUB = -1
-    sdat%pstrm(:)%dtmin = 1.0e30
-    sdat%pstrm(:)%dtmax = 0.0
-    sdat%eccen          = SHR_ORB_UNDEF_REAL
-    sdat%mvelpp         = SHR_ORB_UNDEF_REAL
-    sdat%lambm0         = SHR_ORB_UNDEF_REAL
-    sdat%obliqr         = SHR_ORB_UNDEF_REAL
-    sdat%modeldt        = 0
-    sdat%model_calendar = shr_cal_noleap
-    sdat%pstrm(:)%dtmin = 1.0e30
-    sdat%pstrm(:)%dtmax = 0.0e0
-
-    call shr_strdata_init_model_domain(sdat, mesh, compid, &
-         reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
+    ! Initialize sdat model domain
+    call shr_strdata_init_model_domain(sdat, mesh, reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Now finish initializing sdat
-    call shr_strdata_init(sdat, clock, compid, rc)
+    call shr_strdata_init(sdat, clock, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine shr_strdata_init_from_infiles
+  end subroutine shr_strdata_init_from_xml
 
   !===============================================================================
-  subroutine shr_strdata_init_from_fortran( sdat, mpicom, compid,                  &
-       model_mesh, model_nxg, model_nyg, model_clock,                              &
-       stream_meshfile, stream_filenames, stream_FldListFile, stream_fldListModel, &
-       stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset,         &
-       stream_taxMode, stream_dtlimit, stream_tintalgo, stream_readmode,           &
-       stream_mapalgo, rc)
+  subroutine shr_strdata_init_from_inline(rc)
 
     ! Set strdata and stream info from fortran interface.
     ! Note: When this is called, previous settings are reset to defaults
     ! and then the values passed are used.
 
     ! input/output arguments
-    type(shr_strdata_type) ,intent(inout):: sdat                ! strdata data data-type
-    integer                ,intent(in)   :: mpicom              ! mpi comm
-    integer                ,intent(in)   :: compid
-    type(ESMF_Mesh)        ,intent(in)   :: model_mesh
-    integer                ,intent(in)   :: model_nxg
-    integer                ,intent(in)   :: model_nyg
-    type(ESMF_Clock)       ,intent(in)   :: model_clock
-    character(len=*)       ,intent(in)   :: stream_meshfile
-    character(*)           ,intent(in)   :: stream_FileNames(:) ! filenames for stream data
-    character(*)           ,intent(in)   :: stream_fldListFile  ! file field names, colon delim list
-    character(*)           ,intent(in)   :: stream_fldListModel ! model field names, colon delim list
-    integer                ,intent(in)   :: stream_yearFirst    ! first year to use
-    integer                ,intent(in)   :: stream_yearLast     ! last  year to use
-    integer                ,intent(in)   :: stream_yearAlign    ! align yearFirst with this model year
-    integer                ,intent(in)   :: stream_offset       ! offset in seconds of stream data
-    character(*)           ,intent(in)   :: stream_taxMode
-    real(r8)               ,intent(in)   :: stream_dtlimit
-    character(*)           ,intent(in)   :: stream_mapalgo      ! scalar map algorithm
-    character(*)           ,intent(in)   :: stream_tintalgo     ! time interpolation algorithm
-    character(*)           ,intent(in)   :: stream_readmode     ! file read mode
-    integer                ,intent(out)  :: rc                  ! error status
-
+    integer, intent(out) :: rc
+    
     ! local variables
-    character(*),parameter  :: subName = "(shr_strdata_create) "
-    character(*),parameter  :: F00 = "('(shr_strdata_create) ',8a)"
+    character(*),parameter  :: subName = "(shr_strdata_from_inline) "
+    character(*),parameter  :: F00 = "('(shr_strdata_inline) ',8a)"
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
     ! Assume only 1 stream
-    ! TODO: set all default values 
-
-    sdat%nstreams    = 1
-    sdat%model_mesh  = model_mesh
-    sdat%stream(1)%taxmode  = stream_taxMode
-    sdat%stream(1)%dtlimit  = stream_dtlimit
-    sdat%stream(1)%mapalgo  = stream_mapalgo
-    sdat%stream(1)%tinterpalgo = stream_tintalgo
-    sdat%stream(1)%readmode = stream_readmode ! single or full_file
-    if (trim(sdat%stream(1)%taxmode) == trim(shr_stream_taxis_extend)) then
-       ! reset dtlimit if necessary
-       sdat%stream(1)%dtlimit = 1.0e30
-    end if
-
-    ! Initialize sdat  pio
-    sdat%pio_subsystem => shr_pio_getiosys(compid)
-    sdat%io_type       =  shr_pio_getiotype(compid)
-    sdat%io_format     =  shr_pio_getioformat(compid)
-
-    ! Initialize sdat stream info
-    call shr_stream_init_from_fortran(sdat%stream(1), stream_meshfile, &
-         stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
-         stream_fldlistFile, stream_fldlistModel, stream_fileNames)
-
-    ! Initialize sdat model domain info
-    call shr_strdata_init_model_domain(sdat, model_mesh, compid, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Initialize the rest of sdat
-    call shr_strdata_init(sdat, model_clock, compid, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine shr_strdata_init_from_fortran
+    ! TODO: fill this in
+    
+  end subroutine shr_strdata_init_from_inline
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain( sdat, model_mesh, compid, reset_mask, model_maskfile, rc)
+  subroutine shr_strdata_init_model_domain( sdat, model_mesh, reset_mask, model_maskfile, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat model domain info
@@ -301,7 +218,6 @@ contains
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
     type(ESMF_Mesh)            , intent(in)    :: model_mesh
-    integer                    , intent(in)    :: compid
     logical         , optional , intent(in)    :: reset_mask
     character(len=*), optional , intent(in)    :: model_maskfile
     integer                    , intent(out)   :: rc
@@ -411,51 +327,52 @@ contains
   end subroutine shr_strdata_init_model_domain
 
   !===============================================================================
-  subroutine shr_strdata_init(sdat, model_clock, compid, rc)
+  subroutine shr_strdata_init(sdat, model_clock, rc)
 
     ! input/output variables
     type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_Clock)       , intent(in)    :: model_clock
-    integer                , intent(in)    :: compid
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_Calendar)     :: esmf_calendar   ! esmf calendar
-    type(ESMF_CalKind_Flag) :: esmf_caltype    ! esmf calendar type
-    type(ESMF_DistGrid)     :: distgrid
-    character(CS)           :: calendar        ! calendar name
-    integer                 :: dimcount
-    integer, allocatable    :: minIndexPTile(:,:)
-    integer, allocatable    :: maxIndexPTile(:,:)
-    integer                 :: lnx, lny        ! global mesh dimensions
-    integer                 :: ne              ! number of local mesh elements
-    integer                 :: ns              ! stream index
-    integer                 :: n,m,k           ! generic index
-    character(CL)           :: fileName        ! generic file name
-    integer                 :: nfiles          ! number of data files for a given stream
-    character(CS)           :: uname           ! u vector field name
-    character(CS)           :: vname           ! v vector field name
-    integer                 :: nu, nv          ! vector indices
-    integer                 :: nstream         ! loop stream index
-    integer                 :: nvector         ! loop vector index
-    integer                 :: nfld            ! loop stream field index
-    integer                 :: nflds           ! total number of fields in a given stream
-    type(ESMF_Field)        :: lfield          ! temporary
-    type(ESMF_Field)        :: lfield_src      ! temporary
-    type(ESMF_Field)        :: lfield_dst      ! temporary
-    integer                 :: srcTermProcessing_Value = 0 ! should this be a module variable?
-    integer , pointer       :: stream_gindex(:)
-    integer                 :: stream_lsize
-    character(CS)           :: tmpstr
-    integer                 :: ierr
-    integer                 :: localpet
-    logical                 :: fileExists
-    type(ESMF_VM)           :: vm
-    logical                 :: masterproc
-    integer                 :: nvars
-    character(len=*), parameter :: subname='(shr_strdata_mod:shr_sdat_init)'
-    character(*)    , parameter :: F00 = "('(shr_sdat_init) ',a)"
-    character(*)    , parameter :: F01 = "('(shr_sdat) ',a,2x,i8)"
+    type(ESMF_Calendar)          :: esmf_calendar   ! esmf calendar
+    type(ESMF_CalKind_Flag)      :: esmf_caltype    ! esmf calendar type
+    type(ESMF_DistGrid)          :: distgrid
+    type(ESMF_RegridMethod_Flag) :: regridmethod
+    type(ESMF_PoleMethod_Flag)   :: polemethod
+    character(CS)                :: calendar        ! calendar name
+    integer                      :: dimcount
+    integer, allocatable         :: minIndexPTile(:,:)
+    integer, allocatable         :: maxIndexPTile(:,:)
+    integer                      :: lnx, lny        ! global mesh dimensions
+    integer                      :: ne              ! number of local mesh elements
+    integer                      :: ns              ! stream index
+    integer                      :: n,m,k           ! generic index
+    character(CL)                :: fileName        ! generic file name
+    integer                      :: nfiles          ! number of data files for a given stream
+    character(CS)                :: uname           ! u vector field name
+    character(CS)                :: vname           ! v vector field name
+    integer                      :: nu, nv          ! vector indices
+    integer                      :: nstream         ! loop stream index
+    integer                      :: nvector         ! loop vector index
+    integer                      :: nfld            ! loop stream field index
+    integer                      :: nflds           ! total number of fields in a given stream
+    type(ESMF_Field)             :: lfield          ! temporary
+    type(ESMF_Field)             :: lfield_src      ! temporary
+    type(ESMF_Field)             :: lfield_dst      ! temporary
+    integer                      :: srcTermProcessing_Value = 0 ! should this be a module variable?
+    integer , pointer            :: stream_gindex(:)
+    integer                      :: stream_lsize
+    character(CS)                :: tmpstr
+    integer                      :: ierr
+    integer                      :: localpet
+    logical                      :: fileExists
+    type(ESMF_VM)                :: vm
+    logical                      :: masterproc
+    integer                      :: nvars
+    character(len=*), parameter  :: subname='(shr_strdata_mod:shr_sdat_init)'
+    character(*)    , parameter  :: F00 = "('(shr_sdat_init) ',a)"
+    character(*)    , parameter  :: F01 = "('(shr_sdat) ',a,2x,i8)"
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -564,12 +481,16 @@ contains
        call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_model_lb, 1, lfield_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
+       if (trim(sdat%stream(ns)%mapalgo) == "bilinear") then
+          regridmethod = ESMF_REGRIDMETHOD_BILINEAR
+          polemethod   = ESMF_POLEMETHOD_ALLAVG 
+          ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
+       else
+          call shr_sys_abort('ERROR: only bilinear regriddid is supported for now')
+       end if
+
        call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%pstrm(ns)%routehandle, &
-           regridmethod=ESMF_REGRIDMETHOD_BILINEAR, &
-           polemethod=ESMF_POLEMETHOD_ALLAVG, &
-         ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
-         ! regridmethod=ESMF_REGRIDMETHOD_CONSERVE, &
-         ! polemethod=ESMF_POLEMETHOD_NONE, &
+           regridmethod=regridmethod,  polemethod=polemethod, &
            dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -897,8 +818,6 @@ contains
 
           call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
           call t_startf(trim(lstr)//trim(timname)//'_readLBUB')
-
-          write(6,*)'DEBUG: readmode is ',sdat%stream(ns)%readmode
 
           select case(sdat%stream(ns)%readmode)
           case ('single')
@@ -1264,38 +1183,28 @@ contains
   end subroutine shr_strdata_setOrbs
 
   !===============================================================================
-  subroutine shr_strdata_print(sdat,name)
+  subroutine shr_strdata_print(sdat, name)
 
     !  Print strdata common to all data models
 
     ! input/output parameters:
-    type(shr_strdata_type)  ,intent(in) :: sdat  ! strdata data data-type
-    character(len=*),optional,intent(in) :: name  ! just a name for tracking
+    type(shr_strdata_type) , intent(in) :: sdat  ! strdata data data-type
+    character(len=*)       , intent(in) :: name   
 
     ! local variables
-    integer   :: ns,n
-    character(CL) :: lname
+    integer  :: ns,n
     character(*),parameter :: subName = "(shr_strdata_print) "
     character(*),parameter ::   F00 = "('(shr_strdata_print) ',8a)"
     character(*),parameter ::   F01 = "('(shr_strdata_print) ',a,i6,a)"
     character(*),parameter ::   F02 = "('(shr_strdata_print) ',a,es13.6)"
-    character(*),parameter ::   F03 = "('(shr_strdata_print) ',a,l6)"
     character(*),parameter ::   F04 = "('(shr_strdata_print) ',a,i2,a,a)"
-    character(*),parameter ::   F05 = "('(shr_strdata_print) ',a,i2,a,i6)"
-    character(*),parameter ::   F06 = "('(shr_strdata_print) ',a,i2,a,l2)"
     character(*),parameter ::   F07 = "('(shr_strdata_print) ',a,i2,a,es13.6)"
-    character(*),parameter ::   F20 = "('(shr_strdata_print) ',a,i6,a)"
     character(*),parameter ::   F90 = "('(shr_strdata_print) ',58('-'))"
     !-------------------------------------------------------------------------------
 
-    lname = 'unknown'
-    if (present(name)) then
-       lname = trim(name)
-    endif
-
     write(sdat%logunit,*)
     write(sdat%logunit,F90)
-    write(sdat%logunit,F00) "name        = ",trim(lname)
+    write(sdat%logunit,F00) "name        = ",trim(name)
     write(sdat%logunit,F00) "calendar    = ",trim(sdat%model_calendar)
     write(sdat%logunit,F02) "eccen       = ",sdat%eccen
     write(sdat%logunit,F02) "mvelpp      = ",sdat%mvelpp
@@ -1312,8 +1221,8 @@ contains
        write(sdat%logunit,F04) "  readmode(",ns,") = ",trim(sdat%stream(ns)%readmode)
        write(sdat%logunit,F01) " "
     end do
-    write(sdat%logunit,F01) "nvectors    = ",sdat%nvectors
 
+    write(sdat%logunit,F01) "nvectors    = ",sdat%nvectors
     do n=1, sdat%nvectors
        write(sdat%logunit,F04) "  vectors (",n,") = ",trim(sdat%pstrm(n)%stream_vectors)
     end do
