@@ -623,7 +623,7 @@ contains
          ! second line uses sqrt(2.0*kineticEnergyEdge(k,iEdge))
          ! use implicitCd from spatially variable bottom drag
          B(N) = 1.0_RKIND - A(N) + dt*implicitCd &
-              * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) / layerThicknessEdge(k,iEdge)
+              * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge)
 
          call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
 
@@ -784,7 +784,7 @@ contains
          ! second line uses sqrt(2.0*kineticEnergyEdge(k,iEdge))
          ! use implicitCd from spatially variable bottom drag
          B(N) = 1.0_RKIND - A(N) + dt*implicitCd &
-              * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) / layerThicknessEdge(k,iEdge)
+              * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge)
 
          call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
 
