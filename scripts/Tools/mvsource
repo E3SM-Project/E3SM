@@ -32,13 +32,16 @@ for dirpath, dirnames, filenames in os.walk(caseroot):
             index = oldpath.find(cr)+len(cr)-1
             newpath = cimeroot + oldpath[index:]
             if os.path.exists(newpath):
+               print("Updating link for {}".format(_file))
                symlink_force(newpath, _file)
-   os.chdir(caseroot)
+os.chdir(caseroot)
 
-   with Case(caseroot, read_only=False) as case:
-      case.set_value('CIMEROOT', cimeroot)
-      case.set_value('SRCROOT', os.path.dirname(cimeroot))
-      case.set_value('CASEROOT', caseroot)
-      model = case.get_value('MODEL')
-      case.set_value("MACHDIR", os.path.join(cimeroot,"config",model,"machines"))
-   os.system('cp env_case.xml LockedFiles/')
+with Case(caseroot, read_only=False) as case:
+   print("Updating case xml")
+   case.set_value('CIMEROOT', cimeroot)
+   case.set_value('SRCROOT', os.path.dirname(cimeroot))
+   case.set_value('CASEROOT', caseroot)
+   model = case.get_value('MODEL')
+   case.set_value("MACHDIR", os.path.join(cimeroot,"config",model,"machines"))
+
+os.system('cp env_case.xml LockedFiles/')
