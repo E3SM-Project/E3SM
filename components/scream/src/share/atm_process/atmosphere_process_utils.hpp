@@ -25,6 +25,14 @@ inline std::string e2str (const AtmosphereProcessType ap_type) {
   return "INVALID";
 }
 
+// This enum is mostly used by AtmosphereProcessGroup to establish whether
+// its atm procs are to be run concurrently or sequentially.
+// We put the enum here so other files can easily access it.
+enum class ScheduleType {
+  Sequential,
+  Parallel
+};
+
 } // namespace scream
 
 #endif // SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP

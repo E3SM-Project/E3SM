@@ -22,12 +22,10 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
-  auto Qdp = Q * Pa;
   Q.set_string("kg/kg");
-  Qdp.set_string("kg/kg Pa");
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
-  constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   auto grid = grids_manager->get_grid("Physics");
   const int num_dofs = grid->get_num_local_dofs();
@@ -36,20 +34,19 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   auto VL = FieldTag::VerticalLevel;
   auto CO = FieldTag::Column;
   auto VR = FieldTag::Variable;
-  auto TL = FieldTag::TimeLevel;
 
   FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
-  FieldLayout tracers_state_layout { {CO,TL,VR,VL}, {nc,2,4,NVL} };
-  FieldLayout scalar_state_3d_mid_layout { {CO,TL,VL} , {nc,2,NVL}};
-  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,4,NVL} };
+  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,QSZ,NVL} };
 
-  // set requirements
-  m_required_fields.emplace("dp"         , scalar_state_3d_mid_layout,      Pa, "Physics");
-  m_required_fields.emplace("qdp"        , tracers_state_layout,           Qdp, grid->name());
-  // set computed
-  m_computed_fields.emplace("q"           , vector3d_layout,          Q, "Physics");
-  m_computed_fields.emplace("FQ"          , q_forcing_layout,         Q, grid->name());
+  // Input
+  m_required_fields.emplace("dp", scalar3d_layout,  Pa, grid->name());
+  // Input-Output
+  m_required_fields.emplace("q",  vector3d_layout,  Q,  grid->name());
+  m_required_fields.emplace("FQ", q_forcing_layout, Q,  grid->name());
+
+  m_computed_fields.emplace("q" , vector3d_layout,  Q,  grid->name());
+  m_computed_fields.emplace("FQ", q_forcing_layout, Q,  grid->name());
 
 }
 // =========================================================================================
@@ -74,17 +71,14 @@ void SHOCMacrophysics::run (const Real dt)
   // TODO: create the host mirrors once.
   auto q_dev   = m_shoc_fields_out.at("q").get_view();
   auto fq_dev  = m_shoc_fields_out.at("FQ").get_view();
-  auto qdp_dev = m_shoc_fields_in.at("qdp").get_view();
 
   auto q_host   = Kokkos::create_mirror_view(q_dev);
   auto fq_host  = Kokkos::create_mirror_view(fq_dev);
-  auto qdp_host = Kokkos::create_mirror_view(qdp_dev);
 
   auto q_ptr   = q_host.data();
   auto fq_ptr  = fq_host.data();
-  auto qdp_ptr = qdp_host.data();
 
-  shoc_main_f90 (dt,q_ptr,fq_ptr,qdp_ptr);
+  shoc_main_f90 (dt,q_ptr,fq_ptr);
 
   Kokkos::deep_copy(q_dev,q_host);
   Kokkos::deep_copy(fq_dev,fq_host);

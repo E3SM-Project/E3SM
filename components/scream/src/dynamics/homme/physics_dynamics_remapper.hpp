@@ -4,7 +4,7 @@
 #include "dynamics/homme/hommexx_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
-#include "share/remap/abstract_remapper.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/scream_pack.hpp"
 #include "share/scream_assert.hpp"

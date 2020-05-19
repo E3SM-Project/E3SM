@@ -1,4 +1,4 @@
-#include "atmosphere_process_group.hpp"
+#include "share/atm_process/atmosphere_process_group.hpp"
 
 #include "share/util/scream_std_utils.hpp"
 #include "share/util/string_utils.hpp"
@@ -16,25 +16,28 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
 
   if (m_group_size>1) {
     if (params.get<std::string>("Schedule Type") == "Sequential") {
-      m_group_schedule_type = GroupScheduleType::Sequential;
+      m_group_schedule_type = ScheduleType::Sequential;
     } else if (params.get<std::string>("Schedule Type") == "Parallel") {
-      m_group_schedule_type = GroupScheduleType::Parallel;
+      m_group_schedule_type = ScheduleType::Parallel;
       error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
       error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
-    m_group_schedule_type = GroupScheduleType::Sequential;
+    m_group_schedule_type = ScheduleType::Sequential;
   }
 
   // Create the individual atmosphere processes
+  m_group_name = "Group [";
+  m_group_name += m_group_schedule_type==ScheduleType::Sequential
+                ? "Sequential]:" : "Parallel]:";
   for (int i=0; i<m_group_size; ++i) {
     // The comm to be passed to the processes construction is
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
     //  - a sub-comm of the input comm otherwise
     Comm proc_comm = m_comm;
-    if (m_group_schedule_type==GroupScheduleType::Parallel) {
+    if (m_group_schedule_type==ScheduleType::Parallel) {
       // This is what's going to happen:
       //  - the processes in the group are going to be run in parallel
       //  - each rank is assigned ONE atm process
@@ -69,6 +72,9 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {
       m_required_grids.insert(name);
     }
+
+    m_group_name += " ";
+    m_group_name += m_atm_processes.back()->name();
   }
 
 #ifdef SCREAM_DEBUG
@@ -128,7 +134,8 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
     // Any atm proc sub-group will take care of remapping input/outputs.
     // We only have to deal with 'individual' atm processes
     const auto type = atm_proc->type();
-    if (type!=AtmosphereProcessType::Group) {
+    const bool is_group = type==AtmosphereProcessType::Group;
+    if (!is_group) {
       const auto& atm_proc_grids = atm_proc->get_required_grids();
       // Note: in general, as of today, no atm process other than APG stores more than
       //       one grid, so this for loop is somewhat overkill. Still, it doesn't hurt.
@@ -143,13 +150,13 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
 
     // Add inputs to the list of inputs of the group
     for (const auto& fid : atm_proc->get_required_fields()) {
-      // Whether this fid is on the reference grid or not, we expose as
+      // Whether this fid is on the reference grid or not, we expose
       // as input a copy of fid on the reference grid.
       // If fid is not on the reference grid, we add fid to our 'computed' fields.
       const bool is_ref_grid = (fid.get_grid_name()==ref_grid->name());
       const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in[fid.get_grid_name()]);
 
-      if (m_group_schedule_type==GroupScheduleType::Sequential) {
+      if (m_group_schedule_type==ScheduleType::Sequential) {
         // If the schedule is sequential, we do not add inputs if they are computed
         // by a previous process (they are not an 'input' to the group).
         if (computed.find(fid.name())==computed.end()) {
@@ -182,7 +189,8 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
 
       // If the grid of fid is not the reference one, we also remap it
       // to the reference grid, hence "computing" ref_fid
-      if (fid.get_grid_name()!=ref_grid->name()) {
+      // Exception: if atm proc is a group, then it should already take care of this.
+      if (!is_group && fid.get_grid_name()!=ref_grid->name()) {
         auto& remapper = remap_out[fid.get_grid_name()];
 
         const FieldIdentifier ref_fid = create_ref_fid(fid,remapper);
@@ -259,7 +267,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
 }
 
 void AtmosphereProcessGroup::run (const Real dt) {
-  if (m_group_schedule_type==GroupScheduleType::Sequential) {
+  if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {
     run_parallel(dt);
