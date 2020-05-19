@@ -14,7 +14,6 @@ module dshr_strdata_mod
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian
   use shr_cal_mod      , only : shr_cal_date2ymd, shr_cal_ymd2date
   use shr_orb_mod      , only : shr_orb_decl, shr_orb_cosz, shr_orb_undef_real
-  use shr_nl_mod       , only : shr_nl_find_group_name
   use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
   use shr_string_mod   , only : shr_string_listgetname, shr_string_listisvalid, shr_string_listgetnum
 
@@ -56,7 +55,6 @@ module dshr_strdata_mod
   public  :: shr_strdata_get_stream_pointer ! get a pointer into a stream's fldbun_model field bundle
   public  :: shr_strdata_print
 
-  private :: shr_strdata_readnml_from_infiles
   private :: shr_strdata_init_model_domain
   private :: shr_strdata_readLBUB
 
@@ -72,7 +70,7 @@ module dshr_strdata_mod
      ! real(r8)                          :: dtlimit                        ! stream dt max/min limit
      ! character(CS)                     :: tintalgo                       ! stream time interpolation algorithm
      ! character(CS)                     :: readmode                       ! stream file(s) read mode
-     character(CL)                       :: stream_vectors                 ! stream vectors names from shr_strdata_nml
+     character(CL)                       :: stream_vectors                 ! stream vectors names
      character(CL)                       :: stream_meshfile                ! stream mesh file from stream txt file
      type(ESMF_Mesh)                     :: stream_mesh                    ! stream mesh created from stream mesh file
      type(io_desc_t)                     :: stream_pio_iodesc              ! stream pio descriptor
@@ -110,8 +108,10 @@ module dshr_strdata_mod
      type(shr_strdata_perstream), allocatable :: pstrm(:)
      ! stream info
      type(shr_stream_streamType), pointer :: stream(:)=> null()          ! stream datatype
-     integer                        :: nstreams                          ! number of streams set in shr_strdata_readnml
-     integer                        :: nvectors                          ! number of vectors set in shr_strdata_readnml
+     integer                        :: nstreams                          ! number of streams
+     integer                        :: nvectors                          ! number of vectors
+     ! stdout unit
+     integer                        :: logunit
      ! mpi info
      integer                        :: mpicom
      integer                        :: my_task
@@ -157,7 +157,7 @@ contains
 
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
-    character(len=*)           , intent(in)    :: xmlfilename ! for shr_strdata_nml namelist
+    character(len=*)           , intent(in)    :: xmlfilename
     type(ESMF_Mesh)            , intent(inout) :: mesh
     type(ESMF_Clock)           , intent(in)    :: clock
     integer                    , intent(in)    :: mpicom
@@ -187,6 +187,9 @@ contains
     sdat%mpicom = mpicom
     call mpi_comm_rank(sdat%mpicom, sdat%my_task, ierr)
     masterproc = (sdat%my_task == master_task)
+
+    ! Initialize log unit
+    sdat%logunit = logunit
 
     ! Initialize sdat  pio
     sdat%pio_subsystem => shr_pio_getiosys(compid)
@@ -268,7 +271,7 @@ contains
     rc = ESMF_SUCCESS
 
     ! Assume only 1 stream
-    ! TODO: set all default values - dont read shr_strdata_readnml to set default values
+    ! TODO: set all default values 
 
     sdat%nstreams    = 1
     sdat%model_mesh  = model_mesh
@@ -700,7 +703,7 @@ contains
     rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(filename), pio_nowrite)
 
     ! Create the pio iodesc for fldname
-    call shr_strdata_set_stream_iodesc(sdat%pio_subsystem, pioid, &
+    call shr_strdata_set_stream_iodesc(sdat%my_task, logunit, sdat%pio_subsystem, pioid, &
          trim(fldname), sdat%pstrm(stream_index)%stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1275,155 +1278,6 @@ contains
   end subroutine shr_strdata_setOrbs
 
   !===============================================================================
-  subroutine shr_strdata_readnml_from_infiles(sdat, file, mpicom)
-
-    ! Reads shr_strdata_nml namelist input
-
-    ! input/output arguments
-    type(shr_strdata_type) ,intent(inout):: sdat   ! strdata data data-type
-    character(*) ,optional ,intent(in)   :: file   ! file to read strdata from
-    integer      ,optional ,intent(in)   :: mpicom ! mpi comm
-
-    ! local variables
-    integer, parameter :: nstrmax=1
-    integer, parameter :: nvecmax=1
-    integer    :: rCode         ! return code
-    integer    :: nUnit         ! fortran i/o unit number
-    integer    :: n             ! generic loop index
-    integer    :: my_task       ! my task number, 0 is default
-    integer    :: ntasks        ! total number of tasks
-
-    ! shr_strdata_nml namelist variables
-    integer       :: nx_global          ! global size of nx
-    integer       :: ny_global          ! global size of ny
-    character(CL) :: streams(nStrMax)   ! stream description file names
-    character(CL) :: taxMode(nStrMax)   ! time axis cycling mode
-    real(r8)      :: dtlimit(nStrMax)   ! delta time limiter
-    character(CL) :: vectors(nVecMax)   ! define vectors to vector map
-    character(CL) :: mapalgo(nStrMax)   ! scalar map algorithm
-    character(CL) :: mapmask(nStrMax)   ! scalar map mask
-    character(CL) :: tintalgo(nStrMax)  ! time interpolation algorithm
-    character(CL) :: readmode(nStrMax)  ! file read mode
-    character(CL) :: fileName           ! generic file name
-
-    !----- define namelist -----
-    namelist / shr_strdata_nml / &
-           nx_global ,           &
-           ny_global ,           &
-           streams   ,           &
-           taxMode   ,           &
-           dtlimit   ,           &
-           vectors   ,           &
-           mapalgo   ,           &
-           mapmask   ,           &
-           tintalgo  ,           &
-           readmode
-
-    !----- formats -----
-    character(*),parameter :: subName = "(shr_strdata_readnml_from_infiles) "
-    character(*),parameter ::   F00 = "('(shr_strdata_readnml_from_infiles) ',8a)"
-    character(*),parameter ::   F01 = "('(shr_strdata_readnml_from_infiles) ',a,i6,a)"
-    character(*),parameter ::   F02 = "('(shr_strdata_readnml_from_infiles) ',a,es13.6)"
-    character(*),parameter ::   F03 = "('(shr_strdata_readnml_from_infiles) ',a,l6)"
-    character(*),parameter ::   F04 = "('(shr_strdata_readnml_from_infiles) ',a,i2,a,a)"
-    character(*),parameter ::   F20 = "('(shr_strdata_readnml_from_infiles) ',a,i6,a)"
-    character(*),parameter ::   F90 = "('(shr_strdata_readnml_from_infiles) ',58('-'))"
-    !-------------------------------------------------------------------------------
-
-    my_task = 0
-    ntasks = 1
-
-    if (present(mpicom)) then
-       call mpi_comm_rank(mpicom, my_task, rCode)
-       call mpi_comm_size(mpicom, ntasks, rCode)
-    endif
-    allocate(sdat%stream(nStrMax))
-    allocate(sdat%pstrm(nStrMax))
-    !--master--task--
-    if (my_task == master_task) then
-
-       ! set default values for namelist vars
-       streams(:)  = trim(shr_strdata_nullstr)
-       taxMode(:)  = trim(shr_stream_taxis_cycle)
-       dtlimit(:)  = dtlimit_default
-       vectors(:)  = trim(shr_strdata_nullstr)
-       mapalgo(:)  = 'bilinear'
-       mapmask(:)  = 'dstmask'
-       tintalgo(:) = 'linear'
-       readmode(:) = 'single'
-
-       ! read input namelist
-       if (present(file)) then
-          write(logunit,F00) 'reading input namelist file: ',trim(file)
-          open (newunit=nUnit,file=trim(file),status="old",action="read")
-          call shr_nl_find_group_name(nUnit, 'shr_strdata_nml', status=rCode)
-          if (rCode == 0) then
-             read (nUnit, nml=shr_strdata_nml, iostat=rCode)
-             if (rCode /= 0) then
-                write(logunit,F01) 'ERROR: reading input namelist shr_strdata_input from file, &
-                     &'//trim(file)//' iostat=',rCode
-                call shr_sys_abort(subName//": namelist read error "//trim(file))
-             end if
-          end if
-          close(nUnit)
-       endif
-
-       ! copy temporary/local namelist vars into data structure
-       do n=1,nStrMax
-          call shr_stream_default(sdat%stream(n))
-       enddo
-       sdat%stream(:)%taxmode        = taxMode(:)
-       sdat%stream(:)%dtlimit        = dtlimit(:)
-       sdat%pstrm(:)%stream_vectors = vectors(:)
-       sdat%stream(:)%mapalgo        = mapalgo(:)
-       sdat%stream(:)%mapmask        = mapmask(:)
-       sdat%stream(:)%tinterpalgo       = tintalgo(:)
-       sdat%stream(:)%readmode       = readmode(:)
-
-       sdat%nstreams = 0
-       do n=1,nStrMax
-          if (trim(sdat%stream(n)%taxmode) == trim(shr_stream_taxis_extend)) then
-             sdat%stream(n)%dtlimit = 1.0e30
-          end if
-       end do
-
-       sdat%nvectors = 0
-       do n=1,nVecMax
-          if (trim(vectors(n)) /= trim(shr_strdata_nullstr)) then
-             sdat%nvectors = n
-          end if
-       end do
-    endif   ! master_task
-
-    if (present(mpicom)) then
-       call shr_mpi_bcast(sdat%model_calendar ,mpicom ,'calendar')
-       call shr_mpi_bcast(sdat%nstreams       ,mpicom ,'nstreams')
-       call shr_mpi_bcast(sdat%nvectors       ,mpicom ,'nvectors')
-       call shr_mpi_bcast(sdat%stream(1)%taxmode        ,mpicom ,'taxMode')
-       call shr_mpi_bcast(sdat%stream(1)%dtlimit        ,mpicom ,'dtlimit')
-       call shr_mpi_bcast(sdat%pstrm(1)%stream_vectors ,mpicom ,'vectors')
-       call shr_mpi_bcast(sdat%stream(1)%mapalgo        ,mpicom ,'mapalgo')
-       call shr_mpi_bcast(sdat%stream(1)%mapmask        ,mpicom ,'mapmask')
-       call shr_mpi_bcast(sdat%stream(1)%tinterpalgo       ,mpicom ,'tintalgo')
-       call shr_mpi_bcast(sdat%stream(1)%readmode       ,mpicom ,'readmode')
-    endif
-
-    sdat%pstrm(:)%ymdLB          = -1
-    sdat%pstrm(:)%todLB          = -1
-    sdat%pstrm(:)%ymdUB          = -1
-    sdat%pstrm(:)%todUB          = -1
-    sdat%pstrm(:)%dtmin          = 1.0e30
-    sdat%pstrm(:)%dtmax          = 0.0
-    sdat%eccen                   = SHR_ORB_UNDEF_REAL
-    sdat%mvelpp                  = SHR_ORB_UNDEF_REAL
-    sdat%lambm0                  = SHR_ORB_UNDEF_REAL
-    sdat%obliqr                  = SHR_ORB_UNDEF_REAL
-    sdat%modeldt                 = 0
-    sdat%model_calendar          = shr_cal_noleap
-
-  end subroutine shr_strdata_readnml_from_infiles
-
-  !===============================================================================
   subroutine shr_strdata_print(sdat,name)
 
     !  Print strdata common to all data models
@@ -1497,18 +1351,18 @@ contains
     ! input/output variables
     integer                       ,intent(in)    :: mpicom
     integer                       ,intent(in)    :: my_task
-    integer                       ,intent(in)    :: logunit 
+    integer                       ,intent(in)    :: logunit
     type(shr_stream_streamType)   ,intent(inout) :: stream
     type(ESMF_Mesh)               ,intent(in)    :: stream_mesh
-    character(len=*)              ,intent(in)    :: fldlist_stream(:)  
-    character(len=*)              ,intent(in)    :: fldlist_model(:)  
+    character(len=*)              ,intent(in)    :: fldlist_stream(:)
+    character(len=*)              ,intent(in)    :: fldlist_model(:)
     type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_lb
     type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_ub
     type(iosystem_desc_t), target ,intent(inout) :: pio_subsystem
     integer                       ,intent(in)    :: pio_iotype
     logical                       ,intent(inout) :: pio_iodesc_set
     type(io_desc_t)               ,intent(inout) :: pio_iodesc
-    integer                       ,intent(inout) :: pio_iovartype 
+    integer                       ,intent(inout) :: pio_iovartype
     integer                       ,intent(in)    :: mDate  ,mSec
     integer                       ,intent(inout) :: mDateLB,mSecLB
     integer                       ,intent(inout) :: mDateUB,mSecUB
@@ -1643,7 +1497,7 @@ contains
     type(ESMF_Mesh)             , intent(in)            :: stream_mesh
     character(len=*)            , intent(in)            :: fldlist_stream(:)
     character(len=*)            , intent(in)            :: fldlist_model(:)
-    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream 
+    type(ESMF_FieldBundle)      , intent(inout)         :: fldbun_stream
     type(iosystem_desc_t)       , intent(inout), target :: pio_subsystem
     integer                     , intent(in)            :: pio_iotype
     logical                     , intent(inout)         :: pio_iodesc_set
@@ -1705,14 +1559,14 @@ contains
     ! ******************************************************************************
 
     if (.not. pio_iodesc_set) then
-       call shr_strdata_set_stream_iodesc(pio_subsystem, pioid, trim(fldlist_stream(1)), stream_mesh, &
-            pio_iodesc, pio_iovartype, rc=rc)
+       call shr_strdata_set_stream_iodesc(my_task, logunit, pio_subsystem, pioid, &
+            trim(fldlist_stream(1)), stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        pio_iodesc_set = .true.
     end if
 
     ! ******************************************************************************
-    ! Read in the stream data for field names in fldname_stream_input - but fill in 
+    ! Read in the stream data for field names in fldname_stream_input - but fill in
     ! the data for fldbun_stream with the field names fldname_stream_model
     ! ******************************************************************************
 
@@ -1773,7 +1627,7 @@ contains
     character(len=*)      , intent(in)            :: fldname
     type(ESMF_Mesh)       , intent(in)            :: stream_mesh
     type(io_desc_t)       , intent(inout)         :: pio_iodesc
-    integer               , intent(out)           :: pio_iovartype 
+    integer               , intent(out)           :: pio_iovartype
     integer               , intent(out)           :: rc
 
     ! local variables
@@ -1790,8 +1644,8 @@ contains
     integer                       :: rCode      ! pio return code
     character(*), parameter       :: subname = '(shr_strdata_set_stream_iodesc) '
     character(*), parameter       :: F00  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a)"
-    character(*), parameter       :: F01  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a,)"
-    character(*), parameter       :: F02  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,i8,2x,a,)"
+    character(*), parameter       :: F01  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a)"
+    character(*), parameter       :: F02  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,i8,2x,a)"
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1834,7 +1688,7 @@ contains
     end if
     if (ndims == 2) then
        if (my_task == master_task) then
-          write(logunit,F00) 'setting iodesc for : '//trim(fldlist_stream(1))// &
+          write(logunit,F00) 'setting iodesc for : '//trim(fldname)// &
                ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),&
                ' variable had no time dimension '
        end if
@@ -1843,14 +1697,14 @@ contains
        rcode = pio_inq_dimname(pioid, dimids(ndims), dimname)
        if (trim(dimname) == 'time' .or. trim(dimname) == 'nt') then
           if (my_task == master_task) then
-             write(logunit,F01) 'setting iodesc for : '//trim(fldlist_stream(1))// &
+             write(logunit,F01) 'setting iodesc for : '//trim(fldname)// &
                   ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),&
                   ' variable had time dimension '//trim(dimname)
           end if
           call pio_initdecomp(pio_subsystem, pio_iovartype, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
        else
           if (my_task == master_task) then
-             write(logunit,F02) 'setting iodesc for : '//trim(fldlist_stream(1))// &
+             write(logunit,F02) 'setting iodesc for : '//trim(fldname)// &
                   ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),dimlens(3),&
                   ' variable had no time dimension '
           end if
@@ -1869,7 +1723,7 @@ contains
 
   !===============================================================================
   subroutine shr_strdata_get_stream_pointer(sdat, strm_fld, strm_ptr, logunit, masterproc, rc)
-    
+
     ! Set a pointer, strm_ptr, for field, strm_fld, into sdat fldbun_model field bundle
 
     ! input/output variables
@@ -1878,7 +1732,7 @@ contains
     real(r8)               , pointer       :: strm_ptr(:)
     integer                , intent(in)    :: logunit
     logical                , intent(in)    :: masterproc
-    integer                , intent(out)   :: rc 
+    integer                , intent(out)   :: rc
 
     ! local variables
     integer :: ns, nf
