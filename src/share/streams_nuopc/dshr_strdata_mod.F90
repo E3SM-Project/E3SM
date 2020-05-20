@@ -17,15 +17,11 @@ module dshr_strdata_mod
   use shr_string_mod   , only : shr_string_listgetname, shr_string_listisvalid, shr_string_listgetnum
 
   use dshr_stream_mod  , only : shr_stream_streamtype, shr_stream_getModelFieldList, shr_stream_getStreamFieldList
-  use dshr_stream_mod  , only : shr_stream_taxis_cycle, shr_stream_taxis_extend, shr_stream_default
-  use dshr_stream_mod  , only : shr_stream_getNFiles
-  use dshr_stream_mod  , only : shr_stream_getCurrFile, shr_stream_setCurrFile
-  use dshr_stream_mod  , only : shr_stream_getMeshFilename
-  use dshr_stream_mod  , only : shr_stream_init_from_xml, shr_stream_init_from_fortran
+  use dshr_stream_mod  , only : shr_stream_taxis_cycle, shr_stream_taxis_extend, shr_stream_findBounds
+  use dshr_stream_mod  , only : shr_stream_getCurrFile, shr_stream_setCurrFile, shr_stream_getMeshFilename
+  use dshr_stream_mod  , only : shr_stream_init_from_xml, shr_stream_init_from_inline
   use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
-  use dshr_stream_mod  , only : shr_stream_findBounds
-  use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename
-  use dshr_stream_mod  , only : shr_stream_getfilefieldname, shr_stream_getData
+  use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getData
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
   use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_getfieldN, dshr_fldbun_fldchk, chkerr
   use dshr_methods_mod , only : dshr_fldbun_diagnose, dshr_fldbun_regrid
@@ -61,7 +57,6 @@ module dshr_strdata_mod
   integer                              :: debug    = 1  ! local debug flag
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
-  real(r8)         ,parameter, private :: dtlimit_default = 1.5_r8
   integer          ,parameter          :: master_task = 0
 
   ! note that the fields in fldbun_stream_lb and fldbun_stream_ub contain the the names fldlist_model
@@ -107,7 +102,6 @@ module dshr_strdata_mod
      type(ESMF_Mesh)                :: model_mesh                      ! model mesh
      real(r8), pointer              :: model_lon(:) => null()          ! model longitudes
      real(r8), pointer              :: model_lat(:) => null()          ! model latitudes
-     real(r8), pointer              :: model_lev(:) => null()          ! model levels (if needed)
      integer                        :: model_nxg                       ! model global domain lon size
      integer                        :: model_nyg                       ! model global domain lat size
      integer                        :: model_nzg                       ! model global domain vertical size
@@ -134,13 +128,13 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, mesh, clock, mpicom, &
+  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, &
        compid, logunit, reset_mask, model_maskfile, rc)
 
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
     character(len=*)           , intent(in)    :: xmlfilename
-    type(ESMF_Mesh)            , intent(inout) :: mesh
+    type(ESMF_Mesh)            , intent(inout) :: model_mesh
     type(ESMF_Clock)           , intent(in)    :: clock
     integer                    , intent(in)    :: mpicom
     integer                    , intent(in)    :: compid
@@ -170,14 +164,15 @@ contains
     sdat%io_type       =  shr_pio_getiotype(compid)
     sdat%io_format     =  shr_pio_getioformat(compid)
 
-    ! Read xml file
+    ! Initialize sdat streams (read xml file for streams)
     masterproc = (sdat%my_task == master_task)
     call shr_stream_init_from_xml(xmlfilename, sdat%stream, masterproc, rc=rc)
     sdat%nstreams = size(sdat%stream)
     allocate(sdat%pstrm(sdat%nstreams))
 
     ! Initialize sdat model domain
-    call shr_strdata_init_model_domain(sdat, mesh, reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
+    sdat%model_mesh = model_mesh
+    call shr_strdata_init_model_domain(sdat, reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Now finish initializing sdat
@@ -187,16 +182,36 @@ contains
   end subroutine shr_strdata_init_from_xml
 
   !===============================================================================
-  subroutine shr_strdata_init_from_inline(rc)
+  subroutine shr_strdata_init_from_inline(sdat, mpicom, logunit, compid, &
+       model_clock, model_mesh, stream_meshfile, &
+       stream_yearFirst, stream_yearLast, stream_yearAlign, &
+       stream_offset, stream_taxmode, &
+       stream_fldlistFile, stream_fldListModel, stream_fileNames, rc)
 
     ! Set strdata and stream info from fortran interface.
     ! Note: When this is called, previous settings are reset to defaults
     ! and then the values passed are used.
 
     ! input/output arguments
-    integer, intent(out) :: rc
+    type(shr_strdata_type) , intent(inout) :: sdat
+    integer                , intent(in)    :: mpicom
+    integer                , intent(in)    :: logunit
+    integer                , intent(in)    :: compid
+    type(ESMF_Clock)       , intent(in)    :: model_clock
+    type(ESMF_Mesh)        , intent(in)    :: model_mesh
+    character(len=*)       , intent(in)    :: stream_meshfile
+    integer                , intent(in)    :: stream_yearFirst
+    integer                , intent(in)    :: stream_yearLast
+    integer                , intent(in)    :: stream_yearAlign
+    integer                , intent(in)    :: stream_offset
+    character(len=*)       , intent(in)    :: stream_taxmode
+    character(len=*)       , intent(in)    :: stream_fldlistFile(:)
+    character(len=*)       , intent(in)    :: stream_fldlistModel(:)
+    character(len=*)       , intent(in)    :: stream_fileNames(:)
+    integer                , intent(out)   :: rc
     
     ! local variables
+    integer :: ierr
     character(*),parameter  :: subName = "(shr_strdata_from_inline) "
     character(*),parameter  :: F00 = "('(shr_strdata_inline) ',8a)"
     !-------------------------------------------------------------------------------
@@ -204,12 +219,39 @@ contains
     rc = ESMF_SUCCESS
 
     ! Assume only 1 stream
-    ! TODO: fill this in
+    sdat%nstreams = 1
+    allocate(sdat%pstrm(1))
     
+    ! Initialize sdat mpi info
+    sdat%mpicom = mpicom
+    call mpi_comm_rank(sdat%mpicom, sdat%my_task, ierr)
+
+    ! Initialize log unit
+    sdat%logunit = logunit
+
+    ! Initialize sdat  pio
+    sdat%pio_subsystem => shr_pio_getiosys(compid)
+    sdat%io_type       =  shr_pio_getiotype(compid)
+    sdat%io_format     =  shr_pio_getioformat(compid)
+
+    ! Initialize sdat stream (the following call will allocate the memory for sdat%stream)
+    call shr_stream_init_from_inline(sdat%stream, stream_meshfile, &
+         stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
+         stream_fldlistFile, stream_fldListModel, stream_fileNames)
+
+    ! Initialize sdat model domain
+    sdat%model_mesh = model_mesh
+    call shr_strdata_init_model_domain(sdat, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Finish initializing sdat
+    call shr_strdata_init(sdat, model_clock, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
   end subroutine shr_strdata_init_from_inline
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain( sdat, model_mesh, reset_mask, model_maskfile, rc)
+  subroutine shr_strdata_init_model_domain( sdat, reset_mask, model_maskfile, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat model domain info
@@ -217,7 +259,6 @@ contains
 
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
-    type(ESMF_Mesh)            , intent(in)    :: model_mesh
     logical         , optional , intent(in)    :: reset_mask
     character(len=*), optional , intent(in)    :: model_maskfile
     integer                    , intent(out)   :: rc
@@ -257,11 +298,8 @@ contains
        lmodel_maskfile = ''
     end if
 
-    ! initialize sdat%model_mesh
-    sdat%model_mesh = model_mesh
-
     ! initialize sdat%lsize
-    call ESMF_MeshGet(model_mesh, elementdistGrid=distGrid, rc=rc)
+    call ESMF_MeshGet(sdat%model_mesh, elementdistGrid=distGrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_DistGridGet(distGrid, localDe=0, elementCount=sdat%model_lsize, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -283,21 +321,18 @@ contains
     end do
     deallocate(elementCountPTile)
 
-    ! determine sdat%model_lon, sdat%model_lat and sdat%model_levs
-    ! TODO: add levs - assume this is in the mesh - for now not reference here
-    call ESMF_MeshGet(model_mesh, spatialDim=spatialDim, &
+    ! determine sdat%model_lon, sdat%model_lat
+    call ESMF_MeshGet(sdat%model_mesh, spatialDim=spatialDim, &
          numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
-    call ESMF_MeshGet(model_mesh, ownedElemCoords=ownedElemCoords)
+    call ESMF_MeshGet(sdat%model_mesh, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(sdat%model_lon(numOwnedElements))
     allocate(sdat%model_lat(numOwnedElements))
-    allocate(sdat%model_lev(numOwnedElements))
     do n = 1, numOwnedElements
        sdat%model_lon(n) = ownedElemCoords(2*n-1)
        sdat%model_lat(n) = ownedElemCoords(2*n)
-       sdat%model_lev(n) = shr_const_spval
     end do
 
     ! initialize the model mask if appropriate
@@ -313,13 +348,13 @@ contains
        call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
        call pio_closefile(pioid)
        call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-       call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
+       call ESMF_MeshSet(sdat%model_mesh, elementMask=elemMask, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        deallocate(elemMask)
     else if (lreset_mask) then
        allocate(elemMask(sdat%model_lsize))
        elemMask(:) = 1._r8
-       call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
+       call ESMF_MeshSet(sdat%model_mesh, elementMask=elemMask, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        deallocate(elemMask)
     end if

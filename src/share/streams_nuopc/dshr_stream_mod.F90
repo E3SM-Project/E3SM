@@ -13,64 +13,36 @@ module dshr_stream_mod
   ! Given a model date, this module can return data dates that are upper and
   ! lower time bounds around the given model date and the names of the files
   ! containing those dates.
-  !
-  ! The xml format of a stream txt file will look like the following
-  ! <?xml version="1.0"?>
-  ! <file id="stream" version="1.0">
-  !   <stream_info>
-  !    <meshfile>
-  !      mesh_filename
-  !    </meshfile>
-  !    <data_files>
-  !       /glade/p/cesmdata/cseg/inputdata/atm/datm7/NYF/nyf.ncep.T62.050923.nc
-  !       .....
-  !    <data_files>
-  !    <data_variables>
-  !       u_10  u
-  !    </data_variables>
-  !    <stream_offset>
-  !       0
-  !    </stream_offset>
-  !  </stream_info>
-  ! </file>
   ! -------------------------------------------------------------------------------
 
-  use shr_kind_mod   , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
-  use shr_sys_mod    , only : shr_sys_abort
-  use shr_const_mod  , only : shr_const_cday
-  use shr_string_mod , only : shr_string_leftalign_and_convert_tabs
-  use shr_string_mod , only : shr_string_parseCFtunit
-  use shr_string_mod , only : shr_string_listGetName
-  use shr_cal_mod    , only : shr_cal_noleap
-  use shr_cal_mod    , only : shr_cal_date2ymd
-  use shr_cal_mod    , only : shr_cal_ymd2date
-  use shr_cal_mod    , only : shr_cal_calendarName
-  use shr_cal_mod    , only : shr_cal_advDate
-  use shr_cal_mod    , only : shr_cal_advdateint
-  use shr_log_mod    , only : s_logunit  => shr_log_Unit
-  use shr_log_mod    , only : OOBMsg => shr_log_OOBMsg
-  use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use pio            , only : file_desc_t
+  use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
+  use shr_sys_mod      , only : shr_sys_abort
+  use shr_const_mod    , only : shr_const_cday
+  use shr_string_mod   , only : shr_string_leftalign_and_convert_tabs, shr_string_parseCFtunit
+  use shr_cal_mod      , only : shr_cal_noleap
+  use shr_cal_mod      , only : shr_cal_date2ymd
+  use shr_cal_mod      , only : shr_cal_ymd2date
+  use shr_cal_mod      , only : shr_cal_calendarName
+  use shr_cal_mod      , only : shr_cal_advDate
+  use shr_cal_mod      , only : shr_cal_advdateint
+  use shr_log_mod      , only : s_logunit  => shr_log_Unit
+  use dshr_methods_mod , only : chkerr
+  use pio              , only : file_desc_t
   use netcdf
-  use perf_mod
 
   implicit none
   private ! default private
 
   ! !PUBLIC TYPES:
   public :: shr_stream_streamType        ! stream data type with private components
-  public :: shr_stream_fileType
 
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: shr_stream_init_from_xml
-  public :: shr_stream_init_from_fortran ! initial stream type
-  public :: shr_stream_default           ! set default values
-  public :: shr_stream_parseInput        ! extract fileName,yearAlign, etc. from a string
+  public :: shr_stream_init_from_inline  ! initial stream type
   public :: shr_stream_findBounds        ! return lower/upper bounding date info
   public :: shr_stream_getMeshFileName   ! return stream filename
   public :: shr_stream_getModelFieldList ! return model field name list
   public :: shr_stream_getStreamFieldList! return stream file field name list
-  public :: shr_stream_getFileFieldName  ! return k-th input-file field name
   public :: shr_stream_getPrevFileName   ! return previous file in sequence
   public :: shr_stream_getNextFileName   ! return next file in sequence
   public :: shr_stream_getNFiles         ! get the number of files in a stream
@@ -88,178 +60,179 @@ module dshr_stream_mod
   character(CS),parameter,public :: shr_stream_file_null    = 'not_set'
 
   ! a useful derived type to use inside shr_streamType ---
-  type shr_stream_fileType
+  type shr_stream_file_type
      character(CL)         :: name = shr_stream_file_null ! the file name (full pathname)
      logical               :: haveData = .false.          ! has t-coord data been read in?
      integer               :: nt = 0                      ! size of time dimension
      integer  ,allocatable :: date(:)                     ! t-coord date: yyyymmdd
      integer  ,allocatable :: secs(:)                     ! t-coord secs: elapsed on date
-  end type shr_stream_fileType
+  end type shr_stream_file_type
 
-  type shr_stream_streamType
-     !private                                          ! no public access to internal components
-     !--- input data file names and data ---
-     logical           :: init                         ! has stream been initialized?
-     integer  ,pointer :: initarr(:) => null()         ! surrogate for init flag
-     integer           :: nFiles                       ! number of data files
-     integer           :: nvars
-
-     ! data used for time interpolation  - obtained from shr_strdata namelist
-     integer           :: yearFirst                    ! first year to use in t-axis (yyyymmdd)
-     integer           :: yearLast                     ! last  year to use in t-axis (yyyymmdd)
-     integer           :: yearAlign                    ! align yearFirst with this model year
-     character(CS)     :: taxMode                      ! cycling option for time axis
-     character(CS)     :: tInterpAlgo                  ! Algorithm to use for time interpolation
-     character(CS)     :: readMode
-     real(r8)          :: dtlimit
-     character(CS)     :: mapalgo
-     character(CS)     :: mapmask
-
-     ! data used for time interpolation - obtained from stream txt file
-     integer           :: offset                       ! offset in seconds of stream data
-
-     ! data used for time interpolation - obtained by reading first stream data file
-     character(CS)     :: calendar                     ! stream calendar
-
-     ! stream data metadata - obtained from stream txt file
-     character(CL)     :: meshFileName                 ! filename for mesh for all fields on stream (full pathname)
-     type(shr_stream_fileType), allocatable :: file(:) ! filenames of stream data files (full pathname)
-     character(CXX)    :: fldListFile                  ! field list: file's  field names
-     character(CXX)    :: fldListModel                 ! field list: model's field names
-
-     ! useful for quicker searching ---
-     integer           :: k_lvd,n_lvd                  ! file/sample of least valid date
-     logical           :: found_lvd                    ! T <=> k_lvd,n_lvd have been set
-     integer           :: k_gvd,n_gvd                  ! file/sample of greatest valid date
-     logical           :: found_gvd                    ! T <=> k_gvd,n_gvd have been set
-
-     ! for keeping files open
-     logical           :: fileopen                     ! is current file open
-     character(CL)     :: currfile                     ! current filename
-     type(file_desc_t) :: currpioid                    ! current pio file desc
-     type(stream_data_variable), allocatable :: varlist(:)
-  end type shr_stream_streamType
-
-  type stream_data_variable
+  type shr_stream_data_variable
      character(CS) :: nameinfile
      character(CS) :: nameinmodel
-  end type stream_data_variable
+  end type shr_stream_data_variable
 
+  type shr_stream_streamType
+     !private ! no public access to internal components
+     integer           :: logunit                               ! stdout log unit
+     logical           :: init         = .false.                ! has stream been initialized
+     integer           :: nFiles       = 0                      ! number of data files
+     integer           :: yearFirst    = -1                     ! first year to use in t-axis (yyyymmdd)
+     integer           :: yearLast     = -1                     ! last  year to use in t-axis (yyyymmdd)
+     integer           :: yearAlign    = -1                     ! align yearFirst with this model year
+     character(CS)     :: taxMode      = shr_stream_taxis_cycle ! cycling option for time axis
+     character(CS)     :: tInterpAlgo  = 'linear'               ! algorithm to use for time interpolation
+     character(CS)     :: mapalgo      = 'bilinear'             ! type of mapping - default is 'bilinear'
+     character(CS)     :: readMode     = 'single'               ! stream read model - 'single' or 'full_file' 
+     real(r8)          :: dtlimit      = 1.5_r8                 ! delta time ratio limits for time interpolation
+     integer           :: offset       = 0                      ! offset in seconds of stream data
+     character(CS)     :: calendar     = shr_cal_noleap         ! stream calendar (obtained from first stream data file)
+     character(CL)     :: meshFile     = ' '                    ! filename for mesh for all fields on stream (full pathname)
+     integer           :: k_lvd        = -1                     ! file/sample of least valid date 
+     integer           :: n_lvd        = -1                     ! file/sample of least valid date 
+     logical           :: found_lvd    = .false.                ! T <=> k_lvd,n_lvd have been set
+     integer           :: k_gvd        = -1                     ! file/sample of greatest valid date
+     integer           :: n_gvd        = -1                     ! file/sample of greatest valid date
+     logical           :: found_gvd    = .false.                ! T <=> k_gvd,n_gvd have been set
+     logical           :: fileopen     = .false.                ! is current file open
+     character(CL)     :: currfile     = ' '                    ! current filename
+     integer           :: nvars                                 ! number of stream variables
+     type(file_desc_t) :: currpioid                             ! current pio file desc
+     type(shr_stream_file_type)    , allocatable :: file(:)     ! filenames of stream data files (full pathname)
+     type(shr_stream_data_variable), allocatable :: varlist(:)  ! stream variable names (on file and in model)
+  end type shr_stream_streamType
 
   !----- parameters -----
-  real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
-  integer          , parameter :: initarr_size = 3     ! size of initarr
   integer          , save      :: debug = 0            ! edit/turn-on for debug write statements
+  real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
   character(len=*) , parameter :: sourcefile = &
+       __FILE__
+  character(*)     ,parameter :: u_FILE_u = &
        __FILE__
 
 !===============================================================================
 contains
 !===============================================================================
 
-  ! Complete the dynamic vector definition.
-
   subroutine shr_stream_init_from_xml(xmlfilename, streamdat, mastertask, rc)
-    use FoX_DOM
-    type(shr_stream_streamType), intent(inout), pointer :: streamdat(:)
-    character(len=*), intent(in) :: xmlfilename
-    logical, intent(in) :: mastertask
-    integer, intent(out) :: rc
 
-    type(Node), pointer :: Sdoc, p, streamnode
-    type(NodeList), pointer :: streamlist, filelist, varlist
-    character(len=CL) :: tmpstr
-    integer :: i, n, nstrms
+    use FoX_DOM
+    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadCast, ESMF_SUCCESS
+
+    ! ---------------------------------------------------------------------
+    ! The xml format of a stream txt file will look like the following
+    ! <?xml version="1.0"?>
+    ! <file id="stream" version="1.0">
+    !   <stream_info>
+    !    <meshfile>
+    !      mesh_filename
+    !    </meshfile>
+    !    <data_files>
+    !       /glade/p/cesmdata/cseg/inputdata/atm/datm7/NYF/nyf.ncep.T62.050923.nc
+    !       .....
+    !    <data_files>
+    !    <data_variables>
+    !       u_10  u
+    !    </data_variables>
+    !    <stream_offset>
+    !       0
+    !    </stream_offset>
+    !  </stream_info>
+    ! </file>
+    ! ---------------------------------------------------------------------
+    
+    ! input/output variables
+    type(shr_stream_streamType) , intent(inout), pointer :: streamdat(:)
+    character(len=*)            , intent(in)             :: xmlfilename
+    logical                     , intent(in)             :: mastertask
+    integer                     , intent(out)            :: rc
+
+    ! local variables
+    type(ESMF_VM)            :: vm
+    type(Node)     , pointer :: Sdoc, p, streamnode
+    type(NodeList) , pointer :: streamlist, filelist, varlist
+    character(len=CL)        :: tmpstr
+    integer                  :: i, n, nstrms
+    integer                  :: status 
+    integer                  :: tmp(6)
+    real(r8)                 :: rtmp(1)
+    ! --------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
     nstrms = 0
 
-    if(mastertask) then
-       Sdoc => parseFile(xmlfilename, iostat=rc)
-       if(rc /= 0) then
+    if (mastertask) then
+
+       Sdoc => parseFile(xmlfilename, iostat=status)
+       if (status /= 0) then
           call shr_sys_abort("Could not open file "//trim(xmlfilename))
        endif
        streamlist => getElementsByTagname(Sdoc, "stream_info")
        nstrms = getLength(streamlist)
+
+       ! allocate an array of shr_stream_streamtype objects on just mastertask
        allocate(streamdat(nstrms))
-       do i=1, nstrms
+
+       ! fill in non-default values for the streamdat attributes
+       do i= 1, nstrms
           streamnode => item(streamlist, i-1)
+
           p => item(getElementsByTagname(streamnode, "taxmode"), 0)
-          if(associated(p)) then
+          if (associated(p)) then
              call extractDataContent(p, streamdat(i)%taxmode)
-          else
-             streamdat(i)%taxmode = "cycle"
           endif
+
           p => item(getElementsByTagname(streamnode, "mapalgo"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%mapalgo)
-          else
-             streamdat(i)%mapalgo = "bilinear"
           endif
-          p => item(getElementsByTagname(streamnode, "mapmask"), 0)
-          if(associated(p)) then
-             call extractDataContent(p, streamdat(i)%mapmask)
-          else
-             streamdat(i)%taxmode = "dstmask"
-          endif
-
           p => item(getElementsByTagname(streamnode, "tInterpAlgo"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%tInterpAlgo)
-          else
-             streamdat(i)%tInterpAlgo = "unused"
           endif
           p => item(getElementsByTagname(streamnode, "readMode"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%readMode)
-          else
-             streamdat(i)%readMode = "single"
           endif
-
           p=> item(getElementsByTagname(streamnode, "yearFirst"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%yearFirst)
           else
-             streamdat(i)%yearFirst = 1
+             call shr_sys_abort("yearFirst must be provided")
           endif
           p=> item(getElementsByTagname(streamnode, "yearLast"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%yearLast)
           else
-             streamdat(i)%yearLast = 30 ! What should this be by default?
+             call shr_sys_abort("yearLast must be provided")
           endif
-          call extractDataContent(p, streamdat(i)%yearLast)
-
           p=> item(getElementsByTagname(streamnode, "yearAlign"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%yearAlign)
           else
-             streamdat(i)%yearAlign = 1
+             call shr_sys_abort("yearAlign must be provided")
           endif
-
           p=> item(getElementsByTagname(streamnode, "dtlimit"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%dtlimit)
-          else
-             streamdat(i)%dtlimit = 1.0e30
           endif
-
           p=> item(getElementsByTagname(streamnode, "stream_offset"), 0)
           if(associated(p)) then
              call extractDataContent(p, streamdat(i)%offset)
-          else
-             streamdat(i)%offset = 0
           endif
-
           p=> item(getElementsByTagname(streamnode, "stream_mesh_file"), 0)
-          if(associated(p)) then
-             call extractDataContent(p, streamdat(i)%meshfilename)
+          if (associated(p)) then
+             call extractDataContent(p, streamdat(i)%meshfile)
           else
              call shr_sys_abort("mesh file name must be provided")
           endif
-
           p => item(getElementsByTagname(streamnode, "stream_data_files"), 0)
-          if(.not. associated(p)) then
+          if (.not. associated(p)) then
              call shr_sys_abort("stream data files must be provided")
           endif
+
           filelist => getElementsByTagname(p,"file")
           streamdat(i)%nfiles = getLength(filelist)
 
@@ -269,11 +242,12 @@ contains
              call extractDataContent(p, streamdat(i)%file(n)%name)
           enddo
 
+          ! Determine name of stream variables in file and model
           p => item(getElementsByTagname(streamnode, "stream_data_variables"), 0)
           varlist => getElementsByTagname(p, "var")
           streamdat(i)%nvars = getLength(varlist)
           allocate(streamdat(i)%varlist(streamdat(i)%nvars))
-          do n=1, streamdat(i)%nvars
+          do n = 1, streamdat(i)%nvars
              p => item(varlist, n-1)
              call extractDataContent(p, tmpstr)
              streamdat(i)%varlist(n)%nameinfile = tmpstr(1:index(tmpstr, " "))
@@ -281,41 +255,22 @@ contains
           enddo
 
           call shr_stream_getCalendar(streamdat(i), 1, streamdat(i)%calendar)
-
-
        enddo
        call destroy(Sdoc)
     endif
-    call broadcast_streamdata(nstrms, streamdat, mastertask)
 
-    ! initialize flag that stream has been set
-    do i=1, nstrms
-       call shr_stream_setInit(streamdat(i))
-    enddo
-
-  end subroutine shr_stream_init_from_xml
-
-  subroutine broadcast_streamdata(nstrms, streamdat, mastertask)
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadCast
-    integer, intent(inout) :: nstrms
-    type(shr_stream_streamType), intent(inout), pointer :: streamdat(:)
-    logical, intent(in) :: mastertask
-    ! broadcast the contents of streamdat from master to all tasks
-    type(ESMF_VM) :: vm
-    integer :: tmp(6)
-    integer :: i
-    integer :: n
-    integer :: rc
-    real(r8) :: rtmp(1)
-
+    ! allocate streamdat instance on all tasks
     call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     tmp(1) = nstrms
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     nstrms = tmp(1)
-
-    if(.not. mastertask) then
+    if (.not. mastertask) then
        allocate(streamdat(nstrms))
     endif
+
+    ! broadcast the contents of streamdat from master to all tasks
     do i=1,nstrms
        tmp(1) = streamdat(i)%nfiles
        tmp(2) = streamdat(i)%nvars
@@ -324,41 +279,51 @@ contains
        tmp(5) = streamdat(i)%yearAlign
        tmp(6) = streamdat(i)%offset
        call ESMF_VMBroadCast(vm, tmp, 6, 0, rc=rc)
-       streamdat(i)%nfiles = tmp(1)
-       streamdat(i)%nvars = tmp(2)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       streamdat(i)%nfiles    = tmp(1)
+       streamdat(i)%nvars     = tmp(2)
        streamdat(i)%yearFirst = tmp(3)
-       streamdat(i)%yearLast = tmp(4)
+       streamdat(i)%yearLast  = tmp(4)
        streamdat(i)%yearAlign = tmp(5)
-       streamdat(i)%offset = tmp(6)
+       streamdat(i)%offset    = tmp(6)
        if(.not. mastertask) then
           allocate(streamdat(i)%file(streamdat(i)%nfiles))
           allocate(streamdat(i)%varlist(streamdat(i)%nvars))
        endif
        do n=1,streamdat(i)%nfiles
           call ESMF_VMBroadCast(vm, streamdat(i)%file(n)%name, CL, 0, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        enddo
        do n=1,streamdat(i)%nvars
           call ESMF_VMBroadCast(vm, streamdat(i)%varlist(n)%nameinfile, CS, 0, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_VMBroadCast(vm, streamdat(i)%varlist(n)%nameinmodel, CS, 0, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        enddo
-
-       call ESMF_VMBroadCast(vm, streamdat(i)%meshfilename, CL, 0, rc=rc)
+       call ESMF_VMBroadCast(vm, streamdat(i)%meshfile,     CL, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_VMBroadCast(vm, streamdat(i)%taxmode,      CS, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_VMBroadCast(vm, streamdat(i)%readmode,     CS, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_VMBroadCast(vm, streamdat(i)%tinterpAlgo,  CS, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_VMBroadCast(vm, streamdat(i)%mapalgo,      CS, 0, rc=rc)
-       call ESMF_VMBroadCast(vm, streamdat(i)%mapmask,      CS, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        rtmp(1) = streamdat(i)%dtlimit
        call ESMF_VMBroadCast(vm, rtmp, 1, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        streamdat(i)%dtlimit = rtmp(1)
-
     enddo
-  end subroutine broadcast_streamdata
 
+    ! initialize flag that stream has been set
+    streamdat%init = .true.
+
+  end subroutine shr_stream_init_from_xml
 
   !===============================================================================
 
-  subroutine shr_stream_init_from_fortran(strm, meshfile, &
+  subroutine shr_stream_init_from_inline(streamdat, meshfile, &
        yearFirst, yearLast, yearAlign, offset, taxmode, &
        fldlistFile, fldListModel, fileNames)
 
@@ -368,250 +333,73 @@ contains
     ! --------------------------------------------------------
 
     ! input/output variables
-    type(shr_stream_streamType) ,intent(inout) :: strm         ! data stream
-    character(*)                ,intent(in)    :: meshFile     ! full pathname to stream mesh file
-    integer                     ,intent(in)    :: yearFirst    ! first year to use
-    integer                     ,intent(in)    :: yearLast     ! last  year to use
-    integer                     ,intent(in)    :: yearAlign    ! align yearFirst with this model year
-    integer                     ,intent(in)    :: offset       ! offset in seconds of stream data
-    character(*)                ,intent(in)    :: taxMode      ! time axis mode
-    character(*)                ,intent(in)    :: fldListFile  ! file field names, colon delim list
-    character(*)                ,intent(in)    :: fldListModel ! model field names, colon delim list
-    character(*)                ,intent(in)    :: filenames(:) ! stream data filenames (full pathnamesa)
+    type(shr_stream_streamType) , pointer, intent(inout) :: streamdat(:)    ! data streams (assume 1 below)
+    character(*)                ,intent(in)              :: meshFile        ! full pathname to stream mesh file
+    integer                     ,intent(in)              :: yearFirst       ! first year to use
+    integer                     ,intent(in)              :: yearLast        ! last  year to use
+    integer                     ,intent(in)              :: yearAlign       ! align yearFirst with this model year
+    integer                     ,intent(in)              :: offset          ! offset in seconds of stream data
+    character(*)                ,intent(in)              :: taxMode         ! time axis mode
+    character(*)                ,intent(in)              :: fldListFile(:)  ! file field names, colon delim list
+    character(*)                ,intent(in)              :: fldListModel(:) ! model field names, colon delim list
+    character(*)                ,intent(in)              :: filenames(:)    ! stream data filenames (full pathnamesa)
 
     ! local variables
-    integer                   :: n
-    character(CS)             :: calendar ! stream calendar
-    type(shr_stream_fileType) :: tempFile ! File being constructed.
-!    type(fileVector)          :: fileVec  ! Vector used to construct file array.
-    character(*),parameter    :: subName = '(shr_stream_init_from_fortran) '
+    integer                :: n
+    integer                :: nfiles 
+    integer                :: nvars
+    character(CS)          :: calendar ! stream calendar
+    character(*),parameter :: subName = '(shr_stream_init_from_inline) '
     ! --------------------------------------------------------
 
-    ! set default values for stream
-    call shr_stream_default(strm)
+    ! Assume only 1 stream
+    allocate(streamdat(1))
 
     ! overwrite default values
-    strm%yearFirst    = yearFirst
-    strm%yearLast     = yearLast
-    strm%yearAlign    = yearAlign
-    strm%offset       = offset
-    strm%taxMode      = trim(taxMode)
-    strm%meshFileName = trim(meshFile)
-    strm%fldListFile  = trim(fldListFile)
-    strm%fldListModel = trim(fldListModel)
+    streamdat(1)%yearFirst    = yearFirst
+    streamdat(1)%yearLast     = yearLast
+    streamdat(1)%yearAlign    = yearAlign
+    streamdat(1)%offset       = offset
+    streamdat(1)%taxMode      = trim(taxMode)
+    streamdat(1)%meshFile     = trim(meshFile)
 
-    ! create a linked list of data files in stream
-    do n = 1,size(filenames)
-       ! ignore null file names.
-       if (trim(filenames(n)) /= trim(shr_stream_file_null)) then
-          tempFile%name = trim(filenames(n))
-!          call fileVec%push_back(tempFile)
-       endif
+    ! initialize stream filenames
+    if (allocated(streamdat(1)%file)) then
+       deallocate(streamdat(1)%file)
+    end if
+    nfiles = size(filenames)
+    streamdat(1)%nfiles = nfiles
+    allocate(streamdat(1)%file(nfiles))
+    do n = 1, nfiles
+       streamdat(1)%file(n)%name = trim(filenames(n))
     enddo
 
-    ! True size after throwing out null names.
-!    strm%nFiles = fileVec%vsize()
-!    call fileVec%move_out(strm%file)
+    ! Determine name of stream variables in file and model
+    nvars = size(fldlistFile)
+    streamdat(1)%nvars = nvars
+    allocate(streamdat(1)%varlist(nvars))
+    do n = 1, nvars
+       streamdat(1)%varlist(n)%nameinfile  = trim(fldlistFile(n))
+       streamdat(1)%varlist(n)%nameinmodel = trim(fldlistModel(n))
+    end do
 
     ! get initial calendar value
-    call shr_stream_getCalendar(strm,1,calendar)
-    strm%calendar = trim(calendar)
+    call shr_stream_getCalendar(streamdat(1), 1, calendar)
+    streamdat(1)%calendar = trim(calendar)
 
     ! initialize flag that stream has been set
-    call shr_stream_setInit(strm)
+    streamdat(1)%init = .true.
 
-  end subroutine shr_stream_init_from_fortran
-
-  !===============================================================================
-  subroutine shr_stream_set( strm, yearFirst, yearLast, yearAlign, offset, taxMode,  &
-       meshFileName, fldListFile, fldListModel, filenames, rc)
-
-    !-------------------------------------------------------------------------------
-    ! set or override stream settings
-    !-------------------------------------------------------------------------------
-
-    ! !input/output parameters:
-    type(shr_stream_streamType) ,intent(inout) :: strm         ! data stream
-    integer      ,optional      ,intent(in)    :: yearFirst    ! first year to use
-    integer      ,optional      ,intent(in)    :: yearLast     ! last  year to use
-    integer      ,optional      ,intent(in)    :: yearAlign    ! align yearFirst with this model year
-    integer      ,optional      ,intent(in)    :: offset       ! offset in seconds of stream data
-    character(*) ,optional      ,intent(in)    :: taxMode      ! time axis mode
-    character(*) ,optional      ,intent(in)    :: meshFileName ! stream mesh file
-    character(*) ,optional      ,intent(in)    :: fldListFile  ! file field names, colon delim list
-    character(*) ,optional      ,intent(in)    :: fldListModel ! model field names, colon delim list
-    character(*) ,optional      ,intent(in)    :: filenames(:) ! input filenames
-    integer      ,optional      ,intent(out)   :: rc           ! return code
-
-    ! local variables
-    integer                   :: n
-    character(CL)             :: calendar ! stream calendar
-    type(shr_stream_fileType) :: tempFile ! File being constructed.
-!    type(fileVector)          :: fileVec  ! Vector used to construct file array.
-    character(*),parameter    :: subName = '(shr_stream_set) '
-    character(*),parameter    :: F00   = "('(shr_stream_set) ',8a)"
-    character(*),parameter    :: F01   = "('(shr_stream_set) ',1a,i6)"
-    !-------------------------------------------------------------------------------
-
-    call shr_stream_default(strm)
-
-    if ( present(rc) ) rc = 0
-
-    if (present(yearFirst    )) strm%yearFirst    = yearFirst
-    if (present(yearLast     )) strm%yearLast     = yearLast
-    if (present(yearAlign    )) strm%yearAlign    = yearAlign
-    if (present(offset       )) strm%offset       = offset
-    if (present(taxMode      )) strm%taxMode      = trim(taxMode)
-    if (present(fldListFile  )) strm%fldListFile  = trim(fldListFile)
-    if (present(fldListModel )) strm%fldListModel = trim(fldListModel)
-    if (present(meshFileName )) strm%meshFileName = trim(meshFileName)
-
-    if (present(filenames)) then
-       do n = 1,size(filenames)
-          ! Ignore null file names.
-          if (trim(filenames(n)) /= trim(shr_stream_file_null)) then
-             tempFile%name = trim(filenames(n))
-!             call fileVec%push_back(tempFile)
-          endif
-       enddo
-       ! True size after throwing out null names.
-!       strm%nFiles = fileVec%vsize()
-!       call fileVec%move_out(strm%file)
-    endif
-
-    ! get initial calendar value
-    call shr_stream_getCalendar(strm,1,calendar)
-    strm%calendar = trim(calendar)
-
-    call shr_stream_setInit(strm)
-
-  end subroutine shr_stream_set
-
-  !===============================================================================
-  subroutine shr_stream_default(strm)
-
-    !-----------------------------------------------------------------------------
-    ! set default values for everything in stream
-    !-----------------------------------------------------------------------------
-
-    ! input/output variables:
-    type(shr_stream_streamType) ,intent(inout) :: strm      ! data stream
-    !-------------------------------------------------------------------------------
-
-    call shr_stream_clearInit(strm)
-
-    if (allocated(strm%file)) deallocate(strm%file)
-
-    strm%meshFileName = ' '
-    strm%nFiles       = 0
-    strm%yearFirst    = 0
-    strm%yearLast     = 0
-    strm%yearAlign    = 0
-    strm%offset       = 0
-    strm%taxMode      = trim(shr_stream_taxis_cycle)
-    strm%k_lvd        = -1
-    strm%n_lvd        = -1
-    strm%found_lvd    = .false.
-    strm%k_gvd        = -1
-    strm%n_gvd        = -1
-    strm%found_gvd    = .false.
-    strm%fileopen     = .false.
-    strm%currfile     = ''
-    strm%fldListFile  = ' '
-    strm%fldListModel = ' '
-    strm%calendar     = shr_cal_noleap
-
-  end subroutine shr_stream_default
-  !===============================================================================
-
-  subroutine shr_stream_readUpToTag(nUnit,tag,optionalTag,rc)
-
-    !----- input/output -----
-    integer,intent(in ) :: nUnit       ! i/o unit to read from
-    character(*)        ,intent(in ) :: tag         ! string to search for
-    logical, optional   ,intent(in ) :: optionalTag ! this is an optional tag
-    integer,intent(out) :: rc          ! return code
-
-    !----- local -----
-    character(CL)           :: str   ! temp char string
-    logical                          :: localOptionalTag ! local version of optionalTag
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_readUpToTag) '
-    character(*),parameter :: F00   = "('(shr_stream_readUpToTag) ',8a)"
-
-    !-------------------------------------------------------------------------------
-    ! Note: does not rewind to start of file
-    !-------------------------------------------------------------------------------
-
-    rc = 1
-    localOptionalTag = .false.
-    if (present(optionalTag)) localOptionalTag = optionalTag
-    do while (.true.)
-       read(nUnit,'(a)',END=999) str
-       str = adjustL(str)
-       if (str(1:len_trim(adjustL(tag))) == trim(adjustL(tag))) then
-          rc = 0
-          exit
-       end if
-    end do
-999 continue
-
-    if (rc /= 0 .and. .not. localOptionalTag ) then
-       write(s_logunit,F00) "ERROR: tag not found: ",trim(tag)
-       call shr_sys_abort(subName//"ERROR: tag not found")
-    end if
-
-  end subroutine shr_stream_readUpToTag
-
-  !===============================================================================
-  subroutine shr_stream_parseInput(str,fileName,yearAlign,yearFirst,yearLast,rc)
-
-    !-------------------------------------------------------------------------------
-    ! shr_stream_parseInput -- extract fileName,yearAlign, etc. from a string
-    !-------------------------------------------------------------------------------
-
-    ! input/output parameters:
-    character(*)       ,intent(in)  :: str       ! string to parse
-    character(*)       ,intent(out) :: fileName  ! file name
-    integer            ,intent(out) :: yearFirst ! first year to use
-    integer            ,intent(out) :: yearLast  ! last  year to use
-    integer            ,intent(out) :: yearAlign ! align yearFirst with this model year
-    integer  ,optional ,intent(out) :: rc        ! return code
-
-    ! local variables
-    integer                :: n        ! generic index
-    character(CL)          :: str2     ! temp work string
-    character(*),parameter :: F00   = "('(shr_stream_parseInput) ',8a)"
-    character(*),parameter :: F01   = "('(shr_stream_parseInput) ',a,3i10)"
-    !-------------------------------------------------------------------------------
-
-    if (debug>1) write(s_logunit,F00) "str       = ",trim(str)
-
-    str2 = adjustL(str)
-    n    = index(str2," ")
-    fileName = str2(:n)
-    read(str2(n:),*) yearAlign,yearFirst,yearLast
-
-    if (debug>1) then
-       write(s_logunit,F00) "fileName  = ",trim(fileName)
-       write(s_logunit,F01) "yearAlign = ",yearAlign
-       write(s_logunit,F01) "yearFirst = ",yearFirst
-       write(s_logunit,F01) "yearLast  = ",yearLast
-    end if
-
-    if (present(rc)) rc = 0
-
-  end subroutine shr_stream_parseInput
+  end subroutine shr_stream_init_from_inline
 
   !===============================================================================
   subroutine shr_stream_findBounds(strm,mDateIn, secIn, &
        mDateLB, dDateLB, secLB, n_lb, fileLB,  mDateUB, dDateUB, secUB, n_ub, fileUB)
 
-    !    Given a stream and a model date, find time coordinates of the upper and
-    !    lower time bounds surrounding the models date.  Returns the model date,
-    !    data date, elasped seconds, time index, and file names associated with
-    !    these upper and lower time bounds.
+    ! Given a stream and a model date, find time coordinates of the upper and
+    ! lower time bounds surrounding the models date.  Returns the model date,
+    ! data date, elasped seconds, time index, and file names associated with
+    ! these upper and lower time bounds.
 
     ! input/output parameters:
     type(shr_stream_streamType) ,intent(inout):: strm    ! data stream to query
@@ -628,7 +416,7 @@ contains
     integer                     ,intent(out)  ::    n_ub ! t-coord index of UB
     character(*)                ,intent(out)  ::  fileUB ! file containing  UB
 
-    !----- local -----
+    ! local variables
     integer  :: dDateIn       ! model date mapped onto a data date
     integer  :: dDateF        ! first date
     integer  :: dDateL        ! last date
@@ -665,7 +453,7 @@ contains
 
     if (debug>0) write(s_logunit,F02) "DEBUG: ---------- enter ------------------"
 
-    if ( .not. shr_stream_isInit(strm)) then
+    if ( .not. strm%init ) then
        call shr_sys_abort(trim(subName)//" ERROR: trying to find bounds of uninitialized stream")
     end if
 
@@ -799,8 +587,6 @@ contains
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
           secUB = strm%file(k_ub)%secs(n_ub)
           fileUB = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb1 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -852,8 +638,6 @@ contains
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
           secUB   = strm%file(k_ub)%secs(n_ub)
           fileUB  = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb2 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -886,8 +670,6 @@ contains
           mDateUB = 99991231
           secUB   = 0
           fileUB  = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb3 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -909,8 +691,6 @@ contains
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
           secUB   = strm%file(k_ub)%secs(n_ub)
           fileUB  = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb4 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -990,8 +770,6 @@ contains
                 mDateUB = 99991231
                 secUB   = 0
                 fileUB  = strm%file(k_ub)%name
-                !               write(s_logunit,*)'tcx fb5 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                !               call shr_sys_flush(s_logunit)
                 return
              endif
 
@@ -1013,8 +791,6 @@ contains
                 call shr_cal_ymd2date(yy,mm,dd,mDateUB)
                 secUB   = strm%file(k_ub)%secs(n_ub)
                 fileUB  = strm%file(k_ub)%name
-                !               write(s_logunit,*)'tcx fb6 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                !               call shr_sys_flush(s_logunit)
                 return
              endif
 
@@ -1050,8 +826,6 @@ contains
                    call shr_cal_ymd2date(yy,mm,dd,mDateUB)
                    secUB = strm%file(k_ub)%secs(n_ub)
                    fileUB = strm%file(k_ub)%name
-                   !                  write(s_logunit,*)'tcx fb7 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                   !                  call shr_sys_flush(s_logunit)
                    return
                 endif
              enddo
@@ -1296,7 +1070,7 @@ contains
     character(len=*)            ,intent(out) :: filename
     !-------------------------------------------------------------------------------
 
-    filename = stream%meshFileName
+    filename = stream%meshfile
 
   end subroutine shr_stream_getMeshFileName
 
@@ -1308,8 +1082,11 @@ contains
     !input/output parameters:
     type(shr_stream_streamType) ,intent(in)  :: stream  ! stream in question
     character(*)                ,intent(out) :: list(:)    ! field list
-    !-------------------------------------------------------------------------------
+
+    ! local variables
     integer :: i
+    !-------------------------------------------------------------------------------
+
     do i=1,stream%nvars
        list(i) = stream%varlist(i)%nameinmodel
     enddo
@@ -1334,22 +1111,7 @@ contains
   end subroutine shr_stream_getStreamFieldList
 
   !===============================================================================
-  subroutine shr_stream_getFileFieldName(stream, k, name)
-
-    ! Get name of k-th field in list
-
-    ! input/output parameters:
-    type(shr_stream_streamType) ,intent(in)  :: stream  ! stream in question
-    integer                     ,intent(in)  :: k       ! index of field
-    character(*)                ,intent(out) :: name    ! k-th name in list
-    !-------------------------------------------------------------------------------
-
-    call shr_string_listGetName(stream%fldListFile, k, name)
-
-  end subroutine shr_stream_getFileFieldName
-
-  !===============================================================================
-  subroutine shr_stream_getCalendar(strm,k,calendar)
+  subroutine shr_stream_getCalendar(strm, k, calendar)
 
     ! Returns calendar name
 
@@ -1368,42 +1130,37 @@ contains
     lcal = ' '
     calendar = ' '
     if (k > strm%nfiles) call shr_sys_abort(subname//' ERROR: k gt nfiles')
-
     fileName = trim(strm%file(k)%name)
-
     rCode = nf90_open(fileName,nf90_nowrite,fid)
-
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
     rCode = nf90_inq_varid(fid, 'time', vid)
-
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
     rCode = nf90_inquire_attribute(fid, vid, 'calendar')
-
     if (rCode == nf90_noerr) then
        rCode = nf90_get_att(fid, vid, 'calendar', lcal)
        if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
     else
        lcal = trim(shr_cal_noleap)
     endif
+    rCode = nf90_close(fid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
 
     n = len_trim(lcal)
     if (ichar(lcal(n:n)) == 0 ) lcal(n:n) = ' '
     call shr_string_leftalign_and_convert_tabs(lcal)
     calendar = trim(shr_cal_calendarName(trim(lcal)))
-    rCode = nf90_close(fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
 
   end subroutine shr_stream_getCalendar
 
   !===============================================================================
-  subroutine shr_stream_getCurrFile(strm,fileopen,currfile,currpioid)
+  subroutine shr_stream_getCurrFile(strm, fileopen, currfile, currpioid)
 
     ! returns current file information
 
     ! input/output parameters:
-    type(shr_stream_streamType),intent(in)  :: strm     ! data stream
-    logical           ,optional,intent(out) :: fileopen ! file open flag
-    character(*)      ,optional,intent(out) :: currfile ! current filename
+    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
+    logical           ,optional,intent(out) :: fileopen  ! file open flag
+    character(*)      ,optional,intent(out) :: currfile  ! current filename
     type(file_desc_t) ,optional,intent(out) :: currpioid ! current pioid
     !-------------------------------------------------------------------------------
 
@@ -1414,15 +1171,15 @@ contains
   end subroutine shr_stream_getCurrFile
 
   !===============================================================================
-  subroutine shr_stream_setCurrFile(strm,fileopen,currfile,currpioid)
+  subroutine shr_stream_setCurrFile(strm, fileopen, currfile, currpioid)
 
     ! set current file information
 
     ! input/output parameters:
-    type(shr_stream_streamType),intent(inout) :: strm     ! data stream
-    logical           ,optional,intent(in) :: fileopen ! file open flag
-    character(*)      ,optional,intent(in) :: currfile ! current filename
-    type(file_desc_t) ,optional,intent(in) :: currpioid ! current pioid
+    type(shr_stream_streamType),intent(inout) :: strm      ! data stream
+    logical           ,optional,intent(in)    :: fileopen  ! file open flag
+    character(*)      ,optional,intent(in)    :: currfile  ! current filename
+    type(file_desc_t) ,optional,intent(in)    :: currpioid ! current pioid
     !-------------------------------------------------------------------------------
 
     if (present(fileopen  )) strm%fileopen = fileopen
@@ -1628,7 +1385,7 @@ contains
 
     write(nUnit) nStreams
     do k = 1,nStreams
-       if (.not. shr_stream_isInit(strm(k))) then  ! has stream been initialized?
+       if (.not. strm(k)%init) then  ! has stream been initialized?
           rCode = 1
           write(s_logunit,F01) "ERROR: can't write uninitialized stream to a restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: given uninitialized stream")
@@ -1671,10 +1428,8 @@ contains
        write(nUnit) strm(k)%n_gvd          ! sample of greatest valid date
        write(nUnit) strm(k)%found_gvd      ! T <=> k_gvd,n_gvd have been set
 
-       write(nUnit) strm(k)%fldListFile    ! field list: file's  field names
-       write(nUnit) strm(k)%fldListModel   ! field list: model's field names
        write(nUnit) tInterpAlgo            ! unused
-       write(nUnit) strm(k)%meshFileName   ! mesh filename
+       write(nUnit) strm(k)%meshfile       ! mesh filename
 
     end do
 
@@ -1764,7 +1519,7 @@ contains
           write(s_logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: reading uninitialized stream")
        end if
-       call shr_stream_setInit(strm(k))
+       strm(k)%init = .true.
 
        readok = .true.
 
@@ -1847,8 +1602,6 @@ contains
        endif
 
        ! don't overwrite these from input
-       read(nUnit) inpcx !  fldListFile   - field list: file's  field names
-       read(nUnit) inpcx !  fldListModel  - field list: model's field names
        read(nUnit) inpcs !  tInterpAlgo   -  unused
        read(nUnit) inpcl !  meshFileName  -  mesh filename
 
@@ -1892,69 +1645,10 @@ contains
        write(s_logunit,F01) "yearF/L/A    = ", strm%yearFirst,strm%yearLast,strm%yearAlign
        write(s_logunit,F01) "offset       = ", strm%offset
        write(s_logunit,F00) "taxMode      = ", trim(strm%taxMode)
-
-       write(s_logunit,F00) "fldListFile  = ", trim(strm%fldListFile)
-       write(s_logunit,F00) "fldListModel = ", trim(strm%fldListModel)
-       write(s_logunit,F00) "meshFileName = ", trim(strm%meshFileName)
+       write(s_logunit,F00) "meshfile     = ", trim(strm%meshfile)
     end if
 
   end subroutine shr_stream_dataDump
-
-  !===============================================================================
-  logical function shr_stream_isInit(strm,rc)
-
-    ! Checks if stream is initialized
-
-    ! input/output parameters:
-    type(shr_stream_streamType),  intent(in)    :: strm
-    integer,optional,intent(out)   :: rc
-    !-------------------------------------------------------------------------------
-
-    shr_stream_isInit = .false.
-    if (size(strm%initarr) == initarr_size) shr_stream_isInit = .true.
-    if (present(rc)) rc = 0
-
-  end function shr_stream_isInit
-
-  !===============================================================================
-  subroutine shr_stream_setInit(strm,rc)
-
-    ! Sets stream init flag to TRUE
-
-    ! input/output parameters:
-    type(shr_stream_streamType),  intent(inout) :: strm
-    integer,optional,intent(out)   :: rc
-
-    !--- local ---
-    integer :: ier
-    !-------------------------------------------------------------------------------
-
-    strm%init = .true.
-    deallocate(strm%initarr,stat=ier)
-    allocate(strm%initarr(initarr_size))
-    if (present(rc)) rc = 0
-
-  end subroutine shr_stream_setInit
-
-  !===============================================================================
-  subroutine shr_stream_clearInit(strm,rc)
-
-    !  Checks if stream is initialized
-
-    ! !input/output parameters:
-    type(shr_stream_streamType),  intent(inout) :: strm
-    integer,optional,intent(out)   :: rc
-
-    !--- local ---
-    integer :: ier
-    !-------------------------------------------------------------------------------
-
-    strm%init = .true.
-    deallocate(strm%initarr,stat=ier)
-    allocate(strm%initarr(initarr_size + 5))
-    if (present(rc)) rc = 0
-
-  end subroutine shr_stream_clearInit
 
   !===============================================================================
   subroutine shr_stream_getData(stream, index, filename)
