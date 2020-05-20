@@ -10,7 +10,7 @@ sys.path.append(_LIBDIR)
 _LIBDIR = os.path.join(cimeroot, "scripts", "lib")
 sys.path.append(_LIBDIR)
 try:
-    from Tools.standard_script_setup import *
+    from standard_script_setup import *
     from CIME.case import Case
     from CIME.utils import symlink_force
 except:
@@ -37,7 +37,7 @@ for dirpath, dirnames, filenames in os.walk(caseroot):
             if os.path.exists(newpath):
                 logger.info("Updating link for {}".format(_file))
                 symlink_force(newpath, _file)
-                os.chdir(caseroot)
+os.chdir(caseroot)
 
 with Case(caseroot, read_only=False) as case:
     logger.info("Updating case xml")
