@@ -534,8 +534,8 @@
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>lukasz at uchicago dot edu</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
