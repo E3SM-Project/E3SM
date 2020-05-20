@@ -33,7 +33,6 @@ set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/MICRO_SAM1MOM/microphysics.F90
   cam/src/physics/crm/sam/MICRO_SAM1MOM/precip_init.F90
   cam/src/physics/crm/sam/MICRO_SAM1MOM/precip_proc.F90
-  cam/src/physics/crm/sam/MICRO_SAM1MOM/precip_proc_clubb.F90
   cam/src/physics/crm/sam/advect2_mom_xy.F90
   cam/src/physics/crm/sam/SGS_TKE/diffuse_mom.F90
   cam/src/physics/crm/sam/SGS_TKE/diffuse_mom2D.F90
@@ -59,7 +58,7 @@ set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/crmtracers.F90
   cam/src/physics/crm/sam/crm_ecpp_output_module.F90
   cam/src/physics/crm/sam/crm_input_module.F90
-  cam/src/physics/crm/sam/crmsurface.F90
+  cam/src/physics/crm/sam/crm_surface.F90
   cam/src/physics/crm/sam/crm_output_module.F90
   cam/src/physics/crm/sam/crm_rad_module.F90
   cam/src/physics/crm/sam/crm_state_module.F90
