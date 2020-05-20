@@ -123,7 +123,7 @@ endif
 
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
-   FoX_LIBS := $(shell $(SHAREDLIBROOT)/$(SHAREDPATH)/bin/FoX-config --libs)
+   FoX_LIBS := $(shell $(INSTALL_SHAREDPATH)/bin/FoX-config --libs)
    SLIBS += $(FoX_LIBS)
 else
    CPPDEFS += -DMCT_INTERFACE
@@ -410,7 +410,7 @@ endif
 #===============================================================================
 # User-specified INCLDIR
 #===============================================================================
-INCLDIR := -I. -I$(SHAREDLIBROOT)/$(SHAREDPATH)/finclude
+INCLDIR := -I.
 ifdef USER_INCLDIR
   INCLDIR += $(USER_INCLDIR)
 endif
@@ -457,7 +457,7 @@ VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include -I$(INSTALL_SHAREDPATH)/finclude
 
 ifeq ($(NETCDF_SEPARATE), FALSE)
   INCLDIR += -I$(INC_NETCDF)

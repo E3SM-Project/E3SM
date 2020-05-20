@@ -45,7 +45,7 @@ def buildlib(bldroot, installpath, case):
     caseroot = case.get_value("CASEROOT")
     fox_dir = os.path.join(case.get_value("CIMEROOT"), "src", "externals", "fox")
     # fox does not support out of source build, so we create links to source tree
-    _create_dir_structure(fox_dir, os.path.join(installpath,"fox"))
+    _create_dir_structure(fox_dir, bldroot)
 
     gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
     gmake_opts += " -C {} ".format(bldroot)
@@ -60,7 +60,7 @@ def buildlib(bldroot, installpath, case):
 
     # Now run make
     gmake_opts = " -j "+str(case.get_value("GMAKE_J"))
-    cmd = "{} {} install".format(gmake_cmd, gmake_opts)
+    cmd = "{} {} install install_prefix={}".format(gmake_cmd, gmake_opts, installpath)
     run_bld_cmd_ensure_logging(cmd, logger, from_dir=bldroot)
 
 
