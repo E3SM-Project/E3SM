@@ -5560,6 +5560,12 @@ Tunable Linoz e-fold time scale (in seconds) in the boundary layer
 Default: 172800.0
 </entry>
 
+<entry id="linoz_psc_T" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable Linoz PSC ozone loss temperature (K) threshold
+Default: 193.0
+</entry>
+
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of the directory that contains the files specified in
