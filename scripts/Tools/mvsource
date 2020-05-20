@@ -2,7 +2,7 @@
 # This tool expects two arguments, the caseroot and the new cimeroot
 # It is intended to fix links and update your case source if the caseroot or src is moved.
 #
-import os, sys, errno
+import os, sys
 caseroot = sys.argv[1]
 cimeroot = sys.argv[2]
 
@@ -16,13 +16,10 @@ try:
     from CIME.utils import symlink_force
 except:
     print("ERROR: {} does not appear to be a valid CIMEROOT directory\n".format(cimeroot))
-    exit
-
 
 # simple way to verify we are in a caseroot
 if not os.path.exists(os.path.join(caseroot,"env_case.xml")):
     print("ERROR: {} does not appear to be a valid CASEROOT directory\n".format(caseroot))
-    exit
 
 for dirpath, dirnames, filenames in os.walk(caseroot):
     os.chdir(dirpath)
