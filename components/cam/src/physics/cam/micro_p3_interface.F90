@@ -70,6 +70,7 @@ module micro_p3_interface
       prain_idx,          &
       nevapr_idx,         &
       dei_idx,            &
+      rate1_cw2pr_st_idx, &
       mu_idx,             &
       lambdac_idx,        &
       rei_idx,            &
@@ -194,7 +195,11 @@ end subroutine micro_p3_readnl
 
   subroutine micro_p3_register()
 
+  logical :: prog_modal_aero ! prognostic aerosols
+
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
+
+  call phys_getopts( prog_modal_aero_out   = prog_modal_aero )
 
    ncnst = 0
     ! Register Microphysics Constituents 
@@ -243,6 +248,11 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('QME',  'physpkg',dtype_r8,(/pcols,pver/), qme_idx)
    call pbuf_add_field('PRAIN','physpkg',dtype_r8,(/pcols,pver/), prain_idx)
    call pbuf_add_field('NEVAPR','physpkg',dtype_r8,(/pcols,pver/), nevapr_idx)
+
+   !! module aero_model
+   if (prog_modal_aero) then
+      call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,(/pcols,pver/),rate1_cw2pr_st_idx)
+   endif
 
    !! module clubb_intr
    call pbuf_add_field('PRER_EVAP',  'global', dtype_r8,(/pcols,pver/), prer_evap_idx)
