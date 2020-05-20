@@ -2,6 +2,8 @@
 #define P3_FUNCTIONS_ICE_MELTING_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics_functions.hpp" // also for ETI not on GPUs
+#include "physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -21,6 +23,8 @@ void Functions<S,D>
   // currently enhanced melting from collision is neglected
   // include RH dependence
 
+  using physics = scream::physics::Functions<Scalar, Device>;
+  
   const auto Pi = C::Pi;
   const auto QSMALL = C::QSMALL;
   const auto Tmelt = C::Tmelt;
@@ -30,11 +34,11 @@ void Functions<S,D>
 
   if (has_melt_qi.any()){
 
-    //PMC qv_sat from math_impl.hpp seems to match hardcoded formula from F90 I'm swapping in C++ ver.
+    //PMC qv_sat from physics_saturation_impl.hpp seems to match hardcoded formula from F90 I'm swapping in C++ ver.
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
 
-    //const auto qsat0 = qv_sat(Spack(Tmelt), pres, false); //last false means NOT saturation w/ respect to ice.
-    const auto e0 = polysvp1(Spack(Tmelt), 0);
+    //const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false); //last false means NOT saturation w/ respect to ice.
+    const auto e0 = physics::polysvp1(Spack(Tmelt), 0);
     const auto qsat0 = 0.622 *e0/(pres-e0);
 
     qimlt.set(has_melt_qi, ( (f1pr05+f1pr14*pack::cbrt(sc)*pack::sqrt(rhofaci*rho/mu))

@@ -1,14 +1,14 @@
-#ifndef P3_FUNCTIONS_MATH_IMPL_HPP
-#define P3_FUNCTIONS_MATH_IMPL_HPP
+#ifndef PHYSICS_SATURATION_IMPL_HPP
+#define PHYSICS_SATURATION_IMPL_HPP
 
-#include "p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
-namespace p3 {
+namespace physics {
 
 /*
- * Implementation of p3 functions. Clients should NOT #include
- * this file, #include p3_functions.hpp instead.
+ * Implementation of saturation functions. Clients should NOT #include
+ * this file, #include physics_functions.hpp instead.
  */
 template <typename S, typename D>
 KOKKOS_FUNCTION
@@ -63,7 +63,7 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice)
   return ep_2 * e_pres / pack::max(p_atm-e_pres, sp(1.e-3));
 }
 
-} // namespace p3
+} // namespace physics
 } // namespace scream
 
 #endif

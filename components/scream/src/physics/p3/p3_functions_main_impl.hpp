@@ -2,6 +2,8 @@
 #define P3_FUNCTIONS_MAIN_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics_functions.hpp" // also for ETI not on GPUs
+#include "physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -136,6 +138,10 @@ void Functions<S,D>
   bool& log_nucleationPossible,
   bool& log_hydrometeorsPresent)
 {
+
+  // Get access to saturation functions
+  using physics = scream::physics::Functions<Scalar, Device>;
+
   // load constants into local vars
   constexpr Scalar g            = C::gravit;
   constexpr Scalar rhosur       = C::RHOSUR;
@@ -168,8 +174,8 @@ void Functions<S,D>
 
     rho(k)     = opdel(k)/odzq(k) / g;
     inv_rho(k) = 1 / rho(k);
-    qvs(k)     = qv_sat(t(k), opres(k), 0);
-    qvi(k)     = qv_sat(t(k), opres(k), 1);
+    qvs(k)     = physics::qv_sat(t(k), opres(k), 0);
+    qvi(k)     = physics::qv_sat(t(k), opres(k), 1);
 
     sup(k)  = oqv(k) / qvs(k) - 1;
     supi(k) = oqv(k) / qvi(k) - 1;
