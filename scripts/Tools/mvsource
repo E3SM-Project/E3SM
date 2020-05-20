@@ -17,11 +17,10 @@ except:
     print("ERROR: {} does not appear to be a valid CIMEROOT directory\n".format(cimeroot))
     exit
 
-logger = logging.getLogger(__name__)
 
 # simple way to verify we are in a caseroot
 if not os.path.exists(os.path.join(caseroot,"env_case.xml")):
-    logger.critical("ERROR: {} does not appear to be a valid CASEROOT directory\n".format(caseroot))
+    print("ERROR: {} does not appear to be a valid CASEROOT directory\n".format(caseroot))
     exit
 
 for dirpath, dirnames, filenames in os.walk(caseroot):
@@ -35,12 +34,12 @@ for dirpath, dirnames, filenames in os.walk(caseroot):
                 index = oldpath.find(cr)+len(cr)-1
                 newpath = cimeroot + oldpath[index:]
             if os.path.exists(newpath):
-                logger.info("Updating link for {}".format(_file))
+                print("Updating link for {}".format(_file))
                 symlink_force(newpath, _file)
 os.chdir(caseroot)
 
 with Case(caseroot, read_only=False) as case:
-    logger.info("Updating case xml")
+    print("Updating case xml")
     case.set_value('CIMEROOT', cimeroot)
     case.set_value('SRCROOT', os.path.dirname(cimeroot))
     case.set_value('CASEROOT', caseroot)
