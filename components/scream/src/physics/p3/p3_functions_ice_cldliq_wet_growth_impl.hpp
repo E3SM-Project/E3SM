@@ -36,14 +36,14 @@ void Functions<S,D>
    const auto any_if_col = any_if && qccol_qrcol_ge_small;
 
    const Spack zerodeg{tmelt};
-   const Spack e0 = physics::polysvp1(zerodeg, zero);
+
    Spack qsat0{0.};
    Spack dum{0.};
    Spack dum1{0.};
 
    if (any_if.any()) {
-      qsat0 = sp(0.622)*e0/(pres-e0);
-
+     qsat0 = qv_sat( zerodeg,pres,0 );
+     
       qwgrth.set(any_if,
                 ((f1pr05+f1pr14*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*
                 twopi*(rho*xxlv*dv*(qsat0-qv)-(temp-tmelt)*kap)/
