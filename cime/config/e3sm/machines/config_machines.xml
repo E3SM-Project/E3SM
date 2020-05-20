@@ -2909,8 +2909,8 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>18</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>18</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="spectrum-mpi">
       <!-- Use a helper script to tweak jsrun options -->
@@ -3016,6 +3016,7 @@
       <env name="NETCDFF">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
+      <env name="PGI_ACC_POOL_ALLOC">0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
