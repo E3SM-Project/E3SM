@@ -35,7 +35,7 @@ void Functions<S,D>
   if (has_melt_qi.any()){
 
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
-    const auto qsat0 = qv_sat(Spack(Tmelt), pres, false); //last false means NOT saturation w/ respect to ice.
+    const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false); //last false means NOT saturation w/ respect to ice.
 
     qimlt.set(has_melt_qi, ( (f1pr05+f1pr14*pack::cbrt(sc)*pack::sqrt(rhofaci*rho/mu))
 			     *((t-Tmelt)*kap-rho*xxlv*dv*(qsat0-qv))
