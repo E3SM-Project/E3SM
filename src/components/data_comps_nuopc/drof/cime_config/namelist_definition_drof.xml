@@ -54,7 +54,7 @@
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>Stream domain file directory.</desc>
+    <desc>Stream mesh</desc>
     <values>
       <value stream="rof.diatren_ann_rx1">
 	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc

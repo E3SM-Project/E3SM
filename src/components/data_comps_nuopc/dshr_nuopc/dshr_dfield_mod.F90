@@ -55,7 +55,7 @@ contains
     character(len=*)       , intent(in)    :: state_fld
     character(len=*)       , intent(in)    :: strm_fld
     type(ESMF_State)       , intent(inout) :: state
-    real(r8)               , pointer       :: state_ptr(:)
+    real(r8), optional     , pointer       :: state_ptr(:)
     integer                , intent(in)    :: logunit
     logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
@@ -109,14 +109,15 @@ contains
     end if
 
     ! Set export state array pointer
-    state_ptr => null()
     call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfield_new%state_data1d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data1d = 0.0_r8
     if (masterproc) then
        write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
     end if
-    state_ptr => dfield_new%state_data1d
+    if (present(state_ptr)) then
+       state_ptr => dfield_new%state_data1d
+    end if
 
   end subroutine dshr_dfield_add_1d
 

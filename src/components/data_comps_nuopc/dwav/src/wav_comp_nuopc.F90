@@ -149,6 +149,7 @@ contains
     integer           :: shrlogunit         ! original log unit
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
+    logical           :: exists
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     character(*)    ,parameter :: F00 = "('(wav_comp_nuopc) ',8a)"
     character(*)    ,parameter :: F01 = "('(wav_comp_nuopc) ',a,2x,i8)"
@@ -479,11 +480,14 @@ contains
 
     ! Create stream-> export state mapping
 
-    call dshr_dfield_add(dfields, sdat, state_fld='Sw_lamult' , strm_fld='lamult' , state=exportstate, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_lamult' , strm_fld='lamult' , state=exportstate, &
+         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='Sw_ustokes', strm_fld='ustokes', state=exportstate, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_ustokes', strm_fld='ustokes', state=exportstate, &
+         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='Sw_vstokes', strm_fld='vstokes', state=exportstate, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_vstokes', strm_fld='vstokes', state=exportstate, &
+         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine dwav_comp_realize

@@ -35,70 +35,41 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     """
 
     #----------------------------------------------------
-    # Get a bunch of information from the case.
+    # Initialize namelist defaults and write out model namelist file
     #----------------------------------------------------
+    caseroot = case.get_value("CASEROOT")
     wav_domain_file = case.get_value("WAV_DOMAIN_FILE")
     wav_domain_path = case.get_value("WAV_DOMAIN_PATH")
     dwav_mode = case.get_value("DWAV_MODE")
     wav_grid = case.get_value("WAV_GRID")
 
-    #----------------------------------------------------
+
     # Check for incompatible options.
-    #----------------------------------------------------
     expect(wav_grid != "null",
            "WAV_GRID cannot be null")
     expect(dwav_mode != "NULL",
            "DWAV_MODE cannot be NULL")
 
-    #----------------------------------------------------
     # Log some settings.
-    #----------------------------------------------------
     logger.debug("DWAV mode is {}".format(dwav_mode))
     logger.debug("DWAV grid is {}".format(wav_grid))
 
-    #----------------------------------------------------
-    # Create configuration information.
-    #----------------------------------------------------
+    # Initialize namelist defaults
     config = {}
     config['wav_grid'] = wav_grid
     config['dwav_mode'] = dwav_mode
-
-    #----------------------------------------------------
-    # Initialize namelist defaults
-    #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
+
+    # Write out namelist file
+    namelist_file = os.path.join(confdir, "dwav_in")
+    nmlgen.write_output_file(namelist_file, data_list_path, groups=['dwav_nml'])
 
     #----------------------------------------------------
     # Construct the list of streams.
     #----------------------------------------------------
     streams = nmlgen.get_streams()
-
-    #----------------------------------------------------
-    # For each stream, create stream text file and update
-    # shr_strdata_nml group and input data list.
-    #----------------------------------------------------
-    for stream in streams:
-
-        # Ignore null values.
-        if stream is None or stream in ("NULL", ""):
-            continue
-
-        inst_stream = stream + inst_string
-        logger.debug("DWAV stream is {}".format(inst_stream))
-        stream_path = os.path.join(confdir, "dwav.streams.txt." + inst_stream)
-        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, case.get_value("CASEROOT"), stream, stream_path, data_list_path)
-
-    #----------------------------------------------------
-    # Create dwav_nml namelists group
-    #----------------------------------------------------
-    # set per-stream variables
-    nmlgen.create_shr_strdata_nml()
-
-    #----------------------------------------------------
-    # Finally, write out all the namelists.
-    #----------------------------------------------------
-    namelist_file = os.path.join(confdir, "dwav_in")
-    nmlgen.write_output_file(namelist_file, data_list_path, groups=['dwav_nml','shr_strdata_nml'])
+    stream_path = os.path.join(confdir, "dwav.streams"+inst_string+".xml" )
+    nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
@@ -188,8 +159,8 @@ def buildnml(case, caseroot, compname):
                 file_dest += inst_string
             safe_copy(file_src,file_dest)
 
-            for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
-                safe_copy(txtfile, rundir)
+            for xmlfile in glob.glob(os.path.join(confdir, "*streams.xml")):
+                safe_copy(xmlfile, rundir)
 
 ###############################################################################
 def _main_func():
