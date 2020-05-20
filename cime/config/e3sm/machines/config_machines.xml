@@ -2824,14 +2824,14 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi">
-        <command name="load">pgi/19.4</command>
+        <command name="load">pgi/19.9</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">pgi/19.4</command>
+        <command name="load">pgi/19.9</command>
         <command name="load">cuda</command>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">pgi/19.4</command>
+        <command name="load">pgi/19.9</command>
       </modules>
       <modules compiler="ibm">
         <command name="load">xl</command>
@@ -2920,6 +2920,13 @@
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
       </arguments>
     </mpirun>
+      <mpirun mpilib="spectrum-mpi" compiler="pgigpu" >
+        <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+        <arguments>
+          <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
+          <arg name="gpu"> -gpu </arg>
+        </arguments>
+      </mpirun>
     <module_system type="module" allow_error="true">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/sh</init_path>
@@ -2949,7 +2956,7 @@
         <command name="load">pgi/19.9</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">pgi/19.4</command>
+        <command name="load">pgi/19.9</command>
         <command name="load">cuda</command>
       </modules>
       <modules compiler="ibm">
