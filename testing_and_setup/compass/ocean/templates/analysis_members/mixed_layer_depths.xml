@@ -31,6 +31,7 @@
 			<add_contents>
 				<member name="xtime" type="var"/>
 				<member name="dThreshMLD" type="var"/>
+				<member name="tThreshMLD" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>

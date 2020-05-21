@@ -39,6 +39,7 @@ module ocn_forward_mode
    use ocn_tendency
    use ocn_diagnostics
    use ocn_test
+   use ocn_mesh
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -322,6 +323,10 @@ module ocn_forward_mode
       !
       ! Initialize core
       !
+
+      ! fill the ocean mesh structure
+      call ocn_meshCreate(domain)
+
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)
 
@@ -352,6 +357,9 @@ module ocn_forward_mode
 
          block => block % next
       end do
+
+      ! Update any mesh fields that may have been modified during init
+      call ocn_meshUpdateFields(domain)
 
       if (config_conduct_tests) then
          call mpas_timer_start("test suite")
@@ -729,6 +737,9 @@ module ocn_forward_mode
       type (domain_type), intent(inout) :: domain
 
       integer :: ierr
+
+      ! destroy the ocean mesh structure
+      call ocn_meshDestroy(ierr)
 
       call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
 
