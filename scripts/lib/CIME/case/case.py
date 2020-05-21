@@ -958,7 +958,8 @@ class Case(object):
         nodenames = machobj.get_node_names()
         nodenames = [x for x in nodenames if
                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                     'COMPILER' not in x and 'MPILIB' not in x]
+                     'COMPILER' not in x and 'MPILIB' not in x and 'MAX_MPITASKS_PER_NODE' not in x and\
+                     'MAX_TASKS_PER_NODE' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -981,6 +982,11 @@ class Case(object):
             expect(machobj.is_valid_MPIlib(mpilib, {"compiler":compiler}),
                    "MPIlib {} is not supported on machine {}".format(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
+        for name in ("MAX_TASKS_PER_NODE","MAX_MPITASKS_PER_NODE"):
+            dmax = machobj.get_value(name,{'compiler':compiler})
+            if not dmax:
+                dmax = machobj.get_value(name)
+            self.set_value(name, dmax)
 
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
