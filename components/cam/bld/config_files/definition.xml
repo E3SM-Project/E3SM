@@ -330,6 +330,9 @@ Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 
 <entry id="MMF_microphysics_scheme" valid_values="sam1mom,m2005" value="sam1mom">
 SPCAM Cloud microphysics type.
 </entry>
+<entry id="crm" valid_values="sam,samxx" value="sam">
+SPCAM/MMF CRM source code to build.
+</entry>
 <entry id="crm_adv" valid_values="MPDATA,UM5" value="MPDATA">
 SPCAM Cloud microphysics type.
 </entry>

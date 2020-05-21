@@ -414,6 +414,10 @@
     <alias>F-MMF2-MAML</alias>
     <lname>2000_CAM5%MMF2-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+  <compset>
+    <alias>F-MMFXX</alias>
+    <lname>2000_CAM5%MMFXX_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
   
   <!-- ********** testing compsets w/ reduced CRM dimensions ********** -->
 
@@ -451,6 +455,10 @@
   <compset>
     <alias>F-MMF2-ECPP-TEST</alias>
     <lname>2000_CAM5%MMF2-ECPP-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX-TEST</alias>
+    <lname>2000_CAM5%MMFXX-TEST_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
