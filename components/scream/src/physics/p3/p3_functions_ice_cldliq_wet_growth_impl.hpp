@@ -2,7 +2,8 @@
 #define P3_FUNCTIONS_ICE_CLDLIQ_WET_GROWTH_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "p3_functions_math_impl.hpp"
+#include "physics_functions.hpp" // also for ETI not on GPU
+#include "physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -16,6 +17,9 @@ void Functions<S,D>
                         const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
                         Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd)
 {
+
+   using physics = scream::physics::Functions<Scalar, Device>;
+
    constexpr Scalar qsmall = C::QSMALL;
    constexpr Scalar tmelt  = C::Tmelt;
    constexpr Scalar twopi  = C::Pi*2;
@@ -32,14 +36,14 @@ void Functions<S,D>
    const auto any_if_col = any_if && qccol_qrcol_ge_small;
 
    const Spack zerodeg{tmelt};
-   const Spack e0 = polysvp1(zerodeg, zero);
+
    Spack qsat0{0.};
    Spack dum{0.};
    Spack dum1{0.};
 
    if (any_if.any()) {
-      qsat0 = sp(0.622)*e0/(pres-e0);
-
+     qsat0 = physics::qv_sat( zerodeg,pres,0 );
+     
       qwgrth.set(any_if,
                 ((f1pr05+f1pr14*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*
                 twopi*(rho*xxlv*dv*(qsat0-qv)-(temp-tmelt)*kap)/
