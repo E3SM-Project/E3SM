@@ -78,7 +78,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Determine if need to obtain model mask from a separate file
     if (ocn_nx == atm_nx and ocn_ny == atm_ny and "aquap" not in docn_mode):
         nmlgen.set_value("model_maskfile",os.path.join(ocn_domain_path,ocn_domain_file))
-        
+
     # Determine if will create mesh by reading in a domain file
     model_meshfile = case.get_value("OCN_DOMAIN_MESH")
     if model_meshfile == 'create_mesh':
@@ -90,18 +90,19 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         nmlgen.set_value("streams",value)
         value = [case.get_value('DOCN_AQPCONST_VALUE')]
         nmlgen.set_value("sst_constant_value",value)
+    elif 'sst' not in docn_mode:
+        #----------------------------------------------------
+        # Create stream xml files - first construct the list of streams
+        #----------------------------------------------------
+        streams = nmlgen.get_streams()
+        skip_streams = False
+        stream_path = os.path.join(confdir, "docn.streams"+inst_string+".xml" )
+        nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
+
 
     namelist_file = os.path.join(confdir, "docn_in")
     nmlgen.write_output_file(namelist_file, data_list_path, groups=['docn_nml'])
 
-    #----------------------------------------------------
-    # Create stream xml files - first construct the list of streams
-    #----------------------------------------------------
-
-    streams = nmlgen.get_streams()
-    skip_streams = False
-    stream_path = os.path.join(confdir, "docn.streams"+inst_string+".xml" )
-    nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
