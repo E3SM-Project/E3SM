@@ -2,7 +2,7 @@ module atm_comp_mct
 
   ! !USES:
   use pioExample ! AaronDonahue - example PIO code, to use temporarily until a "real" PIO interface can be built
-  use scream_scorpio_interface, only: eam_h_define, eam_init_pio_subsystem, eam_h_finalize
+  use scream_scorpio_interface, only: eam_h_define, eam_init_pio, eam_h_finalize
   use esmf
   use mct_mod
   use perf_mod
@@ -65,6 +65,14 @@ CONTAINS
         integer (kind=c_int), intent(in) :: start_tod, start_ymd, f_comm
       end subroutine scream_init
     end interface
+!    interface
+!      subroutine eam_init_pio_c(f_comm,atmid,numdim,numvar) bind(c)
+!        use iso_c_binding, only: c_int
+!        !
+!        ! Arguments
+!        !
+!        integer (kind=c_int), intent(in) :: f_comm, atmid, numdim, numvar
+!    end interface
     ! !DESCRIPTION: initialize dead atm model
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -88,7 +96,7 @@ CONTAINS
     integer (kind=SHR_KIND_IN)       :: start_tod, start_ymd
 
     !--- PIO Example variables ---
-!    type(pioExampleClass) :: pioExInst
+    type(pioExampleClass) :: pioExInst
     !-------------------------------------------------------------------------------
     internal_step = 0
     ! Set cdata pointers to derived types (in coupler)
@@ -164,13 +172,15 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize pio
     !----------------------------------------------------------------------------
-    call eam_init_pio_subsystem(compid)
-    call eam_h_define()
+    print *, 'EAM_INIT_PIO'
+    call eam_init_pio(mpicom_atm,compid,2,22)
+    call eam_h_define(2, (/ 20, 0 /), (/ "x", "t" /))
  
     call pioExInst%init(mpicom_atm)
     call pioExInst%createDecomp()
     call pioExInst%createFile()
     call pioExInst%defineVar()
+    print *, 'EAM_INIT_PIO - DONE'
 
   end subroutine atm_init_mct
 
@@ -235,8 +245,9 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Run pio
     !----------------------------------------------------------------------------
-    call pioExInst%writeVar(internal_step)
-    call pioExInst%readVar()
+    print *, 'EAM_RUN_PIO'
+    !call pioExInst%writeVar(internal_step)
+    !call pioExInst%readVar()
     if (my_task==0) print *, 'atm_run_finish', internal_step
 
   end subroutine atm_run_mct
@@ -268,9 +279,11 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Run pio
     !----------------------------------------------------------------------------
-    call pioExInst%closeFile()
+    print *, 'EAM_FINALIZE_PIO'
+    !call pioExInst%closeFile()
     call eam_h_finalize()
-    call pioExInst%cleanUp()
+    !call pioExInst%cleanUp()
+    print *, 'EAM_FINALIZE_PIO - DONE'
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------

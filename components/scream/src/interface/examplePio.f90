@@ -183,6 +183,7 @@ contains
         write(*,*) 'this%numAggregator ',this%numAggregator
         write(*,*) 'this%stride ',this%stride
         write(*,*) 'this%pioIoSystem ',this%pioIoSystem
+        write(*,*) 'this%iotype ',this%iotype
         write(*,*) 'this%optBase ',this%optBase
         write(*,*) 'mpicom ',mpicom
 
