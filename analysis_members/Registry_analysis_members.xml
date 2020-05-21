@@ -30,3 +30,4 @@
 #include "Registry_eddy_product_variables.xml"
 #include "Registry_moc_streamfunction.xml"
 #include "Registry_ocean_heat_content.xml"
+#include "Registry_mixed_layer_heat_budget.xml"

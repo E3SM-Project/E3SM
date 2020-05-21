@@ -49,6 +49,7 @@ module ocn_analysis_driver
    use ocn_eddy_product_variables
    use ocn_moc_streamfunction
    use ocn_ocean_heat_content
+   use ocn_mixed_layer_heat_budget
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -178,6 +179,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'lagrPartTrack', 1)
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
+      call mpas_pool_add_config(analysisMemberList, 'mixesLayerHeatBudget', 1)
       call mpas_pool_add_config(analysisMemberList, 'rpnCalculator', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
@@ -195,6 +197,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'eddyProductVariables', 1)
       call mpas_pool_add_config(analysisMemberList, 'mocStreamfunction', 1)
       call mpas_pool_add_config(analysisMemberList, 'oceanHeatContent', 1)
+      call mpas_pool_add_config(analysisMemberList, 'mixedLayerHeatBudget', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -1085,6 +1088,7 @@ contains
       integer :: nameLength, err_tmp
 
       iErr = 0
+       err_tmp = 0
 
       nameLength = len_trim(analysisMemberName)
 
@@ -1126,6 +1130,8 @@ contains
          call ocn_init_moc_streamfunction(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
          call ocn_init_ocean_heat_content(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
+         call ocn_init_mixed_layer_heat_budget(domain,err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1179,7 +1185,7 @@ contains
       integer :: nameLength, err_tmp
 
       iErr = 0
-
+      err_tmp = 0
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
@@ -1220,6 +1226,8 @@ contains
          call ocn_compute_moc_streamfunction(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
          call ocn_compute_ocean_heat_content(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
+         call ocn_compute_mixed_layer_heat_budget(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1278,7 +1286,7 @@ contains
       integer :: nameLength, err_tmp
 
       iErr = 0
-
+      err_tmp = 0
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
@@ -1319,6 +1327,8 @@ contains
          call ocn_restart_moc_streamfunction(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
          call ocn_restart_ocean_heat_content(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
+         call ocn_restart_mixed_layer_heat_budget(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1371,7 +1381,7 @@ contains
       integer :: nameLength, err_tmp
 
       iErr = 0
-
+      err_tmp = 0
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
@@ -1412,6 +1422,8 @@ contains
          call ocn_finalize_moc_streamfunction(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'oceanHeatContent' ) then
          call ocn_finalize_ocean_heat_content(domain,err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
+         call ocn_finalize_mixed_layer_heat_budget(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
