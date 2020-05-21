@@ -9,6 +9,7 @@
 #include "sgs.h"
 #include "z0_est.h"
 #include "accelerate_crm.h"
+#include "setperturb.h"
 
 void pre_timeloop();
 

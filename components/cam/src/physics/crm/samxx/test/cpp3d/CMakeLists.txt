@@ -7,8 +7,8 @@ set_source_files_properties(${CUDA_SRC} PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLA
 if ("${ARCH}" STREQUAL "CUDA")
   enable_language(CUDA)
   set_source_files_properties(${CUDA_SRC} PROPERTIES LANGUAGE CUDA)
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../externals/cub)
+  include_directories(${YAKL_CUB_HOME})
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../externals/YAKL)
+include_directories(${YAKL_HOME})
 

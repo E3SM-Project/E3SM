@@ -1,8 +1,6 @@
 
 #include "pressure.h"
 
-using yakl::SArray;
-
 void pressure() {
   auto &p             = :: p;
   auto &rhow          = :: rhow;
@@ -122,8 +120,8 @@ void pressure() {
 	//  for (int i=0; i<nx+1; i++) {
 	//    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(nypp,nx+1,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
-    SArray<real,nzm-1> alfa;
-    SArray<real,nzm-1> beta;
+    SArray<real,1,nzm-1> alfa;
+    SArray<real,1,nzm-1> beta;
 
     int jt = 0;
     int it = 0;

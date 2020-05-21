@@ -28,7 +28,7 @@ extern "C" void crm(int ncrms_in, real dt_gl, int plev, real *crm_input_bflxls_p
   ncrms = ncrms_in;
   igstep = igstep_in;
 
-  yakl::init( ncrms*crm_nx*crm_ny*crm_nz*1500 );
+  yakl::init();
 
   create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p, crm_input_zmid_p, crm_input_zint_p, 
                          crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p, crm_input_ul_p, crm_input_vl_p, 

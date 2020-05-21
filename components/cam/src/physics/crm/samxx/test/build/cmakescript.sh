@@ -138,27 +138,28 @@ printf "FFLAGS: $FFLAGS\n\n"
 printf "CXXFLAGS: $CXXFLAGS\n\n"
 printf "CUDAFLAGS: $CUDAFLAGS\n\n"
 
-echo cmake      \
-  -DCMAKE_Fortran_FLAGS:STRING="$FFLAGS" \
-  -DCMAKE_CXX_FLAGS:STRING="$CXXFLAGS"   \
-  -DNCFLAGS:STRING="$NCFLAGS"            \
-  -DDEFS2D:STRING="$DEFS2D"              \
-  -DDEFS3D:STRING="$DEFS3D"              \
-  -DCUDA_FLAGS:string="$CUDAFLAGS"       \
-  -DYAKL_CUB_HOME="`pwd`/../../../../externals/cub" \
-  -DARCH:STRING="${ARCH}"                \
+echo cmake                          \
+  -DCMAKE_Fortran_FLAGS="$FFLAGS"   \
+  -DCMAKE_CXX_FLAGS="$CXXFLAGS"     \
+  -DNCFLAGS="$NCFLAGS"              \
+  -DDEFS2D="$DEFS2D"                \
+  -DDEFS3D="$DEFS3D"                \
+  -DCUDA_FLAGS="$CUDAFLAGS"         \
+  -DYAKL_HOME=${YAKL_HOME}          \
+  -DYAKL_CUB_HOME=${YAKL_CUB_HOME}  \
+  -DARCH="${ARCH}"                  \
   ..
-echo
 
-cmake      \
-  -DCMAKE_Fortran_FLAGS:STRING="$FFLAGS" \
-  -DCMAKE_CXX_FLAGS:STRING="$CXXFLAGS"   \
-  -DNCFLAGS:STRING="$NCFLAGS"            \
-  -DDEFS2D:STRING="$DEFS2D"              \
-  -DDEFS3D:STRING="$DEFS3D"              \
-  -DCUDA_FLAGS:string="$CUDAFLAGS"       \
-  -DYAKL_CUB_HOME="`pwd`/../../../../externals/cub" \
-  -DARCH:STRING="${ARCH}"                \
+cmake                               \
+  -DCMAKE_Fortran_FLAGS="$FFLAGS"   \
+  -DCMAKE_CXX_FLAGS="$CXXFLAGS"     \
+  -DNCFLAGS="$NCFLAGS"              \
+  -DDEFS2D="$DEFS2D"                \
+  -DDEFS3D="$DEFS3D"                \
+  -DCUDA_FLAGS="$CUDAFLAGS"         \
+  -DYAKL_HOME=${YAKL_HOME}          \
+  -DYAKL_CUB_HOME=${YAKL_CUB_HOME}  \
+  -DARCH="${ARCH}"                  \
   ..
 
 

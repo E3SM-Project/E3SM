@@ -16,6 +16,8 @@ export FFLAGS=-O3
 export CXXFLAGS=-O3
 export ARCH="CUDA"
 export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math"
+export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
+export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
 
 source activate rrtmgp-env
 
