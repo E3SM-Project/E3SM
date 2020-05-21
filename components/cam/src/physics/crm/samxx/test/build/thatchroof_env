@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source $MODULESHOME/init/bash
+module purge
+module load netcdf
+
+unset ARCH
+unset CUDA_ARCH
+
+export NCHOME=${NETCDF_PATH}
+export NFHOME=${NETCDF_PATH}
+export NCRMS=4
+export CC=mpicc
+export CXX=mpic++
+export FC=mpif90
+export FFLAGS="-g"
+export CXXFLAGS="-g"
+export ARCH="CUDA"
+export CUDA_ARCH="-arch sm_35"

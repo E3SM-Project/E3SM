@@ -16,6 +16,7 @@ module crm_physics
    use physics_types,   only: physics_state, physics_tend
    use ppgrid,          only: pcols, pver, pverp
    use constituents,    only: pcnst
+   use phys_grid,       only: get_rlat_p, get_rlon_p, get_gcol_p
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
 #endif
@@ -384,6 +385,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: crm_rotation_std     ! scaling factor for rotation (std dev of rotation angle)
    real(crm_rknd) :: crm_rotation_offset  ! offset to specify preferred rotation direction 
 #endif
+
+   real(crm_rknd), allocatable :: latitude0(:), longitude0(:), gcolp(:)
+   integer :: igstep
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -787,9 +791,40 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if (.not.allocated(ptend%s)) write(*,*) '=== ptend%s not allocated ==='
 
       call t_startf ('crm_call')
-      call crm( lchnk, ncol, ztodt, pver,       &
-                crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+      !call crm( lchnk, ncol, ztodt, pver,       &
+      !          crm_input, crm_state, crm_rad,  &
+      !          crm_ecpp_output, crm_output )
+
+      allocate(longitude0(ncol))
+      allocate(latitude0 (ncol))
+      allocate(gcolp     (ncol))
+      do icrm = 1 , ncol
+        latitude0 (icrm) = get_rlat_p(lchnk,icrm) * 57.296_r8
+        longitude0(icrm) = get_rlon_p(lchnk,icrm) * 57.296_r8
+        gcolp     (icrm) = get_gcol_p(lchnk,icrm)
+      enddo
+      deallocate(longitude0)
+      deallocate(latitude0 )
+      igstep = get_nstep()
+      call crm(ncol, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
+               crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
+               crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
+               crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
+               crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
+               crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%timing_factor, &
+               crm_output%prectend, crm_output%precstend, crm_output%cld, crm_output%cldtop, &
+               crm_output%gicewp, crm_output%gliqwp, crm_output%mctot, crm_output%mcup, crm_output%mcdn, &
+               crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
+               crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
+               crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
+               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
+               crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
+               crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
+               crm_output%clhgh, crm_output%clmed, crm_output%cllow, crm_output%sltend, crm_output%qltend, crm_output%qcltend, &
+               crm_output%qiltend, crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
+               crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
+               crm_output%precsl, crm_output%prec_crm, latitude0, longitude0, gcolp, igstep)
+      
       call t_stopf('crm_call')
 
       !---------------------------------------------------------------------------------------------

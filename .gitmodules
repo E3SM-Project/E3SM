@@ -31,3 +31,9 @@
 	path = components/cam/src/physics/cosp2/external
 	url = git@github.com:CFMIP/COSPv2.0.git
 	branch = CESM_v2.1.4
+[submodule "externals/YAKL"]
+	path = externals/YAKL
+	url = git@github.com:mrnorman/YAKL.git
+[submodule "externals/cub"]
+	path = externals/cub
+	url = git@github.com:NVlabs/cub.git
