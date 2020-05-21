@@ -18,7 +18,7 @@ module restart_physics
                                 pio_def_var, pio_def_dim, &
                                 pio_put_var, pio_get_var
   use cospsimulator_intr, only: docosp
-  use radiation,          only: cosp_cnt_init, cosp_cnt, rad_randn_seedrst, kiss_seed_num
+  use radiation,          only: cosp_cnt_init, cosp_cnt, rad_randn_seedrst, kiss_seed_num, umich_flag_emis  ! added umich_flag_emis by U-MICH team, Mar 19, 2020.
 
   implicit none
   private
@@ -47,6 +47,8 @@ module restart_physics
        dstdry1_desc, dstdry2_desc, dstdry3_desc, dstdry4_desc
 
     type(var_desc_t) :: cflx_desc(pcnst), lhf_desc, shf_desc
+
+    type(var_desc_t) :: ts_atm_desc, srf_emis_spec_desc(16)   ! added by U-MICH team. Mar 19, 2020
 
     type(var_desc_t), allocatable :: abstot_desc(:)
 
@@ -159,6 +161,15 @@ module restart_physics
 
     end if
 
+    ! added by U-MICH team. Mar 19, 2020
+    if (umich_flag_emis) then
+       ierr = pio_def_var(File, 'TS_ATM',  pio_double, hdimids, ts_atm_desc)
+       do i = 1, 16
+          write(num,'(i4.4)') i
+          ierr = pio_def_var(File, 'SRF_EMIS_SPEC'//num,  pio_double, hdimids, srf_emis_spec_desc(i))
+       end do
+    end if
+    ! <-- End add.
 
     if( radiation_do('aeres')  ) then
        vsize = (pverp-ntoplw+1)
@@ -410,6 +421,23 @@ module restart_physics
          call pio_write_darray(File, shf_desc, iodesc, tmpfield, ierr)
 
       end if
+
+      ! added by U-MICH team, Mar 19, 2020
+      if (umich_flag_emis) then
+         do i = begchunk, endchunk
+            ncol = cam_in(i)%ncol
+            tmpfield(:ncol, i) = cam_in(i)%ts_atm(:ncol)
+         end do
+         call pio_write_darray(File, ts_atm_desc, iodesc, tmpfield, ierr)
+         do m = 1, 16
+            do i = begchunk, endchunk
+               ncol = cam_in(i)%ncol
+               tmpfield(:ncol, i) = cam_in(i)%srf_emis_spec(:ncol, m)
+            end do
+            call pio_write_darray(File, srf_emis_spec_desc(m), iodesc, tmpfield, ierr)
+         end do
+      end if
+      ! <-- End add.
     !
     !-----------------------------------------------------------------------
     ! Write the abs/ems restart dataset if necessary    
@@ -752,9 +780,36 @@ module restart_physics
            end do
         end do
 
+        ! added by U-MICH team, Mar 19, 2020.
+        if ( umich_flag_emis ) then
+           ierr = pio_inq_varid(File, 'TS_ATM', vardesc)
+           call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+           do c= begchunk, endchunk
+              do i = 1, pcols
+                 cam_in(c)%ts_atm(i) = tmpfield2(i, c)
+              end do
+           end do
+           do m = 1, 16
+              write(num,'(i4.4)') m
+              call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
+              ierr = pio_inq_varid(File, 'SRF_EMIS_SPEC'//num, vardesc)
+              call pio_seterrorhandling(File, err_handling)
+              if (ierr == PIO_NOERR) then ! SRF_EMIS_SPEC variable found on restart file
+                 call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+                 do c= begchunk, endchunk
+                    do i = 1, pcols
+                       cam_in(c)%srf_emis_spec(i,m) = tmpfield2(i, c)
+                    end do
+                 end do
+              end if
+           end do
+        end if
+        ! <-- End add.
+
         deallocate(tmpfield2)
 
      end if
+   
 
      !
      !-----------------------------------------------------------------------

@@ -93,7 +93,7 @@ integer :: firstblock, lastblock      ! global block indices
 
 !!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
 ! flag to control surface emissivit. true: ON, false: OFF
-logical :: umich_flag_emis  = .false.  
+logical, public :: umich_flag_emis  = .false.  
 
 ! flag to control cloud LW radiation transfer solver. 2/4-stream solver. true: ON, false: OFF
 logical :: umich_flag_rtr2 = .false.   

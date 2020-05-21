@@ -11,16 +11,15 @@ contains
     use cam_cpl_indices
     use camsrfexch,     only: cam_in_t
     use phys_grid ,     only: get_ncols_p
-    use ppgrid    ,     only: begchunk, endchunk , pcols ! pcols is added by UM team on Dec.15, 2019      
+    use ppgrid    ,     only: begchunk, endchunk , pcols ! pcols is added by U-MICH team on Dec.15, 2019      
     use shr_const_mod,  only: shr_const_stebol
     use seq_drydep_mod, only: n_drydep
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
-    use time_manager  , only: is_first_step,  get_curr_date  ! get_curr_date is added by UM team on Dec.15, 2019
-    use parrrtm,        only: nbndlw  ! added by UM team on Dec.15, 2019
-    
+    use time_manager  , only: is_first_step,  get_curr_date  ! get_curr_date is added by U-MICH team on Dec.15, 2019
+    use parrrtm,        only: nbndlw  ! added by U-MICH team on Dec.15, 2019
     ! Arguments
     !
     real(r8)      , intent(in)    :: x2a(:,:)
@@ -39,7 +38,7 @@ contains
     logical :: overwrite_flds
     !-----------------------------------------------------------------------
  
-    !!!!!  Added by UM team on Dec.15, 2019
+    !!!!!  Added by U-MICH team on Dec.15, 2019
     integer ::ilats(pcols),ilons(pcols),yr,mon,day,tod,j
     real :: emis0(pcols*(endchunk-begchunk+1),nbndlw)
     integer ::ilats2(pcols*(endchunk-begchunk+1)),ilons2(pcols*(endchunk-begchunk+1))
@@ -91,14 +90,10 @@ contains
           cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,   ig)
           cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
-	  cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
+          cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
 
-          !  Added by UM team on Dec.15, 2018
+          !  Added by U-MICH team on Dec.15, 2018
           cam_in(c)%tlai(i)      =  x2a(index_x2a_Sl_tlai, ig)
-          cam_in(c)%ts_atm(i)        = sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol))) 
-          do j=1,16
-             cam_in(c)%srf_emis_spec(i,j) =1.0 
-          enddo
           !!!!!!!!!! end !!!!!!!!!!!!!!!!!!!!
 
           if ( associated(cam_in(c)%ram1) ) &
@@ -210,7 +205,7 @@ contains
              do i=1,ncols
                 cam_in(c)%lwup(i) = shr_const_stebol*(cam_in(c)%ts(i)**4)
                   
-                !!!!! added by UM team on Dec.15, 2019       
+                !!!!! added by U-MICH team on Dec.15, 2019       
                 cam_in(c)%ts_atm(i)      = sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))  
                 cam_in(c)%srf_emis_spec(i,1:16) = 1.0
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -241,7 +236,7 @@ contains
     ! Local variables
     !
     integer :: avsize, avnat
-    integer :: i,j,m,c,n,ig     ! indices ! is added by UM team on Dec.15, 2019
+    integer :: i,j,m,c,n,ig     ! indices ! is added by U-MICH team on Dec.15, 2019
     integer :: ncols            ! Number of columns
     !-----------------------------------------------------------------------
 
@@ -261,12 +256,12 @@ contains
           a2x(index_a2x_Sa_ptem   ,ig) = cam_out(c)%thbot(i)  
           a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)   
           a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1) 
-	  a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
+          a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
           a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)      
           a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i) 
-          a2x(index_a2x_Do_emis ,ig) = cam_out(c)%do_emis(i)  ! added by UM team on Dec. 15, 2019
+          a2x(index_a2x_Do_emis ,ig) = cam_out(c)%do_emis(i)  ! added by U-MICH team on Dec. 15, 2019
  
-          !!!!! added by UM team on Dec. 15, 2019
+          !!!!! added by U-MICH team on Dec. 15, 2019
           do j=1,16
            a2x(index_a2x_Faxa_lwdn_spec(j) ,ig) = cam_out(c)%flwds_spec(i,j) 
            a2x(index_a2x_Faxa_emis_spec(j) ,ig) = cam_out(c)%emis_spec(i,j)
