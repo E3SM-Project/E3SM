@@ -1921,7 +1921,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="summit" COMPILER="pgi">
   <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
