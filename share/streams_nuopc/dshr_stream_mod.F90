@@ -25,7 +25,6 @@ module dshr_stream_mod
   use shr_cal_mod      , only : shr_cal_calendarName
   use shr_cal_mod      , only : shr_cal_advDate
   use shr_cal_mod      , only : shr_cal_advdateint
-  use shr_log_mod      , only : s_logunit  => shr_log_Unit
   use dshr_methods_mod , only : chkerr
   use pio              , only : file_desc_t
   use netcdf
@@ -115,7 +114,7 @@ module dshr_stream_mod
 contains
 !===============================================================================
 
-  subroutine shr_stream_init_from_xml(xmlfilename, streamdat, mastertask, rc)
+  subroutine shr_stream_init_from_xml(xmlfilename, streamdat, mastertask, logunit, rc)
 
     use FoX_DOM
     use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadCast, ESMF_SUCCESS
@@ -146,6 +145,7 @@ contains
     type(shr_stream_streamType) , intent(inout), pointer :: streamdat(:)
     character(len=*)            , intent(in)             :: xmlfilename
     logical                     , intent(in)             :: mastertask
+    integer                     , intent(in)             :: logunit
     integer                     , intent(out)            :: rc
 
     ! local variables
@@ -316,8 +316,11 @@ contains
        streamdat(i)%dtlimit = rtmp(1)
     enddo
 
+    ! Set logunit
+    streamdat(:)%logunit = logunit
+
     ! initialize flag that stream has been set
-    streamdat%init = .true.
+    streamdat(:)%init = .true.
 
   end subroutine shr_stream_init_from_xml
 
@@ -325,7 +328,7 @@ contains
 
   subroutine shr_stream_init_from_inline(streamdat, meshfile, &
        yearFirst, yearLast, yearAlign, offset, taxmode, &
-       fldlistFile, fldListModel, fileNames)
+       fldlistFile, fldListModel, fileNames, logunit)
 
     ! --------------------------------------------------------
     ! set values of stream datatype independent of a reading in a stream text file
@@ -343,6 +346,7 @@ contains
     character(*)                ,intent(in)              :: fldListFile(:)  ! file field names, colon delim list
     character(*)                ,intent(in)              :: fldListModel(:) ! model field names, colon delim list
     character(*)                ,intent(in)              :: filenames(:)    ! stream data filenames (full pathnamesa)
+    integer                     ,intent(in)              :: logunit         ! stdout unit
 
     ! local variables
     integer                :: n
@@ -383,11 +387,14 @@ contains
        streamdat(1)%varlist(n)%nameinmodel = trim(fldlistModel(n))
     end do
 
-    ! get initial calendar value
+    ! Get initial calendar value
     call shr_stream_getCalendar(streamdat(1), 1, calendar)
     streamdat(1)%calendar = trim(calendar)
 
-    ! initialize flag that stream has been set
+    ! Initialize logunit
+    streamdat(1)%logunit = logunit
+
+    ! Initialize flag that stream has been set
     streamdat(1)%init = .true.
 
   end subroutine shr_stream_init_from_inline
@@ -451,7 +458,7 @@ contains
     !   3) return the bounding data and model dates, file names, & t-coord indicies
     !-------------------------------------------------------------------------------
 
-    if (debug>0) write(s_logunit,F02) "DEBUG: ---------- enter ------------------"
+    if (debug>0) write(strm%logunit,F02) "DEBUG: ---------- enter ------------------"
 
     if ( .not. strm%init ) then
        call shr_sys_abort(trim(subName)//" ERROR: trying to find bounds of uninitialized stream")
@@ -467,7 +474,7 @@ contains
        cycle = .false.
        limit = .true.
     else
-       write(s_logunit,*) trim(subName),' ERROR: illegal taxMode = ',trim(strm%taxMode)
+       write(strm%logunit,*) trim(subName),' ERROR: illegal taxMode = ',trim(strm%taxMode)
        call shr_sys_abort(trim(subName)//' ERROR: illegal taxMode = '//trim(strm%taxMode))
     endif
 
@@ -490,15 +497,15 @@ contains
     endif
 
     if (dYear < 0) then
-       write(s_logunit,*) trim(subName),' ERROR: dyear lt zero = ',dYear
+       write(strm%logunit,*) trim(subName),' ERROR: dyear lt zero = ',dYear
        call shr_sys_abort(trim(subName)//' ERROR: dyear lt one')
     endif
 
     dDateIn = dYear*10000 + modulo(mDateIn,10000) ! mDateIn mapped to range of data years
     rDateIn = dDateIn + secIn/spd                 ! dDateIn + fraction of a day
     if(debug>0) then
-       write(s_logunit,*) 'tcx fbd1 ',mYear,dYear,dDateIn,rDateIn
-       write(s_logunit,*) 'tcx fbd2 ',yrFirst,yrLast,yrAlign,nYears
+       write(strm%logunit,*) 'tcx fbd1 ',mYear,dYear,dDateIn,rDateIn
+       write(strm%logunit,*) 'tcx fbd2 ',yrFirst,yrLast,yrAlign,nYears
     endif
 
     !----------------------------------------------------------------------------
@@ -524,17 +531,17 @@ contains
           end do
        end do A
        if (.not. strm%found_lvd) then
-          write(s_logunit,F00)  "ERROR: LVD not found, all data is before yearFirst"
+          write(strm%logunit,F00)  "ERROR: LVD not found, all data is before yearFirst"
           call shr_sys_abort(trim(subName)//" ERROR: LVD not found, all data is before yearFirst")
        else
           !--- LVD is in or beyond yearFirst, verify it is not beyond yearLast ---
           if ( dDateL <= strm%file(strm%k_lvd)%date(strm%n_lvd) ) then
-             write(s_logunit,F00)  "ERROR: LVD not found, all data is after yearLast"
+             write(strm%logunit,F00)  "ERROR: LVD not found, all data is after yearLast"
              call shr_sys_abort(trim(subName)//" ERROR: LVD not found, all data is after yearLast")
           end if
        end if
        if (debug>1 ) then
-          if (strm%found_lvd) write(s_logunit,F01) "DEBUG: found LVD = ",strm%file(k)%date(n)
+          if (strm%found_lvd) write(strm%logunit,F01) "DEBUG: found LVD = ",strm%file(k)%date(n)
        end if
     end if
 
@@ -543,7 +550,7 @@ contains
        n = strm%n_lvd
        rDatelvd = strm%file(k)%date(n) + strm%file(k)%secs(n)/spd ! LVD date + frac day
     else
-       write(s_logunit,F00)  "ERROR: LVD not found yet"
+       write(strm%logunit,F00)  "ERROR: LVD not found yet"
        call shr_sys_abort(trim(subName)//" ERROR: LVD not found yet")
     endif
 
@@ -555,7 +562,7 @@ contains
        rDategvd = 99991231.0
     endif
     if(debug>0) then
-       write(s_logunit,*) 'tcx fbd3 ',rDateIn,rDatelvd,rDategvd
+       write(strm%logunit,*) 'tcx fbd3 ',rDateIn,rDatelvd,rDategvd
     endif
 
     !-----------------------------------------------------------
@@ -567,7 +574,7 @@ contains
 
     if (rDateIn < rDatelvd) then
        if (limit) then
-          write(s_logunit,*)  trim(subName)," ERROR: limit on and rDateIn lt rDatelvd",rDateIn,rDatelvd
+          write(strm%logunit,*)  trim(subName)," ERROR: limit on and rDateIn lt rDatelvd",rDateIn,rDatelvd
           call shr_sys_abort(trim(subName)//" ERROR: rDateIn lt rDatelvd limit true")
        endif
 
@@ -609,7 +616,7 @@ contains
                       strm%n_gvd = n
                       strm%found_gvd = .true.
                       rDategvd = strm%file(k)%date(n) + strm%file(k)%secs(n)/spd ! GVD date + frac day
-                      if (debug>1 ) write(s_logunit,F01) "DEBUG: found GVD ",strm%file(k)%date(n)
+                      if (debug>1 ) write(strm%logunit,F01) "DEBUG: found GVD ",strm%file(k)%date(n)
                       exit B
                    end if
                 end do
@@ -617,7 +624,7 @@ contains
           end if
 
           if (.not. strm%found_gvd) then
-             write(s_logunit,F00)  "ERROR: GVD not found1"
+             write(strm%logunit,F00)  "ERROR: GVD not found1"
              call shr_sys_abort(trim(subName)//" ERROR: GVD not found1")
           endif
 
@@ -650,7 +657,7 @@ contains
 
     else if (strm%found_gvd .and. rDateIn >= rDategvd) then
        if (limit) then
-          write(s_logunit,*) trim(subName)," ERROR: limit on and rDateIn gt rDategvd",rDateIn,rDategvd
+          write(strm%logunit,*) trim(subName)," ERROR: limit on and rDateIn gt rDategvd",rDateIn,rDategvd
           call shr_sys_abort(trim(subName)//" ERROR: rDateIn gt rDategvd limit true")
        endif
 
@@ -750,7 +757,7 @@ contains
 
           if (strm%found_gvd .and. rDateIn >= rDategvd) then
              if (limit) then
-                write(s_logunit,*) trim(subName)," ERROR: limit on and rDateIn gt rDategvd",rDateIn,rDategvd
+                write(strm%logunit,*) trim(subName)," ERROR: limit on and rDateIn gt rDategvd",rDateIn,rDategvd
                 call shr_sys_abort(trim(subName)//" ERROR: rDateIn gt rDategvd limit true")
              endif
 
@@ -930,7 +937,7 @@ contains
     ! if offset is not zero, adjust strm%file(k)%date(n) and strm%file(k)%secs(n)
     if (strm%offset /= 0) then
        if (size(strm%file(k)%date) /= size(strm%file(k)%secs)) then
-          write(s_logunit,F01) "Incompatable date and secs sizes",size(strm%file(k)%date),size(strm%file(k)%secs)
+          write(strm%logunit,F01) "Incompatable date and secs sizes",size(strm%file(k)%date),size(strm%file(k)%secs)
           call shr_sys_abort()
        endif
        num = size(strm%file(k)%date)
@@ -941,7 +948,7 @@ contains
           call shr_cal_advDateInt(offin,'seconds',din,sin,dout,sout,calendar)
           strm%file(k)%date(n) = dout
           strm%file(k)%secs(n) = sout
-          ! write(s_logunit,*) 'debug ',n,strm%offset,din,sin,dout,sout
+          ! write(strm%logunit,*) 'debug ',n,strm%offset,din,sin,dout,sout
        enddo
     endif
 
@@ -984,11 +991,11 @@ contains
       !-------------------------------------------------------------------------------
 
       rc = 0
-      if (debug>1 ) write(s_logunit,F01) "checking t-coordinate data   for file k =",k
+      if (debug>1 ) write(strm%logunit,F01) "checking t-coordinate data   for file k =",k
 
       if ( .not. strm%file(k)%haveData) then
          rc = 1
-         write(s_logunit,F01) "Don't have data for file ",k
+         write(strm%logunit,F01) "Don't have data for file ",k
          call shr_sys_abort(subName//"ERROR: can't check -- file not read.")
       end if
 
@@ -1006,7 +1013,7 @@ contains
                   date2 = strm%file(k  )%date(n)
                   secs2 = strm%file(k  )%secs(n)
                   checkIt = .true.
-                  if (debug>1 ) write(s_logunit,F01) "comparing with previous file for file k =",k
+                  if (debug>1 ) write(strm%logunit,F01) "comparing with previous file for file k =",k
                end if
             end if
          else if (n==strm%file(k)%nt+1) then
@@ -1019,7 +1026,7 @@ contains
                   date2 = strm%file(k+1)%date(1)
                   secs2 = strm%file(k+1)%secs(1)
                   checkIt = .true.
-                  if (debug>1 ) write(s_logunit,F01) "comparing with next     file for file k =",k
+                  if (debug>1 ) write(strm%logunit,F01) "comparing with next     file for file k =",k
                end if
             end if
          else
@@ -1035,27 +1042,27 @@ contains
          if (checkIt) then
             if ( date1 > date2 ) then
                rc = 1
-               write(s_logunit,F01) "ERROR: calendar dates must be increasing"
-               write(s_logunit,F02) "date(n), date(n+1) = ",date1,date2
+               write(strm%logunit,F01) "ERROR: calendar dates must be increasing"
+               write(strm%logunit,F02) "date(n), date(n+1) = ",date1,date2
                call shr_sys_abort(subName//"ERROR: calendar dates must be increasing")
             else if ( date1 == date2 ) then
                if ( secs1 >= secs2 ) then
                   rc = 1
-                  write(s_logunit,F01) "ERROR: elapsed seconds on a date must be strickly increasing"
-                  write(s_logunit,F02) "secs(n), secs(n+1) = ",secs1,secs2
+                  write(strm%logunit,F01) "ERROR: elapsed seconds on a date must be strickly increasing"
+                  write(strm%logunit,F02) "secs(n), secs(n+1) = ",secs1,secs2
                   call shr_sys_abort(subName//"ERROR: elapsed seconds must be increasing")
                end if
             end if
             if ( secs1 < 0 .or. spd < secs1 ) then
                rc = 1
-               write(s_logunit,F01) "ERROR: elapsed seconds out of valid range [0,spd]"
-               write(s_logunit,F02) "secs(n) = ",secs1
+               write(strm%logunit,F01) "ERROR: elapsed seconds out of valid range [0,spd]"
+               write(strm%logunit,F02) "secs(n) = ",secs1
                call shr_sys_abort(subName//"ERROR: elapsed seconds out of range")
             end if
          end if
       end do
 
-      if (debug>0) write(s_logunit,F01) "data is OK (non-decreasing)  for file k =",k
+      if (debug>0) write(strm%logunit,F01) "data is OK (non-decreasing)  for file k =",k
     end subroutine verifyTCoord
 
   end subroutine shr_stream_readTCoord
@@ -1221,7 +1228,7 @@ contains
     end do
     if (.not. found) then
        rCode = 1
-       write(s_logunit,F00) "ERROR: input file name is not in stream: ",trim(fn)
+       write(strm%logunit,F00) "ERROR: input file name is not in stream: ",trim(fn)
        call shr_sys_abort(subName//"ERROR: file name not in stream: "//trim(fn))
     end if
 
@@ -1275,7 +1282,7 @@ contains
     end do
     if (.not. found) then
        rCode = 1
-       write(s_logunit,F00) "ERROR: input file name is not in stream: ",trim(fn)
+       write(strm%logunit,F00) "ERROR: input file name is not in stream: ",trim(fn)
        call shr_sys_abort(subName//"ERROR: file name not in stream: "//trim(fn))
     end if
 
@@ -1330,6 +1337,7 @@ contains
     integer       :: nUnit       ! a file unit number
     integer       :: nt          ! number of time samples
     character(CS) :: tInterpAlgo ! for backwards compatability
+    integer       :: logunit
     character(*),parameter :: subName = '(shr_stream_restWrite) '
     character(*),parameter :: F00   = "('(shr_stream_restWrite) ',16a) "
     character(*),parameter :: F01   = "('(shr_stream_restWrite) ',a,i5,a,5a) "
@@ -1340,9 +1348,11 @@ contains
     rCode = 0
     tInterpAlgo = 'unused'
 
+    logunit = strm(1)%logunit ! all streams have the same logunit
+
     if (present(nstrms)) then
        if (size(strm) < nstrms) then
-          write(s_logunit,F02) "ERROR: nstrms too large for strm",size(strm),nstrms
+          write(logunit,F02) "ERROR: nstrms too large for strm",size(strm),nstrms
           call shr_sys_abort(subname//": ERROR: nstrms too large for strm")
        endif
        nStreams = nstrms
@@ -1353,11 +1363,11 @@ contains
 
     ! log info to stdout
     if (debug > 0) then
-       write(s_logunit,F00) "case name        : ",trim(caseName)
-       write(s_logunit,F00) "case description : ",trim(caseDesc)
-       write(s_logunit,F00) "File created     : ",&
+       write(logunit,F00) "case name        : ",trim(caseName)
+       write(logunit,F00) "case description : ",trim(caseDesc)
+       write(logunit,F00) "File created     : ",&
             dStr(1:4)//'-'//dStr(5:6)//'-'//dStr(7:8)//' '//tStr(1:2)//':'//tStr(3:4)//':'//tStr(5:6)
-       write(s_logunit,F01) "Number of streams ",nStreams
+       write(logunit,F01) "Number of streams ",nStreams
     end if
 
     !----------------------------------------------------------------------------
@@ -1377,7 +1387,7 @@ contains
     write(nUnit) nStreams
     if (present(nstrms)) then
        if (nstrms /= nStreams) then
-          write(s_logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
+          write(logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
           call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
        endif
        nStreams = nstrms
@@ -1387,7 +1397,7 @@ contains
     do k = 1,nStreams
        if (.not. strm(k)%init) then  ! has stream been initialized?
           rCode = 1
-          write(s_logunit,F01) "ERROR: can't write uninitialized stream to a restart file, k = ",k
+          write(logunit,F01) "ERROR: can't write uninitialized stream to a restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: given uninitialized stream")
        end if
 
@@ -1395,15 +1405,15 @@ contains
        write(nUnit) strm(k)%nFiles       ! number of data files
 
        if (debug > 0) then
-          write(s_logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
-          write(s_logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
-          write(s_logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
+          write(logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
+          write(logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
+          write(logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
        end if
 
        nt = strm(k)%file(1)%nt
        if (strm(k)%file(1)%haveData .and. debug > 0) then
-          write(s_logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1), strm(k)%file(1)%secs(1)
-          write(s_logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt), strm(k)%file(1)%secs(nt)
+          write(logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1), strm(k)%file(1)%secs(1)
+          write(logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt), strm(k)%file(1)%secs(nt)
        endif
        do n=1,strm(k)%nFiles                      ! data specific to each file...
           write(nUnit) strm(k)%file(n)%name       ! the file name
@@ -1472,6 +1482,7 @@ contains
     logical         :: readok                         ! read of restarts ok
 
     !--- formats ---
+    integer                :: logunit
     character(*),parameter :: subName = '(shr_stream_restRead) '
     character(*),parameter :: F00   = "('(shr_stream_restRead) ',16a) "
     character(*),parameter :: F01   = "('(shr_stream_restRead) ',a,i5,a,5a) "
@@ -1486,6 +1497,8 @@ contains
     abort = .false.
     inpcl = ' '
 
+    logunit = strm(1)%logunit ! all streams have the same logunit
+
     !----------------------------------------------------------------------------
     ! read the  data
     !----------------------------------------------------------------------------
@@ -1496,27 +1509,27 @@ contains
     end if
 
     read(nUnit) str         ! case name
-    if (debug > 0) write(s_logunit,F00) trim(str)
+    if (debug > 0) write(logunit,F00) trim(str)
     read(nUnit) str         ! case description
-    if (debug > 0) write(s_logunit,F00) trim(str)
+    if (debug > 0) write(logunit,F00) trim(str)
     read(nUnit) str         ! file creation date
-    if (debug > 0) write(s_logunit,F00) trim(str)
+    if (debug > 0) write(logunit,F00) trim(str)
 
     read(nUnit) nStreams
     if (present(nstrms)) then
        if (nstrms /= nStreams) then
-          write(s_logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
+          write(logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
           call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
        endif
        nStreams = nstrms
     endif
-    if (debug > 0) write(s_logunit,F01) "Number of streams ",nStreams
+    if (debug > 0) write(logunit,F01) "Number of streams ",nStreams
 
     do k = 1,nStreams
        read(nUnit) strm(k)%init         ! has stream been initialized?
        if (.not. strm(k)%init) then
           rCode = 1
-          write(s_logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
+          write(logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: reading uninitialized stream")
        end if
        strm(k)%init = .true.
@@ -1538,7 +1551,7 @@ contains
              read(nUnit) secs(:) ! t-coord secs: elapsed on date
              if (strm(k)%nFiles >= n) then
                 if (trim(name) == trim(strm(k)%file(n)%name)) then
-                   write(s_logunit,F05) "reading time axis for stream restart filename ",k,n, &
+                   write(logunit,F05) "reading time axis for stream restart filename ",k,n, &
                         ' ',trim(name),' ',trim(strm(k)%file(n)%name)
                    strm(k)%file(n)%nt = nt
                    strm(k)%file(n)%haveData = haveData
@@ -1547,7 +1560,7 @@ contains
                    strm(k)%file(n)%date(1:nt) = date(1:nt)
                    strm(k)%file(n)%secs(1:nt) = secs(1:nt)
                 else
-                   write(s_logunit,F05) "WARNING, skip time axis for stream restart filename ",k,n,&
+                   write(logunit,F05) "WARNING, skip time axis for stream restart filename ",k,n,&
                         ' ',trim(name),' ',trim(strm(k)%file(n)%name)
                    readok = .false.
                 endif  ! filenames consistent
@@ -1558,16 +1571,16 @@ contains
        end do
 
        if (debug > 0) then
-          write(s_logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
-          write(s_logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
-          write(s_logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
+          write(logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
+          write(logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
+          write(logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
        end if
 
        if (strm(k)%file(1)%haveData) then
           nt = strm(k)%file(1)%nt
           if (debug > 0) then
-             write(s_logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1),strm(k)%file(1)%secs(1)
-             write(s_logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt),strm(k)%file(1)%secs(nt)
+             write(logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1),strm(k)%file(1)%secs(1)
+             write(logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt),strm(k)%file(1)%secs(nt)
           end if
        endif
 
@@ -1577,8 +1590,8 @@ contains
        read(nUnit) inpi   ! align year to use in t-axis (yyyymmdd)
        read(nUnit) inpi   ! time axis offset
        if (inpi /= strm(k)%offset) then
-          write(s_logunit,F04) " ERROR: offset disagrees ",k,strm(k)%offset,inpi
-          write(s_logunit,F00) "ERRORS Detected ABORTING NOW"
+          write(logunit,F04) " ERROR: offset disagrees ",k,strm(k)%offset,inpi
+          write(logunit,F00) "ERRORS Detected ABORTING NOW"
           call shr_sys_abort(subName//": ERRORS Detected ABORTING NOW")
        endif
 
@@ -1592,7 +1605,7 @@ contains
 
        ! only overwrite if restart read is ok
        if (readok) then
-          write(s_logunit,F05) "setting k n and found lvd gvd on restart ",k,n,' ',trim(name)
+          write(logunit,F05) "setting k n and found lvd gvd on restart ",k,n,' ',trim(name)
           strm(k)%k_lvd     = k_lvd
           strm(k)%n_lvd     = n_lvd
           strm(k)%found_lvd = found_lvd
@@ -1622,30 +1635,33 @@ contains
 
     !----- local -----
     integer   :: k ! generic loop index
+    integer   :: logunit
     character(*),parameter :: F00   = "('(shr_stream_dataDump) ',8a)"
     character(*),parameter :: F01   = "('(shr_stream_dataDump) ',a,3i5)"
     character(*),parameter :: F02   = "('(shr_stream_dataDump) ',a,365i9.8)"
     character(*),parameter :: F03   = "('(shr_stream_dataDump) ',a,365i6)"
     !-------------------------------------------------------------------------------
 
+    logunit = strm%logunit
+
     if (debug > 0) then
-       write(s_logunit,F00) "dump internal data for debugging..."
-       write(s_logunit,F01) "nFiles        = ", strm%nFiles
+       write(logunit,F00) "dump internal data for debugging..."
+       write(logunit,F01) "nFiles        = ", strm%nFiles
        do k=1,strm%nFiles
-          write(s_logunit,F01) "data for file k = ",k
-          write(s_logunit,F00)    "* file(k)%name    = ", trim(strm%file(k)%name)
+          write(logunit,F01) "data for file k = ",k
+          write(logunit,F00)    "* file(k)%name    = ", trim(strm%file(k)%name)
           if ( strm%file(k)%haveData ) then
-             write(s_logunit,F01) "* file(k)%nt      = ", strm%file(k)%nt
-             write(s_logunit,F02) "* file(k)%date(:) = ", strm%file(k)%date(:)
-             write(s_logunit,F03) "* file(k)%Secs(:) = ", strm%file(k)%secs(:)
+             write(logunit,F01) "* file(k)%nt      = ", strm%file(k)%nt
+             write(logunit,F02) "* file(k)%date(:) = ", strm%file(k)%date(:)
+             write(logunit,F03) "* file(k)%Secs(:) = ", strm%file(k)%secs(:)
           else
-             write(s_logunit,F00) "* time coord data not read in yet for this file"
+             write(logunit,F00) "* time coord data not read in yet for this file"
           end if
        end do
-       write(s_logunit,F01) "yearF/L/A    = ", strm%yearFirst,strm%yearLast,strm%yearAlign
-       write(s_logunit,F01) "offset       = ", strm%offset
-       write(s_logunit,F00) "taxMode      = ", trim(strm%taxMode)
-       write(s_logunit,F00) "meshfile     = ", trim(strm%meshfile)
+       write(logunit,F01) "yearF/L/A    = ", strm%yearFirst,strm%yearLast,strm%yearAlign
+       write(logunit,F01) "offset       = ", strm%offset
+       write(logunit,F00) "taxMode      = ", trim(strm%taxMode)
+       write(logunit,F00) "meshfile     = ", trim(strm%meshfile)
     end if
 
   end subroutine shr_stream_dataDump
