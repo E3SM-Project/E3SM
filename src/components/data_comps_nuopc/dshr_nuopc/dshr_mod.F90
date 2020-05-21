@@ -32,7 +32,6 @@ module dshr_mod
   use ESMF             , only : ESMF_Region_Flag, ESMF_REGION_TOTAL, ESMF_MAXSTR
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
-  use shr_file_mod     , only : shr_file_setlogunit
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
   use shr_cal_mod      , only : shr_cal_datetod2string
@@ -124,7 +123,7 @@ contains
   !===============================================================================
   subroutine dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
        flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
-       logunit, shrlogunit, rc)
+       logunit, rc)
 
     ! input/output variables
     type(ESMF_GridComp)              :: gcomp
@@ -137,7 +136,6 @@ contains
     integer          , intent(out)   :: flds_scalar_index_nx
     integer          , intent(out)   :: flds_scalar_index_ny
     integer          , intent(out)   :: logunit
-    integer          , intent(out)   :: shrlogunit
     integer          , intent(out)   :: rc
 
     ! local variables
@@ -195,7 +193,6 @@ contains
     endif
 
     ! set output logging
-    shrlogunit = 6
     if (my_task == master_task) then
        call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -205,7 +202,6 @@ contains
     else
        logUnit = 6
     endif
-    call shr_file_setLogUnit (logunit)
 
     ! set component instance and suffix
     call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
@@ -1091,6 +1087,7 @@ contains
     type(var_desc_t)  :: varid
     type(io_desc_t)   :: pio_iodesc
     integer           :: rcode
+    integer           :: yy, mm, dd
     !-------------------------------------------------------------------------------
 
      ! write data model restart data

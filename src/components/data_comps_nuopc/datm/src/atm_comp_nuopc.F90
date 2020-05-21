@@ -12,7 +12,6 @@ module atm_comp_nuopc
   use NUOPC_Model      , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model      , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model      , only : NUOPC_ModelGet
-  use shr_file_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_kind_mod     , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_precip_mod   , only : shr_precip_partition_rain_snow_ramp
   use shr_const_mod    , only : shr_const_spval, shr_const_tkfrz, shr_const_pi
@@ -287,7 +286,6 @@ contains
 
     ! local variables
     character(len=CL) :: cvalue     ! temporary
-    integer           :: shrlogunit ! original log unit
     integer           :: nu         ! unit number
     integer           :: ierr       ! error code
     logical           :: exists     ! check for file existence
@@ -308,7 +306,7 @@ contains
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
-         logunit, shrlogunit, rc=rc)
+         logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine logical masterproc
@@ -430,9 +428,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
-
   end subroutine InitializeAdvertise
 
   !===============================================================================
@@ -456,7 +451,6 @@ contains
     integer(i8)             :: stepno        ! step number
     real(r8)                :: nextsw_cday   ! calendar of next atm sw
     character(CL)           :: cvalue        ! character string for input config
-    integer                 :: shrlogunit    ! original log unit
     real(R8)                :: orbEccen      ! orb eccentricity (unit-less)
     real(R8)                :: orbMvelpp     ! orb moving vernal eq (radians)
     real(R8)                :: orbLambm0     ! orb mean long of perhelion (radians)
@@ -469,10 +463,6 @@ contains
 
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (logUnit)
 
     ! Initialize sdat
     call t_startf('datm_strdata_init')
@@ -537,9 +527,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
-
   end subroutine InitializeRealize
 
   !===============================================================================
@@ -558,7 +545,6 @@ contains
     type(ESMF_Time)         :: currTime
     type(ESMF_Time)         :: nextTime
     type(ESMF_TimeInterval) :: timeStep
-    integer                 :: shrlogunit    ! original log unit
     real(r8)                :: nextsw_cday
     logical                 :: write_restart ! restart alarm is ringing
     integer                 :: next_ymd      ! model date
@@ -580,10 +566,6 @@ contains
 
     call t_startf(subname)
     call memcheck(subname, 5, my_task==master_task)
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (logunit)
 
     ! Query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -638,8 +620,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
     call t_stopf(subname)
 
   end subroutine ModelAdvance

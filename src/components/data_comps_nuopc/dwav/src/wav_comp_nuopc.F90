@@ -12,7 +12,6 @@ module wav_comp_nuopc
   use NUOPC_Model      , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model      , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model      , only : NUOPC_ModelGet
-  use shr_file_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_kind_mod     , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
@@ -146,7 +145,6 @@ contains
     ! local variables
     integer           :: inst_index         ! number of current instance (ie. 1)
     character(len=CL) :: cvalue             ! temporary
-    integer           :: shrlogunit         ! original log unit
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
     logical           :: exists
@@ -165,7 +163,7 @@ contains
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp,  mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
-         logunit, shrlogunit, rc=rc)
+         logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine logical masterproc
@@ -241,9 +239,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
-
   end subroutine InitializeAdvertise
 
   !===============================================================================
@@ -263,17 +258,12 @@ contains
     integer         :: current_day  ! model day
     integer         :: current_tod  ! model sec into model date
     character(CL)   :: cvalue       ! temporary
-    integer         :: shrlogunit   ! original log unit
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     if (datamode == 'NULL') RETURN
 
     rc = ESMF_SUCCESS
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (logUnit)
 
     ! Initialize sdat - create the model domain mesh and intialize the sdat clock
     call t_startf('dwav_strdata_init')
@@ -314,9 +304,6 @@ contains
     call dshr_state_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
-
   end subroutine InitializeRealize
 
   !===============================================================================
@@ -332,7 +319,6 @@ contains
     type(ESMF_Time)         :: currTime, nextTime
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_State)        :: importState, exportState
-    integer                 :: shrlogunit    ! original log unit
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
@@ -348,10 +334,6 @@ contains
 
     call t_startf(subname)
     call memcheck(subname, 5, my_task == master_task)
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (logunit)
 
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -396,7 +378,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
-    call shr_file_setLogUnit (shrlogunit)
     call t_stopf(subname)
 
   end subroutine ModelAdvance

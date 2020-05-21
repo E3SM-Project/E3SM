@@ -8,7 +8,6 @@ module dshr_tInterp_mod
   use shr_kind_mod     , only : i8=>shr_kind_i8, r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_timeSet, shr_cal_advDateInt, shr_cal_date2julian 
-  use shr_log_mod      , only : s_logunit => shr_log_Unit
   use shr_orb_mod      , only : shr_orb_cosz, shr_orb_decl, SHR_ORB_UNDEF_REAL
   use dshr_methods_mod , only : chkerr
 
@@ -31,7 +30,7 @@ module dshr_tInterp_mod
 contains
 !===============================================================================
 
-  subroutine shr_tInterp_getFactors(D1,S1,D2,S2,Din,Sin,f1,f2,calendar,algo,rc)
+  subroutine shr_tInterp_getFactors(D1,S1,D2,S2,Din,Sin,f1,f2,calendar,logunit,algo,rc)
 
     ! calculate time interpolation factors
     ! Returns two interpolation factors
@@ -50,6 +49,7 @@ contains
     real(r8)     ,intent(out)          :: f1      ! wgt for 1
     real(r8)     ,intent(out)          :: f2      ! wgt for 2
     character(*) ,intent(in)           :: calendar!calendar type
+    integer      ,intent(in)           :: logunit
     character(*) ,intent(in) ,optional :: algo    ! algorithm
     integer      ,intent(out)          :: rc      ! return code
 
@@ -84,7 +84,7 @@ contains
 
     ! --- always check that 1 <= 2, although we could relax this requirement ---
     if (itime2 < itime1) then
-       write(s_logunit,F01) ' ERROR: itime2 < itime1 D=',D1,S1,D2,S2
+       write(logunit,F01) ' ERROR: itime2 < itime1 D=',D1,S1,D2,S2
        call shr_sys_abort(subName//' itime2 < itime1 ')
     endif
 
@@ -117,7 +117,7 @@ contains
     elseif (trim(lalgo) == 'linear') then
        !--- check that itimein is between itime1 and itime2 ---
        if (itime2 < itimein .or. itime1 > itimein) then
-          write(s_logunit,F02) ' ERROR illegal linear times: ',D1,S1,Din,Sin,D2,S2
+          write(logunit,F02) ' ERROR illegal linear times: ',D1,S1,Din,Sin,D2,S2
           call shr_sys_abort(subName//' illegal itimes ')
        endif
        if (itime2 == itime1) then
@@ -132,7 +132,7 @@ contains
           f1 = real(snum,r8)/real(sden,r8)
        endif
     else
-       if (debug > 0) write(s_logunit,F00) 'ERROR: illegal lalgo option: ',trim(lalgo)
+       if (debug > 0) write(logunit,F00) 'ERROR: illegal lalgo option: ',trim(lalgo)
        call shr_sys_abort(subName//' illegal algo option '//trim(lalgo))
     endif
 
@@ -142,13 +142,13 @@ contains
     if (f1 < c0-eps .or. f1 > c1+eps .or. &
          f2 < c0-eps .or. f2 > c1+eps .or. &
          abs(f1+f2-c1) > eps) then
-       if (debug > 0) write(s_logunit,F01) 'ERROR: illegal tInterp values ',f1,f2
+       if (debug > 0) write(logunit,F01) 'ERROR: illegal tInterp values ',f1,f2
        call shr_sys_abort(subName//' illegal tInterp values ')
     endif
 
     if (debug > 0) then
-       write(s_logunit,F03) 'DEBUG: algo,D1,S1,Din,Sin,D2,S2=',trim(lAlgo),D1,S1,Din,Sin,D2,S2
-       write(s_logunit,F01) 'DEBUG: algo,f1,f2= '//trim(lAlgo),f1,f2
+       write(logunit,F03) 'DEBUG: algo,D1,S1,Din,Sin,D2,S2=',trim(lAlgo),D1,S1,Din,Sin,D2,S2
+       write(logunit,F01) 'DEBUG: algo,f1,f2= '//trim(lAlgo),f1,f2
     endif
 
   end subroutine shr_tInterp_getFactors

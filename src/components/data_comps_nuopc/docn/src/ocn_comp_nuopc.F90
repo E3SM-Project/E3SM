@@ -12,7 +12,6 @@ module ocn_comp_nuopc
   use NUOPC_Model      , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model      , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model      , only : NUOPC_ModelGet
-  use shr_file_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_kind_mod     , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
@@ -192,7 +191,6 @@ contains
     ! local variables
     integer           :: inst_index         ! number of current instance (ie. 1)
     character(len=CL) :: cvalue             ! temporary
-    integer           :: shrlogunit         ! original log unit
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
     logical           :: exists             ! check for file existence  
@@ -211,7 +209,7 @@ contains
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
-         logunit, shrlogunit, rc=rc)
+         logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine namelist filename
@@ -316,9 +314,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
-
   end subroutine InitializeAdvertise
 
   !===============================================================================
@@ -340,7 +335,6 @@ contains
     integer                 :: current_day  ! model day
     integer                 :: current_tod  ! model sec into model date
     character(CL)           :: cvalue       ! temporary
-    integer                 :: shrlogunit   ! original log unit
     integer                 :: n,k          ! generic counters
     real(r8), allocatable   :: rmask(:)
     type(file_desc_t)       :: pioid
@@ -352,10 +346,6 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (logUnit)
 
     ! TODO: need a check that the mask file has the same grid as the model mesh
 
@@ -404,9 +394,6 @@ contains
     call dshr_state_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Reset shr logging to original values
-    call shr_file_setLogUnit (shrlogunit)
-
    end subroutine InitializeRealize
 
   !===============================================================================
@@ -423,7 +410,6 @@ contains
     type(ESMF_Alarm)        :: alarm
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_Time)         :: currTime, nextTime
-    integer                 :: shrlogunit    ! original log unit
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
@@ -437,10 +423,6 @@ contains
     rc = ESMF_SUCCESS
 
     call memcheck(subname, 5, my_task == master_task)
-
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (logunit)
 
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -491,8 +473,6 @@ contains
        call dshr_log_clock_advance(clock, 'docn', logunit, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-
-    call shr_file_setLogUnit (shrlogunit)
 
   end subroutine ModelAdvance
 
