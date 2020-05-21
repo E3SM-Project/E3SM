@@ -254,7 +254,7 @@ class GenericXML(object):
         """
         This is the critical function, its interface and performance are crucial.
 
-        You can specify attributes={key:None} if you want to select chilren
+        You can specify attributes={key:None} if you want to select children
         with the key attribute but you don't care what its value is.
         """
         root = root if root is not None else self.root
@@ -292,6 +292,14 @@ class GenericXML(object):
 
     def get_optional_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
+        if len(children) > 1:
+            # see if we can reduce to 1 based on attribute counts
+            if not attributes:
+                children = [c for c in children if not c.xml_element.attrib]
+            else:
+                attlen = len(attributes)
+                children = [c for c in children if len(c.xml_element.attrib) == attlen]
+
         expect(len(children) <= 1, err_msg if err_msg else "Multiple matches for name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
         return children[0] if children else None
 
