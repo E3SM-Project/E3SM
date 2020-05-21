@@ -1111,7 +1111,8 @@ contains
 
              call t_startf(trim(lstr)//trim(timname)//'_tint')
              call shr_tInterp_getFactors(sdat%pstrm(ns)%ymdlb, sdat%pstrm(ns)%todlb, sdat%pstrm(ns)%ymdub, sdat%pstrm(ns)%todub, &
-                  ymdmod(ns), todmod, flb, fub, calendar=sdat%stream(ns)%calendar, algo=trim(sdat%stream(ns)%tinterpalgo), rc=rc)
+                  ymdmod(ns), todmod, flb, fub, calendar=sdat%stream(ns)%calendar, logunit=sdat%logunit, &
+                  algo=trim(sdat%stream(ns)%tinterpalgo), rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              if (debug > 0) then
                 write(logunit,F01) trim(subname),' interp = ',ns,flb,fub
