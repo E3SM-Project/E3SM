@@ -286,9 +286,9 @@ class GenericXML(object):
         return children
 
     def get_child(self, name=None, attributes=None, root=None, err_msg=None):
-        children = self.get_children(root=root, name=name, attributes=attributes)
-        expect(len(children) == 1, err_msg if err_msg else "Expected one child, found {} with name '{}' and attribs '{}' in file {}".format(len(children), name, attributes, self.filename))
-        return children[0]
+        child = self.get_optional_child(root=root, name=name, attributes=attributes, err_msg=err_msg)
+        expect(child, err_msg if err_msg else "Expected one child, found None with name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
+        return child
 
     def get_optional_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
