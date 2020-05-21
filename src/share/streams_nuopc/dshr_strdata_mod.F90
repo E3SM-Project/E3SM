@@ -166,7 +166,7 @@ contains
 
     ! Initialize sdat streams (read xml file for streams)
     masterproc = (sdat%my_task == master_task)
-    call shr_stream_init_from_xml(xmlfilename, sdat%stream, masterproc, rc=rc)
+    call shr_stream_init_from_xml(xmlfilename, sdat%stream, masterproc, logunit, rc=rc)
     sdat%nstreams = size(sdat%stream)
     allocate(sdat%pstrm(sdat%nstreams))
 
@@ -237,7 +237,7 @@ contains
     ! Initialize sdat stream (the following call will allocate the memory for sdat%stream)
     call shr_stream_init_from_inline(sdat%stream, stream_meshfile, &
          stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
-         stream_fldlistFile, stream_fldListModel, stream_fileNames)
+         stream_fldlistFile, stream_fldListModel, stream_fileNames, logunit)
 
     ! Initialize sdat model domain
     sdat%model_mesh = model_mesh
