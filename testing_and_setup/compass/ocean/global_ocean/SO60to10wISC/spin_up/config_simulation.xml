@@ -31,6 +31,7 @@
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
 
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 	</streams>
 

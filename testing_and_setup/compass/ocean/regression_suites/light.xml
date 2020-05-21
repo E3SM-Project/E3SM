@@ -1,4 +1,4 @@
-<regression_suite name="nightly_ocean_test_suite">
+<regression_suite name="light_test_suite">
 	<test name="Periodic Planar 20km - LIGHT particle general test" core="ocean" configuration="periodic_planar" resolution="20km" test="default_light">
 		<script name="run_test.py"/>
 	</test>

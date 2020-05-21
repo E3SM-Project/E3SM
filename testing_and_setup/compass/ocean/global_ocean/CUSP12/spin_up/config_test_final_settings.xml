@@ -33,10 +33,8 @@
 			<attribute name="output_interval">00-01-00_00:00:00</attribute>
 		</stream>
 
-		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
-
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">

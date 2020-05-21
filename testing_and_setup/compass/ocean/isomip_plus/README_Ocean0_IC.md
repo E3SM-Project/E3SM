@@ -130,7 +130,7 @@ echo "Setting up grizzly intel environment for building and running MPAS"
 module purge
 module load git
 source /usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base/etc/profile.d/conda.sh
-conda activate compass_py3.7
+conda activate compass_0.1.5
 module use /usr/projects/climate/SHARED_CLIMATE/modulefiles/all/
 module load intel/17.0.1 openmpi/1.10.5 netcdf/4.4.1 parallel-netcdf/1.5.0 pio/1.7.2
 export CORE=ocean
@@ -147,7 +147,7 @@ new viz tools.  This is based off of the latest `ocean/develop`. In general,
 `ocean/develop` is the place to start, since the `master`  branch is updated only 
 rarely when we make releases:
 ```bash
-cd /usr/projects/climate/cbegeman/mpas/model/reop
+cd /usr/projects/climate/cbegeman/mpas/model/repo
 ```
 Let's make sure we have the latest version of all the branches on all of the remotes
 ```bash
@@ -173,8 +173,9 @@ Now source the file with modules and settings for building MPAS on grizzly:
 ```bash
 source ../../setup_gr.bash
 ```
-If all goes well, you should see `comapss_py3.7` as part of your command prompt and you should be read to build MPAS.
+If all goes well, you should see `comapss_0.1.5` as part of your command prompt and you should be read to build MPAS.
 ```bash
+git submodule update --init --recursive
 make ifort
 ```
 Take a coffee break, this will take some time.
@@ -274,7 +275,7 @@ salloc --nodes=1 --time=0:20:00 --account=e3sm
 
 module purge
 source /usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base/etc/profile.d/conda.sh
-conda activate compass_py3.7
+conda activate compass_0.1.5
 module use /usr/projects/climate/SHARED_CLIMATE/modulefiles/all/
 module load intel/17.0.1 openmpi/1.10.5 netcdf/4.4.1 parallel-netcdf/1.5.0 pio/1.7.2
 
@@ -307,7 +308,7 @@ set -e
 
 module purge
 source /usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base/etc/profile.d/conda.sh
-conda activate compass_py3.7
+conda activate compass_0.1.5
 module use /usr/projects/climate/SHARED_CLIMATE/modulefiles/all/
 module load intel/17.0.1 openmpi/1.10.5 netcdf/4.4.1 parallel-netcdf/1.5.0 pio/1.7.2
 
@@ -363,7 +364,7 @@ it contains a `__init__.py` (which is empty) and a `__main__.py`, which is the m
 with, we'll run the default viz.  If you don't already have the compass conda environment loaded, do:
 ```bash
 source /usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base/etc/profile.d/conda.sh
-conda activate compass_py3.7
+conda activate compass_0.1.5
 ```
 Then, run:
 ```bash

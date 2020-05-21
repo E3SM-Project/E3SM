@@ -10,13 +10,33 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 import numpy as np
+import xml.etree.ElementTree as ET
+import pkg_resources
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
-plt.switch_backend('agg')
 
 
 ##########################################################################
 # Functions
 ##########################################################################
+
+
+def register_sci_viz_colormaps():
+    """Register all SciVisColor colormaps with matplotlib"""
+
+    for mapName in ['3wave-yellow-grey-blue', '3Wbgy5',
+                    '4wave-grey-red-green-mgreen', '5wave-yellow-brown-blue',
+                    'blue-1', 'blue-3', 'blue-6', 'blue-8', 'blue-orange-div',
+                    'brown-2', 'brown-5', 'brown-8', 'green-1', 'green-4',
+                    'green-7', 'green-8', 'orange-5', 'orange-6',
+                    'orange-green-blue-gray', 'purple-7', 'purple-8', 'red-1',
+                    'red-3', 'red-4', 'yellow-1', 'yellow-7']:
+
+        xmlFile = pkg_resources.resource_filename(
+            __name__, 'SciVisColorColormaps/{}.xml'.format(mapName))
+        _read_xml_colormap(xmlFile, mapName)
 
 
 def mergeCellWidthVsLat(
@@ -65,74 +85,72 @@ def mergeCellWidthVsLat(
     return cellWidthOut
 
 
-def EC_CellWidthVsLat(lat):
-    '''
-    EC_CellWidthVsLat - Create Eddy Closure spacing as a function of lat.
-    This is inted as part of the workflow to make an MPAS global mesh.
+def EC_CellWidthVsLat(lat, cellWidthEq=30.0, cellWidthMidLat=60.0,
+                      cellWidthPole=35.0, latPosEq=15.0, latPosPole=73.0,
+                      latTransition=40.0, latWidthEq=6.0, latWidthPole=9.0):
+    """
+    Create Eddy Closure spacing as a function of lat. This is intended as part
+    of the workflow to make an MPAS global mesh.
 
-    Syntax: cellWidthOut = EC_CellWidthVsLat(lat, cellWidthEq, cellWidthMidLat, cellWidthPole,
-                                             latPosEq, latPosPole, latTransition,
-                                             latWidthEq, latWidthPole)
-    Inputs:
-       lat - vector of length n, with entries between -90 and 90, degrees
+    Parameters
+    ----------
+    lat : numpy.ndarray
+       vector of length n, with entries between -90 and 90, degrees
 
-    Optional inputs:
-       Default values for Cell width, km
-       cellWidthEq = 30.0 # Eq is equatorial lat
-       cellWidthMidLat = 60.0 # MidLat is mid lat
-       cellWidthPole = 35.0 # Pole is polar lat
+    cellWidthEq : float, optional
+       Cell width in km at the equator
 
-       Default values for lat positions in degrees
-       latPosEq = 15.0 # position of center of transition region
-       latPosPole = 73.0 # position of center of transition region
-       latTransition = 40 # lat to change from Eq to Pole function
-       latWidthEq = 6.0 # width of transition region
-       latWidthPole = 9.0 # width of transition region
+    cellWidthMidLat : float, optional
+       Cell width in km at mid latitudes
 
-    Outputs:
-       cellWidthOut - vector of length n, entrie are cell width as a function of lat
+    cellWidthPole : float, optional
+       Cell width in km at the poles
 
-    Example:
-       EC60to30 = EC_CellWidthVsLat(lat)
-       EC120to60 = EC_CellWidthVsLat(lat,60,120,70)
-    '''
+    latPosEq : float, optional
+       Latitude in degrees of center of the equatorial transition region
 
-    # Default values for Cell width, km
-    cellWidthEq = 30.0  # Eq is equatorial lat
-    cellWidthMidLat = 60.0  # MidLat is mid lat
-    cellWidthPole = 35.0  # Pole is polar lat
+    latPosPole : float, optional
+       Latitude in degrees of center of the polar transition region
 
-    # Default values for lat positions in degrees
-    latPosEq = 15.0  # position of center of transition region
-    latPosPole = 73.0  # position of center of transition region
-    latTransition = 40  # lat to change from Eq to Pole function
-    latWidthEq = 6.0  # width of transition region
-    latWidthPole = 9.0  # width of transition region
+    latTransition : float, optional
+       Latitude in degrees of the change from equatorial to polar function
 
-    # try
-    #  cellWidthEq =     varargin{1} #
-    #  cellWidthMidLat = varargin{2} #
-    #  cellWidthPole =   varargin{3} #
-    #  latPosEq =        varargin{4} #
-    #  latPosPole =      varargin{5} #
-    #  latTransition =   varargin{6} #
-    #  latWidthEq =      varargin{7} #
-    #  latWidthPole =    varargin{8} #
+    latWidthEq : float, optional
+       Width in degrees latitude of the equatorial transition region
+
+    latWidthPole : float, optional
+       Width in degrees latitude of the polar transition region
+
+    Returns
+    -------
+
+    cellWidthOut : numpy.ndarray
+         1D array of same length as ``lat`` with entries that are cell width as
+         a function of lat
+
+    Examples
+    --------
+    Default
+
+    >>> EC60to30 = EC_CellWidthVsLat(lat)
+
+    Half the default resolution:
+
+    >>> EC120to60 = EC_CellWidthVsLat(lat, cellWidthEq=60., cellWidthMidLat=120., cellWidthPole=70.)
+    """
 
     minCellWidth = min(cellWidthEq, min(cellWidthMidLat, cellWidthPole))
     densityEq = (minCellWidth / cellWidthEq)**4
     densityMidLat = (minCellWidth / cellWidthMidLat)**4
     densityPole = (minCellWidth / cellWidthPole)**4
-    densityEC = np.zeros(lat.shape)
-    cellWidthOut = np.zeros(lat.shape)
-    for j in range(lat.size):
-        if np.abs(lat[j]) < latTransition:
-            densityEC[j] = ((densityEq - densityMidLat) * (1.0 + np.tanh(
-                (latPosEq - np.abs(lat[j])) / latWidthEq)) / 2.0) + densityMidLat
-        else:
-            densityEC[j] = ((densityMidLat - densityPole) * (1.0 + np.tanh(
-                (latPosPole - np.abs(lat[j])) / latWidthPole)) / 2.0) + densityPole
-        cellWidthOut[j] = minCellWidth / densityEC[j]**0.25
+    densityEqToMid = ((densityEq - densityMidLat) * (1.0 + np.tanh(
+        (latPosEq - np.abs(lat)) / latWidthEq)) / 2.0) + densityMidLat
+    densityMidToPole = ((densityMidLat - densityPole) * (1.0 + np.tanh(
+        (latPosPole - np.abs(lat)) / latWidthPole)) / 2.0) + densityPole
+    mask = np.abs(lat) < latTransition
+    densityEC = np.array(densityMidToPole)
+    densityEC[mask] = densityEqToMid[mask]
+    cellWidthOut = minCellWidth / densityEC**0.25
 
     return cellWidthOut
 
@@ -200,97 +218,31 @@ def AtlanticPacificGrid(lat, lon, cellWidthInAtlantic, cellWidthInPacific):
                     cellWidthOut[j, i] = cellWidthInAtlantic[j]
     return cellWidthOut
 
-#
-# def  circleOnGrid(lon, lat, centerLon, centerLat, radius, tanhWidth)
-# '''
-# circleOnGrid: combine two cell width distributions using a tanh function.
-# This is inted as part of the workflow to make an MPAS global mesh.
-#
-# Syntax: cellWidthOut = circleOnGrid(lat, lon, cellWidthInAtlantic, cellWidthInPacific)
-#
-# Inputs:
-#   lon - vector of length m, with entries between -180, 180, degrees
-#   lat - vector of length n, with entries between -90, 90, degrees
-#
-# Optional inputs:
-#
-# Outputs:
-#   cellWidthOut - m by n array, grid cell width on globe, km
-#
-# Example:
-#   RRS18to6 = circleOnGrid(lat,18,6)
-#
-# See also:
-# '''
-#
-# cellWidthOut = zeros(lon.size,lat.size))
-# for i in range(lon.size)
-#  for j in range(lat.size)
-#    [dist d2km]=lldistkm([centerLat, centerLon], [lat[j], lon[i]])
-#    cellWidthOut(i,j) = 0.5*(-tanh((dist - radius)/tanhWidth) + 1.0)
-#
-#
-#
-# def lldistkm(latlon1,latlon2)
-# '''
-# format: [d1km d2km]=lldistkm(latlon1,latlon2)
-# Distance:
-# d1km: distance in km based on Haversine formula
-# (Haversine: http://en.wikipedia.org/wiki/Haversine_formula)
-# d2km: distance in km based on Pythagoras theorem
-# (see: http://en.wikipedia.org/wiki/Pythagorean_theorem)
-# After:
-# http://www.movable-type.co.uk/scripts/latlong.html
-#
-# --Inputs:
-#  latlon1: latlon of origin point [lat lon]
-#  latlon2: latlon of destination point [lat lon]
-#
-# --Outputs:
-#  d1km: distance calculated by Haversine formula
-#  d2km: distance calculated based on Pythagoran theorem
-#
-# --Example 1, short distance:
-#  latlon1=[-43 172]
-#  latlon2=[-44  171]
-#  [d1km d2km]=distance(latlon1,latlon2)
-#  d1km =
-#          137.365669065197 (km)
-#  d2km =
-#          137.368179013869 (km)
-#  d1km approximately equal to d2km
-#
-# --Example 2, longer distance:
-#  latlon1=[-43 172]
-#  latlon2=[20  -108]
-#  [d1km d2km]=distance(latlon1,latlon2)
-#  d1km =
-#          10734.8931427602 (km)
-#  d2km =
-#          31303.4535270825 (km)
-#  d1km is significantly different from d2km (d2km is not able to work
-#  for longer distances).
-#
-# First version: 15 Jan 2012
-# Updated: 17 June 2012
-# --------------------------------------------------------------------------
-# '''
-#
-# radius=6371
-# lat1=latlon1(1)*pi/180
-# lat2=latlon2(1)*pi/180
-# lon1=latlon1(2)*pi/180
-# lon2=latlon2(2)*pi/180
-# deltaLat=lat2-lat1
-# deltaLon=lon2-lon1
-#a=sin((deltaLat)/2)^2 + cos(lat1)*cos(lat2) * sin(deltaLon/2)^2
-# c=2*atan2(sqrt(a),sqrt(1-a))
-# d1km=radius*c #    Haversine distance
-#
-# x=deltaLon*cos((lat1+lat2)/2)
-# y=deltaLat
-# d2km=radius*sqrt(x*x + y*y) # Pythagoran distance
-#
-#
+
+def _read_xml_colormap(xmlFile, mapName):
+    """Read in an XML colormap"""
+
+    xml = ET.parse(xmlFile)
+
+    root = xml.getroot()
+    colormap = root.findall('ColorMap')
+    if len(colormap) > 0:
+        colormap = colormap[0]
+        colorDict = {'red': [], 'green': [], 'blue': []}
+        for point in colormap.findall('Point'):
+            x = float(point.get('x'))
+            color = [float(point.get('r')), float(point.get('g')),
+                     float(point.get('b'))]
+            colorDict['red'].append((x, color[0], color[0]))
+            colorDict['green'].append((x, color[1], color[1]))
+            colorDict['blue'].append((x, color[2], color[2]))
+        cmap = LinearSegmentedColormap(mapName, colorDict, 256)
+
+        _register_colormap_and_reverse(mapName, cmap)
+
+
+def _register_colormap_and_reverse(mapName, cmap):
+    plt.register_cmap(mapName, cmap)
+    plt.register_cmap('{}_r'.format(mapName), cmap.reversed())
 
 ##############################################################
