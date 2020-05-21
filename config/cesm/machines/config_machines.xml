@@ -2040,8 +2040,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
       <env name="MPI_TYPE_DEPTH">16</env>
-      <env name="KMP_AFFINITY">noverbose,disabled</env>
-      <env name="KMP_SCHEDULE">static,balanced</env>
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
@@ -2094,8 +2092,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
       <env name="MPI_TYPE_DEPTH">16</env>
-      <env name="KMP_AFFINITY">noverbose,disabled</env>
-      <env name="KMP_SCHEDULE">static,balanced</env>
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
@@ -2148,8 +2144,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
       <env name="MPI_TYPE_DEPTH">16</env>
-      <env name="KMP_AFFINITY">noverbose,disabled</env>
-      <env name="KMP_SCHEDULE">static,balanced</env>
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
@@ -2202,8 +2196,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_GROUP_MAX">1024</env>
       <env name="MPI_TYPE_MAX">100000</env>
       <env name="MPI_TYPE_DEPTH">16</env>
-      <env name="KMP_AFFINITY">noverbose,disabled</env>
-      <env name="KMP_SCHEDULE">static,balanced</env>
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
