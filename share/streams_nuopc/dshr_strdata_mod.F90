@@ -78,7 +78,7 @@ module dshr_strdata_mod
      type(ESMF_FieldBundle)              :: fldbun_model                    ! stream n field bundle for model time (model grid)
      type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:)       ! field bundle for stream n for all time slices for stream
      integer                             :: ustrm                           ! index of vector u in stream
-     integer                             :: vstrm                           ! index of vector v in stream 
+     integer                             :: vstrm                           ! index of vector v in stream
      integer                             :: ymdLB = -1                      ! stream ymd lower bound
      integer                             :: todLB = -1                      ! stream tod lower bound
      integer                             :: ymdUB = -1                      ! stream ymd upper bound
@@ -134,7 +134,7 @@ contains
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
     character(len=*)           , intent(in)    :: xmlfilename
-    type(ESMF_Mesh)            , intent(inout) :: model_mesh
+    type(ESMF_Mesh)            , intent(in)    :: model_mesh
     type(ESMF_Clock)           , intent(in)    :: clock
     integer                    , intent(in)    :: mpicom
     integer                    , intent(in)    :: compid
@@ -209,7 +209,7 @@ contains
     character(len=*)       , intent(in)    :: stream_fldlistModel(:)
     character(len=*)       , intent(in)    :: stream_fileNames(:)
     integer                , intent(out)   :: rc
-    
+
     ! local variables
     integer :: ierr
     character(*),parameter  :: subName = "(shr_strdata_from_inline) "
@@ -221,7 +221,7 @@ contains
     ! Assume only 1 stream
     sdat%nstreams = 1
     allocate(sdat%pstrm(1))
-    
+
     ! Initialize sdat mpi info
     sdat%mpicom = mpicom
     call mpi_comm_rank(sdat%mpicom, sdat%my_task, ierr)
@@ -352,11 +352,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        deallocate(elemMask)
     else if (lreset_mask) then
-       allocate(elemMask(sdat%model_lsize))
-       elemMask(:) = 1._r8
-       call ESMF_MeshSet(sdat%model_mesh, elementMask=elemMask, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       deallocate(elemMask)
     end if
 
   end subroutine shr_strdata_init_model_domain
@@ -518,7 +513,7 @@ contains
 
        if (trim(sdat%stream(ns)%mapalgo) == "bilinear") then
           regridmethod = ESMF_REGRIDMETHOD_BILINEAR
-          polemethod   = ESMF_POLEMETHOD_ALLAVG 
+          polemethod   = ESMF_POLEMETHOD_ALLAVG
           ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
        else
           call shr_sys_abort('ERROR: only bilinear regriddid is supported for now')
@@ -1225,7 +1220,7 @@ contains
 
     ! input/output parameters:
     type(shr_strdata_type) , intent(in) :: sdat  ! strdata data data-type
-    character(len=*)       , intent(in) :: name   
+    character(len=*)       , intent(in) :: name
 
     ! local variables
     integer  :: ns,n
