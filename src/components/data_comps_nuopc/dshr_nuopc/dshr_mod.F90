@@ -46,6 +46,7 @@ module dshr_mod
   public
 
   public :: dshr_model_initphase
+  public :: dshr_reset_mask
   public :: dshr_init
   public :: dshr_sdat_init
   public :: dshr_create_mesh_from_grid
@@ -56,7 +57,7 @@ module dshr_mod
   public :: dshr_log_clock_advance
   public :: dshr_state_getscalar
   public :: dshr_state_setscalar
-
+  public :: dshr_mesh_init
   private :: dshr_alarm_init
   private :: dshr_time_init
 
@@ -220,9 +221,9 @@ contains
   end subroutine dshr_init
 
   !===============================================================================
-  subroutine dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, compname, &
-       model_meshfile, model_maskfile, model_mesh, read_restart, sdat, &
-       reset_mask, model_createmesh_fromfile, rc)
+  subroutine dshr_mesh_init(gcomp, compid, logunit, compname, &
+       model_meshfile, model_maskfile, model_mesh, read_restart,  &
+       model_createmesh_fromfile, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat
@@ -230,8 +231,6 @@ contains
 
     ! input/output variables
     type(ESMF_GridComp), intent(inout)         :: gcomp
-    type(ESMF_Clock)           , intent(in)    :: clock
-    character(len=*)           , intent(in)    :: xmlfilename ! for shr_strdata_nml namelist
     integer                    , intent(in)    :: logunit
     character(len=*)           , intent(in)    :: compname
     integer                    , intent(out)   :: compid
@@ -239,8 +238,6 @@ contains
     character(len=*)           , intent(in)    :: model_maskfile
     type(ESMF_Mesh)            , intent(out)   :: model_mesh
     logical                    , intent(out)   :: read_restart
-    type(shr_strdata_type)     , intent(inout) :: sdat
-    logical         , optional , intent(in)    :: reset_mask
     character(len=*), optional , intent(in)    :: model_createmesh_fromfile
     integer                    , intent(out)   :: rc
 
@@ -325,23 +322,60 @@ contains
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
     end if
-
     if (my_task == master_task) then
        write(logunit,F00) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(model_meshfile)
     end if
+  end subroutine dshr_mesh_init
+
+  subroutine dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
+       mpicom, compid, logunit, rc)
+
+    type(shr_strdata_type)     , intent(inout) :: sdat
+    character(len=*)           , intent(in)    :: xmlfilename ! for shr_strdata_nml namelist
+    type(ESMF_Mesh)            , intent(in)    :: model_mesh
+    character(len=*)           , intent(in)    :: model_meshfile
+    character(len=*)           , intent(in)    :: model_maskfile
+    type(ESMF_Clock)           , intent(in)    :: clock
+    integer                    , intent(in)    :: logunit
+    integer                    , intent(out)   :: compid
+    integer                    , intent(in)    :: mpicom
+    integer                    , intent(out)   :: rc
+
     ! Initialize sdat from data model input files
     if (trim(model_meshfile) == trim(model_maskfile)) then
        ! do not read in a separate mask
-       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
-            reset_mask=reset_mask, rc=rc)
+       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     else
        call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
-            reset_mask=reset_mask, model_maskfile=model_maskfile, rc=rc)
+            model_maskfile=model_maskfile, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
   end subroutine dshr_sdat_init
+
+  ! Reset all elements of model_mesh to 1
+  subroutine dshr_reset_mask(mesh, rc)
+    use ESMF, only : ESMF_MeshGet, ESMF_DistGridGet, ESMF_MeshSet, ESMF_SUCCESS, ESMF_Mesh, ESMF_DistGrid
+    type(ESMF_Mesh), intent(inout) :: mesh
+    type(ESMF_DistGrid) :: distGrid
+    integer, allocatable  :: elemMask(:)
+    integer :: lsize, rc
+    rc = ESMF_SUCCESS
+
+    call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    print *,__FILE__,__LINE__,lsize
+
+    allocate(elemMask(lsize))
+    elemMask(:) = 1._r8
+    call ESMF_MeshSet(mesh, elementMask=elemMask, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    deallocate(elemMask)
+  end subroutine dshr_reset_mask
+
 
   !===============================================================================
   subroutine dshr_create_mesh_from_grid(filename, mesh, rc)

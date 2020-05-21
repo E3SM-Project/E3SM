@@ -25,7 +25,7 @@ module ocn_comp_nuopc
   use dshr_strdata_mod , only : shr_strdata_get_stream_pointer
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_restart_read, dshr_restart_write
+  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_reset_mask, dshr_mesh_init
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -72,7 +72,7 @@ module ocn_comp_nuopc
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
   character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
-  real(R8)                     :: sst_constant_value                  ! sst constant value  
+  real(R8)                     :: sst_constant_value                  ! sst constant value
   integer                      :: aquap_option                        ! if aqua-planet mode, option to use
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
   character(CL)                :: restfils = nullstr                  ! stream restart file namelist
@@ -193,7 +193,7 @@ contains
     character(len=CL) :: cvalue             ! temporary
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
-    logical           :: exists             ! check for file existence  
+    logical           :: exists             ! check for file existence
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     character(*)    ,parameter :: F00 = "('(ocn_comp_nuopc) ',8a)"
     character(*)    ,parameter :: F01 = "('(ocn_comp_nuopc) ',a,2x,i8)"
@@ -341,7 +341,6 @@ contains
     type(var_desc_t)        :: varid
     type(io_desc_t)         :: pio_iodesc
     integer                 :: rcode
-    logical                 :: reset_mask
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -352,12 +351,14 @@ contains
     ! Initialize sdat
     call t_startf('docn_strdata_init')
     xmlfilename = 'docn.streams.xml'
+    call dshr_mesh_init(gcomp, compid, logunit, 'ocn', model_meshfile, model_maskfile, model_mesh, &
+         read_restart, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-       call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ocn', &
-            model_meshfile, model_maskfile, model_mesh, read_restart, sdat, reset_mask=.true.,  rc=rc)
+       call dshr_reset_mask(model_mesh, rc=rc)
     else
-       call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ocn', &
-            model_meshfile, model_maskfile, model_mesh, read_restart, sdat,  rc=rc)
+       call dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
+            mpicom, compid, logunit, rc=rc)
     end if
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_init')
@@ -595,7 +596,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! -------------------------------------
-    ! Determine ocean fraction 
+    ! Determine ocean fraction
     ! -------------------------------------
 
     ! Set pointers to exportState fields that have no corresponding stream field
@@ -603,12 +604,12 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Obtain the ocean fraction (So_omask)
-    if (trim(model_maskfile) /= trim(model_meshfile)) then 
+    if (trim(model_maskfile) /= trim(model_meshfile)) then
        ! TODO: check that the variable 'frac' is on the file and if not abort
        ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
        rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid, 'frac', varid) 
+       rcode = pio_inq_varid(pioid, 'frac', varid)
        call pio_initdecomp(sdat%pio_subsystem, pio_double, (/nx_global, ny_global/), sdat%model_gindex, pio_iodesc)
        call pio_read_darray(pioid, varid, pio_iodesc, So_omask, rcode)
        call pio_closefile(pioid)
