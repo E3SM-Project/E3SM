@@ -1841,6 +1841,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
+  <CXXFLAGS>
+      <append> -O3 --std=c++14 </append>
+  </CXXFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
