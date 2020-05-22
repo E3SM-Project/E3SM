@@ -377,7 +377,6 @@ This allows using a different mpirun command to launch unit tests
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="labelstdout">-p "%g:"</arg>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
@@ -417,20 +416,10 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables>
       <env name="MODULEPATH">/glade/u/apps/dav/modulefiles/default/compilers:/glade/u/apps/dav/modulefiles/default/idep</env>
       <env name="OMP_STACKSIZE">256M</env>
-      <env name="TMPDIR">/glade/scratch/$USER</env>
-      <env name="MPI_TYPE_DEPTH">16</env>
+      <env name="TMPDIR">/glade/scratch/$USER</env> 
       <env name="CESMDATAROOT">/glade/p/cesmdata/cseg</env>
       <env name="NETCDF_PATH">/glade/u/apps/dav/opt/netcdf-mpi/4.7.3/openmpi/3.1.4/pgi/19.9</env>
-      <env name="MPI_IB_CONGESTED">1</env>
-      <env name="MPI_USE_ARRAY"/>
-    </environment_variables>
-    <environment_variables unit_testing="true">
-      <env name="MPI_USE_ARRAY">false</env>
-    </environment_variables>
-    <environment_variables queue="share">
-      <env name="TMPDIR">/glade/scratch/$USER</env>
-      <env name="MPI_USE_ARRAY">false</env>
-    </environment_variables>
+    </environment_variables> 
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
