@@ -1,0 +1,7 @@
+<template>
+	<namelist>
+		<option name="config_dt">'00:02:00'</option>
+		<option name="config_btr_dt">'00:00:06'</option>
+		<option name="config_mom_del2">10.0</option>
+	</namelist>
+</template>

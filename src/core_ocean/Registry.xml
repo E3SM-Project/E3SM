@@ -444,7 +444,7 @@
 		/>
 	</nml_record>
 	<nml_record name="cvmix" mode="forward">
-		<nml_option name="config_use_cvmix" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix" type="logical" default_value=".true." units="NA"
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
 					possible_values="True or False"
 		/>

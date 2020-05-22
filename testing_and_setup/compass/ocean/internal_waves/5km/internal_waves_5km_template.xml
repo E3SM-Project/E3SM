@@ -11,11 +11,10 @@
 		<option name="config_time_integrator">'split_explicit'</option>
 		<option name="config_use_mom_del2">.true.</option>
 		<option name="config_mom_del2">10.0</option>
-		<option name="config_convective_visc">1.0</option>
-		<option name="config_convective_diff">1.0</option>
 		<option name="config_implicit_bottom_drag_coeff">1.0e-2</option>
-		<option name="config_use_const_visc">.true.</option>
-		<option name="config_vert_visc">1.0e-4</option>
+		<option name="config_use_cvmix_background">.true.</option>
+		<option name="config_use_cvmix_convection">.true.</option>
+		<option name="config_cvmix_background_viscosity">1.0e-4</option>
 	</namelist>
 
 	<streams>
