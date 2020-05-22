@@ -62,8 +62,14 @@ set (EKAT_POSSIBLY_NO_PACK_SIZE ${DEFAULT_POSSIBLY_NO_PACK_SIZE})
 ############################
 
 # This is the only way to expose ekat's include dirs to host projects (if any)
-set (EKAT_INCLUDE_DIRS 
-    "${EKAT_SOURCE_DIR}/src;${EKAT_BINARY_DIR};${EKAT_BINARY_DIR}/src/ekat/ekat_f90_modules" CACHE INTERNAL "EKAT library include dirs")
+set (EKAT_INCLUDE_DIRS_LIST
+  ${EKAT_SOURCE_DIR}/src
+  ${EKAT_BINARY_DIR}
+  ${EKAT_BINARY_DIR}/src/ekat/ekat_f90_modules
+  ${EKAT_TPL_INCLUDE_DIRS}
+)
+
+set (EKAT_INCLUDE_DIRS "${EKAT_INCLUDE_DIRS_LIST}" CACHE INTERNAL "EKAT library include dirs")
 
 add_subdirectory(src/ekat)
 
