@@ -528,6 +528,7 @@ contains
 
               ! averaging over a surface layer assuming that BLdepth is cell bottom
               ! Build deltaVelocitySquared
+              areaSum = 0.0_RKIND
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
                  factor = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
@@ -556,7 +557,8 @@ contains
 
               do kIndexOBL = 1, maxLevelCell(iCell)
                 ! !compute shear contribution assuming BLdepth is cell bottom
-                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL) / areaSum, 1.0e-15_RKIND)
+                !Note that the factor of two is from averaging dot products to cell centers on a C-grid
+                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(2.0_RKIND*deltaVelocitySquared(kIndexOBL) / areaSum, 1.0e-15_RKIND)
 
                 bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
                                   - potentialDensitySum(surfaceAverageIndex(kIndexOBL)) &
