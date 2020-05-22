@@ -735,12 +735,13 @@ contains
            shearSquared = 0.0_RKIND
            do i = 1, nEdgesOnCell(iCell)
              iEdge = edgesOnCell(i, iCell)
-             factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+             factor = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
              areaSum = areaSum + factor
              delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
              shearSquared = shearSquared + factor * delU2
            enddo
-           shearMean = sqrt(shearSquared / areaSum)
+           !Note that the factor of two is from averaging dot product to cell center on a C-grid
+           shearMean = sqrt(2.0_RKIND*shearSquared / areaSum)
            shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
            RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
           end do
@@ -1523,7 +1524,8 @@ contains
         surfaceStressMagnitude(iCell) = sqrt(deltaVelocitySquared / areaSum)
 
        ! compute surface friction velocity
-         surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
+       ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
+         surfaceFrictionVelocity(iCell) = sqrt(2.0_RKIND*surfaceStressMagnitude(iCell) / rho_sw)
 
 
       enddo
