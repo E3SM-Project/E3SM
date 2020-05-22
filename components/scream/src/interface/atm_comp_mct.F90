@@ -173,13 +173,14 @@ CONTAINS
     ! Initialize pio
     !----------------------------------------------------------------------------
     print *, 'EAM_INIT_PIO'
-    call eam_init_pio(mpicom_atm,compid,2,22)
-    call eam_h_define(2, (/ 20, 0 /), (/ "x", "t" /))
+!    call eam_init_pio(mpicom_atm,compid,2,22)
+!    call eam_h_define(2, (/ 20, 0 /), (/ "x", "t" /))
  
     call pioExInst%init(mpicom_atm)
     call pioExInst%createDecomp()
     call pioExInst%createFile()
     call pioExInst%defineVar()
+    call pioExInst%writeVar(0)
     print *, 'EAM_INIT_PIO - DONE'
 
   end subroutine atm_init_mct

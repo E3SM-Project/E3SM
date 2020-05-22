@@ -208,6 +208,7 @@ contains
 
         this%ista = this%myRank * this%arrIdxPerPe + 1
         this%isto = this%ista + (this%arrIdxPerPe - 1)
+        if (this%myRank == this%ntasks-1) this%isto = LEN
 
         allocate(this%compdof(this%ista:this%isto))
         allocate(this%dataBuffer(this%ista:this%isto))

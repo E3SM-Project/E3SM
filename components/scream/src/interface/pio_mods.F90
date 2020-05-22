@@ -7,7 +7,8 @@ module pio_mods
         pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
         PIO_double
     use pio_kinds,  only : PIO_OFFSET_KIND, i4 
-    use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid
+    use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
+                           PIO_inq_dimlen
     use piodarray,  only : PIO_write_darray, PIO_read_darray 
     use pionfatt_mod, only : PIO_put_att   => put_att
 
