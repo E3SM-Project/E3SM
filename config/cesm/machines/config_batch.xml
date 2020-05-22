@@ -219,7 +219,6 @@
       <arg flag="--gres=gpu:v100:4"/>
       <arg flag="--account" name="$PROJECT"/>
       <arg flag="--mem=0"/>
-      <arg flag="--reservation=NTDD0002"/>
       <arg flag="--export=MODULEPATH=/glade/u/apps/dav/modulefiles/default/compilers:/glade/u/apps/dav/modulefiles/default/idep"/>
     </submit_args>
     <queues>
