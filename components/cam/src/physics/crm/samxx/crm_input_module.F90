@@ -1,31 +1,45 @@
 module crm_input_module
-   use params, only: crm_rknd, crm_iknd
+   use params, only: crm_rknd
+#ifdef MODAL_AERO
+   use modal_aero_data, only: ntot_amode
+#endif
    implicit none
    private
    public crm_input_type
    type crm_input_type
 
-      real(crm_rknd), pointer, contiguous :: zmid(:,:)           ! Global grid height (m)
-      real(crm_rknd), pointer, contiguous :: zint(:,:)           ! Global grid interface height (m)
-      real(crm_rknd), pointer, contiguous :: tl(:,:)             ! Global grid temperature (K)
-      real(crm_rknd), pointer, contiguous :: ql(:,:)             ! Global grid water vapor (g/g)
-      real(crm_rknd), pointer, contiguous :: qccl(:,:)           ! Global grid cloud liquid water (g/g)
-      real(crm_rknd), pointer, contiguous :: qiil(:,:)           ! Global grid cloud ice (g/g)
-      real(crm_rknd), pointer, contiguous :: ps(:)               ! Global grid surface pressure (Pa)
-      real(crm_rknd), pointer, contiguous :: pmid(:,:)           ! Global grid pressure (Pa)
-      real(crm_rknd), pointer, contiguous :: pint(:,:)           ! Global grid pressure (Pa)
-      real(crm_rknd), pointer, contiguous :: pdel(:,:)           ! Layer's pressure thickness (Pa)
-      real(crm_rknd), pointer, contiguous :: phis(:)             ! Global grid surface geopotential (m2/s2)
-      real(crm_rknd), pointer, contiguous :: ul(:,:)             ! Global grid u (m/s)
-      real(crm_rknd), pointer, contiguous :: vl(:,:)             ! Global grid v (m/s)
-      real(crm_rknd), pointer, contiguous :: ocnfrac(:)          ! area fraction of the ocean
-      real(crm_rknd), pointer, contiguous :: tau00  (:)          ! large-scale surface stress (N/m2)
-      real(crm_rknd), pointer, contiguous :: wndls  (:)          ! large-scale surface wind (m/s)
-      real(crm_rknd), pointer, contiguous :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
-      real(crm_rknd), pointer, contiguous :: fluxu00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), pointer, contiguous :: fluxv00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), pointer, contiguous :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
-      real(crm_rknd), pointer, contiguous :: fluxq00(:)          ! surface latent heat fluxes [ kg/(m2 s)]
+      real(crm_rknd), allocatable :: zmid(:,:)           ! Global grid height (m)
+      real(crm_rknd), allocatable :: zint(:,:)           ! Global grid interface height (m)
+      real(crm_rknd), allocatable :: tl(:,:)             ! Global grid temperature (K)
+      real(crm_rknd), allocatable :: ql(:,:)             ! Global grid water vapor (g/g)
+      real(crm_rknd), allocatable :: qccl(:,:)           ! Global grid cloud liquid water (g/g)
+      real(crm_rknd), allocatable :: qiil(:,:)           ! Global grid cloud ice (g/g)
+      real(crm_rknd), allocatable :: ps(:)               ! Global grid surface pressure (Pa)
+      real(crm_rknd), allocatable :: pmid(:,:)           ! Global grid pressure (Pa)
+      real(crm_rknd), allocatable :: pint(:,:)           ! Global grid pressure (Pa)
+      real(crm_rknd), allocatable :: pdel(:,:)           ! Layer's pressure thickness (Pa)
+      real(crm_rknd), allocatable :: phis(:)             ! Global grid surface geopotential (m2/s2)
+      real(crm_rknd), allocatable :: ul(:,:)             ! Global grid u (m/s)
+      real(crm_rknd), allocatable :: vl(:,:)             ! Global grid v (m/s)
+      real(crm_rknd), allocatable :: ocnfrac(:)          ! area fraction of the ocean
+      real(crm_rknd), allocatable :: tau00  (:)          ! large-scale surface stress (N/m2)
+      real(crm_rknd), allocatable :: wndls  (:)          ! large-scale surface wind (m/s)
+      real(crm_rknd), allocatable :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
+      real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes [N/m2]
+      real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes [N/m2]
+      real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
+      real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes [ kg/(m2 s)]
+
+#if defined( m2005 ) && defined( MODAL_AERO )
+      real(crm_rknd), allocatable :: naermod (:,:,:)     ! Aerosol number concentration [/m3]
+      real(crm_rknd), allocatable :: vaerosol(:,:,:)     ! aerosol volume concentration [m3/m3]
+      real(crm_rknd), allocatable :: hygro   (:,:,:)     ! hygroscopicity of aerosol mode 
+#endif
+
+#if defined( MMF_ESMT )
+      real(crm_rknd), allocatable :: ul_esmt(:,:)        ! input u for ESMT
+      real(crm_rknd), allocatable :: vl_esmt(:,:)        ! input v for ESMT
+#endif
 
    contains
       procedure, public :: initialize=>crm_input_initialize
@@ -36,31 +50,42 @@ module crm_input_module
 contains
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_input_type
-   subroutine crm_input_initialize(this, nlev, ncrms)
+   subroutine crm_input_initialize(this, ncrms, nlev)
       class(crm_input_type), intent(inout) :: this
-      integer(crm_iknd), intent(in) :: nlev, ncrms
+      integer, intent(in) :: ncrms, nlev
       
-      allocate(this%zmid   (ncrms,nlev  ))
-      allocate(this%zint   (ncrms,nlev+1))
-      allocate(this%tl     (ncrms,nlev  ))
-      allocate(this%ql     (ncrms,nlev  ))
-      allocate(this%qccl   (ncrms,nlev  ))
-      allocate(this%qiil   (ncrms,nlev  ))
-      allocate(this%ps     (ncrms       ))
-      allocate(this%pmid   (ncrms,nlev  ))
-      allocate(this%pint   (ncrms,nlev+1))
-      allocate(this%pdel   (ncrms,nlev  ))
-      allocate(this%phis   (ncrms       ))
-      allocate(this%ul     (ncrms,nlev  ))
-      allocate(this%vl     (ncrms,nlev  ))
-      allocate(this%ocnfrac(ncrms       ))
-      allocate(this%tau00  (ncrms       ))
-      allocate(this%wndls  (ncrms       ))
-      allocate(this%bflxls (ncrms       ))
-      allocate(this%fluxu00(ncrms       ))
-      allocate(this%fluxv00(ncrms       ))
-      allocate(this%fluxt00(ncrms       ))
-      allocate(this%fluxq00(ncrms       ))
+      if (.not. allocated(this%zmid))     allocate(this%zmid(ncrms,nlev))
+      if (.not. allocated(this%zint))     allocate(this%zint(ncrms,nlev+1))
+      if (.not. allocated(this%tl))       allocate(this%tl(ncrms,nlev))
+      if (.not. allocated(this%ql))       allocate(this%ql(ncrms,nlev))
+      if (.not. allocated(this%qccl))     allocate(this%qccl(ncrms,nlev))
+      if (.not. allocated(this%qiil))     allocate(this%qiil(ncrms,nlev))
+      if (.not. allocated(this%ps))       allocate(this%ps(ncrms))
+      if (.not. allocated(this%pmid))     allocate(this%pmid(ncrms,nlev))
+      if (.not. allocated(this%pint))     allocate(this%pint(ncrms,nlev+1))
+      if (.not. allocated(this%pdel))     allocate(this%pdel(ncrms,nlev))
+      if (.not. allocated(this%phis))     allocate(this%phis(ncrms))
+      if (.not. allocated(this%ul))       allocate(this%ul(ncrms,nlev))
+      if (.not. allocated(this%vl))       allocate(this%vl(ncrms,nlev))
+      if (.not. allocated(this%ocnfrac))  allocate(this%ocnfrac(ncrms))
+      if (.not. allocated(this%tau00))    allocate(this%tau00(ncrms))
+      if (.not. allocated(this%wndls))    allocate(this%wndls(ncrms))
+      if (.not. allocated(this%bflxls))   allocate(this%bflxls(ncrms))
+      if (.not. allocated(this%fluxu00))  allocate(this%fluxu00(ncrms))
+      if (.not. allocated(this%fluxv00))  allocate(this%fluxv00(ncrms))
+      if (.not. allocated(this%fluxt00))  allocate(this%fluxt00(ncrms))
+      if (.not. allocated(this%fluxq00))  allocate(this%fluxq00(ncrms))
+
+#if defined( m2005 ) && defined( MODAL_AERO )
+      if (.not. allocated(this%naermod))  allocate(this%naermod(ncrms,nlev,ntot_amode))
+      if (.not. allocated(this%vaerosol)) allocate(this%vaerosol(ncrms,nlev,ntot_amode))
+      if (.not. allocated(this%hygro))    allocate(this%hygro(ncrms,nlev,ntot_amode))
+#endif
+
+#if defined(MMF_ESMT)
+      if (.not. allocated(this%ul_esmt))  allocate(this%ul_esmt(ncrms,nlev))
+      if (.not. allocated(this%vl_esmt))  allocate(this%vl_esmt(ncrms,nlev))
+#endif
 
       ! Initialize
       this%zmid = 0
@@ -84,6 +109,16 @@ contains
       this%fluxv00 = 0
       this%fluxt00 = 0
       this%fluxq00 = 0
+#if defined( m2005 ) && defined( MODAL_AERO )
+      this%naermod  = 0
+      this%vaerosol = 0
+      this%hygro    = 0
+#endif
+#if defined( MMF_ESMT )
+      this%ul_esmt = 0
+      this%vl_esmt = 0
+#endif
+
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
    subroutine crm_input_finalize(this)
@@ -102,6 +137,7 @@ contains
       deallocate(this%phis)
       deallocate(this%ul)
       deallocate(this%vl)
+
       deallocate(this%ocnfrac)
       deallocate(this%tau00)
       deallocate(this%wndls)
@@ -110,6 +146,17 @@ contains
       deallocate(this%fluxv00)
       deallocate(this%fluxt00)
       deallocate(this%fluxq00)
+
+#if defined( m2005 ) && defined( MODAL_AERO )
+      deallocate(this%naermod)
+      deallocate(this%vaerosol)
+      deallocate(this%hygro)
+#endif
+
+#if defined(MMF_ESMT)
+      deallocate(this%ul_esmt)
+      deallocate(this%vl_esmt)
+#endif
 
    end subroutine crm_input_finalize 
 

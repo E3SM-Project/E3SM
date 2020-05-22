@@ -4,5 +4,5 @@
 #include "const.h"
 #include "vars.h"
 
-void setparm();
+extern "C" void setparm();
 

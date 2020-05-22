@@ -19,6 +19,8 @@ void timeloop() {
       crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)+1;
 	  });
 
+    std::cout << "DEBUG: nstep: " << nstep << std::endl;
+
     //------------------------------------------------------------------
     //  Check if the dynamical time step should be decreased
     //  to handle the cases when the flow being locally linearly unstable
@@ -154,11 +156,11 @@ void timeloop() {
 
       //-----------------------------------------------------------
       //       Apply mean-state acceleration
-      if (use_crm_accel && !crm_accel_ceaseflag) {
-        // Use Jones-Bretherton-Pritchard methodology to accelerate
-        // CRM horizontal mean evolution artificially.
-        accelerate_crm(nstep, nstop, crm_accel_ceaseflag);
-      }
+      // if (use_crm_accel && !crm_accel_ceaseflag) {
+      //   // Use Jones-Bretherton-Pritchard methodology to accelerate
+      //   // CRM horizontal mean evolution artificially.
+      //   accelerate_crm(nstep, nstop, crm_accel_ceaseflag);
+      // }
 
       //-----------------------------------------------------------
       //    Compute diagnostics fields:

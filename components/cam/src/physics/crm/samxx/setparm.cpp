@@ -1,7 +1,7 @@
 
 #include "setparm.h"
 
-void setparm() {
+extern "C" void setparm() {
   doprecip  = true;
   dosgs     = true;
   dosurface = true;

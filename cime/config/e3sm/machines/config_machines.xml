@@ -2833,7 +2833,7 @@
         <command name="load">xl/16.1.1-5</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.1.1</command>
+        <command name="load">gcc/9.1.0</command>
       </modules>
       <modules compiler="pgiacc">
         <command name="load">cuda/10.1.168</command>

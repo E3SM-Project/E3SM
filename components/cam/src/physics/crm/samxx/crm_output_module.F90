@@ -1,5 +1,5 @@
 module crm_output_module
-   use params,       only: crm_rknd, crm_iknd
+   use params,       only: crm_rknd
    use crmdims,      only: crm_nx, crm_ny, crm_nz
    implicit none
    public crm_output_type
@@ -54,6 +54,34 @@ module crm_output_module
       real(crm_rknd), allocatable :: qs_mean(:,:)  ! mean snow
       real(crm_rknd), allocatable :: qg_mean(:,:)  ! mean graupel
       real(crm_rknd), allocatable :: qr_mean(:,:)  ! mean rain
+#ifdef m2005
+      real(crm_rknd), allocatable :: nc_mean(:,:)  ! mean cloud water  (#/kg)
+      real(crm_rknd), allocatable :: ni_mean(:,:)  ! mean cloud ice    (#/kg)
+      real(crm_rknd), allocatable :: ns_mean(:,:)  ! mean snow         (#/kg)
+      real(crm_rknd), allocatable :: ng_mean(:,:)  ! mean graupel      (#/kg)
+      real(crm_rknd), allocatable :: nr_mean(:,:)  ! mean rain         (#/kg)
+
+      ! Time and domain averaged process rates
+      real(crm_rknd), allocatable :: aut_a (:,:)  ! cloud water autoconversion (1/s)
+      real(crm_rknd), allocatable :: acc_a (:,:)  ! cloud water accretion (1/s)
+      real(crm_rknd), allocatable :: evpc_a(:,:)  ! cloud water evaporation (1/s)
+      real(crm_rknd), allocatable :: evpr_a(:,:)  ! rain evaporation (1/s)
+      real(crm_rknd), allocatable :: mlt_a (:,:)  ! ice, snow, graupel melting (1/s)
+      real(crm_rknd), allocatable :: sub_a (:,:)  ! ice, snow, graupel sublimation (1/s)
+      real(crm_rknd), allocatable :: dep_a (:,:)  ! ice, snow, graupel deposition (1/s)
+      real(crm_rknd), allocatable :: con_a (:,:)  ! cloud water condensation(1/s)
+#endif /* m2005 */
+
+#if defined( MMF_MOMENTUM_FEEDBACK )
+      real(crm_rknd), allocatable :: ultend(:,:)            ! tendency of ul
+      real(crm_rknd), allocatable :: vltend(:,:)            ! tendency of vl
+#endif
+
+#if defined( MMF_ESMT )
+      real(crm_rknd), allocatable :: u_tend_esmt(:,:)       ! CRM scalar u-momentum tendency
+      real(crm_rknd), allocatable :: v_tend_esmt(:,:)       ! CRM scalar v-momentum tendency
+#endif
+
       real(crm_rknd), allocatable :: sltend  (:,:)          ! CRM output tendency of static energy
       real(crm_rknd), allocatable :: qltend  (:,:)          ! CRM output tendency of water vapor
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
@@ -101,6 +129,13 @@ module crm_output_module
       real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: timing_factor(:)    ! crm cpu efficiency
+
+#ifdef MAML
+      ! MAML variables
+      real(crm_rknd), allocatable :: crm_pcp(ncrms,crm_nx,crm_ny) ! CRM precip rate for MAML (m/s)
+      real(crm_rknd), allocatable :: crm_snw(ncrms,crm_nx,crm_ny) ! CRM snow rate for MAML (m/s)
+#endif
+
    end type crm_output_type
 
 contains
@@ -108,96 +143,128 @@ contains
    !------------------------------------------------------------------------------------------------
    subroutine crm_output_initialize(output, ncol, nlev)
       type(crm_output_type), intent(inout) :: output
-      integer(crm_iknd), intent(in), optional :: ncol, nlev
+      integer, intent(in), optional :: ncol, nlev
 
       ! Allocate arrays if dimensions are passed as input
       if (present(ncol)) then
 
          ! Allocate instantaneous outputs
-         allocate(output%qcl     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%qci     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%qpl     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%qpi     (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%qci)) allocate(output%qci(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%qpl)) allocate(output%qpl(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%qpi)) allocate(output%qpi(ncol,crm_nx,crm_ny,crm_nz))
 
-         allocate(output%tk      (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%tkh     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%prec_crm(ncol,crm_nx,crm_ny       ))
+         if (.not. allocated(output%tk )) allocate(output%tk (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%tkh)) allocate(output%tkh(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%prec_crm)) allocate(output%prec_crm(ncol,crm_nx,crm_ny))
 
-         allocate(output%wvar    (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%aut     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%acc     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%evpc    (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%evpr    (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%mlt     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%sub     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%dep     (ncol,crm_nx,crm_ny,crm_nz))
-         allocate(output%con     (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%wvar)) allocate(output%wvar(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%aut))  allocate(output%aut (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%acc))  allocate(output%acc (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%evpc)) allocate(output%evpc(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%evpr)) allocate(output%evpr(ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%mlt))  allocate(output%mlt (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%sub))  allocate(output%sub (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%dep))  allocate(output%dep (ncol,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(output%con))  allocate(output%con (ncol,crm_nx,crm_ny,crm_nz))
 
 
          ! Allocate domain and time-averaged fields
-         allocate(output%cltot (ncol))
-         allocate(output%cllow (ncol))
-         allocate(output%clmed (ncol))
-         allocate(output%clhgh (ncol))
+         if (.not. allocated(output%cltot)) allocate(output%cltot(ncol))
+         if (.not. allocated(output%cllow)) allocate(output%cllow(ncol))
+         if (.not. allocated(output%clmed)) allocate(output%clmed(ncol))
+         if (.not. allocated(output%clhgh)) allocate(output%clhgh(ncol))
 
-         allocate(output%precc (ncol))
-         allocate(output%precl (ncol))
-         allocate(output%precsc(ncol))
-         allocate(output%precsl(ncol))
+         if (.not. allocated(output%precc))  allocate(output%precc(ncol))
+         if (.not. allocated(output%precl))  allocate(output%precl(ncol))
+         if (.not. allocated(output%precsc)) allocate(output%precsc(ncol))
+         if (.not. allocated(output%precsl)) allocate(output%precsl(ncol))
 
          ! NOTE: this output had a bug in the previous implementation
-         allocate(output%cldtop       (ncol,nlev))
+         if (.not. allocated(output%cldtop)) allocate(output%cldtop(ncol,nlev))
 
-         allocate(output%qc_mean      (ncol,nlev))
-         allocate(output%qi_mean      (ncol,nlev))
-         allocate(output%qs_mean      (ncol,nlev))
-         allocate(output%qg_mean      (ncol,nlev))
-         allocate(output%qr_mean      (ncol,nlev))
+         if (.not. allocated(output%qc_mean)) allocate(output%qc_mean(ncol,nlev))
+         if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
+         if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
+         if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
+         if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
 
-         allocate(output%sltend       (ncol,nlev))
-         allocate(output%qltend       (ncol,nlev))
-         allocate(output%qcltend      (ncol,nlev))
-         allocate(output%qiltend      (ncol,nlev))
+#ifdef m2005
+         if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
+         if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
+         if (.not. allocated(output%ns_mean)) allocate(output%ns_mean(ncol,nlev))
+         if (.not. allocated(output%ng_mean)) allocate(output%ng_mean(ncol,nlev))
+         if (.not. allocated(output%nr_mean)) allocate(output%nr_mean(ncol,nlev))
 
-         allocate(output%cld          (ncol,nlev))  ! cloud fraction
-         allocate(output%gicewp       (ncol,nlev))  ! ice water path
-         allocate(output%gliqwp       (ncol,nlev))  ! ice water path
-         allocate(output%mctot        (ncol,nlev))  ! cloud mass flux
-         allocate(output%mcup         (ncol,nlev))  ! updraft cloud mass flux
-         allocate(output%mcdn         (ncol,nlev))  ! downdraft cloud mass flux
-         allocate(output%mcuup        (ncol,nlev))  ! unsat updraft cloud mass flux
-         allocate(output%mcudn        (ncol,nlev))  ! unsat downdraft cloud mass flux
+         if (.not. allocated(output%aut_a )) allocate(output%aut_a (ncol,nlev))
+         if (.not. allocated(output%acc_a )) allocate(output%acc_a (ncol,nlev))
+         if (.not. allocated(output%evpc_a)) allocate(output%evpc_a(ncol,nlev))
+         if (.not. allocated(output%evpr_a)) allocate(output%evpr_a(ncol,nlev))
+         if (.not. allocated(output%mlt_a )) allocate(output%mlt_a (ncol,nlev))
+         if (.not. allocated(output%sub_a )) allocate(output%sub_a (ncol,nlev))
+         if (.not. allocated(output%dep_a )) allocate(output%dep_a (ncol,nlev))
+         if (.not. allocated(output%con_a )) allocate(output%con_a (ncol,nlev))
+#endif /* m2005 */
 
-         allocate(output%mu_crm       (ncol,nlev))  ! mass flux up
-         allocate(output%md_crm       (ncol,nlev))  ! mass flux down
-         allocate(output%du_crm       (ncol,nlev))  ! mass detrainment from updraft
-         allocate(output%eu_crm       (ncol,nlev))  ! mass entrainment from updraft
-         allocate(output%ed_crm       (ncol,nlev))  ! mass detrainment from downdraft
-         allocate(output%jt_crm       (ncol     ))       ! index of cloud (convection) top
-         allocate(output%mx_crm       (ncol     ))       ! index of cloud (convection) bottom
+#if defined( MMF_MOMENTUM_FEEDBACK )
+         if (.not. allocated(output%ultend )) allocate(output%ultend (ncol,nlev))
+         if (.not. allocated(output%vltend )) allocate(output%vltend (ncol,nlev))
+#endif
 
-         allocate(output%flux_qt      (ncol,nlev))
-         allocate(output%fluxsgs_qt   (ncol,nlev))
-         allocate(output%tkez         (ncol,nlev))
-         allocate(output%tkesgsz      (ncol,nlev))
-         allocate(output%tkz          (ncol,nlev))
-         allocate(output%flux_u       (ncol,nlev))
-         allocate(output%flux_v       (ncol,nlev))
-         allocate(output%flux_qp      (ncol,nlev))
-         allocate(output%precflux     (ncol,nlev))
-         allocate(output%qt_ls        (ncol,nlev))
-         allocate(output%qt_trans     (ncol,nlev))
-         allocate(output%qp_trans     (ncol,nlev))
-         allocate(output%qp_fall      (ncol,nlev))
-         allocate(output%qp_src       (ncol,nlev))
-         allocate(output%qp_evp       (ncol,nlev))
-         allocate(output%t_ls         (ncol,nlev))
-         allocate(output%prectend     (ncol     ))
-         allocate(output%precstend    (ncol     ))
-         allocate(output%taux         (ncol     ))
-         allocate(output%tauy         (ncol     ))
-         allocate(output%z0m          (ncol     ))
-         allocate(output%timing_factor(ncol     ))
+#if defined( MMF_ESMT )
+         if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
+         if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
+#endif
+
+#ifdef MAML
+         if (.not. allocated(output%crm_pcp)) allocate(output%crm_pcp(ncol,crm_nx,crm_ny))
+         if (.not. allocated(output%crm_snw)) allocate(output%crm_snw(ncol,crm_nx,crm_ny))
+#endif
+         
+         if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
+         if (.not. allocated(output%qltend ))  allocate(output%qltend (ncol,nlev))
+         if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
+         if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
+
+         if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
+         if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
+         if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
+         if (.not. allocated(output%mctot )) allocate(output%mctot (ncol,nlev))  ! cloud mass flux
+         if (.not. allocated(output%mcup  )) allocate(output%mcup  (ncol,nlev))  ! updraft cloud mass flux
+         if (.not. allocated(output%mcdn  )) allocate(output%mcdn  (ncol,nlev))  ! downdraft cloud mass flux
+         if (.not. allocated(output%mcuup )) allocate(output%mcuup (ncol,nlev))  ! unsat updraft cloud mass flux
+         if (.not. allocated(output%mcudn )) allocate(output%mcudn (ncol,nlev))  ! unsat downdraft cloud mass flux
+
+         if (.not. allocated(output%mu_crm)) allocate(output%mu_crm(ncol,nlev))  ! mass flux up
+         if (.not. allocated(output%md_crm)) allocate(output%md_crm(ncol,nlev))  ! mass flux down
+         if (.not. allocated(output%du_crm)) allocate(output%du_crm(ncol,nlev))  ! mass detrainment from updraft
+         if (.not. allocated(output%eu_crm)) allocate(output%eu_crm(ncol,nlev))  ! mass entrainment from updraft
+         if (.not. allocated(output%ed_crm)) allocate(output%ed_crm(ncol,nlev))  ! mass detrainment from downdraft
+         if (.not. allocated(output%jt_crm)) allocate(output%jt_crm(ncol))       ! index of cloud (convection) top
+         if (.not. allocated(output%mx_crm)) allocate(output%mx_crm(ncol))       ! index of cloud (convection) bottom
+
+         if (.not. allocated(output%flux_qt      )) allocate(output%flux_qt      (ncol,nlev))
+         if (.not. allocated(output%fluxsgs_qt   )) allocate(output%fluxsgs_qt   (ncol,nlev))
+         if (.not. allocated(output%tkez         )) allocate(output%tkez         (ncol,nlev))
+         if (.not. allocated(output%tkesgsz      )) allocate(output%tkesgsz      (ncol,nlev))
+         if (.not. allocated(output%tkz          )) allocate(output%tkz          (ncol,nlev))
+         if (.not. allocated(output%flux_u       )) allocate(output%flux_u       (ncol,nlev))
+         if (.not. allocated(output%flux_v       )) allocate(output%flux_v       (ncol,nlev))
+         if (.not. allocated(output%flux_qp      )) allocate(output%flux_qp      (ncol,nlev))
+         if (.not. allocated(output%precflux     )) allocate(output%precflux     (ncol,nlev))
+         if (.not. allocated(output%qt_ls        )) allocate(output%qt_ls        (ncol,nlev))
+         if (.not. allocated(output%qt_trans     )) allocate(output%qt_trans     (ncol,nlev))
+         if (.not. allocated(output%qp_trans     )) allocate(output%qp_trans     (ncol,nlev))
+         if (.not. allocated(output%qp_fall      )) allocate(output%qp_fall      (ncol,nlev))
+         if (.not. allocated(output%qp_src       )) allocate(output%qp_src       (ncol,nlev))
+         if (.not. allocated(output%qp_evp       )) allocate(output%qp_evp       (ncol,nlev))
+         if (.not. allocated(output%t_ls         )) allocate(output%t_ls         (ncol,nlev))
+         if (.not. allocated(output%prectend     )) allocate(output%prectend     (ncol))
+         if (.not. allocated(output%precstend    )) allocate(output%precstend    (ncol))
+         if (.not. allocated(output%taux         )) allocate(output%taux         (ncol))
+         if (.not. allocated(output%tauy         )) allocate(output%tauy         (ncol))
+         if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
+         if (.not. allocated(output%timing_factor)) allocate(output%timing_factor(ncol))
 
       end if ! present(ncol)
 
@@ -238,6 +305,38 @@ contains
       output%qs_mean = 0
       output%qg_mean = 0
       output%qr_mean = 0
+#ifdef m2005
+      output%nc_mean = 0
+      output%ni_mean = 0
+      output%ns_mean = 0
+      output%ng_mean = 0
+      output%nr_mean = 0
+
+      output%aut_a = 0
+      output%acc_a = 0
+      output%evpc_a = 0
+      output%evpr_a = 0
+      output%mlt_a = 0
+      output%sub_a = 0
+      output%dep_a = 0
+      output%con_a = 0
+#endif
+
+#if defined( MMF_MOMENTUM_FEEDBACK )
+      output%ultend = 0
+      output%vltend = 0
+#endif
+
+#if defined( MMF_ESMT )
+      output%u_tend_esmt = 0
+      output%v_tend_esmt = 0
+#endif
+
+#ifdef MAML
+      output%crm_pcp = 0
+      output%crm_snw = 0
+#endif
+
       output%sltend  = 0
       output%qltend  = 0
       output%qcltend = 0
@@ -289,83 +388,116 @@ contains
    !------------------------------------------------------------------------------------------------
    subroutine crm_output_finalize(output)
       type(crm_output_type), intent(inout) :: output
-      deallocate(output%qcl)
-      deallocate(output%qci)
-      deallocate(output%qpl)
-      deallocate(output%qpi)
-      deallocate(output%tk )
-      deallocate(output%tkh)
-      deallocate(output%prec_crm)
+      if (allocated(output%qcl)) deallocate(output%qcl)
+      if (allocated(output%qci)) deallocate(output%qci)
+      if (allocated(output%qpl)) deallocate(output%qpl)
+      if (allocated(output%qpi)) deallocate(output%qpi)
+      if (allocated(output%tk )) deallocate(output%tk )
+      if (allocated(output%tkh)) deallocate(output%tkh)
+      if (allocated(output%prec_crm)) deallocate(output%prec_crm)
 
-      deallocate(output%wvar)
-      deallocate(output%aut)
-      deallocate(output%acc)
-      deallocate(output%evpc)
-      deallocate(output%evpr)
-      deallocate(output%mlt)
-      deallocate(output%sub)
-      deallocate(output%dep)
-      deallocate(output%con)
+      if (allocated(output%wvar)) deallocate(output%wvar)
+      if (allocated(output%aut)) deallocate(output%aut)
+      if (allocated(output%acc)) deallocate(output%acc)
+      if (allocated(output%evpc)) deallocate(output%evpc)
+      if (allocated(output%evpr)) deallocate(output%evpr)
+      if (allocated(output%mlt)) deallocate(output%mlt)
+      if (allocated(output%sub)) deallocate(output%sub)
+      if (allocated(output%dep)) deallocate(output%dep)
+      if (allocated(output%con)) deallocate(output%con)
 
-      deallocate(output%cltot)
-      deallocate(output%cllow)
-      deallocate(output%clmed)
-      deallocate(output%clhgh)
-      deallocate(output%cldtop)
-      deallocate(output%precc)
-      deallocate(output%precl)
-      deallocate(output%precsc)
-      deallocate(output%precsl)
+      if (allocated(output%cltot)) deallocate(output%cltot)
+      if (allocated(output%cllow)) deallocate(output%cllow)
+      if (allocated(output%clmed)) deallocate(output%clmed)
+      if (allocated(output%clhgh)) deallocate(output%clhgh)
+      if (allocated(output%cldtop)) deallocate(output%cldtop)
+      if (allocated(output%precc)) deallocate(output%precc)
+      if (allocated(output%precl)) deallocate(output%precl)
+      if (allocated(output%precsc)) deallocate(output%precsc)
+      if (allocated(output%precsl)) deallocate(output%precsl)
 
-      deallocate(output%qc_mean)
-      deallocate(output%qi_mean)
-      deallocate(output%qs_mean)
-      deallocate(output%qg_mean)
-      deallocate(output%qr_mean)
-      deallocate(output%sltend)
-      deallocate(output%qltend)
-      deallocate(output%qcltend)
-      deallocate(output%qiltend)
+      if (allocated(output%qc_mean)) deallocate(output%qc_mean)
+      if (allocated(output%qi_mean)) deallocate(output%qi_mean)
+      if (allocated(output%qs_mean)) deallocate(output%qs_mean)
+      if (allocated(output%qg_mean)) deallocate(output%qg_mean)
+      if (allocated(output%qr_mean)) deallocate(output%qr_mean)
+#ifdef m2005
+      if (allocated(output%nc_mean)) deallocate(output%nc_mean)
+      if (allocated(output%ni_mean)) deallocate(output%ni_mean)
+      if (allocated(output%ns_mean)) deallocate(output%ns_mean)
+      if (allocated(output%ng_mean)) deallocate(output%ng_mean)
+      if (allocated(output%nr_mean)) deallocate(output%nr_mean)
 
-      deallocate(output%cld)
-      deallocate(output%gicewp)
-      deallocate(output%gliqwp)
-      deallocate(output%mctot)
-      deallocate(output%mcup)
-      deallocate(output%mcdn)
-      deallocate(output%mcuup)
-      deallocate(output%mcudn)
+      ! Time and domain-averaged process rates
+      if (allocated(output%aut_a)) deallocate(output%aut_a)
+      if (allocated(output%acc_a)) deallocate(output%acc_a)
+      if (allocated(output%evpc_a)) deallocate(output%evpc_a)
+      if (allocated(output%evpr_a)) deallocate(output%evpr_a)
+      if (allocated(output%mlt_a)) deallocate(output%mlt_a)
+      if (allocated(output%sub_a)) deallocate(output%sub_a)
+      if (allocated(output%dep_a)) deallocate(output%dep_a)
+      if (allocated(output%con_a)) deallocate(output%con_a)
+#endif
 
-      deallocate(output%mu_crm)
-      deallocate(output%md_crm)
-      deallocate(output%du_crm)
-      deallocate(output%eu_crm)
-      deallocate(output%ed_crm)
-      deallocate(output%jt_crm)
-      deallocate(output%mx_crm)
+#if defined( MMF_MOMENTUM_FEEDBACK )
+      if (allocated(output%ultend)) deallocate(output%ultend)
+      if (allocated(output%vltend)) deallocate(output%vltend)
+#endif
 
-      deallocate(output%flux_qt)
-      deallocate(output%fluxsgs_qt)
-      deallocate(output%tkez)
-      deallocate(output%tkesgsz)
-      deallocate(output%tkz)
-      deallocate(output%flux_u)
-      deallocate(output%flux_v)
-      deallocate(output%flux_qp)
-      deallocate(output%precflux)
-      deallocate(output%qt_ls)
-      deallocate(output%qt_trans)
-      deallocate(output%qp_trans)
-      deallocate(output%qp_fall)
-      deallocate(output%qp_src)
-      deallocate(output%qp_evp)
-      deallocate(output%t_ls)
-      deallocate(output%prectend)
-      deallocate(output%precstend)
-      deallocate(output%taux)
-      deallocate(output%tauy)
-      deallocate(output%z0m)
-      deallocate(output%timing_factor)
+#if defined( MMF_ESMT )
+      if (allocated(output%u_tend_esmt)) deallocate(output%u_tend_esmt)
+      if (allocated(output%v_tend_esmt)) deallocate(output%v_tend_esmt)
+#endif
+
+#ifdef MAML
+      if (allocated(output%crm_pcp)) deallocate(output%crm_pcp)
+      if (allocated(output%crm_snw)) deallocate(output%crm_snw)
+#endif
+
+      if (allocated(output%sltend)) deallocate(output%sltend)
+      if (allocated(output%qltend)) deallocate(output%qltend)
+      if (allocated(output%qcltend)) deallocate(output%qcltend)
+      if (allocated(output%qiltend)) deallocate(output%qiltend)
+
+      if (allocated(output%cld)) deallocate(output%cld)
+      if (allocated(output%gicewp)) deallocate(output%gicewp)
+      if (allocated(output%gliqwp)) deallocate(output%gliqwp)
+      if (allocated(output%mctot)) deallocate(output%mctot)
+      if (allocated(output%mcup)) deallocate(output%mcup)
+      if (allocated(output%mcdn)) deallocate(output%mcdn)
+      if (allocated(output%mcuup)) deallocate(output%mcuup)
+      if (allocated(output%mcudn)) deallocate(output%mcudn)
+
+      if (allocated(output%mu_crm)) deallocate(output%mu_crm)
+      if (allocated(output%md_crm)) deallocate(output%md_crm)
+      if (allocated(output%du_crm)) deallocate(output%du_crm)
+      if (allocated(output%eu_crm)) deallocate(output%eu_crm)
+      if (allocated(output%ed_crm)) deallocate(output%ed_crm)
+      if (allocated(output%jt_crm)) deallocate(output%jt_crm)
+      if (allocated(output%mx_crm)) deallocate(output%mx_crm)
+
+      if (allocated(output%flux_qt)) deallocate(output%flux_qt)
+      if (allocated(output%fluxsgs_qt)) deallocate(output%fluxsgs_qt)
+      if (allocated(output%tkez)) deallocate(output%tkez)
+      if (allocated(output%tkesgsz)) deallocate(output%tkesgsz)
+      if (allocated(output%tkz)) deallocate(output%tkz)
+      if (allocated(output%flux_u)) deallocate(output%flux_u)
+      if (allocated(output%flux_v)) deallocate(output%flux_v)
+      if (allocated(output%flux_qp)) deallocate(output%flux_qp)
+      if (allocated(output%precflux)) deallocate(output%precflux)
+      if (allocated(output%qt_ls)) deallocate(output%qt_ls)
+      if (allocated(output%qt_trans)) deallocate(output%qt_trans)
+      if (allocated(output%qp_trans)) deallocate(output%qp_trans)
+      if (allocated(output%qp_fall)) deallocate(output%qp_fall)
+      if (allocated(output%qp_src)) deallocate(output%qp_src)
+      if (allocated(output%qp_evp)) deallocate(output%qp_evp)
+      if (allocated(output%t_ls)) deallocate(output%t_ls)
+      if (allocated(output%prectend)) deallocate(output%prectend)
+      if (allocated(output%precstend)) deallocate(output%precstend)
+      if (allocated(output%taux)) deallocate(output%taux)
+      if (allocated(output%tauy)) deallocate(output%tauy)
+      if (allocated(output%z0m)) deallocate(output%z0m)
+      if (allocated(output%timing_factor)) deallocate(output%timing_factor)
 
    end subroutine crm_output_finalize
    !------------------------------------------------------------------------------------------------
