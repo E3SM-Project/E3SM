@@ -15,9 +15,15 @@ logger = logging.getLogger(__name__)
 
 class Compilers(GenericXML):
 
-    def __init__(self, machobj, infile=None, compiler=None, mpilib=None, files=None, version=None):
+    def __init__(self, machobj, infile=None, compiler=None, mpilib=None, files=None, version=None,
+                 extra_machines_dir=None):
         """
         initialize an object
+
+        If extra_machines_dir is provided, it should be a string giving a path to an
+        additional directory that will be searched for a config_compilers.xml file; if
+        found, the contents of this file will be appended to the standard
+        config_compilers.xml. An empty string is treated the same as None.
         """
 
         if infile is None:
@@ -48,11 +54,19 @@ class Compilers(GenericXML):
         self.mpilib = mpilib
 
         self.compiler_nodes = None # Listed from last to first
-        #Append the contents of $HOME/.cime/config_compilers.xml if it exists
-        #This could cause problems if node matchs are repeated when only one is expected
+        # Append the contents of $HOME/.cime/config_compilers.xml if it exists.
+        #
+        # Also append the contents of a config_compilers.xml file in the directory given by
+        # extra_machines_dir, if present.
+        #
+        # This could cause problems if node matches are repeated when only one is expected.
         infile = os.path.join(os.environ.get("HOME"),".cime","config_compilers.xml")
         if os.path.exists(infile):
             GenericXML.read(self, infile, schema=schema)
+        if extra_machines_dir:
+            infile = os.path.join(extra_machines_dir, "config_compilers.xml")
+            if os.path.exists(infile):
+                GenericXML.read(self, infile, schema=schema)
 
         if self.compiler is not None:
             self.set_compiler(compiler)

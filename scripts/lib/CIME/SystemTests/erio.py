@@ -58,10 +58,10 @@ class ERIO(SystemTestsCommon):
     def run_phase(self):
 
         for idx, pio_type1 in enumerate(self._pio_types):
-            if pio_type1 != "default":
+            if pio_type1 != "default" and pio_type1 != "nothing":
                 self._case.set_value("PIO_TYPENAME", pio_type1)
                 self._full_run(pio_type1)
                 for pio_type2 in self._pio_types[idx+1:]:
-                    if pio_type2 != "default":
+                    if pio_type2 != "default" and pio_type1 != "nothing":
                         self._case.set_value("PIO_TYPENAME", pio_type2)
                         self._restart_run(pio_type2, pio_type1)

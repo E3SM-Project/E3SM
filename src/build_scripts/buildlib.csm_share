@@ -63,6 +63,7 @@ def buildlib(bldroot, installpath, case):
         filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
     elif comp_interface == "nuopc":
         filepath.append(os.path.join(cimeroot,"src","share","nuopc"))
+        filepath.append(os.path.join(cimeroot,"src","share","streams_nuopc"))
     else:
         expect(False, "driver value of {} not supported".format(comp_interface))
 
@@ -116,7 +117,7 @@ def buildlib(bldroot, installpath, case):
         copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
 
     # This runs the make command
-    gmake_opts = "-f {}/Makefile complib MODEL=csm_share ".format(os.path.join(caseroot,"Tools"))
+    gmake_opts = "-f {}/Makefile complib MODEL=csm_share COMP_NAME=csm_share ".format(os.path.join(caseroot,"Tools"))
     gmake_opts += "-j {} ".format(case.get_value("GMAKE_J"))
     gmake_opts += " COMPLIB=libcsm_share.a"
     gmake_opts += ' USER_CPPDEFS="{} -DTIMING" '.format(multiinst_cppdefs)

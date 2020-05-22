@@ -249,11 +249,11 @@ int main(int argc, char* argv[])
         ERR(ret);
 
 
-    /* The rest of the code executes on computation tasks only. As
-     * PIO functions are called on the computation tasks, the
-     * async system will call them on the IO task. When the
-     * computation tasks call PIO_finalize(), the IO task will get
-     * a message to shut itself down. */
+    /* The rest of the code executes on computation tasks only. As PIO
+     * functions are called on the computation tasks, the async system
+     * will call them on the IO task. When the computation tasks call
+     * PIO_finalize(), the IO task will get a message to shut itself
+     * down. */
     if (comp_task)
     {
         /* PIO_Offset elements_per_pe; /\* Array elements per processing unit. *\/ */

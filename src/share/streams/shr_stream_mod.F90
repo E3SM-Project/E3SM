@@ -50,8 +50,9 @@ module shr_stream_mod
 
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public :: shr_stream_init              ! initialize a stream
-  public :: shr_stream_set               ! set stream values
+  public :: shr_stream_init              ! set stream values by reading a stream text file
+  public :: shr_stream_set               ! set stream values directly from a fortran interfrace
+
   public :: shr_stream_default           ! set default values
   public :: shr_stream_parseInput        ! extract fileName,yearAlign, etc. from a string
   public :: shr_stream_findBounds        ! return lower/upper bounding date info
@@ -163,32 +164,19 @@ module shr_stream_mod
   character(len=*), parameter :: sourcefile = &
        __FILE__
 !===============================================================================
-  !===============================================================================
 contains
-  !===============================================================================
+!===============================================================================
 
   ! Complete the dynamic vector definition.
 #include "dynamic_vector_procdef.inc"
 
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_init -- initialize stream datatype, read description text file
-  !
-  ! !DESCRIPTION:
-  !
-  ! !REMARKS:
-  !    should input be via standard Fortran namelist?
-  !
-  ! !REVISION HISTORY:
-  !     2007-Sep-17 - B. Kauffman - reworked wrt new streams.txt format
-  !     2005-Feb-03 - B. Kauffman - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine shr_stream_init(strm, infoFile, yearFirst, yearLast, yearAlign, taxMode, rc)
 
-  subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc)
+    ! --------------------------------------------------------
+    ! initialize stream datatype by reading a stream text file
+    ! --------------------------------------------------------
 
-    ! !INPUT/OUTPUT PARAMETERS:
-
+    ! input/output variables
     type(shr_stream_streamType)    ,intent(out) :: strm      ! data stream
     character(*)                   ,intent(in)  :: infoFile  ! file with stream info, must read
     integer  (SHR_KIND_IN)         ,intent(in)  :: yearFirst ! first year to use
@@ -197,39 +185,25 @@ contains
     character(*)          ,optional,intent(in)  :: taxMode   ! time axis cycling option
     integer  (SHR_KIND_IN),optional,intent(out) :: rc        ! return code
 
-    !EOP
-
-    !----- local -----
+    ! local variables
     integer  (SHR_KIND_IN) :: n             ! generic index
     character(SHR_KIND_CL) :: str           ! string to parse from input data file
     integer  (SHR_KIND_IN) :: int           ! integer to parse from input data file
     character(SHR_KIND_CL) :: subStr        ! sub-string of interest
     integer  (SHR_KIND_IN) :: nUnit         ! file i/o unit number
     character(SHR_KIND_CS) :: startTag      ! input file start tag
-    character(SHR_KIND_CS) ::   endTag      ! input file   end tag
+    character(SHR_KIND_CS) :: endTag        ! input file   end tag
     character(SHR_KIND_CS) :: fldNameFile   ! field name in data file field list
     character(SHR_KIND_CS) :: fldNameModel  ! field name in model     field list
     character(SHR_KIND_CXX):: fldListFile   ! list of data file fields, colon delim list
     character(SHR_KIND_CXX):: fldListModel  ! list of model     fields, colon delim list
     character(SHR_KIND_CL) :: calendar      ! stream calendar
     integer  (SHR_KIND_IN) :: rCode, rCode2 ! return code
-
     type(shr_stream_fileType) :: tempFile   ! File being constructed.
     type(fileVector)       :: fileVec       ! Vector used to construct file array.
-
-    !----- formats -----
     character(*),parameter :: subName = '(shr_stream_init) '
     character(*),parameter :: F00   = "('(shr_stream_init) ',8a)"
-
-    !-------------------------------------------------------------------------------
-    ! notes:
-    ! * should this use standard namelist input?
-    ! * needs more robust error checking
-    ! o yearFirst,yearLast,yearAlign are provided by calling routine
-    ! o parse infoFile for remaining, except for...
-    ! o fileNT,fileDates, & fileSecs, which are initially set to -1, but but are replaced with
-    !   valid values as each file is opened for the first time
-    !-------------------------------------------------------------------------------
+    ! --------------------------------------------------------
 
     rCode = 0
     write(s_logunit,F00) 'Reading file ',trim(infoFile)
@@ -243,9 +217,7 @@ contains
        strm%taxMode       = trim(taxMode)
     endif
 
-    !-----------------------------------------------------------------------------
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading data source'
-    !-----------------------------------------------------------------------------
 
     nUnit = shr_file_getUnit() ! get unused unit number
 
@@ -667,28 +639,18 @@ contains
   end subroutine shr_stream_init
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_set -- set values of stream datatype
-  !
-  ! !DESCRIPTION:
-  !
-  ! !REMARKS:
-  !    set or override stream settings
-  !
-  ! !REVISION HISTORY:
-  !     2010-Apr-20 - T. Craig - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
        fldListFile,fldListModel,domFilePath,domFileName, &
        domTvarName,domXvarName,domYvarName,domZvarName,  &
        domAreaName,domMaskName, &
        filePath,filename,dataSource,rc)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! --------------------------------------------------------
+    ! set values of stream datatype independent of a reading in a stream text file
+    ! this is used to initialize a stream directly from fortran interface 
+    ! --------------------------------------------------------
 
+    ! input/output variables
     type(shr_stream_streamType)    ,intent(inout) :: strm      ! data stream
     integer  (SHR_KIND_IN),optional,intent(in)    :: yearFirst ! first year to use
     integer  (SHR_KIND_IN),optional,intent(in)    :: yearLast  ! last  year to use
@@ -710,21 +672,15 @@ contains
     character(*)          ,optional,intent(in)    :: dataSource ! comment line
     integer  (SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
 
-    !EOP
-
-    !----- local -----
-    integer(SHR_KIND_IN) :: n
-    character(SHR_KIND_CL) :: calendar      ! stream calendar
-
-    type(shr_stream_fileType) :: tempFile   ! File being constructed.
-    type(fileVector)       :: fileVec       ! Vector used to construct file array.
-
-    !----- formats -----
-    character(*),parameter :: subName = '(shr_stream_set) '
-    character(*),parameter :: F00   = "('(shr_stream_set) ',8a)"
-    character(*),parameter :: F01   = "('(shr_stream_set) ',1a,i6)"
-
-    !-------------------------------------------------------------------------------
+    ! local variables
+    integer(SHR_KIND_IN)      :: n
+    character(SHR_KIND_CL)    :: calendar ! stream calendar
+    type(shr_stream_fileType) :: tempFile ! File being constructed.
+    type(fileVector)          :: fileVec  ! Vector used to construct file array.
+    character(*),parameter    :: subName = '(shr_stream_set) '
+    character(*),parameter    :: F00   = "('(shr_stream_set) ',8a)"
+    character(*),parameter    :: F01   = "('(shr_stream_set) ',1a,i6)"
+    ! --------------------------------------------------------
 
     call shr_stream_default(strm)
 
@@ -802,64 +758,40 @@ contains
   end subroutine shr_stream_set
 
   !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_stream_default -- set defaults for stream
-  !
-  ! !DESCRIPTION:
-  !
-  ! !REMARKS:
-  !    set basic default values for streams
-  !
-  ! !REVISION HISTORY:
-  !     2010-Oct-20 - T. Craig - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
   subroutine shr_stream_default(strm,rc)
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! --------------------------------------------------------
+    ! set basic default values for streams
+    ! --------------------------------------------------------
 
+    ! input output variables
     type(shr_stream_streamType)    ,intent(inout) :: strm      ! data stream
     integer  (SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
 
-    !EOP
-
-    !----- local -----
-
-    !----- formats -----
+    ! local variables
     character(*),parameter :: subName = '(shr_stream_default) '
     character(*),parameter :: F00   = "('(shr_stream_default) ',8a)"
     character(*),parameter :: F01   = "('(shr_stream_default) ',1a,i6)"
+    ! --------------------------------------------------------
 
-    !-------------------------------------------------------------------------------
-
-    !-----------------------------------------------------------------------------
-    ! set default values for everything in stream
-    !-----------------------------------------------------------------------------
     call shr_stream_clearInit(strm)
     strm%nFiles           = 0
     strm%dataSource       = 'undefined'
     strm%filePath         = ' '
-
     if (allocated(strm%file)) deallocate(strm%file)
-
     strm%yearFirst        = 0
     strm%yearLast         = 0
     strm%yearAlign        = 0
     strm%offset           = 0
     strm%taxMode          = trim(shr_stream_taxis_cycle)
-
     strm%k_lvd            = -1
     strm%n_lvd            = -1
     strm%found_lvd        = .false.
     strm%k_gvd            = -1
     strm%n_gvd            = -1
     strm%found_gvd        = .false.
-
     strm%fileopen         = .false.
     strm%currfile         = ''
-
     strm%fldListFile      = ' '
     strm%fldListModel     = ' '
     strm%domFilePath      = ' '
@@ -870,12 +802,11 @@ contains
     strm%domZvarName      = ' '
     strm%domAreaName      = ' '
     strm%domMaskName      = ' '
-
     strm%calendar         = shr_cal_noleap
-
     if ( present(rc) ) rc = 0
 
   end subroutine shr_stream_default
+
   !===============================================================================
 
   subroutine shr_stream_readUpToTag(nUnit,tag,optionalTag,rc)

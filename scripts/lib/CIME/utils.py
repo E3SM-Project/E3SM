@@ -357,6 +357,19 @@ def _convert_to_fd(filearg, from_dir, mode="a"):
 
 _hack=object()
 
+def check_for_python(filepath, funcname=None):
+    is_python = is_python_executable(filepath)
+    has_function = True
+    if funcname is not None:
+        has_function = False
+        with open(filepath, 'r') as fd:
+            for line in fd.readlines():
+                if re.search(r"^def\s+{}\(".format(funcname), line) or re.search(r"^from.+import.+\s{}".format(funcname), line):
+                    has_function = True
+                    break
+
+    return is_python and has_function
+
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
                    from_dir=None, timeout=None):
     """
@@ -1241,18 +1254,23 @@ def convert_to_seconds(time_str):
     """
     Convert time value in [[HH:]MM:]SS to seconds
 
+    We assume that XX:YY is likely to be HH:MM, not MM:SS
+
     >>> convert_to_seconds("42")
     42
     >>> convert_to_seconds("01:01:01")
     3661
+    >>> convert_to_seconds("01:01")
+    3660
     """
     components = time_str.split(":")
     expect(len(components) < 4, "Unusual time string: '{}'".format(time_str))
 
     components.reverse()
     result = 0
+    starting_exp = 1 if len(components) == 2 else 0
     for idx, component in enumerate(components):
-        result += int(component) * pow(60, idx)
+        result += int(component) * pow(60, idx + starting_exp)
 
     return result
 
@@ -1351,7 +1369,7 @@ def format_time(time_format, input_format, input_time):
     """
     input_fields = input_format.split("%")
     expect(input_fields[0] == input_time[:len(input_fields[0])],
-           "Failed to parse the input time; does not match the header string")
+           "Failed to parse the input time '{}'; does not match the header string '{}'".format(input_time, input_format))
     input_time = input_time[len(input_fields[0]):]
     timespec = {"H": None, "M": None, "S": None}
     maxvals = {"M": 60, "S": 60}

@@ -213,8 +213,10 @@ integer(SHR_KIND_I8) FUNCTION shr_sys_irtc( rate )
    integer(SHR_KIND_IN)      :: count
    integer(SHR_KIND_IN)      :: count_rate
    integer(SHR_KIND_IN)      :: count_max
+
    integer(SHR_KIND_IN),save :: last_count   = -1
    integer(SHR_KIND_I8),save :: count_offset =  0
+!$OMP THREADPRIVATE (last_count, count_offset)
 
    !----- formats -----
    character(*),parameter :: subName =   '(shr_sys_irtc) '
@@ -222,6 +224,14 @@ integer(SHR_KIND_I8) FUNCTION shr_sys_irtc( rate )
 
 !-------------------------------------------------------------------------------
 ! emulates Cray/SGI irtc function (returns clock tick since last reboot)
+!
+! This function is not intended to measure elapsed time between
+! multi-threaded regions with different numbers of threads. However,
+! use of the threadprivate declaration does guarantee accurate
+! measurement per thread within a single multi-threaded region as
+! long as the number of threads is not changed dynamically during
+! execution within the multi-threaded region.
+!
 !-------------------------------------------------------------------------------
 
    call system_clock(count=count,count_rate=count_rate, count_max=count_max)
@@ -301,7 +311,9 @@ SUBROUTINE shr_sys_flush(unit)
 ! all compilers that CESM supports for years now.
 !
 !-------------------------------------------------------------------------------
+!$OMP SINGLE
    flush(unit)
+!$OMP END SINGLE
 !
 ! The following code was originally present, but there's an obvious issue.
 ! Since shr_sys_flush is usually used to flush output to a log, when it

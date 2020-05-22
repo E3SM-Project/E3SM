@@ -8,13 +8,14 @@ module shr_fire_emis_mod
   ! that are to be passed through the model coupler.
   !================================================================================
 
-  use ESMF         , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
-  use ESMF         , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
-  use shr_kind_mod , only : r8 => shr_kind_r8
-  use shr_kind_mod , only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
-  use shr_sys_mod  , only : shr_sys_abort
-  use shr_log_mod  , only : logunit => shr_log_Unit
-  use shr_nl_mod   , only : shr_nl_find_group_name
+  use ESMF                , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet
+  use ESMF                , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS
+  use shr_kind_mod        , only : r8 => shr_kind_r8, cl=>shr_kind_cl, cx=>shr_kind_cx, cs=>shr_kind_cs
+  use shr_sys_mod         , only : shr_sys_abort
+  use shr_log_mod         , only : logunit => shr_log_Unit
+  use shr_mpi_mod         , only : shr_mpi_bcast
+  use shr_nl_mod          , only : shr_nl_find_group_name
+  use shr_expr_parser_mod , only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
   implicit none
   private
@@ -29,6 +30,7 @@ module shr_fire_emis_mod
   public :: shr_fire_emis_comp_t           ! emission component data type
   public :: shr_fire_emis_mechcomp_t       ! data type for chemical compound in CAM mechanism than has fire emissions
 
+  logical :: fire_emis_initialized  = .false. ! true => shr_fire_emis_readnl alreay called
   logical :: shr_fire_emis_elevated = .true.
 
   character(len=CL), public :: shr_fire_emis_factors_file = ''       ! a table of basic fire emissions compounds
@@ -102,6 +104,7 @@ contains
     ! local variables
     type(ESMF_VM)       :: vm
     integer             :: localPet
+    integer             :: mpicom
     integer             :: rc
     integer             :: unitn            ! namelist unit number
     integer             :: ierr             ! error code
@@ -112,17 +115,23 @@ contains
     logical             :: fire_emis_elevated = .true.
     integer             :: i, tmp(1)
     character(*),parameter :: F00   = "('(shr_fire_emis_readnl) ',2a)"
+    character(len=*), parameter :: subname='(shr_fire_emis_readnl)'
     !------------------------------------------------------------------
 
     namelist /fire_emis_nl/ fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
 
-    emis_nflds=0
+    rc = ESMF_SUCCESS
+
+    ! If other processes have already initialized megan - then the info will just be re-initialized
+
     call ESMF_VMGetCurrent(vm, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
 
-    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
 
+    ! Note the following still needs to be called on all processors since the mpi_bcast is a collective 
+    ! call on all the pes of mpicom
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
@@ -137,36 +146,20 @@ contains
              endif
           endif
           close( unitn )
-          do i=1,maxspc
-             if (len_trim(fire_emis_specifier(i))>0) then
-                emis_nflds=emis_nflds+1
-             endif
-          enddo
        end if
     end if
-
-    tmp = emis_nflds
-    call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
-
-    emis_nflds = tmp(1)
-    if (emis_nflds > 0) then
-       call ESMF_VMBroadcast( vm, fire_emis_specifier, 2*CX*emis_nflds, 0, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
-       call ESMF_VMBroadcast( vm, fire_emis_factors_file, CL, 0, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
-       tmp = 0
-       if (fire_emis_elevated) tmp = 1
-       call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
-       if(tmp(1) == 1) fire_emis_elevated = .true.
-    endif
+    call shr_mpi_bcast(fire_emis_specifier    , mpicom)
+    call shr_mpi_bcast(fire_emis_factors_file , mpicom)
+    call shr_mpi_bcast(fire_emis_elevated     , mpicom)
 
     shr_fire_emis_factors_file = fire_emis_factors_file
     shr_fire_emis_elevated = fire_emis_elevated
 
-    ! parse the namelist info and initialize the module data
-    call shr_fire_emis_init( fire_emis_specifier )
+    ! parse the namelist info and initialize the module data - only if it has not been initialized
+    if (.not. fire_emis_initialized) then
+       call shr_fire_emis_init( fire_emis_specifier )
+    end if
+    emis_nflds = shr_fire_emis_mechcomps_n
 
   end subroutine shr_fire_emis_readnl
 
@@ -179,8 +172,6 @@ contains
     !--------------------------------------------------
     ! module data initializer
     !--------------------------------------------------
-
-    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
     ! input/output variables
     character(len=*), intent(in) :: specifier(:)
@@ -226,6 +217,8 @@ contains
     if (associated(items_list)) call shr_exp_list_destroy(items_list)
 
     ! Need to explicitly add Fl_ based on naming convention
+
+    fire_emis_initialized = .true.
 
   end subroutine shr_fire_emis_init
 

@@ -62,7 +62,7 @@ def copy_histfiles(case, suffix):
         num_copied += len(test_hists)
         for test_hist in test_hists:
             test_hist = os.path.join(rundir,test_hist)
-            if not test_hist.endswith('.nc'):
+            if not test_hist.endswith('.nc') or 'once' in os.path.basename(test_hist):
                 logger.info("Will not compare non-netcdf file {}".format(test_hist))
                 continue
             new_file = "{}.{}".format(test_hist, suffix)
@@ -302,7 +302,7 @@ def compare_test(case, suffix1, suffix2, ignore_fieldlist_diffs=False):
                           ignore_fieldlist_diffs=ignore_fieldlist_diffs)
 
 def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix="",
-          ignore_fieldlist_diffs=False):
+          ignore_fieldlist_diffs=False, cprnc_exe=None):
     """
     Run cprnc to compare two individual nc files
 
@@ -322,7 +322,8 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
         where 'comment' is either an empty string or one of the module-level constants
         beginning with CPRNC_ (e.g., CPRNC_FIELDLISTS_DIFFER)
     """
-    cprnc_exe = case.get_value("CCSM_CPRNC")
+    if not cprnc_exe:
+        cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
     multiinst_regex = re.compile(r'.*%s[^_]*(_[0-9]{4})[.]h.?[.][^.]+?[.]nc' % model)
     mstr = ''
@@ -370,7 +371,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
                     files_match = False
                     comment = CPRNC_FIELDLISTS_DIFFER
             else:
-                expect(False, "Did not find an expected summary string in cprnc output")
+                expect(False, "Did not find an expected summary string in cprnc output:\n{}".format(out))
     else:
         # If there is an error in cprnc, we do the safe thing of saying the comparison failed
         files_match = False
