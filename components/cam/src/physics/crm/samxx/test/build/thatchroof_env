@@ -6,14 +6,17 @@ module load netcdf
 
 unset ARCH
 unset CUDA_ARCH
+unset NCRMS
 
 export NCHOME=${NETCDF_PATH}
 export NFHOME=${NETCDF_PATH}
-export NCRMS=4
+export NCRMS=31
 export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
-export FFLAGS="-g"
-export CXXFLAGS="-g"
-export ARCH="CUDA"
-export CUDA_ARCH="-arch sm_35"
+export FFLAGS="-O3"
+export CXXFLAGS="-O3"
+export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
+export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
+# export ARCH="CUDA"
+# export CUDA_ARCH="-arch sm_35"

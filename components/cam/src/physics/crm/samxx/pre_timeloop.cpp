@@ -5,7 +5,6 @@ void pre_timeloop() {
   auto &longitude0               = :: longitude0;
   auto &lat0                     = :: lat0;
   auto &long0                    = :: long0;
-  auto &gcolp                    = :: gcolp;
   auto &idt_gl                   = :: idt_gl;
   auto &factor_xy                = :: factor_xy;
   auto &crm_rad_temperature      = :: crm_rad_temperature;
@@ -439,7 +438,7 @@ void pre_timeloop() {
     precip_init();
   }
   
-  // if ( igstep <= 1 ) { setperturb(); }
+  if ( igstep <= 1 ) { setperturb(); }
 
   if ( nx%crm_nx_rad==0 || ny%crm_ny_rad==0  ) {
     crm_nx_rad_fac = static_cast<real>(crm_nx_rad)/static_cast<real>(nx);
@@ -457,8 +456,8 @@ void pre_timeloop() {
   crm_run_time  = dt_glob;
   icrm_run_time = 1.0/crm_run_time;
 
-  // if (use_crm_accel) {
-  //   crm_accel_nstop(nstop);  // reduce nstop by factor of (1 + crm_accel_factor)
-  // }
+  if (use_crm_accel) {
+    crm_accel_nstop(nstop);  // reduce nstop by factor of (1 + crm_accel_factor)
+  }
 
 }

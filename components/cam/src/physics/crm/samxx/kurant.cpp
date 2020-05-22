@@ -1,5 +1,6 @@
 
 #include "kurant.h"
+#include "vars.h"
 
 void kurant () {
   auto &w     = ::w;
@@ -55,6 +56,12 @@ void kurant () {
   yakl::ParallelMax<real,yakl::memDevice> pmax( nzm*ncrms );
   real cfl_loc = pmax(tmpMax.data());
   cfl = max(cfl,cfl_loc);
+
+  if(cfl != cfl) {
+    std::cout << "kurant() - cfl is NaN.";
+    finalize();
+    exit(-1);
+  }
 
   kurant_sgs(cfl);
 

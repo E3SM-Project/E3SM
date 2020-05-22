@@ -32,8 +32,6 @@ extern "C" void crm(int ncrms_in, real dt_gl, int plev, real *crm_input_bflxls_p
   crm_accel_factor = crm_accel_factor_in;
   crm_accel_uv = crm_accel_uv_in;
 
-  std::cout << "DEBUG: igstep: " << igstep << std::endl;
-
   yakl::init();
   {
 
