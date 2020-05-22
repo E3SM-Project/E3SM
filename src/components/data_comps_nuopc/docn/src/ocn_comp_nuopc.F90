@@ -25,7 +25,7 @@ module ocn_comp_nuopc
   use dshr_strdata_mod , only : shr_strdata_get_stream_pointer
   use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_reset_mask, dshr_mesh_init
+  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -63,6 +63,7 @@ module ocn_comp_nuopc
   character(len=16)            :: inst_suffix = ""                    ! char string associated with instance (ie. "_0001" or "")
   integer                      :: logunit                             ! logging unit number
   logical                      :: read_restart                        ! start from restart
+  logical                      :: aquaplanet = .false.
   character(*) , parameter     :: nullstr = 'undefined'
 
   ! docn_in namelist input
@@ -355,7 +356,7 @@ contains
          read_restart, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-       call dshr_reset_mask(model_mesh, rc=rc)
+          aquaplanet = .true.
     else
        call dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
             mpicom, compid, logunit, rc=rc)
@@ -638,43 +639,54 @@ contains
     call dshr_state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     Fioo_q(:) = 0._r8
-
-    ! Initialize export state data that has corresponding stream field
-    call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='t', &
-         state=exportState, state_ptr=So_t, logunit=logunit, masterproc=masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='s', &
-         state=exportState, state_ptr=So_s, logunit=logunit, masterproc=masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='u', &
-         state=exportState, state_ptr=So_u, logunit=logunit, masterproc=masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='v', &
-         state=exportState, state_ptr=So_v, logunit=logunit, masterproc=masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='dhdx', &
-         state=exportState, state_ptr=So_dhdx, logunit=logunit, masterproc=masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='dhdy', &
-         state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! initialize pointers for stream fields that have no corresponding import or export fields
-    call shr_strdata_get_stream_pointer( sdat, 'qbot', strm_qbot, logunit, masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'h'   , strm_h   , logunit, masterproc, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and
-    ! currently this is not implemented in cmeps
-    call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
-       call dshr_state_getfldptr(exportState, 'So_fswpen', fldptr1=So_fswpen, rc=rc)
+    if (aquaplanet) then
+          call dshr_state_getfldptr(exportState, 'So_t', fldptr1=So_t, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(exportState, 'So_s', fldptr1=So_s, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(exportState, 'So_u', fldptr1=So_u, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(exportState, 'So_v', fldptr1=So_v, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          So_u(:) = 0.0_r8
+          So_v(:) = 0.0_r8
+    else
+       ! Initialize export state data that has corresponding stream field
+       call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='t', &
+            state=exportState, state_ptr=So_t, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       So_fswpen(:) = swp
-    end if
+       call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='s', &
+            state=exportState, state_ptr=So_s, logunit=logunit, masterproc=masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='u', &
+            state=exportState, state_ptr=So_u, logunit=logunit, masterproc=masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='v', &
+            state=exportState, state_ptr=So_v, logunit=logunit, masterproc=masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='dhdx', &
+            state=exportState, state_ptr=So_dhdx, logunit=logunit, masterproc=masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='dhdy', &
+            state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
+       ! initialize pointers for stream fields that have no corresponding import or export fields
+       call shr_strdata_get_stream_pointer( sdat, 'qbot', strm_qbot, logunit, masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'h'   , strm_h   , logunit, masterproc, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and
+       ! currently this is not implemented in cmeps
+       call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
+          call dshr_state_getfldptr(exportState, 'So_fswpen', fldptr1=So_fswpen, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          So_fswpen(:) = swp
+       end if
+    endif
     ! Initialize export state pointers to non-zero
     So_t(:) = TkFrz
     So_s(:) = ocnsalt
@@ -754,16 +766,20 @@ contains
     ! This automatically will update the fields in the export state
     call t_barrierf('docn_dfield_copy_BARRIER', mpicom)
     call t_startf('docn_dfield_copy')
-    call dshr_dfield_copy(dfields, sdat, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(.not. aquaplanet) then
+       call dshr_dfield_copy(dfields, sdat, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
     call t_stopf('docn_dfield_copy')
 
     !-------------------------------------------------
     ! Determine additional data model behavior based on the mode
     !-------------------------------------------------
-
-    lsize = sdat%model_lsize
-
+    if(aquaplanet) then
+       lsize = size(So_t)
+    else
+       lsize = sdat%model_lsize
+    endif
     call t_startf('docn_datamode')
     select case (trim(datamode))
 
@@ -792,7 +808,6 @@ contains
        end if
        call docn_prescribed_sst(xc, yc, lsize, aquap_option, So_t)
        So_t(:) = So_t(:) + TkFrz
-
     case('SST_AQUAPFILE')
        So_s(:)      = 0.0_r8
        if (associated(So_fswpen)) then
@@ -1055,7 +1070,6 @@ contains
           end if
        end do
     end if
-
   end subroutine docn_prescribed_sst
 
 end module ocn_comp_nuopc

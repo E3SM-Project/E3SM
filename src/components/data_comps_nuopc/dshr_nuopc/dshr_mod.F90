@@ -226,7 +226,7 @@ contains
        model_createmesh_fromfile, rc)
 
     ! ----------------------------------------------
-    ! Initialize sdat
+    ! Initialize model mesh
     ! ----------------------------------------------
 
     ! input/output variables
@@ -253,9 +253,8 @@ contains
     real(r8)                     :: scmlat
     real(r8)                     :: scmlon
     character(len=CL)            :: cvalue
-    character(len=*), parameter  :: subname='(dshr_mod:dshr_sdat_init)'
-    character(*)    , parameter  :: F01 ="('(dshr_sdat_init) ',a,2f10.4)"
-    character(*)    , parameter  :: F00 ="('(dshr_sdat_init) ',a)"
+    character(len=*), parameter  :: subname='(dshr_mod:dshr_mesh_init)'
+    character(*)    , parameter  :: F00 ="('(dshr_mesh_init) ',a)"
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -354,7 +353,7 @@ contains
 
   end subroutine dshr_sdat_init
 
-  ! Reset all elements of model_mesh to 1
+  ! Reset all elements of model_mesh mask to 1
   subroutine dshr_reset_mask(mesh, rc)
     use ESMF, only : ESMF_MeshGet, ESMF_DistGridGet, ESMF_MeshSet, ESMF_SUCCESS, ESMF_Mesh, ESMF_DistGrid
     type(ESMF_Mesh), intent(inout) :: mesh

@@ -72,8 +72,10 @@ contains
     rc = ESMF_SUCCESS
 
     allocate(dfield_new, stat=status)
-    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-    if (status /= 0) call shr_sys_abort(msgstr)
+    if (status /= 0) then
+       write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+       call shr_sys_abort(msgstr)
+    endif
     dfield_new%next => dfields
     dfields => dfield_new
     dfield_new%stream_index = iunset
@@ -99,12 +101,11 @@ contains
        end do
        if (found) exit
     end do
-
     if (masterproc) then
        if (found) then
           write(logunit,*)'(dshr_addfield_add) set pointer for stream field strm_'//trim(strm_fld)
        else
-          write(logunit,*)'(dshr_addfield_add) no pointer set for for stream field strm_'//trim(strm_fld)
+          write(logunit,*)'(dshr_addfield_add) no pointer set for stream field strm_'//trim(strm_fld)
        end if
     end if
 
@@ -190,7 +191,7 @@ contains
                    dfield_new%fldbun_indices(nf) = n
                    if (masterproc) then
                       write(logunit,*)'(dshr_addfield_add) using stream field strm_'//&
-                           trim(strm_flds(nf))//' for 2d '//trim(state_fld) 
+                           trim(strm_flds(nf))//' for 2d '//trim(state_fld)
                    end if
                 end if
              end do
