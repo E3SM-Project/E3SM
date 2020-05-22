@@ -1,4 +1,3 @@
-add_subdirectory(ekat)
 add_subdirectory(share)
 add_subdirectory(dynamics)
 add_subdirectory(physics)
