@@ -17,7 +17,7 @@ module gllfvremap_util_mod
   ! PHIS_d in the sense that an integral of either one over a finite volume
   ! subcell has the same value.
   !
-  ! AMB 2019/07-2020/05 Initial
+  ! AMB 2019/07-2020/06 Initial
 
   use hybrid_mod, only: hybrid_t
   use kinds, only: real_kind
@@ -118,11 +118,12 @@ contains
     real(kind=real_kind) :: wr(np,np,nlev,2)
     integer :: i, j, k, q, d, tl
 
+    elem%state%Q(:,:,:,1) = zero ! moisture tracer is 0
     do j = 1,np
        do i = 1,np
           p = change_coordinates(elem%spherep(i,j))
           do k = 1,nlev
-             do q = 1,qsize
+             do q = 2,qsize
                 elem%state%Q(i,j,k,q) = one + &
                      half*sin((half + modulo(q,2))*p%x)* &
                      sin((half + modulo(q,3))*1.5d0*p%y)* &
@@ -237,7 +238,8 @@ contains
           if (ftype == 0) then
              do k = 1,nlev
                 wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*reshape(pg_data%ps(:,ie), (/nf,nf/))
+                                (hvcoord%hybi(k+1) - hvcoord%hybi(k))* &
+                                reshape(pg_data%ps(:,ie), (/nf,nf/))
              end do
           end if
           do j = 1,nf
@@ -248,8 +250,8 @@ contains
                 pg_data%uv(col,:,:,ie) = f/dt
                 pg_data%T(col,:,ie) = f/dt
                 ! no moisture adjustment => no dp3d adjustment
+                pg_data%q(col,:,1,ie) = zero
                 if (ftype == 0) then
-                   pg_data%q(col,:,1,ie) = zero
                    do q = 2,qsize
                       pg_data%q(col,:,q,ie) = f*wg(i,j,:)/dt
                    end do
@@ -284,7 +286,7 @@ contains
     mass1 = zero; mass2 = zero
     qmin1 = one; qmax1 = -one
     qmin2 = one; qmax2 = -one
-    do q = 1, qsize+4
+    do q = 2, qsize+4
        do ie = nets,nete
           do k = 1,nlev
              wg(:,:,k) = elem(ie)%spheremp
@@ -555,10 +557,11 @@ contains
              if (hybrid%ithr == 0) then
                 ftype = 2
                 if (ftype_idx == 2) ftype = 0
-                ! check=.true. means that the remap routines to
+                ! check=2 means that the remap routines due
                 ! element-level verification of properties and output
-                ! messages if a property fails.
-                call gfr_init(hybrid%par, elem, nphys, .true., boost_pg1)
+                ! messages if a property fails. check >= 1 means that
+                ! global properties are checked.
+                call gfr_init(hybrid%par, elem, nphys, 2, boost_pg1)
                 call init(nphys)
              end if
              !$omp barrier
@@ -745,7 +748,7 @@ contains
          write_latlon)
 
     deallocate(gll_fields, pg_fields)
-    stat = 0
 #endif
+    stat = 0
   end function gfr_pgn_to_smoothed_topo
 end module gllfvremap_util_mod
