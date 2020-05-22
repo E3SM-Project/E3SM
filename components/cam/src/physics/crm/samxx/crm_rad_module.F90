@@ -15,21 +15,21 @@ module crm_rad_module
 
    type crm_rad_type
       ! Radiative heating
-      real(crm_rknd), pointer, contiguous :: qrad(:,:,:,:)
+      real(crm_rknd), pointer :: qrad(:,:,:,:)
 
       ! Quantities used by the radiation code. Note that these are strange in that they are 
       ! time-averages, but spatially-resolved.
-      real(crm_rknd), pointer, contiguous :: temperature(:,:,:,:) ! rad temperature
-      real(crm_rknd), pointer, contiguous :: qv (:,:,:,:) ! rad vapor
-      real(crm_rknd), pointer, contiguous :: qc (:,:,:,:) ! rad cloud water
-      real(crm_rknd), pointer, contiguous :: qi (:,:,:,:) ! rad cloud ice
-      real(crm_rknd), pointer, contiguous :: cld(:,:,:,:) ! rad cloud fraction
+      real(crm_rknd), pointer :: temperature(:,:,:,:) ! rad temperature
+      real(crm_rknd), pointer :: qv (:,:,:,:) ! rad vapor
+      real(crm_rknd), pointer :: qc (:,:,:,:) ! rad cloud water
+      real(crm_rknd), pointer :: qi (:,:,:,:) ! rad cloud ice
+      real(crm_rknd), pointer :: cld(:,:,:,:) ! rad cloud fraction
 
       ! Only relevant when using 2-moment microphysics
-      real(crm_rknd), pointer, contiguous :: nc(:,:,:,:) ! rad cloud droplet number (#/kg)
-      real(crm_rknd), pointer, contiguous :: ni(:,:,:,:) ! rad cloud ice crystal number (#/kg)
-      real(crm_rknd), pointer, contiguous :: qs(:,:,:,:) ! rad cloud snow (kg/kg)
-      real(crm_rknd), pointer, contiguous :: ns(:,:,:,:) ! rad cloud snow crystal number (#/kg)
+      real(crm_rknd), pointer :: nc(:,:,:,:) ! rad cloud droplet number (#/kg)
+      real(crm_rknd), pointer :: ni(:,:,:,:) ! rad cloud ice crystal number (#/kg)
+      real(crm_rknd), pointer :: qs(:,:,:,:) ! rad cloud snow (kg/kg)
+      real(crm_rknd), pointer :: ns(:,:,:,:) ! rad cloud snow crystal number (#/kg)
    end type crm_rad_type
 
 contains
