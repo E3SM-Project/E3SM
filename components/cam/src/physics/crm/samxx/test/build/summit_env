@@ -7,6 +7,7 @@ module load DefApps gcc/8.1.1 cuda/10.1.105 netcdf netcdf-fortran cmake python/3
 source deactivate
 
 unset ARCH
+unset NCRMS
 
 export NCHOME=${OLCF_NETCDF_ROOT}
 export NFHOME=${OLCF_NETCDF_FORTRAN_ROOT}
@@ -16,8 +17,8 @@ export CXX=mpic++
 export FC=mpif90
 export FFLAGS=-O3
 export CXXFLAGS=-O3
-# export ARCH="CUDA"
-# export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math"
+export ARCH="CUDA"
+export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
 export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
 

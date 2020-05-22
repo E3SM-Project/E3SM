@@ -2903,7 +2903,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,pgigpu,pgiacc,gnu</COMPILERS>
+    <COMPILERS>ibm,pgi,pgigpu,pgiacc,gnu,gnugpu</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -2941,6 +2941,13 @@
           <arg name="gpu"> -gpu </arg>
         </arguments>
       </mpirun>
+      <mpirun mpilib="spectrum-mpi" compiler="gnugpu" >
+        <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+        <arguments>
+          <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
+          <arg name="gpu"> -gpu </arg>
+        </arguments>
+      </mpirun>
     <module_system type="module" allow_error="true">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/sh</init_path>
@@ -2961,7 +2968,7 @@
         <command name="load">python/3.5.2</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
-        <command name="load">cmake/3.13.4</command>
+        <command name="load">cmake/3.15.2</command>
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
@@ -2977,15 +2984,20 @@
         <command name="load">xl/16.1.1-5</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/6.4.0</command>
+        <command name="load">gcc/8.1.1</command>
+      </modules>
+      <modules compiler="gnugpu">
+        <command name="load">gcc/8.1.1</command>
+        <command name="load">cuda/10.1.105</command>
       </modules>
       <modules compiler="pgiacc">
         <command name="load">cuda/10.1.168</command>
       </modules>
 
       <modules>
-        <command name="load">netcdf/4.6.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="load">hdf5</command>
+        <command name="load">netcdf</command>
+        <command name="load">netcdf-fortran</command>
       </modules>
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
@@ -2996,6 +3008,9 @@
 	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
+	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+      </modules>
+      <modules compiler="gnugpu" mpilib="!mpi-serial">
 	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
 

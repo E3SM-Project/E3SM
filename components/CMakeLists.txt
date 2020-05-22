@@ -45,7 +45,7 @@ function(set_compilers_e3sm)
 endfunction()
 set_compilers_e3sm()
 
-project(E3SM C CXX Fortran)
+project(E3SM C CXX Fortran CUDA)
 
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
