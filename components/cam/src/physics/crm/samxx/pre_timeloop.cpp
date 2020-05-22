@@ -456,8 +456,8 @@ void pre_timeloop() {
   crm_run_time  = dt_glob;
   icrm_run_time = 1.0/crm_run_time;
 
-  if (use_crm_accel) {
-    crm_accel_nstop(nstop);  // reduce nstop by factor of (1 + crm_accel_factor)
-  }
+  // if (use_crm_accel) {
+  //   crm_accel_nstop(nstop);  // reduce nstop by factor of (1 + crm_accel_factor)
+  // }
 
 }

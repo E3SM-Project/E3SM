@@ -79,6 +79,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
 
 
                             
+extern int pcols;
 extern int ncrms;
 
 extern int  nstep                    ;

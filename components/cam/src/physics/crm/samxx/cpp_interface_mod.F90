@@ -9,7 +9,7 @@ module cpp_interface_mod
 
   interface
 
-    subroutine crm(ncrms_in, dt_gl, plev, crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
+    subroutine crm(ncrms_in, pcols_in, dt_gl, plev, crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
                    crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
                    crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
@@ -32,7 +32,7 @@ module cpp_interface_mod
       use iso_c_binding, only: c_bool
       implicit none
       logical(c_bool), value :: use_crm_accel, crm_accel_uv
-      integer(crm_iknd), value :: ncrms_in, plev, igstep
+      integer(crm_iknd), value :: ncrms_in, pcols_in, plev, igstep
       real(crm_rknd), value :: dt_gl, crm_accel_factor
       real(crm_rknd), dimension(*) :: crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
                                       crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &

@@ -288,6 +288,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crm_output_module,      only: crm_output_type, crm_output_initialize, crm_output_finalize
    use crm_ecpp_output_module, only: crm_ecpp_output_type
    use iso_c_binding         , only: c_bool
+   ! use spmd_utils,          only: masterproc
+   ! use mpi
 
    real(r8),                   intent(in   ) :: ztodt            ! global model time increment
    type(physics_state),        intent(in   ) :: state            ! Global model state 
@@ -394,6 +396,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical(c_bool) :: crm_accel_uv
    logical :: use_crm_accel_tmp
    logical :: crm_accel_uv_tmp
+   ! integer :: ierr
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -569,6 +572,101 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field (pbuf, crm_pcp_idx, crm_pcp)
    call pbuf_get_field (pbuf, crm_snw_idx, crm_snw)
 #endif
+
+   ! if (masterproc) then
+   ! write(*,*) "DEBUG: ncol                               : " , ncol
+   ! write(*,*) "DEBUG: shape( crm_rad%qrad               ): " , shape( crm_rad%qrad               ) 
+   ! write(*,*) "DEBUG: shape( crm_rad%temperature        ): " , shape( crm_rad%temperature        ) 
+   ! write(*,*) "DEBUG: shape( crm_rad%qv                 ): " , shape( crm_rad%qv                 ) 
+   ! write(*,*) "DEBUG: shape( crm_rad%qc                 ): " , shape( crm_rad%qc                 ) 
+   ! write(*,*) "DEBUG: shape( crm_rad%qi                 ): " , shape( crm_rad%qi                 ) 
+   ! write(*,*) "DEBUG: shape( crm_rad%cld                ): " , shape( crm_rad%cld                ) 
+   ! write(*,*) "DEBUG: shape( crm_state%u_wind           ): " , shape( crm_state%u_wind           )
+   ! write(*,*) "DEBUG: shape( crm_state%v_wind           ): " , shape( crm_state%v_wind           )
+   ! write(*,*) "DEBUG: shape( crm_state%w_wind           ): " , shape( crm_state%w_wind           )
+   ! write(*,*) "DEBUG: shape( crm_state%temperature      ): " , shape( crm_state%temperature      )
+   ! write(*,*) "DEBUG: shape( crm_state%qt               ): " , shape( crm_state%qt               )
+   ! write(*,*) "DEBUG: shape( crm_state%qp               ): " , shape( crm_state%qp               )
+   ! write(*,*) "DEBUG: shape( crm_state%qn               ): " , shape( crm_state%qn               )
+   ! write(*,*) "DEBUG: shape( crm_input%bflxls           ): " , shape( crm_input%bflxls           )
+   ! write(*,*) "DEBUG: shape( crm_input%wndls            ): " , shape( crm_input%wndls            )
+   ! write(*,*) "DEBUG: shape( crm_input%zmid             ): " , shape( crm_input%zmid             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%zint             ): " , shape( crm_input%zint             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%pmid             ): " , shape( crm_input%pmid             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%pint             ): " , shape( crm_input%pint             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%pdel             ): " , shape( crm_input%pdel             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%ul               ): " , shape( crm_input%ul               ) 
+   ! write(*,*) "DEBUG: shape( crm_input%vl               ): " , shape( crm_input%vl               ) 
+   ! write(*,*) "DEBUG: shape( crm_input%tl               ): " , shape( crm_input%tl               ) 
+   ! write(*,*) "DEBUG: shape( crm_input%qccl             ): " , shape( crm_input%qccl             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%qiil             ): " , shape( crm_input%qiil             ) 
+   ! write(*,*) "DEBUG: shape( crm_input%ql               ): " , shape( crm_input%ql               ) 
+   ! write(*,*) "DEBUG: shape( crm_input%tau00            ): " , shape( crm_input%tau00            ) 
+   ! write(*,*) "DEBUG: shape( crm_output%timing_factor   ): " , shape( crm_output%timing_factor   )
+   ! write(*,*) "DEBUG: shape( crm_output%prectend        ): " , shape( crm_output%prectend        )
+   ! write(*,*) "DEBUG: shape( crm_output%precstend       ): " , shape( crm_output%precstend       )
+   ! write(*,*) "DEBUG: shape( crm_output%cld             ): " , shape( crm_output%cld             )
+   ! write(*,*) "DEBUG: shape( crm_output%cldtop          ): " , shape( crm_output%cldtop          )
+   ! write(*,*) "DEBUG: shape( crm_output%gicewp          ): " , shape( crm_output%gicewp          )
+   ! write(*,*) "DEBUG: shape( crm_output%gliqwp          ): " , shape( crm_output%gliqwp          )
+   ! write(*,*) "DEBUG: shape( crm_output%mctot           ): " , shape( crm_output%mctot           )
+   ! write(*,*) "DEBUG: shape( crm_output%mcup            ): " , shape( crm_output%mcup            )
+   ! write(*,*) "DEBUG: shape( crm_output%mcdn            ): " , shape( crm_output%mcdn            )
+   ! write(*,*) "DEBUG: shape( crm_output%mcuup           ): " , shape( crm_output%mcuup           )
+   ! write(*,*) "DEBUG: shape( crm_output%mcudn           ): " , shape( crm_output%mcudn           )
+   ! write(*,*) "DEBUG: shape( crm_output%qc_mean         ): " , shape( crm_output%qc_mean         )
+   ! write(*,*) "DEBUG: shape( crm_output%qi_mean         ): " , shape( crm_output%qi_mean         )
+   ! write(*,*) "DEBUG: shape( crm_output%qs_mean         ): " , shape( crm_output%qs_mean         )
+   ! write(*,*) "DEBUG: shape( crm_output%qg_mean         ): " , shape( crm_output%qg_mean         )
+   ! write(*,*) "DEBUG: shape( crm_output%qr_mean         ): " , shape( crm_output%qr_mean         )
+   ! write(*,*) "DEBUG: shape( crm_output%mu_crm          ): " , shape( crm_output%mu_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%md_crm          ): " , shape( crm_output%md_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%eu_crm          ): " , shape( crm_output%eu_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%du_crm          ): " , shape( crm_output%du_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%ed_crm          ): " , shape( crm_output%ed_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%flux_qt         ): " , shape( crm_output%flux_qt         )
+   ! write(*,*) "DEBUG: shape( crm_output%flux_u          ): " , shape( crm_output%flux_u          )
+   ! write(*,*) "DEBUG: shape( crm_output%flux_v          ): " , shape( crm_output%flux_v          )
+   ! write(*,*) "DEBUG: shape( crm_output%fluxsgs_qt      ): " , shape( crm_output%fluxsgs_qt      )
+   ! write(*,*) "DEBUG: shape( crm_output%tkez            ): " , shape( crm_output%tkez            )
+   ! write(*,*) "DEBUG: shape( crm_output%tkesgsz         ): " , shape( crm_output%tkesgsz         )
+   ! write(*,*) "DEBUG: shape( crm_output%tkz             ): " , shape( crm_output%tkz             )
+   ! write(*,*) "DEBUG: shape( crm_output%flux_qp         ): " , shape( crm_output%flux_qp         )
+   ! write(*,*) "DEBUG: shape( crm_output%precflux        ): " , shape( crm_output%precflux        )
+   ! write(*,*) "DEBUG: shape( crm_output%qt_trans        ): " , shape( crm_output%qt_trans        )
+   ! write(*,*) "DEBUG: shape( crm_output%qp_trans        ): " , shape( crm_output%qp_trans        )
+   ! write(*,*) "DEBUG: shape( crm_output%qp_fall         ): " , shape( crm_output%qp_fall         )
+   ! write(*,*) "DEBUG: shape( crm_output%qp_evp          ): " , shape( crm_output%qp_evp          )
+   ! write(*,*) "DEBUG: shape( crm_output%qp_src          ): " , shape( crm_output%qp_src          )
+   ! write(*,*) "DEBUG: shape( crm_output%qt_ls           ): " , shape( crm_output%qt_ls           )
+   ! write(*,*) "DEBUG: shape( crm_output%t_ls            ): " , shape( crm_output%t_ls            )
+   ! write(*,*) "DEBUG: shape( crm_output%jt_crm          ): " , shape( crm_output%jt_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%mx_crm          ): " , shape( crm_output%mx_crm          )
+   ! write(*,*) "DEBUG: shape( crm_output%cltot           ): " , shape( crm_output%cltot           )
+   ! write(*,*) "DEBUG: shape( crm_output%clhgh           ): " , shape( crm_output%clhgh           )
+   ! write(*,*) "DEBUG: shape( crm_output%clmed           ): " , shape( crm_output%clmed           )
+   ! write(*,*) "DEBUG: shape( crm_output%cllow           ): " , shape( crm_output%cllow           )
+   ! write(*,*) "DEBUG: shape( crm_output%sltend          ): " , shape( crm_output%sltend          )
+   ! write(*,*) "DEBUG: shape( crm_output%qltend          ): " , shape( crm_output%qltend          )
+   ! write(*,*) "DEBUG: shape( crm_output%qcltend         ): " , shape( crm_output%qcltend         )
+   ! write(*,*) "DEBUG: shape( crm_output%qiltend         ): " , shape( crm_output%qiltend         )
+   ! write(*,*) "DEBUG: shape( crm_output%tk              ): " , shape( crm_output%tk              )
+   ! write(*,*) "DEBUG: shape( crm_output%tkh             ): " , shape( crm_output%tkh             )
+   ! write(*,*) "DEBUG: shape( crm_output%qcl             ): " , shape( crm_output%qcl             )
+   ! write(*,*) "DEBUG: shape( crm_output%qci             ): " , shape( crm_output%qci             )
+   ! write(*,*) "DEBUG: shape( crm_output%qpl             ): " , shape( crm_output%qpl             )
+   ! write(*,*) "DEBUG: shape( crm_output%qpi             ): " , shape( crm_output%qpi             )
+   ! write(*,*) "DEBUG: shape( crm_output%z0m             ): " , shape( crm_output%z0m             )
+   ! write(*,*) "DEBUG: shape( crm_output%taux            ): " , shape( crm_output%taux            )
+   ! write(*,*) "DEBUG: shape( crm_output%tauy            ): " , shape( crm_output%tauy            )
+   ! write(*,*) "DEBUG: shape( crm_output%precc           ): " , shape( crm_output%precc           )
+   ! write(*,*) "DEBUG: shape( crm_output%precl           ): " , shape( crm_output%precl           )
+   ! write(*,*) "DEBUG: shape( crm_output%precsc          ): " , shape( crm_output%precsc          )
+   ! write(*,*) "DEBUG: shape( crm_output%precsl          ): " , shape( crm_output%precsl          )
+   ! write(*,*) "DEBUG: shape( crm_output%prec_crm        ): " , shape( crm_output%prec_crm        )
+   ! endif
+   ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
+   ! stop
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -819,7 +917,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !          crm_input, crm_state, crm_rad,  &
       !          crm_ecpp_output, crm_output )
 
-      call crm(ncol, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
+      call crm(ncol, pcols, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &

@@ -5,7 +5,7 @@
 #include "vars.h"
 
 
-extern "C" void crm(int ncrms_in, real dt_gl, int plev, real *crm_input_bflxls_p, real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
+extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_input_bflxls_p, real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
                     real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p, real *crm_input_ul_p, real *crm_input_vl_p, 
                     real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p, 
                     real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
@@ -26,11 +26,17 @@ extern "C" void crm(int ncrms_in, real dt_gl, int plev, real *crm_input_bflxls_p
                     bool use_crm_accel_in, real crm_accel_factor_in, bool crm_accel_uv_in) {
 
   dt_glob = dt_gl;
+  pcols = pcols_in;
   ncrms = ncrms_in;
   igstep = igstep_in;
+
   use_crm_accel = use_crm_accel_in;
   crm_accel_factor = crm_accel_factor_in;
   crm_accel_uv = crm_accel_uv_in;
+
+  use_crm_accel = false;
+  crm_accel_factor = 1.;
+  crm_accel_uv = false;
 
   yakl::init();
   {
