@@ -190,80 +190,6 @@
 					possible_values="'split_explicit', 'RK4', 'unsplit_explicit'"
 		/>
 	</nml_record>
-	<nml_record name="ALE_vertical_grid" mode="forward">
-		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
-					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
-					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'"
-		/>
-		<nml_option name="config_ALE_thickness_proportionality" type="character" default_value="restingThickness_times_weights" units="unitless"
-					description="When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines."
-					possible_values="'restingThickness_times_weights' or 'weights_only'"
-		/>
-		<nml_option name="config_vert_taper_weight_depth_1" type="real" default_value="250.0" units="m"
-					description="Vertical coordinate taper weight is one above this depth, linearly decreases to zero below."
-					possible_values="any positive real value, but typically 100 to 1000 m."
-		/>
-		<nml_option name="config_vert_taper_weight_depth_2" type="real" default_value="500.0" units="m"
-					description="Vertical coordinate taper weight is zero below this depth, linearly increases to one above."
-					possible_values="any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1."
-		/>
-		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
-					description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_min_thickness" type="real" default_value="1.0" units="m"
-					description="Minimum thickness allowed."
-					possible_values="any positive real value, but typically 0.1 to 1 m."
-		/>
-		<nml_option name="config_max_thickness_factor" type="real" default_value="6.0" units="unitless"
-					description="Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
-					possible_values="any positive real value, but typically 2-4."
-		/>
-		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
-					description="Determines if the positive Z axis is aligned with the positive K index direction."
-					possible_values=".true. or .false."
-		/>
-	</nml_record>
-	<nml_record name="ALE_frequency_filtered_thickness" mode="forward">
-		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
-					description="If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
-					description="Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
-					possible_values="any positive real value, but typically 5 days."
-		/>
-		<nml_option name="config_use_highFreqThick_restore" type="logical" default_value=".false." units="unitless"
-					description="If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_highFreqThick_restore_time" type="real" default_value="30.0" units="days"
-					description="Restoring time scale for high-frequency thickness, $\tau_{hhf}$."
-					possible_values="any positive real value, but typically 5-30 days."
-		/>
-		<nml_option name="config_use_highFreqThick_del2" type="logical" default_value=".false." units="unitless"
-					description="If true, high frequency thickness prognostic equation ($h^{hf}$) includes term 3 on the RHS, the diffusion term."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_highFreqThick_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
-					description="Horizonal high frequency thickness diffusion, $\kappa_{hhf}$."
-					possible_values="any positive real"
-		/>
-	</nml_record>
-	<nml_record name="partial_bottom_cells" mode="init">
-		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
-					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_pbc_alteration_type" type="character" default_value="full_cell" units="unitless"
-					description="Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
-					possible_values="'full_cell' or 'partial_cell'"
-		/>
-		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
-					description="Determines the minimum fraction of a cell altering the initial conditions can create."
-					possible_values="Any real between 0 and 1."
-		/>
-	</nml_record>
 	<nml_record name="hmix" mode="forward">
 		<nml_option name="config_hmix_scaleWithMesh" type="logical" default_value=".false." units="unitless"
 					description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."
@@ -344,27 +270,27 @@
 		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
-    />
-    <nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
-        description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
-        possible_values="positive real numbers, but small"
-    />
+		/>
+		<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
+					description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
+					possible_values="positive real numbers, but small"
+		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
-    />
-    <nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
-      description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
-      possible_values=".true. or .false."
-    />
-    <nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
-      description="If true, Redi slope is tapered near sfc based on Large et al 1997"
-      possible_values=".true. or .false."
-    />
-    <nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
-      description="If true, the N2 limiting is applied to the horizontal diffusion term"
-      possible_values=".true. or .false."
-    />
+		/>
+		<nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
+					description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
+					description="If true, Redi slope is tapered near sfc based on Large et al 1997"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
+					description="If true, the N2 limiting is applied to the horizontal diffusion term"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
@@ -399,26 +325,6 @@
 		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
 					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
 					possible_values="Any positive real value."
-		/>
-	</nml_record>
-	<nml_record name="hmix_del2_tensor" mode="forward">
-		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
-					description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del2 mixing is not fully vetted and not recommended for production simulations."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_mom_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
-					description="Horizonal viscosity, $\nu_h$."
-					possible_values="any positive real"
-		/>
-	</nml_record>
-	<nml_record name="hmix_del4_tensor" mode="forward">
-		<nml_option name="config_use_mom_del4_tensor" type="logical" default_value=".false." units="unitless"
-					description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del4 mixing is not fully vetted and not recommended for production simulations."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_mom_del4_tensor" type="real" default_value="5.0e13" units="m^4 s^{-1}"
-					description="Coefficient for horizontal biharmonic operator on momentum."
-					possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -1090,18 +996,64 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="testing" mode="forward">
-		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
-					description="If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test."
+	<nml_record name="ALE_vertical_grid" mode="forward">
+		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
+					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
+					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'"
+		/>
+		<nml_option name="config_ALE_thickness_proportionality" type="character" default_value="restingThickness_times_weights" units="unitless"
+					description="When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines."
+					possible_values="'restingThickness_times_weights' or 'weights_only'"
+		/>
+		<nml_option name="config_vert_taper_weight_depth_1" type="real" default_value="250.0" units="m"
+					description="Vertical coordinate taper weight is one above this depth, linearly decreases to zero below."
+					possible_values="any positive real value, but typically 100 to 1000 m."
+		/>
+		<nml_option name="config_vert_taper_weight_depth_2" type="real" default_value="500.0" units="m"
+					description="Vertical coordinate taper weight is zero below this depth, linearly increases to one above."
+					possible_values="any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1."
+		/>
+		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
+					description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
-					description="If true, tensor operations are tested upon start-up."
+		<nml_option name="config_min_thickness" type="real" default_value="1.0" units="m"
+					description="Minimum thickness allowed."
+					possible_values="any positive real value, but typically 0.1 to 1 m."
+		/>
+		<nml_option name="config_max_thickness_factor" type="real" default_value="6.0" units="unitless"
+					description="Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
+					possible_values="any positive real value, but typically 2-4."
+		/>
+		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
+					description="Determines if the positive Z axis is aligned with the positive K index direction."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
-					description="Character string to choose tensor test fuction"
-					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
+	</nml_record>
+	<nml_record name="ALE_frequency_filtered_thickness" mode="forward">
+		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
+					description="If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
+					description="Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
+					possible_values="any positive real value, but typically 5 days."
+		/>
+		<nml_option name="config_use_highFreqThick_restore" type="logical" default_value=".false." units="unitless"
+					description="If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_highFreqThick_restore_time" type="real" default_value="30.0" units="days"
+					description="Restoring time scale for high-frequency thickness, $\tau_{hhf}$."
+					possible_values="any positive real value, but typically 5-30 days."
+		/>
+		<nml_option name="config_use_highFreqThick_del2" type="logical" default_value=".false." units="unitless"
+					description="If true, high frequency thickness prognostic equation ($h^{hf}$) includes term 3 on the RHS, the diffusion term."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_highFreqThick_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
+					description="Horizonal high frequency thickness diffusion, $\kappa_{hhf}$."
+					possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="debug" mode="forward;init">
@@ -1216,6 +1168,20 @@
 		<nml_option name="config_read_nearest_restart" type="logical" default_value=".false." units="unitless"  mode="forward"
 					description="This flag is intended for the expert user.  If false, forward model will error out if time given by config_start_time (or Restart_timestamp file if config_start_time='file') does not match any xtime strings in the restart file.  If true, forward model will read in record with xtime nearest to config_start_time.  Note that the restart file name is still given by config_start_time (or Restart_timestamp file), regardless of the state of this flag."
 					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="testing" mode="forward">
+		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
+					description="If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
+					description="If true, tensor operations are tested upon start-up."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
+					description="Character string to choose tensor test fuction"
+					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
 	<nml_record name="constrain_Haney_number" mode="init">
@@ -2912,7 +2878,7 @@
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
 		/>
-        <var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="Wind speed at 10 meter."
 		/>
 
