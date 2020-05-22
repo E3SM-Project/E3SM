@@ -116,8 +116,8 @@
       <value compset="_CAM5%SP2V1-ECPP"      >-use_ECPP </value>
       <!-- New MMF / super-parameterization compsets -->
       <value compset="_CAM5%MMF"               >-use_MMF -microphys mg2 -nlev 72 -rad rrtmgp -crm_nz 58 -crm_dx 1000 -crm_dt 5 -cppdefs '-DMMF_DIR_NS'</value>
-      <value compset="_CAM5%MMFXX_"            >-crm samxx -MMF_microphysics_scheme sam1mom -crm_nx 64 -crm_nx_rad 16 -crm_ny 1 crm_ny_rad 1</value>
-      <value compset="_CAM5%MMFXX-TEST_"       >-crm samxx -MMF_microphysics_scheme sam1mom -crm_nx 8 -crm_nx_rad 2 -crm_ny 1 crm_ny_rad 1</value>
+      <value compset="_CAM5%MMFXX_"            >-crm samxx -MMF_microphysics_scheme sam1mom -crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1</value>
+      <value compset="_CAM5%MMFXX-TEST_"       >-crm samxx -MMF_microphysics_scheme sam1mom -crm_nx 8 -crm_nx_rad 2 -crm_ny 1 -crm_ny_rad 1</value>
       <value compset="_CAM5%MMF[12]"           >-crm sam -crm_adv MPDATA</value>
       <value compset="_CAM5%MMF1"              >-MMF_microphysics_scheme sam1mom</value>
       <value compset="_CAM5%MMF1"              >-chem none </value>
