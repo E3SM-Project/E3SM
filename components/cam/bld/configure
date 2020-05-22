@@ -1321,8 +1321,8 @@ if (defined $opts{'use_MMF'}) {
     $cfg_ref->set('crm_dt', $opts{'crm_dt'});
     if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
-    $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
-    $cfg_ref->set('crm_adv', $opts{'crm_adv'});
+    if (defined $opts{'MMF_microphysics'}) {$cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});}
+    if (defined $opts{'crm_adv'}) {$cfg_ref->set('crm_adv', $opts{'crm_adv'});}
     # Check that model is not using threading for the MMF 
     if ($nthreads > 1) {
      die <<"EOF";
@@ -1893,13 +1893,15 @@ if (defined $opts{'use_MMF'}) {
     my $crm_dt = $cfg_ref->get('crm_dt');
     my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
     my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
-    my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
-    my $crm_adv = $cfg_ref->get('crm_adv');
+    if (defined $opts{'MMF_microphysics_scheme'}) {my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');}
+    if (defined $opts{'crm_adv'}) {my $crm_adv = $cfg_ref->get('crm_adv');}
     my $yes3Dval = 1;
     if ($crm_ny eq 1) {$yes3Dval = 0;}
-    $cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -DYES3DVAL=$yes3Dval";
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+    if (defined $opts{'crm_adv'}) { $cfg_cppdefs .= " -D_$opts{'crm_adv'}";}
+    if (defined $opts{'MMF_microphysics_scheme'}) { $cfg_cppdefs .= " -D_$opts{'MMF_microphysics_scheme'}";}
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
     if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
     if (defined $opts{'crm_nx_rad'}) { 
