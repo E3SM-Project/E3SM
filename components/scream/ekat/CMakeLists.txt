@@ -81,6 +81,7 @@ add_subdirectory(src/ekat)
 option (EKAT_ENABLE_TESTS "Whether tests should be built.\n" ON)
 
 if (EKAT_ENABLE_TESTS)
+  enable_testing()
   option (EKAT_STRICT_FP "Whether EKAT tests should adopt a strict fp model testing.\n" ON)
   add_subdirectory(tests)
 endif()
