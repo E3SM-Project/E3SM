@@ -449,7 +449,7 @@
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
     <values>
-      <value>$COMP_ROOT_DIR_CPL/cime/cime_config/config_component_$MODEL.xml</value>
+      <value>$COMP_ROOT_DIR_CPL/cime_config/config_component_$MODEL.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

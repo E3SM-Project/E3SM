@@ -464,8 +464,7 @@ class Case(object):
                  config['component']='nems'
              else:
                  config['component']='cpl'
-
-              comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
+             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
 
         if self._cime_model == 'cesm':
             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
