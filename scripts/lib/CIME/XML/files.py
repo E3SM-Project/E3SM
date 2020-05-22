@@ -28,6 +28,7 @@ class Files(EntryID):
         # variables COMP_ROOT_DIR_{} are mutable, all other variables are read only
         self.COMP_ROOT_DIR = {}
         self._comp_interface = comp_interface
+        self._cpl_comp = {}
         # .config_file.xml at the top level may overwrite COMP_ROOT_DIR_ nodes in config_files
 
         if os.path.isfile(config_files_override):
@@ -35,6 +36,13 @@ class Files(EntryID):
             self.overwrite_existing_entries()
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
+        if vid == "COMP_ROOT_DIR_CPL":
+             if self._cpl_comp:
+                 attribute = self._cpl_comp
+             elif attribute:
+                 self._cpl_comp = attribute
+             else:
+                 self._cpl_comp['component'] = 'cpl'
         if "COMP_ROOT_DIR" in vid:
             if vid in self.COMP_ROOT_DIR:
                 if attribute is not None:
