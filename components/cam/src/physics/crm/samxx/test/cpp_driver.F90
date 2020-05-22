@@ -68,7 +68,7 @@ program driver
   endif
 
   ! Allocate model data
-  call crm_input%initialize (           plev,ncrms)
+  call crm_input%initialize (           ncrms,plev)
   call crm_output_initialize(crm_output,ncrms,plev)
   ! These are normally allocated by pbuf, so we have to do it explicitly
   allocate( crm_state%u_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
