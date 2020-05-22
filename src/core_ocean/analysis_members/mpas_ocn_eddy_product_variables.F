@@ -187,7 +187,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, GMBolusVelocityZonal, GMBolusVelocityMeridional, &
            velocityZonalSquared, velocityMeridionalSquared, velocityZonalTimesTemperature, velocityMeridionalTimesTemperature, &
            velocityZonalTimesTemperature_GM, velocityMeridionalTimesTemperature_GM, normalVelocity, normalVelocitySquared, &
-           normalVelocityTimesTemperature
+           normalVelocityTimesTemperature, normalGMBolusVelocity, normalGMBolusVelocityTimesTemperature, normalGMBolusVelocitySquared
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       err = 0
@@ -206,7 +206,8 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
 
@@ -228,6 +229,8 @@ contains
          call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityZonalTimesTemperature_GM', velocityZonalTimesTemperature_GM)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityMeridionalTimesTemperature_GM', &
             velocityMeridionalTimesTemperature_GM)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalGMBolusVelocityTimesTemperature', normalGMBolusVelocityTimesTemperature)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalGMBolusVelocitySquared', normalGMBolusVelocitySquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocityTimesTemperature', normalVelocityTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocitySquared', normalVelocitySquared)
 
@@ -236,6 +239,9 @@ contains
             cell2 = cellsOnEdge(2,iEdge)
 
             do k = 1, maxLevelEdgeTop(iEdge)
+               normalGMBolusVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
+                            activeTracers(index_temperature,k,cell2)) * normalGMBolusVelocity(k,iEdge)
+               normalGMBolusVelocitySquared(k,iEdge) = normalGMBolusVelocity(k,iEdge)**2
                normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
                             activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
                normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
