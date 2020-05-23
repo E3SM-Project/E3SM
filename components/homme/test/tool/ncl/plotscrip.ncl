@@ -13,13 +13,13 @@ rad2deg1 = 1.0
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/ARM_30_x8.g_scrip.nc")
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/ne16np4_scrip.nc")
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/arm_30_x8_lowconn.g_scrip.nc")
-fnames = systemfunc("ls  ~/scratch2/preqx/template/ne8np4_scrip.nc")
+fnames = systemfunc("ls  ne4np4_scrip.nc")
 
 
 fg1     = addfile(fnames,"rw")       ; Open netCDF files.	
-  field = "map"
-  output_format = "ncgm"
-;  output_format = "pdf"
+  field = "gllcv"
+;  output_format = "ncgm"
+  output_format = "pdf"
   wks = gsn_open_wks(output_format,field)
   print ("Writing file "+field+"."+output_format)
 

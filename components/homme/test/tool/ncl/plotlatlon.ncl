@@ -12,13 +12,13 @@ begin
 
 rad2deg1 = 1.0
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/arm_30_x8_lowconn.g_latlon.nc")
-fnames = systemfunc("ls  ./ne8np4_latlon.nc")
+fnames = systemfunc("ls  ./ne4np4_latlon.nc")
 
 
   fg1     = addfile(fnames,"rw")       ; Open netCDF files.	
-  field = "map"
-  output_format = "ncgm"
-;  output_format = "pdf"
+  field = "vertexdata"
+;  output_format = "ncgm"
+  output_format = "pdf"
   wks = gsn_open_wks(output_format,field)
   print ("Writing file "+field+"."+output_format)
   
@@ -75,8 +75,8 @@ fnames = systemfunc("ls  ./ne8np4_latlon.nc")
  irange1a = 0
 ; irange1a = n-100
  irange1b = ncells-1
- if (irange1b .gt. 100) then
-   irange1b = 100
+ if (irange1b .gt. 10000) then
+   irange1b = 10000
  end if
  do i=irange1a,irange1b
    
