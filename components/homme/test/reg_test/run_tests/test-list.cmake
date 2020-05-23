@@ -30,7 +30,7 @@ SET(HOMME_TESTS
   thetanh-TC-nudiv.cmake
   thetanh-TC-nutop.cmake
   thetanhwet-TC.cmake
-  templates.cmake
+  hommetool.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})
