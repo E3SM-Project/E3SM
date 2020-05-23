@@ -9,6 +9,7 @@ if ("${ARCH}" STREQUAL "CUDA")
   set_source_files_properties(${CUDA_SRC} PROPERTIES LANGUAGE CUDA)
 set_source_files_properties(${CUDA_SRC} PROPERTIES COMPILE_FLAGS "${CUDA_FLAGS}")
   include_directories(${YAKL_CUB_HOME})
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/../yakl)
 endif()
 
 include_directories(${YAKL_HOME})
