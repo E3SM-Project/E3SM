@@ -554,7 +554,8 @@ class SystemTestsCommon(object):
                 m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
                 if m is not None:
                     baselog = os.path.join(basegen_dir, m.group(1))+".gz"
-                    safe_copy(cpllog, os.path.join(basegen_dir,baselog))
+                    safe_copy(cpllog,
+                              os.path.join(basegen_dir,baselog))
 
 class FakeTest(SystemTestsCommon):
     """
@@ -616,6 +617,32 @@ class TESTRUNDIFF(FakeTest):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
+        script = \
+"""
+echo Insta pass
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+else
+  cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc
+fi
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
+        self._set_script(script)
+        FakeTest.build_phase(self,
+                       sharedlib_only=sharedlib_only, model_only=model_only)
+
+class TESTRUNDIFFRESUBMIT(TESTRUNDIFF):
+    """
+    You can generate a diff with this test as follows:
+    1) Run the test and generate a baseline
+    2) set TESTRUNDIFF_ALTERNATE environment variable to TRUE
+    3) Re-run the same test from step 1 but do a baseline comparison instead of generation
+      3.a) This should give you a DIFF
+    """
+    def build_phase(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         resubmit = self._case.get_value("RESUBMIT")
         script = \
 """
@@ -630,9 +657,6 @@ fi
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
-
-class TESTRUNDIFFRESUBMIT(TESTRUNDIFF):
-    pass
 
 class TESTTESTDIFF(FakeTest):
 
