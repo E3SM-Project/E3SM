@@ -246,8 +246,8 @@ contains
        else
           call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlevp)
        endif
-       call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
-       call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
+       call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets),nlev)
+       call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets),nlev)
 
        !======================================================
 
@@ -258,7 +258,7 @@ contains
        else
           call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlevp)
        endif
-       call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
+       call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets),nlev)
 
        !======================================================
 
