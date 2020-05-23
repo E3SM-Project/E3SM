@@ -168,6 +168,7 @@ contains
     KEner    = 0
     PEner    = 0
     IEner    = 0
+    muvalue  = 0
     ! dynamics timelevels
     n0=tl%n0
     call TimeLevel_Qdp( tl, qsplit, n0q) !get n0 level into t2_qdp 
@@ -217,6 +218,8 @@ contains
        if (theta_hydrostatic_mode) then
           ! show min/max/num of temperature as a diagnostic
           call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
+          !use muvalue to avoid if-statements below
+          muvalue(:,:,1:nlev) = tdiag(:,:,1:nlev)
        else
           ! show min/max/num of dpnh / dp as a diagnostic
           call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
@@ -239,9 +242,9 @@ contains
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
        if (theta_hydrostatic_mode) then
-          call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlev)
        else
-          call extremumLevelHelper_i(tmax_local,muvalue,'max',logical(ie == nets))
+          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlevp)
        endif
        call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
        call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
@@ -251,9 +254,9 @@ contains
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
        if (theta_hydrostatic_mode) then
-          call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlev)
        else
-          call extremumLevelHelper_i(tmin_local,muvalue,'min',logical(ie == nets))
+          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlevp)
        endif
        call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
 
@@ -266,11 +269,7 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-       if (theta_hydrostatic_mode) then
-          tsum_local(ie)    = SUM(tdiag)
-       else
-          tsum_local(ie)    = SUM(muvalue)
-       endif
+       tsum_local(ie)    = SUM(muvalue)
 
        dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
@@ -1004,14 +1003,15 @@ end subroutine prim_diag_scalars
 
 
 !helper routine to compute min/max for derived quantities
-subroutine extremumLevelHelper(res,field,operation,first)
+subroutine extremumLevelHelper(res,field,operation,first,klev)
    use kinds, only : real_kind
    use dimensions_mod, only : np, np, nlev
    implicit none
    real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
    character(len=*),      intent(in)    :: operation
    logical,               intent(in)    :: first
-   real (kind=real_kind), intent(in)    :: field(np,np,nlev)
+   real (kind=real_kind), intent(in)    :: field(np,np,klev)
+   integer,               intent(in)    :: klev 
 
    real (kind=real_kind)                :: val
    integer                              :: location(3)
@@ -1020,82 +1020,32 @@ subroutine extremumLevelHelper(res,field,operation,first)
 
    if ( first ) then
       if( operation == 'max' ) then
-         res(1) = MAXVAL(field)
-         location = MAXLOC(field)
+         res(1) = MAXVAL(field(:,:,1:klev))
+         location = MAXLOC(field(:,:,1:klev))
          res(2) = location(3)
       else
-         res(1) = MINVAL(field)
-         location = MINLOC(field)
+         res(1) = MINVAL(field(:,:,1:klev))
+         location = MINLOC(field(:,:,1:klev))
          res(2) = location(3)
       endif
    else
       if( operation == 'max' ) then
-         val = MAXVAL(field)
+         val = MAXVAL(field(:,:,1:klev))
          if ( val > res(1) ) then
             res(1) = val
-            location = MAXLOC(field)
+            location = MAXLOC(field(:,:,1:klev))
             res(2) = location(3)
          endif
       else
-         val = MINVAL(field)
+         val = MINVAL(field(:,:,1:klev))
          if ( val < res(1) ) then
             res(1) = val
-            location = MINLOC(field)
+            location = MINLOC(field(:,:,1:klev))
             res(2) = location(3)
          endif
       endif
    endif
 end subroutine extremumLevelHelper
-
-
-
-!helper routine to compute min/max for derived quantities
-subroutine extremumLevelHelper_i(res,field,operation,first)
-   use kinds, only : real_kind
-   use dimensions_mod, only : np, np, nlev
-   implicit none
-   real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
-   character(len=*),      intent(in)    :: operation
-   logical,               intent(in)    :: first
-   real (kind=real_kind), intent(in)    :: field(np,np,nlevp)
-
-   real (kind=real_kind)                :: val
-   integer                              :: location(3)
-
-   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper_i()')
-
-   if ( first ) then
-      if( operation == 'max' ) then
-         res(1) = MAXVAL(field)
-         location = MAXLOC(field)
-         res(2) = location(3)
-      else
-         res(1) = MINVAL(field)
-         location = MINLOC(field)
-         res(2) = location(3)
-      endif
-   else
-      if( operation == 'max' ) then
-         val = MAXVAL(field)
-         if ( val > res(1) ) then
-            res(1) = val
-            location = MAXLOC(field)
-            res(2) = location(3)
-         endif
-      else
-         val = MINVAL(field)
-         if ( val < res(1) ) then
-            res(1) = val
-            location = MINLOC(field)
-            res(2) = location(3)
-         endif
-      endif
-   endif
-end subroutine extremumLevelHelper_i
-
-
-
-
 
 
 !doing extrema with level for all elems
