@@ -90,8 +90,9 @@ module interpolate_mod
 #ifndef CAM
   public :: var_is_vector_uvar, var_is_vector_vvar
 #endif
-  public :: cube_facepoint_ne
-  public :: cube_facepoint_unstructured
+  public :: find_ref_coordinates
+  !public :: cube_facepoint_ne             ! use find_ref_coordinates
+  !public :: cube_facepoint_unstructured   ! use find_ref_coordinates
   public :: parametric_coordinates
 
   public :: interpolate_tracers
@@ -119,8 +120,13 @@ module interpolate_mod
   ! gridtype = 3       equally spaced, no poles (FV staggered velocity)
   ! Seven possible history files, last one is inithist and should be native grid
 #ifndef CAM
+#ifdef PIO_INTERP
   logical, public :: interpolate_analysis(8) = (/.true.,.false.,.false.,.false.,.false.,.false.,.false.,.false./)
+#else
+  logical, public :: interpolate_analysis(8) = .false.
 #endif
+#endif
+
   integer :: nlat,nlon
   real (kind=real_kind), pointer, public   :: lat(:)     => NULL()
   real (kind=real_kind), pointer, public   :: lon(:)     => NULL()
@@ -972,6 +978,64 @@ contains
 
 
   !================================================
+  ! Interface to 
+  ! 
+  ! cube_facepoint_unstructured(): 
+  !      generic for all cases, uses Newton iteration
+  ! cube_facepoint_ne()
+  !      Original Nair routine, for cube sphere meshes with cubed_sphere_map=0
+  !      faster analytic solution
+  !      
+  !================================================
+  subroutine find_ref_coordinates(sphere,elem,ie,gid,cart)
+    !
+    ! search elements on this MPI task to see if they contain 'sphere'
+    ! input: sphere   lat/lon point
+    ! output:  ie      local elem index or -1 if point not found
+    !          gid     global id 
+    !          cart    reference element coordinates
+    !
+    implicit none
+    type (element_t)     , intent(in), target :: elem(:)
+    integer :: ie,gid
+    type (spherical_polar_t) :: sphere
+    type (cartesian2D_t)     :: cart
+
+    ! local
+    integer ii
+
+    ie = -1  ! assume not on this processor
+
+    if ( (cubed_sphere_map /= 0) .or. MeshUseMeshFile) then
+       call cube_facepoint_unstructured(sphere, cart, ie, elem)
+       if (ie /= -1) then
+          ! If points are outside element but within tolerance, move to boundary
+          if (cart%x + 1.0d0.le.0.0d0) cart%x = -1.0d0
+          if (cart%x - 1.0d0.ge.0.0d0) cart%x = 1.0d0
+          if (cart%y + 1.0d0.le.0.0d0) cart%y = -1.0d0
+          if (cart%y - 1.0d0.ge.0.0d0) cart%y = 1.0d0
+          
+          gid = elem(ie)%vertex%number
+       endif
+    else
+       call cube_facepoint_ne(sphere, ne, cart, gid)
+       ! the sphere point belongs to the element number on face = face_no.
+       ! do I own this element?
+       if (gid /= -1) then
+          do ii=1,nelemd
+             if (gid == elem(ii)%vertex%number) then
+                ie  = ii
+                exit
+             endif
+          enddo
+       endif
+    endif
+  end subroutine
+
+
+
+
+  !================================================
   !  (Nair) Cube face index and local coordinates
   !================================================
 
@@ -1248,38 +1312,8 @@ contains
        do i=1,nlon
           sphere%lat=lat(j)
           sphere%lon=lon(i)
+          call find_ref_coordinates(sphere,elem,local_elem_num(j,i),local_elem_gid(j,i),cart_vec(j,i))
 
-          !debug=.false.
-          !if (j==18 .and. i==95) debug=.true.
-          number = -1
-          if ( (cubed_sphere_map /= 0) .or. MeshUseMeshFile) then
-             call cube_facepoint_unstructured(sphere, cart, number, elem)
-             if (number /= -1) then
-                ! If points are outside element but within tolerance, move to boundary
-                if (cart%x + 1.0d0.le.0.0d0) cart%x = -1.0d0
-                if (cart%x - 1.0d0.ge.0.0d0) cart%x = 1.0d0
-                if (cart%y + 1.0d0.le.0.0d0) cart%y = -1.0d0
-                if (cart%y - 1.0d0.ge.0.0d0) cart%y = 1.0d0
-
-                local_elem_num(j,i) = number
-                local_elem_gid(j,i) = elem(number)%vertex%number
-                cart_vec(j,i)    = cart  ! local element coordiante of interpolation point
-             endif
-          else
-             call cube_facepoint_ne(sphere, ne, cart, number)
-             ! the sphere point belongs to the element number on face = face_no.
-             ! do I own this element?
-             if (number /= -1) then
-                do ii=1,nelemd
-                   if (number == elem(ii)%vertex%number) then
-                      local_elem_gid(j,i) = number
-                      local_elem_num(j,i) = ii
-                      cart_vec(j,i)        = cart   ! local element coordinate found above
-                      exit
-                   endif
-                enddo
-             endif
-          endif
           ii=local_elem_num(j,i)
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original

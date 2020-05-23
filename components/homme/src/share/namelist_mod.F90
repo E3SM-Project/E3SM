@@ -499,11 +499,6 @@ module namelist_mod
 
 
 !      Default interpolation grid  (0 = auto compute based on ne,nv)  interpolation is off by default
-#ifdef PIO_INTERP
-       interpolate_analysis=.true.
-#else
-       interpolate_analysis=.false.
-#endif
        interp_nlat =  0
        interp_nlon = 0
        interp_lon0 = 0
@@ -1039,7 +1034,6 @@ module namelist_mod
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q
        write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
-       write(iulog,*)"PHIS smoothing:  ",smooth_phis_numcycle,smooth_phis_nudt
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s

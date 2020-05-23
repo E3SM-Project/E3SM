@@ -703,7 +703,7 @@ contains
 !             else if(infile%vars%name(i).eq.'lat') then    ! already ignored above
 ! 
              else 
-                if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i))
+                if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i)),' nlev=',lev
                 if(par%masterproc) then
                    if (get_interp_parameter('itype')==0) print *,'using native spectral element interpolation'
                    if (get_interp_parameter('itype')==1) print *,'using bilinear interpolation'
@@ -731,8 +731,8 @@ contains
                       call pio_read_darray(infile%FileID, infile%vars%vardesc(i), iodesc3dp1, farray, ierr)
                    end if
                    offset=0
+                   allocate(ftmp(np*np, lev))
                    do ie=1,nelemd
-                      allocate(ftmp(elem(ie)%idxP%NumUniquePts, lev))
                       do k=1,lev
                          do ii=1,elem(ie)%idxP%NumUniquePts
                             !iv=(elem(ie)%idxp%UniquePtOffset+ii+(k-1)*ncnt_in)-1
@@ -743,9 +743,9 @@ contains
                       offset = offset+elem(ie)%idxP%NumUniquePts
                       elem(ie)%state%Q(:,:,:,1) = 0.0d0
                       call putUniquePoints(elem(ie)%idxP, lev, ftmp, elem(ie)%state%Q(:,:,1:lev,1))
-                      call edgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,ie)
-                      deallocate(ftmp)
+                      call edgevpack(edge, elem(ie)%state%Q(:,:,:,1),lev,0,ie)
                    end do
+                   deallocate(ftmp)
 
                    call bndry_exchangeV(par, edge)
                    st = 1
@@ -754,7 +754,7 @@ contains
                    array=0
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
-                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,ie)
+                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,1),lev,0,ie)
                       
                       call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,1:lev,1), &
                            np, lev, array(st:en,:))

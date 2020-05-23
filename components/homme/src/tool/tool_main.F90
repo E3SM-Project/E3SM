@@ -8,18 +8,25 @@
 !   * topo_pgn_to_smoothed
 
 program tool_main
-  use prim_driver_mod,  only: prim_init1, prim_init2, prim_finalize
+  use prim_driver_mod,  only: prim_init1, prim_init2, prim_finalize, deriv1, smooth_topo_datasets
   use hybvcoord_mod,    only: hvcoord_t, hvcoord_init
   use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
   use hybrid_mod,       only: hybrid_t, hybrid_create
-  use dimensions_mod,   only: nelemd
+  use dimensions_mod,   only: nelemd,ne,np
   use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
   use time_mod,         only: timelevel_t
-  use control_mod,      only: vfile_mid, vfile_int, theta_hydrostatic_mode
+  use control_mod,      only: vfile_mid, vfile_int, theta_hydrostatic_mode, topology, test_case,&
+       vanalytic, theta_hydrostatic_mode, ftype, smooth_phis_numcycle
   use common_io_mod,    only: tool
   use kinds,            only: iulog
+  use interpolate_driver_mod, only : pio_read_phis, interpolate_driver
+  use native_mapping, only: create_native_mapping_files
+  use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
+
+
+
 
   implicit none
 
@@ -36,6 +43,7 @@ program tool_main
   call set_namelist_defaults()
 
   call prim_init1(elem, par, dom_mt, tl)
+  theta_hydrostatic_mode=.true.  ! disable some NH tests
 
   ! Set up fake threading; this offline tool doesn't thread.
   ithr = 0
@@ -53,6 +61,16 @@ program tool_main
         call topo_convert(par, elem)
      case ('topo_pgn_to_smoothed')
         call topo_pgn_to_smoothed(par, elem)
+     case ('topo_gll_to_smoothed')
+        call topo_gll_to_smoothed(elem, hybrid, tl)
+     case ('interpolate_tool')
+        ! Interpolate a netcdf file from one grid to another
+        call interpolate_tool(elem, hybrid)
+     case ('gll_mapping_file')
+        ! output HOMME's internal interpolation operator as a mapping file
+        call gll_mapping_file(elem, hybrid, tl)
+     case ('grid_template_tool')
+        call grid_template_tool(elem, hybrid, tl)
      case('none')
         if (par%masterproc) then
            write(iulog,*) 'homme_tool was given tool="none"; exiting without doing anything'
@@ -74,7 +92,6 @@ contains
     ! processor succeed.
 
     use time_mod, only: tstep
-    use control_mod, only: topology, test_case, vanalytic
     use dimensions_mod, only: qsize_d, qsize
 
     tstep = 1
@@ -141,7 +158,6 @@ contains
     ! /
 
     use gllfvremap_util_mod, only: gfr_pgn_to_smoothed_topo
-    use control_mod, only: ftype
 
     type (parallel_t), intent(in) :: par
     type (element_t), intent(inout) :: elem(:)
@@ -157,5 +173,129 @@ contains
        call abortmp('homme_tool: gfr_pgn_to_smoothed_topo returned an error code')
     end if
   end subroutine topo_pgn_to_smoothed
+
+
+  subroutine topo_gll_to_smoothed(elem,hybrid,tl)
+    use hybrid_mod, only : hybrid_t
+    use viscosity_mod, only : smooth_phis
+
+    implicit none
+    ! Read, smooth and output a GLL topo field
+    ! input specified in infilenames(1)
+    ! output: phis_smoothed1.nc
+    !
+    ! To convert the output into a standalone topo file:
+    ! % ncks -O -v geos,lat,lon phis_smoothed1.nc phis_smoothed2.nc
+    ! % ncrename -v geos,PHIS  phis_smoothed2.nc
+    !
+    ! Namelist example: see test/tool/toposmooth_gll.nl
+    !
+    type (hybrid_t)      , intent(in) :: hybrid
+    type (element_t)     , intent(inout), target :: elem(:)
+    type (TimeLevel_t)   , intent(in)     :: tl     
+
+    if (smooth_phis_numcycle>0) then
+       if (len(trim(infilenames(1)))==0 ) then
+          call abortmp('homme_tool: topo_gll_to_smoothed requires infilenames 1 to be defined')
+       end if
+       call pio_read_phis(elem,hybrid%par)
+       call smooth_topo_datasets(elem, hybrid, 1, nelemd)
+       test_case = 'phis-smoothed'
+    else
+       ! in this case, we just output geos from the initial condition
+       ! used to generate test data
+       test_case = 'phis-baroclinic'
+    endif
+
+    ! call output
+    call prim_movie_init( elem, par, hvcoord, tl )
+    call prim_movie_output(elem, tl, hvcoord, par)
+    call prim_movie_finish
+  end subroutine
+    
+
+  
+  subroutine interpolate_tool(elem,hybrid)
+    use hybrid_mod, only : hybrid_t
+
+    implicit none
+    ! Interpolate a native grid E3SM atmosphere history file to a lat/lon history file
+    ! notes:
+    !   vertical coordinates have to match those used in E3SM
+    !   homme_tool has to be compiled with PLEV=72  (matching E3SM file)
+    !   infilesnames(1) = name of E3SM history file to interpolate
+    !   output will use the sane name but with an interp1.nc extension
+    !
+    ! Namelist example: see test/tool/interpolate.nl
+
+    type (hybrid_t)      , intent(in) :: hybrid
+    type (element_t)     , intent(inout), target :: elem(:)
+
+
+    ! debug
+    call interpolate_driver(elem, hybrid)
+
+  end subroutine
+
+
+  subroutine gll_mapping_file(elem,hybrid,tl)
+    use hybrid_mod, only : hybrid_t
+
+    implicit none
+    ! create mapping files from HOMME's internal interpolation algorithm
+    ! notes:
+    !   mapping file output:  map_ne30np4_to_dstfile.nc
+    !   The SE coordinates and areas are written to "coords1.nc" and need
+    !   to be converted to radians and the copied into xc_a, yc_a, and area_a
+    !
+    ! Namelist example: see test/tool/mappingfiles.nl
+
+    type (hybrid_t)      , intent(in) :: hybrid
+    type (element_t)     , intent(inout), target :: elem(:)
+    type (TimeLevel_t)   , intent(in)     :: tl     
+
+    vanalytic=0  ! read vcoord files given in namelist
+    call create_native_mapping_files( hybrid, elem,'bilin')
+    !call create_native_mapping_files( hybrid, elem,'native')
+
+    test_case = 'coords'
+    call prim_movie_init( elem, hybrid%par, hvcoord, tl )
+    call prim_movie_output(elem, tl, hvcoord, par)
+    call prim_movie_finish
+
+  end subroutine
+    
+  subroutine grid_template_tool(elem,hybrid,tl)
+    use hybrid_mod, only : hybrid_t
+    use viscosity_mod, only : smooth_phis
+
+    implicit none
+    ! Read, smooth and output a GLL topo field
+    ! input specified in infilenames(1)
+    ! output: phis_smoothed1.nc
+    !
+    ! To convert the output into a standalone topo file:
+    ! % ncks -O -v geos,lat,lon phis_smoothed1.nc phis_smoothed2.nc
+    ! % ncrename -v geos,PHIS  phis_smoothed2.nc
+    !
+    ! Namelist example: see test/tool/toposmooth_gll.nl
+    !
+    type (hybrid_t)      , intent(in) :: hybrid
+    type (element_t)     , intent(inout), target :: elem(:)
+    type (TimeLevel_t)   , intent(in)     :: tl     
+    character*80 :: nestr,npstr
+
+    ! call output
+    write(nestr,*) ne
+    write(npstr,*) np
+    test_case = 'ne' // trim(adjustl(nestr)) // 'np' // trim(adjustl(npstr)) // '_tmp'
+    call prim_movie_init( elem, par, hvcoord, tl )
+    call prim_movie_output(elem, tl, hvcoord, par)
+    call prim_movie_finish
+  end subroutine
+    
+
+  
+
   
 end program tool_main

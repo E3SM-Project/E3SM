@@ -19,6 +19,7 @@ FILE(GLOB TARGET_F90 ${TARGET_DIR}/*.F90 ${DYCORE_DIR}/*.F90 ${SRC_SHARE_DIR}/*.
 
 SET(TOOL_SRCS_F90
   ${TARGET_F90}
+  ${TARGET_DIR}/native_mapping.F90
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90

@@ -8,7 +8,7 @@ module native_mapping
 ! 
   use kinds,            only: iulog, r8=>real_kind
   use parallel_mod,     only: haltmp, iam, mpi_character, mpi_logical, mpi_integer, mpi_max
-  use control_mod,      only: cubed_sphere_map
+  use control_mod,      only: cubed_sphere_map,dd_pi
   use common_io_mod,    only: infilenames, PIOFS,io_stride, num_io_procs, num_agg
 
   implicit none
@@ -66,7 +66,7 @@ contains
     type(var_desc_t) :: rowid, colid, sid, xca_id, yca_id, xcb_id, ycb_id, maskb_id, maska_id
     type(var_desc_t) :: areaA_id, areaB_id, dg_id, sg_id
     type(io_desc_t) :: iodesci, iodescd
-    character(len=12) :: unit_str
+    character(len=12) :: unit_str,nestr,npstr
     real(r8), allocatable :: areaA(:), areaB(:)
     integer :: cntperelem_in(nelem),  cntperelem_out(nelem)
     integer :: ithr, dg_rank, substr1, substr2
@@ -74,6 +74,8 @@ contains
     type(interpdata_t), pointer :: mapping_interpolate(:)
     integer :: itype
     real(r8) :: fill_double=1.e36_r8
+    real(r8) :: rad2deg 
+    rad2deg = 180/dd_pi
 
 
     if (maptype=='native') then
@@ -159,11 +161,6 @@ contains
           call set_interp_parameter('nlat',dg_dims(1))
        end if
        if (hybrid%masterthread) print *,'locating all interpolation points...'
-       if (cubed_sphere_map==2) then
-          call haltmp('Error: mapping output code only coded for cubed_sphere_map=0')
-          ! todo: copy and edit code for cubed_sphere_map=2 from interpolate_mod.F90
-          ! it calls cube_facepoint_unstructured() insted of cube_facepoint_ne:
-       endif
        sphere%r=1    
        do i=1,npts
           if(grid_imask(i)==1) then
@@ -310,10 +307,11 @@ contains
        substr1 = index(fname,'/',BACK=.true.)
        substr2 = index(fname,'.nc',BACK=.true.)
 
-       write(mappingfile,113) ne,np,fname(substr1+1:substr2-1),trim(maptype)
-113    format('map_ne',i2.2,'np',i1,'_to_',a,'_',a,'.nc')
+       write(nestr,*) ne
+       write(npstr,*) np
+       mappingfile = 'map_ne' // trim(adjustl(nestr)) // 'np' // trim(adjustl(npstr)) // &
+            '_to_' // fname(substr1+1:substr2-1) // '_' // trim(maptype)
 
-       !call cam_pio_createfile(ogfile, mappingfile)
        ierr = pio_createfile(PIOFS, ogfile, iotype_netcdf, mappingfile,PIO_CLOBBER)
 
        ierr = pio_def_dim( ogfile, 'n_a', ncol, na_dim)
@@ -349,12 +347,13 @@ contains
 
 
 
-       ierr = pio_put_att( ogfile, xca_id, 'units','radians')
-       ierr = pio_put_att( ogfile, yca_id, 'units','radians')
-       ierr = pio_put_att( ogfile, xcb_id, 'units','radians')
-       ierr = pio_put_att( ogfile, ycb_id, 'units','radians')
+       ierr = pio_put_att( ogfile, xca_id, 'units','degrees')
+       ierr = pio_put_att( ogfile, yca_id, 'units','degrees')
+       ierr = pio_put_att( ogfile, xcb_id, 'units','degrees')
+       ierr = pio_put_att( ogfile, ycb_id, 'units','degrees')
 
        ierr = pio_put_att( ogfile, PIO_GLOBAL, 'title', 'SE NATIVE Regridding Weights')
+
        ierr = pio_put_att( ogfile, PIO_GLOBAL, 'normalization', 'none')
        if (itype==0 ) then
           ierr = pio_put_att( ogfile, PIO_GLOBAL, 'map_method', 'Spectral-Element remapping')
@@ -362,6 +361,7 @@ contains
           ierr = pio_put_att( ogfile, PIO_GLOBAL, 'map_method', 'Bilinear remapping')
        endif
        ierr = pio_put_att( ogfile, PIO_GLOBAL, 'conventions', 'NCAR-CSM')
+
 
        ierr = pio_put_att( ogfile, PIO_GLOBAL, 'grid_file_out', fname  )
        ierr = pio_put_att( ogfile, PIO_GLOBAL, 'grid_file_atm', 'none - model generated')
@@ -380,13 +380,16 @@ contains
        call pio_write_darray(ogfile, rowid, iodesci, row, ierr)
        call pio_write_darray(ogfile, sid, iodescd, h1d, ierr)
 
+       lon=lon*rad2deg
+       lat=lat*rad2deg
+       clon=clon*rad2deg
+       clat=clat*rad2deg
 
        ierr = pio_put_var(ogfile, xcb_id, lon)
        ierr = pio_put_var(ogfile, ycb_id, lat)   
 
        ierr = pio_put_var(ogfile, xca_id, clon)
        ierr = pio_put_var(ogfile, yca_id, clat)
-
        ierr = pio_put_var(ogfile, maskb_id, grid_imask)
        deallocate(grid_imask)
 

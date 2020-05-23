@@ -939,11 +939,6 @@ contains
     ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
 
-    ! smooth elem%phis if requested.
-    if (smooth_phis_numcycle>0) &
-          call smooth_topo_datasets(elem,hybrid,nets,nete)
-
-
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
        ! so only now does HOMME learn the timstep.  print them out:
@@ -1810,7 +1805,7 @@ contains
 
 
     subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle
+    use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1830,8 +1825,11 @@ contains
     enddo
     
     minf=-9e9
-    if (hybrid%masterthread) &
+    if (hybrid%masterthread) then
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
+       write(iulog,'(a,i10)')  " smooth_phis_numcycle =",smooth_phis_numcycle
+       write(iulog,'(a,e13.5)')" smooth_phis_nudt =",smooth_phis_nudt
+    endif
     call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
 
