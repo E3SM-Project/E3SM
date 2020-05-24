@@ -9,7 +9,7 @@ module native_mapping
   use kinds,            only: iulog, r8=>real_kind
   use parallel_mod,     only: haltmp, iam, mpi_character, mpi_logical, mpi_integer, mpi_max
   use control_mod,      only: cubed_sphere_map,dd_pi
-  use common_io_mod,    only: infilenames, PIOFS,io_stride, num_io_procs, num_agg
+  use common_io_mod,    only: infilenames, PIOFS,io_stride, num_io_procs, num_agg, output_dir
 
   implicit none
   private
@@ -72,6 +72,7 @@ contains
     integer :: ithr, dg_rank, substr1, substr2
 
     type(interpdata_t), pointer :: mapping_interpolate(:)
+    integer, allocatable :: gid_list(:),gid_in(:)
     integer :: itype
     real(r8) :: fill_double=1.e36_r8
     real(r8) :: rad2deg 
@@ -115,6 +116,7 @@ contains
        ierr = pio_inq_dimid( ogfile, 'grid_size', dimid)
        ierr = pio_inq_dimlen( ogfile, dimid, npts)
        allocate(lat(npts), lon(npts), grid_imask(npts), areab(npts))
+       allocate(gid_list(npts))
 
        ierr = pio_inq_dimid( ogfile, 'grid_rank', dimid)
        ierr = pio_inq_dimlen(ogfile, dimid, dg_rank)
@@ -163,12 +165,14 @@ contains
        if (hybrid%masterthread) print *,'locating all interpolation points...'
        sphere%r=1    
        do i=1,npts
+          gid_list(i)=-1
           if(grid_imask(i)==1) then
              sphere%lat=lat(i)
              sphere%lon=lon(i)
              call find_ref_coordinates(sphere,elem,ii,gid,cart)
              if (ii /= -1) then 
                 interpdata(ii)%n_interp = interpdata(ii)%n_interp + 1
+                gid_list(i)=gid
              endif
 
              if(hybrid%masterthread) then
@@ -179,28 +183,24 @@ contains
           end if
        enddo
 
+       ! remove duplicates.  a point claimed by two elements will be owned by the
+       ! element with the largest gid:
+       allocate(gid_in(npts))
+       gid_in=gid_list
+       call mpi_allreduce(gid_in,gid_list,npts, MPI_INTEGER, MPI_MAX, hybrid%par%comm, ierr)
+       deallocate(gid_in)
 
-       ! check if every point in interpolation grid was claimed by an element:
-       countx=sum(interpdata(1:nelemd)%n_interp)
-       global_shared_buf(1,1) = countx
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, nsize=1)
-       count_total = global_shared_sum(1)
-       tpts = sum(grid_imask)
-       if (count_total /= tpts ) then
-          write(iulog,*)__FILE__,__LINE__,iam, count_total, tpts, npts
-          call haltmp('Error setting up interpolation grid count_total<>npts') 
-       endif
 
        countx=maxval(interpdata(1:nelemd)%n_interp)
        count_max = ParallelMax(countx,hybrid)
 
        if (hybrid%masterthread) then
-          write(iulog,'(a,f8.1)') 'Average number of interpolation points per element: ',count_total/real(6*ne*ne)
+          write(iulog,'(a,f8.2)') 'Average number of interpolation points per element: ',count_total/real(6*ne*ne)
           write(iulog,'(a,f8.0)') 'Maximum number of interpolation points on any element: ',count_max
        endif
 
 
-       ! allocate storage
+       ! allocate storage, including duplicates
        do ii=1,nelemd
           ngrid = interpdata(ii)%n_interp
           allocate(interpdata(ii)%interp_xy( ngrid ) )
@@ -217,7 +217,7 @@ contains
              sphere%lat=lat(i)
              sphere%lon=lon(i)
              call find_ref_coordinates(sphere,elem,ii,gid,cart)
-             if (ii /= -1) then 
+             if (ii /= -1 .and. gid==gid_list(i)) then 
                 ngrid = interpdata(ii)%n_interp + 1
                 interpdata(ii)%n_interp = ngrid
                 interpdata(ii)%interp_xy( ngrid ) = cart
@@ -226,6 +226,19 @@ contains
              endif
           end if
        end do
+
+
+       ! check if every point in interpolation grid was claimed by an element:
+       countx=sum(interpdata(1:nelemd)%n_interp)
+       global_shared_buf(1,1) = countx
+       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, nsize=1)
+       count_total = global_shared_sum(1)
+       tpts = sum(grid_imask)
+       if (count_total /= tpts ) then
+          write(iulog,*)__FILE__,__LINE__,iam, count_total, tpts, npts
+          call haltmp('Error setting up interpolation grid count_total<>npts') 
+       endif
+
 
 
        allocate(h(int(countx)))
@@ -309,8 +322,9 @@ contains
 
        write(nestr,*) ne
        write(npstr,*) np
-       mappingfile = 'map_ne' // trim(adjustl(nestr)) // 'np' // trim(adjustl(npstr)) // &
-            '_to_' // fname(substr1+1:substr2-1) // '_' // trim(maptype)
+       mappingfile = trim(output_dir) // &
+            'map_ne' // trim(adjustl(nestr)) // 'np' // trim(adjustl(npstr)) // &
+            '_to_' // fname(substr1+1:substr2-1) // '_' // trim(maptype) // ".nc"
 
        ierr = pio_createfile(PIOFS, ogfile, iotype_netcdf, mappingfile,PIO_CLOBBER)
 

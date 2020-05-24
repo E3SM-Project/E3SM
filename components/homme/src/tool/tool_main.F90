@@ -15,7 +15,7 @@ program tool_main
   use dimensions_mod,   only: nelemd,ne,np
   use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
-  use common_io_mod,    only: output_dir, infilenames
+  use common_io_mod,    only: output_dir, infilenames, output_varnames2
   use time_mod,         only: timelevel_t
   use control_mod,      only: vfile_mid, vfile_int, theta_hydrostatic_mode, topology, test_case,&
        vanalytic, theta_hydrostatic_mode, ftype, smooth_phis_numcycle
@@ -194,13 +194,18 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (TimeLevel_t)   , intent(in)     :: tl     
 
+    character*8 :: varname
+
     if (smooth_phis_numcycle>0) then
        if (len(trim(infilenames(1)))==0 ) then
           call abortmp('homme_tool: topo_gll_to_smoothed requires infilenames 1 to be defined')
        end if
-       call pio_read_phis(elem,hybrid%par)
+       varname='PHIS'
+       if (len(trim(output_varnames2(1)))>0) varname=output_varnames2(1)
+       call pio_read_phis(elem,hybrid%par,varname)
        call smooth_topo_datasets(elem, hybrid, 1, nelemd)
        test_case = 'phis-smoothed'
+
     else
        ! in this case, we just output geos from the initial condition
        ! used to generate test data

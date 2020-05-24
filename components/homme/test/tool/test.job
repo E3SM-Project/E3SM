@@ -41,13 +41,11 @@ set project = /lcrc/group/acme/ccsm-data/inputdata
 set file = $project/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc
 # generate dummy PHIS field
 $mpirun $exe < $TOOLDIR/namelists/topooutput.nl
-ncrename -v geos,PHIS  phis-baroclinic1.nc
-# smooth PHIS field:
+# smooth goes field:
 $mpirun $exe < $TOOLDIR/namelists/toposmooth_gll.nl
 # remove vertical coord info
 ncks -O -v geos,lat,lon phis-smoothed1.nc phis-smoothed2.nc
 ncrename -v geos,PHIS  phis-smoothed2.nc
-
 
 
 

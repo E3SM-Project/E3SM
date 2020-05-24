@@ -38,8 +38,8 @@ hypervis_scaling = 0         ! 2 for RRM grids
 
 &analysis_nl
 tool = 'topo_gll_to_smoothed'
-infilenames = './phis-baroclinic1.nc'
-output_dir = "./"
+infilenames = 'movies/phis-baroclinic1.nc'
+output_dir = "movies/"
 output_timeunits=1
 output_frequency=1
 output_varnames1='geos'  ! homme will output goes. rename afterwards
