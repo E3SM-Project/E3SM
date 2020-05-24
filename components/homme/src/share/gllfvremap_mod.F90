@@ -339,6 +339,18 @@ contains
     ! dt is not used; if it is not, then q is Qdp tendency, and dt
     ! must be the correct physics time step.
 
+#ifdef __INTEL_COMPILER
+# if __INTEL_COMPILER >= 1700 && __INTEL_COMPILER < 1800
+    ! On Anvil with Intel 17, and reproduced on one other platform
+    ! using specfically
+    !   icpc version 17.0.0 (gcc version 4.7.4 compatibility)
+    ! -O3 causes buggy code to be emitted for the limiter block near
+    ! the end of this routine. Work around this by asking the compiler
+    ! to compile this routine no higher than -O2.
+    !DIR$ OPTIMIZE:2
+# endif
+#endif
+
     use element_ops, only: get_field
     use dimensions_mod, only: nlev
     use hybvcoord_mod, only: hvcoord_t
