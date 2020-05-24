@@ -403,10 +403,12 @@ MODULE MOSART_physics_mod
 
             !if(iunit == 52744) then
             !if(iunit == 75723) then
+            if(iunit == 91860) then
             !!if(THeat%Tr(iunit) > 350._r8) then
             !  write(unit=2111,fmt="(i10, 8(e16.4))") iunit, THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hc_r(iunit), THeat%Hh_r(iunit), TRunoff%rarea(iunit,nt_nliq), THeat%Tr(iunit), THeat%forc_t(iunit)
             !  write(unit=2112,fmt="(i10, 8(e14.4))") iunit, TRunoff%yr(iunit,1), THeat%ha_lateral(iunit), THeat%Ha_rin(iunit), THeat%Ha_rout(iunit), TRunoff%rarea(iunit,nt_nliq), TRunoff%erlateral(iunit, 1), TRunoff%erin(iunit, 1), TRunoff%erout(iunit,1)
-            !end if
+              write(unit=2113,fmt="(i10, 3(e14.4))") iunit, TRunoff%yr(iunit,1), THeat%Tr(iunit), THeat%forc_t(iunit)
+            end if
 
        end do ! iunit
        endif  ! euler_calc

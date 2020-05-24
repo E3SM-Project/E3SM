@@ -136,9 +136,10 @@ MODULE MOSART_heat_mod
             
             !if(iunit == 52744) then
             !if(iunit == 75723) then
-            !  write(unit=1111,fmt="(i10, 7(e16.4))") iunit, THeat%Hs_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hl_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%He_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hc_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hh_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Tr(iunit), THeat%forc_t(iunit)
-            !  write(unit=1112,fmt="(i10, f10.4, 7(e14.4))") iunit, TRunoff%yr(iunit,1), THeat%ha_lateral(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rin(iunit)/TRunoff%rarea(iunit,nt_nliq), Ha_temp/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rout(iunit)/TRunoff%rarea(iunit,nt_nliq), TRunoff%erlateral(iunit, 1), TRunoff%erin(iunit, 1), TRunoff%erout(iunit,1)
-            !end if
+            if(iunit == 91860) then
+              write(unit=1111,fmt="(i10, 7(e16.4))") iunit, THeat%Hs_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hl_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%He_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hc_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hh_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Tr(iunit), THeat%forc_t(iunit)
+              write(unit=1112,fmt="(i10, f10.4, 7(e14.4))") iunit, TRunoff%yr(iunit,1), THeat%ha_lateral(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rin(iunit)/TRunoff%rarea(iunit,nt_nliq), Ha_temp/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rout(iunit)/TRunoff%rarea(iunit,nt_nliq), TRunoff%erlateral(iunit, 1), TRunoff%erin(iunit, 1), TRunoff%erout(iunit,1)
+            end if
 
 
         !end if
@@ -236,6 +237,10 @@ MODULE MOSART_heat_mod
 			if(THeat%Tr(iunit) < 273.15_r8) then
 			    THeat%Tr(iunit) = 273.15_r8
 			end if
+
+            if(iunit == 75723) then
+              write(unit=1113,fmt="(i10, f10.4, 5(e14.4))") iunit, THeat%Tr(iunit), THeat%forc_t(iunit), Mr, THeat%deltaH_r(iunit) / (Mr * cpliq), THeat%deltaM_r(iunit) / (Mr * cpliq)
+            end if
             
     end subroutine mainchannelTemp
 
@@ -320,7 +325,7 @@ MODULE MOSART_heat_mod
         call QSat(Tw_, Pbot_, esat_, esdT, qs, qsdT)        
         
         Kl_ = 0.211_r8 + 0.103_r8 * U_ * F_
-        Le_ = (2499.64_r8 - 2.51_r8 * (Tw_-273.15_r8)) * 1000._r8
+        Le_ = (2.495_r8 - 2.36_r8 * 1.e-3 * (Tw_-273.15_r8)) * 1.e6    ! S. L. Dingman (2009), Fluivial Hydraulics
         Evap_  = Kl_ * (esat_ - e_)/100._r8  ! 100 here is for conversion from Pa to hPa
         He_ = -denh2o * Evap_ * Le_ / (86.4e6)
         He_ = He_ * Aw_
@@ -343,7 +348,7 @@ MODULE MOSART_heat_mod
         real(r8) :: Pbot0 = 1013.25_r8 ! normal atmosphere pressure (hpa)
         
         Kl_ = 0.211_r8 + 0.103_r8 * U_ * F_
-        Le_ = (2499.64_r8 - 2.51_r8 * (Tw_-273.15_r8)) * 1000._r8
+        Le_ = (2.495_r8 - 2.36_r8 * 1.e-3 * (Tw_-273.15_r8)) * 1.e6    ! S. L. Dingman (2009), Fluivial Hydraulics
         Hh_ = -gamma * (Pbot_/100._r8/Pbot0) * Kl_ * Le_ * (Tw_ - Ta_) * denh2o/(86.4e6)
         Hh_ = Hh_ * Aw_
         
