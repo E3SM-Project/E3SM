@@ -1135,81 +1135,6 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    !-----------------------------
-    ! initialize pointers for stream fields that have no corresponding import or export fields
-    ! the following calls initialize the pointers like strm_wind below, which effectively initialize the memory
-    ! for these fields
-    ! if a field is not in the any of the streams that is read in, then no pointer will be set and the 
-    ! module array will not be associate
-    !-----------------------------
-
-    call shr_strdata_get_stream_pointer( sdat, 'wind'  , strm_wind  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'tdew'  , strm_tdew  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'tbot'  , strm_tbot  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'pbot'  , strm_pbot  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'shum'  , strm_shum  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'lwdn'  , strm_lwdn  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'rh'    , strm_rh    , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'swdndf', strm_swdndf, logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'swdndr', strm_swdndr, logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'precc' , strm_precc , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'precl' , strm_precl , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'precn' , strm_precn , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'swup'  , strm_swup  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! water isotopes
-    call shr_strdata_get_stream_pointer( sdat, 'rh_16O'   , strm_rh_16O   , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'rh_18O'   , strm_rh_18O   , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'rh_HDO'   , strm_rh_HDO   , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'precn_16O', strm_precn_16O, logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'precn_18O', strm_precn_18O, logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'precn_HDO', strm_precn_HDO, logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! values for optionalcorrection / anomaly forcing (add Sa_precsf for precip scale factor)
-    call shr_strdata_get_stream_pointer( sdat, 'precsf'   , strm_precsf   , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'prec_af'  , strm_prec_af  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'u_af'     , strm_u_af     , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'v_af'     , strm_v_af     , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'tbot_af'  , strm_tbot_af  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'pbot_af'  , strm_pbot_af  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'shum_af'  , strm_shum_af  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'swdn_af'  , strm_swdn_af  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_strdata_get_stream_pointer( sdat, 'lwdn_af'  , strm_lwdn_af  , logunit, masterproc, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
   end subroutine datm_comp_realize
 
   !===============================================================================
@@ -1306,8 +1231,18 @@ contains
     case('COPYALL')
        ! do nothing extra
 
+    !-----------------------------------------------!
     case('CORE2_NYF','CORE2_IAF')
+    !-----------------------------------------------!
+
        if (first_time) then
+          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
           if (.not. associated(strm_prec) .or. .not. associated(strm_swdn)) then
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE2')
           endif
@@ -1319,6 +1254,7 @@ contains
           call datm_get_adjustment_factors(factorFn_mesh, factorFn_data, windFactor, winddFactor, qsatFactor, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
+
        call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%model_calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
@@ -1407,26 +1343,38 @@ contains
 
        enddo   ! lsize
 
+    !-----------------------------------------------!
     case('CORE_IAF_JRA')
+    !-----------------------------------------------!
+
        if (first_time) then
+          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
           if (.not. associated(strm_prec) .or. .not. associated(strm_swdn)) then
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
           endif
+
           if (trim(datamode) == 'CORE_IAF_JRA' ) then
              if (.not. associated(strm_tarcf)) then
                 call shr_sys_abort(trim(subname)//'ERROR: tarcf must be in an input stream for CORE_IAF_JRA')
              endif
           endif
+
           if (trim(factorFn_data) == 'null') then
             windFactor  = 1.0_R8
             winddFactor = 1.0_R8
             qsatFactor  = 1.0_R8
           else
-             call datm_get_adjustment_factors(factorFn_mesh, factorFn_data, &
-                  windFactor, winddFactor, qsatFactor, rc)
+             call datm_get_adjustment_factors(factorFn_mesh, factorFn_data, windFactor, winddFactor, qsatFactor, rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
        endif
+
        call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%model_calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
@@ -1462,18 +1410,66 @@ contains
 
        enddo   ! lsize
 
-    case('CLMNCEP')
+    !-----------------------------------------------!
+    case('CLMNCEP')  
+    !-----------------------------------------------!
+
        if (first_time) then
+          ! initialize pointers for stream fields that have no corresponding import or export fields
+          call shr_strdata_get_stream_pointer( sdat, 'pbot'  , strm_pbot  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'tbot'  , strm_tbot  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'shum'  , strm_shum  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'wind'  , strm_wind  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'tdew'  , strm_tdew  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'rh'    , strm_rh    , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'swdndf', strm_swdndf, logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'swdndr', strm_swdndr, logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'lwdn'  , strm_lwdn  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'precc' , strm_precc , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'precl' , strm_precl , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'precn' , strm_precn , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'rh_16O'   , strm_rh_16O   , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'rh_18O'   , strm_rh_18O   , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'rh_HDO'   , strm_rh_HDO   , logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'precn_16O', strm_precn_16O, logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'precn_18O', strm_precn_18O, logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'precn_HDO', strm_precn_HDO, logunit, masterproc, rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! error check
           if (.not. associated(strm_wind) .or. .not. associated(strm_tbot)) then
              call shr_sys_abort(trim(subname)//' ERROR: wind and tbot must be in streams for CLMNCEP')
           endif
+
+          ! determine anidrmax, tbotmax and tdewmax (see below for use)
           rtmp = maxval(Sa_tbot(:))
           call shr_mpi_max(rtmp, tbotmax, mpicom, 'datm_tbot', all=.true.)
           if (force_prognostic_true) then
              rtmp = maxval(Sx_anidr(:))
              call shr_mpi_max(rtmp, anidrmax, mpicom, 'datm_ani', all=.true.)
           else
-             anidrmax = SHR_CONST_SPVAL ! see below for use
+             anidrmax = SHR_CONST_SPVAL 
           end if
           if (associated(strm_tdew)) then
              rtmp = maxval(strm_tdew(:))
@@ -1481,6 +1477,7 @@ contains
           endif
           if (masterproc) write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
        endif
+
        do n = 1,lsize
           !--- bottom layer height ---
           if (.not. associated(strm_z)) Sa_z(n) = 30.0_R8
@@ -1608,6 +1605,10 @@ contains
 
     ! bias correct precipitation relative to observed
     ! (via bias_correct nameslist option)
+    if (first_time) then
+       call shr_strdata_get_stream_pointer( sdat, 'precsf'   , strm_precsf   , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
     if (associated(strm_precsf)) then
        Faxa_snowc(:) = Faxa_snowc(:) * min(1.e2_r8,strm_precsf(:))
        Faxa_snowl(:) = Faxa_snowl(:) * min(1.e2_r8,strm_precsf(:))
@@ -1617,47 +1618,52 @@ contains
 
     ! adjust atmospheric input fields if anomaly forcing streams exist
     ! (via anomaly_forcing namelist option)
+    if (first_time) then
+       call shr_strdata_get_stream_pointer( sdat, 'u_af'     , strm_u_af     , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'v_af'     , strm_v_af     , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'shum_af'  , strm_shum_af  , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'prec_af'  , strm_prec_af  , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'tbot_af'  , strm_tbot_af  , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'pbot_af'  , strm_pbot_af  , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'swdn_af'  , strm_swdn_af  , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_strdata_get_stream_pointer( sdat, 'lwdn_af'  , strm_lwdn_af  , logunit, masterproc, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
-    ! wind
-    if (associated(strm_u_af) .and. associated(strm_v_af)) then
+    if (associated(strm_u_af) .and. associated(strm_v_af)) then ! wind
        Sa_u(:) = Sa_u(:) + strm_u_af(:)
        Sa_v(:) = Sa_v(:) + strm_v_af(:)
     endif
-
-    ! specific humidity
-    if (associated(strm_shum_af)) then
+    if (associated(strm_shum_af)) then  ! specific humidity
        Sa_shum(:) = Sa_shum(:) + strm_shum_af(:)
        ! avoid possible negative q values
        where (Sa_shum < 0._r8)
           Sa_shum = 1.e-6_r8
        end where
     endif
-
-    ! pressure
-    if (associated(strm_pbot_af)) then
+    if (associated(strm_pbot_af)) then ! pressure
        Sa_pbot(:) = Sa_pbot(:) + strm_pbot_af(:)
     endif
-
-    ! temperature
-    if (associated(strm_tbot_af)) then
+    if (associated(strm_tbot_af)) then ! temperature
        Sa_tbot(:) = Sa_tbot(:) + strm_tbot_af(:)
     endif
-
-    ! longwave
-    if (associated(strm_lwdn_af)) then
+    if (associated(strm_lwdn_af)) then ! longwave
        Faxa_lwdn(:) = Faxa_lwdn(:) * strm_lwdn_af(:)
     endif
-
-    ! precipitation
-    if (associated(strm_prec_af)) then
+    if (associated(strm_prec_af)) then ! precipitation
        Faxa_snowc(:) = Faxa_snowc(:) * strm_prec_af(:)
        Faxa_snowl(:) = Faxa_snowl(:) * strm_prec_af(:)
        Faxa_rainc(:) = Faxa_rainc(:) * strm_prec_af(:)
        Faxa_rainl(:) = Faxa_rainl(:) * strm_prec_af(:)
     end if
-
-    ! shortwave
-    if (associated(strm_swdn_af)) then
+    if (associated(strm_swdn_af)) then ! shortwave
        Faxa_swndr(:) = Faxa_swndr(:) * strm_swdn_af(:)
        Faxa_swvdr(:) = Faxa_swvdr(:) * strm_swdn_af(:)
        Faxa_swndf(:) = Faxa_swndf(:) * strm_swdn_af(:)

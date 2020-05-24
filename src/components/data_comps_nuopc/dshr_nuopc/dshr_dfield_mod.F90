@@ -26,7 +26,6 @@ module dshr_dfield_mod
   type, public :: dfield_type
      ! state data with no ungridded dimensions
      real(r8), pointer          :: state_data1d(:) => null()
-     real(r8), pointer          :: stream_data1d(:) => null()
      integer                    :: stream_index = 0
      integer                    :: fldbun_index = 0
      ! state data with ungridded dimensions
@@ -61,12 +60,15 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(dfield_type), pointer :: dfield_new
-    integer                    :: ns, nf
-    integer                    :: status
-    character(cl)              :: msgstr
-    logical                    :: found
-    character(len=*), parameter :: subname='(dfield_add_1d)'
+    type(dfield_type), pointer      :: dfield_new
+    integer                         :: ns, nf
+    integer                         :: status
+    character(cl)                   :: msgstr
+    integer                         :: fieldcount
+    type(ESMF_Field)                :: lfield
+    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
+    logical                         :: found
+    character(len=*), parameter     :: subname='(dfield_add_1d)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -85,39 +87,52 @@ contains
     ! if strm_fld is in the field bundle of stream ns, set the field index of the field with the name strm_fld
     ! and set the index of the stream
 
-    found = .false.
+    ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
     do ns = 1, sdat%nstreams
-       do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
-          if (trim(strm_fld) == trim(sdat%pstrm(ns)%fldlist_model(nf))) then
+       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldCount=fieldCount, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       allocate(lfieldnamelist(fieldCount))
+       call ESMF_FieldBundleGet(sdat%pstrm(ns)%fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       ! if strm_fld is in the field bundle of stream ns then set the field index of the field with 
+       ! the name strm_fld and set the index of the stream
+       found = .false.
+       do nf = 1,fieldcount
+          if (trim(strm_fld) == trim(lfieldnamelist(nf))) then
              found = .true.
-             ! set indices
              dfield_new%fldbun_index = nf
              dfield_new%stream_index = ns
-             ! set pointer to the stream data
-             call dshr_fldbun_getFldPtr(sdat%pstrm(ns)%fldbun_model, trim(strm_fld), dfield_new%stream_data1d, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
+             if (found) exit
           end if
-          if (found) exit
        end do
-       if (found) exit
+       deallocate(lfieldnamelist)
     end do
-    if (masterproc) then
-       if (found) then
-          write(logunit,*)'(dshr_addfield_add) set pointer for stream field strm_'//trim(strm_fld)
-       else
-          write(logunit,*)'(dshr_addfield_add) no pointer set for stream field strm_'//trim(strm_fld)
-       end if
-    end if
 
     ! Set export state array pointer
     call dshr_state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfield_new%state_data1d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfield_new%state_data1d = 0.0_r8
     if (masterproc) then
-       write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
+       write(logunit,110)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
     end if
+
+    ! Return array pointer if argument is present
     if (present(state_ptr)) then
        state_ptr => dfield_new%state_data1d
+    end if
+
+    ! write output
+    if (masterproc) then
+       if (found) then
+          write(logunit,100)'(dshr_addfield_add) set pointer to stream field strm_'//trim(strm_fld)//&
+               ' stream index = ',ns,' field bundle index= ',nf
+100       format(a,i6,2x,a,i6)
+       else
+          write(logunit,110)'(dshr_addfield_add) no pointer set for for stream field strm_'//trim(strm_fld)
+110       format(a)
+       end if
+       write(logunit,*)
     end if
 
   end subroutine dshr_dfield_add_1d
@@ -220,11 +235,8 @@ contains
   subroutine dshr_dfield_copy(dfields, sdat, rc)
 
     ! Copy stream data into dfield data type for each element of dfields
-    ! This routine will do one of the following
-    ! - populate the export state data (dfield%state_data1d or dfield%state_data2d)
-    !   with the stream field data
-    ! - populate the dfield stream field (dfield%stream_data1d) with spatially and
-    !   time interpolate stream field data
+    ! This routine will populate the export state data 
+    ! (dfield%state_data1d or dfield%state_data2d) with the stream field data
 
     ! input/output variables
     type(dfield_type)      , pointer     :: dfields
@@ -235,12 +247,9 @@ contains
     type(ESMF_field)           :: lfield
     type(dfield_type), pointer :: dfield
     real(r8), pointer          :: data1d(:)
-    integer                    :: n, nf, i, k
+    integer                    :: n, nf
     integer                    :: fldbun_index
     integer                    :: stream_index
-    logical                    :: ispresent
-    integer                    :: ns
-    character(len=CL)          :: msgstr          ! temporary
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -258,7 +267,6 @@ contains
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             dfield%stream_data1d(:) = data1d(:)
              dfield%state_data1d(:) = data1d(:)
           end if
        else if (associated(dfield%state_data2d)) then
