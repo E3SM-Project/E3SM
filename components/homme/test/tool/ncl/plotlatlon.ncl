@@ -34,7 +34,7 @@ fnames = systemfunc("ls  ./ne4np4_latlon.nc")
 ; res@gsnDraw  = False       ; don't draw the plots now
   res@gsnFrame = False       ; or advance the frame
   
-  res@tiMainString        = "GLL control volumes"
+  res@tiMainString        = "GLL subcell grid"
 ;     contour = gsn_csm_contour_map(wks,fg1->area,res)     ; Draw a contour plot.
   
   contour = gsn_map(wks,"CylindricalEquidistant",res) 
