@@ -1,5 +1,29 @@
 
 module nudging
+!!==> JS ADD
+! 2018/08/23 - This version introduces the linear interpolation of 
+!              nudge data to the model time step. It reads in all 
+!              the time slices when the file is opened at the first
+!              model time step, different from the previous version. 
+!              Then it reads in one more time slice when a new nudge
+!              file is opened and remove the oldest time slice in the
+!              array. It may only work appropriately when the nudge 
+!              time step is evenly divided by the model time step.
+! 2018/08/28 - Bug fix for scatter_field_to_chunk, should be called
+!              by all the MPI processes. Now the result is binary
+!              identical to the corrected E3SM nudging code
+! 2018/12/16 - Change the location of scatter_field_to_chunk, 
+!              scatter the data only when the nudging data is 
+!              read in, and let all the processes do the interpolation 
+!              for improved computational performance
+! 2019/01/17 - Bug fix for reading and interpolating the variables 
+!              that are nudged only, controlled by nudge_prof in 
+!              read_and_scatter and linear_intepolation functions
+! 2019/04/05 - Reset the nudging tendency to zero if Update_Model is 
+!              false.
+! 2019/04/08 - Nudge the model data to the same time slice of nudging 
+!              data, performing a real intermittent nudged simulation
+!!==> JS END
 !=====================================================================
 !
 ! Purpose: Implement Nudging of the model state of U,V,T,Q, and/or PS
@@ -185,6 +209,7 @@ module nudging
   use cam_abortutils  ,only:endrun
   use spmd_utils  ,only:masterproc
   use cam_logfile ,only:iulog
+  use perf_mod
 #ifdef SPMD
   use mpishorthand
 #endif
@@ -205,7 +230,11 @@ module nudging
   private::nudging_update_analyses_fv
   private::nudging_set_PSprofile
   private::nudging_set_profile
-
+!!==> JS ADD
+  private::linear_interpolation
+  private:: read_and_scatter
+  private:: open_netcdf
+!!==> JS END
   ! Nudging Parameters
   !--------------------
   logical::         Nudge_Model       =.false.
@@ -213,7 +242,7 @@ module nudging
   logical::         Nudge_File_Present=.false.
   logical::         Nudge_Initialized =.false.
   character(len=cl) Nudge_Path
-  character(len=cs) Nudge_File,Nudge_File_Template
+  character(len=cl) Nudge_File,Nudge_File_Template
   integer           Nudge_Times_Per_Day
   integer           Model_Times_Per_Day
   real(r8)          Nudge_Ucoef,Nudge_Vcoef
@@ -281,6 +310,22 @@ module nudging
   real(r8),allocatable::Nudge_Tstep(:,:,:)  !(pcols,pver,begchunk:endchunk)
   real(r8),allocatable::Nudge_Qstep(:,:,:)  !(pcols,pver,begchunk:endchunk)
   real(r8),allocatable::Nudge_PSstep(:,:)   !(pcols,begchunk:endchunk)
+!!==> JS ADD
+  character(len=10) :: Nudge_Method         ! nudge method 
+  integer :: p_cur                          ! current time index of interpolated 
+					    ! nudge data within an interval
+  integer :: n_cnt			    ! number of read-in nudge data
+  integer :: interval                       ! interpolated data per nudge time slice
+  integer, parameter :: num_vars = 4        ! number of vars to be nudged
+  character(len=1), dimension(num_vars), parameter :: &
+                    vars_name = (/'U','V','Q','T'/)         ! number of vars to be nudged
+  logical :: first_file                                     ! the flag for first nudge data
+  real(r8), allocatable, dimension(:,:,:,:) :: a, b, c, d   ! coeffs for spline
+  real(r8), allocatable, dimension(:,:,:,:) :: INTP_U       ! (pcols,pver,begchunk:endchunk,:)
+  real(r8), allocatable, dimension(:,:,:,:) :: INTP_V       ! (pcols,pver,begchunk:endchunk,:)
+  real(r8), allocatable, dimension(:,:,:,:) :: INTP_T       ! (pcols,pver,begchunk:endchunk,:)
+  real(r8), allocatable, dimension(:,:,:,:) :: INTP_Q       ! (pcols,pver,begchunk:endchunk,:)
+!!==> JS END
 
 contains
   !================================================================
@@ -318,7 +363,10 @@ contains
                          Nudge_Hwin_latWidth,Nudge_Hwin_lonWidth,      &
                          Nudge_Hwin_latDelta,Nudge_Hwin_lonDelta,      &
                          Nudge_Vwin_Lindex,Nudge_Vwin_Hindex,          &
-                         Nudge_Vwin_Ldelta,Nudge_Vwin_Hdelta
+                         Nudge_Vwin_Ldelta,Nudge_Vwin_Hdelta,          &
+!!==> JS ADD
+                         Nudge_Method
+!!==> JS END
 
    ! Nudging is NOT initialized yet, For now
    ! Nudging will always begin/end at midnight.
@@ -366,7 +414,9 @@ contains
    Nudge_Vwin_Hdelta  =0.1_r8
    Nudge_Vwin_Lindex  =0.0_r8
    Nudge_Vwin_Ldelta  =0.1_r8
-
+!!==> JS ADD
+   Nudge_Method       = 'Step'
+!!==> JS END
    ! Read in namelist values
    !------------------------
    if(masterproc) then
@@ -479,6 +529,9 @@ contains
    call mpibcast(Nudge_Vwin_Hdelta  , 1, mpir8 , 0, mpicom)
    call mpibcast(Nudge_Vwin_Lindex  , 1, mpir8 , 0, mpicom)
    call mpibcast(Nudge_Vwin_Ldelta  , 1, mpir8 , 0, mpicom)
+!!==> JS ADD
+   call mpibcast(Nudge_Method,len(Nudge_Method),mpichar,0,mpicom)
+!!==> JS END
 #endif
 
    ! End Routine
@@ -582,6 +635,7 @@ contains
      !--------------------------------------------------------
      Model_Step=86400/Model_Times_Per_Day
      Nudge_Step=86400/Nudge_Times_Per_Day
+
      if(Model_Step.lt.dtime) then
        write(iulog,*) ' '
        write(iulog,*) 'NUDGING: Model_Step cannot be less than a model timestep'
@@ -611,11 +665,14 @@ contains
      ! Check the time relative to the nudging window
      !------------------------------------------------
      call get_curr_date(Year,Month,Day,Sec)
+
      YMD=(Year*10000) + (Month*100) + Day
      YMD1=(Nudge_Beg_Year*10000) + (Nudge_Beg_Month*100) + Nudge_Beg_Day
+
      call timemgr_time_ge(YMD1,Nudge_Beg_Sec,         &
                           YMD ,Sec          ,After_Beg)
      YMD1=(Nudge_End_Year*10000) + (Nudge_End_Month*100) + Nudge_End_Day
+
      call timemgr_time_ge(YMD ,Sec          ,          &
                           YMD1,Nudge_End_Sec,Before_End)
 
@@ -631,6 +688,7 @@ contains
        Nudge_Next_Month=Month
        Nudge_Next_Day  =Day
        Nudge_Next_Sec  =(Sec/Nudge_Step)*Nudge_Step
+
      elseif(.not.After_Beg) then
        ! Set Time indicies to Nudging start,
        ! timestep_init will initialize the data arrays.
@@ -643,6 +701,7 @@ contains
        Nudge_Next_Month=Nudge_Beg_Month
        Nudge_Next_Day  =Nudge_Beg_Day
        Nudge_Next_Sec  =Nudge_Beg_Sec
+
      elseif(.not.Before_End) then
        ! Nudging will never occur, so switch it off
        !--------------------------------------------
@@ -747,6 +806,9 @@ contains
      write(iulog,*) 'NUDGING: Nudge_Hwin_max      =',Nudge_Hwin_max
      write(iulog,*) 'NUDGING: Nudge_Hwin_min      =',Nudge_Hwin_min
      write(iulog,*) 'NUDGING: Nudge_Initialized   =',Nudge_Initialized
+!!==> JS ADD
+     write(iulog,*) 'NUDGING: Nudge_Method        =',Nudge_Method
+!!==> JS END
      write(iulog,*) ' '
      write(iulog,*) ' '
 
@@ -823,6 +885,33 @@ contains
      Target_Q(:pcols,:pver,lchnk)=0._r8
      Target_PS(:pcols,lchnk)=0._r8
    end do
+
+!!==> JS ADD
+   p_cur = 1
+   n_cnt = 1
+   interval = Model_Times_Per_Day / Nudge_Times_Per_Day
+   first_file = .true.
+   select case (Nudge_Method)
+      case ('Step')
+           ! use Xanal directly, no interpolation is needed
+           !-----------------------------------------------
+      case ('IMT')
+           ! use Xanal directly, no interpolation is needed
+           !-----------------------------------------------
+      case ('Linear')
+           allocate(INTP_U(pcols,pver,begchunk:endchunk,2),stat=istat)
+           call alloc_err(istat,'nudging_init','INTP_U',2*pcols*pver*((endchunk-begchunk)+1))
+           allocate(INTP_V(pcols,pver,begchunk:endchunk,2),stat=istat)
+           call alloc_err(istat,'nudging_init','INTP_V',2*pcols*pver*((endchunk-begchunk)+1))
+           allocate(INTP_T(pcols,pver,begchunk:endchunk,2),stat=istat)
+           call alloc_err(istat,'nudging_init','INTP_T',2*pcols*pver*((endchunk-begchunk)+1))
+           allocate(INTP_Q(pcols,pver,begchunk:endchunk,2),stat=istat)
+           call alloc_err(istat,'nudging_init','INTP_Q',2*pcols*pver*((endchunk-begchunk)+1))
+      case default
+           call endrun('nudging_init error: nudge method should &
+                        be either Step, Linear or IMT...')
+   end select        
+!!==> JS END
 
    ! End Routine
    !------------
@@ -971,14 +1060,46 @@ contains
      !  If it is not, then issue a warning and switch off nudging to 'coast'
      !  thru the gap.
      !------------------------------------------------------------------------
-     if(dycore_is('UNSTRUCTURED')) then
+     if(dycore_is('UNSTRUCTURED')) then 
        call nudging_update_analyses_se(trim(Nudge_Path)//trim(Nudge_File))
      elseif(dycore_is('EUL')) then
        call nudging_update_analyses_eul(trim(Nudge_Path)//trim(Nudge_File))
      else !if(dycore_is('LR')) then
        call nudging_update_analyses_fv(trim(Nudge_Path)//trim(Nudge_File))
      endif
+
    endif
+
+!!==> JS ADD
+   if ((Before_End).and.(Update_Model)) then
+
+      select case (Nudge_Method)
+         case ('Linear')
+              call t_startf ('nudging_interp')
+              if (Nudge_Uprof .ne. 0) then 
+                 call linear_interpolation (INTP_U, Target_U, interval, p_cur)
+              end if
+              if (Nudge_Vprof .ne. 0) then 
+                 call linear_interpolation (INTP_V, Target_V, interval, p_cur)
+              end if
+              if (Nudge_Qprof .ne. 0) then 
+                 call linear_interpolation (INTP_Q, Target_Q, interval, p_cur)
+              end if
+              if (Nudge_Tprof .ne. 0) then 
+                 call linear_interpolation (INTP_T, Target_T, interval, p_cur)
+              end if
+              call t_stopf ('nudging_interp')
+         case default
+              ! No interpolation is needed for Step or IMT
+      end select
+ 
+      p_cur = p_cur + 1
+      if (p_cur .gt. interval) then
+          p_cur = 1
+      end if
+
+   end if
+!!==> JS END
 
    !-------------------------------------------------------
    ! Toggle Nudging flag when the time interval is between
@@ -1036,6 +1157,17 @@ contains
 !     write(iulog,*) 'PFC: Nudge_Tstep(1,:pver,begchunk)=',Nudge_Tstep(1,:pver,begchunk)
 !     write(iulog,*) 'PFC: Nudge_Xstep arrays updated:'
 !    endif
+
+!==>JS ADD
+   else
+     ! The following lines are used to reset the nudging tendency
+     ! to zero in order to perform an intermittent simulation
+     Nudge_Ustep(:,:,:) = 0._r8
+     Nudge_Vstep(:,:,:) = 0._r8
+     Nudge_Tstep(:,:,:) = 0._r8
+     Nudge_Qstep(:,:,:) = 0._r8
+     Nudge_PSstep(:,:) = 0._r8
+!==>JS END
    endif
 
    ! End Routine
@@ -1105,6 +1237,9 @@ contains
 !   use wrap_nf
    use ppgrid ,only: pver
    use netcdf
+!!==> JS ADD
+   use filenames ,only: interpret_filename_spec
+!!==> JS END
 
    ! Arguments
    !-------------
@@ -1114,11 +1249,19 @@ contains
    !-------------
    integer lev
    integer ncol,plev,istat
-   integer ncid,varid
-   real(r8) Xanal(Nudge_ncol,Nudge_nlev)
-   real(r8) PSanal(Nudge_ncol)
+   integer ncid, varid
+!   real(r8) PSanal(Nudge_ncol)
    real(r8) Lat_anal(Nudge_ncol)
    real(r8) Lon_anal(Nudge_ncol)
+!   real(r8) :: Xanal(Nudge_ncol,Nudge_nlev)
+
+!!==> JS ADD
+   integer :: cnt3(3)               ! array of counts for each dimension
+   integer :: strt3(3)              ! array of starting indices
+   character(len=cs) :: nudge_file1
+   integer :: n, ncid1
+   integer :: timesiz               ! size of time dimension on dataset
+!!==> JS END
 
    ! Check the existence of the analyses file; broadcast the file status to
    ! all the other MPI nodes. If the file is not there, then just return.
@@ -1141,7 +1284,7 @@ contains
      if(istat.ne.NF90_NOERR) then
        write(iulog,*)'NF90_OPEN: failed for file ',trim(anal_file)
        write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
+       call endrun ('UPDATE_ANALYSES_SE_OPEN')
      endif
 
      ! Read in Dimensions
@@ -1198,76 +1341,190 @@ contains
        call endrun ('UPDATE_ANALYSES_SE')
      endif
 
-     if((Nudge_ncol.ne.ncol).or.(plev.ne.pver)) then
-      write(iulog,*) 'ERROR: nudging_update_analyses_se: ncol=',ncol,' Nudge_ncol=',Nudge_ncol
-      write(iulog,*) 'ERROR: nudging_update_analyses_se: plev=',plev,' pver=',pver
-      call endrun('nudging_update_analyses_se: analyses dimension mismatch')
+!!==> JS ADD
+     istat = nf90_inq_dimid(ncid,'time',varid)
+     if(istat.ne.NF90_NOERR) then
+       write(iulog,*) nf90_strerror(istat)
+       call endrun ('UPDATE_ANALYSES_SE_TIME_DIM_ID')
      endif
+     istat = nf90_inquire_dimension (ncid, varid, len=timesiz)
+     if(istat.ne.NF90_NOERR) then
+       write(iulog,*) nf90_strerror(istat)
+       call endrun ('UPDATE_ANALYSES_SE_TIME_DIM')
+     endif
+!!==> JS END
 
-     ! Read in and scatter data arrays
-     !----------------------------------
-!     call wrap_inq_varid    (ncid,'U',varid)
-!     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'U',varid)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-     istat=nf90_get_var(ncid,varid,Xanal)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-   endif ! (masterproc) then
-   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal ,Target_U)
+     if ((Nudge_ncol.ne.ncol).or.(plev.ne.pver)) then
+        write(iulog,*) 'ERROR: nudging_update_analyses_se: ncol=',ncol,' Nudge_ncol=',Nudge_ncol
+        write(iulog,*) 'ERROR: nudging_update_analyses_se: plev=',plev,' pver=',pver
+        call endrun('nudging_update_analyses_se: analyses dimension mismatch')
+     end if
 
-   if(masterproc) then
-!     call wrap_inq_varid    (ncid,'V',varid)
-!     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'V',varid)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-     istat=nf90_get_var(ncid,varid,Xanal)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-   endif ! (masterproc) then
-   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal ,Target_V)
+   end if ! (masterproc) then
 
-   if(masterproc) then
-!     call wrap_inq_varid    (ncid,'T',varid)
-!     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'T',varid)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-     istat=nf90_get_var(ncid,varid,Xanal)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-   endif ! (masterproc) then
-   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal ,Target_T)
+!!==> JS ADD
+   select case (Nudge_Method)
+      case ('Step')
+           if (masterproc) then
+              n_cnt = n_cnt + 1
+              if (n_cnt .gt. timesiz) then
+                  n_cnt = 1
+              end if
+              strt3(1) = 1
+              strt3(2) = 1
+              strt3(3) = n_cnt
+              cnt3(1)  = ncol
+              cnt3(2)  = pver
+              cnt3(3)  = 1
+           end if
+           call read_and_scatter(ncid, 'U', Nudge_Uprof, strt3, cnt3, Target_U)
+           call read_and_scatter(ncid, 'V', Nudge_Vprof, strt3, cnt3, Target_V)
+           call read_and_scatter(ncid, 'T', Nudge_Tprof, strt3, cnt3, Target_T)
+           call read_and_scatter(ncid, 'Q', Nudge_Qprof, strt3, cnt3, Target_Q)
 
-   if(masterproc) then
-!     call wrap_inq_varid    (ncid,'Q',varid)
-!     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'Q',varid)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-     istat=nf90_get_var(ncid,varid,Xanal)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-   endif ! (masterproc) then
-   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal ,Target_Q)
+      case ('IMT')
+           if (masterproc) then
+              call t_startf ('read_nudging_data')
+              call open_netcdf (ncid1, -Nudge_Step)
+              call t_stopf ('read_nudging_data')
+              if (n_cnt .gt. timesiz) then
+                  n_cnt = 1
+              end if
+              strt3(1) = 1
+              strt3(2) = 1
+              strt3(3) = n_cnt
+              cnt3(1)  = ncol
+              cnt3(2)  = pver
+              cnt3(3)  = 1
+           end if
+           ! Use the CURR time slice for nudging
+           !------------------------------------
+           call read_and_scatter(ncid1, 'U', Nudge_Uprof, strt3, cnt3, Target_U)
+           call read_and_scatter(ncid1, 'V', Nudge_Vprof, strt3, cnt3, Target_V)
+           call read_and_scatter(ncid1, 'T', Nudge_Tprof, strt3, cnt3, Target_T)
+           call read_and_scatter(ncid1, 'Q', Nudge_Qprof, strt3, cnt3, Target_Q)
+           n_cnt = n_cnt + 1
+
+      case ('Linear')
+           ! Single time slice per file
+           ! Need to open a new netcdf file to get the CURR time slice
+           if (timesiz .eq. 1) then
+              if (first_file) then
+                  first_file = .false.
+                  strt3(1) = 1
+                  strt3(2) = 1
+                  strt3(3) = 1 
+                  cnt3(1)  = ncol
+                  cnt3(2)  = pver
+                  cnt3(3)  = 1
+                  if (masterproc) then
+                     call t_startf ('read_nudging_data')
+                     call open_netcdf (ncid1, -Nudge_Step)
+                     call t_stopf ('read_nudging_data')
+                  end if
+                  
+                  ! The start point uses the CURR time slice
+                  !-----------------------------------------
+                  call read_and_scatter(ncid1, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,1))
+                  call read_and_scatter(ncid1, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,1))
+                  call read_and_scatter(ncid1, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,1))
+                  call read_and_scatter(ncid1, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,1))
+                
+                  ! The end point uses the NEXT time slice
+                  !---------------------------------------
+                  call read_and_scatter(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
+                  call read_and_scatter(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
+                  call read_and_scatter(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
+                  call read_and_scatter(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
+
+                  call t_startf ('read_nudging_data')
+                  if (masterproc) then
+                      istat=nf90_close(ncid1)
+                      if (istat.ne.NF90_NOERR) then
+                         write(iulog,*) nf90_strerror(istat)
+                         call endrun ('UPDATE_ANALYSES_SE_CLOSE_LINEAR_NETCDF')
+                      end if
+                  end if
+                  call t_stopf ('read_nudging_data')
+
+              else
+                  ! The previous end point becomes the start point
+                  ! Only need to read in the new end point
+                  !-----------------------------------------------
+                  INTP_U(:,:,:,1) = INTP_U(:,:,:,2)
+                  INTP_V(:,:,:,1) = INTP_V(:,:,:,2)
+                  INTP_Q(:,:,:,1) = INTP_Q(:,:,:,2)
+                  INTP_T(:,:,:,1) = INTP_T(:,:,:,2)
+                  strt3(1) = 1
+                  strt3(2) = 1
+                  strt3(3) = 1
+                  cnt3(1)  = ncol
+                  cnt3(2)  = pver
+                  cnt3(3)  = 1
+                  call read_and_scatter(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
+                  call read_and_scatter(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
+                  call read_and_scatter(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
+                  call read_and_scatter(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
+
+              end if    ! first file for single time slice per file
+
+           else
+              ! Multiple time slices per file
+              ! The start point uses the CURR time slice
+              ! The end point uses the NEXT time slice
+              !-----------------------------------------
+              if (first_file) then
+                  first_file = .false.
+                  do n = 1, 2
+                     strt3(1) = 1
+                     strt3(2) = 1
+                     strt3(3) = n
+                     cnt3(1)  = ncol
+                     cnt3(2)  = pver
+                     cnt3(3)  = 1
+                     call read_and_scatter(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,n))
+                     call read_and_scatter(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,n))
+                     call read_and_scatter(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,n))
+                     call read_and_scatter(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,n))
+                  end do
+                  n_cnt = n_cnt + 2
+
+              else
+
+                  if (n_cnt .gt. timesiz) then
+                      n_cnt = 1
+                  end if
+                  ! The previous end point becomes the start point
+                  ! Only need to read in the new end point
+                  !-----------------------------------------------
+                  INTP_U(:,:,:,1) = INTP_U(:,:,:,2)
+                  INTP_V(:,:,:,1) = INTP_V(:,:,:,2)
+                  INTP_Q(:,:,:,1) = INTP_Q(:,:,:,2)
+                  INTP_T(:,:,:,1) = INTP_T(:,:,:,2)
+                  strt3(1) = 1
+                  strt3(2) = 1
+                  strt3(3) = n_cnt
+                  cnt3(1)  = ncol
+                  cnt3(2)  = pver
+                  cnt3(3)  = 1
+                  call read_and_scatter(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
+                  call read_and_scatter(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
+                  call read_and_scatter(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
+                  call read_and_scatter(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
+                  n_cnt = n_cnt + 1
+
+              end if ! first_file for multiple time slices
+
+           end if     ! single vs. multiple time slices per file
+
+      case default
+          write(iulog,*) 'ERROR: Unknown Input Nudge Method'
+          call endrun('nudging_update_analyses_se: bad input nudge method')
+   end select
+!!==> JS END
+
+!   end if ! (masterproc) then
+!   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal ,Target_U) 
 
    if(masterproc) then
 !!    call wrap_inq_varid    (ncid,'PS',varid)
@@ -1284,14 +1541,14 @@ contains
 !    endif
 
      ! Close the analyses file
-     !-----------------------
+     !------------------------
 !     call wrap_close(ncid)
      istat=nf90_close(ncid)
-     if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
-       call endrun ('UPDATE_ANALYSES_SE')
-     endif
-   endif ! (masterproc) then
+     if (istat.ne.NF90_NOERR) then
+        write(iulog,*) nf90_strerror(istat)
+        call endrun ('UPDATE_ANALYSES_SE_CLOSE')
+     end if
+   end if ! (masterproc) then
 !  call scatter_field_to_chunk(1,         1,1,Nudge_ncol,PSanal,Target_PS)
 
    ! End Routine
@@ -1968,5 +2225,184 @@ contains
    return
   end function ! nudging_set_PSprofile
   !================================================================
+
+!!==> JS ADD
+  ! open a new netcdf file
+  !-----------------------
+  subroutine open_netcdf (ncid, incre_step)
+  use cam_abortutils, only : endrun
+  use perf_mod
+  use netcdf
+  use filenames ,only      : interpret_filename_spec
+
+  integer, intent(out)    :: ncid
+  integer, intent(in)     :: incre_step
+
+  ! local variable  
+  integer :: YMD3, YMD4, Nudge_Next1_Sec, Nudge_Next1_Year, &
+             Nudge_Next1_Month, Nudge_Next1_Day, istat
+  character(len=cs)       :: nudge_file
+
+  YMD3 = (Nudge_Next_Year*10000) + &
+         (Nudge_NEXT_Month*100) + Nudge_Next_Day
+  call timemgr_time_inc(YMD3,Nudge_Next_Sec,  &
+                        YMD4,Nudge_Next1_Sec, &
+                        incre_step,0,0)
+  Nudge_Next1_Year = YMD4/10000
+  YMD4 = YMD4-(Nudge_Next1_Year*10000)
+  Nudge_Next1_Month = YMD4/100
+  Nudge_Next1_Day   = YMD4-(Nudge_Next1_Month*100)
+  nudge_file = interpret_filename_spec (  &
+                    Nudge_File_Template,  &
+               yr_spec=Nudge_Next1_Year,  &
+              mon_spec=Nudge_Next1_Month, &
+              day_spec=Nudge_Next1_Day  , &
+              sec_spec=Nudge_Next1_Sec    )
+  istat=nf90_open(trim(Nudge_Path)//trim(nudge_file),NF90_NOWRITE,ncid)
+  if (istat .ne. NF90_NOERR) then
+      write(iulog,*) 'NF90_OPEN: failed for file',trim(nudge_file)
+      write(iulog,*) nf90_strerror(istat)
+      call endrun ('UPDATE_ANALYSES_SE_OPEN_NETCDF')
+  endif
+  write(iulog,*) 'NUDGING: Reading new analyses:',trim(Nudge_Path)//trim(nudge_file)
+
+  end subroutine
+
+  ! Get and scatter nudging data
+  !-----------------------------
+  subroutine read_and_scatter (ncid, vname, ndg_prof, strt3, cnt3, out_x)
+  use ppgrid, only                 : pver,pcols,begchunk,endchunk
+  use cam_abortutils, only         : endrun
+  use perf_mod
+  use netcdf
+
+  integer, intent(in)             :: ncid, ndg_prof
+  integer, intent(in)             :: strt3(3), cnt3(3)
+  character (len = *), intent(in) :: vname
+  real(r8), intent(out)           :: out_x(pcols,pver,begchunk:endchunk)
+
+  ! local variables
+  real(r8)                        :: Xanal(Nudge_ncol,Nudge_nlev)
+  real(r8)                        :: tinfo
+  integer                         :: istat, varid, varid1
+
+  if (ndg_prof .ne. 0) then
+     if (masterproc) then
+        call t_startf ('read_nudging_data')
+        istat = nf90_inq_varid(ncid,vname,varid)
+        if (istat .ne. NF90_NOERR) then
+            write(iulog,*) nf90_strerror(istat)
+            call endrun ('ANALYSES_SE_INQ_VARID')
+        end if
+        istat = nf90_get_var(ncid,varid,Xanal,strt3,cnt3)
+        if (istat .ne. NF90_NOERR) then
+            write(iulog,*) nf90_strerror(istat)
+            call endrun ('ANALYSES_SE_GET_VAR')
+        end if
+        call t_stopf ('read_nudging_data')
+
+        ! check whether the time slice is read in correctly
+        istat = nf90_inq_varid(ncid,'time',varid1)
+        if (istat .ne. NF90_NOERR) then
+            write(iulog,*) nf90_strerror(istat)
+            call endrun ('ANALYSES_SE_INQ_VARID')
+        end if
+        istat = nf90_get_var(ncid,varid1,tinfo,start=(/n_cnt/))
+        if (istat .ne. NF90_NOERR) then
+            write(iulog,*) nf90_strerror(istat)
+            call endrun ('ANALYSES_SE_GET_VAR')
+        end if
+        write(iulog,*) 'NUDGING: Current time slice is: ', tinfo
+     end if
+     call t_startf ('distribute_data')
+     call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_ncol,Xanal,out_x)
+     call t_stopf ('distribute_data')
+  end if
+
+  end subroutine
+
+  ! Linear interpolation
+  !---------------------
+  subroutine linear_interpolation (input, output, interval, point)
+  use ppgrid,      only : pver,pcols,begchunk,endchunk
+  real(r8), intent(in)  :: input(pcols,pver,begchunk:endchunk,2)
+  real(r8), intent(out) :: output(pcols,pver,begchunk:endchunk)
+  integer, intent(in)   :: interval                         ! number of model time steps per nudge time step
+  integer, intent(in)   :: point                            ! the time spot to be interpolated
+
+  output = ( input(:,:,:,2) - input(:,:,:,1) ) * point * 1._r8 &
+           / (interval * 1._r8) + input(:,:,:,1)
+
+  end subroutine
+
+  ! Spline interpolation
+  ! Reference link: https://en.wikipedia.org/wiki/Spline_(mathematics)
+  !-------------------------------------------------------------------
+  subroutine spline_interpolation (input, output, point)
+  use ppgrid,      only : pver,pcols,begchunk,endchunk
+  real(r8), intent(in)  :: input(pcols,pver,begchunk:endchunk,4)
+  real(r8), intent(out) :: output(pcols,pver,begchunk:endchunk)
+  integer, intent(in)   :: point                            ! the time spot to be interpolated
+
+  ! Local variables
+  !----------------
+  integer  :: i
+  real(r8) :: x, h
+  real(r8), allocatable, dimension(:,:,:,:) :: mu, alpha, l, z
+
+  if (point .eq. 1) then
+      ! The coeffs of spline is fixed until
+      ! a new nudge file is read in
+      allocate(mu(pcols,pver,begchunk:endchunk,3),    &
+               alpha(pcols,pver,begchunk:endchunk,2), &
+               l(pcols,pver,begchunk:endchunk,4),       &
+               z(pcols,pver,begchunk:endchunk,4))
+
+      h = 24._r8 / (Nudge_Times_Per_Day * 1._r8) 
+
+      do i = 1, 4
+         a(:,:,:,i) = input(:,:,:,i)
+      end do
+
+      do i = 1, 2
+         alpha(:,:,:,i) = (a(:,:,:,i+2)-a(:,:,:,i+1))*3._r8/(h*1._r8) - &
+                          (a(:,:,:,i+1)-a(:,:,:,i))*3._r8/(h*1._r8)
+      end do
+
+      l(:,:,:,1) = 1._r8
+      mu(:,:,:,1) = 0._r8
+      z(:,:,:,1) = 0._r8
+
+      do i = 2, 3
+         l(:,:,:,i) = 2._r8 * h - h * mu(:,:,:,i-1)
+         mu(:,:,:,i) = h * 1._r8 / l(:,:,:,i)
+         z(:,:,:,i) = (alpha(:,:,:,i-1)-h*z(:,:,:,i-1)) / l(:,:,:,i)
+      end do
+
+      l(:,:,:,4) = 1._r8
+      c(:,:,:,4) = 0._r8
+      z(:,:,:,4) = 0._r8
+
+      do i = 3, 1, -1
+         c(:,:,:,i) = z(:,:,:,i) - mu(:,:,:,i)*c(:,:,:,i+1)
+         b(:,:,:,i) = (a(:,:,:,i+1)-a(:,:,:,i))/(1._r8*h) - &
+                     interval*(c(:,:,:,i+1)+2._r8*c(:,:,:,i))/3._r8
+         d(:,:,:,i) = (c(:,:,:,i+1)-c(:,:,:,i))/(3._r8*h)
+      end do
+
+      deallocate(mu)
+      deallocate(alpha)
+      deallocate(l)
+      deallocate(z)
+
+  end if
+
+  ! we only need the first piece of spline
+  x = point * 24._r8 / (Model_Times_Per_Day * 1._r8)
+  output = a(:,:,:,1) + b(:,:,:,1) * x + &
+           c(:,:,:,1) * x * x + d(:,:,:,1) * x * x * x
+
+  end subroutine
+!!==> JS END
 
 end module nudging
