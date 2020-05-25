@@ -42,15 +42,12 @@
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       CORE2_NYF (CORE2 normal year forcing) are modes used in forcing prognostic ocean/sea-ice components.
-      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, CLMMOSARTTEST, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
+      CLMCRUNCEPv7, CLMGSWP3v1, CLMMOSARTTEST, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
       WARNING for CLMNLDAS2: This is a regional forcing dataset over the U.S. (25-53N, 235-293E). Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <values match="last">
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
       <value compset="%JRA">CORE_IAF_JRA</value>
-      <value compset="%QIA">CLM_QIAN</value>
-      <value compset="%WISOQIA">CLM_QIAN_WISO</value>
-      <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
       <value compset="%MOSARTTEST">CLMMOSARTTEST</value>

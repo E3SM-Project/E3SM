@@ -149,8 +149,8 @@ contains
     endif
 
     if (debug > 0) then
-       write(logunit,F03) 'DEBUG: algo,D1,S1,Din,Sin,D2,S2=',trim(lAlgo),D1,S1,Din,Sin,D2,S2
-       write(logunit,F01) 'DEBUG: algo,f1,f2= '//trim(lAlgo),f1,f2
+       write(logunit,F03) 'shr_tInterp_getfactors: algo,D1,S1,Din,Sin,D2,S2=',trim(lAlgo),D1,S1,Din,Sin,D2,S2
+       write(logunit,F01) 'shr_tInterp_getfactors: algo,f1,f2= '//trim(lAlgo),f1,f2
     endif
 
   end subroutine shr_tInterp_getFactors

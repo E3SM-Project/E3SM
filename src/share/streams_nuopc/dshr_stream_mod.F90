@@ -1,4 +1,4 @@
-module dshr_stream_mod
+1module dshr_stream_mod
 
   ! -------------------------------------------------------------------------------
   ! Data type and methods to manage input data streams.
@@ -83,13 +83,13 @@ module dshr_stream_mod
      character(CS)     :: taxMode      = shr_stream_taxis_cycle ! cycling option for time axis
      character(CS)     :: tInterpAlgo  = 'linear'               ! algorithm to use for time interpolation
      character(CS)     :: mapalgo      = 'bilinear'             ! type of mapping - default is 'bilinear'
-     character(CS)     :: readMode     = 'single'               ! stream read model - 'single' or 'full_file' 
+     character(CS)     :: readMode     = 'single'               ! stream read model - 'single' or 'full_file'
      real(r8)          :: dtlimit      = 1.5_r8                 ! delta time ratio limits for time interpolation
      integer           :: offset       = 0                      ! offset in seconds of stream data
      character(CS)     :: calendar     = shr_cal_noleap         ! stream calendar (obtained from first stream data file)
      character(CL)     :: meshFile     = ' '                    ! filename for mesh for all fields on stream (full pathname)
-     integer           :: k_lvd        = -1                     ! file/sample of least valid date 
-     integer           :: n_lvd        = -1                     ! file/sample of least valid date 
+     integer           :: k_lvd        = -1                     ! file/sample of least valid date
+     integer           :: n_lvd        = -1                     ! file/sample of least valid date
      logical           :: found_lvd    = .false.                ! T <=> k_lvd,n_lvd have been set
      integer           :: k_gvd        = -1                     ! file/sample of greatest valid date
      integer           :: n_gvd        = -1                     ! file/sample of greatest valid date
@@ -103,7 +103,7 @@ module dshr_stream_mod
   end type shr_stream_streamType
 
   !----- parameters -----
-  integer          , save      :: debug = 0            ! edit/turn-on for debug write statements
+  integer          , save      :: debug = 1            ! edit/turn-on for debug write statements
   real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
   character(len=*) , parameter :: sourcefile = &
        __FILE__
@@ -140,7 +140,7 @@ contains
     !  </stream_info>
     ! </file>
     ! ---------------------------------------------------------------------
-    
+
     ! input/output variables
     type(shr_stream_streamType) , intent(inout), pointer :: streamdat(:)
     character(len=*)            , intent(in)             :: xmlfilename
@@ -154,7 +154,7 @@ contains
     type(NodeList) , pointer :: streamlist, filelist, varlist
     character(len=CL)        :: tmpstr
     integer                  :: i, n, nstrms
-    integer                  :: status 
+    integer                  :: status
     integer                  :: tmp(6)
     real(r8)                 :: rtmp(1)
     ! --------------------------------------------------------
@@ -350,7 +350,7 @@ contains
 
     ! local variables
     integer                :: n
-    integer                :: nfiles 
+    integer                :: nfiles
     integer                :: nvars
     character(CS)          :: calendar ! stream calendar
     character(*),parameter :: subName = '(shr_stream_init_from_inline) '
@@ -504,8 +504,8 @@ contains
     dDateIn = dYear*10000 + modulo(mDateIn,10000) ! mDateIn mapped to range of data years
     rDateIn = dDateIn + secIn/spd                 ! dDateIn + fraction of a day
     if(debug>0) then
-       write(strm%logunit,*) 'tcx fbd1 ',mYear,dYear,dDateIn,rDateIn
-       write(strm%logunit,*) 'tcx fbd2 ',yrFirst,yrLast,yrAlign,nYears
+       write(strm%logunit,*) 'fbd1 ',mYear,dYear,dDateIn,rDateIn
+       write(strm%logunit,*) 'fbd2 ',yrFirst,yrLast,yrAlign,nYears
     endif
 
     !----------------------------------------------------------------------------
@@ -562,7 +562,7 @@ contains
        rDategvd = 99991231.0
     endif
     if(debug>0) then
-       write(strm%logunit,*) 'tcx fbd3 ',rDateIn,rDatelvd,rDategvd
+       write(strm%logunit,*) 'fbd3 ',rDateIn,rDatelvd,rDategvd
     endif
 
     !-----------------------------------------------------------
@@ -1315,7 +1315,7 @@ contains
   end subroutine shr_stream_getNFiles
 
   !===============================================================================
-  subroutine shr_stream_restWrite(strm, fileName, caseName, caseDesc, nstrms, rc)
+  subroutine shr_stream_restWrite(strm, fileName, caseName, nstrms)
 
     ! Write stream data to a restart file.
 
@@ -1323,12 +1323,9 @@ contains
     type(shr_stream_streamType) ,intent(in)  :: strm(:)    ! data streams
     character(*)                ,intent(in)  :: fileName   ! name of restart file
     character(*)                ,intent(in)  :: caseName   ! case name
-    character(*)                ,intent(in)  :: caseDesc   ! case description
     integer, optional           ,intent(in)  :: nstrms     ! number of streams
-    integer,optional            ,intent(out) :: rc         ! return code
 
     ! local variables
-    integer       :: rCode       ! return code
     integer       :: nStreams    ! number of streams
     integer       :: k,n         ! generic loop index
     character( 8) :: dStr        ! F90 wall clock date str yyyymmdd
@@ -1336,7 +1333,6 @@ contains
     character(CS) :: str         ! generic text string
     integer       :: nUnit       ! a file unit number
     integer       :: nt          ! number of time samples
-    character(CS) :: tInterpAlgo ! for backwards compatability
     integer       :: logunit
     character(*),parameter :: subName = '(shr_stream_restWrite) '
     character(*),parameter :: F00   = "('(shr_stream_restWrite) ',16a) "
@@ -1345,11 +1341,10 @@ contains
     character(*),parameter :: F03   = "('(shr_stream_restWrite) ',a,i5,a,5l3) "
     !-------------------------------------------------------------------------------
 
-    rCode = 0
-    tInterpAlgo = 'unused'
-
+    ! stdout unit
     logunit = strm(1)%logunit ! all streams have the same logunit
 
+    ! error checks
     if (present(nstrms)) then
        if (size(strm) < nstrms) then
           write(logunit,F02) "ERROR: nstrms too large for strm",size(strm),nstrms
@@ -1359,118 +1354,75 @@ contains
     else
        nStreams = size(strm)
     endif
-    call date_and_time(dStr,tStr)
-
-    ! log info to stdout
-    if (debug > 0) then
-       write(logunit,F00) "case name        : ",trim(caseName)
-       write(logunit,F00) "case description : ",trim(caseDesc)
-       write(logunit,F00) "File created     : ",&
-            dStr(1:4)//'-'//dStr(5:6)//'-'//dStr(7:8)//' '//tStr(1:2)//':'//tStr(3:4)//':'//tStr(5:6)
-       write(logunit,F01) "Number of streams ",nStreams
-    end if
-
-    !----------------------------------------------------------------------------
-    ! write the  data
-    !----------------------------------------------------------------------------
-
-    open(newunit=nUnit,file=trim(fileName),form="unformatted",action="write")
-
-    str = "case name        : "//caseName
-    write(nUnit) str
-    str = "case description : "//caseDesc
-    write(nUnit) str
-    str = 'File created     : '&
-         //dStr(1:4)//'-'//dStr(5:6)//'-'//dStr(7:8)//' '//tStr(1:2)//':'//tStr(3:4)//':'//tStr(5:6)
-    write(nUnit) str
-
-    write(nUnit) nStreams
-    if (present(nstrms)) then
-       if (nstrms /= nStreams) then
-          write(logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
-          call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
-       endif
-       nStreams = nstrms
-    endif
-
-    write(nUnit) nStreams
     do k = 1,nStreams
        if (.not. strm(k)%init) then  ! has stream been initialized?
-          rCode = 1
           write(logunit,F01) "ERROR: can't write uninitialized stream to a restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: given uninitialized stream")
        end if
+    end do
 
-       write(nUnit) strm(k)%init         ! has stream been initialized?
-       write(nUnit) strm(k)%nFiles       ! number of data files
-
-       if (debug > 0) then
-          write(logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
-          write(logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
-          write(logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
-       end if
-
-       nt = strm(k)%file(1)%nt
-       if (strm(k)%file(1)%haveData .and. debug > 0) then
-          write(logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1), strm(k)%file(1)%secs(1)
-          write(logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt), strm(k)%file(1)%secs(nt)
-       endif
-       do n=1,strm(k)%nFiles                      ! data specific to each file...
-          write(nUnit) strm(k)%file(n)%name       ! the file name
-          write(nUnit) strm(k)%file(n)%haveData   ! has t-coord data been read in?
-          write(nUnit) strm(k)%file(n)%nt         ! size of time dimension
+    ! write restart data
+    open(nUnit,file=trim(fileName),form="unformatted",action="write")
+    write(nUnit) nStreams
+    do k = 1,nStreams
+       write(nUnit) strm(k)%init                  ! has stream been initialized?
+       write(nUnit) strm(k)%nFiles                ! number of data files for this stream
+       do n = 1,strm(k)%nFiles                    ! data specific to each stream file...
+          write(nUnit) strm(k)%file(n)%name       ! the stream file name
+          write(nUnit) strm(k)%file(n)%haveData   ! has stream t-coord data been read in?
+          write(nUnit) strm(k)%file(n)%nt         ! size of stream time dimension
           if (strm(k)%file(n)%haveData) then      ! ie. if arrays have been allocated
              write(nUnit) strm(k)%file(n)%date(:) ! t-coord date: yyyymmdd
              write(nUnit) strm(k)%file(n)%secs(:) ! t-coord secs: elapsed on date
           end if
        end do
-
-       write(nUnit) strm(k)%yearFirst      ! first year to use in t-axis (yyyymmdd)
-       write(nUnit) strm(k)%yearLast       ! last  year to use in t-axis (yyyymmdd)
-       write(nUnit) strm(k)%yearAlign      ! align yearFirst with this model year
-       write(nUnit) strm(k)%offset         ! time axis offset
-      !write(nUnit) strm(k)%taxMode        ! time axis cycling mode
-
-       write(nUnit) strm(k)%k_lvd          ! file of least valid date
-       write(nUnit) strm(k)%n_lvd          ! sample of least valid date
-       write(nUnit) strm(k)%found_lvd      ! T <=> k_lvd,n_lvd have been set
-       write(nUnit) strm(k)%k_gvd          ! file of greatest valid date
-       write(nUnit) strm(k)%n_gvd          ! sample of greatest valid date
-       write(nUnit) strm(k)%found_gvd      ! T <=> k_gvd,n_gvd have been set
-
-       write(nUnit) tInterpAlgo            ! unused
-       write(nUnit) strm(k)%meshfile       ! mesh filename
-
+       write(nUnit) strm(k)%offset                ! time axis offset
+       write(nUnit) strm(k)%k_lvd                 ! file        of least valid date
+       write(nUnit) strm(k)%n_lvd                 !      sample of least valid date
+       write(nUnit) strm(k)%found_lvd             ! T <=> k_lvd,n_lvd have been set
+       write(nUnit) strm(k)%k_gvd                 ! file        of greatest valid date
+       write(nUnit) strm(k)%n_gvd                 !      sample of greatest valid date
+       write(nUnit) strm(k)%found_gvd             ! T <=> k_gvd,n_gvd have been set
     end do
-
     close(nUnit)
-    if ( present(rc) ) rc = rCode
+
+    ! write diagnostic log output
+    call date_and_time(dStr,tStr)
+    write(logunit,F00) "stream restart file created : ",&
+         dStr(1:4)//'-'//dStr(5:6)//'-'//dStr(7:8)//' '//tStr(1:2)//':'//tStr(3:4)//':'//tStr(5:6)
+    write(logunit,F01) "number of streams ",nStreams
+    do k = 1,nStreams
+       nt = strm(k)%file(1)%nt
+       write(logunit,F02) "* stream ",k," offset               = ",strm(k)%offset
+       write(logunit,F03) "* stream ",k," init                 = ",strm(k)%init
+       write(logunit,F01) "* stream ",k," first file name      = ",trim(strm(k)%file(1)%name)
+       write(logunit,F03) "* stream ",k," first file have data = ",strm(k)%file(1)%haveData
+       write(logunit,F02) "* stream ",k," first file ntimes    = ",strm(k)%file(1)%nt
+       if (strm(k)%file(1)%haveData .and. debug > 0) then
+          write(logunit,F02) "* stream ",k," first file date secs = ", strm(k)%file(1)%date(1), strm(k)%file(1)%secs(1)
+          write(logunit,F02) "* stream ",k," last  file date secs = ", strm(k)%file(1)%date(nt), strm(k)%file(1)%secs(nt)
+       endif
+    end do
 
   end subroutine  shr_stream_restWrite
 
   !===============================================================================
-  subroutine shr_stream_restRead(strm,fileName,nstrms,rc)
+  subroutine shr_stream_restRead(strm, fileName, nstrms)
 
     ! read stream data from a restart file
-    ! Either shr_stream_init xor shr_stream_restRead must be called
-    ! Do not call both routines.
 
     ! input/output parameters:
-    type(shr_stream_streamType)  ,intent(inout) :: strm(:)  ! vector of data streams
-    character(*)                 ,intent(in)    :: fileName ! name of restart file
-    integer,optional,intent(in)    :: nstrms   ! number of streams in strm
-    integer,optional,intent(out)   :: rc       ! return code
+    type(shr_stream_streamType) ,intent(inout) :: strm(:)  ! vector of data streams
+    character(*)                ,intent(in)    :: fileName ! name of restart file
+    integer                     ,intent(in)    :: nstrms   ! number of streams in strm
 
-    !--- local ---
+    ! local variables
     integer         :: rCode                          ! return code
     integer         :: nStreams                       ! number of streams
     integer         :: k,n                            ! generic loop index
     character(CS)   :: str                            ! generic text string
     integer         :: nUnit                          ! a file unit number
-    integer         :: inpi                           ! input integer
-    character(CXX)  :: inpcx                          ! input char
-    character(CL)   :: inpcl                          ! input char
-    character(CS)   :: inpcs                          ! input char
+    integer         :: offset_input                   ! input integer
     integer         :: nt                             ! size of time dimension
     character(CS)   :: tInterpAlgo                    ! for backwards compatability
     character(CL)   :: name                           ! local variables
@@ -1478,11 +1430,8 @@ contains
     integer         :: k_lvd, n_lvd, k_gvd, n_gvd     ! local variables
     logical         :: found_lvd, found_gvd, haveData ! local variables
     integer,pointer :: date(:),secs(:)                ! local variables
-    logical         :: abort                          ! abort the restart read
     logical         :: readok                         ! read of restarts ok
-
-    !--- formats ---
-    integer                :: logunit
+    integer         :: logunit
     character(*),parameter :: subName = '(shr_stream_restRead) '
     character(*),parameter :: F00   = "('(shr_stream_restRead) ',16a) "
     character(*),parameter :: F01   = "('(shr_stream_restRead) ',a,i5,a,5a) "
@@ -1492,58 +1441,44 @@ contains
     character(*),parameter :: F05   = "('(shr_stream_restRead) ',a,2i8,6a) "
     !-------------------------------------------------------------------------------
 
-    rCode = 0
-    tInterpAlgo = 'unused'
-    abort = .false.
-    inpcl = ' '
-
-    logunit = strm(1)%logunit ! all streams have the same logunit
-
     !----------------------------------------------------------------------------
     ! read the  data
     !----------------------------------------------------------------------------
 
+    logunit = strm(1)%logunit ! all streams have the same logunit
+
     open(newunit=nUnit,file=trim(fileName),form="unformatted",status="old",action="read", iostat=rCode)
+    write(logunit,F01)'reading stream restart info from '//trim(filename)
     if ( rCode /= 0 )then
        call shr_sys_abort(subName//": ERROR: error opening file: "//trim(fileName) )
     end if
 
-    read(nUnit) str         ! case name
-    if (debug > 0) write(logunit,F00) trim(str)
-    read(nUnit) str         ! case description
-    if (debug > 0) write(logunit,F00) trim(str)
-    read(nUnit) str         ! file creation date
-    if (debug > 0) write(logunit,F00) trim(str)
-
+    ! number of streams
     read(nUnit) nStreams
-    if (present(nstrms)) then
-       if (nstrms /= nStreams) then
-          write(logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
-          call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
-       endif
-       nStreams = nstrms
+    if (nstrms /= nStreams) then
+       write(logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
+       call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
     endif
-    if (debug > 0) write(logunit,F01) "Number of streams ",nStreams
+    nStreams = nstrms
+    write(logunit,F01) "Number of streams on restart ",nStreams
 
+    ! loop over streams
     do k = 1,nStreams
-       read(nUnit) strm(k)%init         ! has stream been initialized?
+       ! has stream been initialized?
+       read(nUnit) strm(k)%init         
        if (.not. strm(k)%init) then
-          rCode = 1
           write(logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: reading uninitialized stream")
        end if
-       strm(k)%init = .true.
-
        readok = .true.
 
-       ! tcraig, don't overwrite these from input
-       read(nUnit) nFiles       ! number of data files
-
-       do n=1,nFiles                     ! data specific to each file...
+       ! don't overwrite these from input - make local variables fo rinput
+       read(nUnit) nFiles
+       write(logunit,F02) "Number of files on stream ",n," is ",nStreams
+       do n = 1,nFiles 
           read(nUnit) name       ! the file name
           read(nUnit) haveData   ! has t-coord data been read in?
           read(nUnit) nt         ! size of time dimension
-
           if (haveData) then     ! ie. if arrays have been allocated
              allocate(date(nt))
              allocate(secs(nt))
@@ -1551,17 +1486,15 @@ contains
              read(nUnit) secs(:) ! t-coord secs: elapsed on date
              if (strm(k)%nFiles >= n) then
                 if (trim(name) == trim(strm(k)%file(n)%name)) then
-                   write(logunit,F05) "reading time axis for stream restart filename ",k,n, &
-                        ' ',trim(name),' ',trim(strm(k)%file(n)%name)
-                   strm(k)%file(n)%nt = nt
-                   strm(k)%file(n)%haveData = haveData
                    allocate(strm(k)%file(n)%date(nt))
                    allocate(strm(k)%file(n)%secs(nt))
+                   write(logunit,F00) "reading time data for stream file ",trim(name)
+                   strm(k)%file(n)%nt = nt
+                   strm(k)%file(n)%haveData = haveData
                    strm(k)%file(n)%date(1:nt) = date(1:nt)
                    strm(k)%file(n)%secs(1:nt) = secs(1:nt)
                 else
-                   write(logunit,F05) "WARNING, skip time axis for stream restart filename ",k,n,&
-                        ' ',trim(name),' ',trim(strm(k)%file(n)%name)
+                   write(logunit,F05) "WARNING, skipping reading in time data for stream file ",trim(name)
                    readok = .false.
                 endif  ! filenames consistent
              endif  ! strm nfiles
@@ -1569,33 +1502,7 @@ contains
              deallocate(secs)
           end if
        end do
-
-       if (debug > 0) then
-          write(logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
-          write(logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
-          write(logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
-       end if
-
-       if (strm(k)%file(1)%haveData) then
-          nt = strm(k)%file(1)%nt
-          if (debug > 0) then
-             write(logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1),strm(k)%file(1)%secs(1)
-             write(logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt),strm(k)%file(1)%secs(nt)
-          end if
-       endif
-
-       ! offset is the only field that should not change here for time axis
-       read(nUnit) inpi   ! first year to use in t-axis (yyyymmdd)
-       read(nUnit) inpi   ! last year to use in t-axis (yyyymmdd)
-       read(nUnit) inpi   ! align year to use in t-axis (yyyymmdd)
-       read(nUnit) inpi   ! time axis offset
-       if (inpi /= strm(k)%offset) then
-          write(logunit,F04) " ERROR: offset disagrees ",k,strm(k)%offset,inpi
-          write(logunit,F00) "ERRORS Detected ABORTING NOW"
-          call shr_sys_abort(subName//": ERRORS Detected ABORTING NOW")
-       endif
-
-       ! read(nUnit) strm(k)%taxMode      ! time axis cycling mode
+       read(nUnit) offset_input ! time axis offset
        read(nUnit) k_lvd        ! file of least valid date
        read(nUnit) n_lvd        ! sample of least valid date
        read(nUnit) found_lvd    ! T <=> k_lvd,n_lvd have been set
@@ -1603,8 +1510,13 @@ contains
        read(nUnit) n_gvd        ! sample of greatest valid date
        read(nUnit) found_gvd    ! T <=> k_gvd,n_gvd have been set
 
-       ! only overwrite if restart read is ok
+       if (offset_input /= strm(k)%offset) then
+          write(logunit,F04) " ERROR: offset disagrees ",k,strm(k)%offset,offset_input
+          write(logunit,F00) "ERRORS Detected ABORTING NOW"
+          call shr_sys_abort(subName//": ERRORS Detected ABORTING NOW")
+       endif
        if (readok) then
+          ! only overwrite if restart read is ok
           write(logunit,F05) "setting k n and found lvd gvd on restart ",k,n,' ',trim(name)
           strm(k)%k_lvd     = k_lvd
           strm(k)%n_lvd     = n_lvd
@@ -1614,14 +1526,19 @@ contains
           strm(k)%found_gvd = found_gvd
        endif
 
-       ! don't overwrite these from input
-       read(nUnit) inpcs !  tInterpAlgo   -  unused
-       read(nUnit) inpcl !  meshFileName  -  mesh filename
+       if (debug > 0) then
+          write(logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
+          write(logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
+          write(logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
+          if (strm(k)%file(1)%haveData) then
+             nt = strm(k)%file(1)%nt
+             write(logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1),strm(k)%file(1)%secs(1)
+             write(logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt),strm(k)%file(1)%secs(nt)
+          end if
+       endif
 
     end do
-
     close(nUnit)
-    if ( present(rc) ) rc = rCode
 
   end subroutine shr_stream_restRead
 

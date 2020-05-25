@@ -326,9 +326,11 @@ contains
     end if
   end subroutine dshr_mesh_init
 
+  !===============================================================================
   subroutine dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
        mpicom, compid, logunit, rc)
 
+    ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
     character(len=*)           , intent(in)    :: xmlfilename ! for shr_strdata_nml namelist
     type(ESMF_Mesh)            , intent(in)    :: model_mesh
@@ -339,6 +341,7 @@ contains
     integer                    , intent(out)   :: compid
     integer                    , intent(in)    :: mpicom
     integer                    , intent(out)   :: rc
+    ! ----------------------------------------------
 
     ! Initialize sdat from data model input files
     if (trim(model_meshfile) == trim(model_maskfile)) then
@@ -1086,7 +1089,7 @@ contains
           call pio_closefile(pioid)
           call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
        end if
-       call shr_strdata_restRead(sdat, trim(rest_files), mpicom)
+       call shr_strdata_restRead(sdat, trim(rest_files))
     else
        if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_files)
     endif
@@ -1112,8 +1115,8 @@ contains
 
     ! local variables
     integer           :: nu
-    character(len=CL) :: rest_filem
-    character(len=CL) :: rest_files
+    character(len=CL) :: rest_file_model
+    character(len=CL) :: rest_file_stream
     character(len=CS) :: date_str
     type(file_desc_t) :: pioid
     integer           :: dimid(1)
@@ -1121,21 +1124,25 @@ contains
     type(io_desc_t)   :: pio_iodesc
     integer           :: rcode
     integer           :: yy, mm, dd
+    character(*), parameter :: F00   = "('(dshr_restart_write) ',8a,2(i0,2x))"
     !-------------------------------------------------------------------------------
 
-     ! write data model restart data
      call shr_cal_datetod2string(date_str, ymd, tod)
-     write(rest_filem,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
-     write(rest_files,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
+     write(rest_file_model ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rm.', trim(date_str),'.nc'
+     write(rest_file_stream,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs.', trim(date_str),'.bin'
+
+     ! write restart info to rpointer file
      if (my_task == master_task) then
         open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-        write(nu,'(a)') rest_filem
-        write(nu,'(a)') rest_files
+        write(nu,'(a)') rest_file_model
+        write(nu,'(a)') rest_file_stream
         close(nu)
-        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_files), ymd, tod
+        write(logunit,F00)' (dshr_restart_write) writing ',trim(rest_file_stream), ymd, tod
      endif
+
+     ! write data model restart data
      if (present(fld) .and. present(fldname)) then
-        rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_clobber)
+        rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_file_model), pio_clobber)
         call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
         rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
         rcode = pio_def_dim(pioid, 'gsize', sdat%model_gsize, dimid(1))
@@ -1148,8 +1155,7 @@ contains
      end if
 
      ! write stream restart data
-     call shr_strdata_restWrite(sdat, trim(rest_files), mpicom, trim(case_name), &
-          'sdat strdata from '//trim(model_name))
+     call shr_strdata_restWrite(sdat, trim(rest_file_stream), trim(case_name))
 
   end subroutine dshr_restart_write
 

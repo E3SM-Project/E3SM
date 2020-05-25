@@ -349,15 +349,17 @@ contains
 
     ! TODO: need a check that the mask file has the same grid as the model mesh
 
-    ! Initialize sdat
+    ! Initialize mesh, restart flag, compid, and logunit
     call t_startf('docn_strdata_init')
-    xmlfilename = 'docn.streams.xml'
     call dshr_mesh_init(gcomp, compid, logunit, 'ocn', model_meshfile, model_maskfile, model_mesh, &
          read_restart, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize sdat if required
     if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
           aquaplanet = .true.
     else
+       xmlfilename = 'docn.streams.xml'
        call dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
             mpicom, compid, logunit, rc=rc)
     end if

@@ -422,8 +422,10 @@ contains
 
        ! Determine field names for stream fields with both stream file names and data model names
        nvars = sdat%stream(ns)%nvars
+
        allocate(sdat%pstrm(ns)%fldList_model(nvars))
        call shr_stream_getModelFieldList(sdat%stream(ns), sdat%pstrm(ns)%fldlist_model)
+
        allocate(sdat%pstrm(ns)%fldlist_stream(nvars))
        call shr_stream_getStreamFieldList(sdat%stream(ns), sdat%pstrm(ns)%fldlist_stream)
 
@@ -1149,38 +1151,27 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_restWrite(sdat, filename, mpicom, str1, str2)
+  subroutine shr_strdata_restWrite(sdat, filename, str1)
 
     type(shr_strdata_type) ,intent(inout) :: sdat
     character(len=*)       ,intent(in)    :: filename
-    integer                ,intent(in)    :: mpicom
     character(len=*)       ,intent(in)    :: str1
-    character(len=*)       ,intent(in)    :: str2
-
-    !--- local ----
-    integer :: my_task,ier
     !-------------------------------------------------------------------------------
 
-    call mpi_comm_rank(mpicom,my_task,ier)
-    if (my_task == 0) then
-       call shr_stream_restWrite(sdat%stream,trim(filename),trim(str1),trim(str2),sdat%nstreams)
+    if (sdat%my_task == master_task) then
+       call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), sdat%nstreams)
     endif
 
   end subroutine shr_strdata_restWrite
 
   !===============================================================================
-  subroutine shr_strdata_restRead(sdat, filename, mpicom)
+  subroutine shr_strdata_restRead(sdat, filename)
 
     type(shr_strdata_type) ,intent(inout) :: sdat
     character(len=*)       ,intent(in)    :: filename
-    integer                ,intent(in)    :: mpicom
-
-    !--- local ----
-    integer :: my_task,ier
     !-------------------------------------------------------------------------------
 
-    call mpi_comm_rank(mpicom,my_task,ier)
-    if (my_task == 0) then
+    if (sdat%my_task == master_task) then
        call shr_stream_restRead(sdat%stream, trim(filename), sdat%nstreams)
     endif
 
@@ -1357,10 +1348,10 @@ contains
        if (mDateLB == oDateUB .and. mSecLB == oSecUB) then
           ! copy fldbun_stream_ub to fldbun_stream_lb
           call t_startf(trim(istr)//'_LB_copy')
-          do nf = 1,size(fldlist_stream)
-             call dshr_fldbun_getfldptr(fldbun_stream_ub, trim(fldlist_stream(nf)), fldptr1=dataptr_ub, rc=rc)
+          do nf = 1,size(fldlist_model)
+             call dshr_fldbun_getfldptr(fldbun_stream_ub, trim(fldlist_model(nf)), fldptr1=dataptr_ub, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getfldptr(fldbun_stream_lb, trim(fldlist_stream(nf)), fldptr1=dataptr_lb, rc=rc)
+             call dshr_fldbun_getfldptr(fldbun_stream_lb, trim(fldlist_model(nf)), fldptr1=dataptr_lb, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              dataptr_lb(:) = dataptr_ub(:)
           end do
