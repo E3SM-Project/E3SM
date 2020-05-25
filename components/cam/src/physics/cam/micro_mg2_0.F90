@@ -1216,7 +1216,8 @@ subroutine micro_mg_tend ( &
         if (qc(i,k).ge.qsmall) then
            ! limit in-cloud values to 0.005 kg/kg
            qcic(i,k)=min(qc(i,k)/lcldm(i,k),5.e-3_r8)
-           ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
+         !!ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
+           ncic(i,k)=max(nc(i,k)/lcldm(i,k),ncnst/rho(i,k))
 
            ! specify droplet concentration
            if (nccons) then
