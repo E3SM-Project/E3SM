@@ -17,7 +17,7 @@ infilenames = ''
 output_dir = "./"
 output_timeunits=1
 output_frequency=1
-output_varnames1='geos'
+output_varnames1='PHIS'
 output_type='netcdf'
 io_stride = 16
 /

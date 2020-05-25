@@ -232,6 +232,7 @@ contains
     call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'PHIS', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
@@ -380,6 +381,18 @@ contains
                 st=en+1
              enddo
              call nf_put_var(ncdf(ios),var2d,start,count,name='geos')
+             deallocate(var2d)
+          endif
+          if(nf_selectedvar('PHIS', output_varnames)) then
+             allocate(var2d(nxyp))
+             if (par%masterproc) print *,'writing geos as PHIS...'
+             st=1
+             do ie=1,nelemd
+                en=st+elem(ie)%idxp%NumUniquePts-1
+                call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
+                st=en+1
+             enddo
+             call nf_put_var(ncdf(ios),var2d,start,count,name='PHIS')
              deallocate(var2d)
           endif
 

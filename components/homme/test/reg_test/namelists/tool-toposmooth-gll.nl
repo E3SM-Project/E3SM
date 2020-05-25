@@ -42,8 +42,7 @@ infilenames = 'movies/phis-baroclinic1.nc'
 output_dir = "movies/"
 output_timeunits=1
 output_frequency=1
-output_varnames1='geos'  ! homme will output goes. rename afterwards
-output_varnames2='geos'  ! name of input variable. usually PHIS, but use 'geos' with test file
+output_varnames1='PHIS'  ! homme will output goes. rename afterwards
 output_type='netcdf'
 io_stride = 16
 /

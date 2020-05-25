@@ -42,8 +42,7 @@ infilenames = './phis-baroclinic1.nc'
 output_dir = "./"
 output_timeunits=1
 output_frequency=1
-output_varnames1='geos'  ! homme will output goes. rename afterwards
-!output_varnames2='PHIS'  ! name of input variable. usually PHIS, but testing code uses 'goes'
+output_varnames1='PHIS'  ! homme will output goes. rename afterwards
 output_type='netcdf'
 io_stride = 16
 /

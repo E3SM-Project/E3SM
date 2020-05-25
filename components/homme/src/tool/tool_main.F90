@@ -201,13 +201,11 @@ contains
           call abortmp('homme_tool: topo_gll_to_smoothed requires infilenames 1 to be defined')
        end if
        varname='PHIS'
-       if (len(trim(output_varnames2(1)))>0) varname=output_varnames2(1)
-       call pio_read_phis(elem,hybrid%par,varname)
+       call pio_read_phis(elem,hybrid%par,'PHIS')
        call smooth_topo_datasets(elem, hybrid, 1, nelemd)
        test_case = 'phis-smoothed'
-
     else
-       ! in this case, we just output geos from the initial condition
+       ! in this case, we just output PHIS from the initial condition
        ! used to generate test data
        test_case = 'phis-baroclinic'
     endif
