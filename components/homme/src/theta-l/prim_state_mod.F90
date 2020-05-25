@@ -429,7 +429,7 @@ contains
     end if
  
 100 format (A10,3(E23.15))
-102 format (A4,I3,A3,3(E23.15))
+102 format (A4,I3,A3,3(E24.16))
 108 format (A10,E23.15,A6,E23.15,A6,E23.15)
 109 format (A10,E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
 110 format (A33,E23.15,A2,I3,A1)
