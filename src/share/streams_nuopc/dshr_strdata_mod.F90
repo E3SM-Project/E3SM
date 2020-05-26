@@ -34,7 +34,7 @@ module dshr_strdata_mod
   use pio              , only : pio_double, pio_real, pio_int, pio_offset_kind
   use pio              , only : pio_read_darray, pio_get_var, pio_setframe
   use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR
-  use perf_mod
+  use perf_mod         , only : t_startf, t_stopf, t_adj_detailf
 
   implicit none
   private
@@ -48,7 +48,8 @@ module dshr_strdata_mod
   public  :: shr_strdata_get_stream_domain  ! public since needed by dshr_mod
   public  :: shr_strdata_get_stream_pointer ! get a pointer into a stream's fldbun_model field bundle
   public  :: shr_strdata_print
-
+  public  :: shr_strdata_get_stream_count
+  public  :: shr_strdata_get_stream_fieldbundle
   private :: shr_strdata_init_model_domain
   private :: shr_strdata_readLBUB
 
@@ -75,7 +76,6 @@ module dshr_strdata_mod
      type(ESMF_FieldBundle)              :: fldbun_model_lb                 ! stream n field bundle for lb of time period (model grid)
      type(ESMF_FieldBundle)              :: fldbun_model_ub                 ! stream n field bundle for ub of time period (model grid)
      type(ESMF_FieldBundle)              :: fldbun_model                    ! stream n field bundle for model time (model grid)
-     type(ESMF_FieldBundle), allocatable :: fldbun_stream_alltimes(:)       ! field bundle for stream n for all time slices for stream
      integer                             :: ustrm                           ! index of vector u in stream
      integer                             :: vstrm                           ! index of vector v in stream
      integer                             :: ymdLB = -1                      ! stream ymd lower bound
@@ -90,7 +90,6 @@ module dshr_strdata_mod
   type shr_strdata_type
      type(shr_strdata_perstream), allocatable :: pstrm(:)              ! stream info
      type(shr_stream_streamType), pointer :: stream(:)=> null()        ! stream datatype
-     integer                        :: nstreams                        ! number of streams
      integer                        :: nvectors                        ! number of vectors
      logical                        :: masterproc
      integer                        :: logunit                         ! stdout unit
@@ -125,6 +124,31 @@ module dshr_strdata_mod
 !===============================================================================
 contains
 !===============================================================================
+  integer function shr_strdata_get_stream_count(sdat)
+    type(shr_strdata_type)     , intent(in) :: sdat
+    shr_strdata_get_stream_count = size(sdat%stream)
+  end function shr_strdata_get_stream_count
+
+  type(ESMF_FieldBundle) function shr_strdata_get_stream_fieldbundle(sdat, ns, name)
+    type(shr_strdata_type)     , intent(in) :: sdat
+    integer                    , intent(in) :: ns ! stream number
+    character(len=*)           , intent(in) :: name
+    if(trim(name) .eq. 'model') then
+       shr_strdata_get_stream_fieldbundle = sdat%pstrm(ns)%fldbun_model
+    else if (trim(name) .eq. 'model_lb') then
+       shr_strdata_get_stream_fieldbundle = sdat%pstrm(ns)%fldbun_model_lb
+    else if (trim(name) .eq. 'model_ub') then
+       shr_strdata_get_stream_fieldbundle = sdat%pstrm(ns)%fldbun_model_ub
+    else if (trim(name) .eq. 'stream_lb') then
+       shr_strdata_get_stream_fieldbundle = sdat%pstrm(ns)%fldbun_stream_lb
+    else if (trim(name) .eq. 'stream_ub') then
+       shr_strdata_get_stream_fieldbundle = sdat%pstrm(ns)%fldbun_stream_ub
+    else
+       call shr_sys_abort(trim(name)//' is not a recognized stream bundle name')
+    endif
+
+  end function shr_strdata_get_stream_fieldbundle
+
 
   subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, compid, logunit, rc)
 
@@ -165,8 +189,7 @@ contains
     sdat%masterproc = (localPet == master_task)
     call shr_stream_init_from_xml(xmlfilename, sdat%stream, sdat%masterproc, sdat%logunit, rc=rc)
 
-    sdat%nstreams = size(sdat%stream)
-    allocate(sdat%pstrm(sdat%nstreams))
+    allocate(sdat%pstrm(shr_strdata_get_stream_count(sdat)))
 
     ! Initialize sdat model domain
     sdat%model_mesh = model_mesh
@@ -300,7 +323,7 @@ contains
     call ESMF_VMGet(vm, localpet=localPet, rc=rc)
     masterproc= localPet==master_task
 
-    do ns = 1,sdat%nstreams
+    do ns = 1,shr_strdata_get_stream_count(sdat)
        ! Initialize calendar for stream n
        call ESMF_VMBroadCast(vm, sdat%stream(ns)%calendar, CS, 0, rc=rc)
 
@@ -444,7 +467,7 @@ contains
        ! normally both fields in the pair will be on one stream
        nu = 0
        nv = 0
-       do ns = 1,sdat%nstreams
+       do ns = 1,shr_strdata_get_stream_count(sdat)
           if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_stream_lb, trim(uname), rc=rc)) nu = n
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_stream_lb, trim(vname), rc=rc)) nv = n
@@ -683,7 +706,7 @@ contains
     nullify(data_u_dst)
     nullify(data_v_dst)
 
-    if (sdat%nstreams < 1) return ! TODO: is this needed
+    if (shr_strdata_get_stream_count(sdat) < 1) return ! TODO: is this needed
 
     lstr = trim(istr)
 
@@ -701,11 +724,11 @@ contains
     sdat%ymd = ymd
     sdat%tod = tod
 
-    if (sdat%nstreams > 0) then
-       allocate(newData(sdat%nstreams))
-       allocate(ymdmod(sdat%nstreams))
+    if (shr_strdata_get_stream_count(sdat) > 0) then
+       allocate(newData(shr_strdata_get_stream_count(sdat)))
+       allocate(ymdmod(shr_strdata_get_stream_count(sdat)))
 
-       do ns = 1,sdat%nstreams
+       do ns = 1,shr_strdata_get_stream_count(sdat)
           ! ---------------------------------------------------------
           ! Consistency checks
           ! ---------------------------------------------------------
@@ -943,7 +966,7 @@ contains
        ! Do time interpolation to create fldbun_model
        ! ---------------------------------------------------------
 
-       do ns = 1,sdat%nstreams
+       do ns = 1,shr_strdata_get_stream_count(sdat)
 
           if (trim(sdat%stream(ns)%tinterpalgo) == 'coszen') then
 
@@ -1056,7 +1079,7 @@ contains
     !-------------------------------------------------------------------------------
 
     if (sdat%masterproc) then
-       call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), sdat%nstreams)
+       call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), shr_strdata_get_stream_count(sdat))
     endif
 
   end subroutine shr_strdata_restWrite
@@ -1069,7 +1092,7 @@ contains
     !-------------------------------------------------------------------------------
 
     if (sdat%masterproc) then
-       call shr_stream_restRead(sdat%stream, trim(filename), sdat%nstreams)
+       call shr_stream_restRead(sdat%stream, trim(filename), shr_strdata_get_stream_count(sdat))
     endif
 
   end subroutine shr_strdata_restRead
@@ -1126,8 +1149,8 @@ contains
     write(sdat%logunit,F02) "obliqr      = ",sdat%obliqr
     write(sdat%logunit,F01) "pio_iotype  = ",sdat%io_type
 
-    write(sdat%logunit,F01) "nstreams    = ",sdat%nstreams
-    do ns = 1, sdat%nstreams
+    write(sdat%logunit,F01) "nstreams    = ",shr_strdata_get_stream_count(sdat)
+    do ns = 1, shr_strdata_get_stream_count(sdat)
        write(sdat%logunit,F04) "  taxMode (",ns,") = ",trim(sdat%stream(ns)%taxmode)
        write(sdat%logunit,F07) "  dtlimit (",ns,") = ",sdat%stream(ns)%dtlimit
        write(sdat%logunit,F04) "  mapalgo (",ns,") = ",trim(sdat%stream(ns)%mapalgo)
@@ -1553,7 +1576,7 @@ contains
     rc = ESMF_SUCCESS
 
     ! loop over all input streams and determine if the strm_fld is in the field bundle of the target stream
-    do ns = 1, sdat%nstreams
+    do ns = 1, shr_strdata_get_stream_count(sdat)
        found = .false.
        ! Check if requested stream field is read in - and if it is then point into the stream field bundle
        do nf = 1,size(sdat%pstrm(ns)%fldlist_model)

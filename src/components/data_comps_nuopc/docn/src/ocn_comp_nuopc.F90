@@ -351,8 +351,6 @@ contains
        aquaplanet = .true.
     end if
 
-    write(6,*)'DEBUG: aquaplanet= ',aquaplanet
-
     ! Initialize mesh, restart flag, compid, and logunit
     call t_startf('docn_strdata_init')
     call dshr_mesh_init(gcomp, compid, logunit, 'ocn', nx_global, ny_global, &
