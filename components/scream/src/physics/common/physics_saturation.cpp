@@ -2,7 +2,7 @@
 #include "share/scream_types.hpp"
 
 namespace scream {
-namespace p3 {
+namespace physics {
 
 /*
  * Explicit instantiation for doing p3 math functions on Reals using the
@@ -11,5 +11,5 @@ namespace p3 {
 
 template struct Functions<Real,DefaultDevice>;
 
-} // namespace p3
+} // namespace physics
 } // namespace scream
