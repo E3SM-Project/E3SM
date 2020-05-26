@@ -97,12 +97,19 @@ macro (SetCompilerFlags)
       OUTPUT_VARIABLE WRAPS_NVCC_OUT1
       ERROR_QUIET)
 
-    # Need to check OMPI_CXX if user is using mpicxx
-    if (DEFINED ENV{OMPI_CXX})
-      execute_process(COMMAND $ENV{OMPI_CXX} "--nvcc-wrapper-show"
-        RESULT_VARIABLE WRAPS_NVCC
-        OUTPUT_VARIABLE WRAPS_NVCC_OUT2
-        ERROR_QUIET)
+    # Need to check OMPI_CXX/MPICH_CXX (if user is using mpicxx)
+    set (mpi_distro_name)
+    GetMpiDistributionName(mpi_distro_name)
+    if (NOT "${mpi_distro_name}" STREQUAL "unknown")
+      set (mpi_cxx_backend_var_name)
+      SetMpiCxxBackendCompilerVarName(mpi_cxx_backend_var_name)
+      if (DEFINED ENV{${mpi_cxx_backend_var_name}})
+        execute_process(COMMAND $ENV{${mpi_cxx_backend_var_name}} "--nvcc-wrapper-show"
+          RESULT_VARIABLE WRAPS_NVCC
+          OUTPUT_VARIABLE WRAPS_NVCC_OUT2
+          ERROR_QUIET)
+      endif()
+      unset (mpi_cxx_backend_var_name)
     endif()
 
     string (FIND "${WRAPS_NVCC_OUT1} ${WRAPS_NVCC_OUT2}" "nvcc" pos)
