@@ -61,7 +61,7 @@ _stream_nuopc_file_template = """
   <stream_info name="{streamname}">
    <taxmode>{taxmode}</taxmode>
    <tInterpAlgo>{tintalgo}</tInterpAlgo>
-   <readmode>{readmode}</readmode>
+   <readMode>{readmode}</readMode>
    <mapalgo>{mapalgo}</mapalgo>
    <mapmask>{mapmask}</mapmask>
    <dtlimit>{dtlimit}</dtlimit>

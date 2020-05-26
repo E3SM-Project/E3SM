@@ -165,8 +165,7 @@ contains
     type(ESMF_VM) :: vm
     integer       :: localPet
     integer       :: ierr
-    character(len=*), parameter  :: subname='(shr_strdata_mod:dshr_sdat_init_from_infiles)'
-    character(*)    , parameter  :: F01="('(shr_init_strdata) ',a,2f10.4)"
+    character(len=*), parameter  :: subname='(shr_strdata_init_from_xml)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -315,7 +314,7 @@ contains
     integer                      :: nvars
     character(len=*), parameter  :: subname='(shr_strdata_mod:shr_sdat_init)'
     character(*)    , parameter  :: F00 = "('(shr_sdat_init) ',a)"
-    character(*)    , parameter  :: F01 = "('(shr_sdat) ',a,2x,i8)"
+    character(*)    , parameter  :: F01  = "('(shr_sdat) ',a,2x,i8)"
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -690,6 +689,7 @@ contains
     character(*)     ,parameter         :: F01  = "('(shr_strdata_advance) ',a,a,i4,2(f10.5,2x))"
     real(r8), pointer :: dataptr_temp1(:)
     real(r8), pointer :: dataptr_temp2(:)
+    integer :: nstreams
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -705,8 +705,8 @@ contains
     nullify(data_v_src)
     nullify(data_u_dst)
     nullify(data_v_dst)
-
-    if (shr_strdata_get_stream_count(sdat) < 1) return ! TODO: is this needed
+    nstreams = shr_strdata_get_stream_count(sdat)
+    if (nstreams < 1) return ! TODO: is this needed
 
     lstr = trim(istr)
 
@@ -724,11 +724,11 @@ contains
     sdat%ymd = ymd
     sdat%tod = tod
 
-    if (shr_strdata_get_stream_count(sdat) > 0) then
-       allocate(newData(shr_strdata_get_stream_count(sdat)))
-       allocate(ymdmod(shr_strdata_get_stream_count(sdat)))
+    if (nstreams > 0) then
+       allocate(newData(nstreams))
+       allocate(ymdmod(nstreams))
 
-       do ns = 1,shr_strdata_get_stream_count(sdat)
+       do ns = 1,nstreams
           ! ---------------------------------------------------------
           ! Consistency checks
           ! ---------------------------------------------------------
@@ -762,19 +762,14 @@ contains
 
 !          call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
           call t_startf(trim(lstr)//trim(timname)//'_readLBUB')
-
           select case(sdat%stream(ns)%readmode)
           case ('single')
-             call shr_strdata_readLBUB(sdat, sdat%stream(ns), &
-                  sdat%pstrm(ns)%stream_mesh, sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
-                  sdat%pstrm(ns)%fldbun_stream_lb, sdat%pstrm(ns)%fldbun_stream_ub, &
-                  sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, &
-                  sdat%pstrm(ns)%stream_pio_iodesc, sdat%pstrm(ns)%stream_pio_iovartype, &
-                  ymdmod(ns), todmod, sdat%pstrm(ns)%ymdLB, sdat%pstrm(ns)%todLB, &
-                  sdat%pstrm(ns)%ymdUB, sdat%pstrm(ns)%todUB, &
+             call shr_strdata_readLBUB(sdat, ns, &
+                  ymdmod(ns), todmod, &
                   newData(ns), trim(lstr)//'_readLBUB', rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           case ('full_file')
+
              ! TODO: need to put in capability to read all stream data at once
           case default
              write(logunit,F00) "ERROR: Unsupported readmode : ", trim(sdat%stream(ns)%readmode)
@@ -966,7 +961,7 @@ contains
        ! Do time interpolation to create fldbun_model
        ! ---------------------------------------------------------
 
-       do ns = 1,shr_strdata_get_stream_count(sdat)
+       do ns = 1,nstreams
 
           if (trim(sdat%stream(ns)%tinterpalgo) == 'coszen') then
 
@@ -1169,36 +1164,26 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_readLBUB(sdat, stream, stream_mesh, &
-       fldlist_stream, fldlist_model, fldbun_stream_lb, fldbun_stream_ub, &
-       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
-       mDate, mSec, mDateLB, mSecLB, mDateUB, mSecUB, newData, istr, rc)
+  subroutine shr_strdata_readLBUB(sdat, ns, mDate, mSec, newData, istr, rc)
 
     !-------------------------------------------------------------------------
     ! Read LB and UB of stream data
     !-------------------------------------------------------------------------
 
     ! input/output variables
-    type(shr_strdata_type) , intent(in) :: sdat  ! strdata data data-type
-    type(shr_stream_streamType)   ,intent(inout) :: stream
-    type(ESMF_Mesh)               ,intent(in)    :: stream_mesh
-    character(len=*)              ,intent(in)    :: fldlist_stream(:)
-    character(len=*)              ,intent(in)    :: fldlist_model(:)
-    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_lb
-    type(ESMF_FieldBundle)        ,intent(inout) :: fldbun_stream_ub
-    type(iosystem_desc_t), target ,intent(inout) :: pio_subsystem
-    integer                       ,intent(in)    :: pio_iotype
-    logical                       ,intent(inout) :: pio_iodesc_set
-    type(io_desc_t)               ,intent(inout) :: pio_iodesc
-    integer                       ,intent(inout) :: pio_iovartype
-    integer                       ,intent(in)    :: mDate  ,mSec
-    integer                       ,intent(inout) :: mDateLB,mSecLB
-    integer                       ,intent(inout) :: mDateUB,mSecUB
-    logical                       ,intent(out)   :: newData
-    character(len=*)              ,intent(in)    :: istr
-    integer                       ,intent(out)   :: rc
+    type(shr_strdata_type) , intent(inout), target :: sdat  ! strdata data data-type
+    integer                , intent(in) :: ns    ! stream number
+    integer                ,intent(in)    :: mDate  ,mSec
+    logical                ,intent(out)   :: newData
+    character(len=*)       ,intent(in)    :: istr
+    integer                ,intent(out)   :: rc
 
     ! local variables
+    integer                             :: pio_iovartype
+    type(shr_stream_streamType),pointer :: stream
+    type(ESMF_Mesh), pointer            :: stream_mesh
+    type(ESMF_FieldBundle)        ,pointer :: fldbun_stream_lb
+    type(ESMF_FieldBundle)        ,pointer :: fldbun_stream_ub
     type(ESMF_VM)                       :: vm
     integer                             :: nf
     integer                             :: rCode      ! return code
@@ -1220,6 +1205,11 @@ contains
     !-------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    stream => sdat%stream(ns)
+    stream_mesh => sdat%pstrm(ns)%stream_mesh
+    fldbun_stream_ub => sdat%pstrm(ns)%fldbun_stream_ub
+    fldbun_stream_lb => sdat%pstrm(ns)%fldbun_stream_lb
+    pio_iovartype = sdat%pstrm(ns)%stream_pio_iovartype
 
     call t_startf(trim(istr)//'_setup')
     ! allocate streamdat instance on all tasks
@@ -1232,14 +1222,14 @@ contains
     filename_lb = 'undefinedlb'
     filename_ub = 'undefinedub'
 
-    oDateLB = mDateLB
-    oSecLB  = mSecLB
-    oDateUB = mDateUB
-    oSecUB  = mSecUB
+    oDateLB = sdat%pstrm(ns)%ymdLB
+    oSecLB  = sdat%pstrm(ns)%todLB
+    oDateUB = sdat%pstrm(ns)%ymdUB
+    oSecUB  = sdat%pstrm(ns)%todUB
 
     rDateM  = real(mDate  ,r8) + real(mSec  ,r8)/shr_const_cday
-    rDateLB = real(mDateLB,r8) + real(mSecLB,r8)/shr_const_cday
-    rDateUB = real(mDateUB,r8) + real(mSecUB,r8)/shr_const_cday
+    rDateLB = real(sdat%pstrm(ns)%ymdLB,r8) + real(sdat%pstrm(ns)%todLB,r8)/shr_const_cday
+    rDateUB = real(sdat%pstrm(ns)%ymdUB,r8) + real(sdat%pstrm(ns)%todUB,r8)/shr_const_cday
     call t_stopf(trim(istr)//'_setup')
 
     if (rDateM < rDateLB .or. rDateM > rDateUB) then
@@ -1257,24 +1247,24 @@ contains
        call ESMF_VMBroadCast(vm, filename_lb, CL, 0, rc=rc)
        call ESMF_VMBroadCast(vm, filename_ub, CL, 0, rc=rc)
 
-       mDateLB = ivals(1) ! Now all processors have the bounds
-       mSecLB  = ivals(2)
-       mDateUB = ivals(3)
-       mSecUB  = ivals(4)
+       sdat%pstrm(ns)%ymdLB = ivals(1) ! Now all processors have the bounds
+       sdat%pstrm(ns)%todLB  = ivals(2)
+       sdat%pstrm(ns)%ymdUB = ivals(3)
+       sdat%pstrm(ns)%todUB  = ivals(4)
        n_lb    = ivals(5)
        n_ub    = ivals(6)
        call t_stopf(trim(istr)//'_bcast')
     endif
 
-    if (mDateLB /= oDateLB .or. mSecLB /= oSecLB) then
+    if (sdat%pstrm(ns)%ymdLB /= oDateLB .or. sdat%pstrm(ns)%todLB /= oSecLB) then
        newdata = .true.
-       if (mDateLB == oDateUB .and. mSecLB == oSecUB) then
+       if (sdat%pstrm(ns)%ymdLB == oDateUB .and. sdat%pstrm(ns)%todLB == oSecUB) then
           ! copy fldbun_stream_ub to fldbun_stream_lb
           call t_startf(trim(istr)//'_LB_copy')
-          do nf = 1,size(fldlist_model)
-             call dshr_fldbun_getfldptr(fldbun_stream_ub, trim(fldlist_model(nf)), fldptr1=dataptr_ub, rc=rc)
+          do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
+             call dshr_fldbun_getfldptr(fldbun_stream_ub, trim(sdat%pstrm(ns)%fldlist_model(nf)), fldptr1=dataptr_ub, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getfldptr(fldbun_stream_lb, trim(fldlist_model(nf)), fldptr1=dataptr_lb, rc=rc)
+             call dshr_fldbun_getfldptr(fldbun_stream_lb, trim(sdat%pstrm(ns)%fldlist_model(nf)), fldptr1=dataptr_lb, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              dataptr_lb(:) = dataptr_ub(:)
           end do
@@ -1282,18 +1272,18 @@ contains
        else
           ! read lower bound of data
           call shr_strdata_readstrm(sdat, stream, stream_mesh, &
-               fldlist_stream, fldlist_model, fldbun_stream_lb, &
-               pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
+               sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, fldbun_stream_lb, &
+               sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, pio_iovartype, &
                filename_lb, n_lb, istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
     endif
 
-    if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
+    if (sdat%pstrm(ns)%ymdUB /= oDateUB .or. sdat%pstrm(ns)%todUB /= oSecUB) then
        newdata = .true.
        call shr_strdata_readstrm(sdat, stream, stream_mesh, &
-            fldlist_stream, fldlist_model, fldbun_stream_ub, &
-            pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
+            sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, fldbun_stream_ub, &
+            sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, pio_iovartype, &
             filename_ub, n_ub, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -1346,11 +1336,9 @@ contains
     logical                       :: fileopen
     type(file_desc_t)             :: pioid
     type(var_desc_t)              :: varid
-    integer(kind=pio_offset_kind) :: frame
     integer                       :: nf
     integer                       :: rCode
     real(r4), allocatable         :: data_real(:)
-    real(r8), allocatable         :: data_double(:)
     real(r8), pointer             :: dataptr(:)
     integer                       :: lsize
     character(*), parameter       :: subname = '(shr_strdata_readstrm) '
@@ -1420,7 +1408,6 @@ contains
        if (debug>0 .and. sdat%masterproc)  then
           write(sdat%logunit,F00)' reading '//trim(fldlist_stream(nf))//' into '//trim(fldlist_model(nf))
        end if
-       frame = nt ! set frame to time index
        call pio_setframe(pioid, varid, int(nt,kind=Pio_Offset_Kind))
        if ( rcode /= PIO_NOERR ) then
           call shr_sys_abort(' ERROR: setting frame for variable: '// trim(fldlist_stream(nf)))
@@ -1434,13 +1421,10 @@ contains
           dataptr(:) = real(data_real(:), kind=r8)
           deallocate(data_real)
        else if (pio_iovartype == PIO_DOUBLE) then
-          allocate(data_double(lsize))
-          call pio_read_darray(pioid, varid, pio_iodesc, data_double, rcode)
+          call pio_read_darray(pioid, varid, pio_iodesc, dataptr, rcode)
           if ( rcode /= PIO_NOERR ) then
              call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
           end if
-          dataptr(:) = data_double(:)
-          deallocate(data_double)
        else
           call shr_sys_abort(subName//"ERROR: only real and double types are subborted for stream read")
        end if
