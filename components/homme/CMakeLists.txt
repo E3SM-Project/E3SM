@@ -314,6 +314,7 @@ message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 if (HOMME_USE_SCORPIO)
+  SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
   ADD_SUBDIRECTORY(utils/externals/scorpio)
 else ()
   # The default I/O library used in "Scorpio classic"
