@@ -1241,11 +1241,11 @@ contains
     !-----------------------------------------------!
 
        if (first_time) then
-          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
           if (.not. associated(strm_prec) .or. .not. associated(strm_swdn)) then
@@ -1353,11 +1353,11 @@ contains
     !-----------------------------------------------!
 
        if (first_time) then
-          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'tarcf' , strm_tarcf , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
           if (.not. associated(strm_prec) .or. .not. associated(strm_swdn)) then
@@ -1421,45 +1421,45 @@ contains
 
        if (first_time) then
           ! initialize pointers for stream fields that have no corresponding import or export fields
-          call shr_strdata_get_stream_pointer( sdat, 'pbot'  , strm_pbot  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'pbot'  , strm_pbot  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'tbot'  , strm_tbot  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'tbot'  , strm_tbot  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'shum'  , strm_shum  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'shum'  , strm_shum  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'wind'  , strm_wind  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'wind'  , strm_wind  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'tdew'  , strm_tdew  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'tdew'  , strm_tdew  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'rh'    , strm_rh    , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'rh'    , strm_rh    , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'swdndf', strm_swdndf, logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'swdndf', strm_swdndf, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'swdndr', strm_swdndr, logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'swdndr', strm_swdndr, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'lwdn'  , strm_lwdn  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'lwdn'  , strm_lwdn  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'swdn'  , strm_swdn  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'prec'  , strm_prec  , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'precc' , strm_precc , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'precc' , strm_precc , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'precl' , strm_precl , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'precl' , strm_precl , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'precn' , strm_precn , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'precn' , strm_precn , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'rh_16O'   , strm_rh_16O   , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'rh_16O'   , strm_rh_16O, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'rh_18O'   , strm_rh_18O   , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'rh_18O'   , strm_rh_18O   , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'rh_HDO'   , strm_rh_HDO   , logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'rh_HDO'   , strm_rh_HDO   , rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'precn_16O', strm_precn_16O, logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'precn_16O', strm_precn_16O, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'precn_18O', strm_precn_18O, logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'precn_18O', strm_precn_18O, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_strdata_get_stream_pointer( sdat, 'precn_HDO', strm_precn_HDO, logunit, masterproc, rc)
+          call shr_strdata_get_stream_pointer( sdat, 'precn_HDO', strm_precn_HDO, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
           ! error check
@@ -1611,7 +1611,7 @@ contains
     ! bias correct precipitation relative to observed
     ! (via bias_correct nameslist option)
     if (first_time) then
-       call shr_strdata_get_stream_pointer( sdat, 'precsf'   , strm_precsf   , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'precsf'   , strm_precsf   , rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
     if (associated(strm_precsf)) then
@@ -1624,21 +1624,21 @@ contains
     ! adjust atmospheric input fields if anomaly forcing streams exist
     ! (via anomaly_forcing namelist option)
     if (first_time) then
-       call shr_strdata_get_stream_pointer( sdat, 'u_af'     , strm_u_af     , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'u_af'     , strm_u_af   , rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'v_af'     , strm_v_af     , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'v_af'     , strm_v_af   , rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'shum_af'  , strm_shum_af  , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'shum_af'  , strm_shum_af, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'prec_af'  , strm_prec_af  , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'prec_af'  , strm_prec_af, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'tbot_af'  , strm_tbot_af  , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'tbot_af'  , strm_tbot_af, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'pbot_af'  , strm_pbot_af  , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'pbot_af'  , strm_pbot_af, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'swdn_af'  , strm_swdn_af  , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'swdn_af'  , strm_swdn_af, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'lwdn_af'  , strm_lwdn_af  , logunit, masterproc, rc)
+       call shr_strdata_get_stream_pointer( sdat, 'lwdn_af'  , strm_lwdn_af, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 

@@ -679,9 +679,9 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! initialize pointers for stream fields that have no corresponding import or export fields
-       call shr_strdata_get_stream_pointer( sdat, 'So_qbot', strm_qbot, logunit, masterproc, rc=rc)
+       call shr_strdata_get_stream_pointer( sdat, 'So_qbot', strm_qbot, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'So_h'   , strm_h   , logunit, masterproc, rc=rc)
+       call shr_strdata_get_stream_pointer( sdat, 'So_h'   , strm_h   , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and

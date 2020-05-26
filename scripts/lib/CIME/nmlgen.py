@@ -58,7 +58,7 @@ _stream_mct_file_template = """<?xml version="1.0"?>
 """
 
 _stream_nuopc_file_template = """
-  <stream_info>
+  <stream_info name="{streamname}">
    <taxmode>{taxmode}</taxmode>
    <tInterpAlgo>{tintalgo}</tInterpAlgo>
    <readmode>{readmode}</readmode>
@@ -613,6 +613,7 @@ class NamelistGenerator(object):
 
                 # create stream txt file
                 stream_file_text = _stream_nuopc_file_template.format(
+                    streamname=stream,
                     data_meshfile=stream_meshfile,
                     data_filenames=stream_datafiles_delimited,
                     data_varnames=stream_variables,

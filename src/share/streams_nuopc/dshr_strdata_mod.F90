@@ -92,8 +92,8 @@ module dshr_strdata_mod
      type(shr_stream_streamType), pointer :: stream(:)=> null()        ! stream datatype
      integer                        :: nstreams                        ! number of streams
      integer                        :: nvectors                        ! number of vectors
+     logical                        :: masterproc
      integer                        :: logunit                         ! stdout unit
-     integer                        :: my_task                         ! mpi info
      integer                        :: io_type                         ! pio info
      integer                        :: io_format                       ! pio info
      integer                        :: modeldt = 0                     ! model dt in seconds
@@ -138,7 +138,8 @@ contains
     integer                    , intent(out)   :: rc
 
     ! local variables
-    logical       :: masterproc
+    type(ESMF_VM) :: vm
+    integer       :: localPet
     integer       :: ierr
     character(len=*), parameter  :: subname='(shr_strdata_mod:dshr_sdat_init_from_infiles)'
     character(*)    , parameter  :: F01="('(shr_init_strdata) ',a,2f10.4)"
@@ -155,9 +156,15 @@ contains
     sdat%io_type       =  shr_pio_getiotype(compid)
     sdat%io_format     =  shr_pio_getioformat(compid)
 
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     ! Initialize sdat streams (read xml file for streams)
-    masterproc = (sdat%my_task == master_task)
-    call shr_stream_init_from_xml(xmlfilename, sdat%stream, masterproc, logunit, rc=rc)
+    sdat%masterproc = (localPet == master_task)
+    call shr_stream_init_from_xml(xmlfilename, sdat%stream, sdat%masterproc, sdat%logunit, rc=rc)
+
     sdat%nstreams = size(sdat%stream)
     allocate(sdat%pstrm(sdat%nstreams))
 
@@ -515,7 +522,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine the file to open
-    if (sdat%my_task == master_task) then
+    if (sdat%masterproc) then
        call shr_stream_getData(sdat%stream(stream_index), 1, filename)
     end if
     call ESMF_VMBroadCast(vm, filename, CL, 0, rc=rc)
@@ -525,7 +532,7 @@ contains
     rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(filename), pio_nowrite)
 
     ! Create the pio iodesc for fldname
-    call shr_strdata_set_stream_iodesc(sdat%my_task, sdat%logunit, sdat%pio_subsystem, pioid, &
+    call shr_strdata_set_stream_iodesc(sdat, sdat%pio_subsystem, pioid, &
          trim(fldname), sdat%pstrm(stream_index)%stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -735,7 +742,7 @@ contains
 
           select case(sdat%stream(ns)%readmode)
           case ('single')
-             call shr_strdata_readLBUB(sdat%my_task, sdat%logunit, sdat%stream(ns), &
+             call shr_strdata_readLBUB(sdat, sdat%stream(ns), &
                   sdat%pstrm(ns)%stream_mesh, sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
                   sdat%pstrm(ns)%fldbun_stream_lb, sdat%pstrm(ns)%fldbun_stream_ub, &
                   sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, &
@@ -751,10 +758,10 @@ contains
              call shr_sys_abort(subName//"ERROR: Unsupported readmode: "//trim(sdat%stream(ns)%readmode))
           end select
 
-          if (debug > 0 .and. sdat%my_task == master_task) then
-             write(logunit,*) trim(subname),' newData flag = ',ns,newData(ns)
-             write(logunit,*) trim(subname),' LB ymd,tod = ',ns,sdat%pstrm(ns)%ymdLB,sdat%pstrm(ns)%todLB
-             write(logunit,*) trim(subname),' UB ymd,tod = ',ns,sdat%pstrm(ns)%ymdUB,sdat%pstrm(ns)%todUB
+          if (debug > 0 .and. sdat%masterproc) then
+             write(sdat%logunit,*) trim(subname),' newData flag = ',ns,newData(ns)
+             write(sdat%logunit,*) trim(subname),' LB ymd,tod = ',ns,sdat%pstrm(ns)%ymdLB,sdat%pstrm(ns)%todLB
+             write(sdat%logunit,*) trim(subname),' UB ymd,tod = ',ns,sdat%pstrm(ns)%ymdUB,sdat%pstrm(ns)%todUB
           endif
 
           ! ---------------------------------------------------------
@@ -996,8 +1003,8 @@ contains
                   ymdmod(ns), todmod, flb, fub, calendar=sdat%stream(ns)%calendar, logunit=sdat%logunit, &
                   algo=trim(sdat%stream(ns)%tinterpalgo), rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             if (debug > 0 .and. sdat%my_task == master_task) then
-                write(logunit,F01) trim(subname),' interp = ',ns,flb,fub
+             if (debug > 0 .and. sdat%masterproc) then
+                write(sdat%logunit,F01) trim(subname),' interp = ',ns,flb,fub
              endif
 
              do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
@@ -1048,7 +1055,7 @@ contains
     character(len=*)       ,intent(in)    :: str1
     !-------------------------------------------------------------------------------
 
-    if (sdat%my_task == master_task) then
+    if (sdat%masterproc) then
        call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), sdat%nstreams)
     endif
 
@@ -1061,7 +1068,7 @@ contains
     character(len=*)       ,intent(in)    :: filename
     !-------------------------------------------------------------------------------
 
-    if (sdat%my_task == master_task) then
+    if (sdat%masterproc) then
        call shr_stream_restRead(sdat%stream, trim(filename), sdat%nstreams)
     endif
 
@@ -1139,7 +1146,7 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_readLBUB(my_task, logunit, stream, stream_mesh, &
+  subroutine shr_strdata_readLBUB(sdat, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_stream_lb, fldbun_stream_ub, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        mDate, mSec, mDateLB, mSecLB, mDateUB, mSecUB, newData, istr, rc)
@@ -1149,8 +1156,7 @@ contains
     !-------------------------------------------------------------------------
 
     ! input/output variables
-    integer                       ,intent(in)    :: my_task
-    integer                       ,intent(in)    :: logunit
+    type(shr_strdata_type) , intent(in) :: sdat  ! strdata data data-type
     type(shr_stream_streamType)   ,intent(inout) :: stream
     type(ESMF_Mesh)               ,intent(in)    :: stream_mesh
     character(len=*)              ,intent(in)    :: fldlist_stream(:)
@@ -1215,7 +1221,7 @@ contains
 
     if (rDateM < rDateLB .or. rDateM > rDateUB) then
        call t_startf(trim(istr)//'_fbound')
-       if (my_task == master_task) then ! Note that the stream bounds is only done on the master task
+       if (sdat%masterproc) then ! Note that the stream bounds is only done on the master task
           call shr_stream_findBounds(stream, mDate, mSec,  &
                ivals(1), dDateLB, ivals(2), ivals(5), filename_lb, &
                ivals(3), dDateUB, ivals(4), ivals(6), filename_ub)
@@ -1252,7 +1258,7 @@ contains
           call t_stopf(trim(istr)//'_LB_copy')
        else
           ! read lower bound of data
-          call shr_strdata_readstrm(my_task, logunit, stream, stream_mesh, &
+          call shr_strdata_readstrm(sdat, stream, stream_mesh, &
                fldlist_stream, fldlist_model, fldbun_stream_lb, &
                pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
                filename_lb, n_lb, istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
@@ -1262,7 +1268,7 @@ contains
 
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
-       call shr_strdata_readstrm(my_task, logunit, stream, stream_mesh, &
+       call shr_strdata_readstrm(sdat, stream, stream_mesh, &
             fldlist_stream, fldlist_model, fldbun_stream_ub, &
             pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
             filename_ub, n_ub, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
@@ -1272,7 +1278,7 @@ contains
     ! determine previous & next data files in list of files
 
     call t_startf(trim(istr)//'_filemgt')
-    if (my_task == master_task .and. newdata) then
+    if (sdat%masterproc .and. newdata) then
        call shr_stream_getPrevFileName(stream, filename_lb, filename_prev)
        call shr_stream_getNextFileName(stream, filename_ub, filename_next)
        inquire(file=trim(filename_next),exist=fileExists)
@@ -1285,7 +1291,7 @@ contains
   end subroutine shr_strdata_readLBUB
 
   !===============================================================================
-  subroutine shr_strdata_readstrm(my_task, logunit, stream, stream_mesh, &
+  subroutine shr_strdata_readstrm(sdat, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_stream, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        filename, nt, istr, boundstr, rc)
@@ -1294,8 +1300,7 @@ contains
     ! the stream is read
 
     ! input/output variables
-    integer                     , intent(in)            :: my_task
-    integer                     , intent(in)            :: logunit
+    type(shr_strdata_type) , intent(in) :: sdat  ! strdata data data-type
     type(shr_stream_streamType) , intent(inout)         :: stream
     type(ESMF_Mesh)             , intent(in)            :: stream_mesh
     character(len=*)            , intent(in)            :: fldlist_stream(:)
@@ -1335,10 +1340,10 @@ contains
 
     ! Set up file to read from
 !    call t_barrierf(trim(istr)//'_BARRIER', mpicom)
-    if (my_task == master_task) then
+    if (sdat%masterproc) then
        inquire(file=trim(fileName),exist=fileExists)
        if (.not. fileExists) then
-          write(logunit,F00) "ERROR: file does not exist: ", trim(fileName)
+          write(sdat%logunit,F00) "ERROR: file does not exist: ", trim(fileName)
           call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
        end if
     endif
@@ -1350,10 +1355,10 @@ contains
     else
        ! otherwise close the old file if open and open new file
        if (fileopen) then
-          if (my_task == master_task) write(logunit,F00) 'close  : ',trim(currfile)
+          if (sdat%masterproc) write(sdat%logunit,F00) 'close  : ',trim(currfile)
           call pio_closefile(pioid)
        endif
-       if (my_task == master_task) write(logunit,F00) 'opening   : ',trim(filename)
+       if (sdat%masterproc) write(sdat%logunit,F00) 'opening   : ',trim(filename)
        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
        call shr_stream_setCurrFile(stream, fileopen=.true., currfile=trim(filename), currpioid=pioid)
     endif
@@ -1363,7 +1368,7 @@ contains
     ! ******************************************************************************
 
     if (.not. pio_iodesc_set) then
-       call shr_strdata_set_stream_iodesc(my_task, logunit, pio_subsystem, pioid, &
+       call shr_strdata_set_stream_iodesc(sdat, pio_subsystem, pioid, &
             trim(fldlist_stream(1)), stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        pio_iodesc_set = .true.
@@ -1375,8 +1380,8 @@ contains
     ! ******************************************************************************
 
     call t_startf(trim(istr)//'_readpio')
-    if (my_task == master_task) then
-       write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
+    if (sdat%masterproc) then
+       write(sdat%logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
     endif
 
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
@@ -1389,8 +1394,8 @@ contains
        if ( rcode /= PIO_NOERR ) then
           call shr_sys_abort(' ERROR: setting varid for variable: '// trim(fldlist_stream(nf)))
        end if
-       if (debug>0 .and. my_task==master_task)  then
-          write(logunit,F00)' reading '//trim(fldlist_stream(nf))//' into '//trim(fldlist_model(nf))
+       if (debug>0 .and. sdat%masterproc)  then
+          write(sdat%logunit,F00)' reading '//trim(fldlist_stream(nf))//' into '//trim(fldlist_model(nf))
        end if
        frame = nt ! set frame to time index
        call pio_setframe(pioid, varid, int(nt,kind=Pio_Offset_Kind))
@@ -1423,12 +1428,11 @@ contains
   end subroutine shr_strdata_readstrm
 
   !===============================================================================
-  subroutine shr_strdata_set_stream_iodesc(my_task, logunit, &
+  subroutine shr_strdata_set_stream_iodesc(sdat, &
        pio_subsystem, pioid, fldname, stream_mesh, pio_iodesc, pio_iovartype, rc)
 
     ! input/output variables
-    integer               , intent(in)            :: my_task
-    integer               , intent(in)            :: logunit
+    type(shr_strdata_type) , intent(in)    :: sdat
     type(iosystem_desc_t) , intent(inout), target :: pio_subsystem
     type(file_desc_t)     , intent(inout)         :: pioid
     character(len=*)      , intent(in)            :: fldname
@@ -1494,8 +1498,8 @@ contains
        end if
     end if
     if (ndims == 2) then
-       if (my_task == master_task) then
-          write(logunit,F00) 'setting iodesc for : '//trim(fldname)// &
+       if (sdat%masterproc) then
+          write(sdat%logunit,F00) 'setting iodesc for : '//trim(fldname)// &
                ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),&
                ' variable had no time dimension '
        end if
@@ -1503,15 +1507,15 @@ contains
     else if (ndims == 3) then
        rcode = pio_inq_dimname(pioid, dimids(ndims), dimname)
        if (trim(dimname) == 'time' .or. trim(dimname) == 'nt') then
-          if (my_task == master_task) then
-             write(logunit,F01) 'setting iodesc for : '//trim(fldname)// &
+          if (sdat%masterproc) then
+             write(sdat%logunit,F01) 'setting iodesc for : '//trim(fldname)// &
                   ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),&
                   ' variable had time dimension '//trim(dimname)
           end if
           call pio_initdecomp(pio_subsystem, pio_iovartype, (/dimlens(1),dimlens(2)/), compdof, pio_iodesc)
        else
-          if (my_task == master_task) then
-             write(logunit,F02) 'setting iodesc for : '//trim(fldname)// &
+          if (sdat%masterproc) then
+             write(sdat%logunit,F02) 'setting iodesc for : '//trim(fldname)// &
                   ' with dimlens(1), dimlens2 = ',dimlens(1),dimlens(2),dimlens(3),&
                   ' variable had no time dimension '
           end if
@@ -1529,7 +1533,7 @@ contains
   end subroutine shr_strdata_set_stream_iodesc
 
   !===============================================================================
-  subroutine shr_strdata_get_stream_pointer(sdat, strm_fld, strm_ptr, logunit, masterproc, rc)
+  subroutine shr_strdata_get_stream_pointer(sdat, strm_fld, strm_ptr, rc)
 
     ! Set a pointer, strm_ptr, for field, strm_fld, into sdat fldbun_model field bundle
 
@@ -1537,8 +1541,6 @@ contains
     type(shr_strdata_type) , intent(in)    :: sdat
     character(len=*)       , intent(in)    :: strm_fld
     real(r8)               , pointer       :: strm_ptr(:)
-    integer                , intent(in)    :: logunit
-    logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -1559,8 +1561,8 @@ contains
              call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model, trim(sdat%pstrm(ns)%fldlist_model(nf)), &
                   strm_ptr, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
-             if (masterproc) then
-                write(logunit,F00)' strm_ptr is allocated for stream field strm_'//trim(strm_fld)
+             if (sdat%masterproc) then
+                write(sdat%logunit,F00)' strm_ptr is allocated for stream field strm_'//trim(strm_fld)
              end if
              found = .true.
              exit
