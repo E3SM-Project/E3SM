@@ -443,14 +443,6 @@ contains
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
 
-!               if(.not.col_pp%active(c)) then
-!                  g = col_pp%gridcell(c)
-!                  write(iulog,*)'natrually vegetated column is not active:',col_pp%active(c)
-!                  write(iulog,*) grc_pp%latdeg(g),'N ',grc_pp%londeg(g),' E'
-!                  call endrun(msg=errMsg(sourcefile, __LINE__))
-!               end if
-               
-               
                if(debug)then
                   write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun_pp%itype(l)
@@ -2274,8 +2266,6 @@ contains
        end if
     end do
 
-!    if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-!         lun_pp%itype(l) == istcrop) then
     num_filter_fates = 0
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
