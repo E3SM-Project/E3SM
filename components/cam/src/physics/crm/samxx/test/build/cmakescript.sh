@@ -131,7 +131,7 @@ printf "NetCDF Flags: $NCFLAGS\n\n"
 ## RUN THE CONFIGURE
 ############################################################################
 FFLAGS="$FFLAGS -ffree-line-length-none -I$NCHOME/include -I$NFHOME/include"
-CXXFLAGS="$CXXFLAGS -std=c++14 -I$NCHOME/include -I$NFHOME/include" -DARRAY_DEBUG
+CXXFLAGS="$CXXFLAGS -std=c++14 -I$NCHOME/include -I$NFHOME/include"
 CUDAFLAGS="$CUDAFLAGS ${CUDA_ARCH} -std=c++14"
 
 printf "FFLAGS: $FFLAGS\n\n"
