@@ -2903,7 +2903,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,pgigpu,pgiacc,gnu</COMPILERS>
+    <COMPILERS>ibm,pgi,pgigpu,pgiacc,gnu,gnugpu</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -2978,6 +2978,10 @@
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
+      </modules>
+      <modules compiler="gnugpu">
+        <command name="load">gcc/8.1.1</command>
+        <command name="load">cuda/10.1.105</command>
       </modules>
       <modules compiler="pgiacc">
         <command name="load">cuda/10.1.168</command>
