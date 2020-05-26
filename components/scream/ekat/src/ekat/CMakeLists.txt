@@ -18,5 +18,9 @@ target_include_directories(ekat SYSTEM PUBLIC ${EKAT_TPL_INCLUDE_DIRS})
 
 target_compile_features(ekat PUBLIC cxx_std_11)
 
+# Enable C Pre-Processor for Fortran.
+# No reason to pollute C/C++ flags (CPP always runs), so add the flag only for Fortran files.
+target_compile_options(ekat PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-cpp>)
+
 target_link_libraries(ekat PUBLIC ${EKAT_TPL_LIBRARIES})
 set_target_properties(ekat PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ekat_f90_modules)

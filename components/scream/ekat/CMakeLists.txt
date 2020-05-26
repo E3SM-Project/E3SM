@@ -87,5 +87,7 @@ if (EKAT_ENABLE_TESTS)
 endif()
 
 # Generate configuration file
-configure_file (${EKAT_SOURCE_DIR}/ekat_config.h.in
-                ${EKAT_BINARY_DIR}/ekat_config.h)
+include (EkatUtils)
+EkatConfigFile (${EKAT_SOURCE_DIR}/ekat_config.h.in
+                ${EKAT_BINARY_DIR}/ekat_config.h
+                ${EKAT_BINARY_DIR}/ekat_config.f)
