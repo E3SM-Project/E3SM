@@ -280,7 +280,7 @@ contains
 
     ! Initialize stream data type
     xmlfilename = 'drof.streams'//trim(inst_suffix)//'.xml'
-    call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
+    call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, compid, logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('drof_strdata_init')
 
@@ -507,7 +507,7 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('drof_BARRIER',mpicom)
     call t_startf('drof_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'drof', rc=rc)
+    call shr_strdata_advance(sdat, target_ymd, target_tod, logunit, 'drof', rc=rc)
     call t_stopf('drof_strdata_advance')
 
     !--------------------

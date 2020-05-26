@@ -362,7 +362,7 @@ contains
     ! Initialize stream data type if not aqua planet
     if (.not. aquaplanet) then
        xmlfilename = 'docn.streams'//trim(inst_suffix)//'.xml'
-       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
+       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, compid, logunit, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
     call t_stopf('docn_strdata_init')
@@ -763,7 +763,7 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('docn_BARRIER',mpicom)
     call t_startf('docn_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'docn', rc=rc)
+    call shr_strdata_advance(sdat, target_ymd, target_tod, logunit, 'docn', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_advance')
 

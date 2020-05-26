@@ -1465,7 +1465,7 @@ contains
     ! loop over streams
     do k = 1,nStreams
        ! has stream been initialized?
-       read(nUnit) strm(k)%init         
+       read(nUnit) strm(k)%init
        if (.not. strm(k)%init) then
           write(logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
           call shr_sys_abort(subName//": ERROR: reading uninitialized stream")
@@ -1475,7 +1475,7 @@ contains
        ! don't overwrite these from input - make local variables fo rinput
        read(nUnit) nFiles
        write(logunit,F02) "Number of files on stream ",n," is ",nStreams
-       do n = 1,nFiles 
+       do n = 1,nFiles
           read(nUnit) name       ! the file name
           read(nUnit) haveData   ! has t-coord data been read in?
           read(nUnit) nt         ! size of time dimension
