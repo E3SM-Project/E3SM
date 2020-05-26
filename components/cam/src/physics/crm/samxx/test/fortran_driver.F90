@@ -6,6 +6,7 @@ program driver
   use crm_output_module
   use crm_state_module
   use crm_rad_module
+  use accelerate_crm_mod
   use dmdf
   use crm_module
   use mpi
@@ -190,6 +191,8 @@ program driver
   if (masterTask) then
     write(*,*) 'Running the CRM'
   endif
+
+  call crm_accel_init()
 
   ! Run the code
   call crm( ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_output, lat0, long0 )

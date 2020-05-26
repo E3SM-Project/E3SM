@@ -10,6 +10,7 @@ using yakl::max;
 using yakl::abs;
 using yakl::c::parallel_for;
 using yakl::SArray;
+using yakl::ScalarLiveOut;
 
 typedef double real;
 

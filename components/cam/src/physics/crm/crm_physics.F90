@@ -76,6 +76,7 @@ subroutine crm_physics_register()
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
 #endif
+   use gator_mod, only: gator_init
    !----------------------------------------------------------------------------
    ! local variables
    integer idx
@@ -90,6 +91,7 @@ subroutine crm_physics_register()
    integer, dimension(5) :: dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
 #endif
    !----------------------------------------------------------------------------
+   call gator_init()
    call phys_getopts( use_ECPP_out = use_ECPP)
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
