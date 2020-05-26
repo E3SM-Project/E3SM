@@ -156,7 +156,7 @@
     <desc>Stream data variable name(s) (this appears in the stream xml file)</desc>
     <values>
       <value>
-        ifrac  ifrac
+        ifrac  Si_ifrac
       </value>
     </values>
   </entry>

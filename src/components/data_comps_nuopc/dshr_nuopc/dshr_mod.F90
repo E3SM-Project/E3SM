@@ -11,10 +11,10 @@ module dshr_mod
   use ESMF             , only : ESMF_State, ESMF_StateGet
   use ESMF             , only : ESMF_Field, ESMF_FieldGet
   use ESMF             , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
-  use ESMF             , only : ESMF_DistGrid, ESMF_Array, ESMF_ArrayCreate, ESMF_ArrayDestroy
+  use ESMF             , only : ESMF_DistGrid, ESMF_DistGridGet, ESMF_Array, ESMF_ArrayCreate, ESMF_ArrayDestroy
   use ESMF             , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_GridCompSet
   use ESMF             , only : ESMF_GeomType_Flag, ESMF_FieldStatus_Flag
-  use ESMF             , only : ESMF_Mesh, ESMF_MeshGet, ESMF_MeshCreate, ESMF_MeshDestroy
+  use ESMF             , only : ESMF_Mesh, ESMF_MeshGet, ESMF_MeshSet, ESMF_MeshCreate, ESMF_MeshDestroy
   use ESMF             , only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER, ESMF_GRIDCREATENOPERIDIMUFRM
   use ESMF             , only : ESMF_FILEFORMAT_ESMFMESH, ESMF_Grid
   use ESMF             , only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
@@ -36,6 +36,7 @@ module dshr_mod
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
   use shr_cal_mod      , only : shr_cal_datetod2string
   use shr_const_mod    , only : shr_const_spval
+  use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml
   use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
   use dshr_methods_mod , only : chkerr
@@ -45,19 +46,19 @@ module dshr_mod
   implicit none
   public
 
-  public :: dshr_model_initphase
-  public :: dshr_reset_mask
-  public :: dshr_init
-  public :: dshr_sdat_init
-  public :: dshr_create_mesh_from_grid
-  public :: dshr_create_mesh_from_scol
-  public :: dshr_set_runclock
-  public :: dshr_restart_read
-  public :: dshr_restart_write
-  public :: dshr_log_clock_advance
-  public :: dshr_state_getscalar
-  public :: dshr_state_setscalar
-  public :: dshr_mesh_init
+  public  :: dshr_model_initphase
+  public  :: dshr_init
+  public  :: dshr_mesh_init
+  public  :: dshr_mesh_reset_mask
+  public  :: dshr_set_runclock
+  public  :: dshr_restart_read
+  public  :: dshr_restart_write
+  public  :: dshr_log_clock_advance
+  public  :: dshr_state_getscalar
+  public  :: dshr_state_setscalar
+
+  private :: dshr_mesh_create_from_grid
+  private :: dshr_mesh_create_from_scol
   private :: dshr_alarm_init
   private :: dshr_time_init
 
@@ -221,7 +222,7 @@ contains
   end subroutine dshr_init
 
   !===============================================================================
-  subroutine dshr_mesh_init(gcomp, compid, logunit, compname, &
+  subroutine dshr_mesh_init(gcomp, compid, logunit, compname, model_nxg, model_nyg, &
        model_meshfile, model_maskfile, model_mesh, read_restart,  &
        model_createmesh_fromfile, rc)
 
@@ -231,9 +232,11 @@ contains
 
     ! input/output variables
     type(ESMF_GridComp), intent(inout)         :: gcomp
+    integer                    , intent(out)   :: compid
     integer                    , intent(in)    :: logunit
     character(len=*)           , intent(in)    :: compname
-    integer                    , intent(out)   :: compid
+    integer                    , intent(in)    :: model_nxg
+    integer                    , intent(in)    :: model_nyg
     character(len=*)           , intent(in)    :: model_meshfile
     character(len=*)           , intent(in)    :: model_maskfile
     type(ESMF_Mesh)            , intent(out)   :: model_mesh
@@ -242,19 +245,31 @@ contains
     integer                    , intent(out)   :: rc
 
     ! local varaibles
-    type(ESMF_VM)                :: vm
-    type(ESMF_Mesh)              :: mesh_global
-    type(ESMF_Calendar)          :: esmf_calendar ! esmf calendar
-    type(ESMF_CalKind_Flag)      :: esmf_caltype  ! esmf calendar type
-    character(CS)                :: calendar      ! calendar name
-    integer                      :: mpicom
-    integer                      :: my_task
-    logical                      :: scmMode
-    real(r8)                     :: scmlat
-    real(r8)                     :: scmlon
-    character(len=CL)            :: cvalue
-    character(len=*), parameter  :: subname='(dshr_mod:dshr_mesh_init)'
-    character(*)    , parameter  :: F00 ="('(dshr_mesh_init) ',a)"
+    type(ESMF_VM)                  :: vm
+    type(ESMF_Mesh)                :: mesh_global
+    type(ESMF_Calendar)            :: esmf_calendar           ! esmf calendar
+    type(ESMF_CalKind_Flag)        :: esmf_caltype            ! esmf calendar type
+    type(ESMF_DistGrid)            :: distGrid
+    integer, pointer               :: model_gindex(:)         ! model global index spzce
+    character(CS)                  :: calendar                ! calendar name
+    integer                        :: mpicom
+    integer                        :: my_task
+    logical                        :: scmMode
+    real(r8)                       :: scmlat
+    real(r8)                       :: scmlon
+    character(len=CL)              :: cvalue
+    integer                        :: lsize                   ! local size of mesh
+    type(ESMF_Array)               :: elemMaskArray
+    integer, allocatable           :: elemMask(:)
+    type(file_desc_t)              :: pioid
+    type(var_desc_t)               :: varid
+    type(io_desc_t)                :: pio_iodesc
+    type(iosystem_desc_t), pointer :: pio_subsystem => null() ! pio info
+    integer                        :: io_type                 ! pio info
+    integer                        :: io_format               ! pio info
+    integer                        :: rcode
+    character(len=*), parameter    :: subname='(dshr_mod:dshr_mesh_init)'
+    character(*)    , parameter    :: F00 ="('(dshr_mesh_init) ',a)"
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -282,16 +297,18 @@ contains
 
     if (trim(model_meshfile) == 'create_mesh') then
        if (present(model_createmesh_fromfile)) then
-          call dshr_create_mesh_from_grid(trim(model_createmesh_fromfile), model_mesh, rc=rc)
+          call dshr_mesh_create_from_grid(trim(model_createmesh_fromfile), model_mesh, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           call shr_sys_abort('ERROR: need to pass model_createmesh_fromfile')
        end if
     else
+
        ! Set single column values
        call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) scmMode
+
        if (scmMode) then
           ! verify that are only using 1 pe
           if (my_task > 0) then
@@ -312,57 +329,80 @@ contains
           mesh_global = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           ! Now create a single column mesh using the single column lats and lons and the global mesh
-          call  dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
+          call  dshr_mesh_create_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_MeshDestroy(mesh_global)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
        else
-          ! Read in the input mesh
+
+          ! Read in the input model mesh
           model_mesh = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! TODO: need a check that the mask file has the same grid as the model mesh
+          ! Reset the model mesh mask if the mask file is different from the mesh file
+          if (trim(model_meshfile) /= trim(model_maskfile)) then
+             pio_subsystem => shr_pio_getiosys(compid)
+             io_type       =  shr_pio_getiotype(compid)
+             io_format     =  shr_pio_getioformat(compid)
+
+             ! obtain lsize and model_gindex
+             call ESMF_MeshGet(model_mesh, elementdistGrid=distGrid, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+             allocate(model_gindex(lsize))
+             allocate(elemMask(lsize))
+             call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=model_gindex, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! obtain model mask from separate model_maskfile (assume mask name on mask file)
+             rcode = pio_openfile(pio_subsystem, pioid, io_type, trim(model_maskfile), pio_nowrite)
+             call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+             rcode = pio_inq_varid(pioid, 'mask', varid) 
+             if ( rcode /= PIO_NOERR ) then
+                call shr_sys_abort(' ERROR: variable mask not found in file '//trim(model_maskfile))
+             end if
+             call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+             call pio_initdecomp(pio_subsystem, pio_int, (/model_nxg, model_nyg/), model_gindex, pio_iodesc)
+             call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
+             call pio_closefile(pioid)
+             call pio_freedecomp(pio_subsystem, pio_iodesc)
+
+             ! rest the model mesh mask
+             call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             deallocate(elemMask)
+             deallocate(model_gindex)
+          end if
+
        end if
     end if
+
     if (my_task == master_task) then
        write(logunit,F00) trim(subname)// " obtaining "//trim(compname)//" mesh from "// trim(model_meshfile)
     end if
+
   end subroutine dshr_mesh_init
 
   !===============================================================================
-  subroutine dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
-       mpicom, compid, logunit, rc)
+  subroutine dshr_mesh_reset_mask(mesh, rc)
+
+    ! Reset all elements of model_mesh mask to 1
+
+    use ESMF, only : ESMF_MeshGet, ESMF_DistGridGet, ESMF_MeshSet, ESMF_SUCCESS, ESMF_Mesh, ESMF_DistGrid
 
     ! input/output variables
-    type(shr_strdata_type)     , intent(inout) :: sdat
-    character(len=*)           , intent(in)    :: xmlfilename ! for shr_strdata_nml namelist
-    type(ESMF_Mesh)            , intent(in)    :: model_mesh
-    character(len=*)           , intent(in)    :: model_meshfile
-    character(len=*)           , intent(in)    :: model_maskfile
-    type(ESMF_Clock)           , intent(in)    :: clock
-    integer                    , intent(in)    :: logunit
-    integer                    , intent(out)   :: compid
-    integer                    , intent(in)    :: mpicom
-    integer                    , intent(out)   :: rc
+    type(ESMF_Mesh), intent(inout) :: mesh
+
+    ! local variables
+    type(ESMF_DistGrid)            :: distGrid
+    integer, allocatable           :: elemMask(:)
+    integer                        :: lsize, rc
     ! ----------------------------------------------
 
-    ! Initialize sdat from data model input files
-    if (trim(model_meshfile) == trim(model_maskfile)) then
-       ! do not read in a separate mask
-       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, &
-            model_maskfile=model_maskfile, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-  end subroutine dshr_sdat_init
-
-  ! Reset all elements of model_mesh mask to 1
-  subroutine dshr_reset_mask(mesh, rc)
-    use ESMF, only : ESMF_MeshGet, ESMF_DistGridGet, ESMF_MeshSet, ESMF_SUCCESS, ESMF_Mesh, ESMF_DistGrid
-    type(ESMF_Mesh), intent(inout) :: mesh
-    type(ESMF_DistGrid) :: distGrid
-    integer, allocatable  :: elemMask(:)
-    integer :: lsize, rc
     rc = ESMF_SUCCESS
 
     call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
@@ -376,11 +416,11 @@ contains
     call ESMF_MeshSet(mesh, elementMask=elemMask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     deallocate(elemMask)
-  end subroutine dshr_reset_mask
 
+  end subroutine dshr_mesh_reset_mask
 
   !===============================================================================
-  subroutine dshr_create_mesh_from_grid(filename, mesh, rc)
+  subroutine dshr_mesh_create_from_grid(filename, mesh, rc)
 
     use netcdf , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_close, nf90_strerror
     use netcdf , only : nf90_inq_dimid, nf90_inq_varid, nf90_get_var
@@ -473,10 +513,10 @@ contains
       endif
     end subroutine nc_check_err
 
-  end subroutine dshr_create_mesh_from_grid
+  end subroutine dshr_mesh_create_from_grid
 
   !===============================================================================
-  subroutine dshr_create_mesh_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
+  subroutine dshr_mesh_create_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
 
     !-------------------------------------------
     ! Create mct ggrid for model grid and set model gsmap if not input
@@ -583,7 +623,7 @@ contains
     call ESMF_ArrayDestroy(elemAreaArray, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine dshr_create_mesh_from_scol
+  end subroutine dshr_mesh_create_from_scol
 
   !===============================================================================
   subroutine dshr_set_runclock(gcomp, rc)

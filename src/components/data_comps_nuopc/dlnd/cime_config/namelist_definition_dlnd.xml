@@ -6,15 +6,6 @@
 
   <!--
       Values to use by default for creation of DLND model dlnd namelists.
-      The element names are the same as the corresponding namelist
-      variables.  Values that depend on the model configuration use
-      attributes to express the dependency.  The recognized attributes
-      are: grid, dlnd_presaero and all configuration
-      attributes from the config_cache.xml file (with keys converted to upper-case).
-
-      strm_year_first is the first year of the stream data that will be used
-      strm_year_last  is the last  year of the stream data that will be used
-      strm_year_align is the model year that will be aligned with stream data for year_first
 
       For cplhist forcing - the following substitutions will be made below
       Replace any instance of the following substring indicators with the appropriate values:
@@ -29,15 +20,6 @@
       Replace any instance of the following substring indicators with the appropriate values:
       %glc  => GLC elevation class from the range 0 to GLC_NEC,
                obtained from the GLC_NEC xml variable
-
-      Replace any instance of $VARNAME with the xml variable value obtained from any
-      of the $CASEROOT/env*xml files
-
-     In dlnd_in,  streams namelist input has the form
-     streams = 'stream1.txt year_align year_first year_last ',
-               'stream2.txt year_align year_first year_last ',
-               ...
-               'streamN.txt year_align year_first year_last '
 
      Currently the following streams are supported
          lnd.cplhist
@@ -65,7 +47,7 @@
     <type>char(100)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>List of streams used for the given datm_mode.</desc>
+    <desc>List of streams used for each supported datamode</desc>
     <values>
       <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
@@ -79,7 +61,9 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value stream="sno.cplhist">$LND_DOMAIN_MESH</value>
+      <value stream="sno.cplhist">
+        $LND_DOMAIN_MESH
+      </value>
     </values>
   </entry>
 
@@ -89,7 +73,9 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="sno.cplhist">$DLND_CPLHIST_DIR/$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
+      <value stream="sno.cplhist">
+        $DLND_CPLHIST_DIR/$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc
+      </value>
     </values>
   </entry>
 
@@ -99,10 +85,10 @@
     <group>streams_file</group>
     <desc>Stream data variable name(s).</desc>
     <values>
-      <value     stream="sno.cplhist">
-        l2x1yr_glc_Sl_tsrf%glc     tsrf%glc
-        l2x1yr_glc_Sl_topo%glc     topo%glc
-        l2x1yr_glc_Flgl_qice%glc   qice%glc
+      <value stream="sno.cplhist">
+        l2x1yr_glc_Sl_tsrf%glc     Sl_tsrf_elev%glc
+        l2x1yr_glc_Sl_topo%glc     Sl_topo_elev%glc
+        l2x1yr_glc_Flgl_qice%glc   Flgl_qice_elev%glc
       </value>
     </values>
   </entry>

@@ -64,7 +64,7 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value grid=".+">
+      <value>
 	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029_ESMFmesh_120520.nc
       </value>
       <value grid="a%T31.*_oi%T31">
@@ -79,7 +79,9 @@
       <value grid="a%0.47x0.63.*_oi%0.47x0.63">
 	$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc
       </value>
-      <!-- <value grid="a%0.23x0.31.*_oi%0.23x0.31">fill this in</value> -->
+      <value grid="a%0.23x0.31.*_oi%0.23x0.31">
+        <!-- fill this in -->
+      </value>
       <value grid="a%4x5.*_m%gx3v7">
 	$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc
       </value>
@@ -114,26 +116,26 @@
     <desc>Stream data variable name(s).</desc>
     <values>
       <value>
-        sst    t
+        sst    So_t
       </value>
       <value stream="som">
-        T     t
-        S     s
-        U     u
-        V     v
-        dhdx  dhdx
-        dhdy  dhdy
-        hblt  h
-        qdp   qbot
+        T     So_t
+        S     So_s
+        U     So_u
+        V     So_v
+        dhdx  So_dhdx
+        dhdy  So_dhdy
+        hblt  So_h
+        qdp   So_qbot
       </value>
       <value stream="interannual">
-        SST_cpl t
+        SST_cpl So_t
       </value>
       <value stream="prescribed" sstice_stream="CAMDATA">
-        SST_cpl t
+        SST_cpl So_t
       </value>
       <value stream="aquapfile">
-        SST_cpl t
+        SST_cpl So_t
       </value>
     </values>
   </entry>

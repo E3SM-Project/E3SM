@@ -18,9 +18,10 @@ module lnd_comp_nuopc
   use shr_mpi_mod       , only : shr_mpi_bcast
   use dshr_methods_mod  , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_sdat_init, dshr_state_setscalar
+  use dshr_strdata_mod  , only : shr_strdata_init_from_xml
+  use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_state_setscalar
   use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod          , only : dshr_restart_read, dshr_restart_write
+  use dshr_mod          , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_dfield_mod   , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod  , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use glc_elevclass_mod , only : glc_elevclass_as_string, glc_elevclass_init
@@ -284,11 +285,12 @@ contains
 
     ! Initialize sdat
     call t_startf('dlnd_strdata_init')
+    call dshr_mesh_init(gcomp, compid, logunit, 'lnd', nx_global, ny_global, &
+         model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
 
+    ! Initialize stream data type
     xmlfilename = 'dlnd.streams.xml'
-    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'lnd', &
-         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, &
-         model_createmesh_fromfile=model_createmesh_fromfile, rc=rc)
+    call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_init')
 
@@ -299,8 +301,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
-            logunit, my_task, mpicom, sdat)
+       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
     end if
 
     ! get the time to interpolate the stream data to
@@ -481,9 +482,6 @@ contains
     integer          , intent(out)   :: rc
 
     ! local variables
-    integer                    :: n
-    character(len=2)           :: nec_str
-    character(CS), allocatable :: strm_flds(:)
     character(*), parameter    :: subName = "(dlnd_comp_realize) "
     ! ----------------------------------------------
 
@@ -496,42 +494,6 @@ contains
 
     call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  model_mesh, &
          subname//':dlndExport', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Set fractional land pointer in export state
-    call dshr_state_getfldptr(exportState, fldname='Sl_lfrin', fldptr1=lfrac, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Obtain fractional land from first stream
-    call shr_strdata_get_stream_domain(sdat, 1, stream_fracname, lfrac, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Create stream-> export state mapping
-    ! Note that strm_flds is the model name for the stream field
-    ! Note that state_fld is the model name for the export field
-    allocate(strm_flds(0:glc_nec))
-    do n = 0,glc_nec
-       nec_str = glc_elevclass_as_string(n)
-       strm_flds(n) = 'tsrf' // trim(nec_str)
-    end do
-    call dshr_dfield_add(dfields, sdat, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, state=exportState, &
-         logunit=logunit, masterproc=masterproc, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    do n = 0,glc_nec
-       nec_str = glc_elevclass_as_string(n)
-       strm_flds(n) = 'topo' // trim(nec_str)
-    end do
-    call dshr_dfield_add(dfields, sdat, state_fld='Sl_topo_elev', strm_flds=strm_flds, state=exportState, &
-         logunit=logunit, masterproc=masterproc, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    do n = 0,glc_nec
-       nec_str = glc_elevclass_as_string(n)
-       strm_flds(n) = 'qice' // trim(nec_str)
-    end do
-    call dshr_dfield_add(dfields, sdat, state_fld='Flgl_qice_elev', strm_flds=strm_flds, state=exportState, &
-         logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine dlnd_comp_realize
@@ -547,11 +509,61 @@ contains
     integer , intent(in)    :: target_ymd       ! model date
     integer , intent(in)    :: target_tod       ! model sec into model date
     integer , intent(out)   :: rc
+
+    ! local variables
+    logical                    :: first_time = .true.
+    integer                    :: n
+    character(len=2)           :: nec_str
+    character(CS), allocatable :: strm_flds(:)
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
     call t_startf('DLND_RUN')
+
+    !--------------------
+    ! set module pointers
+    !--------------------
+
+    if (first_time) then
+
+       ! Set fractional land pointer in export state
+       call dshr_state_getfldptr(exportState, fldname='Sl_lfrin', fldptr1=lfrac, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       ! Obtain fractional land from first stream
+       call shr_strdata_get_stream_domain(sdat, 1, stream_fracname, lfrac, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       ! Create stream-> export state mapping
+       ! Note that strm_flds is the model name for the stream field
+       ! Note that state_fld is the model name for the export field
+       allocate(strm_flds(0:glc_nec))
+       do n = 0,glc_nec
+          nec_str = glc_elevclass_as_string(n)
+          strm_flds(n) = 'tsrf' // trim(nec_str)
+       end do
+       call dshr_dfield_add(dfields, sdat, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, state=exportState, &
+            logunit=logunit, masterproc=masterproc, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do n = 0,glc_nec
+          nec_str = glc_elevclass_as_string(n)
+          strm_flds(n) = 'topo' // trim(nec_str)
+       end do
+       call dshr_dfield_add(dfields, sdat, state_fld='Sl_topo_elev', strm_flds=strm_flds, state=exportState, &
+            logunit=logunit, masterproc=masterproc, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do n = 0,glc_nec
+          nec_str = glc_elevclass_as_string(n)
+          strm_flds(n) = 'qice' // trim(nec_str)
+       end do
+       call dshr_dfield_add(dfields, sdat, state_fld='Flgl_qice_elev', strm_flds=strm_flds, state=exportState, &
+            logunit=logunit, masterproc=masterproc, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    end if
 
     !--------------------
     ! advance dlnd streams
@@ -587,6 +599,8 @@ contains
     call t_stopf('dlnd_datamode')
 
     call t_stopf('DLND_RUN')
+
+    first_time = .false.
 
   end subroutine dlnd_comp_run
 

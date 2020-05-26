@@ -128,8 +128,7 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, &
-       compid, logunit, model_maskfile, rc)
+  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc)
 
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
@@ -139,7 +138,6 @@ contains
     integer                    , intent(in)    :: mpicom
     integer                    , intent(in)    :: compid
     integer                    , intent(in)    :: logunit
-    character(len=*), optional , intent(in)    :: model_maskfile
     integer                    , intent(out)   :: rc
 
     ! local variables
@@ -171,7 +169,7 @@ contains
 
     ! Initialize sdat model domain
     sdat%model_mesh = model_mesh
-    call shr_strdata_init_model_domain(sdat, model_maskfile=model_maskfile, rc=rc)
+    call shr_strdata_init_model_domain(sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Now finish initializing sdat
@@ -250,7 +248,7 @@ contains
   end subroutine shr_strdata_init_from_inline
 
   !===============================================================================
-  subroutine shr_strdata_init_model_domain( sdat, model_maskfile, rc)
+  subroutine shr_strdata_init_model_domain( sdat, rc)
 
     ! ----------------------------------------------
     ! Initialize sdat model domain info
@@ -258,7 +256,6 @@ contains
 
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
-    character(len=*), optional , intent(in)    :: model_maskfile
     integer                    , intent(out)   :: rc
 
     ! local variables
@@ -273,23 +270,10 @@ contains
     real(r8), allocatable :: ownedElemCoords(:) ! mesh lat and lons
     integer               :: my_task
     integer               :: ierr
-    type(ESMF_Array)      :: elemMaskArray
-    integer, allocatable  :: elemMask(:)
-    type(file_desc_t)     :: pioid
-    type(var_desc_t)      :: varid
-    type(io_desc_t)       :: pio_iodesc
     integer               :: rcode
-    logical               :: lreset_mask
-    character(CL)         :: lmodel_maskfile
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
-
-    if (present(model_maskfile)) then
-       lmodel_maskfile = trim(model_maskfile)
-    else
-       lmodel_maskfile = ''
-    end if
 
     ! initialize sdat%lsize
     call ESMF_MeshGet(sdat%model_mesh, elementdistGrid=distGrid, rc=rc)
@@ -327,24 +311,6 @@ contains
        sdat%model_lon(n) = ownedElemCoords(2*n-1)
        sdat%model_lat(n) = ownedElemCoords(2*n)
     end do
-
-    ! initialize the model mask if appropriate
-    if (present(model_maskfile)) then
-       allocate(elemMask(sdat%model_lsize))
-       ! obtain model mask from separate model_maskfile
-       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
-       call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
-       ! TODO: check that mask name is on file and if not abort
-       rcode = pio_inq_varid(pioid, 'mask', varid) ! assume mask name on domain file
-       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/sdat%model_nxg, sdat%model_nyg/), sdat%model_gindex, pio_iodesc)
-       allocate(elemMask(sdat%model_lsize))
-       call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
-       call pio_closefile(pioid)
-       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-       call ESMF_MeshSet(sdat%model_mesh, elementMask=elemMask, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       deallocate(elemMask)
-    end if
 
   end subroutine shr_strdata_init_model_domain
 
@@ -496,8 +462,6 @@ contains
        ! these fields will be used to create the route handles
        ! since all fields in a stream share the same mesh and there is only a unique model mesh
        ! can do this outside of a stream loop by just using the first stream index
-       ! TODO: Determine if mask was reset - and if so if the masks are the same - if they are not do the bilinear
-       ! interpolation below -
 
        call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_stream_lb, 1, lfield_src, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -1486,7 +1450,7 @@ contains
        write(logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
     endif
 
-       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+    call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     do nf = 1,size(fldlist_stream)
        call dshr_fldbun_getfldptr(fldbun_stream, trim(fldlist_model(nf)), fldptr1=dataptr, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return

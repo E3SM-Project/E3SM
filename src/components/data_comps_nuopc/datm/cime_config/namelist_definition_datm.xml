@@ -239,9 +239,20 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
+      <value  stream="CLMGSWP3v1.Solar">
+	/glade/u/home/turuncu/UFS/Streams/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.SCRIP.210520_ESMFmesh.nc
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar/clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc
+      </value>
+      <value  stream="CLMGSWP3v1.Precip">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip/clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc
+      </value>
+      <value  stream="CLMGSWP3v1.TPQW">
+	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc
+      </value>
+
+
       <value stream="CLMGSWP3v1">
 	<!-- $DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh_c20191210.nc -->
-	/glade/u/home/turuncu/UFS/Streams/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.SCRIP.210520_ESMFmesh.nc
       </value>
       <value stream="Anomaly.Forcing">
 	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc

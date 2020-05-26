@@ -21,12 +21,11 @@ module ocn_comp_nuopc
   use shr_const_mod    , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
   use shr_const_mod    , only : shr_const_zsrflyr, shr_const_pi
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_strdata_mod , only : shr_strdata_get_stream_pointer
-  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_pointer 
+  use dshr_strdata_mod , only : shr_strdata_init_from_xml
+  use dshr_mod         , only : dshr_model_initphase, dshr_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
@@ -347,23 +346,25 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! TODO: need a check that the mask file has the same grid as the model mesh
+    ! Determine if data mode is aqua planet
+    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+       aquaplanet = .true.
+    end if
+
+    write(6,*)'DEBUG: aquaplanet= ',aquaplanet
 
     ! Initialize mesh, restart flag, compid, and logunit
     call t_startf('docn_strdata_init')
-    call dshr_mesh_init(gcomp, compid, logunit, 'ocn', model_meshfile, model_maskfile, model_mesh, &
-         read_restart, rc=rc)
+    call dshr_mesh_init(gcomp, compid, logunit, 'ocn', nx_global, ny_global, &
+         model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Initialize sdat if required
-    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-          aquaplanet = .true.
-    else
+    ! Initialize stream data type if not aqua planet
+    if (.not. aquaplanet) then
        xmlfilename = 'docn.streams.xml'
-       call dshr_sdat_init(sdat, xmlfilename, model_mesh, model_meshfile, model_maskfile, clock, &
-            mpicom, compid, logunit, rc=rc)
+       call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('docn_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -608,11 +609,14 @@ contains
 
     ! Obtain the ocean fraction (So_omask)
     if (trim(model_maskfile) /= trim(model_meshfile)) then
-       ! TODO: check that the variable 'frac' is on the file and if not abort
        ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
        rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
        rcode = pio_inq_varid(pioid, 'frac', varid)
+       if ( rcode /= PIO_NOERR ) then
+          call shr_sys_abort(' ERROR: variable frac not found in file '//trim(model_maskfile))
+       end if
+       call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
        call pio_initdecomp(sdat%pio_subsystem, pio_double, (/nx_global, ny_global/), sdat%model_gindex, pio_iodesc)
        call pio_read_darray(pioid, varid, pio_iodesc, So_omask, rcode)
        call pio_closefile(pioid)
@@ -641,6 +645,7 @@ contains
     call dshr_state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     Fioo_q(:) = 0._r8
+
     if (aquaplanet) then
           call dshr_state_getfldptr(exportState, 'So_t', fldptr1=So_t, rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -653,30 +658,30 @@ contains
           So_u(:) = 0.0_r8
           So_v(:) = 0.0_r8
     else
-       ! Initialize export state data that has corresponding stream field
-       call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='t', &
+       ! Initialize export state pointers
+       call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='So_t', &
             state=exportState, state_ptr=So_t, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='s', &
+       call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='So_s', &
             state=exportState, state_ptr=So_s, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='u', &
+       call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='So_u', &
             state=exportState, state_ptr=So_u, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='v', &
+       call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='So_v', &
             state=exportState, state_ptr=So_v, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='dhdx', &
+       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='So_dhdx', &
             state=exportState, state_ptr=So_dhdx, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='dhdy', &
+       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='So_dhdy', &
             state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! initialize pointers for stream fields that have no corresponding import or export fields
-       call shr_strdata_get_stream_pointer( sdat, 'qbot', strm_qbot, logunit, masterproc, rc=rc)
+       call shr_strdata_get_stream_pointer( sdat, 'So_qbot', strm_qbot, logunit, masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'h'   , strm_h   , logunit, masterproc, rc=rc)
+       call shr_strdata_get_stream_pointer( sdat, 'So_h'   , strm_h   , logunit, masterproc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and
@@ -689,6 +694,7 @@ contains
           So_fswpen(:) = swp
        end if
     endif
+
     ! Initialize export state pointers to non-zero
     So_t(:) = TkFrz
     So_s(:) = ocnsalt
@@ -777,18 +783,22 @@ contains
     !-------------------------------------------------
     ! Determine additional data model behavior based on the mode
     !-------------------------------------------------
+
     if(aquaplanet) then
        lsize = size(So_t)
     else
        lsize = sdat%model_lsize
     endif
+
     call t_startf('docn_datamode')
+
     select case (trim(datamode))
 
     case('COPYALL')
        ! do nothing extra
 
     case('SSTDATA')
+       write(6,*)'DEBUG: i am here'
        So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAPANAL')

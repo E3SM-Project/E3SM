@@ -19,9 +19,10 @@ module rof_comp_nuopc
   use shr_mpi_mod      , only : shr_mpi_bcast
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
+  use dshr_strdata_mod , only : shr_strdata_init_from_xml
+  use dshr_mod         , only : dshr_model_initphase, dshr_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_create_mesh_from_grid
+  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
@@ -271,11 +272,15 @@ contains
 
     if (datamode == 'NULL') RETURN
 
-    ! Initialize sdat
+    ! Initialize mesh, restart flag, compid, and logunit
     call t_startf('drof_strdata_init')
+    call dshr_mesh_init(gcomp, compid, logunit, 'rof', nx_global, ny_global, &
+         model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize stream data type
     xmlfilename = 'drof.streams.xml'
-    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'rof', &
-         model_meshfile, model_maskfile, model_mesh, read_restart, sdat,  rc=rc)
+    call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('drof_strdata_init')
 
@@ -286,8 +291,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
-            logunit, my_task, mpicom, sdat)
+       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
     end if
 
     ! Get the time to interpolate the stream data to

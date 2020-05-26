@@ -18,16 +18,15 @@ module ice_comp_nuopc
   use shr_cal_mod          , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_ymd2date, shr_cal_ymd2julian
   use shr_mpi_mod          , only : shr_mpi_bcast
   use shr_frz_mod          , only : shr_frz_freezetemp
-  use dshr_mod             , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
+  use dshr_mod             , only : dshr_model_initphase, dshr_init
   use dshr_mod             , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod             , only : dshr_restart_read, dshr_restart_write
+  use dshr_mod             , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_methods_mod     , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
-  use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_advance
+  use dshr_strdata_mod     , only : shr_strdata_type, shr_strdata_init_from_xml, shr_strdata_advance
   use dshr_dfield_mod      , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod     , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use dice_flux_atmice_mod , only : dice_flux_atmice
   use perf_mod             , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use pio
 
   implicit none
   private ! except
@@ -376,11 +375,16 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! Initialize sdat
+    ! Initialize mesh, restart flag, compid, and logunit
     call t_startf('dice_strdata_init')
+    call dshr_mesh_init(gcomp, compid, logunit, 'ice', nx_global, ny_global, &
+         model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize stream data type
     xmlfilename = 'dice.streams.xml'
-    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'ice', &
-         model_meshfile, model_maskfile, model_mesh, read_restart, sdat, rc=rc)
+    call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dice_strdata_init')
 
     ! Realize the actively coupled fields, now that a model_mesh is established and
@@ -628,9 +632,6 @@ contains
 
     ! local variables
     integer                 :: n, lsize, kf
-    type(file_desc_t)       :: pioid
-    type(var_desc_t)        :: varid
-    type(io_desc_t)         :: pio_iodesc
     integer                 :: numOwnedElements   ! number of elements owned by this PET
     type(ESMF_DistGrid)     :: distGrid           ! model_mesh distGrid
     type(ESMF_Array)        :: elemMaskArray
@@ -657,7 +658,7 @@ contains
     ! -------------------------------------
 
     ! Initialize dfields with export state data that has corresponding stream field
-    call dshr_dfield_add(dfields, sdat, state_fld='Si_ifrac', strm_fld='ifrac', &
+    call dshr_dfield_add(dfields, sdat, state_fld='Si_ifrac', strm_fld='Si_ifrac', &
          state=exportState, state_ptr=Si_ifrac, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -720,31 +721,15 @@ contains
 
     ! Set Si_imask (this corresponds to the ocean mask)
     allocate(imask(sdat%model_lsize))
-    if (trim(model_maskfile) /= trim(model_meshfile)) then 
-       ! Read in the ocean fraction from the input namelist ocean mask file and assume 'mask' name on domain file
-       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
-       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid, 'mask', varid) 
-       call pio_initdecomp(sdat%pio_subsystem, pio_int, (/nx_global, ny_global/), sdat%model_gindex, pio_iodesc)
-       call pio_read_darray(pioid, varid, pio_iodesc, imask, rcode)
-       call pio_closefile(pioid)
-       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-       ! now set the mask as just the real mask
-       Si_imask(:) = real(imask(:), kind=r8)
-    else
-       ! Obtain the ice mask in the ice model_mesh file
-       call ESMF_MeshGet(model_mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! the following call sets the varues of imask
-       call ESMF_MeshGet(model_mesh, elemMaskArray=elemMaskArray, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! now set the mask as just the real mask
-       Si_imask(:) = real(imask(:), kind=r8)
-       call ESMF_ArrayDestroy(elemMaskArray, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    call ESMF_MeshGet(model_mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_MeshGet(model_mesh, elemMaskArray=elemMaskArray, rc=rc) ! set the varues of imask
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    Si_imask(:) = real(imask(:), kind=r8) ! set the mask as real
+    call ESMF_ArrayDestroy(elemMaskArray, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! -------------------------------------
     ! Set pointers to importState fields
