@@ -231,7 +231,7 @@ contains
     character(len=CL) :: cvalue             ! temporary
     integer           :: nu                 ! unit number
     integer           :: ierr               ! error code
-    logical           :: exists             ! check for file existence  
+    logical           :: exists             ! check for file existence
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     character(*)    ,parameter :: F00 = "('(ice_comp_nuopc) ',8a)"
     character(*)    ,parameter :: F01 = "('(ice_comp_nuopc) ',a,2x,i8)"
@@ -240,11 +240,11 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / dice_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         restfilm, restfils, nx_global, ny_global, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0 
+         restfilm, restfils, nx_global, ny_global, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0
 
     rc = ESMF_SUCCESS
 
-    ! Obtain flds_scalar values, mpi values, multi-instance values and  
+    ! Obtain flds_scalar values, mpi values, multi-instance values and
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp, mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
@@ -382,7 +382,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize stream data type
-    xmlfilename = 'dice.streams.xml'
+    xmlfilename = 'dice.streams'//trim(inst_suffix)//'.xml'
     call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dice_strdata_init')

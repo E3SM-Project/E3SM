@@ -95,7 +95,7 @@ def buildnml(case, caseroot, compname):
     ninst = case.get_value("NINST_ICE")
     if ninst is None:
         ninst = case.get_value("NINST")
-    
+
     # Determine configuration directory
     confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
     if not os.path.isdir(confdir):
@@ -170,7 +170,7 @@ def buildnml(case, caseroot, compname):
                 file_dest += inst_string
             safe_copy(file_src,file_dest)
 
-            for xmlfile in glob.glob(os.path.join(confdir, "*streams.xml")):
+            for xmlfile in glob.glob(os.path.join(confdir, "*streams*.xml")):
                 safe_copy(xmlfile, rundir)
 
 ###############################################################################

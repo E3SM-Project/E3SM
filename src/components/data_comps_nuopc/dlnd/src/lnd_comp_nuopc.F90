@@ -289,7 +289,7 @@ contains
          model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
 
     ! Initialize stream data type
-    xmlfilename = 'dlnd.streams.xml'
+    xmlfilename = 'dlnd.streams'//trim(inst_suffix)//'.xml'
     call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_init')

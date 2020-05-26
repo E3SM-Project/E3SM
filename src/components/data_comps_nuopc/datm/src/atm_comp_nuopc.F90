@@ -189,7 +189,7 @@ module atm_comp_nuopc
   real(r8), pointer :: Sx_avsdf(:) => null()
   real(r8), pointer :: Sx_anidf(:) => null()
 
-  ! stream data 
+  ! stream data
   real(r8), pointer :: strm_z(:)         => null()
   real(r8), pointer :: strm_wind(:)      => null()
   real(r8), pointer :: strm_tdew(:)      => null()
@@ -472,7 +472,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize stream data type
-    xmlfilename = 'datm.streams.xml'
+    xmlfilename = 'datm.streams'//trim(inst_suffix)//'.xml'
     call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('datm_strdata_init')
@@ -1416,7 +1416,7 @@ contains
        enddo   ! lsize
 
     !-----------------------------------------------!
-    case('CLMNCEP')  
+    case('CLMNCEP')
     !-----------------------------------------------!
 
        if (first_time) then
@@ -1474,7 +1474,7 @@ contains
              rtmp = maxval(Sx_anidr(:))
              call shr_mpi_max(rtmp, anidrmax, mpicom, 'datm_ani', all=.true.)
           else
-             anidrmax = SHR_CONST_SPVAL 
+             anidrmax = SHR_CONST_SPVAL
           end if
           if (associated(strm_tdew)) then
              rtmp = maxval(strm_tdew(:))

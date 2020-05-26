@@ -18,7 +18,7 @@ module wav_comp_nuopc
   use shr_mpi_mod      , only : shr_mpi_bcast
   use dshr_methods_mod , only : dshr_state_getfldptr, chkerr, memcheck, dshr_state_diagnose
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init 
+  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
   use dshr_mod         , only : dshr_state_setscalar
   use dshr_mod         , only : dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_create_mesh_from_grid
@@ -159,7 +159,7 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! Obtain flds_scalar values, mpi values, multi-instance values and  
+    ! Obtain flds_scalar values, mpi values, multi-instance values and
     ! set logunit and set shr logging to my log file
     call dshr_init(gcomp,  mpicom, my_task, inst_index, inst_suffix, &
          flds_scalar_name, flds_scalar_num, flds_scalar_index_nx, flds_scalar_index_ny, &
@@ -267,7 +267,7 @@ contains
 
     ! Initialize sdat - create the model domain mesh and intialize the sdat clock
     call t_startf('dwav_strdata_init')
-    xmlfilename = 'dwav.streams.xml'
+    xmlfilename = 'dwav.streams'//trim(inst_suffix)//'.xml'
     call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'wav', &
          model_meshfile, model_maskfile, model_mesh, read_restart, sdat,  rc=rc)
     call t_stopf('dwav_strdata_init')

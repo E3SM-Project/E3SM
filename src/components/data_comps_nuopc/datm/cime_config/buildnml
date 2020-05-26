@@ -199,7 +199,7 @@ def buildnml(case, caseroot, compname):
                 file_dest += inst_string
             safe_copy(file_src,file_dest)
 
-            for xmlfile in glob.glob(os.path.join(confdir, "*streams.xml")):
+            for xmlfile in glob.glob(os.path.join(confdir, "*streams*.xml")):
                 safe_copy(xmlfile, rundir)
 
 ###############################################################################

@@ -21,7 +21,7 @@ module ocn_comp_nuopc
   use shr_const_mod    , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
   use shr_const_mod    , only : shr_const_zsrflyr, shr_const_pi
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_pointer 
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_pointer
   use dshr_strdata_mod , only : shr_strdata_init_from_xml
   use dshr_mod         , only : dshr_model_initphase, dshr_init
   use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
@@ -361,7 +361,7 @@ contains
 
     ! Initialize stream data type if not aqua planet
     if (.not. aquaplanet) then
-       xmlfilename = 'docn.streams.xml'
+       xmlfilename = 'docn.streams'//trim(inst_suffix)//'.xml'
        call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -798,7 +798,6 @@ contains
        ! do nothing extra
 
     case('SSTDATA')
-       write(6,*)'DEBUG: i am here'
        So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAPANAL')
