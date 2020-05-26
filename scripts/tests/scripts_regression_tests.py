@@ -1250,10 +1250,12 @@ class TestCreateTestCommon(unittest.TestCase):
         else:
             expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
 
+        print("\nwpc1. {} {}/create_test {}".format(env_changes, SCRIPT_DIR, " ".join(extra_args)) + "\n\n")
         run_cmd_assert_result(self, "{} {}/create_test {}".format(env_changes, SCRIPT_DIR, " ".join(extra_args)),
                               expected_stat=expected_stat)
 
         if full_run:
+            print("wpc1b. in full_run {}\n".format(full_run))
             self._wait_for_tests(test_id, expect_works=(not pre_run_errors and not run_errors))
 
     ###########################################################################
@@ -1262,6 +1264,8 @@ class TestCreateTestCommon(unittest.TestCase):
         if self._hasbatch or always_wait:
             timeout_arg = "--timeout={}".format(GLOBAL_TIMEOUT) if GLOBAL_TIMEOUT is not None else ""
             expected_stat = 0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE
+            print("wpc1c. in _wait_for_tests. expected_stat is {}\n".format(expected_stat))
+            print("wpc1d. run_cmd_assert_result. {}/wait_for_tests {} *{}/TestStatus. {} {}\n".format(TOOLS_DIR, timeout_arg, test_id, self._testroot, expected_stat))
             run_cmd_assert_result(self, "{}/wait_for_tests {} *{}/TestStatus".format(TOOLS_DIR, timeout_arg, test_id),
                                   from_dir=self._testroot, expected_stat=expected_stat)
 
@@ -1737,50 +1741,68 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     ###############################################################################
         # Generate some baselines
         test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A", "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
-
-        if CIME.utils.get_model() == "e3sm":
-            genargs = ["-g", "-o", "-b", self._baseline_name] + test_names
-            genargs.append("--wait")
-            compargs = ["-c", "-b", self._baseline_name] + test_names
-            compargs.append("--wait")
-        else:
-            genargs = ["-g", self._baseline_name, "-o"] + test_names + ["--baseline-root ", self._baseline_area]
-            genargs.append("--wait")
-            compargs = ["-c", self._baseline_name] + test_names + ["--baseline-root ", self._baseline_area]
-            compargs.append("--wait")
-
-        self._create_test(genargs)
-
-        # Hist compare should pass
-        self._create_test(compargs)
-
-        # Change behavior
-        os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
-
-        # Hist compare should now fail
-        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        self._create_test(compargs, test_id=test_id, run_errors=True)
-
-        # compare_test_results should detect the fail
-        cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
-                  .format(TOOLS_DIR, self._testroot, test_id)
-        output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
-
-        # use regex
+        #test_names = ["TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
         for test_name in test_names:
+            if CIME.utils.get_model() == "e3sm":
+                genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
+                compargs = ["-c", "-b", self._baseline_name, test_name]
+            else:
+                genargs = ["-g", self._baseline_name, "-o", test_name,
+                           "--baseline-root ", self._baseline_area]
+                compargs = ["-c", self._baseline_name, test_name,
+                            "--baseline-root ", self._baseline_area]
+
+            #if test_name == "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A":
+            #    genargs.append("--wait")
+            #    compargs.append("--wait")
+            self._create_test(genargs)
+
+            # Hist compare should pass
+            self._create_test(compargs)
+
+            print(os.environ.get('TESTRUNDIFF_ALTERNATE'))
+            # Change behavior
+            os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
+
+            print(os.environ.get('TESTRUNDIFF_ALTERNATE'))
+
+            # Hist compare should now fail
+            # TESTRUNDIFFRESUBMIT requires a second "Hist compare should now fail" check for after the resubmit on batch systems.
+            test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+            if test_name == "TESTRUNDIFF_P1.f19_g16_rx1.A":
+                self._create_test(compargs, test_id=test_id, run_errors=True)
+            else:
+                self._create_test(compargs, test_id=test_id)
+                timeout_arg = "--timeout={}".format(GLOBAL_TIMEOUT) if GLOBAL_TIMEOUT is not None else ""
+                expected_stat = CIME.utils.TESTS_FAILED_ERR_CODE
+                print("wpc8aa. Hist compare should now fail. run_cmd_assert_result. {}/wait_for_tests {} *{}/TestStatus. {} {}\n".format(TOOLS_DIR, timeout_arg, test_id, self._testroot, expected_stat))
+                run_cmd_assert_result(self, "{}/wait_for_tests {} *{}/TestStatus".format(TOOLS_DIR, timeout_arg, test_id),
+                                      from_dir=self._testroot, expected_stat=expected_stat)
+                print("wpc8ab\n")
+
+            # compare_test_results should detect the fail
+            cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
+                    .format(TOOLS_DIR, self._testroot, test_id)
+            output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+            print("wpc 8a. cpr_cmd output is: {}".format(output))
+
+            # use regex
             expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
             the_match = expected_pattern.search(output)
             self.assertNotEqual(the_match, None,
-                                msg="Cmd \n '%s' \n failed to display failed test in output:\n\n%s\n\n%s" % (cpr_cmd, output, test_name))
+                                msg="Cmd '%s' failed to display failed test %s in output:\n%s" % (cpr_cmd, test_name, output))
 
-        # Bless
-        run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
-                        .format(TOOLS_DIR, self._testroot, test_id))
+            # Bless
+            run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
+                            .format(TOOLS_DIR, self._testroot, test_id))
 
-        # Hist compare should now pass again
-        self._create_test(compargs)
+            # Hist compare should now pass again
+            self._create_test(compargs)
+            print(os.environ.get('TESTRUNDIFF_ALTERNATE'))
+            os.environ.pop("TESTRUNDIFF_ALTERNATE")
+            print(os.environ.get('TESTRUNDIFF_ALTERNATE'))
 
-        verify_perms(self, self._baseline_area)
+            verify_perms(self, self._baseline_area)
 
     ###############################################################################
     def test_rebless_namelist(self):

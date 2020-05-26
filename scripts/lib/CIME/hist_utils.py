@@ -219,6 +219,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     all_success = True
     num_compared = 0
     comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(casename, from_dir1, suffix1, from_dir2, suffix2)
+    print("wpc9b. Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(casename, from_dir1, suffix1, from_dir2, suffix2))
     multiinst_driver_compare = False
     archive = case.get_env('archive')
     ref_case = case.get_value("RUN_REFCASE")
@@ -266,8 +267,10 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                     comments += "    {} {} {}\n".format(hist1, DIFF_COMMENT, hist2)
                 comments += "    cat " + cprnc_log_file + "\n"
                 expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
+                print("wpc9c. expected_log_file{} cprnc_log_file{}'\n".format(expected_log_file, cprnc_log_file))
                 if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
                     try:
+                        print("wpc9d. (os.path.exists(expected_log_file){} filecmp.cmp(cprnc_log_file, expected_log_file)){}'\n".format((os.path.exists(expected_log_file), filecmp.cmp(cprnc_log_file, expected_log_file))))
                         safe_copy(cprnc_log_file, casedir)
                     except (OSError, IOError) as _:
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
@@ -402,6 +405,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
+    print("wpc9a. case={} rundir={} basecmp_dir={} outfile_suffix={}".format(case,rundir,basecmp_dir,outfile_suffix))
     success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)

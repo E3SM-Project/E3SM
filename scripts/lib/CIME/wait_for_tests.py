@@ -350,6 +350,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         test_status_filepath = test_path
 
     logging.debug("Watching file: '{}'".format(test_status_filepath))
+    print(("wpc5. Watching file: '{}'".format(test_status_filepath)))
     test_log_path = os.path.join(os.path.dirname(test_status_filepath), ".internal_test_status.log")
 
     # We don't want to make it a requirement that wait_for_tests has write access
@@ -382,10 +383,14 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
                     time.sleep(SLEEP_INTERVAL_SEC)
                     logging.debug("Waiting for test to finish")
                 else:
+                    print("\n")
+                    print(ts.phase_statuses_dump())
+                    print("wpc5a. OVERALL: {}\n\n".format(test_status))
                     results.put( (test_name, test_path, test_status) )
                     break
 
             else:
+                print("wpc5b\n")
                 if (wait and not SIGNAL_RECEIVED):
                     logging.debug("File '{}' does not yet exist".format(test_status_filepath))
                     time.sleep(SLEEP_INTERVAL_SEC)
@@ -400,6 +405,7 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
     results = queue.Queue()
 
     for test_path in test_paths:
+        print("wpc3aa: {} {}".format(test_path, test_paths))
         t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run))
         t.daemon = True
         t.start()
@@ -411,6 +417,7 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
     completed_test_paths = []
     while (not results.empty()):
         test_name, test_path, test_status = results.get()
+        print("wpc3ab: {} {} {}".format(test_name, test_path, test_status))
         if (test_name in test_results):
             prior_path, prior_status = test_results[test_name]
             if (test_status == prior_status):
@@ -420,10 +427,12 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
 
         test_results[test_name] = (test_path, test_status)
         completed_test_paths.append(test_path)
+        print("wpc3ac: {} {}".format(completed_test_paths, test_results[test_name]))
 
     expect(set(test_paths) == set(completed_test_paths),
            "Missing results for test paths: {}".format(set(test_paths) - set(completed_test_paths)))
-
+    print("wpc3a: {}".format(test_results))
+    print("\n")
     return test_results
 
 ###############################################################################
@@ -449,11 +458,15 @@ def wait_for_tests(test_paths,
         test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak, no_run)
 
     all_pass = True
+    print("wpc3: {}".format(test_results.items()))
+    logging.info("wpc4: {}".format(test_results.items()))
+    print(all_pass)
     for test_name, test_data in sorted(test_results.items()):
         test_path, test_status = test_data
         logging.info("Test '{}' finished with status '{}'".format(test_name, test_status))
         logging.info("    Path: {}".format(test_path))
         all_pass &= test_status == TEST_PASS_STATUS
+        print(all_pass)
 
         if update_success:
             caseroot = os.path.dirname(test_data[0])
@@ -464,5 +477,5 @@ def wait_for_tests(test_paths,
 
     if cdash_build_name:
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, force_log_upload)
-
+    print(all_pass)
     return all_pass
