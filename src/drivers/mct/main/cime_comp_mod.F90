@@ -683,6 +683,7 @@ contains
     time_brun = mpi_wtime()
 
     !--- Initialize multiple driver instances, if requested ---
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
     call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
@@ -1323,7 +1324,6 @@ contains
        write(logunit,F00) 'Initialize each component: atm, lnd, rof, ocn, ice, glc, wav, esp, iac'
        call shr_sys_flush(logunit)
     endif
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
 
     call t_startf('CPL:comp_init_pre_all')
     call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
@@ -3428,8 +3428,6 @@ contains
     character        :: date*8, time*10, zone*5
 
     !-------------------------------------------------------------------------------
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
-
     call date_and_time (date, time, zone, values)
     cdate(1:2) = date(5:6)
     cdate(3:3) = '/'
