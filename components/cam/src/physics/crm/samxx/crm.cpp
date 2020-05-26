@@ -45,6 +45,22 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                          crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_qrad_p, crm_output_timing_factor_p, 
                          lat0_p, long0_p, gcolp_p, crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p);
 
+  copy_outputs(crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
+               crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_temperature_p, 
+               crm_rad_qv_p, crm_rad_qc_p, crm_rad_qi_p, crm_rad_cld_p, crm_output_timing_factor_p, 
+               crm_output_prectend_p, crm_output_precstend_p, crm_output_cld_p, crm_output_cldtop_p, 
+               crm_output_gicewp_p, crm_output_gliqwp_p, crm_output_mctot_p, crm_output_mcup_p, crm_output_mcdn_p, 
+               crm_output_mcuup_p, crm_output_mcudn_p, crm_output_qc_mean_p, crm_output_qi_mean_p, crm_output_qs_mean_p, 
+               crm_output_qg_mean_p, crm_output_qr_mean_p, crm_output_mu_crm_p, crm_output_md_crm_p, crm_output_eu_crm_p, 
+               crm_output_du_crm_p, crm_output_ed_crm_p, crm_output_flux_qt_p, crm_output_flux_u_p, crm_output_flux_v_p, 
+               crm_output_fluxsgs_qt_p, crm_output_tkez_p, crm_output_tkesgsz_p, crm_output_tkz_p, crm_output_flux_qp_p, 
+               crm_output_precflux_p, crm_output_qt_trans_p, crm_output_qp_trans_p, crm_output_qp_fall_p, crm_output_qp_evp_p, 
+               crm_output_qp_src_p, crm_output_qt_ls_p, crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, crm_output_cltot_p, 
+               crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, 
+               crm_output_qiltend_p, crm_output_tk_p, crm_output_tkh_p, crm_output_qcl_p, crm_output_qci_p, crm_output_qpl_p, crm_output_qpi_p, 
+               crm_output_z0m_p, crm_output_taux_p, crm_output_tauy_p, crm_output_precc_p, crm_output_precl_p, crm_output_precsc_p, 
+               crm_output_precsl_p, crm_output_prec_crm_p);
+
   allocate();
 
   init_values();

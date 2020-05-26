@@ -47,7 +47,7 @@ void pressure() {
     f(k,j,i,icrm) = p(k,j+offy_p,i+offx_p,icrm);
 	});
 
-  #if 0
+  #ifndef USE_ORIG_FFT
 
     yakl::FFT<nx> fftx;
     yakl::FFT<fftySize> ffty;
@@ -202,7 +202,7 @@ void pressure() {
     f(k,j,i,icrm) = ff(k,j,i,icrm);
 	});
 
-  #if 0
+  #ifndef USE_ORIG_FFT
 
     if (RUN3D) {
       // for (int k=0; k<nzslab; k++) {

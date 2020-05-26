@@ -40,7 +40,7 @@ void setperturb() {
   //     do i = 1,nx
   //       do icrm = 1 , ncrms
   parallel_for( Bounds<4>(perturb_num_layers,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) *  t0(k,icrm) / t02(k,icrm);
+    t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) * t0(k,icrm) / t02(k,icrm);
   });
 }
 
