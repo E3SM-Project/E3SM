@@ -24,8 +24,8 @@ module accelerate_crm_mod
     use params, only: asyncid, rc=>crm_rknd, r8
 
     implicit none
+    public
 
-    ! private module variables
     real(r8), parameter :: coef = 1._r8 / dble(nx * ny)  ! coefficient for horizontal averaging
     logical :: crm_accel_uv  ! (false) apply MSA only to scalar fields (T and QT)
                              ! (true) apply MSA to winds (U/V) and scalar fields
@@ -33,12 +33,6 @@ module accelerate_crm_mod
     ! public module variables
     logical :: use_crm_accel  ! use MSA if true
     real(r8) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
-
-    private :: coef, crm_accel_uv
-    public :: use_crm_accel, crm_accel_factor
-    public :: accelerate_crm
-    public :: crm_accel_nstop
-    public :: crm_accel_init
 
   contains
     subroutine crm_accel_init()
@@ -284,6 +278,7 @@ module accelerate_crm_mod
           enddo
         enddo
       enddo
+
       !$acc parallel loop collapse(4) async(asyncid)
       do k = 1, nzm
         do j = 1 , ny

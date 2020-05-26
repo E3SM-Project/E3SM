@@ -54,15 +54,11 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
 	//       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // calculate tendency * dtn
-    real tmp = t(k,j+offy_s,i+offx_s,icrm) * crm_accel_coef;
-    yakl::atomicAdd(tbaccel(k,icrm),tmp);
-    tmp = (qcl(k,j,i,icrm) + qci(k,j,i,icrm) + qv(k,j,i,icrm)) * crm_accel_coef;
-    yakl::atomicAdd(qtbaccel(k,icrm),tmp);
+    yakl::atomicAdd( tbaccel(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) * crm_accel_coef );
+    yakl::atomicAdd( qtbaccel(k,icrm) , (qcl(k,j,i,icrm) + qci(k,j,i,icrm) + qv(k,j,i,icrm)) * crm_accel_coef );
     if (crm_accel_uv) {
-      tmp = u(k,j+offy_u,i+offx_u,icrm) * crm_accel_coef;
-      yakl::atomicAdd(ubaccel(k,icrm),tmp);
-      tmp = v(k,j+offy_v,i+offx_v,icrm) * crm_accel_coef;
-      yakl::atomicAdd(vbaccel(k,icrm),tmp);
+      yakl::atomicAdd( ubaccel(k,icrm) , u(k,j+offy_u,i+offx_u,icrm) * crm_accel_coef );
+      yakl::atomicAdd( vbaccel(k,icrm) , v(k,j+offy_v,i+offx_v,icrm) * crm_accel_coef );
     }
 	});
 
@@ -70,8 +66,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //!! Compute the accelerated tendencies
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  bool1d     ceaseDev ("ceaseTmp",1);
-  boolHost1d ceaseHost("ceaseTmp",1);
+  ScalarLiveOut<bool> ceaseflag_liveout(false);
 
   // for (int k=0; k<nzm; k++) {
 	//  for (int icrm=0; icrm<ncrms; icrm++) {
@@ -83,12 +78,10 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
       vtend_acc(k,icrm) = vbaccel(k,icrm) - v0(k,icrm);
     }
     if (abs(ttend_acc(k,icrm)) > ttend_threshold) {
-      ceaseDev(0) = true;
+      ceaseflag_liveout = true;
     }
 	});
-  ceaseDev.deep_copy_to(ceaseHost);
-  yakl::fence();
-  ceaseflag = ceaseHost(0);
+  ceaseflag = ceaseflag_liveout.hostRead();
 
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -151,11 +144,11 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
 	//     for (int i=0; i<nx; i++) {
 	//       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    if (micro_field(idx_qt,k,j,i,icrm) < 0.0) {
-      yakl::atomicAdd(qneg(k,icrm),micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm)); 
+    if (micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) < 0.0) {
+      yakl::atomicAdd( qneg(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) ); 
     }
     else {
-      yakl::atomicAdd(qpoz(k,icrm),micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm));
+      yakl::atomicAdd( qpoz(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) );
     }
 	});
 
@@ -179,8 +172,8 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
       // Partition micro_field == qv + qcl + qci following these rules:
       //    (1) attempt to satisfy purely by adjusting qv
       //    (2) adjust qcl and qci only if needed to ensure positivity
-      if (micro_field(idx_qt,k,j,i,icrm) <= 0.0) {
-        qv(k,j,i,icrm) = 0.0;
+      if (micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) < 0.0) {
+        qv (k,j,i,icrm) = 0.0;
         qcl(k,j,i,icrm) = 0.0;
         qci(k,j,i,icrm) = 0.0;
       } else {
@@ -198,17 +191,18 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
 	});
 }
 
-void crm_accel_nstop(int &nstop) {
 
+
+void crm_accel_nstop(int &nstop) {
   if(nstop%static_cast<int>((1+crm_accel_factor)) != 0) {
     std::cout << "CRM acceleration unexpected exception:\n";
     std::cout << "(1+crm_accel_factor) does not divide equally into nstop\n";
     std::cout << "nstop = " <<  nstop << std::endl;
     std::cout << "crm_accel_factor = " << crm_accel_factor << std::endl;
     exit(-1);
-  }
-  else {
+  } else {
     nstop = nstop / (1 + crm_accel_factor);
   }
-
 }
+
+

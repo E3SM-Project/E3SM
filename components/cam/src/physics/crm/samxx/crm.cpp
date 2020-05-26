@@ -29,14 +29,9 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
   pcols = pcols_in;
   ncrms = ncrms_in;
   igstep = igstep_in;
-
   use_crm_accel = use_crm_accel_in;
   crm_accel_factor = crm_accel_factor_in;
   crm_accel_uv = crm_accel_uv_in;
-
-  use_crm_accel = false;
-  crm_accel_factor = 1.;
-  crm_accel_uv = false;
 
   create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p, crm_input_zmid_p, crm_input_zint_p, 
                          crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p, crm_input_ul_p, crm_input_vl_p, 
