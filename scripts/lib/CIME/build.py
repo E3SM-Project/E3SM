@@ -173,6 +173,8 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
+    # Components-specific cmake args
+    cmp_cmake_args = ""
     for model, _, _, _, config_dir in complist:
         if buildlist is not None and model.lower() not in buildlist:
             continue
@@ -181,7 +183,7 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
         if model == "cpl":
             config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
 
-        _create_build_metadata_for_component(config_dir, libroot, bldroot, case)
+        cmp_cmake_args += _create_build_metadata_for_component(config_dir, libroot, bldroot, case)
 
     # Call CMake
     cmake_args = get_standard_cmake_args(case, sharedpath)
@@ -191,7 +193,12 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
         cmake_args += " -GNinja "
         cmake_env += "PATH={}:$PATH ".format(ninja_path)
 
-    cmake_cmd = "{}cmake {} {}/components".format(cmake_env, cmake_args, srcroot)
+    # Glue all pieces together:
+    #  - cmake environment
+    #  - common (i.e. project-wide) cmake args
+    #  - component-specific cmake args
+    #  - path to src folder
+    cmake_cmd = "{}cmake {} {} {}/components".format(cmake_env, cmake_args, cmp_cmake_args, srcroot)
     stat = 0
     if dry_run:
         logger.info("CMake cmd:\ncd {} && {}\n\n".format(bldroot, cmake_cmd))
@@ -454,7 +461,8 @@ def _create_build_metadata_for_component(config_dir, libroot, bldroot, case):
     bc_path = os.path.join(config_dir, "buildlib_cmake")
     expect(os.path.exists(bc_path), "Missing: {}".format(bc_path))
     buildlib = imp.load_source("buildlib_cmake", os.path.join(config_dir, "buildlib_cmake"))
-    buildlib.buildlib(bldroot, libroot, case)
+    cmake_args = buildlib.buildlib(bldroot, libroot, case)
+    return "" if cmake_args is None else cmake_args
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all, clean_depends):

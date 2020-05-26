@@ -33,6 +33,7 @@ _TESTS = {
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
             "SMS.r05_r05.I1850CLM45CN",
+            "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-lulcc_sville",
             )
         },
 
@@ -58,6 +59,7 @@ _TESTS = {
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_ne4.FC5AV1C-L.cam-chem_pp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
@@ -183,10 +185,35 @@ _TESTS = {
             )
         },
 
+    #e3sm MMF tests for development
+    "e3sm_mmf" : {
+        "time" : "02:00:00",
+        "tests" : (
+            # MMF tests
+            "ERP_Ln9_P96.ne4_ne4.F-MMF1-TEST.cam-crmout",
+            "ERP_Ln9_P96.ne4pg2_ne4pg2.F-MMF2-TEST",
+            "ERP_Ln9_P96.ne4_ne4.F-MMF2-ECPP-TEST",
+            "SMS_D_Ln3_P96.ne4_ne4.F-MMF1-TEST",
+            "SMS_D_Ln3_P96.ne4pg2_ne4pg2.F-MMF2-TEST",
+            # non-MMF tests with RRTMGP
+            "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.cam-rrtmgp",
+            )
+        },
+
     #e3sm tests to mimic production runs
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
         "tests"   : "SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6"
+        },
+
+    #e3sm tests to mimic BGC production runs
+    "e3sm_bgcprod" : {
+        "tests"   :  (
+               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.allactive-v1bgc_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRD_CNPRDCTC_20TR.allactive-v1bgc",
+               "SMS_Ld2.ne30_oECv3_ICG.BGCEXP_BCRC_CNPECACNT_1850S.allactive-v1bgceca_1850",
+               "SMS_Ld2.ne30_oECv3_ICG.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
+               )
         },
 
     "fates" : {
