@@ -781,6 +781,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">sems-env</command>
+        <command name="load">acme-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
         <command name="load">sems-cmake/3.12.2</command>
@@ -789,7 +790,7 @@
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">sems-openmpi/1.10.5</command>
-        <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
       <modules mpilib="mpi-serial">
         <command name="load">sems-netcdf/4.4.1/exo</command>
