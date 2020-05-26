@@ -1767,18 +1767,27 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             print(os.environ.get('TESTRUNDIFF_ALTERNATE'))
 
             # Hist compare should now fail
-            # TESTRUNDIFFRESUBMIT requires a second "Hist compare should now fail" check for after the resubmit on batch systems.
             test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
             if test_name == "TESTRUNDIFF_P1.f19_g16_rx1.A":
                 self._create_test(compargs, test_id=test_id, run_errors=True)
             else:
                 self._create_test(compargs, test_id=test_id)
+                '''
                 timeout_arg = "--timeout={}".format(GLOBAL_TIMEOUT) if GLOBAL_TIMEOUT is not None else ""
                 expected_stat = CIME.utils.TESTS_FAILED_ERR_CODE
+
+                testdir = os.path.join(cls._testroot, casename)
                 print("wpc8aa. Hist compare should now fail. run_cmd_assert_result. {}/wait_for_tests {} *{}/TestStatus. {} {}\n".format(TOOLS_DIR, timeout_arg, test_id, self._testroot, expected_stat))
-                run_cmd_assert_result(self, "{}/wait_for_tests {} *{}/TestStatus".format(TOOLS_DIR, timeout_arg, test_id),
-                                      from_dir=self._testroot, expected_stat=expected_stat)
+                #run_cmd_assert_result(self, "{}/wait_for_tests {} *{}/TestStatus".format(TOOLS_DIR, timeout_arg, test_id),
+                #                      from_dir=self._testroot, expected_stat=expected_stat)
+
+                #testdir = os.path.join(cls._testroot, casename)
+                expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
+                the_match = expected_pattern.search(output)
+                self.assertNotEqual(the_match, None,
+                                    msg="Cmd '%s' failed to display failed test %s in output:\n%s" % (cpr_cmd, test_name, output))
                 print("wpc8ab\n")
+                '''
 
             # compare_test_results should detect the fail
             cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
