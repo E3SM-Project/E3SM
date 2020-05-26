@@ -1008,7 +1008,7 @@ subroutine compute_sfc_terms(nlev, nlevi, shcol, dtime, rho_zi, uw_sfc, vw_sfc, 
 
      ! Apply the surface fluxes explicitly for temperature and moisture
      rdp        = rdp_zt(icol,nlev)
-     fac       =  dtime * ggr * rho * rdp !a common factor for the following 3 equations
+     fac       =  dtime * (ggr * rho * rdp) !a common factor for the following 3 equations
 
      thetal(icol,nlev) = thetal(icol,nlev) + fac * wthl_sfc(icol)
      qw(icol,nlev)     = qw(icol,nlev)     + fac * wqw_sfc(icol)
