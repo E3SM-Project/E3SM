@@ -87,6 +87,16 @@
   </compset>
 
   <compset>
+    <alias>F1850S-AR5-superfast</alias>
+    <lname>1850S_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TRS-AR5-superfast</alias>
+    <lname>20TRS_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
     <alias>F1950C5-CMIP6-LR</alias>
     <lname>1950_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>

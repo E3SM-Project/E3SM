@@ -46,6 +46,7 @@ character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [
                                                        !  linoz_mam3 | linoz_mam4_resus |
                                                        !  linoz_mam4_resus_mom |
                                                        !  linoz_mam4_resus_mom_soag |
+                                                       !  superfast_mam4_resus_mom_soag |
                                                        !  super_fast_llnl | super_fast_llnl_mam3 | 
                                                        !  waccm_mozart_mam3 | none
 character(len=16) :: waccmx_opt           = unset_str  ! WACCMX run option [ionosphere | neutral | off
@@ -383,6 +384,7 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_soag') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
+                      .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &

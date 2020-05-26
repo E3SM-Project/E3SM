@@ -72,6 +72,16 @@
 <!-- E3SM v1 science compsets -->
 
 <compset>
+  <alias>A_WCYCL1850_AR5emis_superfast</alias>
+  <lname>1850_CAM5%AR5sf_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL20TR_AR5emis_superfast</alias>
+  <lname>20TR_CAM5%AR5sf_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>A_WCYCL2000</alias>
   <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
