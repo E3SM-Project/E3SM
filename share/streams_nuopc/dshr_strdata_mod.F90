@@ -41,7 +41,6 @@ module dshr_strdata_mod
 
   public  :: shr_strdata_type
   public  :: shr_strdata_init_from_xml
-  public  :: shr_strdata_init_from_inline
   public  :: shr_strdata_restRead
   public  :: shr_strdata_restWrite
   public  :: shr_strdata_setOrbs
@@ -94,7 +93,6 @@ module dshr_strdata_mod
      integer                        :: nstreams                        ! number of streams
      integer                        :: nvectors                        ! number of vectors
      integer                        :: logunit                         ! stdout unit
-     integer                        :: mpicom                          ! mpi info
      integer                        :: my_task                         ! mpi info
      integer                        :: io_type                         ! pio info
      integer                        :: io_format                       ! pio info
@@ -128,14 +126,13 @@ module dshr_strdata_mod
 contains
 !===============================================================================
 
-  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, mpicom, compid, logunit, rc)
+  subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, compid, logunit, rc)
 
     ! input/output variables
     type(shr_strdata_type)     , intent(inout) :: sdat
     character(len=*)           , intent(in)    :: xmlfilename
     type(ESMF_Mesh)            , intent(in)    :: model_mesh
     type(ESMF_Clock)           , intent(in)    :: clock
-    integer                    , intent(in)    :: mpicom
     integer                    , intent(in)    :: compid
     integer                    , intent(in)    :: logunit
     integer                    , intent(out)   :: rc
@@ -149,9 +146,6 @@ contains
 
     rc = ESMF_SUCCESS
 
-    ! Initialize sdat mpi info
-    sdat%mpicom = mpicom
-    call mpi_comm_rank(sdat%mpicom, sdat%my_task, ierr)
 
     ! Initialize log unit
     sdat%logunit = logunit
@@ -177,75 +171,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_strdata_init_from_xml
-
-  !===============================================================================
-  subroutine shr_strdata_init_from_inline(sdat, mpicom, logunit, compid, &
-       model_clock, model_mesh, stream_meshfile, &
-       stream_yearFirst, stream_yearLast, stream_yearAlign, &
-       stream_offset, stream_taxmode, &
-       stream_fldlistFile, stream_fldListModel, stream_fileNames, rc)
-
-    ! Set strdata and stream info from fortran interface.
-    ! Note: When this is called, previous settings are reset to defaults
-    ! and then the values passed are used.
-
-    ! input/output arguments
-    type(shr_strdata_type) , intent(inout) :: sdat
-    integer                , intent(in)    :: mpicom
-    integer                , intent(in)    :: logunit
-    integer                , intent(in)    :: compid
-    type(ESMF_Clock)       , intent(in)    :: model_clock
-    type(ESMF_Mesh)        , intent(in)    :: model_mesh
-    character(len=*)       , intent(in)    :: stream_meshfile
-    integer                , intent(in)    :: stream_yearFirst
-    integer                , intent(in)    :: stream_yearLast
-    integer                , intent(in)    :: stream_yearAlign
-    integer                , intent(in)    :: stream_offset
-    character(len=*)       , intent(in)    :: stream_taxmode
-    character(len=*)       , intent(in)    :: stream_fldlistFile(:)
-    character(len=*)       , intent(in)    :: stream_fldlistModel(:)
-    character(len=*)       , intent(in)    :: stream_fileNames(:)
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    integer :: ierr
-    character(*),parameter  :: subName = "(shr_strdata_from_inline) "
-    character(*),parameter  :: F00 = "('(shr_strdata_inline) ',8a)"
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Assume only 1 stream
-    sdat%nstreams = 1
-    allocate(sdat%pstrm(1))
-
-    ! Initialize sdat mpi info
-    sdat%mpicom = mpicom
-    call mpi_comm_rank(sdat%mpicom, sdat%my_task, ierr)
-
-    ! Initialize log unit
-    sdat%logunit = logunit
-
-    ! Initialize sdat  pio
-    sdat%pio_subsystem => shr_pio_getiosys(compid)
-    sdat%io_type       =  shr_pio_getiotype(compid)
-    sdat%io_format     =  shr_pio_getioformat(compid)
-
-    ! Initialize sdat stream (the following call will allocate the memory for sdat%stream)
-    call shr_stream_init_from_inline(sdat%stream, stream_meshfile, &
-         stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
-         stream_fldlistFile, stream_fldListModel, stream_fileNames, logunit)
-
-    ! Initialize sdat model domain
-    sdat%model_mesh = model_mesh
-    call shr_strdata_init_model_domain(sdat, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Finish initializing sdat
-    call shr_strdata_init(sdat, model_clock, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine shr_strdata_init_from_inline
 
   !===============================================================================
   subroutine shr_strdata_init_model_domain( sdat, rc)
@@ -572,6 +497,7 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
+    type(ESMF_VM)           :: vm
     type(var_desc_t)        :: varid
     type(file_desc_t)       :: pioid
     integer                 :: rcode
@@ -585,12 +511,15 @@ contains
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine the file to open
     if (sdat%my_task == master_task) then
        call shr_stream_getData(sdat%stream(stream_index), 1, filename)
     end if
-    call shr_mpi_bcast(filename, sdat%mpicom, 'streamfile')
+    call ESMF_VMBroadCast(vm, filename, CL, 0, rc=rc)
+
 
     ! Open the file
     rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(filename), pio_nowrite)
@@ -625,7 +554,7 @@ contains
   end subroutine shr_strdata_get_stream_domain
 
   !===============================================================================
-  subroutine shr_strdata_advance(sdat, ymd, tod, mpicom, logunit, istr, timers, rc)
+  subroutine shr_strdata_advance(sdat, ymd, tod, logunit, istr, timers, rc)
 
     ! -------------------------------------------------------
     ! Mismatching calendars: 4 cases
@@ -674,7 +603,6 @@ contains
     type(shr_strdata_type) ,intent(inout)       :: sdat
     integer                ,intent(in)          :: ymd    ! current model date
     integer                ,intent(in)          :: tod    ! current model date
-    integer                ,intent(in)          :: mpicom
     integer                ,intent(in)          :: logunit
     character(len=*)       ,intent(in)          :: istr
     logical                ,intent(in),optional :: timers
@@ -759,11 +687,9 @@ contains
 
     if (.not.ltimers) call t_adj_detailf(tadj)
 
-    call t_barrierf(trim(lstr)//trim(timname)//'_total_BARRIER',mpicom)
+!    call t_barrierf(trim(lstr)//trim(timname)//'_total_BARRIER',mpicom)
     call t_startf(trim(lstr)//trim(timname)//'_total')
 
-    call mpi_comm_size(mpicom, npes, ierr)
-    call mpi_comm_rank(mpicom, my_task,ierr)
 
     sdat%ymd = ymd
     sdat%tod = tod
@@ -804,12 +730,12 @@ contains
           ! fldbun_stream_ub to fldbun_stream_lb and read in new fldbun_stream_ub data
           ! ---------------------------------------------------------
 
-          call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
+!          call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
           call t_startf(trim(lstr)//trim(timname)//'_readLBUB')
 
           select case(sdat%stream(ns)%readmode)
           case ('single')
-             call shr_strdata_readLBUB(sdat%mpicom, sdat%my_task, sdat%logunit, sdat%stream(ns), &
+             call shr_strdata_readLBUB(sdat%my_task, sdat%logunit, sdat%stream(ns), &
                   sdat%pstrm(ns)%stream_mesh, sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
                   sdat%pstrm(ns)%fldbun_stream_lb, sdat%pstrm(ns)%fldbun_stream_ub, &
                   sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, &
@@ -1213,7 +1139,7 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_readLBUB(mpicom, my_task, logunit, stream, stream_mesh, &
+  subroutine shr_strdata_readLBUB(my_task, logunit, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_stream_lb, fldbun_stream_ub, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        mDate, mSec, mDateLB, mSecLB, mDateUB, mSecUB, newData, istr, rc)
@@ -1223,7 +1149,6 @@ contains
     !-------------------------------------------------------------------------
 
     ! input/output variables
-    integer                       ,intent(in)    :: mpicom
     integer                       ,intent(in)    :: my_task
     integer                       ,intent(in)    :: logunit
     type(shr_stream_streamType)   ,intent(inout) :: stream
@@ -1245,6 +1170,7 @@ contains
     integer                       ,intent(out)   :: rc
 
     ! local variables
+    type(ESMF_VM)                       :: vm
     integer                             :: nf
     integer                             :: rCode      ! return code
     logical                             :: fileexists
@@ -1267,6 +1193,9 @@ contains
     rc = ESMF_SUCCESS
 
     call t_startf(trim(istr)//'_setup')
+    ! allocate streamdat instance on all tasks
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     newData = .false.
     n_lb = -1
@@ -1294,10 +1223,11 @@ contains
        call t_stopf(trim(istr)//'_fbound')
 
        call t_startf(trim(istr)//'_bcast')
-       call shr_mpi_bcast(stream%calendar, mpicom)
-       call shr_mpi_bcast(ivals, mpicom)
-       call shr_mpi_bcast(filename_lb, mpicom)
-       call shr_mpi_bcast(filename_ub, mpicom)
+       call ESMF_VMBroadCast(vm, ivals, 6, 0, rc=rc)
+       call ESMF_VMBroadCast(vm, stream%calendar, CS, 0, rc=rc)
+       call ESMF_VMBroadCast(vm, filename_lb, CL, 0, rc=rc)
+       call ESMF_VMBroadCast(vm, filename_ub, CL, 0, rc=rc)
+
        mDateLB = ivals(1) ! Now all processors have the bounds
        mSecLB  = ivals(2)
        mDateUB = ivals(3)
@@ -1322,7 +1252,7 @@ contains
           call t_stopf(trim(istr)//'_LB_copy')
        else
           ! read lower bound of data
-          call shr_strdata_readstrm(mpicom, my_task, logunit, stream, stream_mesh, &
+          call shr_strdata_readstrm(my_task, logunit, stream, stream_mesh, &
                fldlist_stream, fldlist_model, fldbun_stream_lb, &
                pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
                filename_lb, n_lb, istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
@@ -1332,7 +1262,7 @@ contains
 
     if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
        newdata = .true.
-       call shr_strdata_readstrm(mpicom, my_task, logunit, stream, stream_mesh, &
+       call shr_strdata_readstrm(my_task, logunit, stream, stream_mesh, &
             fldlist_stream, fldlist_model, fldbun_stream_ub, &
             pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
             filename_ub, n_ub, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
@@ -1355,7 +1285,7 @@ contains
   end subroutine shr_strdata_readLBUB
 
   !===============================================================================
-  subroutine shr_strdata_readstrm(mpicom, my_task, logunit, stream, stream_mesh, &
+  subroutine shr_strdata_readstrm(my_task, logunit, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_stream, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        filename, nt, istr, boundstr, rc)
@@ -1364,7 +1294,6 @@ contains
     ! the stream is read
 
     ! input/output variables
-    integer                     , intent(in)            :: mpicom
     integer                     , intent(in)            :: my_task
     integer                     , intent(in)            :: logunit
     type(shr_stream_streamType) , intent(inout)         :: stream
@@ -1405,7 +1334,7 @@ contains
     rc = ESMF_SUCCESS
 
     ! Set up file to read from
-    call t_barrierf(trim(istr)//'_BARRIER', mpicom)
+!    call t_barrierf(trim(istr)//'_BARRIER', mpicom)
     if (my_task == master_task) then
        inquire(file=trim(fileName),exist=fileExists)
        if (.not. fileExists) then
