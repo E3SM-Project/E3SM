@@ -152,8 +152,8 @@ class SystemTestsCommon(object):
                 resub_val = self._case.get_value("RESUBMIT")
                 print("wpc0a. resub_val {}\n".format(resub_val))
             else:
-                print("wpc0b. resub_val {}\n".format(resub_val))
                 resub_val = 0
+                print("wpc0b. resub_val {}\n".format(resub_val))
 
             self.run_phase()
             if self._case.get_value("GENERATE_BASELINE") and resub_val == 0:
