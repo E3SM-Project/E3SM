@@ -683,7 +683,6 @@ contains
     time_brun = mpi_wtime()
 
     !--- Initialize multiple driver instances, if requested ---
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
     call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
@@ -1011,6 +1010,7 @@ contains
     else
        call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
     end if
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
 
     !----------------------------------------------------------
     ! Read shr_flux  namelist settings
