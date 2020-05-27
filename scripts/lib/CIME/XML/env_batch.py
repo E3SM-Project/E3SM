@@ -709,6 +709,7 @@ class EnvBatch(EnvBase):
         if submitcmd.startswith("ssh"):
             # add ` before cd $CASEROOT and at end of command
             submitcmd = submitcmd.replace("cd $CASEROOT","\'cd $CASEROOT") + "\'"
+
         if dry_run:
             return submitcmd
         else:

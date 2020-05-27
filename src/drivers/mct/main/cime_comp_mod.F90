@@ -1010,6 +1010,7 @@ contains
     else
        call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
     end if
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
 
     !----------------------------------------------------------
     ! Read shr_flux  namelist settings
@@ -3427,8 +3428,6 @@ contains
     character        :: date*8, time*10, zone*5
 
     !-------------------------------------------------------------------------------
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
-
     call date_and_time (date, time, zone, values)
     cdate(1:2) = date(5:6)
     cdate(3:3) = '/'
@@ -4189,7 +4188,6 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_rof_setup_send()
-
     !----------------------------------------------------
     ! rof prep-merge
     !----------------------------------------------------
