@@ -49,7 +49,6 @@ module dshr_mod
   public  :: dshr_model_initphase
   public  :: dshr_init
   public  :: dshr_mesh_init
-  public  :: dshr_mesh_reset_mask
   public  :: dshr_set_runclock
   public  :: dshr_restart_read
   public  :: dshr_restart_write
@@ -62,42 +61,10 @@ module dshr_mod
   private :: dshr_alarm_init
   private :: dshr_time_init
 
-  ! Clock and alarm options
-  character(len=*), private, parameter :: &
-       optNONE           = "none"      , &
-       optNever          = "never"     , &
-       optNSteps         = "nsteps"    , &
-       optNStep          = "nstep"     , &
-       optNSeconds       = "nseconds"  , &
-       optNSecond        = "nsecond"   , &
-       optNMinutes       = "nminutes"  , &
-       optNMinute        = "nminute"   , &
-       optNHours         = "nhours"    , &
-       optNHour          = "nhour"     , &
-       optNDays          = "ndays"     , &
-       optNDay           = "nday"      , &
-       optNMonths        = "nmonths"   , &
-       optNMonth         = "nmonth"    , &
-       optNYears         = "nyears"    , &
-       optNYear          = "nyear"     , &
-       optMonthly        = "monthly"   , &
-       optYearly         = "yearly"    , &
-       optDate           = "date"      , &
-       optIfdays0        = "ifdays0"
-
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
-
-  ! used/reused in module
-  logical                     :: isPresent
-  character(len=1024)         :: msgString
-  type(ESMF_FieldStatus_Flag) :: status
 
   ! Module data
   integer     , parameter :: master_task = 0
-  integer                 :: iunset = -999
-  integer     , parameter :: SecPerDay = 86400 ! Seconds per day
-  integer     , parameter :: dbug = 10
-  character(*), parameter :: modName =  "(dshr_mod)"
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -223,8 +190,7 @@ contains
 
   !===============================================================================
   subroutine dshr_mesh_init(gcomp, compid, logunit, compname, model_nxg, model_nyg, &
-       model_meshfile, model_maskfile, model_mesh, read_restart,  &
-       model_createmesh_fromfile, rc)
+       model_meshfile, model_maskfile, model_createmesh_fromfile, model_mesh, read_restart, rc)
 
     ! ----------------------------------------------
     ! Initialize model mesh
@@ -239,9 +205,9 @@ contains
     integer                    , intent(in)    :: model_nyg
     character(len=*)           , intent(in)    :: model_meshfile
     character(len=*)           , intent(in)    :: model_maskfile
+    character(len=*)           , intent(in)    :: model_createmesh_fromfile
     type(ESMF_Mesh)            , intent(out)   :: model_mesh
     logical                    , intent(out)   :: read_restart
-    character(len=*), optional , intent(in)    :: model_createmesh_fromfile
     integer                    , intent(out)   :: rc
 
     ! local varaibles
@@ -280,7 +246,7 @@ contains
     call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Set compid (for mct)
+    ! Set compid (for pio)
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
@@ -290,95 +256,93 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
 
+    ! Set single column values
+    call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) scmMode
+
     ! Obtain the data model mesh
     ! (1) if asked to create the mesh - create mesh from input file given by model_createmesh_fromfile
     ! (2) if single column - read in the data model domain file - and find the nearest neighbor
     ! (3) if not single column - obtain the mesh directly from the mesh input
 
-    if (trim(model_meshfile) == 'create_mesh') then
-       if (present(model_createmesh_fromfile)) then
-          call dshr_mesh_create_from_grid(trim(model_createmesh_fromfile), model_mesh, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       else
-          call shr_sys_abort('ERROR: need to pass model_createmesh_fromfile')
+    if (trim(model_meshfile) == 'undefined') then
+
+       ! TODO: verify that are only running on one processor here
+
+       call dshr_mesh_create_from_grid(trim(model_createmesh_fromfile), compid, model_mesh, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    else if (scmMode) then
+
+       ! verify that are only using 1 pe
+       if (my_task > 0) then
+          write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
+          call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
+       endif
+       ! obtain the single column lon and lat
+       call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) scmlon
+       call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) scmlat
+       if (my_task == master_task) then
+          write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
        end if
+       ! Read in the input mesh
+       mesh_global = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! Now create a single column mesh using the single column lats and lons and the global mesh
+       call  dshr_mesh_create_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_MeshDestroy(mesh_global)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     else
 
-       ! Set single column values
-       call NUOPC_CompAttributeGet(gcomp, name='single_column', value=cvalue, rc=rc)
+       ! Read in the input model mesh
+       model_mesh = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) scmMode
 
-       if (scmMode) then
-          ! verify that are only using 1 pe
-          if (my_task > 0) then
-             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
-             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
-          endif
-          ! obtain the single column lon and lat
-          call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
+       ! TODO: need a check that the mask file has the same grid as the model mesh
+       ! Reset the model mesh mask if the mask file is different from the mesh file
+       if (trim(model_meshfile) /= trim(model_maskfile)) then
+          pio_subsystem => shr_pio_getiosys(compid)
+          io_type       =  shr_pio_getiotype(compid)
+          io_format     =  shr_pio_getioformat(compid)
+
+          ! obtain lsize and model_gindex
+          call ESMF_MeshGet(model_mesh, elementdistGrid=distGrid, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          read(cvalue,*) scmlon
-          call NUOPC_CompAttributeGet(gcomp, name='scmlat', value=cvalue, rc=rc)
+          call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          read(cvalue,*) scmlat
-          if (my_task == master_task) then
-             write(logunit,*) ' scm mode, lon lat = ',scmmode, scmlon,scmlat
+          allocate(model_gindex(lsize))
+          allocate(elemMask(lsize))
+          call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=model_gindex, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! obtain model mask from separate model_maskfile (assume mask name on mask file)
+          rcode = pio_openfile(pio_subsystem, pioid, io_type, trim(model_maskfile), pio_nowrite)
+          call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+          rcode = pio_inq_varid(pioid, 'mask', varid) 
+          if ( rcode /= PIO_NOERR ) then
+             call shr_sys_abort(' ERROR: variable mask not found in file '//trim(model_maskfile))
           end if
-          ! Read in the input mesh
-          mesh_global = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          ! Now create a single column mesh using the single column lats and lons and the global mesh
-          call  dshr_mesh_create_from_scol(scmlon, scmlat, logunit, mesh_global, model_mesh, rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_MeshDestroy(mesh_global)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+          call pio_initdecomp(pio_subsystem, pio_int, (/model_nxg, model_nyg/), model_gindex, pio_iodesc)
+          call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
+          call pio_closefile(pioid)
+          call pio_freedecomp(pio_subsystem, pio_iodesc)
 
-       else
-
-          ! Read in the input model mesh
-          model_mesh = ESMF_MeshCreate(trim(model_meshfile), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+          ! rest the model mesh mask
+          call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          ! TODO: need a check that the mask file has the same grid as the model mesh
-          ! Reset the model mesh mask if the mask file is different from the mesh file
-          if (trim(model_meshfile) /= trim(model_maskfile)) then
-             pio_subsystem => shr_pio_getiosys(compid)
-             io_type       =  shr_pio_getiotype(compid)
-             io_format     =  shr_pio_getioformat(compid)
-
-             ! obtain lsize and model_gindex
-             call ESMF_MeshGet(model_mesh, elementdistGrid=distGrid, rc=rc)
-             if (ChkErr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-             if (ChkErr(rc,__LINE__,u_FILE_u)) return
-             allocate(model_gindex(lsize))
-             allocate(elemMask(lsize))
-             call ESMF_DistGridGet(distGrid, localDe=0, seqIndexList=model_gindex, rc=rc)
-             if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-             ! obtain model mask from separate model_maskfile (assume mask name on mask file)
-             rcode = pio_openfile(pio_subsystem, pioid, io_type, trim(model_maskfile), pio_nowrite)
-             call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-             rcode = pio_inq_varid(pioid, 'mask', varid) 
-             if ( rcode /= PIO_NOERR ) then
-                call shr_sys_abort(' ERROR: variable mask not found in file '//trim(model_maskfile))
-             end if
-             call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
-             call pio_initdecomp(pio_subsystem, pio_int, (/model_nxg, model_nyg/), model_gindex, pio_iodesc)
-             call pio_read_darray(pioid, varid, pio_iodesc, elemMask, rcode)
-             call pio_closefile(pioid)
-             call pio_freedecomp(pio_subsystem, pio_iodesc)
-
-             ! rest the model mesh mask
-             call ESMF_MeshSet(model_mesh, elementMask=elemMask, rc=rc)
-             if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-             deallocate(elemMask)
-             deallocate(model_gindex)
-          end if
-
+          deallocate(elemMask)
+          deallocate(model_gindex)
        end if
+
     end if
 
     if (my_task == master_task) then
@@ -388,99 +352,73 @@ contains
   end subroutine dshr_mesh_init
 
   !===============================================================================
-  subroutine dshr_mesh_reset_mask(mesh, rc)
-
-    ! Reset all elements of model_mesh mask to 1
-
-    use ESMF, only : ESMF_MeshGet, ESMF_DistGridGet, ESMF_MeshSet, ESMF_SUCCESS, ESMF_Mesh, ESMF_DistGrid
-
-    ! input/output variables
-    type(ESMF_Mesh), intent(inout) :: mesh
-
-    ! local variables
-    type(ESMF_DistGrid)            :: distGrid
-    integer, allocatable           :: elemMask(:)
-    integer                        :: lsize, rc
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call ESMF_MeshGet(mesh, elementdistGrid=distGrid, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_DistGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    print *,__FILE__,__LINE__,lsize
-
-    allocate(elemMask(lsize))
-    elemMask(:) = 1._r8
-    call ESMF_MeshSet(mesh, elementMask=elemMask, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    deallocate(elemMask)
-
-  end subroutine dshr_mesh_reset_mask
-
-  !===============================================================================
-  subroutine dshr_mesh_create_from_grid(filename, mesh, rc)
-
-    use netcdf , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_close, nf90_strerror
-    use netcdf , only : nf90_inq_dimid, nf90_inq_varid, nf90_get_var
-    use netcdf , only : nf90_inquire_dimension, nf90_inquire_variable
+  subroutine dshr_mesh_create_from_grid(filename, compid, mesh, rc)
 
     ! input/output variables
     character(len=*), intent(in)  :: filename
+    integer         , intent(in)  :: compid
     type(ESMF_Mesh) , intent(out) :: mesh
     integer         , intent(out) :: rc
 
     ! local variables
-    integer               :: ncid, ierr
-    integer               :: dimid_ni, dimid_nj, dimid_nv
-    integer               :: ni, nj, nv
-    integer               :: varid_xv, varid_yv
-    integer               :: maxIndex(2)
-    real(r8)              :: mincornerCoord(2)
-    real(r8)              :: maxcornerCoord(2)
-    type(ESMF_Grid)       :: lgrid
-    real(r8), allocatable :: xv(:,:,:), yv(:,:,:)
+    type(iosystem_desc_t), pointer :: pio_subsystem => null() ! pio info
+    integer                        :: io_type                 ! pio info
+    integer                        :: io_format               ! pio info
+    type(file_desc_t)              :: pioid
+    type(var_desc_t)               :: varid_xv, varid_yv
+    integer                        :: rcode
+    integer                        :: dimid_ni, dimid_nj, dimid_nv
+    integer                        :: ni, nj, nv
+    real(r8), allocatable          :: xv(:,:,:), yv(:,:,:)
+    integer                        :: maxIndex(2)
+    real(r8)                       :: mincornerCoord(2)
+    real(r8)                       :: maxcornerCoord(2)
+    type(ESMF_Grid)                :: lgrid
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
+    pio_subsystem => shr_pio_getiosys(compid)
+    io_type       =  shr_pio_getiotype(compid)
+    io_format     =  shr_pio_getioformat(compid)
+
     ! open file
-    ierr = nf90_open(filename, NF90_NOWRITE, ncid)
-    call nc_check_err(ierr, 'nf90_open', trim(filename))
+    rcode = pio_openfile(pio_subsystem, pioid, io_type, trim(filename), pio_nowrite)
+    call pio_check_err(rcode, 'error opening file '//trim(filename))
+    call PIO_seterrorhandling(pioid, PIO_BCAST_ERROR)
 
     ! get dimension ids
-    ierr = nf90_inq_dimid(ncid, 'ni', dimid_ni)
-    call nc_check_err(ierr, 'nf90_inq_dimid for ni', trim(filename))
-    ierr = nf90_inq_dimid(ncid, 'nj', dimid_nj)
-    call nc_check_err(ierr, 'nf90_inq_dimid for nj', trim(filename))
-    ierr = nf90_inq_dimid(ncid, 'nv', dimid_nv)
-    call nc_check_err(ierr, 'nf90_inq_dimid for nv', trim(filename))
+    rcode = pio_inq_dimid(pioid, 'ni', dimid_ni)
+    call pio_check_err(rcode, 'pio_inq_dimid for ni in file '//trim(filename))
+    rcode = pio_inq_dimid(pioid, 'nj', dimid_nj)
+    call pio_check_err(rcode, 'pio_inq_dimid for nj in file '//trim(filename))
+    rcode = pio_inq_dimid(pioid, 'nv', dimid_nv)
+    call pio_check_err(rcode, 'pio_inq_dimid for nj in file '//trim(filename))
 
     ! get dimension values
-    ierr = nf90_inquire_dimension(ncid, dimid_ni, len=ni)
-    call nc_check_err(ierr, 'nf90_inq_dimension for ni', trim(filename))
-    ierr = nf90_inquire_dimension(ncid, dimid_nj, len=nj)
-    call nc_check_err(ierr, 'nf90_inq_dimension for nj', trim(filename))
-    ierr = nf90_inquire_dimension(ncid, dimid_nv, len=nv)
-    call nc_check_err(ierr, 'nf90_inq_dimension for nv', trim(filename))
+    rcode = pio_inquire_dimension(pioid, dimid_ni, len=ni)
+    call pio_check_err(rcode, 'pio_inq_dimension for ni in file '//trim(filename))
+    rcode = pio_inquire_dimension(pioid, dimid_nj, len=nj)
+    call pio_check_err(rcode, 'pio_inq_dimension for nj in file '//trim(filename))
+    rcode = pio_inquire_dimension(pioid, dimid_nv, len=nv)
+    call pio_check_err(rcode, 'pio_inq_dimension for nv in file '//trim(filename))
 
     ! get variable ids
-    ierr = nf90_inq_varid(ncid, 'xv', varid_xv)
-    call nc_check_err(ierr, 'nf90_inq_varid for xv', trim(filename))
-    ierr = nf90_inq_varid(ncid, 'yv', varid_yv)
-    call nc_check_err(ierr, 'nf90_inq_varid for yv', trim(filename))
+    rcode = pio_inq_varid(pioid, 'xv', varid_xv)
+    call pio_check_err(rcode, 'pio_inq_varid for xv in file '//trim(filename))
+    rcode = pio_inq_varid(pioid, 'yv', varid_yv)
+    call pio_check_err(rcode, 'pio_inq_varid for yv in file '//trim(filename))
 
     ! allocate memory for variables and get variable values
     allocate(xv(nv,ni,nj), yv(nv,ni,nj))
-    ierr = nf90_get_var(ncid, varid_xv, xv)
-    call nc_check_err(ierr, 'nf90_get_var for xv', trim(filename))
-    ierr = nf90_get_var(ncid, varid_yv, yv)
-    call nc_check_err(ierr, 'nf90_get_var for yv', trim(filename))
+    rcode = pio_get_var(pioid, varid_xv, xv)
+    call pio_check_err(rcode, 'pio_get_var for xv in file '//trim(filename))
+    rcode = pio_get_var(pioid, varid_yv, yv)
+    call pio_check_err(rcode, 'pio_get_var for yv in file '//trim(filename))
 
     ! close file
-    ierr = nf90_close(ncid)
-    call nc_check_err(ierr, 'nf90_close', trim(filename))
+    call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+    call pio_closefile(pioid)
 
     ! create the grid
     maxIndex(1)       = ni          ! number of lons
@@ -490,6 +428,7 @@ contains
     maxcornerCoord(1) = xv(3,ni,nj) ! max lon
     maxcornerCoord(2) = yv(3,ni,nj) ! max lat
     deallocate(xv,yv)
+
     lgrid = ESMF_GridCreateNoPeriDimUfrm (maxindex=maxindex, &
          mincornercoord=mincornercoord, maxcornercoord= maxcornercoord, &
          staggerloclist=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
@@ -501,17 +440,14 @@ contains
 
   contains
 
-    subroutine nc_check_err(ierror, description, filename)
+    subroutine pio_check_err(ierror, description)
       integer     , intent(in) :: ierror
       character(*), intent(in) :: description
-      character(*), intent(in) :: filename
-
-      if (ierror /= nf90_noerr) then
-         write (*,'(6a)') 'ERROR ', trim(description),'. NetCDF file : "', trim(filename),&
-              '". Error message:', trim(nf90_strerror(ierror))
+      if (ierror /= PIO_NOERR) then
+         write (*,'(6a)') 'ERROR ', trim(description)
          call shr_sys_abort()
       endif
-    end subroutine nc_check_err
+    end subroutine pio_check_err
 
   end subroutine dshr_mesh_create_from_grid
 
@@ -752,6 +688,27 @@ contains
     type(ESMF_Time)         :: NextAlarm        ! Next restart alarm time
     type(ESMF_TimeInterval) :: AlarmInterval    ! Alarm interval
     integer                 :: sec
+    character(len=*), parameter :: &   ! Clock and alarm options
+         optNONE           = "none"      , &
+         optNever          = "never"     , &
+         optNSteps         = "nsteps"    , &
+         optNStep          = "nstep"     , &
+         optNSeconds       = "nseconds"  , &
+         optNSecond        = "nsecond"   , &
+         optNMinutes       = "nminutes"  , &
+         optNMinute        = "nminute"   , &
+         optNHours         = "nhours"    , &
+         optNHour          = "nhour"     , &
+         optNDays          = "ndays"     , &
+         optNDay           = "nday"      , &
+         optNMonths        = "nmonths"   , &
+         optNMonth         = "nmonth"    , &
+         optNYears         = "nyears"    , &
+         optNYear          = "nyear"     , &
+         optMonthly        = "monthly"   , &
+         optYearly         = "yearly"    , &
+         optDate           = "date"      , &
+         optIfdays0        = "ifdays0"
     character(len=*), parameter :: subname = '(dshr_alarm_init): '
     !-------------------------------------------------------------------------------
 
@@ -1046,6 +1003,7 @@ contains
     integer :: year, mon, day ! year, month, day as integers
     integer :: tdate          ! temporary date
     integer :: date           ! coded-date (yyyymmdd)
+    integer         , parameter :: SecPerDay = 86400 ! Seconds per day
     character(len=*), parameter :: subname='(dshr_time_init)'
     !-------------------------------------------------------------------------------
 

@@ -85,7 +85,11 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Determine if will create mesh by reading in a domain file
     model_meshfile = case.get_value("ATM_DOMAIN_MESH")
     if model_meshfile == 'create_mesh':
+        atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
+        atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
         nmlgen.set_value("model_createmesh_fromfile",os.path.join(atm_domain_path,atm_domain_file))
+        nmlgen.set_value("model_meshfile","undefined")
+        nmlgen.set_value("model_maskfile","undefined")
 
     namelist_file = os.path.join(confdir, "datm_in")
     nmlgen.write_output_file(namelist_file, data_list_path, groups=['datm_nml','shr_strdata_nml'])

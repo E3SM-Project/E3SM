@@ -61,61 +61,61 @@
       <support>Non-standard grid for testing of the interpolation in DATM rather than coupler</support>
     </model_grid>
 
-    <model_grid alias="1D_1D" compset="DATM.+DROF">
+    <model_grid alias="1D_1D" compset="DATM.+DROF|DATM.+SROF">
       <grid name="atm">01col</grid>
       <grid name="lnd">01col</grid>
       <support>Non-standard grid for running POP in true 1D mode</support>
     </model_grid>
 
-    <model_grid alias="CLM_USRDAT" compset="DATM.+CLM">
+    <model_grid alias="CLM_USRDAT" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">CLM_USRDAT</grid>
       <grid name="lnd">CLM_USRDAT</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_numaIA" compset="DATM.+CLM">
+    <model_grid alias="1x1_numaIA" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_numaIA</grid>
       <grid name="lnd">1x1_numaIA</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_brazil" compset="DATM.+CLM">
+    <model_grid alias="1x1_brazil" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_brazil</grid>
       <grid name="lnd">1x1_brazil</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_smallvilleIA" compset="DATM.+CLM">
+    <model_grid alias="1x1_smallvilleIA" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_smallvilleIA</grid>
       <grid name="lnd">1x1_smallvilleIA</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_camdenNJ" compset="DATM.+CLM">
+    <model_grid alias="1x1_camdenNJ" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_camdenNJ</grid>
       <grid name="lnd">1x1_camdenNJ</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_mexicocityMEX" compset="DATM.+CLM">
+    <model_grid alias="1x1_mexicocityMEX" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_mexicocityMEX</grid>
       <grid name="lnd">1x1_mexicocityMEX</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_vancouverCAN" compset="DATM.+CLM">
+    <model_grid alias="1x1_vancouverCAN" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_vancouverCAN</grid>
       <grid name="lnd">1x1_vancouverCAN</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_urbanc_alpha" compset="DATM.+CLM">
+    <model_grid alias="1x1_urbanc_alpha" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">1x1_urbanc_alpha</grid>
       <grid name="lnd">1x1_urbanc_alpha</grid>
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="5x5_amazon" compset="DATM.+CLM">
+    <model_grid alias="5x5_amazon" compset="DATM.+CLM|DATM.+SLND">
       <grid name="atm">5x5_amazon</grid>
       <grid name="lnd">5x5_amazon</grid>
       <grid name="rof">null</grid>

@@ -597,134 +597,6 @@ contains
          subname//':docnImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! -------------------------------------
-    ! Determine ocean fraction
-    ! -------------------------------------
-
-    ! Set pointers to exportState fields that have no corresponding stream field
-    call dshr_state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Obtain the ocean fraction (So_omask)
-    if (trim(model_maskfile) /= trim(model_meshfile)) then
-       ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
-       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
-       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid, 'frac', varid)
-       if ( rcode /= PIO_NOERR ) then
-          call shr_sys_abort(' ERROR: variable frac not found in file '//trim(model_maskfile))
-       end if
-       call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
-       call pio_initdecomp(sdat%pio_subsystem, pio_double, (/nx_global, ny_global/), sdat%model_gindex, pio_iodesc)
-       call pio_read_darray(pioid, varid, pio_iodesc, So_omask, rcode)
-       call pio_closefile(pioid)
-       call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-    else
-       ! Obtain the ocean fraction from the mask values in the ocean mesh file
-       call ESMF_MeshGet(model_mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       allocate(imask(numOwnedElements))
-       elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! the following call sets the varues of imask
-       call ESMF_MeshGet(model_mesh, elemMaskArray=elemMaskArray, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! now set the fraction as just the real mask
-       So_omask(:) = real(imask(:), kind=r8)
-       deallocate(imask)
-       call ESMF_ArrayDestroy(elemMaskArray, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    ! -------------------------------------
-    ! Set pointers to exportState fields
-    ! -------------------------------------
-
-    call dshr_state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    Fioo_q(:) = 0._r8
-
-    if (aquaplanet) then
-          call dshr_state_getfldptr(exportState, 'So_t', fldptr1=So_t, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call dshr_state_getfldptr(exportState, 'So_s', fldptr1=So_s, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call dshr_state_getfldptr(exportState, 'So_u', fldptr1=So_u, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          call dshr_state_getfldptr(exportState, 'So_v', fldptr1=So_v, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          So_u(:) = 0.0_r8
-          So_v(:) = 0.0_r8
-    else
-       ! Initialize export state pointers
-       call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='So_t', &
-            state=exportState, state_ptr=So_t, logunit=logunit, masterproc=masterproc, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='So_s', &
-            state=exportState, state_ptr=So_s, logunit=logunit, masterproc=masterproc, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='So_u', &
-            state=exportState, state_ptr=So_u, logunit=logunit, masterproc=masterproc, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='So_v', &
-            state=exportState, state_ptr=So_v, logunit=logunit, masterproc=masterproc, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='So_dhdx', &
-            state=exportState, state_ptr=So_dhdx, logunit=logunit, masterproc=masterproc, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='So_dhdy', &
-            state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       ! initialize pointers for stream fields that have no corresponding import or export fields
-       call shr_strdata_get_stream_pointer( sdat, 'So_qbot', strm_qbot, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_strdata_get_stream_pointer( sdat, 'So_h'   , strm_h   , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and
-       ! currently this is not implemented in cmeps
-       call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
-          call dshr_state_getfldptr(exportState, 'So_fswpen', fldptr1=So_fswpen, rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-          So_fswpen(:) = swp
-       end if
-    endif
-
-    ! Initialize export state pointers to non-zero
-    So_t(:) = TkFrz
-    So_s(:) = ocnsalt
-
-    ! Allocate memory for somtp
-    allocate(somtp(sdat%model_lsize))
-
-    ! -------------------------------------
-    ! Set pointers to importState fields
-    ! -------------------------------------
-
-    if (ocn_prognostic) then
-       call dshr_state_getfldptr(importState, 'Foxx_swnet' , fldptr1=Foxx_swnet , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Foxx_sen'   , fldptr1=Foxx_sen   , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Foxx_lat'   , fldptr1=Foxx_lat   , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Faxa_lwdn'  , fldptr1=Faxa_lwdn  , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Faxa_snow'  , fldptr1=Faxa_snow  , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Fioi_melth' , fldptr1=Fioi_melth , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_state_getfldptr(importState, 'Foxx_rofi'  , fldptr1=Foxx_rofi  , rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-    end if
-
   end subroutine docn_comp_realize
 
 !===============================================================================
@@ -753,6 +625,135 @@ contains
     rc = ESMF_SUCCESS
 
     call t_startf('DOCN_RUN')
+
+    if (first_time) then
+
+       ! -------------------------------------
+       ! Determine ocean fraction
+       ! -------------------------------------
+       
+       ! Set pointers to exportState fields that have no corresponding stream field
+       call dshr_state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       ! Obtain the ocean fraction (So_omask)
+       if (trim(model_maskfile) /= trim(model_meshfile)) then
+          ! Read in the ocean fraction from the input namelist ocean mask file and assume 'frac' name on domain file
+          rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(model_maskfile), pio_nowrite)
+          call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+          rcode = pio_inq_varid(pioid, 'frac', varid)
+          if ( rcode /= PIO_NOERR ) then
+             call shr_sys_abort(' ERROR: variable frac not found in file '//trim(model_maskfile))
+          end if
+          call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+          call pio_initdecomp(sdat%pio_subsystem, pio_double, (/nx_global, ny_global/), sdat%model_gindex, pio_iodesc)
+          call pio_read_darray(pioid, varid, pio_iodesc, So_omask, rcode)
+          call pio_closefile(pioid)
+          call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+       else
+          ! Obtain the ocean fraction from the mask values in the ocean mesh file
+          call ESMF_MeshGet(model_mesh, numOwnedElements=numOwnedElements, elementdistGrid=distGrid, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          allocate(imask(numOwnedElements))
+          elemMaskArray = ESMF_ArrayCreate(distGrid, imask, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! the following call sets the varues of imask
+          call ESMF_MeshGet(model_mesh, elemMaskArray=elemMaskArray, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! now set the fraction as just the real mask
+          So_omask(:) = real(imask(:), kind=r8)
+          deallocate(imask)
+          call ESMF_ArrayDestroy(elemMaskArray, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+
+       ! Set pointers to exportState fields
+       call dshr_state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       Fioo_q(:) = 0._r8
+
+       if (aquaplanet) then
+
+          call dshr_state_getfldptr(exportState, 'So_t', fldptr1=So_t, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(exportState, 'So_s', fldptr1=So_s, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(exportState, 'So_u', fldptr1=So_u, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(exportState, 'So_v', fldptr1=So_v, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          So_u(:) = 0.0_r8
+          So_v(:) = 0.0_r8
+
+       else
+
+          ! Initialize export state pointers
+          call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='So_t', &
+               state=exportState, state_ptr=So_t, logunit=logunit, masterproc=masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='So_s', &
+               state=exportState, state_ptr=So_s, logunit=logunit, masterproc=masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='So_u', &
+               state=exportState, state_ptr=So_u, logunit=logunit, masterproc=masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='So_v', &
+               state=exportState, state_ptr=So_v, logunit=logunit, masterproc=masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='So_dhdx', &
+               state=exportState, state_ptr=So_dhdx, logunit=logunit, masterproc=masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='So_dhdy', &
+               state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+          ! initialize pointers for stream fields that have no corresponding import or export fields
+          call shr_strdata_get_stream_pointer( sdat, 'So_qbot', strm_qbot, logunit, masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call shr_strdata_get_stream_pointer( sdat, 'So_h'   , strm_h   , logunit, masterproc, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+          ! For So_fswpen is only needed for diurnal cycle calculation of atm/ocn fluxes - and
+          ! currently this is not implemented in cmeps
+          call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
+             call dshr_state_getfldptr(exportState, 'So_fswpen', fldptr1=So_fswpen, rc=rc)
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
+             So_fswpen(:) = swp
+          end if
+       endif
+
+       ! Initialize export state pointers to non-zero
+       So_t(:) = TkFrz
+       So_s(:) = ocnsalt
+
+       ! Allocate memory for somtp
+       allocate(somtp(sdat%model_lsize))
+
+       ! Set pointers to importState fields
+       if (ocn_prognostic) then
+          call dshr_state_getfldptr(importState, 'Foxx_swnet' , fldptr1=Foxx_swnet , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Foxx_sen'   , fldptr1=Foxx_sen   , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Foxx_lat'   , fldptr1=Foxx_lat   , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Faxa_lwdn'  , fldptr1=Faxa_lwdn  , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Faxa_snow'  , fldptr1=Faxa_snow  , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Fioi_melth' , fldptr1=Fioi_melth , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call dshr_state_getfldptr(importState, 'Foxx_rofi'  , fldptr1=Foxx_rofi  , rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       end if
+
+    end if ! end of first_time
 
     !--------------------
     ! advance docn streams
@@ -799,7 +800,7 @@ contains
        So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAPANAL')
-       So_s(:)      = 0.0_r8
+       So_s(:) = 0.0_r8
        if (associated(So_fswpen)) then
           So_fswpen(:) = 0.0_r8
        end if
@@ -817,15 +818,16 @@ contains
        end if
        call docn_prescribed_sst(xc, yc, lsize, aquap_option, So_t)
        So_t(:) = So_t(:) + TkFrz
+
     case('SST_AQUAPFILE')
-       So_s(:)      = 0.0_r8
+       So_s(:) = 0.0_r8
        if (associated(So_fswpen)) then
           So_fswpen(:) = 0.0_r8
        end if
        So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAP_CONSTANT')
-       So_s(:)      = 0.0_r8
+       So_s(:) = 0.0_r8
        if (associated(So_fswpen)) then
           So_fswpen(:) = 0.0_r8
        end if

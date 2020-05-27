@@ -49,7 +49,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
-    if "CLM" in datm_mode:
+    if "CLM" in datm_mode and case.get_value("COMP_LND") == "clm":
         expect(datm_presaero != "none",
                "A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none.")
         expect(datm_topo != "none",

@@ -370,20 +370,50 @@
       Users must create scientifically appropriate data for their particular
       application.  A tool is available to derive valid SOM forcing.
 
-      Set by the xml variable DOCN_MODE in env_run.xml
-      Currently, DOCN_MODE can be [prescribed,som,interannual,null]
-      If DOCN_MODE is prescribed, datamode will be set to SSTDATA
-      If DOCN_MODE is interannual, datamode will be set to IAF
-      If DOCN_MODE is som , datamode will be set to SOM
-      If DOCN_MODE is sst_aqup[n], datamode will be set to SST_AQUAP
-      If DOCN_MODE is som_aqup[n], datamode will be set to SOM_AQUAP
-      If DOCN_MODE is null, datamode will be set to NULL
+      (1) map the xml variable DOCN_MODE => config variable docn_mode
+        compset="_DOCN%NULL_"     => docn_mode=null               
+        compset="_DOCN%DOM_"      => docn_mode=prescribed         
+        compset="_DOCN%SOM_"      => docn_mode=som                
+        compset="_DOCN%SOMAQP_"   => docn_mode=som_aquap          
+        compset="_DOCN%IAF_"      => docn_mode=interannual        
+        compset="_DOCN%AQP1_"     => docn_mode=sst_aquap1         
+        compset="_DOCN%AQP2_"     => docn_mode=sst_aquap2         
+        compset="_DOCN%AQP3_"     => docn_mode=sst_aquap3         
+        compset="_DOCN%AQP4_"     => docn_mode=sst_aquap4         
+        compset="_DOCN%AQP5_"     => docn_mode=sst_aquap5         
+        compset="_DOCN%AQP6_"     => docn_mode=sst_aquap6         
+        compset="_DOCN%AQP7_"     => docn_mode=sst_aquap7         
+        compset="_DOCN%AQP8_"     => docn_mode=sst_aquap8         
+        compset="_DOCN%AQP9_"     => docn_mode=sst_aquap9         
+        compset="_DOCN%AQP10_"    => docn_mode=sst_aquap10        
+        compset="_DOCN%AQPFILE_"  => docn_mode=sst_aquapfile      
+        compset="_DOCN%AQPCONST_" => docn_mode=sst_aquap_constant 
 
-      default: SSTDATA (prescribed setting for DOCN_MODE)'
-    </desc>
+      (2) map the config variable docn_mode => namelist variable datamode
+        docn_mode="null"                => datamode=NULL
+        docn_mode="prescribed"          => datamode=SSTDATA
+        docn_mode="sst_aquap1$"         => datamode=SST_AQUAP1
+        docn_mode="sst_aquap2$"         => datamode=SST_AQUAP2
+        docn_mode="sst_aquap3$"         => datamode=SST_AQUAP3
+        docn_mode="sst_aquap4$"         => datamode=SST_AQUAP4
+        docn_mode="sst_aquap5$"         => datamode=SST_AQUAP5
+        docn_mode="sst_aquap6$"         => datamode=SST_AQUAP6
+        docn_mode="sst_aquap7$"         => datamode=SST_AQUAP7
+        docn_mode="sst_aquap8$"         => datamode=SST_AQUAP8
+        docn_mode="sst_aquap9$"         => datamode=SST_AQUAP9
+        docn_mode="sst_aquap10$"        => datamode=SST_AQUAP10
+        docn_mode="sst_aquapfile$"      => datamode=SST_AQUAPFILE
+        docn_mode="sst_aquap_constant$" => datamode=SST_AQUAP_CONSTANT
+        docn_mode="som$"                => datamode=SOM
+        docn_mode="som_aquap"           => datamode=SOM_AQUAP
+        docn_mode="interannual"         => datamode=IAF
+     </desc>
     <values>
       <value docn_mode="null">NULL</value>
       <value docn_mode="prescribed">SSTDATA</value>
+      <value docn_mode="som$">SOM</value>
+      <value docn_mode="som_aquap">SOM_AQUAP</value>
+      <value docn_mode="interannual">IAF</value>
       <value docn_mode="sst_aquap1$">SST_AQUAP1</value>
       <value docn_mode="sst_aquap2$">SST_AQUAP2</value>
       <value docn_mode="sst_aquap3$">SST_AQUAP3</value>
@@ -396,9 +426,6 @@
       <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
       <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
       <value docn_mode="sst_aquap_constant$">SST_AQUAP_CONSTANT</value>
-      <value docn_mode="som$">SOM</value>
-      <value docn_mode="som_aquap">SOM_AQUAP</value>
-      <value docn_mode="interannual">IAF</value>
     </values>
   </entry>
 

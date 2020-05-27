@@ -241,22 +241,20 @@
       <value>null</value>
       <value  stream="CLMGSWP3v1.Solar">
 	/glade/u/home/turuncu/UFS/Streams/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.SCRIP.210520_ESMFmesh.nc
-	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar/clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc
+	<!-- $DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar/clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc -->
       </value>
       <value  stream="CLMGSWP3v1.Precip">
-	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip/clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc
+	/glade/u/home/turuncu/UFS/Streams/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.SCRIP.210520_ESMFmesh.nc
+	<!-- $DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip/clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc -->
       </value>
       <value  stream="CLMGSWP3v1.TPQW">
-	$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc
-      </value>
-
-
-      <value stream="CLMGSWP3v1">
-	<!-- $DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh_c20191210.nc -->
+	/glade/u/home/turuncu/UFS/Streams/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.SCRIP.210520_ESMFmesh.nc
+	<!-- $DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL/clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc -->
       </value>
       <value stream="Anomaly.Forcing">
+        <!-- TODO: what is this mesh? -->
 	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc
-      </value> <!-- TODO: what is this mesh? -->
+      </value> 
       <value stream="CLM1PT.1x1_mexicocityMEX">
 	<!-- TODO: generate_mesh_from: $DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc -->
       </value>
@@ -284,7 +282,6 @@
       <value stream="presaero.SSP">
 	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
       </value>
-
       <!-- <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
       <!-- <value stream="CLMNLDAS2">$DIN_LOC_ROOT/share/domains/domain.clm</value> -->
       <!-- <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value> -->
