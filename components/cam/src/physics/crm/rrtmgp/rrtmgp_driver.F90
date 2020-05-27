@@ -39,12 +39,13 @@ contains
   !
   ! --------------------------------------------------
   function rte_lw( &
-        k_dist, gas_concs, p_lay, t_lay, p_lev,            &
+        k_dist, gas_names, gas_vmr, p_lay, t_lay, p_lev,            &
         t_sfc, sfc_emis, cld_tau, aer_tau,                 &
         allsky_fluxes, clrsky_fluxes,                      &
         col_dry, t_lev, inc_flux, n_gauss_angles) result(error_msg)
     type(ty_gas_optics_rrtmgp),  intent(in   ) :: k_dist       !< derived type with spectral information
-    type(ty_gas_concs),          intent(in   ) :: gas_concs    !< derived type encapsulating gas concentrations
+    character(len=*), dimension(:), intent(in) :: gas_names
+    real(wp), dimension(:,:,:),    intent(in   ) :: gas_vmr
     real(wp), dimension(:,:),    intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
     real(wp), dimension(:,:),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
     real(wp), dimension(:),      intent(in   ) :: t_sfc     !< surface temperature           [K]  (ncol)
@@ -64,9 +65,10 @@ contains
     character(len=128)                    :: error_msg
 
     ! Local variables
+    type(ty_gas_concs) :: gas_concs    !< derived type encapsulating gas concentrations
     type(ty_optical_props_1scl) :: optical_props, cld_props, aer_props
     type(ty_source_func_lw) :: sources
-    integer :: ncol, nlay, ngpt, nband, nstr
+    integer :: ncol, nlay, ngpt, nband, nstr, igas
     logical :: top_at_1
     ! --------------------------------
     ! Problem sizes
@@ -80,18 +82,13 @@ contains
 
     top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
 
-    !  Error checking
-    if(present(t_lev)) then
-      if(any([size(t_lev, 1), &
-              size(t_lev, 2)] /= [ncol, nlay+1])) &
-        error_msg = "rrtmpg_lw: t_lev inconsistently sized"
-    end if
-    if(present(inc_flux)) then
-      if(any([size(inc_flux, 1), &
-              size(inc_flux, 2)] /= [ncol, ngpt])) &
-        error_msg = "rrtmpg_lw: incident flux inconsistently sized"
-    end if
-    if(len_trim(error_msg) > 0) return
+    ! Setup gas concentrations
+    error_msg = gas_concs%init(gas_names)
+    if (error_msg /= '') return
+    do igas = 1,size(gas_names)
+       error_msg = gas_concs%set_vmr(gas_names(igas), gas_vmr(igas,:,:))
+    end do
+    if (error_msg /= '') return
 
     ! Optical properties arrays
     error_msg = optical_props%alloc_1scl(ncol, nlay, k_dist)

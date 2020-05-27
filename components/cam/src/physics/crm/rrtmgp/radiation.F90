@@ -2089,35 +2089,21 @@ contains
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
       type(ty_optical_props_1scl), intent(in) :: cld_optics, aer_optics
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
-
-      type(ty_gas_concs) :: gas_concs
       integer :: ncol, nlev, igas
-
-      ! Character array to hold lowercase gas names
       character(len=32), allocatable :: gas_names_lower(:)
 
       ncol = size(pmid,1)
       nlev = size(pmid,2)
 
-      ! Initialize gas concentrations with lower case names
+      ! Get lowercase gas names
       allocate(gas_names_lower(size(gas_names)))
       do igas = 1,size(gas_names)
          gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
       end do
-      call handle_error(gas_concs%init(gas_names_lower))
-
-      ! Populate gas concentrations
-      do igas = 1,size(gas_names)
-         call handle_error(gas_concs%set_vmr( &
-            gas_names_lower(igas), gas_vmr(igas,:,:) &
-         ))
-      end do
-      deallocate(gas_names_lower)
-
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_rte_lw')
-      call handle_error(rte_lw(k_dist_lw, gas_concs, &
+      call handle_error(rte_lw(k_dist_lw, gas_names_lower, gas_vmr(:,1:ncol,1:), &
                                pmid(1:ncol,1:nlev), tmid(1:ncol,1:nlev), &
                                pint(1:ncol,1:nlev+1), tint(1:ncol,nlev+1), &
                                emis_sfc(1:nlwbands,1:ncol), &
@@ -2126,6 +2112,7 @@ contains
                                t_lev=tint(1:ncol,1:nlev+1), &
                                n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
       call t_stopf('rad_rte_lw')
+      deallocate(gas_names_lower)
 
    end subroutine calculate_fluxes_lw
 
