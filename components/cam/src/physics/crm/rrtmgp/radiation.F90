@@ -1304,7 +1304,7 @@ contains
 
       ! Cloud and aerosol optics
       type(ty_optical_props_2str) :: cld_optics_sw, aer_optics_sw
-      type(ty_optical_props_1scl) :: cld_optics_lw, aer_optics_lw
+      real(r8), dimension(:,:,:), allocatable :: cld_tau_lw_all, aer_tau_lw_all
 
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrs_all, qrsc_all
 
@@ -1470,10 +1470,8 @@ contains
                call handle_error(cld_optics_sw%alloc_2str( &
                   ncol_tot, nlev_rad, k_dist_sw, name='cld_optics_sw' &
                ))
-               call handle_error(cld_optics_lw%alloc_1scl( &
-                  ncol_tot, nlev_rad, k_dist_lw, name='cld_optics_lw' &
-               ))
-               cld_optics_lw%tau = 0
+               allocate(cld_tau_lw_all(ncol_tot, nlev_rad, nlwgpts))
+               allocate(aer_tau_lw_all(ncol_tot, nlev_rad, nlwbands))
                cld_optics_sw%tau = 0
                cld_optics_sw%ssa = 0
                cld_optics_sw%g   = 0
@@ -1489,14 +1487,11 @@ contains
                   ncol_tot, nlev_rad, k_dist_sw%get_band_lims_wavenumber(), &
                   name='aer_optics_sw'                                  &
                ))
-               call handle_error(aer_optics_lw%alloc_1scl(          &
-                  ncol_tot, nlev_rad, k_dist_lw%get_band_lims_wavenumber(), &
-                  name='aer_optics_lw'                              &
-               ))
-               aer_optics_lw%tau = 0
                aer_optics_sw%tau = 0
                aer_optics_sw%ssa = 0
                aer_optics_sw%g   = 0
+               aer_tau_lw_all = 0
+               cld_tau_lw_all = 0
 
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
@@ -1628,11 +1623,11 @@ contains
                         tmid(j,:) = tmid_col(ic,:)
                         pint(j,:) = pint_col(ic,:)
                         tint(j,:) = tint_col(ic,:)
-                        cld_optics_lw%tau(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
+                        cld_tau_lw_all(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
                         cld_optics_sw%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
                         cld_optics_sw%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
                         cld_optics_sw%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
-                        aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
+                        aer_tau_lw_all(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
                         aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
                         aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
                         aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
@@ -1781,7 +1776,7 @@ contains
                                         pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
                                         pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
                                         surface_emissivity(1:nlwbands,1:ncol_tot), &
-                                        cld_optics_lw%tau, aer_optics_lw%tau, &
+                                        cld_tau_lw_all, aer_tau_lw_all, &
                                         fluxes_allsky_all, fluxes_clrsky_all, &
                                         t_lev=tint(1:ncol_tot,1:nlev_rad+1), &
                                         n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
@@ -1845,8 +1840,6 @@ contains
                call free_fluxes(fluxes_clrsky)
                call free_fluxes(fluxes_allsky_all)
                call free_fluxes(fluxes_clrsky_all)
-               call free_optics_lw(cld_optics_lw)
-               call free_optics_lw(aer_optics_lw)
 
             else
 
