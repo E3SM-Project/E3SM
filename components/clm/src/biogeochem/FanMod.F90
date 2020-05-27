@@ -38,6 +38,9 @@ module FanMod
        iflx_soilq = 4, & ! percolation to soil
        iflx_roff = 5, &  ! surface runoff
        iflx_to_tan = 6   ! conversion to tan (from urea) 
+  ! Number of different fluxes, the minimum size for flux vectors:
+  integer, parameter, public :: num_fluxes = 6
+
   ! Indices in flux arrays, storage:
   integer, parameter, public :: iflx_air_barns = 1, &
        iflx_air_stores = 2, &
@@ -53,6 +56,8 @@ module FanMod
        err_balance_tan = 4, err_balance_nitr = 5, err_nan = 6, err_bad_subst = 7
 
   integer, parameter, public :: subst_tan = 1, subst_urea = 2
+
+  logical, parameter, public :: debug_fan = .false.
   
   real(r8), parameter, public :: water_relax_t = 24*3600.0_r8
   
