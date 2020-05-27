@@ -2005,42 +2005,29 @@ contains
       ! Apply delta scaling to account for forward-scattering
       call handle_error(cld_optics_day%delta_scale())
 
-      ! Check incoming optical properties
-      call handle_error(cld_optics_day%validate())
-      call handle_error(aer_optics_day%validate())
-
       ! Initialize gas concentrations with lower case names
       allocate(gas_names_lower(size(gas_names)))
       do igas = 1,size(gas_names)
          gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
       end do
-      call handle_error(gas_concs%init(gas_names_lower))
 
-      ! Populate gas concentrations
-      do igas = 1,size(gas_names)
-         call handle_error(gas_concs%set_vmr( &
-            gas_names_lower(igas), gas_vmr_day(igas,1:nday,:) &
-         ))
-      end do
-      deallocate(gas_names_lower)
-
-      call handle_error(cld_optics_day%validate())
-      call handle_error(aer_optics_day%validate())
-        
       ! Compute fluxes
       call t_startf('rad_rte_sw')
-      call handle_error(rte_sw(gas_concs, &
-                               pmid_day(1:nday,1:nlev), &
-                               tmid_day(1:nday,1:nlev), &
-                               pint_day(1:nday,1:nlev+1), &
-                               coszrs_day(1:nday), &
-                               alb_dir_day(1:nswbands,1:nday), &
-                               alb_dif_day(1:nswbands,1:nday), &
-                               cld_optics_day, &
-                               fluxes_allsky_day, fluxes_clrsky_day, &
-                               aer_props=aer_optics_day, &
-                               tsi_scaling=tsi_scaling))
+      call handle_error(rte_sw( &
+         gas_names_lower, gas_vmr_day(:,1:nday,:), &
+         pmid_day(1:nday,1:nlev), &
+         tmid_day(1:nday,1:nlev), &
+         pint_day(1:nday,1:nlev+1), &
+         coszrs_day(1:nday), &
+         alb_dir_day(1:nswbands,1:nday), &
+         alb_dif_day(1:nswbands,1:nday), &
+         cld_optics_day%tau, cld_optics_day%ssa, cld_optics_day%g, &
+         aer_optics_day%tau, aer_optics_day%ssa, aer_optics_day%g, &
+         fluxes_allsky_day, fluxes_clrsky_day, &
+         tsi_scaling=tsi_scaling &
+      ))
       call t_stopf('rad_rte_sw')
+      deallocate(gas_names_lower)
 
       ! Expand daytime-only fluxes
       call reset_fluxes(fluxes_allsky)
