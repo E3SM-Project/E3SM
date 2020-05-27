@@ -523,7 +523,6 @@ subroutine shoc_main ( &
      qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
      ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
      pblh)                                ! Output
-
   return
 
 end subroutine shoc_main
@@ -2792,6 +2791,104 @@ subroutine pblintd(&
     !
 
     ! Compute virtual potential temperature
+    call pblintd_init_pot(&
+               shcol,nlev,&             ! Input
+               thl,ql,q,&               ! Input
+               thv)                     ! Output
+
+    call pblintd_init(&
+           shcol,nlev,&             ! Input
+           z,&                      ! Input
+           check,rino,pblh)         ! Output
+
+    !
+    ! PBL height calculation:  Scan upward until the Richardson number between
+    ! the first level and the current level exceeds the "critical" value.
+    !
+    call pblintd_height(&
+       shcol,nlev,nlevi,&             ! Input
+       z,u,v,ustar,&                  ! Input
+       thv,tlv,    &                  ! Input
+       pblh,rino,check)               ! Output
+    !
+    ! Estimate an effective surface temperature to account for surface
+    ! fluctuations
+    !
+    call pblintd_surf_temp(&
+       shcol,nlev,nlevi,&          ! Input
+       z,ustar,obklen,kbfs,thv,&   ! Input
+       phiminv,tlv,unstbl,&        ! Output
+       pblh,check,rino)            ! InOutput
+
+    !
+    ! Improve pblh estimate for unstable conditions using the convective
+    ! temperature excess:
+    !
+    call pblintd_vvk(&
+       shcol,nlev,&             ! Input
+       z,u,v,ustar,&            ! Input
+       thv,tlv,&                ! Input
+       check,rino,pblh)         ! Output
+    !
+    ! PBL height must be greater than some minimum mechanical mixing depth
+    ! Several investigators have proposed minimum mechanical mixing depth
+    ! relationships as a function of the local friction velocity, u*.  We
+    ! make use of a linear relationship of the form h = c u* where c=700.
+    ! The scaling arguments that give rise to this relationship most often
+    ! represent the coefficient c as some constant over the local coriolis
+    ! parameter.  Here we make use of the experimental results of Koracin
+    ! and Berkowicz (1988) [BLM, Vol 43] for wich they recommend 0.07/f
+    ! where f was evaluated at 39.5 N and 52 N.  Thus we use a typical mid
+    ! latitude value for f so that c = 0.07/f = 700.  Also, do not allow
+    ! PBL to exceed some maximum (npbl) number of allowable points
+    !
+    call pblintd_pblh(&
+       shcol,nlev,nlevi,&             ! Input
+       z,ustar,check,&                ! Input
+       pblh)                          ! Output
+    !
+    ! Final requirement on PBL heightis that it must be greater than the depth
+    ! of the lowest model level over ocean if there is any cloud diagnosed in
+    ! the lowest model level.  This is to deal with the inadequacies of the
+    ! current "dry" formulation of the boundary layer, where this test is
+    ! used to identify circumstances where there is marine stratus in the
+    ! lowest level, and to provide a weak ventilation of the layer to avoid
+    ! a pathology in the cloud scheme (locking in low-level stratiform cloud)
+    ! If over an ocean surface, and any cloud is diagnosed in the
+    ! lowest level, set pblh to 50 meters higher than top interface of lowest
+    ! level
+    !
+    call pblintd_ocncldcheck(      &
+                   shcol,nlev,nlevi, &                  ! Input
+                   zi,cldn,          &                  ! Input
+                   pblh)                                ! InOutput
+ 
+    return
+end subroutine pblintd
+
+subroutine pblintd_init_pot(&
+       shcol,nlev,&             ! Input
+       thl,ql,q,&               ! Input
+       thv)                     ! Output
+    !------------------------------Arguments--------------------------------
+    !
+    ! Input arguments
+    !
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+
+    real(rtype), intent(in)  :: thl(shcol,nlev)         ! liquid water potential temp [K]
+    real(rtype), intent(in)  :: ql(shcol,nlev)          ! cloud liquid mixing ratio [kg/kg]
+    real(rtype), intent(in)  :: q(shcol,nlev)           ! water vapor [kg/kg]
+    real(rtype), intent(out) :: thv(shcol,nlev)         ! virtual potential temperature
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
+    integer  :: k                       ! level index
+    real(rtype) :: th
+
+    ! Compute virtual potential temperature
     do k=1,nlev
       do i=1,shcol
         th=thl(i,k)+(lcond/cp)*ql(i,k)
@@ -2799,12 +2896,77 @@ subroutine pblintd(&
       enddo
     enddo
 
+end subroutine pblintd_init_pot
+
+subroutine pblintd_init(&
+       shcol,nlev,&             ! Input
+       z,&                      ! Input
+       check,rino,pblh)         ! Output
+    !------------------------------Arguments--------------------------------
+    ! Input arguments
+    !
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+
+    real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
+    !
+    ! Output arguments
+    !
+    real(rtype), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(out) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
+    logical, intent(out)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
+
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
     do i=1,shcol
        check(i)     = .true.
        rino(i,nlev) = 0.0_rtype
        pblh(i)      = z(i,nlev)
     end do
+end subroutine pblintd_init 
+
+subroutine pblintd_height(&
+       shcol,nlev,nlevi,&             ! Input
+       z,u,v,ustar,&                  ! Input
+       thv,tlv,    &                  ! Input
+       pblh,rino,check)               ! Output
+    !------------------------------Arguments--------------------------------
     !
+    ! Input arguments
+    !
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+    integer, intent(in) :: nlevi                     ! number of interface layers
+
+    real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
+    real(rtype), intent(in)  :: u(shcol,nlev)           ! windspeed x-direction [m/s]
+    real(rtype), intent(in)  :: v(shcol,nlev)           ! windspeed y-direction [m/s]
+    real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
+    real(rtype), intent(in)  :: thv(shcol,nlev)         ! virtual potential temperature
+    real(rtype), intent(in)  :: tlv(shcol)              ! ref. level pot tmp + tmp excess
+
+    !
+    ! Output arguments
+    !
+    real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout) :: rino(shcol,nlev)                     ! bulk Richardson no. from level to ref lev
+    logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
+
+    !
+    !---------------------------Local parameters----------------------------
+    !
+    real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
+    real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
+    real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
+    integer  :: k                       ! level index
+    real(rtype) :: vvk                     ! velocity magnitude squared
+    real(rtype) :: th
     !
     ! PBL height calculation:  Scan upward until the Richardson number between
     ! the first level and the current level exceeds the "critical" value.
@@ -2812,19 +2974,59 @@ subroutine pblintd(&
     do k=nlev-1,nlev-npbl+1,-1
        do i=1,shcol
           if (check(i)) then
-             vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 + fac*ustar(i)**2
+             vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 +fac*ustar(i)**2
              vvk = max(vvk,tiny)
-             rino(i,k) = ggr*(thv(i,k) - thv(i,nlev))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
+             rino(i,k) = ggr*(thv(i,k) -thv(i,nlev))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
              if (rino(i,k) >= ricr) then
-                pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) - rino(i,k+1)) * &
+                pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) -rino(i,k+1)) * &
                      (z(i,k) - z(i,k+1))
                 check(i) = .false.
              end if
           end if
        end do
     end do
+    return
+end subroutine pblintd_height
+
+subroutine pblintd_surf_temp(&
+       shcol,nlev,nlevi,&          ! Input
+       z,ustar,obklen,kbfs,thv,&   ! Input
+       phiminv,tlv,unstbl,&        ! Output
+       pblh,check,rino)            ! InOutput
+    !------------------------------Arguments--------------------------------
+    ! Input arguments
     !
-    ! Estimate an effective surface temperature to account for surface fluctuations
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+    integer, intent(in) :: nlevi                     ! number of interface layers
+
+    real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
+    real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
+    real(rtype), intent(in)  :: obklen(shcol)           ! Obukhov length
+    real(rtype), intent(in)  :: kbfs(shcol)             ! sfc kinematic buoyancy flux [m^2/s^3]
+    real(rtype), intent(in) :: thv(shcol,nlev)          ! virtual potential temperature
+
+    real(rtype), intent(out) :: phiminv(shcol)          ! inverse phi function for momentum
+    real(rtype), intent(out) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
+    logical, intent(out)  :: unstbl(shcol)              ! pts w/unstbl pbl (positive virtual ht flx)
+    logical, intent(inout)  :: check(shcol)             ! True=>chk if Richardson no.>critcal
+    real(rtype), intent(inout) :: rino(shcol,nlev)      ! bulk Richardson no. from level to ref lev
+    real(rtype), intent(inout) :: pblh(shcol)              ! boundary-layer height [m]
+
+    !
+    !---------------------------Local parameters----------------------------
+    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
+    real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
+    real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
+    real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
+    real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
+    !
+    ! Estimate an effective surface temperature to account for surface
+    ! fluctuations
     !
     do i=1,shcol
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
@@ -2836,8 +3038,53 @@ subroutine pblintd(&
           tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
        end if
     end do
+    return
+end subroutine pblintd_surf_temp
+
+subroutine pblintd_vvk(&
+       shcol,nlev,&             ! Input
+       z,u,v,ustar,&            ! Input
+       thv,tlv,&                ! Input
+       check,rino,pblh)         ! Output
+    !------------------------------Arguments--------------------------------
+    ! Input arguments
     !
-    ! Improve pblh estimate for unstable conditions using the convective temperature excess:
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+
+    real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
+    real(rtype), intent(in)  :: u(shcol,nlev)           ! windspeed x-direction [m/s]
+    real(rtype), intent(in)  :: v(shcol,nlev)           ! windspeed y-direction [m/s]
+    real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
+    real(rtype), intent(in)  :: thv(shcol,nlev)         ! virtual potential temperature
+    real(rtype), intent(in)  :: tlv(shcol)              ! ref. level pot tmp + tmp excess
+    !
+    ! In/Output arguments
+    !
+    logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
+
+    !
+    !---------------------------Local parameters----------------------------
+    !
+    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
+    real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
+    real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
+    real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
+    real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
+    real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
+    real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
+    real(rtype), parameter :: binm  = betam*sffrac    ! betam * sffrac
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
+    integer  :: k                       ! level index
+    real(rtype) :: vvk                     ! velocity magnitude squared
+    !
+    ! Improve pblh estimate for unstable conditions using the convective
+    ! temperature excess:
     !
     do k=nlev-1,nlev-npbl+1,-1
        do i=1,shcol
@@ -2853,6 +3100,31 @@ subroutine pblintd(&
           end if
        end do
     end do
+    return
+end subroutine pblintd_vvk
+
+subroutine pblintd_pblh(&
+       shcol,nlev,nlevi,&             ! Input
+       z,ustar,check,&                ! Input
+       pblh)                          ! Output
+    !------------------------------Arguments--------------------------------
+    ! Input arguments
+    !
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+    integer, intent(in) :: nlevi                     ! number of interface layers
+
+    real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
+    real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
+    logical, intent(in)      :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    !
+    ! Output arguments
+    !
+    real(rtype), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
     !
     ! PBL height must be greater than some minimum mechanical mixing depth
     ! Several investigators have proposed minimum mechanical mixing depth
@@ -2870,6 +3142,32 @@ subroutine pblintd(&
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        pblh(i) = max(pblh(i),700.0_rtype*ustar(i))
     end do
+    return
+end subroutine pblintd_pblh
+
+
+subroutine pblintd_ocncldcheck(      &
+                   shcol,nlev,nlevi, &                  ! Input
+                   zi,cldn,          &                  ! Input
+                   pblh)                                ! InOutput
+    !------------------------------Arguments--------------------------------
+    ! Input arguments
+    !
+    integer, intent(in) :: shcol                     ! number of atmospheric columns
+    integer, intent(in) :: nlev                      ! number of mid-point layers
+    integer, intent(in) :: nlevi                     ! number of interface layers
+
+    real(rtype), intent(in)  :: zi(shcol,nlevi)         ! height above surface [m]
+    real(rtype), intent(in)  :: cldn(shcol,nlev)        ! new cloud fraction
+    !
+    ! In/Output arguments
+    !
+    real(rtype), intent(inout) :: pblh(shcol)             ! boundary-layer height [m]
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    integer  :: i                       ! longitude index
+    logical  :: ocncldcheck(shcol)      ! True=>if ocean surface and cloud in lowest layer
     !
     ! Final requirement on PBL heightis that it must be greater than the depth
     ! of the lowest model level over ocean if there is any cloud diagnosed in
@@ -2879,7 +3177,8 @@ subroutine pblintd(&
     ! lowest level, and to provide a weak ventilation of the layer to avoid
     ! a pathology in the cloud scheme (locking in low-level stratiform cloud)
     ! If over an ocean surface, and any cloud is diagnosed in the
-    ! lowest level, set pblh to 50 meters higher than top interface of lowest level
+    ! lowest level, set pblh to 50 meters higher than top interface of lowest
+    ! level
     !
     !  jrm This is being applied everywhere (not just ocean)!
     do i=1,shcol
@@ -2887,9 +3186,8 @@ subroutine pblintd(&
        if (cldn(i,nlev).ge.0.0_rtype) ocncldcheck(i) = .true.
        if (ocncldcheck(i)) pblh(i) = max(pblh(i),zi(i,nlev) + 50._rtype)
     end do
-    !
     return
-end subroutine pblintd
+end subroutine pblintd_ocncldcheck
 
   !==============================================================
   ! Linear interpolation to get values on various grids
