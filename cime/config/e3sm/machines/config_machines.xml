@@ -751,7 +751,7 @@
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc_wrap</CCSM_CPRNC>
+    <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -827,7 +827,7 @@
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc_wrap</CCSM_CPRNC>
+    <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
