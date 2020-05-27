@@ -1136,6 +1136,7 @@ contains
                                   ty_optical_props_2str
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_rrtmgp_util_string, only: lower_case
+      use rrtmgp_driver, only: rte_lw
 
       ! CAM history module provides subroutine to send output data to the history
       ! buffer to be aggregated and written to disk
@@ -1321,6 +1322,8 @@ contains
       ! NOTE: these are diagnostic only
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
+
+      character(len=32), dimension(:), allocatable :: gas_names_lower
 
       !----------------------------------------------------------------------
 
@@ -1767,17 +1770,23 @@ contains
                call initialize_rrtmgp_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_all)
                call initialize_rrtmgp_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_clrsky_all)
 
-               ! Calculate longwave fluxes
-               call t_startf('rad_fluxes_lw')
-               call calculate_fluxes_lw(                                          &
-                  active_gases, vmr_all(:,1:ncol_tot,1:nlev_rad),               &
-                  surface_emissivity(1:nlwbands,1:ncol_tot),                    &
-                  pmid(1:ncol_tot,1:nlev_rad  ), tmid(1:ncol_tot,1:nlev_rad  ), &
-                  pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,1:nlev_rad+1), &
-                  cld_optics_lw            , aer_optics_lw,             &
-                  fluxes_allsky_all            , fluxes_clrsky_all              &
-               )
-               call t_stopf('rad_fluxes_lw')
+               ! Get lowercase gas names
+               allocate(gas_names_lower(size(active_gases)))
+               do igas = 1,size(active_gases)
+                  gas_names_lower(igas) = trim(lower_case(active_gases(igas)))
+               end do
+               ! Do longwave radiative transfer calculations
+               call t_startf('rad_rte_lw')
+               call handle_error(rte_lw(k_dist_lw, gas_names_lower, vmr_all(:,1:ncol_tot,1:nlev_rad), &
+                                        pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
+                                        pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
+                                        surface_emissivity(1:nlwbands,1:ncol_tot), &
+                                        cld_optics_lw%tau, aer_optics_lw%tau, &
+                                        fluxes_allsky_all, fluxes_clrsky_all, &
+                                        t_lev=tint(1:ncol_tot,1:nlev_rad+1), &
+                                        n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
+               call t_stopf('rad_rte_lw')
+               deallocate(gas_names_lower)
 
                ! Calculate heating rates
                call t_startf('rad_heating_lw')
@@ -2070,54 +2079,6 @@ contains
    end subroutine calculate_fluxes_sw
 
    !----------------------------------------------------------------------------
-
-   subroutine calculate_fluxes_lw(gas_names, gas_vmr, emis_sfc, &
-                                pmid, tmid, pint, tint, &
-                                cld_optics, aer_optics, &
-                                fluxes_allsky, fluxes_clrsky)
-
-      use perf_mod, only: t_startf, t_stopf
-      use rrtmgp_driver, only: rte_lw
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      use mo_optical_props, only: ty_optical_props_1scl
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_util_string, only: lower_case
-
-      character(len=*), intent(in) :: gas_names(:)
-      real(r8), intent(in) :: gas_vmr(:,:,:)
-      real(r8), intent(in) :: emis_sfc(:,:)
-      real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
-      type(ty_optical_props_1scl), intent(in) :: cld_optics, aer_optics
-      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
-      integer :: ncol, nlev, igas
-      character(len=32), allocatable :: gas_names_lower(:)
-
-      ncol = size(pmid,1)
-      nlev = size(pmid,2)
-
-      ! Get lowercase gas names
-      allocate(gas_names_lower(size(gas_names)))
-      do igas = 1,size(gas_names)
-         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
-      end do
-
-      ! Do longwave radiative transfer calculations
-      call t_startf('rad_rte_lw')
-      call handle_error(rte_lw(k_dist_lw, gas_names_lower, gas_vmr(:,1:ncol,1:), &
-                               pmid(1:ncol,1:nlev), tmid(1:ncol,1:nlev), &
-                               pint(1:ncol,1:nlev+1), tint(1:ncol,nlev+1), &
-                               emis_sfc(1:nlwbands,1:ncol), &
-                               cld_optics%tau, aer_optics%tau, &
-                               fluxes_allsky, fluxes_clrsky, &
-                               t_lev=tint(1:ncol,1:nlev+1), &
-                               n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
-      call t_stopf('rad_rte_lw')
-      deallocate(gas_names_lower)
-
-   end subroutine calculate_fluxes_lw
-
-   !----------------------------------------------------------------------------
-
    ! Utility routine to compute domain averages of CRM data that has been
    ! "packed" into a single dimension to hold both global GCM columns and CRM
    ! "subcolumns" within each GCM column. Input will be 2D arrays dimensioned
