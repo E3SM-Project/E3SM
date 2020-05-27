@@ -31,7 +31,7 @@ module dshr_strdata_mod
   use pio              , only : pio_inquire, pio_inq_varid, pio_inq_varndims, pio_inq_vardimid
   use pio              , only : pio_inq_dimlen, pio_inq_vartype, pio_inq_dimname
   use pio              , only : pio_double, pio_real, pio_int, pio_offset_kind
-  use pio              , only : pio_read_darray, pio_get_var, pio_setframe
+  use pio              , only : pio_read_darray, pio_setframe
   use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf
 
@@ -75,8 +75,6 @@ module dshr_strdata_mod
      integer                             :: stream_ub
      type(ESMF_Field)                    :: field_stream                    ! a field on the stream data domain
      type(ESMF_FieldBundle), allocatable :: fldbun_data(:)                  ! stream field bundle interpolated to model grid
-     type(ESMF_FieldBundle), pointer     :: fldbun_model_lb                 ! stream n field bundle for lb of time period (model grid)
-     type(ESMF_FieldBundle), pointer     :: fldbun_model_ub                 ! stream n field bundle for ub of time period (model grid)
      type(ESMF_FieldBundle)              :: fldbun_model                    ! stream n field bundle interpolated to model grid and time
      integer                             :: ustrm                           ! index of vector u in stream
      integer                             :: vstrm                           ! index of vector v in stream
@@ -194,7 +192,9 @@ contains
 
     ! Initialize sdat streams (read xml file for streams)
     sdat%masterproc = (localPet == master_task)
-    call shr_stream_init_from_xml(xmlfilename, sdat%stream, sdat%masterproc, sdat%logunit, rc=rc)
+
+    call shr_stream_init_from_xml(xmlfilename, sdat%stream, sdat%masterproc, &
+         sdat%logunit, compid, rc=rc)
 
     allocate(sdat%pstrm(shr_strdata_get_stream_count(sdat)))
 
@@ -420,14 +420,12 @@ contains
           sdat%pstrm(ns)%stream_ub = 2
           allocate(sdat%pstrm(ns)%fldbun_data(2))
        else if(sdat%stream(ns)%readmode=='full_file') then
-!          print *,__FILE__,__LINE__,sdat%stream(ns)
-          ! how many times are in the full file?
+
+
        endif
        do i=1,size(sdat%pstrm(ns)%fldbun_data)
           sdat%pstrm(ns)%fldbun_data(i) = ESMF_FieldBundleCreate(rc=rc) ! stream mesh
        enddo
-       sdat%pstrm(ns)%fldbun_model_lb => sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb)
-       sdat%pstrm(ns)%fldbun_model_ub => sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_ub)
        sdat%pstrm(ns)%fldbun_model    = ESMF_FieldBundleCreate(rc=rc) ! time interpolation on model mesh
        do nfld = 1, nvars
           ! create temporary fields on model mesh and add the fields to the field bundle
@@ -458,7 +456,7 @@ contains
        sdat%pstrm(ns)%field_stream = ESMF_FieldCreate(sdat%pstrm(ns)%stream_mesh, &
             ESMF_TYPEKIND_r8, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_model_lb , 1, lfield_dst, rc=rc)
+       call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb), 1, lfield_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        !sdat%stream(ns)%mapalgo = "redist"
@@ -1022,7 +1020,7 @@ contains
              do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
                 call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , sdat%pstrm(ns)%fldlist_model(nf), dataptr   , rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_lb, sdat%pstrm(ns)%fldlist_model(nf), dataptr_lb, rc=rc)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb), sdat%pstrm(ns)%fldlist_model(nf), dataptr_lb, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 do i = 1,size(dataptr)
                    if (coszen(i) > solZenMin) then
@@ -1054,9 +1052,9 @@ contains
              do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
                 call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model   , sdat%pstrm(ns)%fldlist_model(nf), dataptr   , rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_lb, sdat%pstrm(ns)%fldlist_model(nf), dataptr_lb, rc=rc)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb), sdat%pstrm(ns)%fldlist_model(nf), dataptr_lb, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_model_ub, sdat%pstrm(ns)%fldlist_model(nf), dataptr_ub, rc=rc)
+                call dshr_fldbun_getfldptr(sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_ub), sdat%pstrm(ns)%fldlist_model(nf), dataptr_ub, rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 dataptr(:) = dataptr_lb(:) * flb + dataptr_ub(:) * fub
              end do
@@ -1261,26 +1259,11 @@ contains
 
     if (rDateM < rDateLB .or. rDateM > rDateUB) then
        call t_startf(trim(istr)//'_fbound')
-       if (sdat%masterproc) then ! Note that the stream bounds is only done on the master task
-          call shr_stream_findBounds(stream, mDate, mSec,  &
-               ivals(1), dDateLB, ivals(2), ivals(5), filename_lb, &
-               ivals(3), dDateUB, ivals(4), ivals(6), filename_ub)
-       endif
+       call shr_stream_findBounds(stream, mDate, mSec,  &
+            sdat%pstrm(ns)%ymdLB, dDateLB, sdat%pstrm(ns)%todLB, n_lb, filename_lb, &
+            sdat%pstrm(ns)%ymdUB, dDateUB, sdat%pstrm(ns)%todUB, n_ub, filename_ub)
+
        call t_stopf(trim(istr)//'_fbound')
-
-       call t_startf(trim(istr)//'_bcast')
-       call ESMF_VMBroadCast(vm, ivals, 6, 0, rc=rc)
-       call ESMF_VMBroadCast(vm, stream%calendar, CS, 0, rc=rc)
-       call ESMF_VMBroadCast(vm, filename_lb, CL, 0, rc=rc)
-       call ESMF_VMBroadCast(vm, filename_ub, CL, 0, rc=rc)
-
-       sdat%pstrm(ns)%ymdLB = ivals(1) ! Now all processors have the bounds
-       sdat%pstrm(ns)%todLB  = ivals(2)
-       sdat%pstrm(ns)%ymdUB = ivals(3)
-       sdat%pstrm(ns)%todUB  = ivals(4)
-       n_lb    = ivals(5)
-       n_ub    = ivals(6)
-       call t_stopf(trim(istr)//'_bcast')
     endif
 
     if (sdat%pstrm(ns)%ymdLB /= oDateLB .or. sdat%pstrm(ns)%todLB /= oSecLB) then
@@ -1290,15 +1273,6 @@ contains
           i = sdat%pstrm(ns)%stream_ub
           sdat%pstrm(ns)%stream_ub = sdat%pstrm(ns)%stream_lb
           sdat%pstrm(ns)%stream_lb = i
-!          call t_startf(trim(istr)//'_LB_copy')
-!          do nf = 1,size(sdat%pstrm(ns)%fldlist_model)
-!             call dshr_fldbun_getfldptr(fldbun_stream_ub, trim(sdat%pstrm(ns)%fldlist_model(nf)), fldptr1=dataptr_ub, rc=rc)
-!             if (chkerr(rc,__LINE__,u_FILE_u)) return
-!             call dshr_fldbun_getfldptr(fldbun_stream_lb, trim(sdat%pstrm(ns)%fldlist_model(nf)), fldptr1=dataptr_lb, rc=rc)
-!             if (chkerr(rc,__LINE__,u_FILE_u)) return
-!             dataptr_lb(:) = dataptr_ub(:)
-!          end do
-!          call t_stopf(trim(istr)//'_LB_copy')
        else
           ! read lower bound of data
           call shr_strdata_readstrm(sdat, ns, stream, stream_mesh, &
@@ -1433,7 +1407,9 @@ contains
     call dshr_field_getfldptr(sdat%pstrm(ns)%field_stream, fldptr1=dataptr, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     lsize = size(dataptr)
-
+    if (pio_iovartype == PIO_REAL) then
+       allocate(data_real(lsize))
+    endif
     do nf = 1,size(fldlist_stream)
        call dshr_fldbun_getfieldN(fldbun_model, nf, field_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -1450,13 +1426,11 @@ contains
           call shr_sys_abort(' ERROR: setting frame for variable: '// trim(fldlist_stream(nf)))
        end if
        if (pio_iovartype == PIO_REAL) then
-          allocate(data_real(lsize))
           call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
           if ( rcode /= PIO_NOERR ) then
              call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
           end if
           dataptr(:) = real(data_real(:), kind=r8)
-          deallocate(data_real)
        else if (pio_iovartype == PIO_DOUBLE) then
           call pio_read_darray(pioid, varid, pio_iodesc, dataptr, rcode)
           if ( rcode /= PIO_NOERR ) then
@@ -1471,7 +1445,9 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     enddo
-
+    if (pio_iovartype == PIO_REAL) then
+       deallocate(data_real)
+    endif
     call t_stopf(trim(istr)//'_readpio')
 
   end subroutine shr_strdata_readstrm
