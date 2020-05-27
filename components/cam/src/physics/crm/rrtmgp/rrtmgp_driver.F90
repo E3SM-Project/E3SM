@@ -43,9 +43,10 @@ contains
   !
   ! --------------------------------------------------
   function rte_lw( &
-        gas_names, gas_vmr, p_lay, t_lay, p_lev,            &
-        t_sfc, sfc_emis, cld_tau, aer_tau,                 &
-        allsky_fluxes, clrsky_fluxes,                      &
+        gas_names, gas_vmr, p_lay, t_lay, p_lev,    &
+        t_sfc, sfc_emis, cld_tau, aer_tau,          &
+        allsky_flux_up, allsky_flux_dn, allsky_bnd_flux_up, allsky_bnd_flux_dn, &
+        clrsky_flux_up, clrsky_flux_dn, clrsky_bnd_flux_up, clrsky_bnd_flux_dn, &
         col_dry, t_lev, inc_flux, n_gauss_angles) result(error_msg)
     character(len=*), dimension(:), intent(in) :: gas_names
     real(wp), dimension(:,:,:),    intent(in   ) :: gas_vmr
@@ -55,7 +56,10 @@ contains
     real(wp), dimension(:,:),    intent(in   ) :: sfc_emis  !< emissivity at surface         []   (nband, ncol)
     real(wp), dimension(:,:,:),  intent(in   ) :: cld_tau   ! cloud absorption optical depth (ncol,nlay,ngpt)
     real(wp), dimension(:,:,:),  intent(in   ) :: aer_tau   ! cloud absorption optical depth (ncol,nlay,nband)
-    type(ty_fluxes_byband),      intent(inout) :: allsky_fluxes, clrsky_fluxes
+    real(wp), dimension(:,:), intent(inout), target :: &
+       allsky_flux_up, allsky_flux_dn, clrsky_flux_up, clrsky_flux_dn
+    real(wp), dimension(:,:,:), intent(inout), target :: &
+       allsky_bnd_flux_up, allsky_bnd_flux_dn, clrsky_bnd_flux_up, clrsky_bnd_flux_dn
 
     ! Optional inputs
     real(wp), dimension(:,:), &
@@ -71,6 +75,7 @@ contains
     type(ty_gas_concs) :: gas_concs    !< derived type encapsulating gas concentrations
     type(ty_optical_props_1scl) :: optical_props, cld_props, aer_props
     type(ty_source_func_lw) :: sources
+    type(ty_fluxes_byband) :: allsky_fluxes, clrsky_fluxes
     integer :: ncol, nlay, ngpt, nband, nstr, igas
     logical :: top_at_1
     ! --------------------------------
@@ -84,6 +89,16 @@ contains
     nband = k_dist_lw%get_nband()
 
     top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
+
+    ! Associate output pointers
+    allsky_fluxes%flux_up => allsky_flux_up
+    allsky_fluxes%flux_dn => allsky_flux_dn
+    clrsky_fluxes%flux_up => clrsky_flux_up
+    clrsky_fluxes%flux_dn => clrsky_flux_dn
+    allsky_fluxes%bnd_flux_up => allsky_bnd_flux_up
+    allsky_fluxes%bnd_flux_dn => allsky_bnd_flux_dn
+    clrsky_fluxes%bnd_flux_up => clrsky_bnd_flux_up
+    clrsky_fluxes%bnd_flux_dn => clrsky_bnd_flux_dn
 
     ! Setup gas concentrations
     error_msg = gas_concs%init(gas_names)
@@ -114,7 +129,7 @@ contains
                                   col_dry, t_lev)
     if (error_msg /= '') return
 
-    ! Clear sky is gases + aerosols (if they're supplied)
+    ! Clear sky fluxes (gases + aerosols)
     error_msg = aer_props%increment(optical_props)
     if(error_msg /= '') return
     error_msg = base_rte_lw(optical_props, top_at_1, sources, &
@@ -122,7 +137,7 @@ contains
                             inc_flux, n_gauss_angles)
     if(error_msg /= '') return
 
-    ! All-sky fluxes = clear skies + clouds
+    ! All-sky fluxes (clear skies + clouds)
     error_msg = cld_props%increment(optical_props)
     if(error_msg /= '') return
 

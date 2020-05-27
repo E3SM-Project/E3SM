@@ -1772,14 +1772,18 @@ contains
                end do
                ! Do longwave radiative transfer calculations
                call t_startf('rad_rte_lw')
-               call handle_error(rte_lw(gas_names_lower, vmr_all(:,1:ncol_tot,1:nlev_rad), &
-                                        pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
-                                        pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
-                                        surface_emissivity(1:nlwbands,1:ncol_tot), &
-                                        cld_tau_lw_all, aer_tau_lw_all, &
-                                        fluxes_allsky_all, fluxes_clrsky_all, &
-                                        t_lev=tint(1:ncol_tot,1:nlev_rad+1), &
-                                        n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
+               call handle_error(rte_lw( &
+                  gas_names_lower, vmr_all(:,1:ncol_tot,1:nlev_rad), &
+                  pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
+                  pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
+                  surface_emissivity(1:nlwbands,1:ncol_tot), &
+                  cld_tau_lw_all, aer_tau_lw_all, &
+                  fluxes_allsky_all%flux_up, fluxes_allsky_all%flux_dn, &
+                  fluxes_allsky_all%bnd_flux_up, fluxes_allsky_all%bnd_flux_dn, &
+                  fluxes_clrsky_all%flux_up, fluxes_clrsky_all%flux_dn, &
+                  fluxes_clrsky_all%bnd_flux_up, fluxes_clrsky_all%bnd_flux_dn, &
+                  t_lev=tint(1:ncol_tot,1:nlev_rad+1), &
+                  n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
                call t_stopf('rad_rte_lw')
                deallocate(gas_names_lower)
 
