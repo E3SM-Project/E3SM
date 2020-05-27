@@ -31,6 +31,12 @@ module radiation
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
                               handle_error
 
+   ! k-distribution coefficients. These will be populated by reading from the
+   ! RRTMGP coefficients files, specified by coefficients_file_sw and
+   ! coefficients_file_lw in the radiation namelist. They exist as module data
+   ! because we only want to load those files once.
+   use rrtmgp_driver, only: k_dist_lw, k_dist_sw
+
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
 
@@ -128,12 +134,6 @@ module radiation
    ! TODO: where is this set, and what is shr_orb_cosz? Alternative solar zenith
    ! angle calculation? What is the other behavior?
    real(r8) :: dt_avg = 0.0_r8  
-
-   ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by coefficients_file_sw and
-   ! coefficients_file_lw in the radiation namelist. They exist as module data
-   ! because we only want to load those files once.
-   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
@@ -1772,7 +1772,7 @@ contains
                end do
                ! Do longwave radiative transfer calculations
                call t_startf('rad_rte_lw')
-               call handle_error(rte_lw(k_dist_lw, gas_names_lower, vmr_all(:,1:ncol_tot,1:nlev_rad), &
+               call handle_error(rte_lw(gas_names_lower, vmr_all(:,1:ncol_tot,1:nlev_rad), &
                                         pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
                                         pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
                                         surface_emissivity(1:nlwbands,1:ncol_tot), &
@@ -2029,7 +2029,7 @@ contains
         
       ! Compute fluxes
       call t_startf('rad_rte_sw')
-      call handle_error(rte_sw(k_dist_sw, gas_concs, &
+      call handle_error(rte_sw(gas_concs, &
                                pmid_day(1:nday,1:nlev), &
                                tmid_day(1:nday,1:nlev), &
                                pint_day(1:nday,1:nlev+1), &

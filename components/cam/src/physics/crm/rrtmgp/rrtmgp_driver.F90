@@ -31,6 +31,10 @@ module rrtmgp_driver
   implicit none
   private
   public :: rte_lw, rte_sw
+
+  public :: k_dist_lw, k_dist_sw
+  type(ty_gas_optics_rrtmgp) :: k_dist_lw, k_dist_sw
+
 contains
   ! --------------------------------------------------
   !
@@ -39,11 +43,10 @@ contains
   !
   ! --------------------------------------------------
   function rte_lw( &
-        k_dist, gas_names, gas_vmr, p_lay, t_lay, p_lev,            &
+        gas_names, gas_vmr, p_lay, t_lay, p_lev,            &
         t_sfc, sfc_emis, cld_tau, aer_tau,                 &
         allsky_fluxes, clrsky_fluxes,                      &
         col_dry, t_lev, inc_flux, n_gauss_angles) result(error_msg)
-    type(ty_gas_optics_rrtmgp),  intent(in   ) :: k_dist       !< derived type with spectral information
     character(len=*), dimension(:), intent(in) :: gas_names
     real(wp), dimension(:,:,:),    intent(in   ) :: gas_vmr
     real(wp), dimension(:,:),    intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
@@ -77,8 +80,8 @@ contains
 
     ncol  = size(p_lay, 1)
     nlay  = size(p_lay, 2)
-    ngpt  = k_dist%get_ngpt()
-    nband = k_dist%get_nband()
+    ngpt  = k_dist_lw%get_ngpt()
+    nband = k_dist_lw%get_nband()
 
     top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
 
@@ -91,22 +94,22 @@ contains
     if (error_msg /= '') return
 
     ! Optical properties arrays
-    error_msg = optical_props%alloc_1scl(ncol, nlay, k_dist)
+    error_msg = optical_props%alloc_1scl(ncol, nlay, k_dist_lw)
     if (error_msg /= '') return
-    error_msg = cld_props%alloc_1scl(ncol, nlay, k_dist)
+    error_msg = cld_props%alloc_1scl(ncol, nlay, k_dist_lw)
     if (error_msg /= '') return
     cld_props%tau = cld_tau
-    error_msg = aer_props%alloc_1scl(ncol, nlay, k_dist%get_band_lims_wavenumber())
+    error_msg = aer_props%alloc_1scl(ncol, nlay, k_dist_lw%get_band_lims_wavenumber())
     if (error_msg /= '') return
     aer_props%tau = aer_tau
 
     ! Source function
-    error_msg = sources%init(k_dist)
+    error_msg = sources%init(k_dist_lw)
     error_msg = sources%alloc(ncol, nlay)
     if (error_msg /= '') return
 
     ! Gas optical depth -- pressure need to be expressed as Pa
-    error_msg = k_dist%gas_optics(p_lay, p_lev, t_lay, t_sfc, gas_concs, &
+    error_msg = k_dist_lw%gas_optics(p_lay, p_lev, t_lay, t_sfc, gas_concs, &
                                   optical_props, sources,                &
                                   col_dry, t_lev)
     if (error_msg /= '') return
@@ -131,11 +134,10 @@ contains
   end function rte_lw
   ! --------------------------------------------------
   function rte_sw( &
-        k_dist, gas_concs, p_lay, t_lay, p_lev,     &
+        gas_concs, p_lay, t_lay, p_lev,     &
         mu0, sfc_alb_dir, sfc_alb_dif, cloud_props, &
         allsky_fluxes, clrsky_fluxes,               &
         aer_props, col_dry, inc_flux, tsi_scaling   ) result(error_msg)
-    type(ty_gas_optics_rrtmgp),  intent(in   ) :: k_dist       !< derived type with spectral information
     type(ty_gas_concs),          intent(in   ) :: gas_concs    !< derived type encapsulating gas concentrations
     real(wp), dimension(:,:),    intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
     real(wp), dimension(:,:),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
@@ -168,8 +170,8 @@ contains
 
     ncol  = size(p_lay, 1)
     nlay  = size(p_lay, 2)
-    ngpt  = k_dist%get_ngpt()
-    nband = k_dist%get_nband()
+    ngpt  = k_dist_sw%get_ngpt()
+    nband = k_dist_sw%get_nband()
 
     top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
 
@@ -200,14 +202,14 @@ contains
     if(len_trim(error_msg) > 0) return
 
     ! Optical properties arrays
-    error_msg = optical_props%alloc_2str(ncol, nlay, k_dist)
+    error_msg = optical_props%alloc_2str(ncol, nlay, k_dist_sw)
     if (error_msg /= '') return
 
     ! TOA flux
     allocate(toa_flux(ncol, ngpt))
 
     ! Gas optical depth -- pressure need to be expressed as Pa
-    error_msg = k_dist%gas_optics(p_lay, p_lev, t_lay, gas_concs,  &
+    error_msg = k_dist_sw%gas_optics(p_lay, p_lev, t_lay, gas_concs,  &
                                   optical_props, toa_flux,                          &
                                   col_dry)
     if (error_msg /= '') return
