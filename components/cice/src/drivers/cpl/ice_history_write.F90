@@ -621,6 +621,12 @@
          endif
       enddo ! num_avail_hist_fields
 
+      ! -------------------------
+      ! clean-up PIO descriptors
+      ! -------------------------
+      call pio_freedecomp(File,iodesc2d)
+      call pio_freedecomp(File,iodesc3d)
+
       !-----------------------------------------------------------------
       ! close output dataset
       !-----------------------------------------------------------------
@@ -641,12 +647,6 @@
 !    msize0,' MB (highwater) ',mrss0,' MB (usage)'
 !     endif
       
-      ! -------------------------
-      ! clean-up PIO descriptors
-      ! -------------------------
-      call pio_freedecomp(File,iodesc2d)
-      call pio_freedecomp(File,iodesc3d)
-
       !-------------------------
       !  Test memory usage
       !-------------------------
