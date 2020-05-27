@@ -1,4 +1,4 @@
-1module dshr_stream_mod
+module dshr_stream_mod
 
   ! -------------------------------------------------------------------------------
   ! Data type and methods to manage input data streams.
@@ -26,8 +26,11 @@
   use shr_cal_mod      , only : shr_cal_advDate
   use shr_cal_mod      , only : shr_cal_advdateint
   use dshr_methods_mod , only : chkerr
-  use pio              , only : file_desc_t
-  use netcdf
+  use pio              , only : pio_noerr, pio_seterrorhandling, pio_inq_att, pio_openfile
+  use pio              , only : file_desc_t, pio_inq_varid, iosystem_desc_t, pio_file_is_open
+  use pio              , only : pio_nowrite, pio_inquire_dimension, pio_inquire_variable, pio_bcast_error
+  use pio              , only : pio_get_att, pio_get_var
+
 
   implicit none
   private ! default private
@@ -65,6 +68,7 @@
      integer               :: nt = 0                      ! size of time dimension
      integer  ,allocatable :: date(:)                     ! t-coord date: yyyymmdd
      integer  ,allocatable :: secs(:)                     ! t-coord secs: elapsed on date
+     type(file_desc_t)     :: fileid
   end type shr_stream_file_type
 
   type shr_stream_data_variable
@@ -75,6 +79,9 @@
   type shr_stream_streamType
      !private ! no public access to internal components
      integer           :: logunit                               ! stdout log unit
+     type(iosystem_desc_t), pointer :: pio_subsystem
+     integer           :: pio_iotype
+     integer           :: pio_ioformat
      logical           :: init         = .false.                ! has stream been initialized
      integer           :: nFiles       = 0                      ! number of data files
      integer           :: yearFirst    = -1                     ! first year to use in t-axis (yyyymmdd)
@@ -114,11 +121,12 @@
 contains
 !===============================================================================
 
-  subroutine shr_stream_init_from_xml(xmlfilename, streamdat, mastertask, logunit, rc)
+  subroutine shr_stream_init_from_xml(xmlfilename, streamdat, mastertask, logunit, &
+       compid, rc)
 
     use FoX_DOM
     use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadCast, ESMF_SUCCESS
-
+    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
     ! ---------------------------------------------------------------------
     ! The xml format of a stream txt file will look like the following
     ! <?xml version="1.0"?>
@@ -146,6 +154,7 @@ contains
     character(len=*)            , intent(in)             :: xmlfilename
     logical                     , intent(in)             :: mastertask
     integer                     , intent(in)             :: logunit
+    integer                     , intent(in)             :: compid
     integer                     , intent(out)            :: rc
 
     ! local variables
@@ -253,8 +262,6 @@ contains
              streamdat(i)%varlist(n)%nameinfile = tmpstr(1:index(tmpstr, " "))
              streamdat(i)%varlist(n)%nameinmodel = tmpstr(index(trim(tmpstr), " ", .true.)+1:)
           enddo
-
-          call shr_stream_getCalendar(streamdat(i), 1, streamdat(i)%calendar)
        enddo
        call destroy(Sdoc)
     endif
@@ -314,13 +321,19 @@ contains
        call ESMF_VMBroadCast(vm, rtmp, 1, 0, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        streamdat(i)%dtlimit = rtmp(1)
+       streamdat(i)%pio_subsystem => shr_pio_getiosys(compid)
+       streamdat(i)%pio_iotype = shr_pio_getiotype(compid)
+       streamdat(i)%pio_ioformat = shr_pio_getioformat(compid)
+       call shr_stream_getCalendar(streamdat(i), 1, streamdat(i)%calendar)
     enddo
+
 
     ! Set logunit
     streamdat(:)%logunit = logunit
 
     ! initialize flag that stream has been set
     streamdat(:)%init = .true.
+
 
   end subroutine shr_stream_init_from_xml
 
@@ -400,7 +413,7 @@ contains
   end subroutine shr_stream_init_from_inline
 
   !===============================================================================
-  subroutine shr_stream_findBounds(strm,mDateIn, secIn, &
+  subroutine shr_stream_findBounds(strm, mDateIn, secIn, &
        mDateLB, dDateLB, secLB, n_lb, fileLB,  mDateUB, dDateUB, secUB, n_ub, fileUB)
 
     ! Given a stream and a model date, find time coordinates of the upper and
@@ -845,14 +858,14 @@ contains
   end subroutine shr_stream_findBounds
 
   !===============================================================================
-  subroutine shr_stream_readTCoord(strm,k,rc)
+  subroutine shr_stream_readTCoord(strm, k, rc)
 
     ! Read in time coordinates with possible offset (require that time coordinate is 'time')
 
     ! input/output parameters:
     type(shr_stream_streamType)  ,intent(inout) :: strm ! data stream to query
-    integer         ,intent(in)    :: k    ! stream file index
-    integer,optional,intent(out)   :: rc   ! return code
+    integer         ,intent(in)                 :: k    ! stream file index
+    integer,optional,intent(out)                :: rc   ! return code
 
     ! local variables
     character(CL)          :: fileName    ! filename to read
@@ -861,13 +874,15 @@ contains
     integer                :: din,dout
     integer                :: sin,sout,offin
     integer                :: lrc
-    integer                :: fid,vid,ndims,rcode
+
+    integer                :: vid,ndims,rcode
     integer,allocatable    :: dids(:)
     character(CS)          :: units,calendar
     character(CS)          :: bunits        ! time units (days,secs,...)
     integer                :: bdate         ! base date: calendar date
     real(R8)               :: bsec          ! base date: elapsed secs
     integer                :: ndate         ! calendar date of time value
+    integer                :: old_handle    ! previous setting of pio error handling
     real(R8)               :: nsec          ! elapsed secs on calendar date
     real(R8),allocatable   :: tvar(:)
     character(*),parameter :: subname = '(shr_stream_readTCoord) '
@@ -875,21 +890,19 @@ contains
     !-------------------------------------------------------------------------------
 
     lrc = 0
+    if(.not. pio_file_is_open(strm%file(k)%fileid)) then
+       fileName  = trim(strm%file(k)%name)
+       rcode = pio_openfile(strm%pio_subsystem, strm%file(k)%fileid, strm%pio_iotype, &
+            filename, pio_nowrite)
+    endif
 
-    fileName  = trim(strm%file(k)%name)
-    rCode = nf90_open(fileName, nf90_nowrite, fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
-    rCode = nf90_inq_varid(fid, 'time', vid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
-    rCode = nf90_inquire_variable(fid, vid, ndims=ndims)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable1')
+    rCode = pio_inq_varid(strm%file(k)%fileid, 'time', vid)
+    rCode = pio_inquire_variable(strm%file(k)%fileid, vid, ndims=ndims)
     allocate(dids(ndims))
-    rCode = nf90_inquire_variable(fid, vid, dimids=dids)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable2')
+    rCode = pio_inquire_variable(strm%file(k)%fileid, vid, dimids=dids)
 
     ! determine number of times in file
-    rCode = nf90_inquire_dimension(fid, dids(1), len=nt)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_dimension')
+    rCode = pio_inquire_dimension(strm%file(k)%fileid, dids(1), len=nt)
     deallocate(dids)
 
     ! allocate memory for date and secs
@@ -898,18 +911,18 @@ contains
 
     ! get time units
     units = ' '
-    rCode = nf90_get_att(fid, vid, 'units', units)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att units')
+    rCode = pio_get_att(strm%file(k)%fileid, vid, 'units', units)
     n = len_trim(units)
     if (ichar(units(n:n)) == 0 ) units(n:n) = ' '
     call shr_string_leftalign_and_convert_tabs(units)
 
     ! get strm%calendar
     calendar = ' '
-    rCode = nf90_inquire_attribute(fid, vid, 'calendar')
-    if (rCode == nf90_noerr) then
-       rCode = nf90_get_att(fid, vid, 'calendar', calendar)
-       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
+    call pio_seterrorhandling(strm%file(k)%fileid, PIO_BCAST_ERROR, old_handle)
+    rCode = pio_inq_att(strm%file(k)%fileid, vid, 'calendar')
+    call pio_seterrorhandling(strm%file(k)%fileid, old_handle)
+    if (rCode == pio_noerr) then
+       rCode = pio_get_att(strm%file(k)%fileid, vid, 'calendar', calendar)
     else
        calendar = trim(shr_cal_noleap)
     endif
@@ -921,10 +934,7 @@ contains
 
     ! read in time coordinate values
     allocate(tvar(nt))
-    rcode = nf90_get_var(fid,vid,tvar)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_var')
-    rCode = nf90_close(fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
+    rcode = pio_get_var(strm%file(k)%fileid,vid,tvar)
 
     ! determine strm%file(k)%date(n) and strm%file(k)%secs(n)
     do n = 1,nt
@@ -1123,13 +1133,14 @@ contains
     ! Returns calendar name
 
     ! input/output parameters:
-    type(shr_stream_streamType) ,intent(in)  :: strm     ! data stream
+    type(shr_stream_streamType) ,intent(inout)  :: strm     ! data stream
     integer                     ,intent(in)  :: k        ! file to query
     character(*)                ,intent(out) :: calendar ! calendar name
 
     ! local
     integer                :: fid, vid, n
     character(CL)          :: fileName,lcal
+    integer                :: old_handle
     integer                :: rCode
     character(*),parameter :: subName = '(shr_stream_getCalendar) '
     !-------------------------------------------------------------------------------
@@ -1137,20 +1148,21 @@ contains
     lcal = ' '
     calendar = ' '
     if (k > strm%nfiles) call shr_sys_abort(subname//' ERROR: k gt nfiles')
-    fileName = trim(strm%file(k)%name)
-    rCode = nf90_open(fileName,nf90_nowrite,fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
-    rCode = nf90_inq_varid(fid, 'time', vid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
-    rCode = nf90_inquire_attribute(fid, vid, 'calendar')
-    if (rCode == nf90_noerr) then
-       rCode = nf90_get_att(fid, vid, 'calendar', lcal)
-       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
+
+    if(.not. pio_file_is_open(strm%file(k)%fileid)) then
+       fileName  = strm%file(k)%name
+       rcode = pio_openfile(strm%pio_subsystem, strm%file(k)%fileid, strm%pio_iotype, trim(filename))
+    endif
+
+    rCode = pio_inq_varid(strm%file(k)%fileid, 'time', vid)
+    call pio_seterrorhandling(strm%file(k)%fileid, PIO_BCAST_ERROR, old_handle)
+    rCode = pio_inq_att(strm%file(k)%fileid, vid, 'calendar')
+    call pio_seterrorhandling(strm%file(k)%fileid, old_handle)
+    if(rcode == PIO_NOERR) then
+       rCode = pio_get_att(strm%file(k)%fileid, vid, 'calendar', lcal)
     else
        lcal = trim(shr_cal_noleap)
     endif
-    rCode = nf90_close(fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
 
     n = len_trim(lcal)
     if (ichar(lcal(n:n)) == 0 ) lcal(n:n) = ' '
@@ -1165,7 +1177,7 @@ contains
     ! returns current file information
 
     ! input/output parameters:
-    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
+    type(shr_stream_streamType),intent(inout)  :: strm      ! data stream
     logical           ,optional,intent(out) :: fileopen  ! file open flag
     character(*)      ,optional,intent(out) :: currfile  ! current filename
     type(file_desc_t) ,optional,intent(out) :: currpioid ! current pioid
