@@ -107,6 +107,17 @@ real(rtype), parameter :: maxtke = 50.0_rtype
 ! Minimum TKE [m2/s2]
 real(rtype), parameter :: mintke = 0.0004_rtype
 
+!===================
+! const parameter for Diagnosis of PBL depth
+real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
+real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
+real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
+real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
+real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
+real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
+real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
+real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
+
 ! Maximum number of levels in pbl from surface
 integer :: npbl
 
@@ -2753,35 +2764,18 @@ subroutine pblintd(&
     real(rtype), intent(in)  :: kbfs(shcol)             ! sfc kinematic buoyancy flux [m^2/s^3]
     real(rtype), intent(in)  :: zi(shcol,nlevi)         ! height above surface [m]
     real(rtype), intent(in)  :: cldn(shcol,nlev)        ! new cloud fraction
-
     !
     ! Output arguments
     !
     real(rtype), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
     !
-    !---------------------------Local parameters----------------------------
-    !
-    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
-    real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
-    real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
-    real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
-    real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
-    real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
-    real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
-    real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
-    !
     !---------------------------Local workspace-----------------------------
     !
-    integer  :: i                       ! longitude index
-    integer  :: k                       ! level index
-
     real(rtype) :: phiminv(shcol)          ! inverse phi function for momentum
     real(rtype) :: phihinv(shcol)          ! inverse phi function for heat
     real(rtype) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
     real(rtype) :: thv(shcol,nlev)         ! virtual potential temperature
     real(rtype) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
-    real(rtype) :: vvk                     ! velocity magnitude squared
-    real(rtype) :: th
 
     logical  :: unstbl(shcol)           ! pts w/unstbl pbl (positive virtual ht flx)
     logical  :: check(shcol)            ! True=>chk if Richardson no.>critcal
@@ -2955,12 +2949,6 @@ subroutine pblintd_height(&
     logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
 
     !
-    !---------------------------Local parameters----------------------------
-    !
-    real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
-    real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
-    real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
-    !
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
@@ -3012,14 +3000,6 @@ subroutine pblintd_surf_temp(&
     logical, intent(inout)  :: check(shcol)             ! True=>chk if Richardson no.>critcal
     real(rtype), intent(inout) :: rino(shcol,nlev)      ! bulk Richardson no. from level to ref lev
     real(rtype), intent(inout) :: pblh(shcol)              ! boundary-layer height [m]
-
-    !
-    !---------------------------Local parameters----------------------------
-    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
-    real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
-    real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
-    real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
-    real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
     !
     !---------------------------Local workspace-----------------------------
     !
@@ -3064,18 +3044,6 @@ subroutine pblintd_vvk(&
     logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
     real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
     real(rtype), intent(inout) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
-
-    !
-    !---------------------------Local parameters----------------------------
-    !
-    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
-    real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
-    real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
-    real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
-    real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
-    real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
-    real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
-    real(rtype), parameter :: binm  = betam*sffrac    ! betam * sffrac
     !
     !---------------------------Local workspace-----------------------------
     !
