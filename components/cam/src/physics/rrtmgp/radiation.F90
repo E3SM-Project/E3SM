@@ -33,6 +33,12 @@ module radiation
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
                               handle_error
 
+   ! k-distribution coefficients. These will be populated by reading from the
+   ! RRTMGP coefficients files, specified by coefficients_file_sw and
+   ! coefficients_file_lw in the radiation namelist. They exist as module data
+   ! because we only want to load those files once.
+   use rrtmgp_driver, only: k_dist_lw, k_dist_sw
+
    implicit none
    private
    save
@@ -127,12 +133,6 @@ module radiation
    ! TODO: where is this set, and what is shr_orb_cosz? Alternative solar zenith
    ! angle calculation? What is the other behavior?
    real(r8) :: dt_avg = 0.0_r8  
-
-   ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by coefficients_file_sw and
-   ! coefficients_file_lw in the radiation namelist. They exist as module data
-   ! because we only want to load those files once.
-   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
@@ -1497,7 +1497,7 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
-      use mo_rrtmgp_clr_all_sky, only: rte_sw
+      use rrtmgp_driver, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
@@ -1559,6 +1559,9 @@ contains
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day, tint_day
 
       real(r8), dimension(size(active_gases),ncol,pver) :: gas_vmr_day
+      ! Character array to hold lowercase gas names
+      character(len=32), allocatable :: gas_names_lower(:)
+      real(r8), dimension(:,:,:), allocatable :: gas_vmr_rad
       integer :: igas, iday, icol
 
       ! Everybody needs a name
@@ -1669,25 +1672,38 @@ contains
                                    gas_vmr_day(igas,1:nday,1:pver), &
                                    day_indices(1:nday))
       end do
-      call set_gas_concentrations(nday, gas_names, gas_vmr_day, gas_concentrations)
+      ! Initialize gas concentrations with lower case names
+      allocate(gas_names_lower(size(gas_names)))
+      allocate(gas_vmr_rad(size(gas_names),nday,nlev_rad))
+      do igas = 1,size(gas_names)
+         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
+      end do
+      gas_vmr_rad = 0
+      gas_vmr_rad(:,:nday,ktop:kbot) = gas_vmr_day(:,:nday,1:pver)
       call t_stopf('rad_set_gases_sw')
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_calculations_sw')
       call handle_error(rte_sw( &
-         k_dist_sw, gas_concentrations, &
+         gas_names_lower, gas_vmr_rad, &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
          coszrs_day(1:nday), &
          albedo_dir_day(1:nswbands,1:nday), &
          albedo_dif_day(1:nswbands,1:nday), &
-         cld_optics_sw, &
-         fluxes_allsky_day, fluxes_clrsky_day, &
-         aer_props=aer_optics_sw, &
+         cld_optics_sw%tau, cld_optics_sw%ssa, cld_optics_sw%g, &
+         aer_optics_sw%tau, aer_optics_sw%ssa, aer_optics_sw%g, &
+         fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
+         fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
+         fluxes_allsky%bnd_flux_dn_dir, &
+         fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
+         fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net, &
+         fluxes_clrsky%bnd_flux_dn_dir, &
          tsi_scaling=tsi_scaling &
       ))
       call t_stopf('rad_calculations_sw')
+      deallocate(gas_names_lower, gas_vmr_rad)
 
       ! Calculate heating rates on the DAYTIME columns
       call t_startf('rad_heating_rate_sw')
@@ -1790,7 +1806,7 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
       use perf_mod, only: t_startf, t_stopf
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
+      use rrtmgp_driver, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
@@ -1814,6 +1830,10 @@ contains
 
       ! Temporary heating rates on radiation vertical grid
       real(r8), dimension(ncol,nlev_rad) :: qrl_rad, qrlc_rad
+
+      ! Character array to hold lowercase gas names
+      character(len=32), allocatable :: gas_names_lower(:)
+      real(r8), dimension(:,:,:), allocatable :: gas_vmr_rad
 
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
@@ -1846,13 +1866,6 @@ contains
       call handle_error(aer_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
       call aer_optics_lw%set_name('longwave aerosol optics')
 
-      ! Set gas concentrations (I believe the active gases may change
-      ! for different values of icall, which is why we do this within
-      ! the loop).
-      call t_startf('rad_gas_concentrations_lw')
-      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
-      call t_stopf('rad_gas_concentrations_lw')
-
       if (do_aerosol_rad) then
          ! Get longwave aerosol optics
          call t_startf('rad_aer_optics_lw')
@@ -1863,20 +1876,32 @@ contains
          aer_optics_lw%tau(:,:,:) = 0
       end if
 
+      ! Initialize gas concentrations with lower case names
+      allocate(gas_names_lower(size(gas_names)))
+      allocate(gas_vmr_rad(size(gas_names),ncol,nlev_rad))
+      do igas = 1,size(gas_names)
+         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
+      end do
+      gas_vmr_rad = 0
+      gas_vmr_rad(:,:ncol,ktop:kbot) = gas_vmr(:,:ncol,1:pver)
+
       ! Do longwave radiative transfer calculations
       call t_startf('rad_calculations_lw')
       call handle_error(rte_lw( &
-         k_dist_lw, gas_concentrations, &
+         gas_names_lower, gas_vmr_rad(:,1:ncol,1:nlev_rad), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
          pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
-         cld_optics_lw, &
-         fluxes_allsky, fluxes_clrsky, &
-         aer_props=aer_optics_lw, &
+         cld_optics_lw%tau, aer_optics_lw%tau, &
+         fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
+         fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
+         fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
+         fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net, &
          t_lev=tint(1:ncol,1:nlev_rad+1), &
          n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
       ))
       call t_stopf('rad_calculations_lw')
+      deallocate(gas_vmr_rad, gas_names_lower)
 
       ! Calculate heating rates
       call calculate_heating_rate(  &
@@ -2572,53 +2597,6 @@ contains
       end do  ! igas
 
    end subroutine get_gas_vmr
-
-   !----------------------------------------------------------------------------
-
-   subroutine set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_util_string, only: lower_case
-
-      integer, intent(in) :: ncol
-      character(len=*), intent(in), dimension(:) :: gas_names
-      real(r8), intent(in), dimension(:,:,:) :: gas_vmr
-      type(ty_gas_concs), intent(out) :: gas_concentrations
-
-      ! Local variables
-      real(r8), dimension(pcols,nlev_rad) :: vol_mix_ratio_out
-
-      ! Loop indices
-      integer :: igas
-
-      ! Character array to hold lowercase gas names
-      character(len=32), allocatable :: gas_names_lower(:)
-
-      ! Name of subroutine for error messages
-      character(len=32) :: subname = 'set_gas_concentrations'
-
-      ! Initialize gas concentrations with lower case names
-      allocate(gas_names_lower(size(gas_names)))
-      do igas = 1,size(gas_names)
-         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
-      end do
-      call handle_error(gas_concentrations%init(gas_names_lower))
-
-      ! For each gas, add level above model top and set values in RRTMGP object
-      do igas = 1,size(gas_names)
-         vol_mix_ratio_out = 0
-         ! Map to radiation grid
-         vol_mix_ratio_out(1:ncol,ktop:kbot) = gas_vmr(igas,1:ncol,1:pver)
-         ! Copy top-most model level to top-most rad level (which could be above
-         ! the top of the model)
-         vol_mix_ratio_out(1:ncol,1) = gas_vmr(igas,1:ncol,1)
-         ! Set volumn mixing ratio in gas concentration object for just columns
-         ! in this chunk
-         call handle_error(gas_concentrations%set_vmr( &
-            trim(lower_case(gas_names(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) &
-         )
-      end do
-
-   end subroutine set_gas_concentrations
 
    !----------------------------------------------------------------------------
 
