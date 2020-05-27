@@ -119,7 +119,6 @@
         <command name="rm">craype-sandybridge</command>
         <command name="rm">craype-ivybridge</command>
         <command name="rm">craype</command>
-        <command name="rm">craype-hugepages2M</command>
         <command name="rm">papi</command>
         <command name="rm">cmake</command>
         <command name="rm">cray-petsc</command>
@@ -199,6 +198,7 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
     <environment_variables compiler="intel">
+      <env name="CRAYPE_LINK_TYPE">static</env>
       <env name="FORT_BUFFERED">yes</env>
     </environment_variables>
   </machine>
@@ -362,10 +362,12 @@
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
     <environment_variables compiler="intel">
+      <env name="CRAYPE_LINK_TYPE">static</env>
       <env name="FORT_BUFFERED">yes</env>
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
     <environment_variables compiler="intel19">
+      <env name="CRAYPE_LINK_TYPE">static</env>
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
   </machine>
