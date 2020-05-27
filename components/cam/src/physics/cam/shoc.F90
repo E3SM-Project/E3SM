@@ -944,10 +944,10 @@ subroutine diag_second_shoc_moments_lbycond(&
   ! Purpose of this subroutine is to diagnose the lower
   !  boundary condition for the second order moments needed 
   !  for the SHOC parameterization.  
-  ! The thermodymnamic, tracer, and momentum fluxes are set to the 
-  !  surface fluxes for the host model, while the thermodynamic
-  !  variances and covariances are computed according to that
-  !  of Andre et al. 1978.  
+  ! The thermodymnamic, tracer, and momentum fluxes are set 
+  !  to the surface fluxes for the host model, while the
+  !  thermodynamic variances and covariances are computed
+  !  according to that of Andre et al. 1978.  
 
   implicit none
 
@@ -1083,7 +1083,7 @@ subroutine diag_second_shoc_moments(&
          thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Input/Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
          wtracer_sec,&                          ! Input/Output
-	 w_sec)                                 ! Output
+         w_sec)                                 ! Output
 	 
   ! Purpose of this subroutine is to diagnose the second
   !  order moments needed for the SHOC parameterization.
@@ -1133,23 +1133,23 @@ subroutine diag_second_shoc_moments(&
   
 ! INPUT/OUTPUT VARIABLES  
   ! second order liquid wat. potential temp. [K^2]
-  real(rtype), intent(out) :: thl_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: thl_sec(shcol,nlevi)
   ! second order total water mixing rat. [kg^2/kg^2]
-  real(rtype), intent(out) :: qw_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: qw_sec(shcol,nlevi)
   ! covariance of temp and moisture [K kg/kg]
-  real(rtype), intent(out) :: qwthl_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: qwthl_sec(shcol,nlevi)
   ! vertical flux of heat [K m/s]
-  real(rtype), intent(out) :: wthl_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: wthl_sec(shcol,nlevi)
   ! vertical flux of total water [kg/kg m/s]
-  real(rtype), intent(out) :: wqw_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: wqw_sec(shcol,nlevi)
   ! vertical flux of zonal wind [m2/s2]
-  real(rtype), intent(out) :: uw_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: uw_sec(shcol,nlevi)
   ! vertical flux of meridional wind [m2/s2]
-  real(rtype), intent(out) :: vw_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: vw_sec(shcol,nlevi)
   ! vertical flux of tke [m3/s3]
-  real(rtype), intent(out) :: wtke_sec(shcol,nlevi)
+  real(rtype), intent(inout) :: wtke_sec(shcol,nlevi)
   ! vertical flux of tracer [varies m/s]
-  real(rtype), intent(out) :: wtracer_sec(shcol,nlevi,num_tracer)
+  real(rtype), intent(inout) :: wtracer_sec(shcol,nlevi,num_tracer)
 
 ! OUTPUT VARIABLES
   ! second order vertical velocity [m2/s2]
@@ -1231,10 +1231,13 @@ subroutine diag_second_shoc_moments_ubycond(&
          wtracer_sec)                           ! Input/Output
 	 
   ! Purpose of this subroutine is to diagnose the upper
-  !  boundary condition for the second order moments needed 
-  !  for the SHOC parameterization.  Currently set all to zero 	 
+  !  boundary condition for the second order moments 
+  !  needed for the SHOC parameterization.  Currently
+  !  set all to zero. 	 
 	 
   implicit none
+  
+  ! INPUT VARIABLES
   ! number of SHOC columns
   integer, intent(in) :: shcol
   ! number of interface levels
@@ -1242,7 +1245,7 @@ subroutine diag_second_shoc_moments_ubycond(&
   ! number of tracers
   integer, intent(in) :: num_tracer
 
-  ! OUTPUT VARIABLES
+  ! INPUT/OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
   real(rtype), intent(inout) :: thl_sec(shcol,nlevi)
   ! second order total water mixing rat. [kg^2/kg^2]
