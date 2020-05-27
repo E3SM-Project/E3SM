@@ -631,7 +631,7 @@ contains
        ! -------------------------------------
        ! Determine ocean fraction
        ! -------------------------------------
-       
+
        ! Set pointers to exportState fields that have no corresponding stream field
        call dshr_state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
