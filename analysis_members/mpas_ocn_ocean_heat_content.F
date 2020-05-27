@@ -89,7 +89,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -138,7 +138,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -154,45 +154,45 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: oceanHeatContentAMPool
-      type (dm_info) :: dminfo
-      type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: statePool
-      type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: tracersPool
+      type(mpas_pool_type), pointer :: oceanHeatContentAMPool
+      type(dm_info) :: dminfo
+      type(block_type), pointer :: block
+      type(mpas_pool_type), pointer :: statePool
+      type(mpas_pool_type), pointer :: meshPool
+      type(mpas_pool_type), pointer :: scratchPool
+      type(mpas_pool_type), pointer :: diagnosticsPool
+      type(mpas_pool_type), pointer :: tracersPool
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, index_temperature
       integer :: iTracer, k, iCell
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
-      
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      real (kind=RKIND), dimension(:,:), pointer :: zMid, layerThickness
-      real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge,   &
-                  oceanHeatContentSfcToBot, oceanHeatContentSfcTo700m,         &
-                  oceanHeatContent700mto2000m, oceanHeatContent2000mtoBot
 
-      real (kind=RKIND) :: heatLayer
+      real(kind=RKIND), dimension(:, :, :), pointer :: tracers
+      real(kind=RKIND), dimension(:, :), pointer :: zMid, layerThickness
+      real(kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, &
+                                                 oceanHeatContentSfcToBot, oceanHeatContentSfcTo700m, &
+                                                 oceanHeatContent700mto2000m, oceanHeatContent2000mtoBot
+
+      real(kind=RKIND) :: heatLayer
       err = 0
 
-      dminfo = domain % dminfo
+      dminfo = domain%dminfo
 
-      block => domain % blocklist
+      block => domain%blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'layeredOceanHeatContent', oceanHeatContentAMPool)
+         call mpas_pool_get_subpool(block%structs, 'state', statePool)
+         call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block%structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block%structs, 'layeredOceanHeatContent', oceanHeatContentAMPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
+         call mpas_pool_get_dimension(block%dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block%dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(block%dimensions, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(block%dimensions, 'nVerticesSolve', nVerticesSolve)
 
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
@@ -210,38 +210,38 @@ contains
          call mpas_pool_get_array(oceanHeatContentAMPool, 'oceanHeatContent700mto2000m', oceanHeatContent700mto2000m)
          call mpas_pool_get_array(oceanHeatContentAMPool, 'oceanHeatContent2000mtoBot', oceanHeatContent2000mtoBot)
 
-         do iCell = 1,nCellsSolve
-           k = 1
-           oceanHeatContentSfcTo700m(iCell) = 0.0_RKIND
-           oceanHeatContentSfcToBot(iCell) = 0.0_RKIND
-           oceanHeatContent700mto2000m(iCell) = 0.0_RKIND
-           oceanHeatContent2000mtoBot(iCell) = 0.0_RKIND
-           do while (zMid(k,iCell) .ge. -700.0_RKIND .and. k .le. maxLevelCell(iCell))
-             heatLayer = layerThickness(k,iCell)*areaCell(iCell)*cp_sw*rho_sw*       &
-                    (tracers(index_temperature,k,iCell)+273.15_RKIND)
-             oceanHeatContentSfcTo700m(iCell) = oceanHeatContentSfcTo700m(iCell) + heatLayer
-             oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
-             k = k + 1
-           enddo
+         do iCell = 1, nCellsSolve
+            k = 1
+            oceanHeatContentSfcTo700m(iCell) = 0.0_RKIND
+            oceanHeatContentSfcToBot(iCell) = 0.0_RKIND
+            oceanHeatContent700mto2000m(iCell) = 0.0_RKIND
+            oceanHeatContent2000mtoBot(iCell) = 0.0_RKIND
+            do while (zMid(k, iCell) .ge. -700.0_RKIND .and. k .le. maxLevelCell(iCell))
+               heatLayer = layerThickness(k, iCell)*areaCell(iCell)*cp_sw*rho_sw* &
+                           (tracers(index_temperature, k, iCell) + 273.15_RKIND)
+               oceanHeatContentSfcTo700m(iCell) = oceanHeatContentSfcTo700m(iCell) + heatLayer
+               oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
+               k = k + 1
+            enddo
 
-           do while (zMid(k,iCell) .ge. -2000.0_RKIND .and. k .le. maxLevelCell(iCell))
-             heatLayer = layerThickness(k,iCell)*areaCell(iCell)*cp_sw*rho_sw*       &
-                    (tracers(index_temperature,k,iCell)+273.15_RKIND)
-             oceanHeatContent700mto2000m(iCell) = oceanHeatContent700mto2000m(iCell) + heatLayer
-             oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
-             k = k + 1
-           enddo
+            do while (zMid(k, iCell) .ge. -2000.0_RKIND .and. k .le. maxLevelCell(iCell))
+               heatLayer = layerThickness(k, iCell)*areaCell(iCell)*cp_sw*rho_sw* &
+                           (tracers(index_temperature, k, iCell) + 273.15_RKIND)
+               oceanHeatContent700mto2000m(iCell) = oceanHeatContent700mto2000m(iCell) + heatLayer
+               oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
+               k = k + 1
+            enddo
 
-           do while (k .le. maxLevelCell(iCell))
-             heatLayer = layerThickness(k,iCell)*areaCell(iCell)*cp_sw*rho_sw*       &
-                    (tracers(index_temperature,k,iCell)+273.15_RKIND)
-             oceanHeatContent2000mtoBot(iCell) = oceanHeatContent2000mtoBot(iCell) + heatLayer
-             oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
-             k = k + 1
-           end do
+            do while (k .le. maxLevelCell(iCell))
+               heatLayer = layerThickness(k, iCell)*areaCell(iCell)*cp_sw*rho_sw* &
+                           (tracers(index_temperature, k, iCell) + 273.15_RKIND)
+               oceanHeatContent2000mtoBot(iCell) = oceanHeatContent2000mtoBot(iCell) + heatLayer
+               oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
+               k = k + 1
+            end do
          end do
 
-         block => block % next
+         block => block%next
       end do
 
    end subroutine ocn_compute_ocean_heat_content!}}}
@@ -273,7 +273,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -320,7 +320,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
