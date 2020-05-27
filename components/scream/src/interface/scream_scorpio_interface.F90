@@ -47,14 +47,16 @@ module scream_scorpio_interface
   use pio_mods, only: io_desc_t, iosystem_desc_t, file_desc_t, var_desc_t, pio_global, &
                       pio_init, var_desc_t, pio_unlimited, pio_int, pio_def_dim,& 
                       pio_def_var, pio_enddef, pio_noerr, pio_closefile, pio_inq_dimid, &
-                      pio_real, pio_double, pio_initdecomp, pio_inq_dimlen, pio_setframe
+                      pio_real, pio_double, pio_initdecomp, pio_inq_dimlen, pio_setframe, &
+                      pio_offset_kind, pio_write_darray
 
   implicit none
   save
                      
   public :: eam_init_pio, &  ! Get pio subsystem info from main code
             eam_h_define, &      ! Create a new NetCDF file for PIO writing
-            eam_h_finalize
+            eam_h_finalize, &
+            eam_h_write
   private :: errorHandle
 
   ! Universal PIO variables for the module
@@ -93,7 +95,6 @@ module scream_scorpio_interface
     character(len=max_chars) :: long_name = ''    ! 'long_name' attribute
     character(len=max_chars) :: units = ''        ! 'units' attribute
     type(var_desc_t) :: piovar                    ! netCDF variable ID
-    type(io_desc_t)  :: iodescNCells              ! PIO descriptor used by this variable
     integer          :: dtype                     ! data type
     integer          :: numdims                   ! Number of dimensions in out field
     type(io_desc_t), pointer  :: iodesc           ! PIO decomp associated with this variable
@@ -237,9 +238,11 @@ contains
     integer :: dim_ii
     integer :: ierr
     integer, allocatable :: dimlen(:)
-    integer :: total_dimlen, my_dof_len
+    integer :: total_dimlen, my_dof_len, extra_procs
     integer :: ii, istart, istop
+    logical :: has_t_dim  ! Logical to flag whether this variable has a time-dimension.  This is important for the decomposition step.
   
+    has_t_dim = .false.
     pio_atm_file%varcounter = pio_atm_file%varcounter + 1
     if (pio_atm_file%varcounter.gt.pio_atm_file%numvar) call errorHandle("EAM_PIO ERROR: Attempted to register more variables than originally declared, "//trim(shortname),pio_atm_file%pioFileDesc,-999)
     hist_var => pio_atm_file%variables(pio_atm_file%varcounter)
@@ -253,9 +256,20 @@ contains
       call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(dims(dim_ii)),pio_atm_file%pioFileDesc,ierr)
       ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
       call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(dims(dim_ii)),pio_atm_file%pioFileDesc,ierr)
+      if (hist_var%dimlen(dim_ii).eq.0) has_t_dim = .true.
+      write(*,*) "ASD Var Dims:", trim(dims(dim_ii)), hist_var%dimid(dim_ii), hist_var%dimlen(dim_ii)
     end do
-    total_dimlen = size(hist_var%dimlen)
+
+    ! Distribute responsibility for writing cores over all PIO ranks
+    ! i.e. compute the degrees of freedom that this rank will contribute to PIO
+    if (has_t_dim) then
+      total_dimlen = size(hist_var%dimlen(:length-1))
+    else
+      total_dimlen = size(hist_var%dimlen)
+    end if
+    extra_procs = mod(total_dimlen,pio_ntasks)
     my_dof_len   = total_dimlen/pio_ntasks
+    if (extra_procs > 0) my_dof_len = my_dof_len + 1
     istart = pio_myrank * my_dof_len + 1
     istop  = istart +  my_dof_len - 1
     if (pio_myrank == pio_ntasks-1) then
@@ -265,8 +279,11 @@ contains
     allocate( hist_var%compdof(my_dof_len) )
     hist_var%compdof(:my_dof_len) = (/ (ii, ii=istart,istop, 1) /)
 
+    ! Register Variable with PIO
+    write(*,*) "ASD def_var", hist_var%dtype, hist_var%dimid(:length), istart, istop
     ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:length), hist_var%pioVar)
     call errorHandle("PIO ERROR: could not define variable "//trim(shortname),pio_atm_file%pioFileDesc,ierr)
+
     ! Assign a PIO decomposition to variable, if none exists, create a new one:
     found = .false.
     curr => iodesc_list_top
@@ -290,35 +307,55 @@ contains
         nullify(curr%iodesc)  ! Extra step to ensure clean iodesc
         nullify(curr%next)  ! Extra step to ensure clean iodesc
       end if
+      allocate(curr%iodesc)
       curr%tag = tag
-      call pio_initdecomp(pio_subsystem, hist_var%dtype, hist_var%dimlen, hist_var%compdof, curr%iodesc, &
-           rearr=pio_rearranger)
+      write(*,*) "ASD def_iodesc", hist_var%dtype, hist_var%dimlen
+      if (has_t_dim) then
+        call pio_initdecomp(pio_subsystem, hist_var%dtype, hist_var%dimlen(:length-1), hist_var%compdof, curr%iodesc, &
+             rearr=pio_rearranger)
+      else
+        call pio_initdecomp(pio_subsystem, hist_var%dtype, hist_var%dimlen, hist_var%compdof, curr%iodesc, &
+             rearr=pio_rearranger)
+      end if
       hist_var%iodesc => curr%iodesc 
     end if
-    
 
     return
   end subroutine register_variable
 !=====================================================================!
-  subroutine eam_h_write(pio_atm_file,step)
+  subroutine eam_h_write(step)
 
-    type(pio_atm_output),pointer, intent(inout) :: pio_atm_file
-    integer, optional, intent(in)               :: step
+!    type(pio_atm_output),pointer, intent(inout) :: pio_atm_file
+    integer(kind=pio_offset_kind), optional, intent(in)               :: step
 
+    type(pio_atm_output),pointer :: pio_atm_file
     type(hist_var_t), pointer :: var 
     integer :: ivar, ierr
+    integer :: my_dummy_value
+    integer, allocatable :: fdata_int(:)
+    real(rtype), allocatable :: fdata_real(:)
 
+    pio_atm_file => atm_output_files(1)
     ! Cycle through all variables in this specific output.
     do ivar = 1,pio_atm_file%numvar
+      my_dummy_value = pio_myrank
       var => pio_atm_file%variables(ivar)
-!      if (present(step)) then
-!        call PIO_setframe(pio_atm_file%pioFileDesc,var,step)
-!      end if
-!      call PIO_write_darray(pio_atm_file%pioFileDesc, &
-!                            var%piovar, &
-!                            var%iodescNCells, &
-!                            var%values, &
-!                            ierr
+      if (present(step)) then
+        call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,step)
+        my_dummy_value = my_dummy_value + step
+      end if
+      if (var%dtype == PIO_int) then
+        write(*,*) "Writing variable: ", var%name, step, pio_atm_file%filename
+        allocate(fdata_int(var%dimlen(1)))
+        fdata_int(:) = my_dummy_value
+        call PIO_write_darray(pio_atm_file%pioFileDesc, &
+                              var%piovar, &
+                              var%iodesc, &
+                              fdata_int, &   ! TODO, make this actually variable specific, i.e. FIX THIS
+                              ierr)
+!      else
+!
+      end if
       call errorHandle("PIO ERROR: could not write variable "//trim(var%name),pio_atm_file%pioFileDesc,ierr)
 
     end do
