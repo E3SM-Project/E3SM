@@ -1778,10 +1778,10 @@ contains
                   pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
                   surface_emissivity(1:nlwbands,1:ncol_tot), &
                   cld_tau_lw_all, aer_tau_lw_all, &
-                  fluxes_allsky_all%flux_up, fluxes_allsky_all%flux_dn, &
-                  fluxes_allsky_all%bnd_flux_up, fluxes_allsky_all%bnd_flux_dn, &
-                  fluxes_clrsky_all%flux_up, fluxes_clrsky_all%flux_dn, &
-                  fluxes_clrsky_all%bnd_flux_up, fluxes_clrsky_all%bnd_flux_dn, &
+                  fluxes_allsky_all%flux_up, fluxes_allsky_all%flux_dn, fluxes_allsky_all%flux_net, &
+                  fluxes_allsky_all%bnd_flux_up, fluxes_allsky_all%bnd_flux_dn, fluxes_allsky_all%bnd_flux_net, &
+                  fluxes_clrsky_all%flux_up, fluxes_clrsky_all%flux_dn, fluxes_clrsky_all%flux_net, &
+                  fluxes_clrsky_all%bnd_flux_up, fluxes_clrsky_all%bnd_flux_dn, fluxes_clrsky_all%bnd_flux_net, &
                   t_lev=tint(1:ncol_tot,1:nlev_rad+1), &
                   n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
                call t_stopf('rad_rte_lw')
@@ -2027,7 +2027,12 @@ contains
          alb_dif_day(1:nswbands,1:nday), &
          cld_optics_day%tau, cld_optics_day%ssa, cld_optics_day%g, &
          aer_optics_day%tau, aer_optics_day%ssa, aer_optics_day%g, &
-         fluxes_allsky_day, fluxes_clrsky_day, &
+         fluxes_allsky_day%flux_up, fluxes_allsky_day%flux_dn, fluxes_allsky_day%flux_net, &
+         fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, &
+         fluxes_allsky_day%bnd_flux_dn_dir, &
+         fluxes_clrsky_day%flux_up, fluxes_clrsky_day%flux_dn, fluxes_clrsky_day%flux_net, &
+         fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, &
+         fluxes_clrsky_day%bnd_flux_dn_dir, &
          tsi_scaling=tsi_scaling &
       ))
       call t_stopf('rad_rte_sw')

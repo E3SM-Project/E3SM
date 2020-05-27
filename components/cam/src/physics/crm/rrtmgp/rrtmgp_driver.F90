@@ -45,8 +45,10 @@ contains
   function rte_lw( &
         gas_names, gas_vmr, p_lay, t_lay, p_lev,    &
         t_sfc, sfc_emis, cld_tau, aer_tau,          &
-        allsky_flux_up, allsky_flux_dn, allsky_bnd_flux_up, allsky_bnd_flux_dn, &
-        clrsky_flux_up, clrsky_flux_dn, clrsky_bnd_flux_up, clrsky_bnd_flux_dn, &
+        allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+        allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, &
+        clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
+        clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, &
         col_dry, t_lev, inc_flux, n_gauss_angles) result(error_msg)
     character(len=*), dimension(:), intent(in) :: gas_names
     real(wp), dimension(:,:,:),    intent(in   ) :: gas_vmr
@@ -57,9 +59,11 @@ contains
     real(wp), dimension(:,:,:),  intent(in   ) :: cld_tau   ! cloud absorption optical depth (ncol,nlay,ngpt)
     real(wp), dimension(:,:,:),  intent(in   ) :: aer_tau   ! cloud absorption optical depth (ncol,nlay,nband)
     real(wp), dimension(:,:), intent(inout), target :: &
-       allsky_flux_up, allsky_flux_dn, clrsky_flux_up, clrsky_flux_dn
+       allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+       clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net
     real(wp), dimension(:,:,:), intent(inout), target :: &
-       allsky_bnd_flux_up, allsky_bnd_flux_dn, clrsky_bnd_flux_up, clrsky_bnd_flux_dn
+       allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, &
+       clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net
 
     ! Optional inputs
     real(wp), dimension(:,:), &
@@ -78,27 +82,31 @@ contains
     type(ty_fluxes_byband) :: allsky_fluxes, clrsky_fluxes
     integer :: ncol, nlay, ngpt, nband, nstr, igas
     logical :: top_at_1
-    ! --------------------------------
-    ! Problem sizes
-    !
+
     error_msg = ""
 
+    ! Problem sizes
     ncol  = size(p_lay, 1)
     nlay  = size(p_lay, 2)
     ngpt  = k_dist_lw%get_ngpt()
     nband = k_dist_lw%get_nband()
 
+    ! Flag for TOA->SFC or SFC->TOA
     top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
 
     ! Associate output pointers
     allsky_fluxes%flux_up => allsky_flux_up
     allsky_fluxes%flux_dn => allsky_flux_dn
+    allsky_fluxes%flux_net => allsky_flux_net
     clrsky_fluxes%flux_up => clrsky_flux_up
     clrsky_fluxes%flux_dn => clrsky_flux_dn
+    clrsky_fluxes%flux_net => clrsky_flux_net
     allsky_fluxes%bnd_flux_up => allsky_bnd_flux_up
     allsky_fluxes%bnd_flux_dn => allsky_bnd_flux_dn
+    allsky_fluxes%bnd_flux_net => allsky_bnd_flux_net
     clrsky_fluxes%bnd_flux_up => clrsky_bnd_flux_up
     clrsky_fluxes%bnd_flux_dn => clrsky_bnd_flux_dn
+    clrsky_fluxes%bnd_flux_net => clrsky_bnd_flux_net
 
     ! Setup gas concentrations
     error_msg = gas_concs%init(gas_names)
@@ -153,7 +161,10 @@ contains
         mu0, sfc_alb_dir, sfc_alb_dif,  &
         cld_tau, cld_ssa, cld_asm,      &
         aer_tau, aer_ssa, aer_asm,      &
-        allsky_fluxes, clrsky_fluxes,   &
+        allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+        allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
+        clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
+        clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
         col_dry, inc_flux, tsi_scaling  ) result(error_msg)
       character(len=*), dimension(:), intent(in   ) :: gas_names
       real(wp), dimension(:,:,:),  intent(in   ) :: gas_vmr
@@ -164,7 +175,12 @@ contains
       real(wp), dimension(:,:),    intent(in   ) :: sfc_alb_dir, sfc_alb_dif
       real(wp), dimension(:,:,:),  intent(in   ) :: cld_tau, cld_ssa, cld_asm
       real(wp), dimension(:,:,:),  intent(in   ) :: aer_tau, aer_ssa, aer_asm
-      type(ty_fluxes_byband),      intent(inout) :: allsky_fluxes, clrsky_fluxes
+      real(wp), dimension(:,:),    intent(inout), target :: &
+         allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+         clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net
+      real(wp), dimension(:,:,:), intent(inout), target :: &
+         allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
+         clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir
 
       ! Optional inputs
       real(wp), dimension(:,:), &
@@ -176,20 +192,38 @@ contains
       ! Local variables
       type(ty_optical_props_2str) :: optical_props, cloud_props, aer_props
       type(ty_gas_concs) :: gas_concs    !< derived type encapsulating gas concentrations
+      type(ty_fluxes_byband) :: allsky_fluxes, clrsky_fluxes
       real(wp), dimension(:,:), allocatable :: toa_flux
       integer :: ncol, nlay, ngpt, nband, nstr, igas
       logical :: top_at_1
 
-      ! Problem sizes
       error_msg = ""
 
+      ! Problem sizes
       ncol  = size(p_lay, 1)
       nlay  = size(p_lay, 2)
       ngpt  = k_dist_sw%get_ngpt()
       nband = k_dist_sw%get_nband()
   
+      ! Flag for TOA->SFC or SFC->TOA
       top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
-  
+
+      ! Associate output pointers
+      allsky_fluxes%flux_up => allsky_flux_up
+      allsky_fluxes%flux_dn => allsky_flux_dn
+      allsky_fluxes%flux_net => allsky_flux_net
+      clrsky_fluxes%flux_up => clrsky_flux_up
+      clrsky_fluxes%flux_dn => clrsky_flux_dn
+      clrsky_fluxes%flux_net => clrsky_flux_net
+      allsky_fluxes%bnd_flux_up => allsky_bnd_flux_up
+      allsky_fluxes%bnd_flux_dn => allsky_bnd_flux_dn
+      allsky_fluxes%bnd_flux_net => allsky_bnd_flux_net
+      allsky_fluxes%bnd_flux_dn_dir => allsky_bnd_flux_dn_dir
+      clrsky_fluxes%bnd_flux_up => clrsky_bnd_flux_up
+      clrsky_fluxes%bnd_flux_dn => clrsky_bnd_flux_dn
+      clrsky_fluxes%bnd_flux_net => clrsky_bnd_flux_net
+      clrsky_fluxes%bnd_flux_dn_dir => clrsky_bnd_flux_dn_dir
+
       ! Setup gas concentrations
       error_msg = gas_concs%init(gas_names)
       if (error_msg /= '') return
