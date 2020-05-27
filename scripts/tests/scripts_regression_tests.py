@@ -1739,9 +1739,15 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     ###############################################################################
     def test_bless_test_results(self):
     ###############################################################################
+        print(("Testing machine = %s" % MACHINE.get_machine_name()))
+        # Test resubmit scenario if Machine has a batch system
+        if MACHINE.has_batch_system():
+            print(MACHINE.has_batch_system())
+            test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A", "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
+        else:
+            test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A"]
+
         # Generate some baselines
-        test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A", "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
-        #test_names = ["TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
         for test_name in test_names:
             if CIME.utils.get_model() == "e3sm":
                 genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
