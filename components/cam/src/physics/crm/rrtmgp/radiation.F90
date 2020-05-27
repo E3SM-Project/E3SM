@@ -1918,7 +1918,7 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use mo_rrtmgp_util_string, only: lower_case
-      use mo_rrtmgp_clr_all_sky, only: rte_sw
+      use rrtmgp_driver, only: rte_sw
 
       character(len=*), intent(in) :: gas_names(:)
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
@@ -2077,7 +2077,7 @@ contains
                                 fluxes_allsky, fluxes_clrsky)
 
       use perf_mod, only: t_startf, t_stopf
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
+      use rrtmgp_driver, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
@@ -2121,9 +2121,8 @@ contains
                                pmid(1:ncol,1:nlev), tmid(1:ncol,1:nlev), &
                                pint(1:ncol,1:nlev+1), tint(1:ncol,nlev+1), &
                                emis_sfc(1:nlwbands,1:ncol), &
-                               cld_optics, &
+                               cld_optics%tau, aer_optics%tau, &
                                fluxes_allsky, fluxes_clrsky, &
-                               aer_props=aer_optics, &
                                t_lev=tint(1:ncol,1:nlev+1), &
                                n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
       call t_stopf('rad_rte_lw')
