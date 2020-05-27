@@ -99,6 +99,36 @@ pgi:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
+pgi-summit:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
+	"FC_SERIAL = pgf90" \
+	"CC_SERIAL = pgcc" \
+	"CXX_SERIAL = pgc++" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -g -O3 -byteswapio -Mfree" \
+	"CFLAGS_OPT = -O3 " \
+	"CXXFLAGS_OPT = -O3 " \
+	"LDFLAGS_OPT = -O3 " \
+	"FFLAGS_ACC = -acc -Minfo=accel -ta=tesla:cc70,cc60,deepcopy,nollvm " \
+	"CFLAGS_ACC = -acc -Minfo=accel -ta=tesla:cc70,cc60,deepcopy,nollvm "  \
+	"FFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
+	"CFLAGS_DEBUG = -O0 -g -traceback" \
+	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
+	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
+	"PICFLAG = -fpic" \
+	"BUILD_TARGET = $(@)" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"OPENACC = $(OPENACC)" \
+	"CPPFLAGS = -DpgiFortran -D_MPI -DUNDERSCORE" )
+
 pgi-nersc:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
@@ -582,6 +612,14 @@ ifeq "$(OPENMP)" "true"
 	LDFLAGS += $(FFLAGS_OMP)
 endif #OPENMP IF
 
+ifeq "$(OPENACC)" "true"
+        FFLAGS += $(FFLAGS_ACC)
+        CFLAGS += $(CFLAGS_ACC)
+        CXXFLAGS += $(CFLAGS_ACC)
+        override CPPFLAGS += "-DMPAS_OPENACC"
+        LDFLAGS += $(FFLAGS_ACC)
+endif #OPENACC IF
+
 ifeq "$(PRECISION)" "single"
 	CFLAGS += "-DSINGLE_PRECISION"
 	CXXFLAGS += "-DSINGLE_PRECISION"
@@ -670,6 +708,12 @@ ifeq "$(OPENMP)" "true"
 	OPENMP_MESSAGE="MPAS was built with OpenMP enabled."
 else
 	OPENMP_MESSAGE="MPAS was built without OpenMP support."
+endif
+
+ifeq "$(OPENACC)" "true"
+	OPENACC_MESSAGE="MPAS was built with OpenACC accelerator support enabled."
+else
+	OPENACC_MESSAGE="MPAS was built without OpenACC accelerator support."
 endif
 
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
@@ -849,6 +893,7 @@ endif
 	@echo $(PAPI_MESSAGE)
 	@echo $(TAU_MESSAGE)
 	@echo $(OPENMP_MESSAGE)
+	@echo $(OPENACC_MESSAGE)
 	@echo $(SHAREDLIB_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
