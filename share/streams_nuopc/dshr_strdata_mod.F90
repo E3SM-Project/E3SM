@@ -971,6 +971,7 @@ contains
 
              call t_startf(trim(lstr)//trim(timname)//'_coszen')
              allocate(coszen(sdat%model_lsize))
+             write(6,*)'DEBUG: model_size = ',sdat%model_lsize
 
              ! get coszen
              call t_startf(trim(lstr)//trim(timname)//'_coszenC')
