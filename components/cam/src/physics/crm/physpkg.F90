@@ -2471,7 +2471,7 @@ if (l_dry_adj) then
 
     lq(:) = .FALSE.
     lq(1) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'dadadj', ls=.true., lq=lq)
+    call physics_ptend_init(ptend, state%psetcols, 'crm_dadadj', ls=.true., lq=lq)
     ptend%s(:ncol,:pver)   = state%t(:ncol,:pver)
     ptend%q(:ncol,:pver,1) = state%q(:ncol,:pver,1)
 
@@ -2879,7 +2879,7 @@ end if
 #if defined(MODAL_AERO)  
       ! temporarily turn on all lq, so it is allocated
       lq(:) = .true.
-      call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
+      call physics_ptend_init(ptend, state%psetcols, 'crm_wup', lq=lq)
 
       ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
       ptend%lq(:) = .false.
@@ -3232,7 +3232,10 @@ subroutine add_fld_default_calls()
   implicit none
 
   !Add all existing ptend names for the addfld calls
-  character(len=20), parameter :: vlist(27) = (/     'topphysbc           '                       ,&
+  character(len=20), parameter :: vlist(38) = (/     'topphysbc           '                       ,&
+       'crm                 ','mmf_flux_bypass     ','crmclouds_mixnuc    ','crm_conv2           ',&
+       'ecpp                ','crm_mic_aero_run    ','crm_ndrop_aero      ','crm_ndrop           ',&
+       'crm_dadadj          ','crm_wup             ','crm_vdiff           '                       ,&
        'chkenergyfix        ','dadadj              ','zm_convr            ','zm_conv_evap        ',&
        'momtran             ','zm_conv_tend        ','UWSHCU              ','convect_shallow     ',&
        'pcwdetrain_mac      ','macro_park          ','macrop              ','micro_mg            ',&

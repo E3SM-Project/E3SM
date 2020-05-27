@@ -1079,7 +1079,7 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    ! initialize ptend
    lq(:) = .false.
    lq(1) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'MMF_FLUX_BYPASS', &
+   call physics_ptend_init(ptend, state%psetcols, 'mmf_flux_bypass', &
                            lu=.false., lv=.false., ls=.true., lq=lq)
 
    ! apply fluxes to bottom layer

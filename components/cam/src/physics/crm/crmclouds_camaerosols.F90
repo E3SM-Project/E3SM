@@ -368,7 +368,7 @@ subroutine crmclouds_convect_tend(state,  ptend,  ztodt,  pbuf)
    lq(ixcldice) = .false.
    lq(ixcldliq) = .false.
 
-   call physics_ptend_init(ptend,state%psetcols,'convtran2',lq=lq)
+   call physics_ptend_init(ptend,state%psetcols,'crm_conv2',lq=lq)
 !==Guangxing Lin    
 
 !
