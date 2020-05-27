@@ -150,23 +150,18 @@ class SystemTestsCommon(object):
 
             if self._case.get_value("BATCH_SYSTEM") != "none":
                 resub_val = self._case.get_value("RESUBMIT")
-                print("wpc0a. resub_val {}\n".format(resub_val))
             else:
                 resub_val = 0
-                print("wpc0b. resub_val {}\n".format(resub_val))
 
             self.run_phase()
             if self._case.get_value("GENERATE_BASELINE") and resub_val == 0:
-                print("wpc0c. resub_val {}\n".format(resub_val))
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
 
             if self._case.get_value("COMPARE_BASELINE") and resub_val == 0:
-                print("wpc0d. resub_val {}\n".format(resub_val))
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
                 self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
 
-            print("wpc0e. resub_val {}\n".format(resub_val))
             self._phase_modifying_call(MEMLEAK_PHASE, self._check_for_memleak)
 
             self._phase_modifying_call(STARCHIVE_PHASE, self._st_archive_case_test)
@@ -184,7 +179,6 @@ class SystemTestsCommon(object):
             raise
 
         finally:
-            print("wpc0f. resub_val {}\n".format(resub_val))
             # Writing the run status should be the very last thing due to wait_for_tests
             time_taken = time.time() - start_time
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
