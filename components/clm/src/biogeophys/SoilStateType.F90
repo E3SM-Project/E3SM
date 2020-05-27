@@ -542,6 +542,7 @@ contains
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
+       nlevbed = col_pp%nlevbed(c)
 
        if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
 
@@ -568,7 +569,7 @@ contains
              this%tkmg_col(c,lev)   = spval
              this%tksatu_col(c,lev) = spval
              this%tkdry_col(c,lev)  = spval
-             if (lun_pp%itype(l)==istwet .and. lev > nlevsoi) then
+             if (lun_pp%itype(l)==istwet .and. lev > nlevbed) then
                 this%csol_col(c,lev) = csol_bedrock
              else
                 this%csol_col(c,lev)= spval
