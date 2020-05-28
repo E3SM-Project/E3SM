@@ -755,6 +755,14 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
                 -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
+ifdef ZLIB_PATH
+        CMAKE_OPTS += -D LIBZ_PATH:STRING="$(ZLIB_PATH)"
+endif
+
+ifdef SZIP_PATH
+        CMAKE_OPTS += -D SZIP_PATH:STRING="$(SZIP_PATH)"
+endif
+
 ifdef HDF5_PATH
         CMAKE_OPTS += -D HDF5_PATH:STRING="$(HDF5_PATH)"
 endif
