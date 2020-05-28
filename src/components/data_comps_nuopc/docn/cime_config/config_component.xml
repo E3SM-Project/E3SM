@@ -65,8 +65,6 @@
       <value compset="_DOCN%AQP10_">sst_aquap10</value>
       <value compset="_DOCN%AQPFILE_">sst_aquapfile</value>
       <value compset="_DOCN%AQPCONST_">sst_aquap_constant</value>
-       ! -------------------------------------
-
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
