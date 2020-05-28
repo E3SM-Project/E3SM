@@ -1,7 +1,7 @@
 #ifndef SCREAM_RRTMGP_RADIATION_HPP
 #define SCREAM_RRTMGP_RADIATION_HPP
 
-#include "share/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_parameter_list.hpp"
 #include <string>
 
@@ -11,7 +11,7 @@ namespace scream {
      * exactly ONE instance of this class in its list of subcomponents.
      */
 
-    class RRTMGPRadiation : public scream::AtmosphereProcess {
+    class RRTMGPRadiation : public AtmosphereProcess {
         public:
             using field_type       = Field<      Real, device_type>;
             using const_field_type = Field<const Real, device_type>;
@@ -31,7 +31,7 @@ namespace scream {
             // Required grid for the subcomponent (??)
             std::set<std::string> get_required_grids () const {
                 static std::set<std::string> s;
-                s.insert("Physics");
+                s.insert(m_rrtmgp_params.get<std::string>("Grid"));
                 return s;
             }
 
@@ -60,6 +60,8 @@ namespace scream {
 
             std::map<std::string,const_field_type> m_rrtmgp_fields_in;
             std::map<std::string,field_type>       m_rrtmgp_fields_out;
+
+            std::shared_ptr<FieldInitializer> m_initializer;
 
             util::TimeStamp m_current_ts;
             Comm            m_rrtmgp_comm;

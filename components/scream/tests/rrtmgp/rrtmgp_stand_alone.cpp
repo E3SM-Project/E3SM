@@ -51,7 +51,6 @@ namespace scream {
 
         // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
         // which rely on factory for process creation. The initialize method of the AD does that.
-        // While we're at it, check that the case insensitive key of the factory works.
         auto& proc_factory = AtmosphereProcessFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
 
@@ -75,9 +74,13 @@ namespace scream {
         // Dummy timestamp
         util::TimeStamp time (0,0,0);
 
-        // Initialize the driver
+        // Initialize the driver, run the driver, cleanup
         ad.initialize(atm_comm, ad_params, time);
+        ad.run(300.0);
+        ad.finalize();
+        upgm.clean_up();
 
+        // Run RRTMGP standalone codes and compare with AD run
         // Do something interesting here...
         // NOTE: these will get replaced with AD stuff that handles these
         //rrtmgp::rrtmgp_init();

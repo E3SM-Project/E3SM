@@ -27,4 +27,26 @@ namespace scream {
         for (auto& fid: m_computed_fields) { field_repo.register_field(fid); }
     }
 
+    void RRTMGPRadiation::set_required_field_impl(const Field<const Real, device_type>& f) {
+        /* The following copied from the P3 code */
+        //const auto& name = f.get_header().get_identifier().name();
+        //m_rrtmgp_fields_in.emplace(name,f);
+        //m_rrtmgp_host_views_in[name] = Kokkos::create_mirror_view(f.get_view());
+        //m_raw_ptrs_in[name] = m_rrtmgp_host_views_in[name].data();
+
+        // Add myself as customer to the field
+        //add_me_as_customer(f);
+    }
+
+    void RRTMGPRadiation::set_computed_field_impl(const Field<      Real, device_type>& f) {
+        /* The following copied from the P3 code */
+        //const auto& name = f.get_header().get_identifier().name();
+        //m_rrtmgp_fields_out.emplace(name,f);
+        //m_rrtmgp_host_views_out[name] = Kokkos::create_mirror_view(f.get_view());
+        //m_raw_ptrs_out[name] = m_rrtmgp_host_views_out[name].data();
+
+        // Add myself as provider for the field
+        //add_me_as_provider(f);
+    }
+
 }  // namespace scream

@@ -1,6 +1,7 @@
 # Add RRTMGP source files. Right now, this builds the Fortran source for RRTMGP.
 # Once the C++ port of RRTMGP is complete we should switch over to that.
 set(RRTMGP_SRCS
+  atmosphere_radiation.cpp
   rrtmgp.cpp
   scream_rrtmgp_interface.cpp
   scream_rrtmgp_interface.F90
@@ -32,6 +33,7 @@ set(RRTMGP_SRCS
 set(RRTMGP_HEADERS
   rrtmgp.hpp
   scream_rrtmgp_interface.hpp
+  atmosphere_radiation.hpp
 )
 
 add_library(rrtmgp ${RRTMGP_SRCS})
