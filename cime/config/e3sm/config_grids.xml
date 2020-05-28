@@ -3377,6 +3377,11 @@
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne4np4/map_r05_TO_ne4np4_aave.160621.nc</map>
     </gridmap>
 
+    <gridmap lnd_grid="ne4np4.pg2" rof_grid="r05">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_to_r05_mono.200527.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne4pg2/map_r05_to_ne4pg2_mono.200527.nc</map>
+    </gridmap>
+
     <gridmap lnd_grid="ne11np4" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne11np4/map_ne11np4_TO_r05_aave.160621.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne11np4/map_r05_TO_ne11np4_aave.160621.nc</map>
