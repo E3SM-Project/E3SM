@@ -463,5 +463,5 @@ def wait_for_tests(test_paths,
 
     if cdash_build_name:
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, force_log_upload)
-    print(all_pass)
+
     return all_pass
