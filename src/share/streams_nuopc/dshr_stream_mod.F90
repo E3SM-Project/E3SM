@@ -326,9 +326,9 @@ contains
 
   !===============================================================================
 
-  subroutine shr_stream_init_from_inline(streamdat, meshfile, &
-       yearFirst, yearLast, yearAlign, offset, taxmode, &
-       fldlistFile, fldListModel, fileNames, logunit)
+  subroutine shr_stream_init_from_inline(streamdat, stream_meshfile, &
+       stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
+       stream_fldlistFile, stream_fldListModel, stream_fileNames, logunit)
 
     ! --------------------------------------------------------
     ! set values of stream datatype independent of a reading in a stream text file
@@ -336,17 +336,17 @@ contains
     ! --------------------------------------------------------
 
     ! input/output variables
-    type(shr_stream_streamType) , pointer, intent(inout) :: streamdat(:)    ! data streams (assume 1 below)
-    character(*)                ,intent(in)              :: meshFile        ! full pathname to stream mesh file
-    integer                     ,intent(in)              :: yearFirst       ! first year to use
-    integer                     ,intent(in)              :: yearLast        ! last  year to use
-    integer                     ,intent(in)              :: yearAlign       ! align yearFirst with this model year
-    integer                     ,intent(in)              :: offset          ! offset in seconds of stream data
-    character(*)                ,intent(in)              :: taxMode         ! time axis mode
-    character(*)                ,intent(in)              :: fldListFile(:)  ! file field names, colon delim list
-    character(*)                ,intent(in)              :: fldListModel(:) ! model field names, colon delim list
-    character(*)                ,intent(in)              :: filenames(:)    ! stream data filenames (full pathnamesa)
-    integer                     ,intent(in)              :: logunit         ! stdout unit
+    type(shr_stream_streamType) , pointer, intent(inout) :: streamdat(:)           ! data streams (assume 1 below)
+    character(*)                ,intent(in)              :: stream_meshFile        ! full pathname to stream mesh file
+    integer                     ,intent(in)              :: stream_yearFirst       ! first year to use
+    integer                     ,intent(in)              :: stream_yearLast        ! last  year to use
+    integer                     ,intent(in)              :: stream_yearAlign       ! align yearFirst with this model year
+    integer                     ,intent(in)              :: stream_offset          ! offset in seconds of stream data
+    character(*)                ,intent(in)              :: stream_taxMode         ! time axis mode
+    character(*)                ,intent(in)              :: stream_fldListFile(:)  ! file field names, colon delim list
+    character(*)                ,intent(in)              :: stream_fldListModel(:) ! model field names, colon delim list
+    character(*)                ,intent(in)              :: stream_filenames(:)    ! stream data filenames (full pathnamesa)
+    integer                     ,intent(in)              :: logunit                ! stdout unit
 
     ! local variables
     integer                :: n
@@ -360,31 +360,31 @@ contains
     allocate(streamdat(1))
 
     ! overwrite default values
-    streamdat(1)%yearFirst    = yearFirst
-    streamdat(1)%yearLast     = yearLast
-    streamdat(1)%yearAlign    = yearAlign
-    streamdat(1)%offset       = offset
-    streamdat(1)%taxMode      = trim(taxMode)
-    streamdat(1)%meshFile     = trim(meshFile)
+    streamdat(1)%yearFirst    = stream_yearFirst
+    streamdat(1)%yearLast     = stream_yearLast
+    streamdat(1)%yearAlign    = stream_yearAlign
+    streamdat(1)%offset       = stream_offset
+    streamdat(1)%taxMode      = trim(stream_taxMode)
+    streamdat(1)%meshFile     = trim(stream_meshFile)
 
     ! initialize stream filenames
     if (allocated(streamdat(1)%file)) then
        deallocate(streamdat(1)%file)
     end if
-    nfiles = size(filenames)
+    nfiles = size(stream_filenames)
     streamdat(1)%nfiles = nfiles
     allocate(streamdat(1)%file(nfiles))
     do n = 1, nfiles
-       streamdat(1)%file(n)%name = trim(filenames(n))
+       streamdat(1)%file(n)%name = trim(stream_filenames(n))
     enddo
 
     ! Determine name of stream variables in file and model
-    nvars = size(fldlistFile)
+    nvars = size(stream_fldlistFile)
     streamdat(1)%nvars = nvars
     allocate(streamdat(1)%varlist(nvars))
     do n = 1, nvars
-       streamdat(1)%varlist(n)%nameinfile  = trim(fldlistFile(n))
-       streamdat(1)%varlist(n)%nameinmodel = trim(fldlistModel(n))
+       streamdat(1)%varlist(n)%nameinfile  = trim(stream_fldlistFile(n))
+       streamdat(1)%varlist(n)%nameinmodel = trim(stream_fldlistModel(n))
     end do
 
     ! Get initial calendar value

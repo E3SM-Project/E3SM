@@ -62,7 +62,7 @@
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>Stream domain file directory.</desc>
+    <desc>Stream mesh files</desc>
     <values>
       <value>
 	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029_ESMFmesh_120520.nc

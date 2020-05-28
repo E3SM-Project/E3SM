@@ -378,7 +378,7 @@ contains
     ! Initialize mesh, restart flag, compid, and logunit
     call t_startf('dice_strdata_init')
     call dshr_mesh_init(gcomp, compid, logunit, 'ice', nx_global, ny_global, &
-         model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
+         model_meshfile, model_maskfile, model_createmesh_fromfile, model_mesh, read_restart, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize stream data type
