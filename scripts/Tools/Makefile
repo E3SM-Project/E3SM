@@ -306,7 +306,7 @@ ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+# Set esmf.mk location with ESMF_LIBDIR having precedence over ESMFMKFILE
 CIME_ESMFMKFILE := undefined_ESMFMKFILE
 ifdef ESMFMKFILE
    CIME_ESMFMKFILE := $(ESMFMKFILE)
