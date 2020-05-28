@@ -277,7 +277,7 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iEdge, N, cell1, cell2, edgeThicknessTotal, k, A, B, C, velTemp)
+      !$omp private(N, cell1, cell2, edgeThicknessTotal, k, A, B, C, velTemp)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
@@ -430,7 +430,7 @@ contains
       A(1)=0.0_RKIND
 
       !$omp parallel
-      !$omp do schedule(runtime) private(iEdge, N, cell1, cell2, A, B, C, velTemp)
+      !$omp do schedule(runtime) private(N, cell1, cell2, A, B, C, velTemp)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
@@ -574,7 +574,7 @@ contains
 
       call mpas_timer_start('vmix tracers tend imp loop', .false.)
       !$omp parallel
-      !$omp do schedule(runtime) private(iCell, N, A, B, C, rhs, tracersTemp)
+      !$omp do schedule(runtime) private(N, A, B, C, rhs, tracersTemp)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
          N = maxLevelCell(iCell)

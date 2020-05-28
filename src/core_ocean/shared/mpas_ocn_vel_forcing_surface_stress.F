@@ -146,7 +146,7 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iEdge, zTop, cell1, cell2, attenuationCoeff, transmissionCoeffTop, &
+      !$omp private(zTop, cell1, cell2, attenuationCoeff, transmissionCoeffTop, &
       !$omp         remainingStress, k, zBot)
       do iEdge = 1, nEdges
         zTop = 0.0_RKIND

@@ -211,7 +211,7 @@ contains
 
          !$omp parallel
          !$omp do schedule(runtime) &
-         !$omp private(iCell, kMax, prelim_ALE_Thickness, remainder, k, newThickness, &
+         !$omp private(kMax, prelim_ALE_Thickness, remainder, k, newThickness, &
          !$omp         min_ALE_thickness_down, min_ALE_thickness_up)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
