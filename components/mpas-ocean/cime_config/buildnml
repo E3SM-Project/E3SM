@@ -460,6 +460,7 @@ def buildnml(case, caseroot, compname):
         if ocn_forcing == 'datm_forced_restoring':
             lines.append('<stream name="surface_salinity_monthly_data"')
             lines.append('       type="input"')
+            lines.append('       io_type="{}"'.format(ocn_pio_typename))
             lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, restoring_file))
             lines.append('       input_interval="none"')
             lines.append('       packages="activeTracersSurfaceRestoringPKG">')
@@ -472,6 +473,7 @@ def buildnml(case, caseroot, compname):
         if analysis_mask_file != '':
             lines.append('<stream name="transectMasksInput"')
             lines.append('        type="input"')
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
             lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, analysis_mask_file))
             lines.append('        input_interval="initial_only">')
             lines.append('')
@@ -485,6 +487,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="regionalMasksInput"')
             lines.append('        type="input"')
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
             lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, analysis_mask_file))
             lines.append('        input_interval="initial_only">')
             lines.append('')
@@ -498,6 +501,7 @@ def buildnml(case, caseroot, compname):
 
         lines.append('<stream name="mocStreamfunctionOutput"')
         lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
         lines.append('        filename_template="mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"')
         lines.append('        filename_interval="01-00-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
@@ -1195,6 +1199,7 @@ def buildnml(case, caseroot, compname):
         if eco_forcing_file != '':
             lines.append('<stream name="ecosys_monthly_flux"')
             lines.append('        type="input"')
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
             lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, eco_forcing_file))
             lines.append('        input_interval="none"')
             lines.append('        packages="ecosysTracersPKG">')
