@@ -436,7 +436,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   if (present(Q1)) then
-     call get_R_star(dp,elem%state%Q(:,:,:,1))  ! compute Rstar, store in dp
+     call get_R_star(dp,Q1(:,:,:))  ! compute Rstar, store in dp
      elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*dp(:,:,:)/Rgas
   endif
 
