@@ -38,12 +38,33 @@ namespace scream {
 
         // Setup parameter list for inputs to the radiation interface
         ParameterList ad_params("Atmosphere Driver");
+        auto& proc_params = ad_params.sublist("Atmosphere Processes");
+        proc_params.set("Number of Entries", 1);
+        proc_params.set<std::string>("Schedule Type", "Sequential");
+        auto& p0 = proc_params.sublist("Process 0");
+        p0.set<std::string>("Process Name", "RRTMGP");
+        p0.set<std::string>("Grid","Physics");
+
+        auto& gm_params = ad_params.sublist("Grids Manager");
+        gm_params.set<std::string>("Type","User Provided");
+        gm_params.set<std::string>("Reference Grid","Physics");
 
         // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
         // which rely on factory for process creation. The initialize method of the AD does that.
         // While we're at it, check that the case insensitive key of the factory works.
         auto& proc_factory = AtmosphereProcessFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
+
+        // Need to register grids managers before we create the driver
+        auto& gm_factory = GridsManagerFactory::instance();
+        gm_factory.register_product("User Provided",create_user_provided_grids_manager);
+
+        // Set the dummy grid in the UserProvidedGridManager
+        // Recall that this class stores *static* members, so whatever
+        // we set here, will be reflected in the GM built by the factory.
+        UserProvidedGridsManager upgm;
+        upgm.set_grid(std::make_shared<DummyPhysicsGrid>(num_cols));
+        upgm.set_reference_grid("Physics");
 
         // Create a MPI communicator
         Comm atm_comm (MPI_COMM_WORLD);
@@ -59,9 +80,9 @@ namespace scream {
 
         // Do something interesting here...
         // NOTE: these will get replaced with AD stuff that handles these
-        rrtmgp::rrtmgp_init();
-        rrtmgp::rrtmgp_main();
-        rrtmgp::rrtmgp_finalize();
+        //rrtmgp::rrtmgp_init();
+        //rrtmgp::rrtmgp_main();
+        //rrtmgp::rrtmgp_finalize();
 
         // If we got here, we were able to run the above code
         REQUIRE(true);
