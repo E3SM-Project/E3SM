@@ -1582,22 +1582,11 @@ if (l_tracer_aero) then
          cam_in%cflx)
 
     ! Chemistry calculation
-    !Guangxing Lin
-!    write(*,*) 'gxlin-test1, lq = ', ptend%lq(49)
-    call outfld('bc_bf_chem', state%q(:,:,43), pcols, lchnk   )
-    !Guangxing Lin, end
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
 
-    !Guangxing Lin
-!    write(*,*) 'gxlin-test2, lq = ', ptend%lq(49)
        call physics_update(state, ptend, ztodt, tend)
-    !Guangxing Lin, end
-    !Guangxing Lin
-!    write(*,*) 'gxlin-test3, lq = ', ptend%lq(49)
-    call outfld('bc_af_chem', state%q(:,:,43), pcols, lchnk   )
-    !Guangxing Lin, end
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, &
             cam_in%cflx)
@@ -1666,18 +1655,11 @@ end if ! l_rayleigh
 
 if (l_tracer_aero) then
 
-    !Guangxing Lin
-    !call cnst_get_ind('dst_c3', ixdstc3)
-    call outfld('bc_bf_drydep', state%q(:,:,43), pcols, lchnk   )
-    !Guangxing Lin, end
     !  aerosol dry deposition processes
     call t_startf('aero_drydep')
     call aero_model_drydep( state, pbuf, obklen, surfric, cam_in, ztodt, cam_out, ptend )
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('aero_drydep')
-    !Guangxing Lin
-    call outfld('bc_af_drydep', state%q(:,:,43), pcols, lchnk   )
-    !Guangxing Lin, end
 
    ! CARMA microphysics
    !
@@ -1839,7 +1821,7 @@ end if ! l_ac_energy_chk
     water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
     call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
        !Guangxing Lin
-       call outfld('ps2', state%ps(:), pcols, lchnk   )
+       !call outfld('ps2', state%ps(:), pcols, lchnk   )
        !Guangxing Lin,end
     !Integrate column static energy
     ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -2131,7 +2113,7 @@ subroutine tphysbc (ztodt,               &
     endif
 
        !Guangxing Lin
-       call outfld('ps1', state%ps(:), pcols, lchnk   )
+       !call outfld('ps1', state%ps(:), pcols, lchnk   )
        !Guangxing Lin, end
     static_ener_ac_idx = pbuf_get_index('static_ener_ac')
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
@@ -2485,7 +2467,7 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
        !Guangxing Lin    
-       call outfld('bc_bf_ndrop', state%q(:,:,43), pcols, lchnk   )
+       !call outfld('bc_bf_ndrop', state%q(:,:,43), pcols, lchnk   )
        !Guangxing Lin    
 
        do macmic_it = 1, cld_macmic_num_steps
@@ -2689,7 +2671,7 @@ end if
 
        end do ! end substepping over macrophysics/microphysics
           !Guangxing Lin
-           call outfld('bc_af_ndrop', state%q(:,:,43), pcols, lchnk   )
+          ! call outfld('bc_af_ndrop', state%q(:,:,43), pcols, lchnk   )
           !Guangxing Lin, end
 
        prec_sed(:ncol) = prec_sed_macmic(:ncol)/cld_macmic_num_steps
@@ -2733,7 +2715,7 @@ if (l_tracer_aero) then
        !Guangxing Lin
        !call cnst_get_ind('dst_c3', ixdstc3)
        !write(*,*) 'gxlin-test grav =', gravit
-       call outfld('bc_bf_wetdep', state%q(:,:,43), pcols, lchnk   )
+       !call outfld('bc_bf_wetdep', state%q(:,:,43), pcols, lchnk   )
        !Guangxing Lin, end
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
@@ -2746,7 +2728,7 @@ if (l_tracer_aero) then
           !Guangxing Lin, end
        call physics_update(state, ptend, ztodt, tend)
        !Guangxing Lin
-       call outfld('bc_af_wetdep', state%q(:,:,43), pcols, lchnk   )
+       !call outfld('bc_af_wetdep', state%q(:,:,43), pcols, lchnk   )
        !Guangxing Lin, end
 
 
