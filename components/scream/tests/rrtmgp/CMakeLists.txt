@@ -1,7 +1,8 @@
 INCLUDE (ScreamUtils)
 
 # Required libraries
-SET (NEED_LIBS rrtmgp scream_control scream_share)
+SET (rrtmgpLib rrtmgp)
+SET (NEED_LIBS ${rrtmgpLib} scream_control scream_share)
 
 # Test atmosphere processes
 CreateUnitTest(rrtmgp_stand_alone "rrtmgp_stand_alone.cpp" "${NEED_LIBS}")
