@@ -904,7 +904,7 @@ subroutine update_prognostics_implicit( &
 
 end subroutine update_prognostics_implicit
 
-!==============================================================
+!=======================================================
 ! SHOC Diagnose the second order moments, 
 !  main routine
 
@@ -914,19 +914,15 @@ subroutine diag_second_shoc_moments(&
          u_wind,v_wind,tracer,tke, &            ! Input
          isotropy,tkh,tk,&                      ! Input
          dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
-	 wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
-	 wtracer_sfc, &                         ! Input
+         wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
+         wtracer_sfc, &                         ! Input
          thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
          wtracer_sec,&                          ! Output
          w_sec)                                 ! Output
 	 
-  ! Purpose of this subroutine is to diagnose the second
-  !  order moments needed for the SHOC parameterization.
-  !  Namely these are variances of thetal, qw, and vertical
-  !  velocity.  In addition the vertical fluxes of thetal, qw,
-  !  u, v, TKE, and tracers are computed here as well as the
-  !  correlation of qw and thetal.	 
+  ! This is the main routine to compute the second
+  !   order moments in SHOC. 	 
 	 
   implicit none
 
@@ -1003,8 +999,8 @@ subroutine diag_second_shoc_moments(&
     !  calculate surface boundary conditions
     call diag_second_moments_lbycond(&
        shcol,nlev,nlevi,&                   ! Input
-       num_tracer,thetal,qw,&             ! Input
-       u_wind,v_wind,tracer,&             ! Input
+       num_tracer,thetal,qw,&               ! Input
+       u_wind,v_wind,tracer,&               ! Input
        isotropy,tkh,tk,&                    ! Input
        dz_zi,zt_grid,zi_grid,&              ! Input
        wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
@@ -1017,8 +1013,8 @@ subroutine diag_second_shoc_moments(&
     !  for points away from boundaries
     call diag_second_moments(&
        shcol,nlev,nlevi, &                    ! Input
-       num_tracer,thetal,qw, &              ! Input
-       u_wind,v_wind,tracer,tke, &          ! Input
+       num_tracer,thetal,qw, &                ! Input
+       u_wind,v_wind,tracer,tke, &            ! Input
        isotropy,tkh,tk,&                      ! Input
        dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
        thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Input/Output
@@ -1029,7 +1025,7 @@ subroutine diag_second_shoc_moments(&
     ! Diagnose the second order moments,
     !  calculate the upper boundary conditions
     call diag_second_moments_ubycond(&
-       shcol,nlevi,num_tracer, &            ! Input
+       shcol,nlevi,num_tracer, &              ! Input
        thl_sec, qw_sec,&                      ! Input/Output
        wthl_sec,wqw_sec,&                     ! Input/Output
        qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
