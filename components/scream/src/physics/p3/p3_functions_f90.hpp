@@ -287,7 +287,7 @@ extern "C"{
 struct CldliqImmersionFreezingData
 {
   // inputs
-  Real t, lamc, mu_c, cdist1, qc_incld;
+  Real t, lamc, mu_c, cdist1, qc_incld, qc_relvar;
 
   // output
   Real qcheti, ncheti;
@@ -296,7 +296,7 @@ struct CldliqImmersionFreezingData
 void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
 extern "C"{
   void cldliq_immersion_freezing_f(Real t, Real lamc, Real mu_c,
-    Real cdist1, Real qc_incld, Real* qcheti, Real* ncheti);
+       Real cdist1, Real qc_incld, Real qc_relvar, Real* qcheti, Real* ncheti);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -340,7 +340,7 @@ extern "C"{
 struct CloudRainAccretionData
 {
   // inputs
-  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar;
 
   // output
   Real qcacc, ncacc;
@@ -350,7 +350,7 @@ void cloud_rain_accretion(CloudRainAccretionData& d);
 extern "C"{
 
   void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
-    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+       Real nc_incld, Real qr_incld, Real qc_relvar, Real* qcacc, Real* ncacc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,6 +361,7 @@ struct CloudWaterAutoconversionData
   Real rho;
   Real qc_incld;
   Real nc_incld;
+  Real qc_relvar;
 
   // output
   Real qcaut;
@@ -371,7 +372,7 @@ struct CloudWaterAutoconversionData
 void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
 extern "C"{
 
-  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld,
+  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, Real qc_relvar,
     Real* qcaut, Real* ncautc, Real* ncautr);
 }
 
@@ -420,11 +421,26 @@ struct IceMeltingData
 };
 
 void ice_melting(IceMeltingData& d);
-extern "C"{
 
+extern "C"{
 void ice_melting_f(Real rho,Real t,Real pres,Real rhofaci,Real f1pr05,Real f1pr14,Real xxlv,Real xlf,Real dv,Real sc,Real mu,Real kap,Real qv,Real qitot_incld,Real nitot_incld,Real* qimlt,Real* nimlt);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct SubgridVarianceScalingData
+{
+  // inputs
+  Real relvar,expon;
+  // no outputs - is a function
+};
+
+Real subgrid_variance_scaling(SubgridVarianceScalingData& d);
+
+extern "C"{
+  Real subgrid_variance_scaling_f(Real relvar,Real expon);
+}
+  
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GetCloudDsd2Data

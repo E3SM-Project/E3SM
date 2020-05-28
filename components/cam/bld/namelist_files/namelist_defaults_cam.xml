@@ -1012,11 +1012,13 @@
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 
 <!-- P3 specific namelist variables -->
-<micro_p3_lookup_dir> atm/cam/physprops </micro_p3_lookup_dir>
-<micro_p3_tableversion> 4 </micro_p3_tableversion>
-<micro_aerosolactivation > .true.  </micro_aerosolactivation>
-<micro_subgrid_cloud     > .true.  </micro_subgrid_cloud>
-<micro_tend_output       > .true.  </micro_tend_output>
+<micro_p3_lookup_dir	    > atm/cam/physprops </micro_p3_lookup_dir>
+<micro_p3_tableversion		      > 4 	</micro_p3_tableversion>
+<micro_aerosolactivation              > .true.  </micro_aerosolactivation>
+<micro_subgrid_cloud     	      > .true.  </micro_subgrid_cloud>
+<micro_tend_output       	      > .true.  </micro_tend_output>
+<p3_QcAutoCon_Expon    		      >  2.47   </p3_QcAutoCon_Expon>
+<p3_QcAccret_Expon    		      >  1.15   </p3_QcAccret_Expon>
 
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 
