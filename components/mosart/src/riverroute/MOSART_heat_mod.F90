@@ -133,15 +133,6 @@ MODULE MOSART_heat_mod
             Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
             THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)
             
-            
-            !if(iunit == 52744) then
-            !if(iunit == 75723) then
-            if(iunit == 91860) then
-              write(unit=1111,fmt="(i10, 7(e16.4))") iunit, THeat%Hs_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hl_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%He_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hc_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Hh_r(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Tr(iunit), THeat%forc_t(iunit)
-              write(unit=1112,fmt="(i10, f10.4, 7(e14.4))") iunit, TRunoff%yr(iunit,1), THeat%ha_lateral(iunit)/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rin(iunit)/TRunoff%rarea(iunit,nt_nliq), Ha_temp/TRunoff%rarea(iunit,nt_nliq), THeat%Ha_rout(iunit)/TRunoff%rarea(iunit,nt_nliq), TRunoff%erlateral(iunit, 1), TRunoff%erin(iunit, 1), TRunoff%erout(iunit,1)
-            end if
-
-
         !end if
     end subroutine mainchannelHeat
 
