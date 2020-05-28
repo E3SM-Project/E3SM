@@ -97,7 +97,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
         logger.warning("{} already exists, delete to replace".format(ems_path))
         return
 
-    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
+    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing, standalone_configure=True)
     ems_file.populate(machobj)
     ems_file.write()
 

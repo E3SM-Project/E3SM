@@ -15,14 +15,20 @@ logger = logging.getLogger(__name__)
 class EnvMachSpecific(EnvBase):
     # pylint: disable=unused-argument
     def __init__(self, caseroot=None, infile="env_mach_specific.xml",
-                 components=None, unit_testing=False, read_only=False):
+                 components=None, unit_testing=False, read_only=False,
+                 standalone_configure=False):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
+
+        Notes on some arguments:
+        standalone_configure: logical - whether this is being called from the standalone
+            configure utility, outside of a case
         """
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
         EnvBase.__init__(self, caseroot, infile, schema=schema, read_only=read_only)
         self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing", "queue")
         self._unit_testing = unit_testing
+        self._standalone_configure = standalone_configure
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
@@ -161,8 +167,12 @@ class EnvMachSpecific(EnvBase):
         if "SOFTENV_LOAD" in os.environ:
             lines.append("source $SOFTENV_LOAD")
 
-        modules_to_load = self._get_modules_for_case(case)
-        envs_to_set = self._get_envs_for_case(case)
+        if self._unit_testing or self._standalone_configure:
+            job = None
+        else:
+            job = case.get_primary_job()
+        modules_to_load = self._get_modules_for_case(case, job=job)
+        envs_to_set = self._get_envs_for_case(case, job=job)
         filename = ".env_mach_specific.{}".format(shell)
         if modules_to_load is not None:
             if module_system == "module":
