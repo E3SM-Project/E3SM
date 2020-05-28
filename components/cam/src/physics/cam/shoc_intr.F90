@@ -799,7 +799,7 @@ end function shoc_implements_cnst
 	shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
 	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
-	cloud_frac(:ncol,:), rcm(:ncol,:), & ! Input/Output
+	rcm(:ncol,:),cloud_frac(:ncol,:), & ! Input/Output
         pblh(:ncol), & ! Output
         shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
         w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)   
