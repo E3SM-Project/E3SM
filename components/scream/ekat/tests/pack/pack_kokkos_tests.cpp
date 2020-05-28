@@ -250,7 +250,7 @@ TEST_CASE("kokkos_packs", "scream::pack") {
     });
 
     auto big = repack<16>(small);
-    if (big.extent(0) != num_bigs) ++nerrs_local;
+    if (big.extent_int(0) != num_bigs) ++nerrs_local;
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_bigs*4), [&] (int i) {
       for (int p = 0; p < 4; ++p) {
@@ -333,7 +333,8 @@ TEST_CASE("host_device_packs", "scream::pack")
 
   for (int i = 0; i < num_pksizes_to_test; ++i) {
     for (int j = 0; j < num_views_per_pksize; ++j) {
-      for (int k = 0; k < (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]); ++k) {
+      const int klim = (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]);
+      for (int k = 0; k < klim; ++k) {
         ptr_data[i][j][k] = k*(i+j+1);
       }
     }
@@ -347,7 +348,8 @@ TEST_CASE("host_device_packs", "scream::pack")
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int&) {
     for (int i = 0; i < num_pksizes_to_test; ++i) {
       for (int j = 0; j < num_views_per_pksize; ++j) {
-        for (int k = 0; k < (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]); ++k) {
+        const int klim = (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]);
+        for (int k = 0; k < klim; ++k) {
 
           const int view_idx = k / pk_sizes[i];
           const int pk_idx = k % pk_sizes[i];
@@ -383,7 +385,8 @@ TEST_CASE("host_device_packs", "scream::pack")
 
   for (int i = 0; i < num_pksizes_to_test; ++i) {
     for (int j = 0; j < num_views_per_pksize; ++j) {
-      for (int k = 0; k < (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]); ++k) {
+      const int klim = (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]);
+      for (int k = 0; k < klim; ++k) {
         REQUIRE(ptr_data[i][j][k] == k*(i+j+1) + i + j);
       }
     }

@@ -141,7 +141,7 @@ static void unittest_workspace()
       // These nerrs_local increments are write race conditions among threads in
       // a team, but that's OK: nerrs_local doesn't have to be accurate. A 0
       // result will be a true 0 result.
-      if (ws_int.extent(0) != ints_per_ws) ++nerrs_local;
+      if (ws_int.extent_int(0) != ints_per_ws) ++nerrs_local;
       ws.release(ws_int);
 
       const auto ws_dlb = ws.template take<double>("doubles");
