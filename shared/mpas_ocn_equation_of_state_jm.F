@@ -305,7 +305,7 @@ contains
       if (displacementType == 'surfaceDisplaced') then
 
          !$omp parallel
-         !$omp do schedule(runtime) private(iCell, k, tq, sq)
+         !$omp do schedule(runtime) private(k, tq, sq)
          do iCell=1,nCells
          do k=1,nVertLevels
             tq = min(tracersSurfaceLayerValue(indexT,iCell), &
@@ -322,7 +322,7 @@ contains
       else
 
          !$omp parallel
-         !$omp do schedule(runtime) private(iCell, k, tq, sq)
+         !$omp do schedule(runtime) private(k, tq, sq)
          do iCell=1,nCells
          do k = 1, nVertLevels
             tq = min(tracers(indexT,k,iCell), ocnEqStateTmax)
@@ -343,7 +343,7 @@ contains
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iCell, k, sq, tq, sqr, t2, work1, work2, rhosfc, work3, work4, bulkMod)
+      !$omp private(k, sq, tq, sqr, t2, work1, work2, rhosfc, work3, work4, bulkMod)
 #endif
       do iCell=1,nCells
       do k=1,nVertLevels
@@ -576,7 +576,7 @@ contains
       if (displacementType == 'surfaceDisplaced') then
 
          !$omp parallel
-         !$omp do schedule(runtime) private(iCell, k, tq, sq)
+         !$omp do schedule(runtime) private(k, tq, sq)
          do iCell=1,nCells
          do k=1,nVertLevels
             tq = min(tracersSurfaceLayerValue(indexT,iCell), &
@@ -593,7 +593,7 @@ contains
       else
 
          !$omp parallel
-         !$omp do schedule(runtime) private(iCell, k, tq, sq)
+         !$omp do schedule(runtime) private(k, tq, sq)
          do iCell=1,nCells
          do k = 1, nVertLevels
             tq = min(tracers(indexT,k,iCell), ocnEqStateTmax)
@@ -618,7 +618,7 @@ contains
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iCell, k, sq, tq, sqr, t2, work1, work2, rhosfc, work3, work4, bulkMod, &
+      !$omp private(k, sq, tq, sqr, t2, work1, work2, rhosfc, work3, work4, bulkMod, &
       !$omp         denomk, drdt0, dkdt, drhodt, drds0, dkds, drhods)
 #endif
       do iCell=1,nCells

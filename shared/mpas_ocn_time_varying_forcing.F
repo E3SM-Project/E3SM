@@ -367,7 +367,7 @@ contains
     ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_time_varying_atmospheric_forcing_ramp)
 
     !$omp parallel
-    !$omp do schedule(runtime) private(iCell, windStressCoefficient)
+    !$omp do schedule(runtime) private(windStressCoefficient)
     do iCell = 1, nCells
 
        windSpeedU(iCell) = ramp*windSpeedU(iCell)

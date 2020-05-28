@@ -138,7 +138,7 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iCell, maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, &
+      !$omp private(maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, &
       !$omp         energyChange, temperatureChange, thicknessChange, iceThicknessChange, iTracer)
       do iCell = 1, nCellsSolve ! Check performance of these two loop definitions
 !     do iCell = nCellsSolve, 1, -1

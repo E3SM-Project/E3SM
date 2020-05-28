@@ -151,7 +151,7 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iEdge, cell1, cell2, invLength, k, qArr, j, eoe, edgeWeight, workVorticity)
+      !$omp private(cell1, cell2, invLength, k, qArr, j, eoe, edgeWeight, workVorticity)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)

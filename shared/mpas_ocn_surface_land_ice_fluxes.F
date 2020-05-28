@@ -495,7 +495,7 @@ contains
 
       if(isomipOn) then
          !$omp parallel
-         !$omp do schedule(runtime) private(iCell, freshwaterFlux, heatFlux)
+         !$omp do schedule(runtime) private(freshwaterFlux, heatFlux)
          do iCell = 1, nCells
             if (landIceMask(iCell) == 0) cycle
 
@@ -780,7 +780,7 @@ contains
     Tlatent = latent_heat_fusion_mks/cp_sw
 
     !$omp parallel
-    !$omp do schedule(runtime) private(iCell, T0, dTf_dS, transferVelocityRatio, a, b, c)
+    !$omp do schedule(runtime) private(T0, dTf_dS, transferVelocityRatio, a, b, c)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
@@ -928,7 +928,7 @@ contains
     cpRatio = cp_land_ice/cp_sw
     !$omp parallel
     !$omp do schedule(runtime) reduction(+:err) &
-    !$omp private(iCell, T0, dTf_dS, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
+    !$omp private(T0, dTf_dS, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
