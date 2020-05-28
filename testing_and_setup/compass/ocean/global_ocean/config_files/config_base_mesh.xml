@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <config case="base_mesh">
 
-	<copy_file source_path="script_test_dir" source="define_base_mesh.py" dest="define_base_mesh.py"/>
+	<add_link source_path="script_test_dir" source="build_base_mesh.py" dest="build_base_mesh.py"/>
 
 	<run_script name="run.py">
-		<step executable="build_mesh">
+		<step executable="./build_base_mesh.py">
 		</step>
 	</run_script>
 </config>
