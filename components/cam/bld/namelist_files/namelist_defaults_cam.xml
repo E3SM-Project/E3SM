@@ -229,9 +229,10 @@
 <bnd_topo hgrid="10x15"     >atm/cam/topo/USGS-gtopo30_10x15_remap_c050520.nc</bnd_topo>
 
 <bnd_topo hgrid="ne4np4"   npg="0">atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
-<bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4pg2_16xdel2-PFC-consistentSGH.c20190618.nc</bnd_topo>
+<bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x.c20160612_converted.nc</bnd_topo>
 <bnd_topo hgrid="ne11np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne16np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne16np4pg2_16xdel2_20200527.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
@@ -823,8 +824,10 @@
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
 <drydep_srf_file hgrid="ne4np4"  >atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne4np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne16np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne16pg2_200527.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" npg="0">atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne30pg2_200129.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
