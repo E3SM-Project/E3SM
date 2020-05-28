@@ -1,3 +1,5 @@
+#include "ekat_config.f"
+
 module unit_test_mod
   implicit none
 contains
@@ -6,9 +8,16 @@ contains
     use array_io_mod
     use iso_c_binding
 
+#ifdef EKAT_DOUBLE_PRECISION
+    integer, parameter :: c_real = c_double
+#else
+    integer, parameter :: c_real = c_float
+#endif
+
+
     integer(kind=c_int) :: nerr
     integer ::  i, j
-    real, target :: a(10,3), b(10,3)
+    real(kind=c_real), target :: a(10,3), b(10,3)
     logical :: ok
 
     character(kind=c_char, len=128), parameter :: &
