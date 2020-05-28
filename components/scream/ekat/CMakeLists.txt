@@ -30,15 +30,13 @@ list (APPEND EKAT_TPL_LIBRARIES ${YAMLCPP_LIBRARIES})
 ############################
 
 # By default, we build ekat in double precision
-option (EKAT_DOUBLE_PRECISION "Whether EKAT should be built with double precision floating points." ON)
-option (EKAT_MPI_ERRORS_ARE_FATAL "Whether EKAT should crash when MPI errors happen." ON)
+option (EKAT_DOUBLE_PRECISION " Whether EKAT should be built with double precision floating points." ON)
+option (EKAT_MPI_ERRORS_ARE_FATAL " Whether EKAT should crash when MPI errors happen." ON)
 set (EKAT_PACK_SIZE       16 CACHE STRING
-  "The number of scalars in a pack::Pack and Mask.\n
+  " The number of scalars in a pack::Pack and Mask.
    Larger packs have good performance on conditional-free loops due to improved caching.")
 set (EKAT_SMALL_PACK_SIZE  8 CACHE STRING
-  "The number of scalars in a pack::SmallPack and SmallMask.\n
-   Smaller packs can have better performance in loops with conditionals,\n
-   since more of the packs will have masks with uniform value.")
+  " The number of scalars in a pack::SmallPack and SmallMask. Smaller packs can have better performance in loops with conditionals, since more of the packs will have masks with uniform value.")
 
 # For some routines, SKX may have better performance with pksize=1
 # The following lines are meant to set up another variable to store
@@ -49,7 +47,7 @@ if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "SKX")
   set(DEFAULT_POSSIBLY_NO_PACK TRUE)
 endif ()
 set(EKAT_POSSIBLY_NO_PACK ${DEFAULT_POSSIBLY_NO_PACK} CACHE BOOL
-  "Set possibly-no-pack to this value. You can set it to something else to restore packs on SKX for testing.")
+  " Set possibly-no-pack to this value. You can set it to something else to restore packs on SKX for testing.")
 
 set (DEFAULT_POSSIBLY_NO_PACK_SIZE ${EKAT_PACK_SIZE})
 if (EKAT_POSSIBLY_NO_PACK)
@@ -81,11 +79,11 @@ add_subdirectory(src/ekat)
 ############################
 
 # By default, we DO build ekat tests. This may change in the future
-option (EKAT_ENABLE_TESTS "Whether tests should be built.\n" ON)
+option (EKAT_ENABLE_TESTS "Whether tests should be built." ON)
 
 if (EKAT_ENABLE_TESTS)
   enable_testing()
-  option (EKAT_STRICT_FP "Whether EKAT tests should adopt a strict fp model testing.\n" ON)
+  option (EKAT_STRICT_FP " Whether EKAT tests should adopt a strict fp model testing." ON)
   add_subdirectory(tests)
 endif()
 

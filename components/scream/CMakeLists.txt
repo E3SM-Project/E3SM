@@ -50,17 +50,6 @@ endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
-# Proecess the EKAT package right away
-set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat)
-if (SCREAM_DOUBLE_PRECISION)
-  set (EKAT_PRECISION "DOUBLE")
-else()
-  set (EKAT_PRECISION "SINGLE")
-endif()
-set (Kokkos_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
-set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
-include(Ekat)
-
 # Set the scream base and src directory, to be used across subfolders
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -84,6 +73,9 @@ string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
 
 enable_testing()
 include(CTest)
+
+set (Kokkos_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
+include(Kokkos)
 
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 
@@ -165,11 +157,21 @@ set(SCREAM_FPMODEL ${DEFAULT_FPMODEL} CACHE STRING "Compiler floating point mode
 set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception")
 ### <Scream configuration options
 
-set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/catch2/include)
-
 # Scream test configuration options
 set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
 set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
+
+# Proecess the EKAT package
+set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
+set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat)
+
+include(Ekat)
+if (SCREAM_DOUBLE_PRECISION)
+  buildEkat("DOUBLE" PREFIX "SCREAM")
+else()
+  buildEkat("SINGLE" PREFIX "SCREAM")
+endif()
+
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
