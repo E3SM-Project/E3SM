@@ -104,6 +104,7 @@ module dshr_stream_mod
      logical           :: fileopen     = .false.                ! is current file open
      character(CL)     :: currfile     = ' '                    ! current filename
      integer           :: nvars                                 ! number of stream variables
+     character(CL)     :: stream_vectors                  ! stream vectors names
      type(file_desc_t) :: currpioid                             ! current pio file desc
      type(shr_stream_file_type)    , allocatable :: file(:)     ! filenames of stream data files (full pathname)
      type(shr_stream_data_variable), allocatable :: varlist(:)  ! stream variable names (on file and in model)
@@ -237,6 +238,13 @@ contains
           else
              call shr_sys_abort("mesh file name must be provided")
           endif
+          p => item(getElementsByTagname(streamnode, "stream_vectors"), 0)
+          if (associated(p)) then
+             call extractDataContent(p, streamdat(i)%stream_vectors)
+          else
+             call shr_sys_abort("stream vectors must be provided")
+          endif
+
           p => item(getElementsByTagname(streamnode, "stream_data_files"), 0)
           if (.not. associated(p)) then
              call shr_sys_abort("stream data files must be provided")
@@ -314,6 +322,9 @@ contains
        call ESMF_VMBroadCast(vm, streamdat(i)%readmode,     CS, 0, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_VMBroadCast(vm, streamdat(i)%tinterpAlgo,  CS, 0, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_VMBroadCast(vm, streamdat(i)%stream_vectors,  CL, 0, rc=rc)
+
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_VMBroadCast(vm, streamdat(i)%mapalgo,      CS, 0, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
