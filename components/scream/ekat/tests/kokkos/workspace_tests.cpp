@@ -31,9 +31,10 @@ static void unittest_workspace_overprovision()
 
   using WSM = WorkspaceManager<Real, Device>;
 
-  const int nk = 128;
+  const int max_threads = ExeSpace::concurrency();
+  const int nk = OnGpu<ExeSpace>::value ? 128 : (max_threads < 7 ? max_threads : 7);
 
-  const auto temp_policy = ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  const auto temp_policy = ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(1, nk);
   TeamUtils<ExeSpace> tu_temp(temp_policy);
   const int num_conc = tu_temp.get_max_concurrent_threads() / temp_policy.team_size();
 
@@ -47,7 +48,7 @@ static void unittest_workspace_overprovision()
   const int ni_over    = num_conc * (explicit_op_fact + .5);
 
   for (const int ni_item : {ni_under, ni_conc, ni_between, ni_exact, ni_over}) {
-    TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni_item, nk));
+    TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(ni_item, nk));
     WSM wsm(4, 4, policy);
 
     if (ni_item <= ni_exact) {
@@ -62,7 +63,7 @@ static void unittest_workspace_overprovision()
   }
 
   for (const int ni_item : {ni_under, ni_conc, ni_between, ni_exact, ni_over}) {
-    TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni_item, nk));
+    TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(ni_item, nk));
     WSM wsm(4, 4, policy, explicit_op_fact);
 
     if (ni_item <= ni_exact) {
@@ -75,7 +76,6 @@ static void unittest_workspace_overprovision()
       REQUIRE(wsm.m_max_ws_idx == num_conc * explicit_op_fact);
     }
   }
-
 }
 
 static void unittest_workspace()
