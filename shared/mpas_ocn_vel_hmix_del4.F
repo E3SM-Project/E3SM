@@ -191,7 +191,7 @@ contains
       !Compute delsq_u
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iEdge, cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, k)
+      !$omp private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, k)
       do iEdge = 1, nEdges
          delsq_u(:, iEdge) = 0.0_RKIND
          cell1 = cellsOnEdge(1,iEdge)
@@ -216,7 +216,7 @@ contains
 
       ! Compute delsq_relativeVorticity
       !$omp parallel
-      !$omp do schedule(runtime) private(iVertex, invAreaTri1, i, iEdge, k)
+      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k)
       do iVertex = 1, nVertices
          delsq_relativeVorticity(:, iVertex) = 0.0_RKIND
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
@@ -235,7 +235,7 @@ contains
 
       ! Compute delsq_divergence
       !$omp parallel
-      !$omp do schedule(runtime) private(iCell, invAreaCell1, i, iEdge, k)
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
       do iCell = 1, nCells
          delsq_divergence(:, iCell) = 0.0_RKIND
          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
@@ -256,7 +256,7 @@ contains
       ! as  \nabla div(\nabla^2 u) + k \times \nabla ( k \cross curl(\nabla^2 u) )
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(iEdge, cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, k, u_diffusion)
+      !$omp private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, k, u_diffusion)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)

@@ -249,7 +249,7 @@ module ocn_tracer_advection_mono
       ! See notes in commit 2cd4a89d.
 
       !$omp parallel
-      !$omp do schedule(runtime) private(iCell, invAreaCell1, kmax, k, i, iEdge, signedFactor)
+      !$omp do schedule(runtime) private(invAreaCell1, kmax, k, i, iEdge, signedFactor)
       do iCell = 1, nCells
         invAreaCell1 = dt/areaCell(iCell)
         kmax = maxLevelCell(iCell)
@@ -312,7 +312,7 @@ module ocn_tracer_advection_mono
         ! surrounding cells for later limiting.
 
         !$omp parallel
-        !$omp do schedule(runtime) private(iCell, k, i, cell2, kmax)
+        !$omp do schedule(runtime) private(k, i, cell2, kmax)
         do iCell = 1, nCells
           do k=1, maxLevelCell(iCell)
             tracerMin(k,iCell) = tracerCur(k,iCell)
@@ -340,7 +340,7 @@ module ocn_tracer_advection_mono
 
         !$omp parallel
         !$omp do schedule(runtime) &
-        !$omp private(iEdge, cell1, cell2, k, wgtTmp, sgnTmp, flxTmp, i, iCell, coef1, coef3, &
+        !$omp private(cell1, cell2, k, wgtTmp, sgnTmp, flxTmp, i, iCell, coef1, coef3, &
         !$omp         tracerWeight)
         do iEdge = 1, nEdges
           cell1 = cellsOnEdge(1, iEdge)
@@ -418,7 +418,7 @@ module ocn_tracer_advection_mono
 
         !$omp parallel
         !$omp do schedule(runtime) &
-        !$omp private(iCell, invAreaCell1, i, iEdge, cell1, cell2, signedFactor, k, &
+        !$omp private(invAreaCell1, i, iEdge, cell1, cell2, signedFactor, k, &
         !$omp         tracerUpwindNew, tracerMinNew, tracerMaxNew, scaleFactor)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
@@ -536,7 +536,7 @@ module ocn_tracer_advection_mono
         if (computeBudgets) then
 
            !$omp parallel
-           !$omp do schedule(runtime) private(iEdge, k)
+           !$omp do schedule(runtime) private(k)
            do iEdge = 1,nEdgesArray( 2 )
            do k = 1,maxLevelEdgeTop(iEdge)
               ! Save u*h*T flux on edge for analysis. This variable will be
@@ -547,7 +547,7 @@ module ocn_tracer_advection_mono
            enddo
            !$omp end do
 
-           !$omp do schedule(runtime) private(iCell, k)
+           !$omp do schedule(runtime) private(k)
            do iCell = 1, nCellsArray( 1 )
            do k = 1, maxLevelCell(iCell)
               activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = &
@@ -564,7 +564,7 @@ module ocn_tracer_advection_mono
            ! Check tracer values against local min,max to detect
            ! non-monotone values and write warning if found
            !$omp parallel
-           !$omp do schedule(runtime) private(iCell, k)
+           !$omp do schedule(runtime) private(k)
            do iCell = 1, nCells
            do k = 1, maxLevelCell(iCell)
               if(tracerCur(k,iCell) < tracerMin(k, iCell)-eps) then
@@ -626,7 +626,7 @@ module ocn_tracer_advection_mono
 
         ! Determine bounds on tracerCur from neighbor values for limiting
         !$omp parallel
-        !$omp do schedule(runtime) private(iCell, kmax, k)
+        !$omp do schedule(runtime) private(kmax, k)
         do iCell = 1, nCells
           kmax = maxLevelCell(iCell)
 
@@ -659,7 +659,7 @@ module ocn_tracer_advection_mono
         case (vertOrder4)
 
           !$omp parallel
-          !$omp do schedule(runtime) private(iCell, kmax, k)
+          !$omp do schedule(runtime) private(kmax, k)
           do iCell = 1, nCells
             kmax = maxLevelCell(iCell)
             do k=3,kmax-1
@@ -676,7 +676,7 @@ module ocn_tracer_advection_mono
         case (vertOrder3)
 
           !$omp parallel
-          !$omp do schedule(runtime) private(iCell, kmax, k)
+          !$omp do schedule(runtime) private(kmax, k)
           do iCell = 1, nCells
             kmax = maxLevelCell(iCell)
             do k=3,kmax-1
@@ -697,7 +697,7 @@ module ocn_tracer_advection_mono
        case (vertOrder2)
 
           !$omp parallel
-          !$omp do schedule(runtime) private(iCell, kmax, k, verticalWeightK, verticalWeightKm1)
+          !$omp do schedule(runtime) private(kmax, k, verticalWeightK, verticalWeightKm1)
           do iCell = 1, nCells
             kmax = maxLevelCell(iCell)
             do k=3,kmax-1
@@ -720,7 +720,7 @@ module ocn_tracer_advection_mono
         ! Remove low order flux from the high order flux.
         ! Store left over high order flux in highOrderFlx array.
         !$omp parallel
-        !$omp do schedule(runtime) private(iCell, kmax, verticalWeightK, verticalWeightKm1, k)
+        !$omp do schedule(runtime) private(kmax, verticalWeightK, verticalWeightKm1, k)
         do iCell = 1, nCells
           kmax = maxLevelCell(iCell)
           ! Next-to-top cell in column is second-order
@@ -781,7 +781,7 @@ module ocn_tracer_advection_mono
         nCells = nCellsArray( 2 )
         !$omp parallel
         !$omp do schedule(runtime) &
-        !$omp private(iCell, k, tracerMinNew, tracerMaxNew, tracerUpwindNew, scaleFactor)
+        !$omp private(k, tracerMinNew, tracerMaxNew, tracerUpwindNew, scaleFactor)
         do iCell = 1, nCells
 
           ! Build the scale factors to limit flux for FCT
@@ -820,7 +820,7 @@ module ocn_tracer_advection_mono
         ! Accumulate the scaled high order vertical tendencies
         ! and the upwind tendencies
         !$omp parallel
-        !$omp do schedule(runtime) private(iCell, kmax, k, flux)
+        !$omp do schedule(runtime) private(kmax, k, flux)
         do iCell = 1, nCells
           kmax = maxLevelCell(iCell)
           ! rescale the high order vertical flux
@@ -854,7 +854,7 @@ module ocn_tracer_advection_mono
 #endif
         if (computeBudgets) then
            !$omp parallel
-           !$omp do schedule(runtime) private(iCell, k)
+           !$omp do schedule(runtime) private(k)
            do iCell = 1, nCells
               do k = 2, maxLevelCell(iCell)
                  activeTracerVerticalAdvectionTopFlux(iTracer,k,iCell) = &
@@ -873,7 +873,7 @@ module ocn_tracer_advection_mono
           nCells = nCellsArray( 1 )
           ! Check for monotonicity of new tracer value
           !$omp parallel
-          !$omp do schedule(runtime) private(iCell, k, tracerNew)
+          !$omp do schedule(runtime) private(k, tracerNew)
           do iCell = 1, nCells
           do k = 1, maxLevelCell(iCell)
              ! workTend on the RHS is the total vertical advection tendency
