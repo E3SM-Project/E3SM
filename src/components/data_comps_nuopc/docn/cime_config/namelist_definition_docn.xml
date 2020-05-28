@@ -252,10 +252,10 @@
       last, and align settings associated with the stream dataset, to
       extend the first and last valid value indefinitely, or to limit
       the interpolated data to fall only between the least and
-      greatest valid value of the time array.  
-      valid values: cycle,extend,limit 
-      ==> extend = extrapolate before and after the period by using the first or last value.  
-      ==> cycle = cycle between the range of data 
+      greatest valid value of the time array.
+      valid values: cycle,extend,limit
+      ==> extend = extrapolate before and after the period by using the first or last value.
+      ==> cycle = cycle between the range of data
       ==> limit = restrict to the period for which the data is valid
     </desc>
     <values>
@@ -284,7 +284,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <desc>
-      delta time ratio limits placed on the  time interpolation associated 
+      delta time ratio limits placed on the  time interpolation associated
       with the array of streams.  this real
       value causes the model to stop if the ratio of the running maximum
       delta time divided by the minimum delta time is greater than the
@@ -371,23 +371,23 @@
       application.  A tool is available to derive valid SOM forcing.
 
       (1) map the xml variable DOCN_MODE => config variable docn_mode
-        compset="_DOCN%NULL_"     => docn_mode=null               
-        compset="_DOCN%DOM_"      => docn_mode=prescribed         
-        compset="_DOCN%SOM_"      => docn_mode=som                
-        compset="_DOCN%SOMAQP_"   => docn_mode=som_aquap          
-        compset="_DOCN%IAF_"      => docn_mode=interannual        
-        compset="_DOCN%AQP1_"     => docn_mode=sst_aquap1         
-        compset="_DOCN%AQP2_"     => docn_mode=sst_aquap2         
-        compset="_DOCN%AQP3_"     => docn_mode=sst_aquap3         
-        compset="_DOCN%AQP4_"     => docn_mode=sst_aquap4         
-        compset="_DOCN%AQP5_"     => docn_mode=sst_aquap5         
-        compset="_DOCN%AQP6_"     => docn_mode=sst_aquap6         
-        compset="_DOCN%AQP7_"     => docn_mode=sst_aquap7         
-        compset="_DOCN%AQP8_"     => docn_mode=sst_aquap8         
-        compset="_DOCN%AQP9_"     => docn_mode=sst_aquap9         
-        compset="_DOCN%AQP10_"    => docn_mode=sst_aquap10        
-        compset="_DOCN%AQPFILE_"  => docn_mode=sst_aquapfile      
-        compset="_DOCN%AQPCONST_" => docn_mode=sst_aquap_constant 
+        compset="_DOCN%NULL_"     => docn_mode=null
+        compset="_DOCN%DOM_"      => docn_mode=prescribed
+        compset="_DOCN%SOM_"      => docn_mode=som
+        compset="_DOCN%SOMAQP_"   => docn_mode=som_aquap
+        compset="_DOCN%IAF_"      => docn_mode=interannual
+        compset="_DOCN%AQP1_"     => docn_mode=sst_aquap1
+        compset="_DOCN%AQP2_"     => docn_mode=sst_aquap2
+        compset="_DOCN%AQP3_"     => docn_mode=sst_aquap3
+        compset="_DOCN%AQP4_"     => docn_mode=sst_aquap4
+        compset="_DOCN%AQP5_"     => docn_mode=sst_aquap5
+        compset="_DOCN%AQP6_"     => docn_mode=sst_aquap6
+        compset="_DOCN%AQP7_"     => docn_mode=sst_aquap7
+        compset="_DOCN%AQP8_"     => docn_mode=sst_aquap8
+        compset="_DOCN%AQP9_"     => docn_mode=sst_aquap9
+        compset="_DOCN%AQP10_"    => docn_mode=sst_aquap10
+        compset="_DOCN%AQPFILE_"  => docn_mode=sst_aquapfile
+        compset="_DOCN%AQPCONST_" => docn_mode=sst_aquap_constant
 
       (2) map the config variable docn_mode => namelist variable datamode
         docn_mode="null"                => datamode=NULL
