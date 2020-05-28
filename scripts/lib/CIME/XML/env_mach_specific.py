@@ -150,7 +150,14 @@ class EnvMachSpecific(EnvBase):
             f.write(self.list_modules())
         run_cmd_no_fail("echo -e '\n' && env", arg_stdout=filename)
 
-    def make_env_mach_specific_file(self, shell, case):
+    def make_env_mach_specific_file(self, shell, case, output_dir=''):
+        """Writes .env_mach_specific.sh or .env_mach_specific.csh
+
+        Args:
+        shell: string - 'sh' or 'csh'
+        case: case object
+        output_dir: string - path to output directory (if empty string, uses current directory)
+        """
         module_system = self.get_module_system_type()
         sh_init_cmd = self.get_module_system_init_path(shell)
         sh_mod_cmd = self.get_module_system_cmd_path(shell)
@@ -190,7 +197,7 @@ class EnvMachSpecific(EnvBase):
                 else:
                     expect(False, "Unknown shell type: '{}'".format(shell))
 
-        with open(filename, "w") as fd:
+        with open(os.path.join(output_dir, filename), "w") as fd:
             fd.write("\n".join(lines))
 
     # Private API
