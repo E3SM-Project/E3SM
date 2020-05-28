@@ -41,6 +41,7 @@ module dshr_strdata_mod
 
   public  :: shr_strdata_type
   public  :: shr_strdata_init_from_xml
+  public  :: shr_strdata_init_from_inline
   public  :: shr_strdata_restRead
   public  :: shr_strdata_restWrite
   public  :: shr_strdata_setOrbs
@@ -124,15 +125,20 @@ module dshr_strdata_mod
 !===============================================================================
 contains
 !===============================================================================
+
   integer function shr_strdata_get_stream_count(sdat)
     type(shr_strdata_type)     , intent(in) :: sdat
     shr_strdata_get_stream_count = size(sdat%stream)
   end function shr_strdata_get_stream_count
 
+  !===============================================================================
   type(ESMF_FieldBundle) function shr_strdata_get_stream_fieldbundle(sdat, ns, name)
+
+    ! input/output variables
     type(shr_strdata_type)     , intent(in) :: sdat
     integer                    , intent(in) :: ns ! stream number
     character(len=*)           , intent(in) :: name
+
     if(trim(name) .eq. 'model') then
        shr_strdata_get_stream_fieldbundle = sdat%pstrm(ns)%fldbun_model
     else if (trim(name) .eq. 'model_lb') then
@@ -149,7 +155,7 @@ contains
 
   end function shr_strdata_get_stream_fieldbundle
 
-
+  !===============================================================================
   subroutine shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, compid, logunit, rc)
 
     ! input/output variables
@@ -169,7 +175,6 @@ contains
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
-
 
     ! Initialize log unit
     sdat%logunit = logunit
@@ -200,6 +205,60 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_strdata_init_from_xml
+
+  !===============================================================================
+  subroutine shr_strdata_init_from_inline(sdat, my_task, logunit, compid, model_clock, model_mesh,&
+       stream_meshfile, stream_filenames, stream_fldlistFile, stream_fldListModel, &
+       stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, rc)
+
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat                   ! stream data type
+    integer                , intent(in)    :: my_task                ! my mpi task
+    integer                , intent(in)    :: logunit                ! stdout logunit 
+    integer                , intent(in)    :: compid                 ! component id (needed by pio)
+    type(ESMF_Clock)       , intent(in)    :: model_clock            ! model clock
+    type(ESMF_Mesh)        , intent(in)    :: model_mesh             ! model mesh
+    character(*)           , intent(in)    :: stream_meshFile        ! full pathname to stream mesh file
+    character(*)           , intent(in)    :: stream_filenames(:)    ! stream data filenames (full pathnamesa)
+    character(*)           , intent(in)    :: stream_fldListFile(:)  ! file field names, colon delim list
+    character(*)           , intent(in)    :: stream_fldListModel(:) ! model field names, colon delim list
+    integer                , intent(in)    :: stream_yearFirst       ! first year to use
+    integer                , intent(in)    :: stream_yearLast        ! last  year to use
+    integer                , intent(in)    :: stream_yearAlign       ! align yearFirst with this model year
+    integer                , intent(in)    :: stream_offset          ! offset in seconds of stream data
+    character(*)           , intent(in)    :: stream_taxMode         ! time axis mode
+    integer                , intent(out)   :: rc                     ! error code
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! Initialize sdat%logunit and sdat%masterproc
+    sdat%logunit = logunit
+    sdat%masterproc = (my_task == master_task)
+
+    ! Initialize sdat pio 
+    sdat%pio_subsystem => shr_pio_getiosys(compid)
+    sdat%io_type       =  shr_pio_getiotype(compid)
+    sdat%io_format     =  shr_pio_getioformat(compid)
+
+    ! Initialize sdat%pstrm - ASSUME only 1 stream
+    allocate(sdat%pstrm(1))
+
+    ! Initialize sdat model domain
+    sdat%model_mesh = model_mesh
+    call shr_strdata_init_model_domain(sdat, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize sdat stream - ASSUME only 1 stream
+    call shr_stream_init_from_inline(sdat%stream, stream_meshfile, &
+       stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
+       stream_fldlistFile, stream_fldListModel, stream_fileNames, logunit)
+
+    ! Now finish initializing sdat
+    call shr_strdata_init(sdat, model_clock, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine shr_strdata_init_from_inline
 
   !===============================================================================
   subroutine shr_strdata_init_model_domain( sdat, rc)
@@ -337,6 +396,7 @@ contains
              call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
           end if
        endif
+
        sdat%pstrm(ns)%stream_mesh = ESMF_MeshCreate(trim(filename), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
