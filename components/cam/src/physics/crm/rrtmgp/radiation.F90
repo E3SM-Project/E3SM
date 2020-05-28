@@ -1132,8 +1132,6 @@ contains
 
       ! RRTMGP radiation drivers and derived types
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_optical_props, only: ty_optical_props_1scl, & 
-                                  ty_optical_props_2str
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_rrtmgp_util_string, only: lower_case
       use rrtmgp_driver, only: rte_lw
@@ -1303,8 +1301,9 @@ contains
       real(r8) :: tsi_scaling
 
       ! Cloud and aerosol optics
-      type(ty_optical_props_2str) :: cld_optics_sw, aer_optics_sw
-      real(r8), dimension(:,:,:), allocatable :: cld_tau_lw_all, aer_tau_lw_all
+      real(r8), dimension(:,:,:), allocatable :: &
+         cld_tau_lw_all, cld_tau_sw_all, cld_ssa_sw_all, cld_asm_sw_all, &
+         aer_tau_lw_all, aer_tau_sw_all, aer_ssa_sw_all, aer_asm_sw_all
 
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrs_all, qrsc_all
 
@@ -1464,34 +1463,24 @@ contains
                nnight = count(night_indices(1:ncol) > 0)
 
                ! Initialize cloud optics objects
-               call handle_error(cld_optics_sw%alloc_2str( &
-                  ncol, nlev_rad, k_dist_sw, name='cld_optics_sw' &
-               ))
-               call handle_error(cld_optics_sw%alloc_2str( &
-                  ncol_tot, nlev_rad, k_dist_sw, name='cld_optics_sw' &
-               ))
-               allocate(cld_tau_lw_all(ncol_tot, nlev_rad, nlwgpts))
-               allocate(aer_tau_lw_all(ncol_tot, nlev_rad, nlwbands))
-               cld_optics_sw%tau = 0
-               cld_optics_sw%ssa = 0
-               cld_optics_sw%g   = 0
-
-               ! Initialize aerosol optics; passing only the wavenumber bounds for each
-               ! "band" rather than passing the full spectral discretization object, and
-               ! omitting the "g-point" mapping forces the optics to be indexed and
-               ! stored by band rather than by g-point. This is most consistent with our
-               ! treatment of aerosol optics in the model, and prevents us from having to
-               ! map bands to g-points ourselves since that will all be handled by the
-               ! private routines internal to the optics class.
-               call handle_error(aer_optics_sw%alloc_2str(              &
-                  ncol_tot, nlev_rad, k_dist_sw%get_band_lims_wavenumber(), &
-                  name='aer_optics_sw'                                  &
-               ))
-               aer_optics_sw%tau = 0
-               aer_optics_sw%ssa = 0
-               aer_optics_sw%g   = 0
-               aer_tau_lw_all = 0
-               cld_tau_lw_all = 0
+               allocate( &
+                  cld_tau_lw_all(ncol_tot, nlev_rad, nlwgpts ), &
+                  cld_tau_sw_all(ncol_tot, nlev_rad, nswgpts ), &
+                  cld_ssa_sw_all(ncol_tot, nlev_rad, nswgpts ), &
+                  cld_asm_sw_all(ncol_tot, nlev_rad, nswgpts ), &
+                  aer_tau_lw_all(ncol_tot, nlev_rad, nlwbands), &
+                  aer_tau_sw_all(ncol_tot, nlev_rad, nswbands), &
+                  aer_ssa_sw_all(ncol_tot, nlev_rad, nswbands), &
+                  aer_asm_sw_all(ncol_tot, nlev_rad, nswbands)  &
+               )
+               cld_tau_lw_all = 0._r8
+               cld_tau_sw_all = 0._r8
+               cld_ssa_sw_all = 0._r8
+               cld_asm_sw_all = 0._r8
+               aer_tau_lw_all = 0._r8
+               aer_tau_sw_all = 0._r8
+               aer_ssa_sw_all = 0._r8
+               aer_asm_sw_all = 0._r8
 
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
@@ -1624,13 +1613,13 @@ contains
                         pint(j,:) = pint_col(ic,:)
                         tint(j,:) = tint_col(ic,:)
                         cld_tau_lw_all(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
-                        cld_optics_sw%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
-                        cld_optics_sw%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
-                        cld_optics_sw%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
+                        cld_tau_sw_all(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
+                        cld_ssa_sw_all(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
+                        cld_asm_sw_all(j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
                         aer_tau_lw_all(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
-                        aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
-                        aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
-                        aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
+                        aer_tau_sw_all(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
+                        aer_ssa_sw_all(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
+                        aer_asm_sw_all(j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
                         j = j + 1
                      end do  ! ic = 1,ncol
@@ -1664,7 +1653,8 @@ contains
                   coszrs_all(1:ncol_tot), &
                   albedo_direct_all(1:nswbands,1:ncol_tot), &
                   albedo_diffuse_all(1:nswbands,1:ncol_tot), &
-                  cld_optics_sw, aer_optics_sw, &
+                  cld_tau_sw_all, cld_ssa_sw_all, cld_asm_sw_all, &
+                  aer_tau_sw_all, aer_ssa_sw_all, aer_asm_sw_all, &
                   fluxes_allsky_all, fluxes_clrsky_all, tsi_scaling &
                )
                call t_stopf('rad_calculate_fluxes_sw')
@@ -1742,8 +1732,10 @@ contains
                call free_fluxes(fluxes_clrsky_all)
 
                ! Free optical properties
-               call free_optics_sw(cld_optics_sw)
-               call free_optics_sw(aer_optics_sw)
+               deallocate( &
+                  cld_tau_sw_all, cld_ssa_sw_all, cld_asm_sw_all, &
+                  aer_tau_sw_all, aer_ssa_sw_all, aer_asm_sw_all  &
+               )
             else
 
                ! Conserve energy
@@ -1915,14 +1907,13 @@ contains
    subroutine calculate_fluxes_sw(gas_names, gas_vmr, &
                                   pmid, tmid, pint, &
                                   coszrs, alb_dir, alb_dif, &
-                                  cld_optics, aer_optics, &
+                                  cld_tau, cld_ssa, cld_asm, &
+                                  aer_tau, aer_ssa, aer_asm, &
                                   fluxes_allsky, fluxes_clrsky, &
                                   tsi_scaling)
 
       use perf_mod, only: t_startf, t_stopf
       use mo_fluxes_byband, only: ty_fluxes_byband
-      use mo_optical_props, only: ty_optical_props_2str
-      use mo_gas_concentrations, only: ty_gas_concs
       use mo_rrtmgp_util_string, only: lower_case
       use rrtmgp_driver, only: rte_sw
 
@@ -1931,20 +1922,23 @@ contains
       real(r8), intent(in), dimension(:,:) :: pmid, tmid, pint
       real(r8), intent(in), dimension(:) :: coszrs
       real(r8), intent(in), dimension(:,:) :: alb_dir, alb_dif
-      type(ty_optical_props_2str), intent(in) :: cld_optics, aer_optics
+      real(r8), intent(in), dimension(:,:,:) :: &
+         cld_tau, cld_ssa, cld_asm, &
+         aer_tau, aer_ssa, aer_asm
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(in) :: tsi_scaling
 
       ! For day-only arrays/objects
-      type(ty_optical_props_2str) :: cld_optics_day, aer_optics_day
       type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
+      real(r8), dimension(:,:,:), allocatable :: &
+         cld_tau_day, cld_ssa_day, cld_asm_day, &
+         aer_tau_day, aer_ssa_day, aer_asm_day
       real(r8), dimension(size(pmid,1), size(pmid,2)) :: pmid_day, tmid_day
       real(r8), dimension(size(pint,1), size(pint,2)) :: pint_day
       real(r8), dimension(size(coszrs)) :: coszrs_day
       real(r8), dimension(size(alb_dir,1),size(alb_dir,2)) :: alb_dir_day, alb_dif_day
       real(r8), dimension(size(gas_vmr,1),size(gas_vmr,2),size(gas_vmr,3)) :: gas_vmr_day
 
-      type(ty_gas_concs) :: gas_concs
       integer :: ncol, nday, nlev, igas, iday, icol
       integer, dimension(size(coszrs)) :: day_indices, night_indices
 
@@ -1967,18 +1961,16 @@ contains
       end if
 
       ! Allocate daytime-only optics
-      call handle_error(cld_optics_day%alloc_2str(nday, nlev, k_dist_sw, name='sw day-time cloud optics'))
-      call handle_error(aer_optics_day%alloc_2str(nday, nlev, k_dist_sw%get_band_lims_wavenumber(), name='sw day-time aerosol optics'))
+      allocate( &
+         cld_tau_day(nday,nlev,nswgpts), cld_ssa_day(nday,nlev,nswgpts), cld_asm_day(nday,nlev,nswgpts), &
+         aer_tau_day(nday,nlev,nswbands), aer_ssa_day(nday,nlev,nswbands), aer_asm_day(nday,nlev,nswbands) &
+      )
 
       ! Allocate fluxes
       ! TODO: use pointers to stack arrays to save from allocating/deallocating
       ! each step
       call initialize_rrtmgp_fluxes(nday, nlev+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
-
-      ! Check incoming optical properties
-      call handle_error(cld_optics%validate())
-      call handle_error(aer_optics%validate())
 
       ! Compress to day-time only
       do iday = 1,nday
@@ -1998,16 +1990,13 @@ contains
          gas_vmr_day(:,iday,:) = gas_vmr(:,icol,:)
 
          ! Compress optics
-         cld_optics_day%tau(iday,:,:) = cld_optics%tau(icol,:,:)
-         cld_optics_day%ssa(iday,:,:) = cld_optics%ssa(icol,:,:)
-         cld_optics_day%g  (iday,:,:) = cld_optics%g  (icol,:,:)
-         aer_optics_day%tau(iday,:,:) = aer_optics%tau(icol,:,:)
-         aer_optics_day%ssa(iday,:,:) = aer_optics%ssa(icol,:,:)
-         aer_optics_day%g  (iday,:,:) = aer_optics%g  (icol,:,:)
+         cld_tau_day(iday,:,:) = cld_tau(icol,:,:)
+         cld_ssa_day(iday,:,:) = cld_ssa(icol,:,:)
+         cld_asm_day(iday,:,:) = cld_asm(icol,:,:)
+         aer_tau_day(iday,:,:) = aer_tau(icol,:,:)
+         aer_ssa_day(iday,:,:) = aer_ssa(icol,:,:)
+         aer_asm_day(iday,:,:) = aer_asm(icol,:,:)
       end do
-
-      ! Apply delta scaling to account for forward-scattering
-      call handle_error(cld_optics_day%delta_scale())
 
       ! Initialize gas concentrations with lower case names
       allocate(gas_names_lower(size(gas_names)))
@@ -2025,8 +2014,8 @@ contains
          coszrs_day(1:nday), &
          alb_dir_day(1:nswbands,1:nday), &
          alb_dif_day(1:nswbands,1:nday), &
-         cld_optics_day%tau, cld_optics_day%ssa, cld_optics_day%g, &
-         aer_optics_day%tau, aer_optics_day%ssa, aer_optics_day%g, &
+         cld_tau_day, cld_ssa_day, cld_asm_day, &
+         aer_tau_day, aer_ssa_day, aer_asm_day, &
          fluxes_allsky_day%flux_up, fluxes_allsky_day%flux_dn, fluxes_allsky_day%flux_net, &
          fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, &
          fluxes_allsky_day%bnd_flux_dn_dir, &
@@ -2060,8 +2049,10 @@ contains
       end do
 
       ! Free memory
-      call free_optics_sw(cld_optics_day)
-      call free_optics_sw(aer_optics_day)
+      deallocate( &
+         cld_tau_day, cld_ssa_day, cld_asm_day, &
+         aer_tau_day, aer_ssa_day, aer_asm_day &
+      )
       call free_fluxes(fluxes_allsky_day)
       call free_fluxes(fluxes_clrsky_day)
 
@@ -2650,26 +2641,6 @@ contains
       if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
       if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
    end subroutine free_fluxes
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_sw(optics)
-      use mo_optical_props, only: ty_optical_props_2str
-      type(ty_optical_props_2str), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      if (allocated(optics%ssa)) deallocate(optics%ssa)
-      if (allocated(optics%g)) deallocate(optics%g)
-      call optics%finalize()
-   end subroutine free_optics_sw
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_lw(optics)
-      use mo_optical_props, only: ty_optical_props_1scl
-      type(ty_optical_props_1scl), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      call optics%finalize()
-   end subroutine free_optics_lw
 
    !----------------------------------------------------------------------------
 

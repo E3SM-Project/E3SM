@@ -245,6 +245,10 @@ contains
       aer_props%tau = aer_tau
       aer_props%ssa = aer_ssa
       aer_props%g   = aer_asm
+
+      ! Delta scale
+      error_msg = cloud_props%delta_scale()
+      if (error_msg /= '') return
   
       ! TOA flux
       allocate(toa_flux(ncol, ngpt))
