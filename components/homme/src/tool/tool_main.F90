@@ -140,13 +140,17 @@ contains
     ! file is then input for a second run of cube_to_target, this time to
     ! compute SGH, SGH30, LANDFRAC, and LANDM_COSLAT on physgrid.
     !
+    !
     ! Namelist example:
+    ! NOTE:  smooth_phis_numcycle, smooth_phis_nudt and hypervis_order settings
+    ! are grid dependent.  See test/tool/toposmooth_gll.nl for recommended settings
+    ! for other grids   
     !
     ! &ctl_nl
     ! ne = 30
     ! smooth_phis_numcycle = 16
     ! smooth_phis_nudt = 28e7
-    ! hypervis_scaling = 0 
+    ! hypervis_scaling = 0
     ! hypervis_order = 2
     ! se_ftype = 2 ! actually output NPHYS; overloaded use of ftype
     ! /
