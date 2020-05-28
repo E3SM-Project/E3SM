@@ -2376,7 +2376,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append>-mkl -lpthread</append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
