@@ -1,15 +1,18 @@
+#!/usr/bin/env python
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import matplotlib.pyplot as plt
 import numpy as np
+from mpas_tools.ocean import build_spherical_mesh
 import mpas_tools.mesh.creation.mesh_definition_tools as mdt
-from mpas_tools.mesh.creation.coastal_tools import \
+from mpas_tools.mesh.creation.signed_distance import \
     signed_distance_from_geojson, mask_from_geojson
 from mpas_tools.viz.colormaps import register_sci_viz_colormaps
+from mpas_tools.cime.constants import constants
 from geometric_features import read_feature_collection
-import xarray
+
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 def cellWidthVsLatLon():
@@ -17,19 +20,24 @@ def cellWidthVsLatLon():
     Create cell width array for this mesh on a regular latitude-longitude grid.
     Returns
     -------
-       cellWidth : numpy.ndarray
+       cellWidth : ndarray
             m x n array, entries are desired cell width in km
-       lat : numpy.ndarray
+
+       lat : ndarray
             latitude, vector of length m, with entries between -90 and 90,
             degrees
-       lon : numpy.ndarray
+
+       lon : ndarray
             longitude, vector of length n, with entries between -180 and 180,
             degrees
     """
     # To speed up for testing, set following line to 1.0 degrees
     dlon = 1.0
     dlat = dlon
-    print('\nCreating cellWidth on a lat-lon grid of: {0:.2f} x {0:.2f} degrees'.format(dlon,dlat))
+    #earth_radius = constants['SHR_CONST_REARTH']
+    earth_radius = 6371.0e3
+    print('\nCreating cellWidth on a lat-lon grid of: {0:.2f} x {0:.2f} '
+          'degrees'.format(dlon,dlat))
     print('This can be set higher for faster test generation\n')
     nlon = int(360. / dlon) + 1
     nlat = int(180. / dlat) + 1
@@ -58,7 +66,7 @@ def cellWidthVsLatLon():
 
     # Signed distance of Atlantic region
     fc = read_feature_collection('Atlantic_region.geojson')
-    signedDistance = signed_distance_from_geojson(fc, lon, lat,
+    signedDistance = signed_distance_from_geojson(fc, lon, lat, earth_radius,
                                                   max_length=0.25)
 
     # Merge Atlantic and Pacific distrubutions smoothly
@@ -79,14 +87,6 @@ def cellWidthVsLatLon():
 
     # Merge: step transition over land, smooth transition over water
     cellWidth = cellWidthSharp * landMask + cellWidthSmooth * (1 - landMask)
-
-    # save signed distance to a file
-    # da = xarray.DataArray(signedDistance,
-    #                      dims=['y', 'x'],
-    #                      coords={'y': lat, 'x': lon},
-    #                      name='signedDistance')
-    #cw_filename = 'signedDistance.nc'
-    # da.to_netcdf(cw_filename)
 
     ax = plt.subplot(4, 2, 1)
     ax.plot(lat, AtlVsLat, label='Atlantic')
@@ -114,6 +114,7 @@ def cellWidthVsLatLon():
 
     return cellWidth, lon, lat
 
+
 def plot_cartopy(nPlot, varName, var, map_name):
     ax = plt.subplot(4, 2, nPlot, projection=ccrs.PlateCarree())
     ax.set_global()
@@ -139,5 +140,10 @@ def plot_cartopy(nPlot, varName, var, map_name):
     plt.title(varName)
 
 
+def main():
+    cellWidth, lon, lat = cellWidthVsLatLon()
+    build_spherical_mesh(cellWidth, lon, lat, out_filename='base_mesh.nc')
+
+
 if __name__ == '__main__':
-    cellWidthVsLatLon()
+    main()
