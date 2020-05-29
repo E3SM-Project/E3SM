@@ -100,16 +100,16 @@
     <!-- domains for data atmosphere -->
     <domain name="T62">
       <nx>192</nx> <ny>94</ny>
-      <file grid="atm|lnd" mask="Atlantic8">/glade/u/home/turuncu/UFS/Atlantic8/T62/domain.lnd.T62_Atlantic8.200423.nc</file>
-      <file grid="ocnice"  mask="Atlantic8">/glade/u/home/turuncu/UFS/Atlantic8/T62/domain.ocn.T62_Atlantic8.200423.nc</file>
+      <file grid="atm|lnd" mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.lnd.T62_Atlantic8.200423.nc</file>
+      <file grid="ocnice"  mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.T62_Atlantic8.200423.nc</file>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh.nc</mesh>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
     <domain name="TL319">
       <nx>640</nx> <ny>320</ny>
-      <file grid="atm|lnd" mask="Atlantic8">/glade/u/home/turuncu/UFS/Atlantic8/TL319/domain.lnd.TL319_Atlantic8.200527.nc</file>
-      <file grid="ocnice"  mask="Atlantic8">/glade/u/home/turuncu/UFS/Atlantic8/TL319/domain.ocn.TL319_Atlantic8.200527.nc</file>
+      <file grid="atm|lnd" mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.lnd.TL319_Atlantic8.200527.nc</file>
+      <file grid="ocnice"  mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.TL319_Atlantic8.200527.nc</file>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc</mesh>
       <desc>TL319 grid for JRA55</desc>
     </domain>
@@ -117,8 +117,8 @@
     <!-- domains for regional ocean (HYCOM) -->
     <domain name="Atlantic8">
       <nx>1135</nx> <ny>633</ny>
-      <file grid="ocnice">/glade/u/home/turuncu/UFS/Atlantic8/T62/domain.ocn.Atlantic8.2004123.nc</file>
-      <mesh driver="nuopc">/glade/u/home/turuncu/UFS/Atlantic8/T62/Atlantic8_SCRIP_230420_ESMFmesh.nc</mesh>
+      <file grid="ocnice">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.Atlantic8.2004123.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/hafs/share/meshes/Atlantic8_SCRIP_230420_ESMFmesh.nc</mesh>
       <desc>Atlantic8 is a Atlantic grid for Dorian case at 7-8 km HYCOM grid:</desc>
       <support>For regional HYCOM experiments</support>
     </domain>    
@@ -152,18 +152,18 @@
 
   <gridmaps driver="nuopc">
     <gridmap atm_grid="T62" ocn_grid="Atlantic8">
-    <map name="ATM2OCN_FMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_T62_TO_Atlantic8_aave.200423.nc</map>
-    <map name="ATM2OCN_SMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_T62_TO_Atlantic8_blin.200423.nc</map>
-    <map name="ATM2OCN_VMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_T62_TO_Atlantic8_blin.200423.nc</map>
-    <map name="OCN2ATM_FMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_Atlantic8_TO_T62_aave.200423.nc</map>
-    <map name="OCN2ATM_SMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/T62/map_Atlantic8_TO_T62_aave.200423.nc</map>
+    <map name="ATM2OCN_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_T62_TO_Atlantic8_aave.200423.nc</map>
+    <map name="ATM2OCN_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_T62_TO_Atlantic8_blin.200423.nc</map>
+    <map name="ATM2OCN_VMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_T62_TO_Atlantic8_blin.200423.nc</map>
+    <map name="OCN2ATM_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_T62_aave.200423.nc</map>
+    <map name="OCN2ATM_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_T62_aave.200423.nc</map>
     </gridmap>
     <gridmap atm_grid="TL319" ocn_grid="Atlantic8">
-    <map name="ATM2OCN_FMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/TL319/map_TL319_TO_Atlantic8_aave.200527.nc</map>
-    <map name="ATM2OCN_SMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/TL319/map_TL319_TO_Atlantic8_blin.200527.nc</map>
-    <map name="ATM2OCN_VMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/TL319/map_TL319_TO_Atlantic8_blin.200527.nc</map>
-    <map name="OCN2ATM_FMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/TL319/map_Atlantic8_TO_TL319_aave.200527.nc</map>
-    <map name="OCN2ATM_SMAPNAME">/glade/u/home/turuncu/UFS/Atlantic8/TL319/map_Atlantic8_TO_TL319_aave.200527.nc</map>
+    <map name="ATM2OCN_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_TL319_TO_Atlantic8_aave.200527.nc</map>
+    <map name="ATM2OCN_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_TL319_TO_Atlantic8_blin.200527.nc</map>
+    <map name="ATM2OCN_VMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_TL319_TO_Atlantic8_blin.200527.nc</map>
+    <map name="OCN2ATM_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_TL319_aave.200527.nc</map>
+    <map name="OCN2ATM_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_TL319_aave.200527.nc</map>
     </gridmap>
   </gridmaps>
 </grid_data>
