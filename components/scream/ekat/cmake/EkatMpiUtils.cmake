@@ -34,7 +34,7 @@ function (DisableMpiCxxBindings)
 
   if ("${DISTRO_NAME}" STREQUAL "openmpi")
     add_definitions (-DOMPI_SKIP_MPICXX)
-  elseif ("${DISTRO_NAMEi}" STREQUAL "mpich")
+  elseif ("${DISTRO_NAME}" STREQUAL "mpich")
     add_definitions (-DMPICH_SKIP_MPICXX)
   else ()
     message (FATAL_ERROR "Unsupported MPI distribution.")

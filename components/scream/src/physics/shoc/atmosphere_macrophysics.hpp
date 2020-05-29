@@ -15,7 +15,7 @@ namespace scream
  * The AD should store exactly ONE instance of this class stored
  * in its list of subcomponents (the AD should make sure of this).
  *
- *  Note: for now, scream is only going to accommodate SHOC and as macrophysics
+ *  Note: for now, scream is only going to accommodate SHOC as macrophysics
 */
 
 class SHOCMacrophysics : public scream::AtmosphereProcess

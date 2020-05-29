@@ -23,12 +23,12 @@
 # to ensure ekat (with the desired precision) is built only once
 define_property(GLOBAL
                 PROPERTY EKAT_DOUBLE_BUILT
-                BRIEF_DOCS "Wheter ekat subdir (with precision set to double) has already been processed"
+                BRIEF_DOCS "Whether ekat subdir (with precision set to double) has already been processed"
                 FULL_DOCS "This property is used by cmake to ensure that EKAT
                            submodule directory is only processed once (with add_subdirectory).")
 define_property(GLOBAL
                 PROPERTY EKAT_SINGLE_BUILT
-                BRIEF_DOCS "Wheter ekat subdir (with precision set to single) has already been processed"
+                BRIEF_DOCS "Whether ekat subdir (with precision set to single) has already been processed"
                 FULL_DOCS "This property is used by cmake to ensure that EKAT
                            submodule directory is only processed once (with add_subdirectory).")
 
