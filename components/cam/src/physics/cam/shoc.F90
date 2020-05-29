@@ -1921,7 +1921,7 @@ subroutine shoc_tke(&
 ! LOCAL VARIABLES
   real(rtype) :: shear_prod(shcol,nlevi)
   real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
-  real(rtype) :: shear_prod_zt(shcol,nlev), tk_zi(shcol,nlevi)
+  real(rtype) :: shear_prod_zt(shcol,nlev)
   real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce
   real(rtype) :: Ckh_s,Ckm_s,Ces,Ce1,Ce2,smix,Cee,Cs
   real(rtype) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
@@ -1931,6 +1931,7 @@ subroutine shoc_tke(&
   real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
   real(rtype) :: brunt_int(shcol), z_over_L
   real(rtype) :: zL_crit_val, pbl_trans
+  logical :: do_stable
   integer i,j,k,kc,kb,kt
 
   lambda_low=0.001_rtype
@@ -1978,7 +1979,6 @@ subroutine shoc_tke(&
       kt=k-1
       grid_dz = 1._rtype/dz_zi(i,k)
 
-      tk_in=tk_zi(i,k)
       ! calculate vertical gradient of u&v wind
       u_grad=grid_dz*(u_wind(i,kt)-u_wind(i,k))
       v_grad=grid_dz*(v_wind(i,kt)-v_wind(i,k))
@@ -2016,6 +2016,24 @@ subroutine shoc_tke(&
       tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
 
       tke(i,k)=min(tke(i,k),maxtke)
+      
+      ! Compute the return to isotropic timescale as per
+      ! Canuto et al. 2004.  This is used to define the
+      ! eddy coefficients as well as to diagnose higher
+      ! moments in SHOC
+
+      ! define the time scale
+      tscale1=(2.0_rtype*tke(i,k))/a_diss
+
+      ! define a damping term "lambda" based on column stability
+      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+      lambda=max(lambda_low,min(lambda_high,lambda))
+
+      buoy_sgs_save=brunt(i,k)
+      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+
+      ! Compute the return to isotropic timescale
+      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
 
       ! Dimensionless Okukhov length considering only 
       !  the lowest model grid layer height to scale
@@ -2030,25 +2048,7 @@ subroutine shoc_tke(&
         tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
       else
-	! Default definition of eddy diffusivity
-	
-	! Compute the return to isotropic timescale as per
-        ! Canuto et al. 2004.  This is used to define the
-        ! eddy coefficients as well as to diagnose higher
-        ! moments in SHOC
-
-        ! define the time scale
-        tscale1=(2.0_rtype*tke(i,k))/a_diss
-
-        ! define a damping term "lambda" based on column stability
-        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-        lambda=max(lambda_low,min(lambda_high,lambda))
-
-        buoy_sgs_save=brunt(i,k)
-        if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
-
-        ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))  
+	! Default definition of eddy diffusivity  
       
         ! Define the eddy coefficients for heat and momentum
         tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
