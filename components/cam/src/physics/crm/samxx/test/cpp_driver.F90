@@ -10,6 +10,7 @@ program driver
   use dmdf
   use mpi
   use iso_c_binding, only: c_bool, c_double
+  use gator_mod, only: gator_init
   implicit none
   integer :: ncrms
   type(crm_input_type)         :: crm_input
@@ -49,6 +50,7 @@ program driver
   real(crm_rknd), allocatable :: read_crm_rad_cld          (:,:,:,:)
   character(len=64) :: fprefix = 'cpp_output'
   real(crm_rknd), allocatable :: gcolp(:)
+  integer(8) :: t1, t2, tr
 
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
@@ -56,6 +58,8 @@ program driver
   call distr_indices(NCRMS,nranks,rank,myTasks_beg,myTasks_end)
   ncrms = myTasks_end - myTasks_beg + 1
   masterTask = rank == 0
+
+  call gator_init()
 
   if (masterTask) then
     write(*,*) "File   : ", trim(fname_in)
@@ -189,9 +193,14 @@ program driver
     write(*,*) 'Running the CRM'
   endif
 
+  call system_clock(t1)
+
   ! Run the code
   !call crm( ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_output, lat0, long0 )
-  call crm( ncrms, dt_gl(1), plev, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%timing_factor, crm_output%prectend, crm_output%precstend, crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, crm_output%clhgh, crm_output%clmed, crm_output%cllow, crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, crm_output%precsl, crm_output%prec_crm, lat0, long0, gcolp, 2 , logical(.false.,c_bool) , 1._c_double , logical(.false.,c_bool) )
+  call crm( ncrms, ncrms, dt_gl(1), plev, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%timing_factor, crm_output%prectend, crm_output%precstend, crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, crm_output%clhgh, crm_output%clmed, crm_output%cllow, crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, crm_output%precsl, crm_output%prec_crm, lat0, long0, gcolp, 2 , logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
+
+  call system_clock(t2,tr)
+  write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
 
   if (masterTask) then
     write(*,*) 'Writing output data'

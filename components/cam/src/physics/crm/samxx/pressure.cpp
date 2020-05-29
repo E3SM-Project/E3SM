@@ -1,4 +1,6 @@
 
+// #define USE_ORIG_FFT
+
 #include "pressure.h"
 
 void pressure() {
@@ -47,39 +49,82 @@ void pressure() {
     f(k,j,i,icrm) = p(k,j+offy_p,i+offx_p,icrm);
 	});
 
-  yakl::FFT<nx> fftx;
-  yakl::FFT<fftySize> ffty;
+  #ifndef USE_ORIG_FFT
 
-  // for (int k=0; k<nzslab; k++) {
-  //  for (int j=0; j<ny; j++) {
-	//      for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-    real ftmp[nx+2];
-    real tmp [nx];
+    yakl::FFT<nx> fftx;
+    yakl::FFT<fftySize> ffty;
 
-    for (int i=0; i<nx ; i++) { ftmp[i] = f(k,j,i,icrm); }
-
-    fftx.forward(ftmp, tmp);
-
-    for (int i=0; i<nx2; i++) { f(k,j,i,icrm) = ftmp[i]; }
-  });
-
-  if (RUN3D) {
     // for (int k=0; k<nzslab; k++) {
-    //  for (int i=0; j<nx+1; i++) {
-    //    for(int l=0; l<ny2; l++) {
+    //  for (int j=0; j<ny; j++) {
     //      for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      real ftmp[ny+2];
-      real tmp [ny];
+    parallel_for( Bounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+      real ftmp[nx+2];
+      real tmp [nx];
 
-      for (int j=0; j<ny ; j++) { ftmp[j] = f(k,j,i,icrm); }
+      for (int i=0; i<nx ; i++) { ftmp[i] = f(k,j,i,icrm); }
 
-      ffty.forward(ftmp, tmp);
+      fftx.forward(ftmp, tmp);
 
-      for (int j=0; j<ny2; j++) { f(k,j,i,icrm) = ftmp[j]; }
-	  });
-  }
+      for (int i=0; i<nx2; i++) { f(k,j,i,icrm) = ftmp[i]; }
+    });
+
+    if (RUN3D) {
+      // for (int k=0; k<nzslab; k++) {
+      //  for (int i=0; j<nx+1; i++) {
+      //    for(int l=0; l<ny2; l++) {
+      //      for (int icrm=0; icrm<ncrms; icrm++) {
+      parallel_for( Bounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+        real ftmp[ny+2];
+        real tmp [ny];
+
+        for (int j=0; j<ny ; j++) { ftmp[j] = f(k,j,i,icrm); }
+
+        ffty.forward(ftmp, tmp);
+
+        for (int j=0; j<ny2; j++) { f(k,j,i,icrm) = ftmp[j]; }
+      });
+    }
+
+  #else
+
+    realHost2d work  ("work"  ,ny2,nx2);
+    realHost1d ftmp_x("ftmp_x",nx2);
+    realHost1d ftmp_y("ftmp_y",ny2);
+    realHost1d trigxi("trigxi",n3i);
+    realHost1d trigxj("trigxj",n3j);
+    intHost1d  ifaxi ("ifaxi" ,100);
+    intHost1d  ifaxj ("ifaxj" ,100);
+    realHost4d fHost = f.createHostCopy();
+
+    yakl::fence();
+
+    fftfax_crm( nx_gl , ifaxi.data() , trigxi.data() );
+    if (RUN3D) fftfax_crm( ny_gl , ifaxj.data() , trigxj.data() );
+
+    for (int k = 0 ; k < nzslab ; k++) {
+      for (int j = 0 ; j < ny_gl ; j++) {
+        for (int icrm = 0 ; icrm < ncrms ; icrm++) {
+          for (int i=0 ; i < nx2 ; i++) { ftmp_x(i) = fHost(k,j,i,icrm); }
+          fft991_crm( ftmp_x.data() , work.data() , trigxi.data() , ifaxi.data() , 1 , nx2 , nx_gl , 1 , -1 );
+          for (int i=0 ; i < nx2 ; i++) { fHost(k,j,i,icrm) = ftmp_x(i); }
+        }
+      }
+    }
+    if (RUN3D) {
+      for (int k = 0 ; k < nzslab ; k++) {
+        for (int i = 0 ; i < nx_gl+1 ; i++) {
+          for (int icrm = 0 ; icrm < ncrms ; icrm++) {
+            for (int j=0 ; j < ny2 ; j++) { ftmp_y(j) = fHost(k,j,i,icrm); }
+            fft991_crm( ftmp_y.data() , work.data() , trigxj.data() , ifaxj.data() , 1 , nx2 , ny_gl , 1 , -1);
+            for (int j=0 ; j < ny2 ; j++) { fHost(k,j,i,icrm) = ftmp_y(j); }
+          }
+        }
+      }
+    }
+
+    fHost.deep_copy_to(f);
+
+  #endif
 
   // for(int k=0; k<nzslab; k++) {
   //  for(int j=0; j<nypp; j++) {
@@ -159,37 +204,68 @@ void pressure() {
     f(k,j,i,icrm) = ff(k,j,i,icrm);
 	});
 
-  if (RUN3D) {
+  #ifndef USE_ORIG_FFT
+
+    if (RUN3D) {
+      // for (int k=0; k<nzslab; k++) {
+      //   for (int i=0; i<nx+1; i++) {
+      //     for (int icrm=0; icrm<ncrms; icrm++) {
+      parallel_for( Bounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+        real ftmp[ny+2];
+        real tmp [ny];
+        
+        for(int j=0; j<ny+2; j++) { ftmp[j] = f(k,j,i,icrm); }
+
+        ffty.inverse(ftmp,tmp);
+
+        for(int j=0; j<ny  ; j++) { f(k,j,i,icrm) = ftmp[j]; } 
+      });
+    }
+
     // for (int k=0; k<nzslab; k++) {
-		//  for (int i=0; i<nx+1; i++) {
-    //    for(int l=0; l<ny+2; l++) { 
-		//      for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      real ftmp[ny+2];
-      real tmp [ny];
-      
-      for(int j=0; j<ny+2; j++) { ftmp[j] = f(k,j,i,icrm); }
+    //   for (int j=0; i<ny; i++) {
+    //     for (int icrm=0; icrm<ncrms; icrm++) {
+    parallel_for( Bounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+      real ftmp[nx+2];
+      real tmp [nx];
 
-      ffty.inverse(ftmp,tmp);
+      for(int i=0; i<nx+2; i++) { ftmp[i] = f(k,j,i,icrm); }
 
-      for(int j=0; j<ny  ; j++) { f(k,j,i,icrm) = ftmp[j]; } 
-	  });
-  }
+      fftx.inverse(ftmp,tmp);
 
-  // for (int k=0; k<nzslab; k++) {
-	//  for (int j=0; i<ny; i++) {
-  //    for(in l=0; l<nx; l++) { 
-	//      for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-    real ftmp[nx+2];
-    real tmp [nx];
+      for(int i=0; i<nx  ; i++) { f(k,j,i,icrm) = ftmp[i]; }
+    });
 
-    for(int i=0; i<nx+2; i++) { ftmp[i] = f(k,j,i,icrm); }
+  #else
 
-    fftx.inverse(ftmp,tmp);
+    f.deep_copy_to(fHost);
+    yakl::fence();
 
-    for(int i=0; i<nx  ; i++) { f(k,j,i,icrm) = ftmp[i]; }
-  });
+    if (RUN3D) {
+      for (int k = 0 ; k < nzslab ; k++) {
+        for (int i = 0 ; i < nx_gl+1 ; i++) {
+          for (int icrm = 0 ; icrm < ncrms ; icrm++) {
+            for (int j=0 ; j < ny2 ; j++) { ftmp_y(j) = fHost(k,j,i,icrm); }
+            fft991_crm( ftmp_y.data() , work.data() , trigxj.data() , ifaxj.data() , 1 , nx2 , ny_gl , 1 , +1);
+            for (int j=0 ; j < ny2 ; j++) { fHost(k,j,i,icrm) = ftmp_y(j); }
+          }
+        }
+      }
+    }
+
+    for (int k = 0 ; k < nzslab ; k++) {
+      for (int j = 0 ; j < ny_gl ; j++) {
+        for (int icrm = 0 ; icrm < ncrms ; icrm++) {
+          for (int i=0 ; i < nx2 ; i++) { ftmp_x(i) = fHost(k,j,i,icrm); }
+          fft991_crm( ftmp_x.data() , work.data() , trigxi.data() , ifaxi.data() , 1 , nx2 , nx_gl , 1 , +1);
+          for (int i=0 ; i < nx2 ; i++) { fHost(k,j,i,icrm) = ftmp_x(i); }
+        }
+      }
+    }
+
+    fHost.deep_copy_to(f);
+
+  #endif
 
   parallel_for( Bounds<4>(nzslab,dimy_p,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int jj, ii;

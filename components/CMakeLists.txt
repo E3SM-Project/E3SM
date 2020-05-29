@@ -46,6 +46,10 @@ endfunction()
 set_compilers_e3sm()
 
 project(E3SM C CXX Fortran)
+find_package(CUDA)
+if (CUDA_FOUND)
+  enable_language(CUDA)
+endif()
 
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)

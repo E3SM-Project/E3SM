@@ -57,6 +57,20 @@ function(e3sm_add_flags FILE_ARG FLAGS_ARG)
   set_property(SOURCE ${REAL_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FLAGS_ARG} ")
 endfunction()
 
+# Add compile flags for a file. Expects a filepath relative to E3SM/components if it
+# is not a generated file.
+function(e3sm_declare_cuda FILE_ARG)
+  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
+    set(REAL_FILE ${FILE_ARG})
+  else()
+    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/${FILE_ARG})
+      message(FATAL_ERROR "Trying to set flags on non-existent source: ${FILE_ARG}, looked for ${PROJECT_SOURCE_DIR}/${FILE_ARG}")
+    endif()
+    set(REAL_FILE "${SOURCE_PATH}/${FILE_ARG}")
+  endif()
+  set_source_files_properties(${REAL_FILE} PROPERTIES LANGUAGE CUDA)
+endfunction()
+
 # Remove compile flags for a file. Expects a filepath relative to E3SM/components if it
 # is not a generated file.
 function(e3sm_remove_flags FILE_ARG FLAGS_ARG)
