@@ -1890,7 +1890,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append COMP_NAME="cice" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </FFLAGS>
   <LDFLAGS>
-    <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
+    <append>  -qsmp=omp -qoffload -Wl,--relax -Wl,--allow-multiple-definition </append>
   </LDFLAGS>
   <SLIBS>
     <append MPILIB="mpi-serial">-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
