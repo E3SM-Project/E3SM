@@ -3,7 +3,7 @@ module dshr_dfield_mod
   use ESMF
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_get_stream_count, SHR_STRDATA_GET_STREAM_FIELDBUNDLE
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_get_stream_count, shr_strdata_get_stream_fieldbundle
   use dshr_methods_mod , only : dshr_state_getfldptr, dshr_fldbun_getfieldn, dshr_field_getfldptr, dshr_fldbun_getFldPtr
   use dshr_methods_mod , only : chkerr
 
@@ -36,8 +36,7 @@ module dshr_dfield_mod
      type(dfield_type), pointer :: next => null()
   end type dfield_type
 
-  integer :: iunset = -999
-  character(*), parameter :: modName =  "(dshr_dfield_mod)"
+  integer     , parameter :: iunset = -999
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -272,7 +271,6 @@ contains
           fldbun_index = dfield%fldbun_index
           if (stream_index /= iunset .and. fldbun_index /= iunset) then
              fldbun_model = shr_strdata_get_stream_fieldbundle(sdat, stream_index, 'model')
-
              call dshr_fldbun_getfieldn(fldbun_model, fldbun_index, lfield, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              call dshr_field_getfldptr(lfield, fldptr1=data1d, rc=rc)

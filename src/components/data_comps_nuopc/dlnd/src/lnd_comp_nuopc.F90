@@ -19,8 +19,8 @@ module lnd_comp_nuopc
   use dshr_methods_mod  , only : dshr_state_getfldptr, dshr_state_diagnose, chkerr, memcheck
   use dshr_strdata_mod  , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_strdata_mod  , only : shr_strdata_init_from_xml
-  use dshr_mod          , only : dshr_model_initphase, dshr_init, dshr_state_setscalar
-  use dshr_mod          , only : dshr_set_runclock, dshr_log_clock_advance
+  use dshr_mod          , only : dshr_model_initphase, dshr_init
+  use dshr_mod          , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
   use dshr_mod          , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_dfield_mod   , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod  , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -60,7 +60,7 @@ module lnd_comp_nuopc
   logical                  :: read_restart                        ! start from restart
   character(*) , parameter :: nullstr = 'undefined'
 
-                                                                  ! dlnd_in namelist input
+  ! dlnd_in namelist input
   character(CL)            :: dataMode = nullstr                  ! flags physics options wrt input data
   character(CL)            :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)            :: model_maskfile = nullstr            ! full pathname to obtain mask from
@@ -286,7 +286,7 @@ contains
     ! Initialize sdat
     call t_startf('dlnd_strdata_init')
     call dshr_mesh_init(gcomp, compid, logunit, 'lnd', nx_global, ny_global, &
-         model_meshfile, model_maskfile, model_mesh, read_restart, rc=rc)
+         model_meshfile, model_maskfile, model_createmesh_fromfile, model_mesh, read_restart, rc=rc)
 
     ! Initialize stream data type
     xmlfilename = 'dlnd.streams'//trim(inst_suffix)//'.xml'
@@ -312,7 +312,7 @@ contains
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! Run dlnd to create export state
-    call dlnd_comp_run(current_ymd, current_tod, rc=rc)
+    call dlnd_comp_run(importState, exportState, current_ymd, current_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! add scalars to export state
@@ -368,7 +368,7 @@ contains
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
 
     ! run dlnd
-    call dlnd_comp_run(next_ymd, next_tod, rc=rc)
+    call dlnd_comp_run(importState, exportState, next_ymd, next_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! write_restart if alarm is ringing
@@ -499,16 +499,18 @@ contains
   end subroutine dlnd_comp_realize
 
   !===============================================================================
-  subroutine dlnd_comp_run(target_ymd, target_tod, rc)
+  subroutine dlnd_comp_run(importState, exportState, target_ymd, target_tod, rc)
 
     ! --------------------------
     ! advance dlnd
     ! --------------------------
 
     ! input/output variables:
-    integer , intent(in)    :: target_ymd       ! model date
-    integer , intent(in)    :: target_tod       ! model sec into model date
-    integer , intent(out)   :: rc
+    type(ESMF_State) , intent(inout) :: importState
+    type(ESMF_State) , intent(inout) :: ExportState
+    integer          , intent(in)    :: target_ymd       ! model date
+    integer          , intent(in)    :: target_tod       ! model sec into model date
+    integer          , intent(out)   :: rc
 
     ! local variables
     logical                    :: first_time = .true.
@@ -541,7 +543,7 @@ contains
        allocate(strm_flds(0:glc_nec))
        do n = 0,glc_nec
           nec_str = glc_elevclass_as_string(n)
-          strm_flds(n) = 'tsrf' // trim(nec_str)
+          strm_flds(n) = 'Sl_tsrf_elev' // trim(nec_str)
        end do
        call dshr_dfield_add(dfields, sdat, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, state=exportState, &
             logunit=logunit, masterproc=masterproc, rc=rc)
@@ -549,7 +551,7 @@ contains
 
        do n = 0,glc_nec
           nec_str = glc_elevclass_as_string(n)
-          strm_flds(n) = 'topo' // trim(nec_str)
+          strm_flds(n) = 'Sl_topo_elev' // trim(nec_str)
        end do
        call dshr_dfield_add(dfields, sdat, state_fld='Sl_topo_elev', strm_flds=strm_flds, state=exportState, &
             logunit=logunit, masterproc=masterproc, rc=rc)
@@ -557,7 +559,7 @@ contains
 
        do n = 0,glc_nec
           nec_str = glc_elevclass_as_string(n)
-          strm_flds(n) = 'qice' // trim(nec_str)
+          strm_flds(n) = 'Flgl_qice_elev' // trim(nec_str)
        end do
        call dshr_dfield_add(dfields, sdat, state_fld='Flgl_qice_elev', strm_flds=strm_flds, state=exportState, &
             logunit=logunit, masterproc=masterproc, rc=rc)

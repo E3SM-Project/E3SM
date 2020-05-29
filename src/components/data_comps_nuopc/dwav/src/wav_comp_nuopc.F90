@@ -17,12 +17,11 @@ module wav_comp_nuopc
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_mpi_mod      , only : shr_mpi_bcast
   use dshr_methods_mod , only : dshr_state_getfldptr, chkerr, memcheck, dshr_state_diagnose
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
-  use dshr_mod         , only : dshr_model_initphase, dshr_init, dshr_sdat_init
-  use dshr_mod         , only : dshr_state_setscalar
-  use dshr_mod         , only : dshr_set_runclock, dshr_log_clock_advance
-  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_create_mesh_from_grid
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance
+  use dshr_strdata_mod , only : shr_strdata_init_from_xml
+  use dshr_mod         , only : dshr_model_initphase, dshr_init
+  use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
+  use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
@@ -267,9 +266,14 @@ contains
 
     ! Initialize sdat - create the model domain mesh and intialize the sdat clock
     call t_startf('dwav_strdata_init')
+    call dshr_mesh_init(gcomp, compid, logunit, 'wav', nx_global, ny_global, &
+         model_meshfile, model_maskfile, model_createmesh_fromfile, model_mesh, read_restart, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize stream data type if not aqua planet
     xmlfilename = 'dwav.streams'//trim(inst_suffix)//'.xml'
-    call dshr_sdat_init(gcomp, clock, xmlfilename, compid, logunit, 'wav', &
-         model_meshfile, model_maskfile, model_mesh, read_restart, sdat,  rc=rc)
+    call shr_strdata_init_from_xml(sdat, xmlfilename, model_mesh, clock, compid, logunit, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dwav_strdata_init')
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -499,7 +503,7 @@ contains
     ! time and spatially interpolate to model time and grid
     call t_barrierf('dwav_BARRIER',mpicom)
     call t_startf('dwav_strdata_advance')
-    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, logunit, 'dwav', rc=rc)
+    call shr_strdata_advance(sdat, target_ymd, target_tod, logunit, 'dwav', rc=rc)
     call t_stopf('dwav_strdata_advance')
 
     !--------------------
