@@ -1891,42 +1891,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="summit" COMPILER="gnugpu">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </CFLAGS>
-  <CXXFLAGS>
-    <append> -O3 --std=c++14 </append>
-  </CXXFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CXX_LIBS>
-    <base>-lstdc++</base>
-  </CXX_LIBS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append>  -Wl,--relax -Wl,--allow-multiple-definition -L$ENV{CUDAPATH}/lib64 -lcudart_static </append>
-  </LDFLAGS>
-  <SLIBS>
-    <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-  </SLIBS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpiCC </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> gcc </SCC>
-  <SCXX> g++ </SCXX>
-  <SFC> gfortran </SFC>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-
 <compiler MACH="summit-cpu" COMPILER="gnu">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
