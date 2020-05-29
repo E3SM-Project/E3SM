@@ -2667,6 +2667,7 @@ sub write_filepath
             print $fh "$camsrcdir/cam/src/physics/crm/samxx\n";
             print $fh "$camsrcdir/cam/src/physics/crm/samxx/fortran\n";
             print $fh "$camsrcdir/cam/src/physics/crm/samxx/fortran/ADV_MPDATA\n";
+            print $fh "$camsrcdir/cam/src/physics/crm/samxx/fortran/MICRO_SAM1MOM\n";
         } elsif ($opts{'crm'} eq 'sam') {
             # base CRM code
             print $fh "$camsrcdir/cam/src/physics/crm/sam\n";

@@ -2979,10 +2979,6 @@
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
       </modules>
-      <modules compiler="gnugpu">
-        <command name="load">gcc/8.1.1</command>
-        <command name="load">cuda/10.1.105</command>
-      </modules>
       <modules compiler="pgiacc">
         <command name="load">cuda/10.1.168</command>
       </modules>
