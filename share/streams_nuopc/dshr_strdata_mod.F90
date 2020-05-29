@@ -31,7 +31,7 @@ module dshr_strdata_mod
   use pio              , only : pio_inquire, pio_inq_varid, pio_inq_varndims, pio_inq_vardimid
   use pio              , only : pio_inq_dimlen, pio_inq_vartype, pio_inq_dimname
   use pio              , only : pio_double, pio_real, pio_int, pio_offset_kind
-  use pio              , only : pio_read_darray, pio_setframe
+  use pio              , only : pio_read_darray, pio_setframe, pio_fill_double, pio_get_att
   use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf
 
@@ -54,7 +54,7 @@ module dshr_strdata_mod
   private :: shr_strdata_readLBUB
 
   ! public data members:
-  integer                              :: debug    = 1  ! local debug flag
+  integer                              :: debug    = 0  ! local debug flag
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
   integer          ,parameter          :: master_task = 0
@@ -380,6 +380,7 @@ contains
     character(len=*), parameter  :: subname='(shr_strdata_mod:shr_sdat_init)'
     character(*)    , parameter  :: F00 = "('(shr_sdat_init) ',a)"
     character(*)    , parameter  :: F01  = "('(shr_sdat) ',a,2x,i8)"
+    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -438,10 +439,10 @@ contains
           enddo
           lfield = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name=trim(sdat%pstrm(ns)%fldlist_model(nfld)), &
                meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-
           call ESMF_FieldBundleAdd(sdat%pstrm(ns)%fldbun_model   , (/lfield/), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end do
+
 
        ! Create a field on the model mesh for coszen time interpolation for this stream if needed
        if (trim(sdat%stream(ns)%tinterpalgo) == 'coszen') then
@@ -1322,6 +1323,7 @@ contains
        fldlist_stream, fldlist_model, fldbun_model, &
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        filename, nt, istr, boundstr, rc)
+    use shr_const_mod         , only : r8fill => SHR_CONST_SPVAL
 
     ! Read the stream data and initialize the strea pio_iodesc the first time
     ! the stream is read
@@ -1355,9 +1357,13 @@ contains
     integer                       :: nf
     integer                       :: rCode
     real(r4), allocatable         :: data_real(:)
+    real(r4)                      :: fillvalue_r4
+    real(r8)                      :: fillvalue_r8
+    logical                       :: handlefill = .false.
+    integer                       :: old_error_handle
     real(r8), pointer             :: dataptr(:)=>null()
     real(r8), pointer             :: dataptr2d_src(:,:) => null(), dataptr2d_dst(:,:) => null()
-    integer                       :: lsize
+    integer                       :: lsize, n
     integer                       :: spatialDim, numOwnedElements
     real(r8), pointer             :: nv_coords(:), nu_coords(:), data_u_dst(:), data_v_dst(:)
     real(r8)                      :: lat, lon, sinlat, sinlon, coslat, coslon
@@ -1442,11 +1448,18 @@ contains
     do nf = 1,size(fldlist_stream)
        call dshr_fldbun_getfieldN(fldbun_model, nf, field_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-
        rcode = pio_inq_varid(pioid, trim(fldlist_stream(nf)), varid)
-       if ( rcode /= PIO_NOERR ) then
-          call shr_sys_abort(' ERROR: setting varid for variable: '// trim(fldlist_stream(nf)))
-       end if
+
+       handlefill = .false.
+       call PIO_seterrorhandling(pioid, PIO_BCAST_ERROR, old_error_handle)
+       if (pio_iovartype == PIO_REAL) then
+          rcode = pio_get_att(pioid, varid, "_FillValue", fillvalue_r4)
+       else if (pio_iovartype == PIO_DOUBLE) then
+          rcode = pio_get_att(pioid, varid, "_FillValue", fillvalue_r8)
+       endif
+       if(rcode == PIO_NOERR) handlefill=.true.
+       call PIO_seterrorhandling(pioid, old_error_handle)
+
        if (debug>0 .and. sdat%masterproc)  then
           write(sdat%logunit,F00)' reading '//trim(fldlist_stream(nf))//' into '//trim(fldlist_model(nf))
        end if
@@ -1459,12 +1472,29 @@ contains
           if ( rcode /= PIO_NOERR ) then
              call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
           end if
-          dataptr(:) = real(data_real(:), kind=r8)
+          if(handlefill) then
+             do n=1,size(dataptr)
+                if(data_real(n) .ne. fillvalue_r4) then
+                   dataptr(n) = real(data_real(n), kind=r8)
+                else
+                   dataptr(n) = r8fill
+                endif
+             enddo
+          else
+             dataptr(:) = real(data_real(:),kind=r8)
+          endif
        else if (pio_iovartype == PIO_DOUBLE) then
           call pio_read_darray(pioid, varid, pio_iodesc, dataptr, rcode)
           if ( rcode /= PIO_NOERR ) then
              call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
           end if
+          if(handlefill) then
+             do n=1,size(dataptr)
+                if(dataptr(n).eq.fillvalue_r8) then
+                   dataptr(n) = r8fill
+                endif
+             enddo
+          endif
        else
           call shr_sys_abort(subName//"ERROR: only real and double types are subborted for stream read")
        end if

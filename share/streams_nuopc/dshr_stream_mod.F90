@@ -111,7 +111,7 @@ module dshr_stream_mod
   end type shr_stream_streamType
 
   !----- parameters -----
-  integer          , save      :: debug = 1            ! edit/turn-on for debug write statements
+  integer          , save      :: debug = 0            ! edit/turn-on for debug write statements
   real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
   character(len=*) , parameter :: sourcefile = &
        __FILE__
