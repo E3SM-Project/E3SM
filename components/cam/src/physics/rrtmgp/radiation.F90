@@ -1500,6 +1500,7 @@ contains
       use rrtmgp_driver, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_gas_concentrations, only: ty_gas_concs
+      use mo_rrtmgp_util_string, only: lower_case
       use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             compress_optics_sw, set_aerosol_optics_sw
@@ -1531,9 +1532,6 @@ contains
             cld_tau_day, cld_ssa_day, cld_asm_day, &
             aer_tau_day, aer_ssa_day, aer_asm_day
       
-      ! Gas concentrations
-      type(ty_gas_concs) :: gas_concentrations
-
       ! Incoming solar radiation, scaled for solar zenith angle 
       ! and earth-sun distance
       real(r8) :: solar_irradiance_by_gpt(ncol,nswgpts)
@@ -1626,16 +1624,19 @@ contains
       allocate( &
          cld_tau_day(nday,nlev_rad,nswgpts), &
          cld_ssa_day(nday,nlev_rad,nswgpts), &
-         cld_asm_day(nday,nlev_rad_nswgpts), &
+         cld_asm_day(nday,nlev_rad,nswgpts), &
          aer_tau_day(nday,nlev_rad,nswbands), &
          aer_ssa_day(nday,nlev_rad,nswbands), &
-         aer_asm_day(nday,nlev_rad_nswbands)  &
+         aer_asm_day(nday,nlev_rad,nswbands)  &
       )
       cld_tau_day = 0
       cld_ssa_day = 1
       cld_asm_day = 0
       call compress_optics_sw( &
-         day_indices, cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+         day_indices, &
+         cld_tau_gpt(1:ncol,1:pver,:), &
+         cld_ssa_gpt(1:ncol,1:pver,:), &
+         cld_asm_gpt(1:ncol,1:pver,:), &
          cld_tau_day(1:nday,2:nlev_rad,:), &
          cld_ssa_day(1:nday,2:nlev_rad,:), &
          cld_asm_day(1:nday,2:nlev_rad,:)  &
@@ -1680,14 +1681,14 @@ contains
       do igas = 1,size(gas_names)
          gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
       end do
-      gas_vmr_rad = 0
-      gas_vmr_rad(:,:nday,ktop:kbot) = gas_vmr_day(:,:nday,1:pver)
+      gas_vmr_rad(:,:,1) = gas_vmr_day(:,:,1)
+      gas_vmr_rad(:,1:nday,ktop:kbot) = gas_vmr_day(:,1:nday,1:pver)
       call t_stopf('rad_set_gases_sw')
 
       ! Do shortwave radiative transfer calculations
-      call t_startf('rad_calculations_sw')
+      call t_startf('rad_rte_sw')
       call handle_error(rte_sw( &
-         gas_names_lower, gas_vmr_rad, &
+         gas_names_lower, gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
@@ -1696,15 +1697,15 @@ contains
          albedo_dif_day(1:nswbands,1:nday), &
          cld_tau_day, cld_ssa_day, cld_asm_day, &
          aer_tau_day, aer_ssa_day, aer_asm_day, &
-         fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
-         fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
-         fluxes_allsky%bnd_flux_dn_dir, &
-         fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
-         fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net, &
-         fluxes_clrsky%bnd_flux_dn_dir, &
+         fluxes_allsky_day%flux_up, fluxes_allsky_day%flux_dn, fluxes_allsky_day%flux_net, &
+         fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, &
+         fluxes_allsky_day%bnd_flux_dn_dir, &
+         fluxes_clrsky_day%flux_up, fluxes_clrsky_day%flux_dn, fluxes_clrsky_day%flux_net, &
+         fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, &
+         fluxes_clrsky_day%bnd_flux_dn_dir, &
          tsi_scaling=tsi_scaling &
       ))
-      call t_stopf('rad_calculations_sw')
+      call t_stopf('rad_rte_sw')
       deallocate(gas_names_lower, gas_vmr_rad)
 
       ! Calculate heating rates on the DAYTIME columns
@@ -1812,8 +1813,7 @@ contains
       use perf_mod, only: t_startf, t_stopf
       use rrtmgp_driver, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
-      use mo_optical_props, only: ty_optical_props_1scl
-      use mo_gas_concentrations, only: ty_gas_concs
+      use mo_rrtmgp_util_string, only: lower_case
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
 
@@ -1839,10 +1839,10 @@ contains
       character(len=32), allocatable :: gas_names_lower(:)
       real(r8), dimension(:,:,:), allocatable :: gas_vmr_rad
 
-      ! RRTMGP types
-      type(ty_gas_concs) :: gas_concentrations
-      type(ty_optical_props_1scl) :: aer_optics_lw
-      type(ty_optical_props_1scl) :: cld_optics_lw
+      ! Optical properties arrays
+      real(r8), dimension(:,:,:), allocatable :: cld_tau_rad, aer_tau_rad
+
+      integer :: igas
 
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
@@ -1852,32 +1852,23 @@ contains
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
+      allocate(cld_tau_rad(ncol,nlev_rad,nlwgpts), aer_tau_rad(ncol,nlev_rad,nlwbands))
+
       ! Populate RRTMGP optics
       call t_startf('longwave cloud optics')
-      call handle_error(cld_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
-      cld_optics_lw%tau = 0.0
-      cld_optics_lw%tau(1:ncol,2:nlev_rad,:) = cld_tau_gpt(1:ncol,1:pver,:)
-      call handle_error(cld_optics_lw%delta_scale())
+      cld_tau_rad = 0._r8
+      aer_tau_rad = 0._r8
+      cld_tau_rad(1:ncol,2:nlev_rad,:) = cld_tau_gpt(1:ncol,1:pver,:)
       call t_stopf('longwave cloud optics')
-
-      ! Initialize aerosol optics; passing only the wavenumber bounds for each
-      ! "band" rather than passing the full spectral discretization object, and
-      ! omitting the "g-point" mapping forces the optics to be indexed and
-      ! stored by band rather than by g-point. This is most consistent with our
-      ! treatment of aerosol optics in the model, and prevents us from having to
-      ! map bands to g-points ourselves since that will all be handled by the
-      ! private routines internal to the optics class.
-      call handle_error(aer_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
-      call aer_optics_lw%set_name('longwave aerosol optics')
 
       if (do_aerosol_rad) then
          ! Get longwave aerosol optics
          call t_startf('rad_aer_optics_lw')
-         aer_optics_lw%tau(:,:,:) = 0
-         aer_optics_lw%tau(1:ncol,ktop:kbot,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
+         aer_tau_rad = 0._r8
+         aer_tau_rad(1:ncol,ktop:kbot,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
          call t_stopf('rad_aer_optics_lw')
       else
-         aer_optics_lw%tau(:,:,:) = 0
+         aer_tau_rad = 0._r8
       end if
 
       ! Initialize gas concentrations with lower case names
@@ -1886,7 +1877,7 @@ contains
       do igas = 1,size(gas_names)
          gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
       end do
-      gas_vmr_rad = 0
+      gas_vmr_rad(:,:,1) = gas_vmr(:,:,1)
       gas_vmr_rad(:,:ncol,ktop:kbot) = gas_vmr(:,:ncol,1:pver)
 
       ! Do longwave radiative transfer calculations
@@ -1896,7 +1887,7 @@ contains
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
          pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
-         cld_optics_lw%tau, aer_optics_lw%tau, &
+         cld_tau_rad, aer_tau_rad, &
          fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
          fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
          fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
@@ -1926,8 +1917,7 @@ contains
       qrlc(1:ncol,1:pver) = qrlc_rad(1:ncol,ktop:kbot)
                   
       ! Free fluxes and optical properties
-      call free_optics_lw(cld_optics_lw)
-      call free_optics_lw(aer_optics_lw)
+      deallocate(cld_tau_rad, aer_tau_rad)
 
    end subroutine radiation_driver_lw
 
@@ -2482,15 +2472,6 @@ contains
       if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
       if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
    end subroutine free_fluxes
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_lw(optics)
-      use mo_optical_props, only: ty_optical_props_1scl
-      type(ty_optical_props_1scl), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      call optics%finalize()
-   end subroutine free_optics_lw
 
    !----------------------------------------------------------------------------
 
