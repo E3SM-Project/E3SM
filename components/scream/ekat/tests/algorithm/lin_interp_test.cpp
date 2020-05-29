@@ -176,16 +176,11 @@ TEST_CASE("lin_interp", "soak") {
 
     // Compare results
     {
-#ifdef EKAT_STRICT_FP
-      constexpr bool Strict = true;
-#else
-      constexpr bool Strict = false;
-#endif
       auto y2kvm = Kokkos::create_mirror_view(y2kv);
       Kokkos::deep_copy(y2kvm, y2kv);
       for (int i = 0; i < ncol; ++i) {
         for (int j = 0; j < km2; ++j) {
-          scream::util::catch2_req_pk_sensitive<Strict,Pack::n>(y2_f90[i][j], y2kvm(i, j / Pack::n)[j % Pack::n]);
+          scream::util::catch2_req_pk_sensitive<scream::util::StrictFP,Pack::n>(y2_f90[i][j], y2kvm(i, j / Pack::n)[j % Pack::n]);
         }
       }
     }

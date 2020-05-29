@@ -9,6 +9,12 @@
 namespace scream {
 namespace util {
 
+#ifdef EKAT_STRICT_FP
+constexpr bool StrictFP = true;
+#else
+constexpr bool StrictFP = false;
+#endif
+
 struct TestSession {
   static TestSession& get () {
     static TestSession s;
