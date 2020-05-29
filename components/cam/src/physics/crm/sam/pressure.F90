@@ -149,15 +149,12 @@ contains
     !$omp target teams distribute parallel do collapse(3) private(ftmp_x,work)
 #endif
     do k=1,nzslab
-#if defined(_OPENMP)
-!      !$omp parallel do collapse(2)
-#endif
       do j = 1 , ny_gl
         do icrm = 1 , ncrms
 #if defined(_OPENACC)
           !$acc cache(ftmp_x,work)
 #elif defined(_OPENMP)
-!          !$omp flush(ftmp_x,work)
+          !$omp flush(ftmp_x,work)
 #endif
           ftmp_x = f(icrm,:,j,k)
           call fft991_crm(ftmp_x,work,trigxi,ifaxi,1,nx2,nx_gl,1,-1)
@@ -172,15 +169,12 @@ contains
       !$omp target teams distribute parallel do collapse(3) private(ftmp_y,work)
 #endif
       do k=1,nzslab
-#if defined(_OPENMP)
-!        !$omp parallel do collapse(2)
-#endif
         do i = 1 , nx_gl+1
           do icrm = 1 , ncrms
 #if defined(_OPENACC)
             !$acc cache(ftmp_y,work)
 #elif defined(_OPENMP)
-!            !$omp flush(ftmp_y,work)
+            !$omp flush(ftmp_y,work)
 #endif
             ftmp_y = f(icrm,i,:,k)
             call fft991_crm(ftmp_y,work,trigxj,ifaxj,1,nx2,ny_gl,1,-1)
@@ -266,7 +260,7 @@ contains
 #if defined(_OPENACC)
           !$acc cache(alfa,beta)
 #elif defined(_OPENMP)
-!          !$omp flush(alfa,beta)
+          !$omp flush(alfa,beta)
 #endif
           if(dowally) then
             jd=j+jt-1
@@ -323,12 +317,9 @@ contains
 #if defined(_OPENACC)
       !$acc parallel loop gang vector collapse(3) private(ftmp_y,work) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute private(ftmp_x,work)
+      !$omp target teams distribute parallel do collapse(3) private(ftmp_x,work)
 #endif
       do k=1,nzslab
-#if defined(_OPENMP)
-        !$omp parallel do collapse(2)
-#endif
         do i = 1 , nx_gl+1
           do icrm = 1 , ncrms
 #if defined(_OPENACC)
@@ -349,15 +340,12 @@ contains
     !$omp target teams distribute parallel do collapse(3) private(ftmp_x,work)
 #endif
     do k=1,nzslab
-#if defined(_OPENMP)
-!      !$omp parallel do collapse(2)
-#endif
       do j = 1 , ny_gl
         do icrm = 1 , ncrms
 #if defined(_OPENACC)
           !$acc cache(ftmp_x,work)
 #elif defined(_OPENMP)
-!          !$omp flush(ftmp_x,work)
+          !$omp flush(ftmp_x,work)
 #endif
           ftmp_x = f(icrm,:,j,k)
           call fft991_crm(ftmp_x,work,trigxi,ifaxi,1,nx2,nx_gl,1,+1)
