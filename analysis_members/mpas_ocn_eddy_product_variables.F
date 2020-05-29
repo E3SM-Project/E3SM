@@ -44,6 +44,7 @@ module ocn_eddy_product_variables
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -207,15 +208,12 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
-         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
 
          call mpas_pool_get_array(statePool, 'ssh',ssh, 1)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal',GMBolusVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
@@ -226,39 +224,88 @@ contains
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalTimesTemperature', velocityZonalTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalTimesTemperature', &
             velocityMeridionalTimesTemperature)
-         call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityZonalTimesTemperature_GM', velocityZonalTimesTemperature_GM)
-         call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityMeridionalTimesTemperature_GM', &
-            velocityMeridionalTimesTemperature_GM)
-         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalGMBolusVelocityTimesTemperature', normalGMBolusVelocityTimesTemperature)
-         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalGMBolusVelocitySquared', normalGMBolusVelocitySquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocityTimesTemperature', normalVelocityTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocitySquared', normalVelocitySquared)
 
-         do iEdge = 1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
+         ! if GM is active, include the GM variables.
+         ! I repeated the block of code here for better performance, rather than
+         ! split the GM and non-GM variables into separate loops.
+         if (config_use_GM) then
+            call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+            call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal',GMBolusVelocityZonal)
+            call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
+            call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityZonalTimesTemperature_GM', velocityZonalTimesTemperature_GM)
+            call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityMeridionalTimesTemperature_GM', &
+               velocityMeridionalTimesTemperature_GM)
+            call mpas_pool_get_array(eddyProductVariablesAMPool,'normalGMBolusVelocityTimesTemperature', normalGMBolusVelocityTimesTemperature)
+            call mpas_pool_get_array(eddyProductVariablesAMPool,'normalGMBolusVelocitySquared', normalGMBolusVelocitySquared)
 
-            do k = 1, maxLevelEdgeTop(iEdge)
-               normalGMBolusVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
-                            activeTracers(index_temperature,k,cell2)) * normalGMBolusVelocity(k,iEdge)
-               normalGMBolusVelocitySquared(k,iEdge) = normalGMBolusVelocity(k,iEdge)**2
-               normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
-                            activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
-               normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
+            !$omp parallel
+            !$omp do schedule(runtime) private(cell1, cell2, k)
+            do iEdge = 1,nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+
+               do k = 1, maxLevelEdgeTop(iEdge)
+                  normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
+                               activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
+                  normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
+                  normalGMBolusVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
+                               activeTracers(index_temperature,k,cell2)) * normalGMBolusVelocity(k,iEdge)
+                  normalGMBolusVelocitySquared(k,iEdge) = normalGMBolusVelocity(k,iEdge)**2
+               end do
             end do
-         end do
+            !$omp end do
+            !$omp end parallel
 
-         do iCell = 1,nCellsSolve
-            SSHSquared(iCell) = ssh(iCell)**2
-            do k = 1, maxLevelCell(iCell)
-               velocityZonalSquared(k,iCell) = velocityZonal(k,iCell)**2
-               velocityMeridionalSquared(k,iCell) = velocityMeridional(k,iCell)**2
-               velocityZonalTimesTemperature(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
-               velocityMeridionalTimesTemperature(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
-               velocityZonalTimesTemperature_GM(k,iCell) = GMBolusVelocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
-               velocityMeridionalTimesTemperature_GM(k,iCell) = GMBolusVelocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
-             end do
-         end do
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+            do iCell = 1,nCellsSolve
+               SSHSquared(iCell) = ssh(iCell)**2
+               do k = 1, maxLevelCell(iCell)
+                  velocityZonalSquared(k,iCell) = velocityZonal(k,iCell)**2
+                  velocityMeridionalSquared(k,iCell) = velocityMeridional(k,iCell)**2
+                  velocityZonalTimesTemperature(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
+                  velocityMeridionalTimesTemperature(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
+                  velocityZonalTimesTemperature_GM(k,iCell) = GMBolusVelocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
+                  velocityMeridionalTimesTemperature_GM(k,iCell) = GMBolusVelocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
+                end do
+            end do
+            !$omp end do
+            !$omp end parallel
+
+         ! if GM is not active, do exactly the same computation as above but
+         ! without the GM variables.
+         else
+            !$omp parallel
+            !$omp do schedule(runtime) private(cell1, cell2, k)
+            do iEdge = 1,nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+
+               do k = 1, maxLevelEdgeTop(iEdge)
+                  normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
+                               activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
+                  normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
+
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+            do iCell = 1,nCellsSolve
+               SSHSquared(iCell) = ssh(iCell)**2
+               do k = 1, maxLevelCell(iCell)
+                  velocityZonalSquared(k,iCell) = velocityZonal(k,iCell)**2
+                  velocityMeridionalSquared(k,iCell) = velocityMeridional(k,iCell)**2
+                  velocityZonalTimesTemperature(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
+                  velocityMeridionalTimesTemperature(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
+                end do
+            end do
+            !$omp end do
+            !$omp end parallel
+         endif
 
          block => block % next
       end do
