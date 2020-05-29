@@ -1931,7 +1931,6 @@ subroutine shoc_tke(&
   real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
   real(rtype) :: brunt_int(shcol), z_over_L
   real(rtype) :: zL_crit_val, pbl_trans
-  logical :: do_stable
   integer i,j,k,kc,kb,kt
 
   lambda_low=0.001_rtype
@@ -2048,9 +2047,8 @@ subroutine shoc_tke(&
         tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
       else
-	! Default definition of eddy diffusivity  
+        ! Default definition of eddy diffusivity for heat and momentum  
       
-        ! Define the eddy coefficients for heat and momentum
         tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
         tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
       endif
