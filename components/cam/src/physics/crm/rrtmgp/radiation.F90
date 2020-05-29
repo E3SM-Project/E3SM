@@ -16,6 +16,8 @@ module radiation
    use cam_abortutils,   only: endrun
    use scamMod,          only: scm_crm_mode, single_column, swrad_off
    use rad_constituents, only: N_DIAG
+   use radconstants,     only: &
+      set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -514,6 +516,10 @@ contains
       ! by the absorption coefficient data.
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
+
+      ! Set values in radconstants
+      call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
+      call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -1877,6 +1883,10 @@ contains
                   do ix = 1,crm_nx_rad
                      do ic = 1,ncol
                         crm_qrad(ic,ix,iy,iz) = (crm_qrs(ic,ix,iy,iz) + crm_qrl(ic,ix,iy,iz)) / cpair
+                        if (conserve_energy) then
+                           ilev = pver - iz + 1
+                           crm_qrad(ic,ix,iy,iz) = crm_qrad(ic,ix,iy,iz) * state%pdel(ic,ilev)
+                        end if
                      end do
                   end do
                end do

@@ -11,6 +11,7 @@ contains
     integer, intent(in) :: ncrms
     integer i,j,k,kb,icrm
     real(crm_rknd) betu, betd
+
 #if defined(_OPENACC)
     !$acc parallel loop gang vector collapse(4) async(asyncid)
 #elif defined(_OPENMP)
@@ -19,7 +20,7 @@ contains
     do k=2,nzm
       do j=1,ny
         do i=1,nx
-          do icrm = 1 , ncrms
+          do icrm=1,ncrms
             kb=k-1
             betu=adz(icrm,kb)/(adz(icrm,k)+adz(icrm,kb))
             betd=adz(icrm,k)/(adz(icrm,k)+adz(icrm,kb))
@@ -39,5 +40,4 @@ contains
     end do ! k
 
   end subroutine buoyancy
-
 end module buoyancy_mod

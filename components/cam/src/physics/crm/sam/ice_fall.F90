@@ -17,7 +17,7 @@ contains
     integer, allocatable :: kmax(:)
     integer, allocatable :: kmin(:)
     real(crm_rknd), allocatable :: fz(:,:,:,:)
-    integer :: i,j,k,k1,k2,kb,kc,ici,icrm
+    integer :: i,j,k, kb, kc, ici,icrm
     real(crm_rknd) coef,dqi,lat_heat,vt_ice
     real(crm_rknd) omnu, omnc, omnd, qiu, qic, qid, tmp_theta, tmp_phi
 
@@ -29,11 +29,10 @@ contains
     call prefetch( kmin )
     call prefetch( fz )
 #elif defined(_OPENMP)
-    !$omp target enter data map(alloc: kmax )
-    !$omp target enter data map(alloc: kmin )
-    !$omp target enter data map(alloc: fz )
+    !$omp target enter data map(alloc: kmax)
+    !$omp target enter data map(alloc: kmin)
+    !$omp target enter data map(alloc: fz)
 #endif
-
 #if defined(_OPENACC)
     !$acc parallel loop async(asyncid)
 #elif defined(_OPENMP)
@@ -56,7 +55,7 @@ contains
 #if defined(_OPENACC)
               !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update 
+              !$omp atomic update
 #endif
               kmin(icrm) = min(kmin(icrm),k)
 #if defined(_OPENACC)
@@ -86,7 +85,7 @@ contains
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(4) 
+    !$omp target teams distribute parallel do collapse(4)
 #endif
     do k = 1,nz
       do j = 1, ny
@@ -110,9 +109,7 @@ contains
       do j = 1,ny
         do i = 1,nx
           do icrm = 1 , ncrms
-            k1 = max(1,kmin(icrm)-1)
-            k2 = kmax(icrm)
-            if (k >= k1 .and. k <= k2 ) then
+            if (k >= max(1,kmin(icrm)-1) .and. k <= kmax(icrm) ) then
               ! Set up indices for x-y planes above and below current plane.
               kc = min(nzm,k+1)
               kb = max(1,k-1)
@@ -135,7 +132,6 @@ contains
               !         if (qic.eq.qid) then
               if (abs(qic-qid).lt.1.0e-25) then  ! when qic, and qid is very small, qic_qid can still be zero
                 ! even if qic is not equal to qid. so add a fix here +++mhwang
-                tmp_theta = 0.
                 tmp_phi = 0.
               else
                 tmp_theta = (qiu-qic)/(qic-qid)
@@ -174,9 +170,7 @@ contains
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
-            k1 = max(1,kmin(icrm)-2)
-            k2 = kmax(icrm)
-            if ( k >= k1 .and. k <= k2 ) then
+            if ( k >= max(1,kmin(icrm)-2) .and. k <= kmax(icrm) ) then
             coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
             ! The cloud ice increment is the difference of the fluxes.
             dqi=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
@@ -232,22 +226,21 @@ contains
           !$acc atomic update
 #elif defined(_OPENMP)
           !$omp atomic update
-#endif
+#endif      
           precsfc(icrm,i,j) = precsfc(icrm,i,j)+dqi
 #if defined(_OPENACC)
           !$acc atomic update
 #elif defined(_OPENMP)
           !$omp atomic update
-#endif
+#endif      
           precssfc(icrm,i,j) = precssfc(icrm,i,j)+dqi
         end do
       end do
     end do
-
 #if defined(_OPENMP)
-    !$omp target exit data map(delete: kmax )
-    !$omp target exit data map(delete: kmin )
-    !$omp target exit data map(delete: fz )
+    !$omp target exit data map(delete: kmax)
+    !$omp target exit data map(delete: kmin)
+    !$omp target exit data map(delete: fz)
 #endif
     deallocate( kmax )
     deallocate( kmin )

@@ -36,7 +36,6 @@ contains
 #elif defined(_OPENMP)
     !$omp target enter data map(alloc: df)
 #endif
-
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)

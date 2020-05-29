@@ -8,16 +8,14 @@ contains
     !       momentum tendency due to the 2nd-order-central vertical advection
     use vars
     use params, only: crm_rknd
-#if defined(_OPENACC)
     use openacc_utils
-#endif
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd), allocatable :: fuz(:,:,:,:)
     real(crm_rknd), allocatable :: fvz(:,:,:,:)
     real(crm_rknd), allocatable :: fwz(:,:,:,:)
     integer i, j, k, kc, kb,icrm
-    real(crm_rknd) dz25, www, rhoi
+    real(crm_rknd) dz25, www, rhoi, dfuz, dfvz, dfwz
 
     allocate( fuz(ncrms,nx,ny,nz ) )
     allocate( fvz(ncrms,nx,ny,nz ) )
@@ -31,7 +29,6 @@ contains
     !$omp target enter data map(alloc: fvz)
     !$omp target enter data map(alloc: fwz)
 #endif
-
 #if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)
@@ -46,7 +43,7 @@ contains
 #if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(3)
+    !$omp target teams distribute parallel do collapse(2)
 #endif
     do j=1,ny
       do i=1,nx
@@ -98,7 +95,7 @@ contains
 #if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(4) 
+      !$omp target teams distribute parallel do collapse(4)
 #endif
       do k=2,nzm
         do j=1,ny
@@ -140,18 +137,22 @@ contains
             dz25=1./(4.*dz(icrm))
             kc = k+1
             rhoi = 1./(rho(icrm,k)*adz(icrm,k))
+            dfuz = (fuz(icrm,i,j,kc)-fuz(icrm,i,j,k))*rhoi
+            dfvz = (fvz(icrm,i,j,kc)-fvz(icrm,i,j,k))*rhoi
 #if defined(_OPENACC)
-              !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update
+            !$omp atomic update
 #endif
-            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fuz(icrm,i,j,kc)-fuz(icrm,i,j,k))*rhoi
+            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-dfuz
 #if defined(_OPENACC)
-              !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update
+            !$omp atomic update
 #endif
-            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fvz(icrm,i,j,kc)-fvz(icrm,i,j,k))*rhoi
+            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-dfvz
+          !  dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fuz(icrm,i,j,kc)-fuz(icrm,i,j,k))*rhoi
+          !  dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fvz(icrm,i,j,kc)-fvz(icrm,i,j,k))*rhoi
             fwz(icrm,i,j,k)=dz25*(w(icrm,i,j,kc)*rhow(icrm,kc)+w(icrm,i,j,k)*rhow(icrm,k))*(w(icrm,i,j,kc)+w(icrm,i,j,k))
           end do
         end do
@@ -168,12 +169,14 @@ contains
           do icrm = 1 , ncrms
             kb=k-1
             rhoi = 1./(rhow(icrm,k)*adzw(icrm,k))
+            dfwz = (fwz(icrm,i,j,k)-fwz(icrm,i,j,kb))*rhoi
 #if defined(_OPENACC)
-              !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update
+            !$omp atomic update
 #endif
-            dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-(fwz(icrm,i,j,k)-fwz(icrm,i,j,kb))*rhoi
+            dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-dfwz
+          !  dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-(fwz(icrm,i,j,k)-fwz(icrm,i,j,kb))*rhoi
           end do
         end do
       end do ! k

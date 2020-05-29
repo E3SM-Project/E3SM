@@ -43,9 +43,7 @@ contains
     !$omp target enter data map(alloc: t0loc)
     !$omp target enter data map(alloc: u0loc)
     !$omp target enter data map(alloc: v0loc)
-    !$omp target enter data map(alloc: tau)
-#endif
-   
+#endif   
     if(tau_min.lt.2*dt) then
       print*,'Error: in damping() tau_min is too small!'
       call task_abort()
@@ -53,7 +51,7 @@ contains
 #if defined(_OPENACC)
     !$acc parallel loop async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do
+    !$omp target teams distribute parallel do 
 #endif
     do icrm = 1 , ncrms
       do k=nzm,1,-1
@@ -71,11 +69,6 @@ contains
       do icrm = 1 , ncrms
         if ( k <= nzm .and. k >= nzm-n_damp(icrm) ) then
           tau(icrm,k) = tau_min *(tau_max/tau_min)**((z(icrm,nzm)-z(icrm,k))/(z(icrm,nzm)-z(icrm,nzm-n_damp(icrm))))
-#if defined(_OPENACC)
-          !$acc atomic update
-#elif defined(_OPENMP)
-          !$omp atomic update
-#endif
           tau(icrm,k)=1./tau(icrm,k)
         endif
       end do
@@ -87,7 +80,7 @@ contains
 #if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(2) 
+    !$omp target teams distribute parallel do collapse(2)
 #endif
     do k=1, nzm
       do icrm = 1 , ncrms
@@ -136,33 +129,17 @@ contains
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) vector_length(128) num_gangs(numgangs) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(4)
+    !$omp target teams distribute parallel do simd collapse(4)
 #endif
     do k = 1 , nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
             if ( k <= nzm .and. k >= nzm-n_damp(icrm) ) then
-#if defined(_OPENMP)
-              !$omp atomic update
-#endif
               dudt(icrm,i,j,k,na)= dudt(icrm,i,j,k,na)-(u(icrm,i,j,k)-u0loc(icrm,k)) * tau(icrm,k)
-#if defined(_OPENMP)
-              !$omp atomic update
-#endif
               dvdt(icrm,i,j,k,na)= dvdt(icrm,i,j,k,na)-(v(icrm,i,j,k)-v0loc(icrm,k)) * tau(icrm,k)
-#if defined(_OPENMP)
-              !$omp atomic update
-#endif
               dwdt(icrm,i,j,k,na)= dwdt(icrm,i,j,k,na)-w(icrm,i,j,k) * tau(icrm,k)
-              tmp = dtn*(t(icrm,i,j,k)-t0loc(icrm,k)) * tau(icrm,k)
-#if defined(_OPENMP)
-              !$omp atomic update
-#endif
-              t(icrm,i,j,k)= t(icrm,i,j,k)-tmp
-#if defined(_OPENMP)
-              !$omp atomic update
-#endif
+              t(icrm,i,j,k)= t(icrm,i,j,k)-dtn*(t(icrm,i,j,k)-t0loc(icrm,k)) * tau(icrm,k)
               micro_field(icrm,i,j,k,index_water_vapor)= micro_field(icrm,i,j,k,index_water_vapor)-dtn*(qv(icrm,i,j,k)-qv0(icrm,k)) * tau(icrm,k)
             endif
           end do! i
@@ -174,8 +151,7 @@ contains
     !$omp target exit data map(delete: t0loc)
     !$omp target exit data map(delete: u0loc)
     !$omp target exit data map(delete: v0loc)
-    !$omp target exit data map(delete: tau)
-#endif
+#endif   
     deallocate( n_damp )
     deallocate( t0loc )
     deallocate( u0loc )

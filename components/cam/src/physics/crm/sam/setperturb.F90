@@ -36,6 +36,7 @@ contains
       !$omp target update from(t)
       !$omp target update from(t0)
 #endif
+
       factor_xy = 1./real((nx*ny),crm_rknd)
 
       ! set the sub-grid scale (SGS) turbulence fields

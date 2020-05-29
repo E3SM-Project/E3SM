@@ -1,9 +1,9 @@
-module crmsurface_mod
+module crm_surface_mod
   implicit none
 
 contains
 
-  subroutine crmsurface(ncrms,bflx)
+  subroutine crm_surface(ncrms,bflx)
     use vars
     use params
     implicit none
@@ -13,59 +13,57 @@ contains
     integer i,j,icrm
 
     !--------------------------------------------------------
-    if(SFC_FLX_FXD.and..not.SFC_TAU_FXD) then
 #if defined(_OPENACC)
-      !$acc parallel loop async(asyncid)
+    !$acc parallel loop async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do
+    !$omp target teams distribute parallel do 
 #endif
-      do icrm = 1 , ncrms
+    do icrm = 1 , ncrms
 #if defined(_OPENACC)
-        !$acc atomic update
+      !$acc atomic update
 #elif defined(_OPENMP)
-        !$omp atomic update
+      !$omp atomic update
 #endif
-        uhl(icrm) = uhl(icrm) + dtn*utend(icrm,1)
+      uhl(icrm) = uhl(icrm) + dtn*utend(icrm,1)
 #if defined(_OPENACC)
-        !$acc atomic update
+      !$acc atomic update
 #elif defined(_OPENMP)
-        !$omp atomic update
+      !$omp atomic update
 #endif
-        vhl(icrm) = vhl(icrm) + dtn*vtend(icrm,1)
-        taux0(icrm) = 0.
-        tauy0(icrm) = 0.
-      enddo
+      vhl(icrm) = vhl(icrm) + dtn*vtend(icrm,1)
+      taux0(icrm) = 0.
+      tauy0(icrm) = 0.
+    end do
 #if defined(_OPENACC)
-      !$acc parallel loop collapse(3) async(asyncid)
+    !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(3)
+    !$omp target teams distribute parallel do collapse(3)
 #endif
-      do j=1,ny
-        do i=1,nx
-          do icrm = 1 , ncrms
-            u_h0 = max(real(1.,crm_rknd),sqrt((0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug)**2+(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg)**2))
-            tau00 = rho(icrm,1) * diag_ustar(z(icrm,1),bflx(icrm),u_h0,z0(icrm))**2
-            fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug-uhl(icrm))/u_h0*tau00
-            fluxbv(icrm,i,j) = -(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/u_h0*tau00
-            tmp = fluxbu(icrm,i,j)/real(nx*ny,crm_rknd)
+    do j=1,ny
+      do i=1,nx
+        do icrm = 1 , ncrms
+          u_h0 = max(real(1.,crm_rknd),sqrt((0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug)**2+(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg)**2))
+          tau00 = rho(icrm,1) * diag_ustar(z(icrm,1),bflx(icrm),u_h0,z0(icrm))**2
+          fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug-uhl(icrm))/u_h0*tau00
+          fluxbv(icrm,i,j) = -(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/u_h0*tau00
+          tmp = fluxbu(icrm,i,j)/dble(nx*ny)
 #if defined(_OPENACC)
-            !$acc atomic update
+          !$acc atomic update
 #elif defined(_OPENMP)
-            !$omp atomic update
+          !$omp atomic update
 #endif
-            taux0(icrm) = taux0(icrm) + tmp
-            tmp = fluxbv(icrm,i,j)/real(nx*ny,crm_rknd)
+          taux0(icrm) = taux0(icrm) + tmp
+          tmp = fluxbv(icrm,i,j)/dble(nx*ny)
 #if defined(_OPENACC)
-            !$acc atomic update
+          !$acc atomic update
 #elif defined(_OPENMP)
-            !$omp atomic update
-#endif
-            tauy0(icrm) = tauy0(icrm) + tmp
-          end do
+          !$omp atomic update
+#endif    
+          tauy0(icrm) = tauy0(icrm) + tmp
         end do
-      enddo
-    end if ! SFC_FLX_FXD
-  end subroutine crmsurface
+      end do
+    end do
+  end subroutine crm_surface
 
   ! ----------------------------------------------------------------------
   !
@@ -92,11 +90,7 @@ contains
   ! so now used as reciprocal of obukhov length)
   real(crm_rknd) function diag_ustar(z,bflx,wnd,z0)
     use params, only: crm_rknd
-#if defined(_OPENACC)
     !$acc routine seq
-#elif defined(_OPENMP)
-    !$omp declare target
-#endif
     implicit none
     real(crm_rknd), parameter      :: vonk =  0.4   ! von Karmans constant
     real(crm_rknd), parameter      :: g    = 9.81   ! gravitational acceleration
@@ -165,4 +159,4 @@ contains
   end function z0_est
   ! ----------------------------------------------------------------------
 
-end module crmsurface_mod
+end module crm_surface_mod

@@ -39,7 +39,7 @@ contains
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(4) 
+    !$omp target teams distribute parallel do collapse(4)
 #endif
     do k=1,nzm
       do j=1,ny
@@ -49,52 +49,52 @@ contains
             tabs(icrm,i,j,k) = t(icrm,i,j,k)-gamaz(icrm,k)+ fac_cond * (qcl(icrm,i,j,k)+qpl(icrm,i,j,k)) + fac_sub *(qci(icrm,i,j,k) + qpi(icrm,i,j,k))
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             u0(icrm,k)=u0(icrm,k)+u(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             v0(icrm,k)=v0(icrm,k)+v(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             p0(icrm,k)=p0(icrm,k)+p(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             t0(icrm,k)=t0(icrm,k)+t(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             tabs0(icrm,k)=tabs0(icrm,k)+tabs(icrm,i,j,k)
             tmp = qv(icrm,i,j,k)+qcl(icrm,i,j,k)+qci(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             q0(icrm,k)=q0(icrm,k)+tmp
             tmp = qcl(icrm,i,j,k) + qci(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             qn0(icrm,k) = qn0(icrm,k) + tmp
             tmp = qpl(icrm,i,j,k) + qpi(icrm,i,j,k)
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             qp0(icrm,k) = qp0(icrm,k) + tmp
@@ -110,75 +110,25 @@ contains
 #endif
     do k=1,nzm
       do icrm = 1 , ncrms
-#if defined(_OPENACC)
-       !$acc atomic update
-#elif defined(_OPENMP)  
-       !$omp atomic update
-#endif
         u0(icrm,k)=u0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         v0(icrm,k)=v0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         t0(icrm,k)=t0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         tabs0(icrm,k)=tabs0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         q0(icrm,k)=q0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         qn0(icrm,k)=qn0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         qp0(icrm,k)=qp0(icrm,k)*coef
-#if defined(_OPENACC)
-        !$acc atomic update
-#elif defined(_OPENMP)  
-        !$omp atomic update
-#endif
         p0(icrm,k)=p0(icrm,k)*coef
       enddo ! k
     enddo
 #if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(3) 
+    !$omp target teams distribute parallel do collapse(3)
 #endif
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
-#if defined(_OPENACC)
-          !$acc atomic update
-#elif defined(_OPENMP)  
-          !$omp atomic update
-#endif
           usfc_xy(icrm,i,j) = usfc_xy(icrm,i,j) + u(icrm,i,j,1)*dtfactor
-#if defined(_OPENACC)
-          !$acc atomic update
-#elif defined(_OPENMP)  
-          !$omp atomic update
-#endif
           vsfc_xy(icrm,i,j) = vsfc_xy(icrm,i,j) + v(icrm,i,j,1)*dtfactor
         enddo
       enddo
@@ -213,7 +163,7 @@ contains
             tmp = qsatw_crm(tabs(icrm,i,j,k),pres(icrm,k))*coef1
 #if defined(_OPENACC)
             !$acc atomic update
-#elif defined(_OPENMP)  
+#elif defined(_OPENMP)
             !$omp atomic update
 #endif
             swvp_xy(icrm,i,j) = swvp_xy(icrm,i,j)+tmp
@@ -231,11 +181,6 @@ contains
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
-#if defined(_OPENACC)
-          !$acc atomic update
-#elif defined(_OPENMP)  
-          !$omp atomic update
-#endif
           psfc_xy(icrm,i,j) = psfc_xy(icrm,i,j) + (100.*pres(icrm,1) + p(icrm,i,j,1))*dtfactor
         enddo
       enddo

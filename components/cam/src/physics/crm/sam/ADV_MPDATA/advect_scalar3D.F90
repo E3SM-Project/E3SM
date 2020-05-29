@@ -28,7 +28,7 @@ contains
     real(crm_rknd), allocatable :: iadz (:,:)
     real(crm_rknd), allocatable :: irho (:,:)
     real(crm_rknd), allocatable :: irhow(:,:)
-    real(crm_rknd) eps, dd, pp_temp, pn_temp
+    real(crm_rknd) eps, dd
     integer i,j,k,ic,ib,jc,jb,kc,kb, icrm
     logical nonos
     real(crm_rknd) x1, x2, a, b, a1, a2, y
@@ -65,6 +65,7 @@ contains
     !$omp target enter data map(alloc: mn)
     !$omp target enter data map(alloc: uuu)
     !$omp target enter data map(alloc: vvv)
+    !$omp target enter data map(alloc: www)
     !$omp target enter data map(alloc: iadz)
     !$omp target enter data map(alloc: irho)
     !$omp target enter data map(alloc: irhow)
@@ -87,7 +88,7 @@ contains
 #if defined(_OPENACC)
         !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-        !$omp target teams distribute parallel do collapse(3)
+        !$omp target teams distribute parallel do collapse(4)
 #endif
         do k=1,nzm
           do j=dimy1_u,dimy2_u
@@ -107,7 +108,7 @@ contains
 #endif
         do k=1,nzm
           do j=dimy1_u,dimy2_u
-            do i=nxp1,dimx2_u
+            do i=nx+1,dimx2_u
               do icrm = 1 , ncrms
                 u(icrm,i,j,k) = 0.
               enddo
@@ -224,18 +225,9 @@ contains
         do i=-1,nxp2
           do icrm = 1 , ncrms
             if (i >= 1 .and. i <= nx .and. j >= 1 .and. j <= ny) then
-#if defined(_OPENACC)
               !$acc atomic update
-#elif defined(_OPENMP)
-              !$omp atomic update
-#endif
               flux(icrm,k) = flux(icrm,k) + www(icrm,i,j,k)
             endif
-#if defined(_OPENACC)
-              !$acc atomic update
-#elif defined(_OPENMP)
-              !$omp atomic update
-#endif
             f(icrm,i,j,k)=f(icrm,i,j,k)-( uuu(icrm,i+1,j,k)-uuu(icrm,i,j,k)  & 
                               + vvv(icrm,i,j+1,k)-vvv(icrm,i,j,k)  &
                               +(www(icrm,i,j,k+1)-www(icrm,i,j,k) )*iadz(icrm,k))*irho(icrm,k)
@@ -367,24 +359,18 @@ contains
             do icrm = 1 , ncrms
               if (j <= ny) then
                 ib=i-1
-                pp_temp = pp(uuu(icrm,i,j,k))
-                pn_temp = pn(uuu(icrm,i,j,k))
-                uuu(icrm,i,j,k) = pp_temp*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,ib,j,k)) &
-                                 -pn_temp*min(real(1.,crm_rknd),mx(icrm,ib,j,k),mn(icrm,i,j,k))
+                uuu(icrm,i,j,k) = pp(uuu(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,ib,j,k)) &
+                                 -pn(uuu(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,ib,j,k),mn(icrm,i,j,k))
               endif
               if (i <= nx) then
                 jb=j-1
-                pp_temp = pp(vvv(icrm,i,j,k))
-                pn_temp = pn(vvv(icrm,i,j,k))
-                vvv(icrm,i,j,k) = pp_temp*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,jb,k)) &
-                                 -pn_temp*min(real(1.,crm_rknd),mx(icrm,i,jb,k),mn(icrm,i,j,k))
+                vvv(icrm,i,j,k) = pp(vvv(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,jb,k)) &
+                                 -pn(vvv(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,jb,k),mn(icrm,i,j,k))
               endif
               if (i <= nx .and. j <= ny) then
                 kb=max(1,k-1)
-                pp_temp = pp(www(icrm,i,j,k))
-                pn_temp = pn(www(icrm,i,j,k))
-                www(icrm,i,j,k) = pp_temp*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,j,kb)) &
-                                 -pn_temp*min(real(1.,crm_rknd),mx(icrm,i,j,kb),mn(icrm,i,j,k))
+                www(icrm,i,j,k) = pp(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,j,kb)) &
+                                 -pn(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,kb),mn(icrm,i,j,k))
 #if defined(_OPENACC)
                 !$acc atomic update
 #elif defined(_OPENMP)

@@ -14,11 +14,10 @@ contains
 
     use grid
     use vars, only: u, v, w, rho, rhow
-    use params, only: docolumn, crm_rknd
+    use params, only: crm_rknd
 
     implicit none
     integer, intent(in) :: ncrms
-    integer, intent(in) :: num
     real(crm_rknd) f(ncrms,dimx1_s:dimx2_s, dimy1_s:dimy2_s, nzm)
     real(crm_rknd) flux(ncrms,nz), fadv(ncrms,nz)
     real(crm_rknd), allocatable :: f0(:,:,:,:)
@@ -29,22 +28,8 @@ contains
 #if defined(_OPENACC)
     call prefetch(f0)
 #elif defined(_OPENMP)
-   !$omp target enter data map(alloc: f0)
+    !$omp target enter data map(alloc: f0)
 #endif
-
-    if(docolumn) then
-#if defined(_OPENACC)
-      !$acc parallel loop collapse(2) async(asyncid)
-#elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(2)
-#endif
-      do k = 1 , nz
-        do icrm = 1 , ncrms
-          flux(icrm,k) = 0.
-        enddo
-      enddo
-      return
-    end if
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
@@ -65,7 +50,6 @@ contains
     else
       call advect_scalar2D(ncrms, f, u, w, rho, rhow, flux)
     endif
-
 #if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)

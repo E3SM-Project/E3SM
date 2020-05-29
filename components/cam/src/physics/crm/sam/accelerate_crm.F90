@@ -155,7 +155,6 @@ module accelerate_crm_mod
       real(r8) :: factor, qt_res ! local variables for redistributing moisture
       real(rc) :: ttend_threshold ! threshold for ttend_acc at which MSA aborts
       real(rc) :: tmin  ! mininum value of t allowed (sanity factor)
-      real(rc) :: ttemp, utemp, vtemp, micro_temp  ! temperatory temperature
 
       ttend_threshold = 5.  ! 5K, following UP-CAM implementation
       tmin = 50.  ! should never get below 50K in crm, following UP-CAM implementation
@@ -182,25 +181,24 @@ module accelerate_crm_mod
       call prefetch( qpoz      )
       call prefetch( qneg      )
 #elif defined(_OPENMP)
-      !$omp target enter data map(alloc: ubaccel   )
-      !$omp target enter data map(alloc: vbaccel   )
-      !$omp target enter data map(alloc: tbaccel   )
-      !$omp target enter data map(alloc: qtbaccel  )
-      !$omp target enter data map(alloc: ttend_acc )
-      !$omp target enter data map(alloc: qtend_acc )
-      !$omp target enter data map(alloc: utend_acc )
-      !$omp target enter data map(alloc: vtend_acc )
-      !$omp target enter data map(alloc: qpoz      )
-      !$omp target enter data map(alloc: qneg      )
+      !$omp target enter data map(alloc: ubaccel)
+      !$omp target enter data map(alloc: vbaccel)
+      !$omp target enter data map(alloc: tbaccel)
+      !$omp target enter data map(alloc: qtbaccel)
+      !$omp target enter data map(alloc: ttend_acc)
+      !$omp target enter data map(alloc: qtend_acc)
+      !$omp target enter data map(alloc: utend_acc)
+      !$omp target enter data map(alloc: vtend_acc)
+      !$omp target enter data map(alloc: qpoz)
+      !$omp target enter data map(alloc: qneg)
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Compute the average among horizontal columns for each variable
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 #if defined(_OPENACC)
       !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(2) 
+      !$omp target teams distribute parallel do collapse(2)
 #endif
       do k = 1, nzm
         do icrm = 1, ncrms
@@ -212,11 +210,10 @@ module accelerate_crm_mod
           endif
         enddo
       enddo
-
 #if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(4) 
+      !$omp target teams distribute parallel do collapse(4)
 #endif
       do k = 1, nzm
         do j = 1 , ny
@@ -264,7 +261,7 @@ module accelerate_crm_mod
 #if defined(_OPENACC)
       !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(2) 
+      !$omp target teams distribute parallel do collapse(2)
 #endif
       do k = 1, nzm
         do icrm = 1, ncrms
@@ -309,22 +306,20 @@ module accelerate_crm_mod
         return
       endif
 
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply the accelerated tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(4) 
+      !$omp target teams distribute parallel do collapse(4)
 #endif
       do k = 1, nzm
         do j = 1, ny
           do i = 1, nx
             do icrm = 1, ncrms
-              ttemp = t(icrm,i,j,k) + crm_accel_factor * ttend_acc(icrm,k)
               ! don't let T go negative!
-              t(icrm,i,j,k) = max(tmin, ttemp)
+              t(icrm,i,j,k) = max(tmin, t(icrm,i,j,k) + crm_accel_factor * ttend_acc(icrm,k))
               if (crm_accel_uv) then
 #if defined(_OPENACC)
                 !$acc atomic update
@@ -356,7 +351,7 @@ module accelerate_crm_mod
 #if defined(_OPENACC)
       !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(2) 
+      !$omp target teams distribute parallel do collapse(2)
 #endif
       do k = 1, nzm
         do icrm = 1, ncrms
@@ -364,12 +359,11 @@ module accelerate_crm_mod
           qneg(icrm,k) = 0.
         enddo
       enddo
-
       ! separately accumulate positive and negative qt values in each layer k
 #if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(4) 
+      !$omp target teams distribute parallel do collapse(4)
 #endif
       do k = 1, nzm
         do j = 1, ny
@@ -394,11 +388,10 @@ module accelerate_crm_mod
           enddo
         enddo
       enddo
-
 #if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(4) 
+      !$omp target teams distribute parallel do collapse(4)
 #endif
       do k = 1, nzm
         do j = 1 , ny
@@ -414,8 +407,7 @@ module accelerate_crm_mod
                 ! Clip qt values at 0 and remove the negative excess in each layer
                 ! proportionally from the positive qt fields in the layer
                 factor = 1._r8 + qneg(icrm,k) / qpoz(icrm,k)
-                micro_temp = micro_field(icrm,i,j,k,idx_qt) * factor
-                micro_field(icrm,i,j,k,idx_qt) = max(0._rc, micro_temp)
+                micro_field(icrm,i,j,k,idx_qt) = max(0._rc, micro_field(icrm,i,j,k,idx_qt) * factor)
                 ! Partition micro_field == qv + qcl + qci following these rules:
                 !    (1) attempt to satisfy purely by adjusting qv
                 !    (2) adjust qcl and qci only if needed to ensure positivity
@@ -430,12 +422,16 @@ module accelerate_crm_mod
                   if (qt_res < 0._r8) then
                     ! qv was clipped; need to reduce qcl and qci accordingly
                     factor = 1._r8 + qt_res / (qcl(icrm,i,j,k) + qci(icrm,i,j,k))
-#if defined(_OPENMP)
+#if defined(_OPENACC)
+                    !$acc atomic update
+#elif defined(_OPENMP)
                     !$omp atomic update
 #endif
                     qcl(icrm,i,j,k) = qcl(icrm,i,j,k) * factor
-#if defined(_OPENMP)
-                    !$omp atomic update
+#if defined(_OPENACC)
+                   !$acc atomic update
+#elif defined(_OPENMP)
+                   !$omp atomic update
 #endif
                     qci(icrm,i,j,k) = qci(icrm,i,j,k) * factor
                   endif
@@ -445,18 +441,17 @@ module accelerate_crm_mod
           enddo ! j = 1, ny
         enddo ! k = 1, nzm
       enddo ! icrm = 1, ncrms
-
 #if defined(_OPENMP)
-      !$omp target exit data map(delete: ubaccel   )
-      !$omp target exit data map(delete: vbaccel   )
-      !$omp target exit data map(delete: tbaccel   )
-      !$omp target exit data map(delete: qtbaccel  )
-      !$omp target exit data map(delete: ttend_acc )
-      !$omp target exit data map(delete: qtend_acc )
-      !$omp target exit data map(delete: utend_acc )
-      !$omp target exit data map(delete: vtend_acc )
-      !$omp target exit data map(delete: qpoz      )
-      !$omp target exit data map(delete: qneg      )
+      !$omp target exit data map(delete: ubaccel)
+      !$omp target exit data map(delete: vbaccel)
+      !$omp target exit data map(delete: tbaccel)
+      !$omp target exit data map(delete: qtbaccel)
+      !$omp target exit data map(delete: ttend_acc)
+      !$omp target exit data map(delete: qtend_acc)
+      !$omp target exit data map(delete: utend_acc)
+      !$omp target exit data map(delete: vtend_acc)
+      !$omp target exit data map(delete: qpoz)
+      !$omp target exit data map(delete: qneg)
 #endif
       deallocate( ubaccel   )
       deallocate( vbaccel   )

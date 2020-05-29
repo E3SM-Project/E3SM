@@ -9,8 +9,10 @@ contains
     !        momentum tendency due to SGS diffusion
 
     use vars
-    use params, only: docolumn, crm_rknd
+    use params, only: crm_rknd
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     integer :: dimx1_d, dimx2_d, dimy1_d, dimy2_d
@@ -22,7 +24,7 @@ contains
     real(crm_rknd) rdx21,rdy21,rdx251,rdy251,rdz25
     real(crm_rknd) dxy,dxz,dyx,dyz,dzx,dzy
     integer i,j,k,ic,ib,jb,jc,kc,kcu,icrm
-    real(crm_rknd) tkx, tky, tkz, rhoi, iadzw, iadz
+    real(crm_rknd) tkx, tky, tkz, rhoi, iadzw, iadz, dfu, dfv, dfw
     real(crm_rknd), allocatable :: fu(:,:,:,:)
     real(crm_rknd), allocatable :: fv(:,:,:,:)
     real(crm_rknd), allocatable :: fw(:,:,:,:)
@@ -82,24 +84,27 @@ contains
           do icrm = 1 , ncrms
             kc=k+1
             ib=i-1
+            dfu = (fu(icrm,i,j,k)-fu(icrm,ib,j,k))
+            dfv = (fv(icrm,i,j,k)-fv(icrm,ib,j,k))
+            dfw = (fw(icrm,i,j,k)-fw(icrm,ib,j,k))
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,k)-fu(icrm,ib,j,k))
+            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-dfu
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,k)-fv(icrm,ib,j,k))
+            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-dfv
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-(fw(icrm,i,j,k)-fw(icrm,ib,j,k))
+            dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-dfw
           enddo
         enddo
       enddo
@@ -141,24 +146,27 @@ contains
           do icrm = 1 , ncrms
             jb=j-1
             kc=k+1
+            dfu = (fu(icrm,i,j,k)-fu(icrm,i,jb,k))
+            dfv = (fv(icrm,i,j,k)-fv(icrm,i,jb,k))
+            dfw = (fw(icrm,i,j,k)-fw(icrm,i,jb,k))
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,k)-fu(icrm,i,jb,k))
+            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-dfu
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,k)-fv(icrm,i,jb,k))
+            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-dfv
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-(fw(icrm,i,j,k)-fw(icrm,i,jb,k))
+            dwdt(icrm,i,j,kc,na)=dwdt(icrm,i,j,kc,na)-dfw
           enddo
         enddo
       enddo
@@ -202,13 +210,13 @@ contains
             tkz=rdz25*(tk(icrm,i,j,k)+tk(icrm,i,jb,k)+tk(icrm,i,j,kc)+tk(icrm,i,jb,kc))
             fv(icrm,i,j,kc)=-tkz*( (v(icrm,i,j,kc)-v(icrm,i,j,k))*iadzw + (w(icrm,i,j,kc)-w(icrm,i,jb,kc))*dzy)*rhow(icrm,kc)
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
             uwsb(icrm,kc)=uwsb(icrm,kc)+fu(icrm,i,j,kc)
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
@@ -234,13 +242,13 @@ contains
           fu(icrm,i,j,nz)=fluxtu(icrm,i,j) * rdz * rhow(icrm,nz)
           fv(icrm,i,j,nz)=fluxtv(icrm,i,j) * rdz * rhow(icrm,nz)
 #if defined(_OPENACC)
-          !$acc atomic update
+          !$acc atomic udpate
 #elif defined(_OPENMP)
           !$omp atomic update
 #endif
           uwsb(icrm,1) = uwsb(icrm,1) + fu(icrm,i,j,1)
 #if defined(_OPENACC)
-          !$acc atomic update
+          !$acc atomic udpate
 #elif defined(_OPENMP)
           !$omp atomic update
 #endif
@@ -259,18 +267,20 @@ contains
           do icrm = 1 , ncrms
             kc=k+1
             rhoi = 1./(rho(icrm,k)*adz(icrm,k))
+            dfu = (fu(icrm,i,j,kc)-fu(icrm,i,j,k))*rhoi
+            dfv = (fv(icrm,i,j,kc)-fv(icrm,i,j,k))*rhoi
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,kc)-fu(icrm,i,j,k))*rhoi
+            dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-dfu
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,kc)-fv(icrm,i,j,k))*rhoi
+            dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-dfv
           enddo
         enddo
       enddo ! k
@@ -285,12 +295,13 @@ contains
         do i=1,nx
           do icrm = 1 , ncrms
             rhoi = 1./(rhow(icrm,k)*adzw(icrm,k))
+            dfw = (fw(icrm,i,j,k+1)-fw(icrm,i,j,k))*rhoi
 #if defined(_OPENACC)
-            !$acc atomic update
+            !$acc atomic udpate
 #elif defined(_OPENMP)
             !$omp atomic update
 #endif
-            dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-(fw(icrm,i,j,k+1)-fw(icrm,i,j,k))*rhoi
+            dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-dfw
           enddo
         enddo
       enddo ! k

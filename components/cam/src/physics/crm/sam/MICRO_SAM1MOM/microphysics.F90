@@ -7,7 +7,7 @@ module microphysics
   ! Marat Khairoutdinov, 2006
 
   use grid, only: nx,ny,nzm,nz, dimx1_s,dimx2_s,dimy1_s,dimy2_s ! subdomain grid information
-  use params, only: doprecip, docloud, doclubb, crm_rknd, asyncid
+  use params, only: doprecip, docloud, crm_rknd, asyncid
   use micro_params
   implicit none
 
@@ -88,7 +88,6 @@ CONTAINS
     allocate( qpsrc(ncrms,nz)  )
     allocate( qpevp(ncrms,nz)  )
     allocate( flag_precip    (nmicro_fields) )
-
 #if defined(_OPENACC)
     call prefetch(micro_field  )
     call prefetch(fluxbmk   )
@@ -116,7 +115,9 @@ CONTAINS
     !$omp target enter data map(alloc: qpevp)
     !$omp target enter data map(alloc: flag_precip)
 #endif
+
     zero = 0
+
     micro_field = zero
     fluxbmk  = zero
     fluxtmk  = zero
@@ -133,38 +134,6 @@ CONTAINS
     qpevp = zero
     flag_precip    (:)  = (/0,1/)
   end subroutine allocate_micro
-
-#if defined(_OPENMP)
-  subroutine update_device_micro()
-    !$omp target update to( micro_field)
-    !$omp target update to( fluxbmk)
-    !$omp target update to( fluxtmk)
-    !$omp target update to( mkwle)
-    !$omp target update to( mkwsb)
-    !$omp target update to( mkadv)
-    !$omp target update to( mkdiff)
-    !$omp target update to( mkoutputscale)
-    !$omp target update to( qn)
-    !$omp target update to( qpsrc)
-    !$omp target update to( qpevp)
-    !$omp target update to( flag_precip)
-  end subroutine update_device_micro
-
-  subroutine update_host_micro()
-    !$omp target update from( micro_field)
-    !$omp target update from( fluxbmk)
-    !$omp target update from( fluxtmk)
-    !$omp target update from( mkwle)
-    !$omp target update from( mkwsb)
-    !$omp target update from( mkadv)
-    !$omp target update from( mkdiff)
-    !$omp target update from( mkoutputscale)
-    !$omp target update from( qn)
-    !$omp target update from( qpsrc)
-    !$omp target update from( qpevp)
-    !$omp target update from( flag_precip)
-  end subroutine update_host_micro
-#endif
 
   subroutine deallocate_micro()
     implicit none
@@ -199,6 +168,37 @@ CONTAINS
     deallocate(flag_precip    )
   end subroutine deallocate_micro
 
+#if defined(_OPENMP)
+  subroutine update_device_micro()
+    !$omp target update to( micro_field)
+    !$omp target update to( fluxbmk)
+    !$omp target update to( fluxtmk)
+    !$omp target update to( mkwle)
+    !$omp target update to( mkwsb)
+    !$omp target update to( mkadv)
+    !$omp target update to( mkdiff)
+    !$omp target update to( mkoutputscale)
+    !$omp target update to( qn)
+    !$omp target update to( qpsrc)
+    !$omp target update to( qpevp)
+    !$omp target update to( flag_precip)
+  end subroutine update_device_micro
+
+  subroutine update_host_micro()
+    !$omp target update from( micro_field)
+    !$omp target update from( fluxbmk)
+    !$omp target update from( fluxtmk)
+    !$omp target update from( mkwle)
+    !$omp target update from( mkwsb)
+    !$omp target update from( mkadv)
+    !$omp target update from( mkdiff)
+    !$omp target update from( mkoutputscale)
+    !$omp target update from( qn)
+    !$omp target update from( qpsrc)
+    !$omp target update from( qpevp)
+    !$omp target update from( flag_precip)
+  end subroutine update_host_micro
+#endif
 
   ! required microphysics subroutines and function:
   !----------------------------------------------------------------------
@@ -214,41 +214,17 @@ CONTAINS
 
   subroutine micro_init(ncrms)
 
-#ifdef CLUBB_CRM
-    use params, only: doclubb, doclubbnoninter ! dschanen UWM 21 May 2008
-    use params, only: nclubb
-#endif
     use grid, only: nrestart
     use vars
-    use params, only: dosmoke
     implicit none
     integer, intent(in) :: ncrms
     integer k, n,icrm, i, j, l
-
-#ifdef CLUBB_CRM
-    !  if ( nclubb /= 1 ) then
-    !    write(0,*) "The namelist parameter nclubb is not equal to 1,",  &
-    !      " but SAM single moment microphysics is enabled."
-    !    write(0,*) "This will create unrealistic results in subsaturated grid boxes. ", &
-    !      "Exiting..."
-    !    call task_abort()
-    !  end if
-#endif
-
 
     a_bg = 1./(tbgmax-tbgmin)
     a_pr = 1./(tprmax-tprmin)
     a_gr = 1./(tgrmax-tgrmin)
 
     if(nrestart.eq.0) then
-
-#ifndef CRM
-      micro_field(:,:,:,:,:) = 0.
-      do k=1,nzm
-        micro_field(:,:,:,k,1) = q0(:,k)
-      end do
-      qn(:,:,:,:) = 0.
-#endif
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
@@ -265,17 +241,7 @@ CONTAINS
       enddo
     enddo
 
-#ifdef CLUBB_CRM
-      if ( docloud .or. doclubb ) then
-#else
       if(docloud) then
-#endif
-#ifndef CRM
-        call cloud(ncrms,micro_field(:,:,:,:,1),micro_field(:,:,:,:,2),qn)
-#endif
-        call micro_diagnose(ncrms)
-      end if
-      if(dosmoke) then
         call micro_diagnose(ncrms)
       end if
     end if
@@ -316,10 +282,10 @@ CONTAINS
     mkunits(2) = 'g/kg'
     mkoutputscale(2) = 1.e3
 #if defined(_OPENMP)
-   !$omp target update to(mkname)
-   !$omp target update to(mklongname)
-   !$omp target update to(mkunits)
-   !$omp target update to(mkoutputscale)
+    !$omp target update to(mkname)
+    !$omp target update to(mklongname)
+    !$omp target update to(mkunits)
+    !$omp target update to(mkoutputscale)
 #endif
   end subroutine micro_init
 
@@ -330,19 +296,6 @@ CONTAINS
     implicit none
     integer, intent(in) :: ncrms
     integer :: icrm, i, j
-
-#ifdef CLUBB_CRM
-    ! Added by dschanen UWM
-    use params, only: doclubb, doclubb_sfc_fluxes, docam_sfc_fluxes
-    do icrm = 1 , ncrms
-      if ( doclubb .and. (doclubb_sfc_fluxes .or. docam_sfc_fluxes) ) then
-        ! Add this in later
-        fluxbmk(icrm,:,:,index_water_vapor) = 0.0
-      else
-        fluxbmk(icrm,:,:,index_water_vapor) = fluxbq(icrm,:,:)
-      end if
-    enddo
-#else
 #if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
@@ -355,7 +308,6 @@ CONTAINS
         enddo
       enddo
     enddo
-#endif
 #if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
@@ -374,17 +326,11 @@ CONTAINS
   !!! compute local microphysics processes (bayond advection and SGS diffusion):
   !
   subroutine micro_proc(ncrms)
-    use grid  !, only: nstep,dt,icycle
-    use params, only: dosmoke
+    use grid, only: nstep,dt,icycle
     use cloud_mod
     use precip_init_mod
     use precip_proc_mod
-#ifdef CLUBB_CRM
-    use params, only: doclubb, doclubbnoninter ! dschanen UWM 21 May 2008
-    use clubbvars, only: cloud_frac
-    use vars, only:  CF3D
-    use grid, only: nzm
-#endif
+
     implicit none
     integer, intent(in) :: ncrms
     integer :: icrm
@@ -397,20 +343,6 @@ CONTAINS
       if(doprecip) call precip_proc(ncrms, qpsrc, qpevp, micro_field(:,:,:,:,1), micro_field(:,:,:,:,2), qn)
       call micro_diagnose(ncrms)
     end if
-
-    if(dosmoke) then
-      call micro_diagnose(ncrms)
-    end if
-#ifdef CLUBB_CRM
-    if ( doclubb ) then ! -dschanen UWM 21 May 2008
-      do icrm = 1 , ncrms
-        cf3d(icrm,:,:, 1:nzm) = cloud_frac(:,:,2:nzm+1) ! CF3D is used in precip_proc_clubb,
-        ! so it is set here first  +++mhwang
-        if(doprecip) call precip_proc_clubb(ncrms,icrm)
-      enddo
-      call micro_diagnose(ncrms)
-    end if
-#endif /*CLUBB_CRM*/
   end subroutine micro_proc
 
   !----------------------------------------------------------------------
@@ -444,102 +376,12 @@ CONTAINS
     end do
   end subroutine micro_diagnose
 
-#ifdef CLUBB_CRM
-  !---------------------------------------------------------------------
-  subroutine micro_update()
-
-    ! Description:
-    ! This subroutine essentially does what micro_proc does but does not
-    ! call any microphysics subroutines.  We need this so that CLUBB gets a
-    ! properly updated value of ice fed in.
-    !
-    ! dschanen UWM 7 Jul 2008
-    !---------------------------------------------------------------------
-
-    !   call micro_diagnose()
-
-    call micro_diagnose_clubb()
-
-  end subroutine micro_update
-
-  !---------------------------------------------------------------------
-  subroutine micro_adjust( new_qv, new_qc )
-    ! Description:
-    ! Adjust vapor and liquid water.
-    ! Microphysical variables are stored separately in
-    !    SAM's dynamics + CLUBB ( e.g. qv, qcl, qci) and
-    !    SAM's microphysics. (e.g. q and qn).
-    ! This subroutine stores values of qv, qcl updated by CLUBB
-    !   in the single-moment microphysical variables q and qn.
-    !
-    ! dschanen UWM 20 May 2008
-    !---------------------------------------------------------------------
-
-    use vars, only: qci
-
-    implicit none
-
-    real(crm_rknd), dimension(nx,ny,nzm), intent(in) :: &
-    new_qv, & ! Water vapor mixing ratio that has been adjusted by CLUBB [kg/kg]
-    new_qc    ! Cloud water mixing ratio that has been adjusted by CLUBB [kg/kg].
-    ! For the single moment microphysics, it is liquid + ice
-
-    micro_field(icrm,1:nx,1:ny,1:nzm,1) = new_qv + new_qc ! Vapor + Liquid + Ice
-    qn(icrm,1:nx,1:ny,1:nzm) = new_qc ! Liquid + Ice
-
-    return
-  end subroutine micro_adjust
-
-  subroutine micro_diagnose_clubb()
-
-    use vars
-    use constants_clubb, only: fstderr, zero_threshold
-    use error_code, only: clubb_at_least_debug_level ! Procedur
-
-    real(crm_rknd) omn, omp
-    integer i,j,k
-
-    do k=1,nzm
-      do j=1,ny
-        do i=1,nx
-          ! For CLUBB,  water vapor and liquid water is used
-          ! so set qcl to qn while qci to zero. This also allows us to call CLUBB
-          ! every nclubb th time step  (see sgs_proc in sgs.F90)
-
-          qv(icrm,i,j,k) = micro_field(icrm,i,j,k,1) - qn(icrm,i,j,k)
-          ! Apply local hole-filling to vapor by converting liquid to vapor. Moist
-          ! static energy should be conserved, so updating temperature is not
-          ! needed here. -dschanen 31 August 2011
-          if ( qv(icrm,i,j,k) < zero_threshold ) then
-            qn(icrm,i,j,k) = qn(icrm,i,j,k) + qv(icrm,i,j,k)
-            qv(icrm,i,j,k) = zero_threshold
-            if ( qn(icrm,i,j,k) < zero_threshold ) then
-              if ( clubb_at_least_debug_level( 1 ) ) then
-                write(fstderr,*) "Total water at", "i =", i, "j =", j, "k =", k, "is negative.", &
-                "Applying non-conservative hard clipping."
-              end if
-              qn(icrm,i,j,k) = zero_threshold
-            end if ! cloud_liq < 0
-          end if ! qv < 0
-
-          qcl(icrm,i,j,k) = qn(icrm,i,j,k)
-          qci(icrm,i,j,k) = 0.0
-          omp = max(0.,min(1.,(tabs(icrm,i,j,k)-tprmin)*a_pr))
-          qpl(icrm,i,j,k) = micro_field(icrm,i,j,k,2)*omp
-          qpi(icrm,i,j,k) = micro_field(icrm,i,j,k,2)*(1.-omp)
-        end do
-      end do
-    end do
-
-  end subroutine micro_diagnose_clubb
-
-#endif /*CLUBB_CRM*/
   !----------------------------------------------------------------------
   !!! function to compute terminal velocity for precipitating variables:
   ! In this particular case there is only one precipitating variable.
 
-  real(crm_rknd) function term_vel_qp(ncrms,icrm,i,j,k,ind,qploc,rho,tabs,qp_threshold,tprmin,&
-                                      a_pr,vrain,crain,tgrmin,a_gr,vgrau,cgrau,vsnow,csnow)
+  subroutine term_vel_qp(ncrms,icrm,i,j,k,ind,qploc,rho,tabs,qp_threshold,tprmin,&
+                                      a_pr,vrain,crain,tgrmin,a_gr,vgrau,cgrau,vsnow,csnow,term_vel)
 #if defined(_OPENACC)
     !$acc routine seq
 #elif defined(_OPENMP)
@@ -551,19 +393,19 @@ CONTAINS
     real(crm_rknd), intent(in) :: qploc
     real(crm_rknd), intent(in) :: rho(ncrms,nzm), tabs(ncrms,nx, ny, nzm)
     real(crm_rknd), intent(in) :: qp_threshold,tprmin,a_pr,vrain,crain,tgrmin,a_gr,vgrau,cgrau,vsnow,csnow
-!    real(crm_rknd), intent(out) :: term_vel
+    real(crm_rknd), intent(out) :: term_vel
     real(crm_rknd) wmax, omp, omg, qrr, qss, qgg
 
-    term_vel_qp = 0.
+    term_vel = 0.
     if(qploc.gt.qp_threshold) then
       omp = max(real(0.,crm_rknd),min(real(1.,crm_rknd),(tabs(icrm,i,j,k)-tprmin)*a_pr))
       if(omp.eq.1.) then
-        term_vel_qp = vrain*(rho(icrm,k)*qploc)**crain
+        term_vel = vrain*(rho(icrm,k)*qploc)**crain
       elseif(omp.eq.0.) then
         omg = max(real(0.,crm_rknd),min(real(1.,crm_rknd),(tabs(icrm,i,j,k)-tgrmin)*a_gr))
         qgg=omg*qploc
         qss=qploc-qgg
-        term_vel_qp = (omg*vgrau*(rho(icrm,k)*qgg)**cgrau &
+        term_vel = (omg*vgrau*(rho(icrm,k)*qgg)**cgrau &
         +(1.-omg)*vsnow*(rho(icrm,k)*qss)**csnow)
       else
         omg = max(real(0.,crm_rknd),min(real(1.,crm_rknd),(tabs(icrm,i,j,k)-tgrmin)*a_gr))
@@ -571,11 +413,11 @@ CONTAINS
         qss=qploc-qrr
         qgg=omg*qss
         qss=qss-qgg
-        term_vel_qp = (omp*vrain*(rho(icrm,k)*qrr)**crain + (1.-omp)*(omg*vgrau*(rho(icrm,k)*qgg)**cgrau + &
+        term_vel = (omp*vrain*(rho(icrm,k)*qrr)**crain + (1.-omp)*(omg*vgrau*(rho(icrm,k)*qgg)**cgrau + &
                       (1.-omg)*vsnow*(rho(icrm,k)*qss)**csnow))
       endif
     end if
-  end function term_vel_qp
+  end subroutine term_vel_qp
 
   !----------------------------------------------------------------------
   !!! compute sedimentation
@@ -583,7 +425,9 @@ CONTAINS
   subroutine micro_precip_fall(ncrms)
     use vars
     use params, only : pi
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd), allocatable :: omega(:,:,:,:)
@@ -591,7 +435,11 @@ CONTAINS
     integer i,j,k,icrm
 
     allocate(omega(ncrms,nx,ny,nzm))
+#if defined(_OPENACC)
     call prefetch( omega )
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: omega)
+#endif
 
     crain = b_rain / 4.
     csnow = b_snow / 4.
@@ -615,7 +463,9 @@ CONTAINS
     end do
 
     call precip_fall(ncrms, 2, omega, ind)
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: omega)
+#endif
     deallocate(omega)
 
   end subroutine micro_precip_fall
@@ -653,7 +503,7 @@ CONTAINS
     real(crm_rknd) :: y,pp,pn
     real(crm_rknd) :: lat_heat, wmax
     integer nprec, iprec
-    real(crm_rknd) :: flagstat, tmp
+    real(crm_rknd) :: flagstat, tmp, delta_fz
 
     !Statement functions
     pp(y)= max(real(0.,crm_rknd),y)
@@ -740,9 +590,9 @@ CONTAINS
                 !call task_abort
               endif
             end select
-            tmp = term_vel_qp(ncrms,icrm,i,j,k,ind,micro_field(icrm,i,j,k,2),rho(1,1),&
+            call  term_vel_qp(ncrms,icrm,i,j,k,ind,micro_field(icrm,i,j,k,2),rho(1,1),&
                                                       tabs(1,1,1,1),qp_threshold,tprmin,a_pr,vrain,crain,tgrmin,&
-                                                      a_gr,vgrau,cgrau,vsnow,csnow)
+                                                      a_gr,vgrau,cgrau,vsnow,csnow,tmp)
             wp(icrm,i,j,k)=rhofac(icrm,k)*tmp
             tmp = wp(icrm,i,j,k)*iwmax(icrm,k)
             prec_cfl = max(prec_cfl,tmp) ! Keep column maximum CFL
@@ -780,9 +630,7 @@ CONTAINS
     else
       nprec = 1
     endif
-#if defined(_OPENMP)
-    !$omp taskwait
-#endif
+
     !  loop over iterations
     do iprec = 1,nprec
 #if defined(_OPENACC)
@@ -830,17 +678,11 @@ CONTAINS
           do i=1,nx
             do icrm = 1 , ncrms
               kc=k+1
-#if defined(_OPENACC)
-              !$acc atomic update
-#elif defined(_OPENMP)
-              !$omp atomic update
-#endif
               tmp_qp(icrm,i,j,k)=tmp_qp(icrm,i,j,k)-(fz(icrm,i,j,kc)-fz(icrm,i,j,k))*irhoadz(icrm,k) !Update temporary qp
             enddo
           enddo
         enddo
       enddo
-
 #if defined(_OPENACC)
       !$acc parallel loop gang vector collapse(4) async(asyncid)
 #elif defined(_OPENMP)
@@ -898,13 +740,14 @@ CONTAINS
               do icrm = 1 , ncrms
                 kb=max(1,k-1)
                 ! Add limited flux correction to fz(k).
+                delta_fz = pp(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,j,kb)) - &
+                           pn(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,kb),mn(icrm,i,j,k)) ! Anti-diffusive flux
 #if defined(_OPENACC)
                 !$acc atomic update
 #elif defined(_OPENMP)
                 !$omp atomic update
 #endif
-                fz(icrm,i,j,k) = fz(icrm,i,j,k) + pp(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,j,kb)) - &
-                                                  pn(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,kb),mn(icrm,i,j,k)) ! Anti-diffusive flux
+                fz(icrm,i,j,k) = fz(icrm,i,j,k) + delta_fz
               enddo
             enddo
           enddo
@@ -926,11 +769,6 @@ CONTAINS
               ! Update precipitation mass fraction.
               ! Note that fz is the total flux, including both the
               ! upwind flux and the anti-diffusive correction.
-#if defined(_OPENACC)
-              !$acc atomic update
-#elif defined(_OPENMP)
-              !$omp atomic update
-#endif
               micro_field(icrm,i,j,k,2)=micro_field(icrm,i,j,k,2)-(fz(icrm,i,j,kc)-fz(icrm,i,j,k))*irhoadz(icrm,k)
               tmp = -(fz(icrm,i,j,kc)-fz(icrm,i,j,k))*irhoadz(icrm,k)*flagstat  ! For qp budget
 #if defined(_OPENACC)
@@ -960,24 +798,27 @@ CONTAINS
 #endif
               precflux(icrm,k) = precflux(icrm,k) - tmp   ! For statistics
               if (k == 1) then
+                tmp = fz(icrm,i,j,1)*flagstat ! For statistics
 #if defined(_OPENACC)
-               !$acc atomic update
+                !$acc atomic update
 #elif defined(_OPENMP)
-               !$omp atomic update
+                !$omp atomic update
 #endif
-                precsfc(icrm,i,j) = precsfc(icrm,i,j) - fz(icrm,i,j,1)*flagstat ! For statistics
+                precsfc(icrm,i,j) = precsfc(icrm,i,j) - tmp
+                tmp = fz(icrm,i,j,1)*(1.-omega(icrm,i,j,1))*flagstat ! For statistics
 #if defined(_OPENACC)
-               !$acc atomic update
+                !$acc atomic update
 #elif defined(_OPENMP)
-               !$omp atomic update
+                !$omp atomic update
 #endif
-                precssfc(icrm,i,j) = precssfc(icrm,i,j) - fz(icrm,i,j,1)*(1.-omega(icrm,i,j,1))*flagstat ! For statistics
+                precssfc(icrm,i,j) = precssfc(icrm,i,j) - tmp
+                tmp = fz(icrm,i,j,1)*flagstat ! For 2D output
 #if defined(_OPENACC)
-               !$acc atomic update
+                !$acc atomic update
 #elif defined(_OPENMP)
-               !$omp atomic update
+                !$omp atomic update
 #endif
-                prec_xy(icrm,i,j) = prec_xy(icrm,i,j) - fz(icrm,i,j,1)*flagstat ! For 2D output
+                prec_xy(icrm,i,j) = prec_xy(icrm,i,j) - tmp
               endif
             enddo
           enddo
@@ -996,13 +837,11 @@ CONTAINS
             do k=1,nzm
               do icrm = 1 , ncrms
                 !Passing variables via first index because of PGI bug with pointers
-                tmp = term_vel_qp(ncrms,icrm,i,j,k,ind,micro_field(icrm,i,j,k,2),rho(1,1),&
-                                 tabs(1,1,1,1),qp_threshold,tprmin,a_pr,vrain,crain,tgrmin,a_gr,vgrau,cgrau,vsnow,csnow)
-                !wp(icrm,i,j,k) = rhofac(icrm,k)*tmp
+                call term_vel_qp(ncrms,icrm,i,j,k,ind,micro_field(icrm,i,j,k,2),rho(1,1),&
+                                 tabs(1,1,1,1),qp_threshold,tprmin,a_pr,vrain,crain,tgrmin,a_gr,vgrau,cgrau,vsnow,csnow,tmp)
+                wp(icrm,i,j,k) = rhofac(icrm,k)*tmp
                 ! Decrease precipitation velocity by factor of nprec
-                wp(icrm,i,j,k) = -tmp*rhofac(icrm,k)*rhow(icrm,k)*dtn/dz(icrm)/real(nprec,crm_rknd)
-
-                !wp(icrm,i,j,k) = -wp(icrm,i,j,k)*rhow(icrm,k)*dtn/dz(icrm)/real(nprec,crm_rknd)
+                wp(icrm,i,j,k) = -wp(icrm,i,j,k)*rhow(icrm,k)*dtn/dz(icrm)/real(nprec,crm_rknd)
                 ! Note: Don't bother checking CFL condition at each
                 ! substep since it's unlikely that the CFL will
                 ! increase very much between substeps when using
@@ -1030,7 +869,7 @@ CONTAINS
     !$omp target exit data map(delete: irhoadz)
     !$omp target exit data map(delete: iwmax)
     !$omp target exit data map(delete: rhofac)
-#endif
+#endif    
     deallocate( mx      )
     deallocate( mn      )
     deallocate( lfac    )

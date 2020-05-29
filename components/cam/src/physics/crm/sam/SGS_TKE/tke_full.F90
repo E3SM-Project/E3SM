@@ -97,9 +97,9 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   call prefetch( buoy_sgs_vert  )
   call prefetch( a_prod_bu_vert )
 #elif defined(_OPENMP)
-  !$omp target enter data map(alloc: def2 )
-  !$omp target enter data map(alloc: buoy_sgs_vert )
-  !$omp target enter data map(alloc: a_prod_bu_vert )
+  !$omp target enter data map(alloc: def2)
+  !$omp target enter data map(alloc: buoy_sgs_vert)
+  !$omp target enter data map(alloc: a_prod_bu_vert)
 #endif
   !-----------------------------------------------------------------------
   !-----------------------------------------------------------------------
@@ -291,12 +291,6 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
           Cee = Ce1+Ce2*ratio
           if(dosmagor) then
             tk(icrm,i,j,k) = sqrt(Ck**3/Cee*max(0._crm_rknd,def2(icrm,i,j,k)-Pr*buoy_sgs))*smix**2
-#if defined( SP_TK_LIM )
-              !!! put a hard lower limit on near-surface tk
-              if ( z(icrm,k).lt.tk_min_depth ) then
-                tk(icrm,i,j,k) = max( tk(icrm,i,j,k), tk_min_value )
-              end if
-#endif
             tke(icrm,i,j,k) = (tk(icrm,i,j,k)/(Ck*smix))**2
             a_prod_sh = (tk(icrm,i,j,k)+0.001)*def2(icrm,i,j,k)
             ! a_prod_bu=-(tk(icrm,i,j,k)+0.001)*Pr*buoy_sgs
@@ -308,13 +302,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
             a_prod_bu = 0.5*( a_prod_bu_vert(icrm,i,j,k-1) + a_prod_bu_vert(icrm,i,j,k) )
             !!! cap the diss rate (useful for large time steps)
             a_diss = min(tke(icrm,i,j,k)/(4.*dt),Cee/smix*tke(icrm,i,j,k)**1.5)
-#if defined(_OPENACC)
-            !$acc atomic update
-#elif defined(_OPENMP)
-            !$omp atomic update
-#endif
-            tke(icrm,i,j,k) = tke(icrm,i,j,k)+dtn*(max(0._crm_rknd,a_prod_sh+a_prod_bu)-a_diss)
-            tke(icrm,i,j,k) = max(real(0.,crm_rknd),tke(icrm,i,j,k))
+            tke(icrm,i,j,k) = max(real(0.,crm_rknd),tke(icrm,i,j,k)+dtn*(max(0._crm_rknd,a_prod_sh+a_prod_bu)-a_diss))
             tk(icrm,i,j,k)  = Ck*smix*sqrt(tke(icrm,i,j,k))
           end if
           tk(icrm,i,j,k)  = min(tk(icrm,i,j,k),tkmax)
@@ -350,9 +338,9 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
     end do ! k
   enddo !icrm
 #if defined(_OPENMP)
-  !$omp target exit data map(delete: def2 )
-  !$omp target exit data map(delete: buoy_sgs_vert )
-  !$omp target exit data map(delete: a_prod_bu_vert )
+  !$omp target exit data map(delete: def2)
+  !$omp target exit data map(delete: buoy_sgs_vert)
+  !$omp target exit data map(delete: a_prod_bu_vert)
 #endif
   deallocate( def2           )
   deallocate( buoy_sgs_vert  )

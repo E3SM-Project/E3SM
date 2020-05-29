@@ -89,7 +89,7 @@ contains
       if(mod(rank,nsubdomains_x).eq.nsubdomains_x-1) then
 #if defined(_OPENACC)
         !$acc parallel loop collapse(3) async(asyncid)
-#elif defined(_OPENMP)
+#elif defined(_OPENACC)
         !$omp target teams distribute parallel do collapse(3)
 #endif
         do k=1,nzm
@@ -196,8 +196,18 @@ contains
         do i=1,nx
           do icrm = 1 , ncrms
             ib=i-1
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dfdt(icrm,i,j,k)=dfdt(icrm,i,j,k)-(flx_x(icrm,i,j,k)-flx_x(icrm,ib,j,k))
             jb=j-1
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             dfdt(icrm,i,j,k)=dfdt(icrm,i,j,k)-(flx_y(icrm,i,j,k)-flx_y(icrm,i,jb,k))
           enddo
         enddo
@@ -265,12 +275,17 @@ contains
             kb=k-1
             rhoi = 1./(adz(icrm,k)*rho(icrm,k))
             dfdt(icrm,i,j,k)=dtn*(dfdt(icrm,i,j,k)-(flx_z(icrm,i,j,k)-flx_z(icrm,i,j,kb))*rhoi)
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             field(icrm,i,j,k)=field(icrm,i,j,k)+dfdt(icrm,i,j,k)
           enddo
         enddo
       enddo
     enddo
-#if defined(_OPENACC)
+#if defined(_OPENMP)
     !$omp target exit data map(delete: flx_x)
     !$omp target exit data map(delete: flx_y)
     !$omp target exit data map(delete: flx_z)

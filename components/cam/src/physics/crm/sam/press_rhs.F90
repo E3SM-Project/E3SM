@@ -12,13 +12,13 @@ contains
     implicit none
     integer, intent(in) :: ncrms
     real *8 dta,rdx,rdy,rdz,btat,ctat,rup,rdn
-    integer i,j,k,ic,jc,kc,icrm
+    integer i,j,k,ic,jc,kc, icrm
 
     if(dowallx.and.mod(rank,nsubdomains_x).eq.0) then
 #if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(3) 
+      !$omp target teams distribute parallel do collapse(3)
 #endif
       do k=1,nzm
         do j=1,ny
@@ -33,7 +33,7 @@ contains
 #if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(3) 
+      !$omp target teams distribute parallel do collapse(3)
 #endif
       do k=1,nzm
         do i=1,nx
@@ -55,7 +55,7 @@ contains
 #if defined(_OPENACC)
       !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(4) 
+      !$omp target teams distribute parallel do collapse(4)
 #endif
       do k=1,nzm
         do j=1,ny
@@ -80,9 +80,6 @@ contains
               ctat*(rdx*(dudt(icrm,ic,j,k,nc)-dudt(icrm,i,j,k,nc))+ &
               rdy*(dvdt(icrm,i,jc,k,nc)-dvdt(icrm,i,j,k,nc))+ &
               (dwdt(icrm,i,j,kc,nc)*rup-dwdt(icrm,i,j,k,nc)*rdn) )
-#if defined(_OPENMP)
-              !$omp atomic update
-#endif
               p(icrm,i,j,k)=p(icrm,i,j,k)*rho(icrm,k)
             end do
           end do
@@ -114,9 +111,6 @@ contains
             (dwdt(icrm,i,j,kc,nb)*rup-dwdt(icrm,i,j,k,nb)*rdn) ) + &
             ctat*(rdx*(dudt(icrm,ic,j,k,nc)-dudt(icrm,i,j,k,nc))+ &
             (dwdt(icrm,i,j,kc,nc)*rup-dwdt(icrm,i,j,k,nc)*rdn) )
-#if defined(_OPENMP)
-            !$omp atomic update
-#endif
             p(icrm,i,j,k)=p(icrm,i,j,k)*rho(icrm,k)
           end do
         end do

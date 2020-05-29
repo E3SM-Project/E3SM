@@ -96,7 +96,7 @@ contains
 #if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
 #elif defined(_OPENMP)
-      !$omp target teams distribute parallel do collapse(3) 
+      !$omp target teams distribute parallel do collapse(3)
 #endif
       do k = 1,nzm
         do i = 1, nx
@@ -108,25 +108,25 @@ contains
             fu1 = dx25*(u(icrm,ic-1,j,k)+u(icrm,i-1,j,k))*(u(icrm,i-1,j,k)+u(icrm,ic-1,j,k))
             fu2 = dx25*(u(icrm,ic  ,j,k)+u(icrm,i  ,j,k))*(u(icrm,i  ,j,k)+u(icrm,ic  ,j,k))
 #if defined(_OPENACC)
-              !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update
+            !$omp atomic update
 #endif
             dudt(icrm,i,j,k,na)  = dudt(icrm,i,j,k,na)  - (fu2-fu1)
             fv1 = dx25*(u(icrm,ic-1,j,k)+u(icrm,i-1,j,k))*(v(icrm,i-1,j,k)+v(icrm,ic-1,j,k))
             fv2 = dx25*(u(icrm,ic  ,j,k)+u(icrm,i  ,j,k))*(v(icrm,i  ,j,k)+v(icrm,ic  ,j,k))
 #if defined(_OPENACC)
-              !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update
+            !$omp atomic update
 #endif
             dvdt(icrm,i,j,k,na)  = dvdt(icrm,i,j,k,na)  - (fv2-fv1)
             fw1 = dx25*(u(icrm,ic-1,j,k)*rho(icrm,k)*adz(icrm,k)+u(icrm,ic-1,j,kcu)*rho(icrm,kcu)*adz(icrm,kcu))*(w(icrm,i-1,j,kc)+w(icrm,ic-1,j,kc))
             fw2 = dx25*(u(icrm,ic  ,j,k)*rho(icrm,k)*adz(icrm,k)+u(icrm,ic  ,j,kcu)*rho(icrm,kcu)*adz(icrm,kcu))*(w(icrm,i  ,j,kc)+w(icrm,ic  ,j,kc))
 #if defined(_OPENACC)
-              !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-              !$omp atomic update
+            !$omp atomic update
 #endif
             dwdt(icrm,i,j,kc,na) = dwdt(icrm,i,j,kc,na)-irho*(fw2-fw1)
           end do

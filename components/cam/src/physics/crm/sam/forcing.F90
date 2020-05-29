@@ -19,10 +19,6 @@ contains
     real(crm_rknd) :: coef, factor
     integer        :: i,j,k,icrm
 
-    integer :: nneg_tmp
-    real(crm_rknd) :: qneg_tmp, qpoz_tmp
-    real(crm_rknd) :: t_tmp, micro_tmp, dudt_tmp, dvdt_tmp
-
     allocate( qneg(ncrms,nzm) )
     allocate( qpoz(ncrms,nzm) )
     allocate( nneg(ncrms,nzm) )
@@ -37,11 +33,10 @@ contains
 #endif
 
     coef = 1./3600.
-
 #if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(2) 
+    !$omp target teams distribute parallel do collapse(2)
 #endif
     do k=1,nzm
       do icrm = 1 , ncrms
@@ -50,20 +45,19 @@ contains
         nneg(icrm,k) = 0
       enddo
     enddo
-
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(4) 
+    !$omp target teams distribute parallel do collapse(4)
 #endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
 #if defined(_OPENACC)
-           !$acc atomic update
+            !$acc atomic update
 #elif defined(_OPENMP)
-           !$omp atomic update
+            !$omp atomic update
 #endif
             t(icrm,i,j,k)=t(icrm,i,j,k) + ttend(icrm,k) * dtn
 #if defined(_OPENACC)
@@ -109,11 +103,10 @@ contains
         end do
       end do
     end do
-
 #if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
 #elif defined(_OPENMP)
-    !$omp target teams distribute parallel do collapse(4) 
+    !$omp target teams distribute parallel do collapse(4)
 #endif
     do k=1,nzm
       do j=1,ny
@@ -127,7 +120,6 @@ contains
         end do
       end do
     end do
-
 #if defined(_OPENMP)
     !$omp target exit data map(delete: qneg)
     !$omp target exit data map(delete: qpoz)
@@ -138,4 +130,5 @@ contains
     deallocate( nneg )
 
   end subroutine forcing
+
 end module forcing_mod

@@ -33,7 +33,6 @@ contains
     call prefetch( buffer )
 #elif defined(_OPENMP)
     !$omp target enter data map(alloc: buffer)
-    !$omp target update from (f)
 #endif
 
     i1 = i_1 - 1

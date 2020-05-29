@@ -28,7 +28,7 @@ contains
       ct = 0.
     end if
 #if defined(_OPENMP)
-  !$omp target update to(dt3)
+   !$omp target update to (dt3)
 #endif
   end subroutine abcoefs
 
