@@ -23,7 +23,8 @@ from CIME.XML.env_mach_specific import EnvMachSpecific
 logger = logging.getLogger(__name__)
 
 def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
-              comp_interface, sysos, unit_testing=False, noenv=False):
+              comp_interface, sysos, unit_testing=False, noenv=False,
+              extra_machines_dir=None):
     """Add Macros, Depends, and env_mach_specific files to a directory.
 
     Arguments:
@@ -36,10 +37,13 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
     debug - Boolean specifying whether debugging options are enabled.
     unit_testing - Boolean specifying whether we're running unit tests (as
                    opposed to a system run)
+    extra_machines_dir - String giving path to an additional directory that will be
+                         searched for a config_compilers.xml file.
     """
     # Macros generation.
     suffixes = {'Makefile': 'make', 'CMake': 'cmake'}
-    macro_maker = Compilers(machobj, compiler=compiler, mpilib=mpilib)
+    macro_maker = Compilers(machobj, compiler=compiler, mpilib=mpilib,
+                            extra_machines_dir=extra_machines_dir)
     for form in macros_format:
         out_file_name = os.path.join(output_dir,"Macros."+suffixes[form])
         macro_maker.write_macros_file(macros_file=out_file_name, output_format=suffixes[form])

@@ -895,7 +895,7 @@ class Case(object):
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
                   input_dir=None, driver=None, workflowid="default",
-                  non_local=False):
+                  non_local=False, extra_machines_dir=None):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -944,7 +944,9 @@ class Case(object):
         # machine
         #--------------------------------------------
         # set machine values in env_xxx files
-        machobj = Machines(machine=machine_name)
+        if extra_machines_dir:
+            self.set_value("EXTRA_MACHDIR", extra_machines_dir)
+        machobj = Machines(machine=machine_name, extra_machines_dir=extra_machines_dir)
         probed_machine = machobj.probe_machine_name()
         machine_name = machobj.get_machine_name()
         self.set_value("MACH", machine_name)
@@ -956,7 +958,8 @@ class Case(object):
         nodenames = machobj.get_node_names()
         nodenames = [x for x in nodenames if
                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                     'COMPILER' not in x and 'MPILIB' not in x]
+                     'COMPILER' not in x and 'MPILIB' not in x and 'MAX_MPITASKS_PER_NODE' not in x and\
+                     'MAX_TASKS_PER_NODE' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -979,6 +982,11 @@ class Case(object):
             expect(machobj.is_valid_MPIlib(mpilib, {"compiler":compiler}),
                    "MPIlib {} is not supported on machine {}".format(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
+        for name in ("MAX_TASKS_PER_NODE","MAX_MPITASKS_PER_NODE"):
+            dmax = machobj.get_value(name,{'compiler':compiler})
+            if not dmax:
+                dmax = machobj.get_value(name)
+            self.set_value(name, dmax)
 
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
@@ -1081,7 +1089,8 @@ class Case(object):
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         logger.info("Batch_system_type is {}".format(batch_system_type))
-        batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
+        batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files,
+                      extra_machines_dir=extra_machines_dir)
         workflow = Workflow(files=files)
         bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
         env_workflow = self.get_env("workflow")
@@ -1586,7 +1595,8 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None, workflowid="default", non_local=False):
+               input_dir=None, driver=None, workflowid="default", non_local=False,
+               extra_machines_dir=None):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1603,7 +1613,8 @@ directory, NOT in this subdirectory."""
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
                            input_dir=input_dir, driver=driver,
-                           workflowid=workflowid, non_local=non_local)
+                           workflowid=workflowid, non_local=non_local,
+                           extra_machines_dir=extra_machines_dir)
 
             self.create_caseroot()
 

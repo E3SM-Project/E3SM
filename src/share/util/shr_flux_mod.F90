@@ -133,6 +133,7 @@ end subroutine shr_flux_adjust_constants
 !     2006-Nov-07 - B. Kauffman - code migrated from cpl6 to share
 !
 !     2011-Mar-13 - J. Nusbaumer - Water Isotope ocean flux added.
+!     2019-May-16 - Jack Reeves Eyre (UA) and Kai Zhang (PNNL) - Added COARE/Fairall surface flux scheme option (ocn_surface_flux_scheme .eq. 1) based on code from Thomas Toniazzo (Bjerknes Centre, Bergen) ”
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
