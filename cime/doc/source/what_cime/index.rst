@@ -45,7 +45,7 @@ CIME is comprised of:
     i. “Data-only” versions of 6 of the 7 components that can replace active components at build-time.
     ii. “Stub” versions of all 7 components for building a complete system.
 
-4. Source code for externall libraries useful in scientific applications in general and climate models in particular.
+4. Source code for external libraries useful in scientific applications in general and climate models in particular.
     i.  Parallel I/O library.
     ii. The Model Coupling Toolkit.
     iii. Timing library.
