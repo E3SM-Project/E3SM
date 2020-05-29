@@ -250,6 +250,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize sdat stream - ASSUME only 1 stream
+    write(6,*)'DEBUG: stream_meshfile = ',stream_meshfile
     call shr_stream_init_from_inline(sdat%stream, stream_meshfile, &
        stream_yearFirst, stream_yearLast, stream_yearAlign, stream_offset, stream_taxmode, &
        stream_fldlistFile, stream_fldListModel, stream_fileNames, logunit)
@@ -439,7 +440,7 @@ contains
        sdat%pstrm(ns)%fldbun_stream_lb = ESMF_FieldBundleCreate(rc=rc) ! stream mesh at lower time bound
        sdat%pstrm(ns)%fldbun_stream_ub = ESMF_FieldBundleCreate(rc=rc) ! stream mesh at upper time bound
        if (masterproc) then
-          write(sdat%logunit,F00)' initializing fldbun_stream_model_lb and fldbun_stream_model_up on stream mesh'
+          write(sdat%logunit,F00)' initializing fldbun_stream_lb and fldbun_stream_ub on stream mesh'
        end if
        do nfld = 1, nvars
           ! create temporary fields on stream mesh and add the fields to the field bundle
