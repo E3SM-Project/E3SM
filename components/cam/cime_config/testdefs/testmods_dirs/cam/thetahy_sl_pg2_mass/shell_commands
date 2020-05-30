@@ -1,0 +1,5 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=theta-l
+./xmlchange --append CAM_CONFIG_OPTS="-co2_cycle"
+./xmlchange RUN_STARTDATE=1950-02-14
+./xmlchange POSTRUN_SCRIPT="$CIMEROOT/../components/homme/utils/e3sm_test/check_mass_conservation.py"

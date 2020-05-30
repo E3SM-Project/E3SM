@@ -1,0 +1,2 @@
+semi_lagrange_cdr_check = .true.
+statefreq = 144
