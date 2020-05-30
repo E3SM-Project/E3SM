@@ -72,6 +72,7 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_column.F
   core_seaice/shared/mpas_seaice_diagnostics.F
   core_seaice/shared/mpas_seaice_error.F
+  core_seaice/shared/mpas_seaice_mesh_pool.F
 )
 
 # analysis members
@@ -103,6 +104,13 @@ set(SEAICE_MODEL_FORWARD
 )
 list(APPEND RAW_SOURCES ${SEAICE_MODEL_FORWARD})
 list(APPEND DISABLE_QSMP ${SEAICE_MODEL_FORWARD})
+
+# add accelerator/gpu flags
+list(APPEND ADD_ACC_FLAGS
+  core_seaice/shared/mpas_seaice_velocity_solver_variational.f90
+  core_seaice/shared/mpas_seaice_velocity_solver.f90
+  core_seaice/shared/mpas_seaice_mesh_pool.f90
+)
 
 # Generate core input
 handle_st_nl_gen("namelist.seaice" "streams.seaice stream_list.seaice. listed" ${CORE_INPUT_DIR} ${CORE_BLDDIR})

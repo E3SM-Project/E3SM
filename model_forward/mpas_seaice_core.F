@@ -414,6 +414,7 @@ module seaice_core
       use mpas_decomp
       use seaice_column, only: &
            seaice_column_finalize
+      use seaice_mesh_pool
 
       implicit none
 
@@ -421,6 +422,9 @@ module seaice_core
       integer :: ierr
 
       iErr = 0
+
+      call mpas_log_write(" Destruct mesh pool...")
+      call seaice_mesh_pool_destroy(iErr)
 
       ! finalize column
       call seaice_column_finalize(domain)
