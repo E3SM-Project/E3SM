@@ -291,6 +291,10 @@
 					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_Redi_apply_flux_limiter" type="logical" default_value=".true." units="unitless"
+					description="If true, apply a flux limiter to guarantee physical bounds on T&S"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
