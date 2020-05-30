@@ -67,22 +67,22 @@
       <value>
 	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029_ESMFmesh_120520.nc
       </value>
-      <value grid="a%T31.*_oi%T31">
+      <value grid="_oi%T31">
 	$DIN_LOC_ROOT/share/meshes/T31_040122_ESMFmesh.nc
       </value>
-      <value grid="a%1.9x2.5.*_oi%1.9x2.5">
+      <value grid="_oi%1.9x2.5">
 	$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc
       </value>
-      <value grid="a%0.9x1.25.*_oi%0.9x1.25">
+      <value grid="_oi%0.9x1.25">
 	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
       </value>
-      <value grid="a%0.47x0.63.*_oi%0.47x0.63">
+      <value grid="_oi%0.47x0.63">
 	$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc
       </value>
-      <value grid="a%0.23x0.31.*_oi%0.23x0.31">
+      <value grid="_oi%0.23x0.31">
         <!-- fill this in -->
       </value>
-      <value grid="a%4x5.*_m%gx3v7">
+      <value grid="oi%4x5">
 	$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc
       </value>
     </values>

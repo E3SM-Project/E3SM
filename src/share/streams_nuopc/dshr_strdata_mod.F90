@@ -7,7 +7,6 @@ module dshr_strdata_mod
 
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx, r4=>shr_kind_r4
   use shr_sys_mod      , only : shr_sys_abort
-  use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_const_mod    , only : shr_const_pi, shr_const_cDay, shr_const_spval
   use shr_cal_mod      , only : shr_cal_calendarname, shr_cal_timeSet
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian
@@ -470,33 +469,35 @@ contains
 
        ! ------------------------------------
        ! Create the sdat route handles for mapping the stream -> model
-       ! For now only  create bilinear route handle for stream(n) -> model mapping
        ! ------------------------------------
 
-       ! create the source and destination fields needed for the route handles
-       ! these fields will be used to create the route handles
-       ! since all fields in a stream share the same mesh and there is only a unique model mesh
+       ! create the source and destination fields needed to create the route handles
+       ! assume that all fields in a stream share the same mesh and there is only a unique model mesh
        ! can do this outside of a stream loop by just using the first stream index
 
        call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_stream_lb, 1, lfield_src, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_model_lb, 1, lfield_dst, rc=rc)
+       call dshr_fldbun_getFieldN(sdat%pstrm(ns)%fldbun_model_lb , 1, lfield_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
+       !sdat%stream(ns)%mapalgo = "redist"
        if (trim(sdat%stream(ns)%mapalgo) == "bilinear") then
-          regridmethod = ESMF_REGRIDMETHOD_BILINEAR
-          polemethod   = ESMF_POLEMETHOD_ALLAVG
-          ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
+          call ESMF_FieldRegridStore(lfield_src, lfield_dst, &
+               routehandle=sdat%pstrm(ns)%routehandle, &
+               regridmethod=ESMF_REGRIDMETHOD_BILINEAR,  &
+               polemethod=ESMF_POLEMETHOD_NONE, &
+             ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
+               dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
+               srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       else if (trim(sdat%stream(ns)%mapalgo) == 'redist') then 
+          call ESMF_FieldRedistStore(lfield_src, lfield_dst, &
+               routehandle=sdat%pstrm(ns)%routehandle, &
+               ignoreUnmatchedIndices = .true., rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
        else
-          call shr_sys_abort('ERROR: only bilinear regriddid is supported for now')
+          call shr_sys_abort('ERROR: only bilinear regrid or redist is supported for now')
        end if
-
-       call ESMF_FieldRegridStore(lfield_src, lfield_dst, routehandle=sdat%pstrm(ns)%routehandle, &
-           regridmethod=regridmethod,  polemethod=polemethod, &
-           dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
-           srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     end do ! end of loop over streams
 
