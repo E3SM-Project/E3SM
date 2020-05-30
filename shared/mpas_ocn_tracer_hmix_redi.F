@@ -139,7 +139,7 @@ contains
 
       real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
-      real(kind=RKIND) :: areaSum, r_tmp, tracer_turb_flux, kappaRediEdgeVal
+      real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
@@ -193,7 +193,6 @@ contains
          redi_term3(:, :, iCell) = 0.0_RKIND
          fluxRediZTop(:, :) = 0.0_RKIND
         !rediKappaCell(iCell) = 0.0_RKIND
-         areaSum = 0.0_RKIND
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
@@ -206,8 +205,6 @@ contains
             else  ! cell2 == iCell
                iCellSelf = 2
             endif
-
-            areaSum = areaSum + 0.25_RKIND * dvEdge(iEdge) * dcEdge(iEdge)
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
@@ -317,7 +314,7 @@ contains
          fluxRediZTop(:, maxLevelCell(iCell) + 1) = 0.0_RKIND
          redi_term3_topOfCell(:, 1, iCell) = 0.0_RKIND
          do k = 2, maxLevelCell(iCell)
-            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k)/areaSum
+            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k) * invAreaCell
          end do
          redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
 
@@ -327,8 +324,9 @@ contains
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
                flux_term3 = RediKappa(iCell)*2.0_RKIND* &
-                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k)/areaSum - &
-                             kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell)*fluxRediZTop(iTr, k + 1)/areaSum)
+                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k)  &
+                            * invAreaCell - kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell) &
+                            *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
             end do
@@ -336,6 +334,8 @@ contains
       end do ! iCell
       !$omp end do
       !$omp barrier
+
+      if ( config_Redi_apply_flux_limiter ) then
 
       !loop over cells and check for out of bounds
       if (isActiveTracer) then
@@ -375,6 +375,8 @@ contains
       end do ! iCell
       !$omp end do
       !$omp barrier
+
+      endif
 
       !now go back and reapply all tendencies
       !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
