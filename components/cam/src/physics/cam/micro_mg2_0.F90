@@ -1216,8 +1216,12 @@ subroutine micro_mg_tend ( &
         if (qc(i,k).ge.qsmall) then
            ! limit in-cloud values to 0.005 kg/kg
            qcic(i,k)=min(qc(i,k)/lcldm(i,k),5.e-3_r8)
-         !!ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
-           ncic(i,k)=max(nc(i,k)/lcldm(i,k),ncnst/rho(i,k))
+           ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
+
+           ! specify droplet concentration (in-cloud) 
+           if (ncnst.gt.1.e6_r8) then !! > 1/cm3 
+              ncic(i,k)=max(ncic(i,k),ncnst/rho(i,k))
+           end if
 
            ! specify droplet concentration
            if (nccons) then
@@ -2092,6 +2096,10 @@ subroutine micro_mg_tend ( &
         dums(i,k) = (qs(i,k)+qstend(i,k)*deltat)/precip_frac(i,k)
         dumns(i,k) = max((ns(i,k)+nstend(i,k)*deltat)/precip_frac(i,k),0._r8)
 
+        ! specify droplet concentration (in-cloud) 
+        if (ncnst.gt.1.e6_r8) then !! > 1/cm3 
+           dumnc(i,k)=max(dumnc(i,k),ncnst/rho(i,k))
+        end if
 
         ! switch for specification of droplet and crystal number
         if (nccons) then
@@ -2491,6 +2499,11 @@ subroutine micro_mg_tend ( &
         dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)
         dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)
 
+        ! specify droplet concentration (now grid mean) 
+        if (ncnst.gt.1.e6_r8) then !! > 1/cm3 
+           dumnc(i,k) = max(dumnc(i,k),ncnst/rho(i,k)*lcldm(i,k))
+        end if
+
         ! switch for specification of droplet and crystal number
         if (nccons) then
            dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
@@ -2701,6 +2714,11 @@ subroutine micro_mg_tend ( &
         dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
         dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)/precip_frac(i,k)
         dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)/precip_frac(i,k)
+
+        ! specify droplet concentration (in-cloud) 
+        if (ncnst.gt.1.e6_r8) then !! > 1/cm3 
+           dumnc(i,k) = max(dumnc(i,k),ncnst/rho(i,k))
+        end if
 
         ! switch for specification of droplet and crystal number
         if (nccons) then
