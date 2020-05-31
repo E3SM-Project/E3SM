@@ -2733,12 +2733,91 @@ subroutine shoc_energy_fixer(&
   real(rtype), intent(inout) :: host_dse(shcol,nlev)
 
   ! LOCAL VARIABLES
+  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
+  integer :: shoctop(shcol)
+
+  call shoc_energy_total_fixer(&
+         shcol,nlev,nlevi,dtime,nadv,&  ! Input
+         zt_grid,zi_grid,&              ! Input
+         se_b,ke_b,wv_b,wl_b,&          ! Input
+         se_a,ke_a,wv_a,wl_a,&          ! Input
+         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         te_a, te_b)                    ! Output
+
+  call shoc_energy_threshold_fixer(&
+         shcol,nlev,nlevi,&             ! Input
+         pint,tke,te_a,te_b,&           ! Input
+         se_dis,shoctop)                ! Output
+
+  call shoc_energy_dse_fixer(&
+         shcol,nlev,&                  ! Input
+         se_dis,shoctop,   &           ! Input
+         host_dse)                     ! Input/Output
+
+  return
+
+end subroutine shoc_energy_fixer
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_total_fixer(&
+         shcol,nlev,nlevi,dtime,nadv,&  ! Input
+         zt_grid,zi_grid,&              ! Input
+         se_b,ke_b,wv_b,wl_b,&          ! Input
+         se_a,ke_a,wv_a,wl_a,&          ! Input
+         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         te_a, te_b)                    ! Output
+
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+  ! number of levels on interface grid
+  integer, intent(in) :: nlevi
+  ! SHOC timestep
+  real(rtype), intent(in) :: dtime
+  ! number of SHOC iterations
+  integer, intent(in) :: nadv
+  ! integrated static energy before
+  real(rtype), intent(in) :: se_b(shcol)
+  ! integrated kinetic energy before
+  real(rtype), intent(in) :: ke_b(shcol)
+  ! integrated water vapor before
+  real(rtype), intent(in) :: wv_b(shcol)
+  ! integrated liquid water before
+  real(rtype), intent(in) :: wl_b(shcol)
+  ! integrated static energy after
+  real(rtype), intent(in) :: se_a(shcol)
+  ! integrated kinetic energy after
+  real(rtype), intent(in) :: ke_a(shcol)
+  ! integrated water vapor after
+  real(rtype), intent(in) :: wv_a(shcol)
+  ! integrated liquid water after
+  real(rtype), intent(in) :: wl_a(shcol)
+  ! Surface sensible heat flux [K m/s]
+  real(rtype), intent(in) :: wthl_sfc(shcol)
+  ! Surface latent heat flux [kg/kg m/s]
+  real(rtype), intent(in) :: wqw_sfc(shcol)
+  ! heights on midpoint grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! heights on interface grid [m]
+  real(rtype), intent(in) :: zi_grid(shcol,nlev)
+  ! density on midpoint grid [kg/m^3]
+  real(rtype), intent(in) :: rho_zt(shcol,nlev)
+
+  ! INPUT VARIABLES
+  real(rtype), intent(out) :: te_a(shcol)
+  real(rtype), intent(out) :: te_b(shcol)
+
+  ! LOCAL VARIABLES
   ! density on interface grid [kg/m^3]
   real(rtype) :: rho_zi(shcol,nlevi)
   ! sensible and latent heat fluxes [W/m^2]
   real(rtype) :: shf, lhf, hdtime
-  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
-  integer :: shoctop(shcol)
   integer :: i, k
 
   ! compute the host timestep
@@ -2746,7 +2825,8 @@ subroutine shoc_energy_fixer(&
 
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
 
-  ! Based on these integrals, compute the total energy before and after SHOC call
+  ! Based on these integrals, compute the total energy before and after SHOC
+  ! call
   do i=1,shcol
     ! convert shf and lhf to W/m^2
     shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)
@@ -2755,6 +2835,46 @@ subroutine shoc_energy_fixer(&
     te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)
     te_b(i) = te_b(i)+(shf+(lhf)*(lcond+lice))*hdtime
   enddo
+
+  return
+
+end subroutine shoc_energy_total_fixer
+
+
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_threshold_fixer(&
+         shcol,nlev,nlevi,&             ! Input
+         pint,tke,te_a,te_b,&           ! Input
+         se_dis,shoctop)                ! Output
+
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+  ! number of levels on interface grid
+  integer, intent(in) :: nlevi
+  ! pressure on interface grid [Pa]
+  real(rtype), intent(in) :: pint(shcol,nlevi)
+  !turbulent kinetic energy [m^2/s^2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+
+  real(rtype), intent(in) :: te_a(shcol)
+  real(rtype), intent(in) :: te_b(shcol)
+
+
+  ! INPUT VARIABLES
+  real(rtype), intent(out) :: se_dis(shcol)
+  integer, intent(out) :: shoctop(shcol)
+
+  ! LOCAL VARIABLES
+  ! sensible and latent heat fluxes [W/m^2]
+  integer :: i, k
 
   ! Limit the energy fixer to find highest layer where SHOC is active
   ! Find first level where wp2 is higher than lowest threshold
@@ -2768,6 +2888,37 @@ subroutine shoc_energy_fixer(&
     se_dis(i) = (te_a(i) - te_b(i))/(pint(i,nlevi)-pint(i,shoctop(i)))
   enddo
 
+  return
+
+end subroutine shoc_energy_threshold_fixer
+
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_dse_fixer(&
+         shcol,nlev,&                  ! Input
+         se_dis,shoctop,   &           ! Input
+         host_dse)                     ! Input/Output
+
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+
+  ! INPUT VARIABLES
+  real(rtype), intent(in) :: se_dis(shcol)
+  integer, intent(in) :: shoctop(shcol)
+
+  !host temperature [K]
+  real(rtype), intent(inout) :: host_dse(shcol,nlev)
+
+  ! LOCAL VARIABLES
+  integer :: i, k
+
   do i=1,shcol
     do k=shoctop(i),nlev
       host_dse(i,k) = host_dse(i,k) - se_dis(i)*ggr
@@ -2776,7 +2927,8 @@ subroutine shoc_energy_fixer(&
 
   return
 
-end subroutine shoc_energy_fixer
+end subroutine shoc_energy_dse_fixer
+
 
 
 
