@@ -54,7 +54,7 @@ module dshr_strdata_mod
   private :: shr_strdata_readLBUB
 
   ! public data members:
-  integer                              :: debug    = 2  ! local debug flag
+  integer                              :: debug    = 0  ! local debug flag
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
   integer          ,parameter          :: master_task = 0
