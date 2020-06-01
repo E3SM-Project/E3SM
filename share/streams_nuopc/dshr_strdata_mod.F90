@@ -54,7 +54,7 @@ module dshr_strdata_mod
   private :: shr_strdata_readLBUB
 
   ! public data members:
-  integer                              :: debug    = 0  ! local debug flag
+  integer                              :: debug    = 2  ! local debug flag
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
   integer          ,parameter          :: master_task = 0
@@ -76,8 +76,8 @@ module dshr_strdata_mod
      type(ESMF_Field)                    :: stream_vector                   ! a vector field on the stream data domain
      type(ESMF_FieldBundle), allocatable :: fldbun_data(:)                  ! stream field bundle interpolated to model grid
      type(ESMF_FieldBundle)              :: fldbun_model                    ! stream n field bundle interpolated to model grid and time
-     integer                             :: ustrm = -1                      ! index of vector u stream
-     integer                             :: vstrm = -1                      ! index of vector v stream
+     integer                             :: ucomp = -1                      ! index of vector u in stream
+     integer                             :: vcomp = -1                      ! index of vector v in stream
      integer                             :: ymdLB = -1                      ! stream ymd lower bound
      integer                             :: todLB = -1                      ! stream tod lower bound
      integer                             :: ymdUB = -1                      ! stream ymd upper bound
@@ -490,13 +490,9 @@ contains
             srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     end do ! end of loop over streams
-
-    ! ------------------------------------
-    ! determine the streams for ustrm and vstrm
-    ! ------------------------------------
-    ! check vectors and compute ustrm,vstrm
-    ! determine if vector field names match any field names in the input stream
-
+    !
+    ! Check for vector pairs in the stream - both ucomp and vcomp must be in the same stream
+    !
     do m = 1,shr_strdata_get_stream_count(sdat)
        ! check that vector field list is a valid colon delimited string
        if(trim(sdat%stream(m)%stream_vectors).eq.'null') cycle
@@ -511,41 +507,8 @@ contains
           write(sdat%logunit,*) trim(subname),' vec fldlist ne 2 m=',m,trim(sdat%stream(m)%stream_vectors)
           call shr_sys_abort(subname//': vec fldlist ne 2:'//trim(sdat%stream(m)%stream_vectors))
        endif
-       sdat%nvectors=m
-       ! get name of the first and second field in the colon delimited string
-       call shr_string_listGetName(sdat%stream(m)%stream_vectors,1,uname)
-       call shr_string_listGetName(sdat%stream(m)%stream_vectors,2,vname)
 
-       ! loop through the streams and find which stream(s) contain the vector field pair
-       ! normally both fields in the pair will be on one stream
-       nu = 0
-       nv = 0
-       do ns = 1,shr_strdata_get_stream_count(sdat)
-          if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb), trim(uname), rc=rc)) nu = ns
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          if (dshr_fldbun_fldchk(sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb), trim(vname), rc=rc)) nv = ns
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       enddo
-
-       ! error checks
-       if (nu == 0  .or. nv == 0) then
-          ! if the input fields are not contained - then abort
-          write(sdat%logunit,*) trim(subname),' vec flds not found  m=',m,trim(sdat%stream(m)%stream_vectors)
-          call shr_sys_abort(subname//': vec flds not found:'//trim(sdat%stream(m)%stream_vectors))
-       else if (nu /= nv) then
-          ! mesh files for nu and nv stream must be the same
-          if (trim(sdat%pstrm(nu)%stream_meshfile) /= trim(sdat%pstrm(nv)%stream_meshfile)) then
-             write(sdat%logunit,*) trim(subname),' vec fld mesh files are not same m=',m,trim(sdat%stream(m)%stream_vectors)
-             write(sdat%logunit,*) trim(subname),' vec mesh file file for nu = ',nu,' is ',trim(sdat%pstrm(nu)%stream_meshfile)
-             write(sdat%logunit,*) trim(subname),' vec mesh file file for nv = ',nv,' is ',trim(sdat%pstrm(nv)%stream_meshfile)
-             call shr_sys_abort(subname//': vec fld mesh files must be the same:'//trim(sdat%stream(m)%stream_vectors))
-          end if
-       else
-          ! now set the stream indices for ustrm and vstrm
-          sdat%pstrm(m)%ustrm = nu
-          sdat%pstrm(m)%vstrm = nv
-       end if
-       sdat%pstrm(nu)%stream_vector = ESMF_FieldCreate(sdat%pstrm(nu)%stream_mesh, ESMF_TYPEKIND_r8, name='field_src', &
+       sdat%pstrm(m)%stream_vector = ESMF_FieldCreate(sdat%pstrm(m)%stream_mesh, ESMF_TYPEKIND_r8, name='stream_vector', &
             ungriddedLbound=(/1/), ungriddedUbound=(/2/), gridToFieldMap=(/2/), meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     enddo
@@ -869,7 +832,7 @@ contains
           call t_stopf(trim(lstr)//trim(timname)//'_readLBUB')
 
        enddo ! end of loop over streams
-
+#ifdef DOTHIS
        ! ---------------------------------------------------------
        ! remap with vectors if needed
        ! ---------------------------------------------------------
@@ -986,7 +949,7 @@ contains
 
           endif ! end block nu > 0 or nv>0
        enddo
-
+#endif
        ! ---------------------------------------------------------
        ! Do time interpolation to create fldbun_model
        ! ---------------------------------------------------------
@@ -1426,20 +1389,12 @@ contains
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     call dshr_field_getfldptr(sdat%pstrm(ns)%field_stream, fldptr1=dataptr, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    if(sdat%pstrm(ns)%ustrm > 0) then
+    if(sdat%pstrm(ns)%ucomp > 0 .and. sdat%pstrm(ns)%vcomp > 0) then
        call shr_string_listGetName(stream%stream_vectors,1,uname)
-       call dshr_field_getfldptr(sdat%pstrm(ns)%stream_vector, fldptr2=dataptr2d_src, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       print *,__FILE__,__LINE__,size(dataptr),size(dataptr2d_src,2)
-    endif
-    if(sdat%pstrm(ns)%vstrm > 0) then
        call shr_string_listGetName(stream%stream_vectors,2,vname)
        call dshr_field_getfldptr(sdat%pstrm(ns)%stream_vector, fldptr2=dataptr2d_src, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
-
-
-
 
     lsize = size(dataptr)
     if (pio_iovartype == PIO_REAL) then
@@ -1461,12 +1416,11 @@ contains
        call PIO_seterrorhandling(pioid, old_error_handle)
 
        if (debug>0 .and. sdat%masterproc)  then
-          write(sdat%logunit,F00)' reading '//trim(fldlist_stream(nf))//' into '//trim(fldlist_model(nf))
+          write(sdat%logunit,F02)' reading '//trim(fldlist_stream(nf))//' into '//trim(fldlist_model(nf)),' at time index: ',nt
        end if
+
        call pio_setframe(pioid, varid, int(nt,kind=Pio_Offset_Kind))
-       if ( rcode /= PIO_NOERR ) then
-          call shr_sys_abort(' ERROR: setting frame for variable: '// trim(fldlist_stream(nf)))
-       end if
+
        if (pio_iovartype == PIO_REAL) then
           call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
           if ( rcode /= PIO_NOERR ) then
@@ -1508,21 +1462,23 @@ contains
                termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.false., zeroregion=ESMF_REGION_TOTAL, rc=rc)
        endif
     enddo
-    !TODO assuming for now that both u and v are in the same stream file
+
+    ! Both components of a vector stream must be in the same input stream file
     if(associated(dataptr2d_src)) then
-       ! get lon and lat of stream nu
+       ! get lon and lat of stream u and v fields
+       allocate(dataptr(lsize))
+
        call ESMF_MeshGet(sdat%pstrm(ns)%stream_mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+
        allocate(nu_coords(spatialDim*numOwnedElements))
        call ESMF_MeshGet(sdat%pstrm(ns)%stream_mesh, ownedElemCoords=nu_coords)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       ! get lon and lat of stream nv
-       call ESMF_MeshGet(sdat%pstrm(ns)%stream_mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
        allocate(nv_coords(spatialDim*numOwnedElements))
        call ESMF_MeshGet(sdat%pstrm(ns)%stream_mesh, ownedElemCoords=nv_coords)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+
        do i=1,lsize
           dataptr(i) = dataptr2d_src(1,i)
           lon = nu_coords(2*i-1)
@@ -1539,12 +1495,14 @@ contains
        call ESMF_FieldRegrid(sdat%pstrm(ns)%stream_vector, vector_dst, sdat%pstrm(ns)%routehandle, &
             termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, zeroregion=ESMF_REGION_TOTAL, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+
        call ESMF_FieldGet(vector_dst, farrayPtr=dataptr2d_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        call dshr_fldbun_getFldPtr(fldbun_model, trim(uname), data_u_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        call dshr_fldbun_getFldPtr(fldbun_model, trim(vname), data_v_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+
        do i = 1,size(data_u_dst)
           lon = sdat%model_lon(i)
           lat = sdat%model_lat(i)
@@ -1588,7 +1546,7 @@ contains
     integer                       :: lsize
     integer, pointer              :: compdof(:)
     character(CS)                 :: dimname
-    integer                       :: rCode      ! pio return code
+    integer                       :: rCode      ! pio return code (only used when pio error handling is PIO_BCAST_ERROR)
     character(*), parameter       :: subname = '(shr_strdata_set_stream_iodesc) '
     character(*), parameter       :: F00  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a)"
     character(*), parameter       :: F01  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a)"
@@ -1598,18 +1556,15 @@ contains
     rc = ESMF_SUCCESS
 
     ! query the first field in the stream dataset
-    call PIO_seterrorhandling(pioid, PIO_BCAST_ERROR)
     rcode = pio_inq_varid(pioid, trim(fldname), varid)
-    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring varid for '//trim(fldname))
     rcode = pio_inq_varndims(pioid, varid, ndims)
-    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring ndims for '//trim(fldname))
+
     allocate(dimids(ndims))
     allocate(dimlens(ndims))
     rcode = pio_inq_vardimid(pioid, varid, dimids(1:ndims))
-    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring dimids for '//trim(fldname))
+
     do n = 1, ndims
        rcode = pio_inq_dimlen(pioid, dimids(n), dimlens(n))
-       call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring dimlens for '//trim(fldname))
     end do
 
     ! determine compdof for stream
@@ -1623,16 +1578,7 @@ contains
 
     ! determine type of the variable
     rcode = pio_inq_vartype(pioid, varid, pio_iovartype)
-    call shr_strdata_handle_error(rcode, 'SHR_STRDATA_PIO_VAR_INFO: Error inquiring type for '//trim(fldname))
 
-    ! now create the io descriptor
-    rcode = pio_inquire(pioid, unlimitedDimid=unlimdid)
-    if (rcode == PIO_NOERR) then
-       if (dimids(ndims) == unlimdid) then
-          ! remove unlimited time dimension from the pio_init decomp
-          ndims = ndims - 1
-       end if
-    end if
     if (ndims == 2) then
        if (sdat%masterproc) then
           write(sdat%logunit,F00) 'setting iodesc for : '//trim(fldname)// &
