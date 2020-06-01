@@ -1,0 +1,30 @@
+<template>
+	<namelist>
+		<option name="config_AM_oceanHeatContent_enable">.true.</option>
+		<option name="config_AM_oceanHeatContent_compute_on_startup">.true.</option>
+		<option name="config_AM_oceanHeatContent_write_on_startup">.true.</option>
+		<option name="config_AM_oceanHeatContent_compute_interval">'output_interval'</option>
+		<option name="config_AM_oceanHeatContent_output_stream">'oceanHeatContentOutput'</option>
+	</namelist>
+
+	<streams>
+		<stream name="oceanHeatContentOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">oceanHeatContentOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-05_00:00:00</attribute>
+			<attribute name="filename_template">analysis_members/oceanHeatContent.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">oceanHeatContentAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="oceanHeatContentSfctoBot" type="var"/>
+				<member name="oceanHeatContentSfcto700m" type="var"/>
+				<member name="oceanHeatContent700mto2000m" type="var"/>
+				<member name="oceanHeatContent2000mtoBot" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
