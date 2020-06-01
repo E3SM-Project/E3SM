@@ -680,6 +680,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="anlworkstation" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <MOAB_PATH>/home/sarich/software/anlworkstation/gcc-8.2.0/moab</MOAB_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>

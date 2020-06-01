@@ -63,6 +63,8 @@ def buildlib(bldroot, installpath, case):
         filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
     elif comp_interface == "nuopc":
         filepath.append(os.path.join(cimeroot,"src","share","nuopc"))
+    elif comp_interface == "moab":
+        filepath.append(os.path.join(cimeroot,"src","drivers","moab","shr"))
     else:
         expect(False, "driver value of {} not supported".format(comp_interface))
 
