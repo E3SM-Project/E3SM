@@ -17,7 +17,8 @@ extern "C" {
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
-                 Real* dzq, Real* npccn, Real* naai, Int it, Real* prt_liq, Real* prt_sol, Int its,
+                 Real* dzq, Real* npccn, Real* naai, Real* qc_relvar,
+		 Int it, Real* prt_liq, Real* prt_sol, Int its,
                  Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
                  Real* diag_di, Real* diag_rhoi,
@@ -54,6 +55,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   dzq = Array2("vertical grid spacing, m", ncol, nlev);
   npccn = Array2("ccn activated number tendency, kg-1 s-1", ncol, nlev);
   naai = Array2("activated nuclei concentration, kg-1", ncol, nlev);
+  qc_relvar = Array2("Assumed SGS 1/(var(qc)/mean(qc)), kg2/kg2", ncol, nlev);
   pdel = Array2("pressure thickness, Pa", ncol, nlev);
   exner = Array2("Exner expression", ncol, nlev);
   // Out
@@ -98,14 +100,13 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
         d_->name.data(),                                                \
         d_->name.size()})
   fdipb(qv); fdipb(th); fdipb(pres);
-  fdipb(dzq); fdipb(npccn); fdipb(naai); fdipb(qc); fdipb(nc); fdipb(qr); fdipb(nr);
-  fdipb(qitot); fdipb(nitot);
+  fdipb(dzq); fdipb(npccn); fdipb(naai); fdipb(qc_relvar); fdipb(qc); 
+  fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
   fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
   fdipb(pdel); fdipb(exner); fdipb(cmeiout); fdipb(prain);
-  fdipb(nevapr); fdipb(prer_evap);
-  fdipb(rflx); fdipb(sflx);
+  fdipb(nevapr); fdipb(prer_evap); fdipb(rflx); fdipb(sflx);
   fdipb(rcldm); fdipb(lcldm); fdipb(icldm);
   fdipb(pratot); fdipb(prctot); fdipb(p3_tend_out);
   fdipb(mu_c); fdipb(lamc); fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
@@ -143,7 +144,8 @@ void p3_main (const FortranData& d) {
   p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
             d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(),
-            d.pres.data(), d.dzq.data(), d.npccn.data(), d.naai.data(), d.it, d.prt_liq.data(),
+            d.pres.data(), d.dzq.data(), d.npccn.data(), d.naai.data(), d.qc_relvar.data(),
+	    d.it, d.prt_liq.data(),
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(),

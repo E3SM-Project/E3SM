@@ -3,7 +3,7 @@
 ! C++ versions of the functions from Fortran) if the macro
 ! SCREAM_CONFIG_IS_CMAKE is defined.
 !
-! Make sure to make the place the following lines at the top of any modules
+! Make sure to place the following lines at the top of any modules
 ! that use these macros:
 !
 ! use physics_common_iso_f, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &

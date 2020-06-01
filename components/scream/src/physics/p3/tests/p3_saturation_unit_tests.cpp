@@ -61,10 +61,6 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     const Scalar LatVap = C::LatVap;
     const Scalar LatIce = C::LatIce;
 
-    printf("===============================\n");
-    printf("Checking T = %f and Pres = %e\n",temperature,pressure);
-    printf("===============================\n");
-
     //PMC note: original version looped over pack dimension, testing each entry. This isn't
     //necessary b/c packs were created by copying a scalar up to pack size. Thus just evaluating
     // 1st entry below.
@@ -86,10 +82,10 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     // ---------------------------------------------------------      
     // Now check that computed vs expected values are small enough.     
     if ( std::abs(sat_ice_p[0] - correct_sat_ice_p ) > Cond_ice_p*tol ) {
-      printf("  esi: abs(calc-expected),cond*tol=%e %e\n",std::abs(sat_ice_p[0] - correct_sat_ice_p ),tol*Cond_ice_p );
+      printf("esi for T = %f abs diff is %e but max allowed is %e\n",temperature,std::abs(sat_ice_p[0] - correct_sat_ice_p ),tol*Cond_ice_p );
       errors++;}
     if (std::abs(sat_liq_p[0] - correct_sat_liq_p) > Cond_liq_p*tol)  {
-      printf("  esl: abs(calc-expected),cond*tol=%e %e\n",std::abs(sat_liq_p[0] - correct_sat_liq_p ),tol*Cond_liq_p);
+      printf("esl  for T = %f abs diff is %e but max allowed is %e\n",temperature,std::abs(sat_liq_p[0] - correct_sat_liq_p ),tol*Cond_liq_p);
       errors++;}
 
     //==========================================================
