@@ -27,9 +27,6 @@ module ocn_vmix
    use mpas_timer
 
    use ocn_constants
-   use ocn_vmix_coefs_const
-   use ocn_vmix_coefs_tanh
-   use ocn_vmix_coefs_rich
    use ocn_vmix_cvmix
    use ocn_vmix_coefs_redi
 
@@ -175,9 +172,6 @@ contains
       end do
       !$omp end do
 
-      call ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err1, timeLevel)
-      call ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
-      call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, scratchPool, err3, timeLevel)
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, diagnosticsPool, err4, timeLevel)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err5, timeLevel)
 
@@ -883,12 +877,6 @@ contains
           implicitBottomDragCoef = config_implicit_bottom_drag_coeff
       endif
 
-      call ocn_vmix_coefs_const_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_vmix_coefs_tanh_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_vmix_coefs_rich_init(err_tmp)
-      err = ior(err, err_tmp)
       call ocn_vmix_cvmix_init(domain,err_tmp)
       err = ior(err, err_tmp)
       call ocn_vmix_coefs_redi_init(err_tmp)

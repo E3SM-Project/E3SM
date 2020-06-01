@@ -6,6 +6,8 @@
 	<add_executable source="model" dest="ocean_model"/>
 
 	<namelist name="namelist.ocean" mode="init">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<option name="config_init_configuration">'baroclinic_channel'</option>
 		<option name="config_vert_levels">-1</option>
 		<option name="config_ocean_run_mode">'init'</option>
@@ -13,6 +15,8 @@
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<stream name="input_init">
 			<attribute name="filename_template">mpas_mesh.nc</attribute>
 		</stream>

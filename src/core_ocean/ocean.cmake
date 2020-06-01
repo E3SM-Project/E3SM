@@ -68,9 +68,6 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vel_forcing_explicit_bottom_drag.F
   core_ocean/shared/mpas_ocn_vel_pressure_grad.F
   core_ocean/shared/mpas_ocn_vmix.F
-  core_ocean/shared/mpas_ocn_vmix_coefs_const.F
-  core_ocean/shared/mpas_ocn_vmix_coefs_rich.F
-  core_ocean/shared/mpas_ocn_vmix_coefs_tanh.F
   core_ocean/shared/mpas_ocn_vmix_coefs_redi.F
   core_ocean/shared/mpas_ocn_vmix_cvmix.F
   core_ocean/shared/mpas_ocn_tendency.F

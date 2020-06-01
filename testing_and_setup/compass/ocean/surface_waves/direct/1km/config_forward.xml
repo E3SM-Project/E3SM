@@ -18,7 +18,7 @@
 		<option name="config_dt">'0000_00:01:00'</option>
 		<option name="config_time_integrator">'RK4'</option>
 		<option name="config_run_duration">'0001_00:00:01'</option>
-		<option name="config_use_const_visc">.false.</option>
+		<option name="config_use_cvmix_background">.false.</option>
 		<option name="config_use_mom_del2">.false.</option>
 		<option name="config_implicit_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_use_debugTracers">.true.</option>

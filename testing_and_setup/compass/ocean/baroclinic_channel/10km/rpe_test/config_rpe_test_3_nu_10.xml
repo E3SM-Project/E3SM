@@ -6,12 +6,15 @@
 	<add_executable source="model" dest="ocean_model"/>
 
 	<namelist name="namelist.ocean" mode="forward">
-		<template file="baroclinic_channel_10km_template.xml" path_base="script_resolution_dir"/>
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<option name="config_run_duration">'20_00:00:00'</option>
 		<option name="config_mom_del2">10.0</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<stream name="mesh">
 			<attribute name="filename_template">initial_state.nc</attribute>
 		</stream>

@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_vmix_coefs_const
+!  ocn_vmix_coefs_redi
 !
 !> \brief MPAS ocean vertical mixing coefficients
 !> \author Doug Jacobsen
@@ -10,7 +10,6 @@
 !>  This module contains the routines for compounding
 !>  the Redi vertical mixing coefficients.
 !>
-!
 !-----------------------------------------------------------------------
 
 module ocn_vmix_coefs_redi

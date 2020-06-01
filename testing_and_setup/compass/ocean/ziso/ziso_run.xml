@@ -4,8 +4,6 @@
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_use_mom_del4">.true.</option>
 		<option name="config_mom_del4_div_factor">10.0</option>
-		<option name="config_convective_visc">1.0</option>
-		<option name="config_convective_diff">1.0</option>
 		<option name="config_use_cvmix">.true.</option>
 		<option name="config_use_cvmix_background">.true.</option>
 		<option name="config_use_cvmix_convection">.true.</option>

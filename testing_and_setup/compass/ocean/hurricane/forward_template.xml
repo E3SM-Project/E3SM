@@ -15,8 +15,8 @@
 		<option name="config_ALE_thickness_proportionality">'weights_only'</option>
 		<option name="config_vert_coord_movement">'uniform_stretching'</option>
 
-                <option name="config_use_const_visc">.true.</option>
-                <option name="config_vert_visc">1.0e4</option>
+                <option name="config_use_cvmix_background">.true.</option>
+                <option name="config_cvmix_background_viscosity">1.0e4</option>
 
                 <option name="config_use_bulk_wind_stress">.true.</option>
                 <option name="config_use_time_varying_atmospheric_forcing">.true.</option>
