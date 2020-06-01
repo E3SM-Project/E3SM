@@ -46,28 +46,29 @@ static void run_bfb()
   constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
   constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06,
                    nc_incld3 = 1.734E+07, nc_incld4 = 9.952E+08;
-
+  constexpr Scalar qc_relvar_val = 1;
+  
   CloudRainAccretionData cloud_rain_acc_data[max_pack_size] = {
-    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small},
+    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc, qc_relvar
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small,qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small},
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small,qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small},
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small,qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small}
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small,qc_relvar_val}
   };
 
   // Sync to device
@@ -85,20 +86,21 @@ static void run_bfb()
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld;
+    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar;
     for (Int s = 0; s < Spack::n; ++s) {
       rho[s]            = device_data(s).rho;
       inv_rho[s]        = device_data(s).inv_rho;
       qc_incld[s]       = device_data(s).qc_incld;
       nc_incld[s]       = device_data(s).nc_incld;
       qr_incld[s]       = device_data(s).qr_incld;
+      qc_relvar[s]      = device_data(s).qc_relvar;
     }
 
     Spack qcacc{0.0};
     Spack ncacc{0.0};
 
     Functions::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
-                                    qcacc, ncacc);
+                                    qc_relvar, qcacc, ncacc);
 
     // Copy results back into views
     for (Int s = 0; s < Spack::n; ++s) {

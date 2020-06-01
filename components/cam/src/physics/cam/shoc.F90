@@ -182,13 +182,13 @@ subroutine shoc_main ( &
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
-     shoc_cldfrac,shoc_ql,&               ! Input/Output
+     shoc_ql,shoc_cldfrac,&               ! Input/Output
      pblh,&                               ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
      uw_sec, vw_sec, w3,&                 ! Output (diagnostic)
-     wqls_sec, brunt)                     ! Output (diagnostic)
+     wqls_sec, brunt, shoc_ql2)           ! Output (diagnostic)
 
   implicit none
 
@@ -271,6 +271,8 @@ subroutine shoc_main ( &
 
   ! planetary boundary layer depth [m]
   real(rtype), intent(out) :: pblh(shcol)
+  ! cloud liquid mixing ratio variance [kg^2/kg^2]
+  real(rtype), intent(out) :: shoc_ql2(shcol, nlev)
 
   ! also output variables, but part of the SHOC diagnostics
   !  to be output to history file by host model (if desired)
@@ -386,9 +388,8 @@ subroutine shoc_main ( &
        shcol,nlev,nlevi,dtime,&             ! Input
        wthv_sec,shoc_mix,&                  ! Input
        dz_zi,dz_zt,pres,&                   ! Input
-       u_wind,v_wind,brunt,&                ! Input
-       uw_sfc,vw_sfc,&                      ! Input
-       zt_grid,zi_grid,&                    ! Input
+       u_wind,v_wind,brunt,obklen,&         ! Input
+       zt_grid,zi_grid,pblh,&               ! Input
        tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
 
@@ -404,20 +405,19 @@ subroutine shoc_main ( &
          u_wind,v_wind)                     ! Input/Output
     endif
 
-    ! Diagnose the second order moments, needed
-    !  for the PDF closure
+    ! Diagnose the second order moments
     call diag_second_shoc_moments(&
-       shcol,nlev,nlevi,&                   ! Input
-       num_qtracers,thetal,qw,&             ! Input
-       u_wind,v_wind,qtracers,tke,&         ! Input
-       isotropy,tkh,tk,&                    ! Input
-       dz_zi,zt_grid,zi_grid,&              ! Input
-       wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
-       wtracer_sfc,shoc_mix,&               ! Input
-       w_sec,thl_sec,qw_sec,&               ! Output
-       wthl_sec,wqw_sec,&                   ! Output
-       qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
-       wtracer_sec)
+       shcol,nlev,nlevi, &                    ! Input
+       num_qtracers,thetal,qw, &              ! Input
+       u_wind,v_wind,qtracers,tke, &          ! Input
+       isotropy,tkh,tk,&                      ! Input
+       dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
+       wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
+       wtracer_sfc, &                         ! Input       
+       thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Output
+       qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
+       wtracer_sec,&                          ! Output
+       w_sec)                                 ! Output
 
     ! Diagnose the third moment of vertical velocity,
     !  needed for the PDF closure
@@ -434,13 +434,19 @@ subroutine shoc_main ( &
     !   based on SGS mixing, if explicit scheme is used
     if (.not. do_implicit) then
       call update_prognostics(&
-         shcol,nlev,nlevi,num_qtracers,&    ! Input
+         shcol,nlev,nlevi,    &             ! Input
          dtime,dz_zt,wthl_sec,&             ! Input
          wqw_sec,wtke_sec,uw_sec,&          ! Input
-         vw_sec,wtracer_sec,&               ! Input
+         vw_sec,                 &          ! Input
          rho_zt,zt_grid,zi_grid,&           ! Input
-         thetal,qw,qtracers,tke,&           ! Input/Output
+         thetal,qw,tke,         &           ! Input/Output
          u_wind,v_wind)                     ! Input/Output
+
+      call update_tracers( &
+         shcol,nlev,nlevi,num_qtracers,&    ! Input
+         dtime,dz_zt,wtracer_sec,&          ! Input
+         rho_zt,zt_grid,zi_grid,&           ! Input
+         qtracers)                          ! Input/Output
     endif
 
     ! Call the PDF to close on SGS cloud and turbulence
@@ -451,7 +457,7 @@ subroutine shoc_main ( &
        wqw_sec,qwthl_sec,w3,pres,&          ! Input
        zt_grid,zi_grid,&                    ! Input
        shoc_cldfrac,shoc_ql,&               ! Output
-       wqls_sec,wthv_sec)                   ! Output
+       wqls_sec,wthv_sec,shoc_ql2)          ! Output
 
     ! Check TKE to make sure values lie within acceptable
     !  bounds after vertical advection, etc.
@@ -577,12 +583,12 @@ end subroutine shoc_grid
 ! (< 20 s), otherwise the implicit diffusion solver should be used
 
 subroutine update_prognostics( &
-         shcol,nlev,nlevi,num_tracer,&    ! Input
+         shcol,nlev,nlevi,     &          ! Input
          dtime,dz_zt,wthl_sec,&           ! Input
          wqw_sec,wtke_sec,uw_sec,&        ! Input
-         vw_sec,wtracer_sec,&             ! Input
+         vw_sec,                 &        ! Input
          rho_zt,zt_grid,zi_grid,&         ! Input
-         thetal,qw,tracer,tke,&           ! Input/Output
+         thetal,qw,tke,       &           ! Input/Output
          u_wind,v_wind)                   ! Input/Output
 
 ! Purpose of this subroutine is to update T, q, u, v, tke, and
@@ -598,8 +604,6 @@ subroutine update_prognostics( &
   integer, intent(in) :: nlev
   ! number of interface levels
   integer, intent(in) :: nlevi
-  ! number of tracers
-  integer, intent(in) :: num_tracer
   ! time step [s]
   real(rtype), intent(in) :: dtime
   ! thickness of grid centered on thermo points [m]
@@ -608,8 +612,6 @@ subroutine update_prognostics( &
   real(rtype), intent(in) :: wthl_sec(shcol,nlevi)
   ! vertical flux of moisture [kg/kg m/s]
   real(rtype), intent(in) :: wqw_sec(shcol,nlevi)
-  ! vertical flux of tracers [varies]
-  real(rtype), intent(in) :: wtracer_sec(shcol,nlevi,num_tracer)
   ! vertical zonal momentum flux [m2/s2]
   real(rtype), intent(in) :: uw_sec(shcol,nlevi)
   ! vertical meridional momentum flux [m2/s2]
@@ -628,8 +630,6 @@ subroutine update_prognostics( &
   real(rtype), intent(inout) :: thetal(shcol,nlev)
   ! total water mixing ratio [kg/kg]
   real(rtype), intent(inout) :: qw(shcol,nlev)
-  ! tracers [varies]
-  real(rtype), intent(inout) :: tracer(shcol,nlev,num_tracer)
   ! zonal wind [m/s]
   real(rtype), intent(inout) :: u_wind(shcol,nlev)
   ! meridional wind [m/s]
@@ -667,11 +667,6 @@ subroutine update_prognostics( &
       ! Update turbulent kinetic energy via vertical diffusion
       tke(i,k)=tke(i,k)-dtime*(r1*wtke_sec(i,k)-r2*wtke_sec(i,kb))*thedz
 
-      ! Update tracers via vertical diffusion
-      do p=1,num_tracer
-        tracer(i,k,p)=tracer(i,k,p)-dtime*(r1*wtracer_sec(i,k,p)-r2*wtracer_sec(i,kb,p))*thedz
-      enddo
-
       ! Update the u and v wind components via vertical diffusion
       u_wind(i,k)=u_wind(i,k)-dtime*(r1*uw_sec(i,k)-r2*uw_sec(i,kb))*thedz
       v_wind(i,k)=v_wind(i,k)-dtime*(r1*vw_sec(i,k)-r2*vw_sec(i,kb))*thedz
@@ -683,6 +678,70 @@ subroutine update_prognostics( &
 
 end subroutine update_prognostics
 
+!==============================================================
+! Update tracers based on SGS mixing
+! using explicit diffusion solver.  Note that this routine
+! should only be called if using very small time steps
+! (< 20 s), otherwise the implicit diffusion solver should be used
+
+subroutine update_tracers( &
+         shcol,nlev,nlevi,num_tracer,&    ! Input
+         dtime,dz_zt,wtracer_sec,&        ! Input
+         rho_zt,zt_grid,zi_grid,&         ! Input
+         tracer)                          ! Input/Output
+! INPUT VARIABLES
+  ! number of SHOC columns
+  integer, intent(in) :: shcol
+  ! number of vertical levels
+  integer, intent(in) :: nlev
+  ! number of interface levels
+  integer, intent(in) :: nlevi
+  ! number of tracers
+  integer, intent(in) :: num_tracer
+  ! time step [s]
+  real(rtype), intent(in) :: dtime
+  ! thickness of grid centered on thermo points [m]
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  ! vertical flux of tracers [varies]
+  real(rtype), intent(in) :: wtracer_sec(shcol,nlevi,num_tracer)
+  ! air density [kg/m3]
+  real(rtype), intent(in) :: rho_zt(shcol,nlev)
+  ! heights centered on thermo points [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! heights centered on interface points [m]
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
+
+! IN/OUT VARIABLES
+  ! tracers [varies]
+  real(rtype), intent(inout) :: tracer(shcol,nlev,num_tracer)
+
+! LOCAL VARIABLES
+  integer :: kb, kt, k, i, p
+  real(rtype) :: thedz, r1, r2, r3
+  real(rtype) :: rho_zi(shcol,nlevi)
+
+  ! linearly interpolate air density from thermo to interface grid
+  call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
+
+  do k=1,nlev
+    kb = k+1
+    do i=1,shcol
+      ! define air densities on various levels for mass weighted
+      !  diffusion for conservation of mass
+      r1=rho_zi(i,k)
+      r2=rho_zi(i,kb)
+      r3=rho_zt(i,k)
+      ! mass weighted 1/dz
+      thedz=1._rtype/(dz_zt(i,k)*r3)
+
+      ! Update tracers via vertical diffusion
+      do p=1,num_tracer
+        tracer(i,k,p)=tracer(i,k,p)-dtime*(r1*wtracer_sec(i,k,p)-r2*wtracer_sec(i,kb,p))*thedz
+      enddo
+    enddo ! end i loop (column loop)
+  enddo ! end k loop (vertical loop)
+
+end subroutine update_tracers
 !==============================================================
 ! Update T, q, tracers, tke, u, and v based on implicit diffusion
 ! If running with time steps longer than ~ 20 s then to preserve
@@ -847,29 +906,26 @@ subroutine update_prognostics_implicit( &
 
 end subroutine update_prognostics_implicit
 
-!==============================================================
-! SHOC Diagnose the second order moments
+!=======================================================
+! SHOC Diagnose the second order moments, 
+!  main routine
 
 subroutine diag_second_shoc_moments(&
          shcol,nlev,nlevi, &                    ! Input
          num_tracer,thetal,qw, &                ! Input
          u_wind,v_wind,tracer,tke, &            ! Input
          isotropy,tkh,tk,&                      ! Input
-         dz_zi,zt_grid,zi_grid,&                ! Input
+         dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
          wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
-         wtracer_sfc,shoc_mix, &                ! Input
-         w_sec, thl_sec, qw_sec,&               ! Output
-         wthl_sec,wqw_sec,&                     ! Output
+         wtracer_sfc, &                         ! Input
+         thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
-         wtracer_sec)                           ! Output
-
-  ! Purpose of this subroutine is to diagnose the second
-  !  order moments needed for the SHOC parameterization.
-  !  Namely these are variances of thetal, qw, and vertical
-  !  velocity.  In addition the vertical fluxes of thetal, qw,
-  !  u, v, TKE, and tracers are computed here as well as the
-  !  correlation of qw and thetal.
-
+         wtracer_sec,&                          ! Output
+         w_sec)                                 ! Output
+	 
+  ! This is the main routine to compute the second
+  !   order moments in SHOC. 	 
+	 
   implicit none
 
 ! INPUT VARIABLES
@@ -906,7 +962,138 @@ subroutine diag_second_shoc_moments(&
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! thickness centered on interface grid [m]
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
+  ! Mixing length [m]
+  real(rtype), intent(in) :: shoc_mix(shcol,nlev)
+  ! Surface sensible heat flux [K m/s]
+  real(rtype), intent(in) :: wthl_sfc(shcol)
+  ! Surface latent heat flux [kg/kg m/s]
+  real(rtype), intent(in) :: wqw_sfc(shcol)
+  ! Surface momentum flux (u-direction) [m3/s3]
+  real(rtype), intent(in) :: uw_sfc(shcol)
+  ! Surface momentum flux (v-direction) [m3/s3]
+  real(rtype), intent(in) :: vw_sfc(shcol)
+  ! Tracer flux [varies m/s]
+  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)  
+  
+! OUTPUT VARIABLES  
+  ! second order liquid wat. potential temp. [K^2]
+  real(rtype), intent(out) :: thl_sec(shcol,nlevi)
+  ! second order total water mixing rat. [kg^2/kg^2]
+  real(rtype), intent(out) :: qw_sec(shcol,nlevi)
+  ! covariance of temp and moisture [K kg/kg]
+  real(rtype), intent(out) :: qwthl_sec(shcol,nlevi)
+  ! vertical flux of heat [K m/s]
+  real(rtype), intent(out) :: wthl_sec(shcol,nlevi)
+  ! vertical flux of total water [kg/kg m/s]
+  real(rtype), intent(out) :: wqw_sec(shcol,nlevi)
+  ! vertical flux of zonal wind [m2/s2]
+  real(rtype), intent(out) :: uw_sec(shcol,nlevi)
+  ! vertical flux of meridional wind [m2/s2]
+  real(rtype), intent(out) :: vw_sec(shcol,nlevi)
+  ! vertical flux of tke [m3/s3]
+  real(rtype), intent(out) :: wtke_sec(shcol,nlevi)
+  ! vertical flux of tracer [varies m/s]
+  real(rtype), intent(out) :: wtracer_sec(shcol,nlevi,num_tracer)
+  ! second order vertical velocity [m2/s2]
+  real(rtype), intent(out) :: w_sec(shcol,nlev)
 
+    ! Diagnose the second order moments, 
+    !  calculate surface boundary conditions
+    call diag_second_moments_lbycond(&
+       shcol,nlev,nlevi,&                   ! Input
+       num_tracer,thetal,qw,&               ! Input
+       u_wind,v_wind,tracer,&               ! Input
+       isotropy,tkh,tk,&                    ! Input
+       dz_zi,zt_grid,zi_grid,&              ! Input
+       wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,&     ! Input
+       wtracer_sfc,shoc_mix,&               ! Input
+       thl_sec,qw_sec,wthl_sec,wqw_sec,&    ! Output
+       qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
+       wtracer_sec)                         ! Output
+
+    ! Diagnose the second order moments, 
+    !  for points away from boundaries
+    call diag_second_moments(&
+       shcol,nlev,nlevi, &                    ! Input
+       num_tracer,thetal,qw, &                ! Input
+       u_wind,v_wind,tracer,tke, &            ! Input
+       isotropy,tkh,tk,&                      ! Input
+       dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
+       thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Input/Output
+       qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
+       wtracer_sec,&                          ! Input/Output
+       w_sec)                                 ! Output
+
+    ! Diagnose the second order moments,
+    !  calculate the upper boundary conditions
+    call diag_second_moments_ubycond(&
+       shcol,nlevi,num_tracer, &              ! Input
+       thl_sec, qw_sec,&                      ! Input/Output
+       wthl_sec,wqw_sec,&                     ! Input/Output
+       qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
+       wtracer_sec)                           ! Input/Output
+ 
+  return
+end subroutine diag_second_shoc_moments
+
+!==============================================================
+! SHOC Diagnose the second order moments, 
+!  lower boundary conditions
+
+subroutine diag_second_moments_lbycond(&
+         shcol,nlev,nlevi, &                    ! Input
+         num_tracer,thetal,qw, &                ! Input
+         u_wind,v_wind,tracer, &                ! Input
+         isotropy,tkh,tk,&                      ! Input
+         dz_zi,zt_grid,zi_grid,&                ! Input
+         wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
+         wtracer_sfc,shoc_mix, &                ! Input
+         thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Output
+         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
+         wtracer_sec)                           ! Output
+
+  ! Purpose of this subroutine is to diagnose the lower
+  !  boundary condition for the second order moments needed 
+  !  for the SHOC parameterization.  
+  ! The thermodymnamic, tracer, and momentum fluxes are set 
+  !  to the surface fluxes for the host model, while the
+  !  thermodynamic variances and covariances are computed
+  !  according to that of Andre et al. 1978.  
+
+  implicit none
+
+! INPUT VARIABLES
+  ! number of SHOC columns
+  integer, intent(in) :: shcol
+  ! number of midpoint levels
+  integer, intent(in) :: nlev
+  ! number of interface levels
+  integer, intent(in) :: nlevi
+  ! number of tracers
+  integer, intent(in) :: num_tracer
+
+  ! liquid water potential temperature [K]
+  real(rtype), intent(in) :: thetal(shcol,nlev)
+  ! total water mixing ratio [kg/kg]
+  real(rtype), intent(in) :: qw(shcol,nlev)
+  ! zonal wind component [m/s]
+  real(rtype), intent(in) :: u_wind(shcol,nlev)
+  ! meridional wind component [m/s]
+  real(rtype), intent(in) :: v_wind(shcol,nlev)
+  ! return to isotropy timescale [s]
+  real(rtype), intent(in) :: isotropy(shcol,nlev)
+  ! eddy coefficient for heat [m2/s]
+  real(rtype), intent(in) :: tkh(shcol,nlev)
+  ! eddy coefficient for momentum [m2/s]
+  real(rtype), intent(in) :: tk(shcol,nlev)
+  ! tracers [varies]
+  real(rtype), intent(in) :: tracer(shcol,nlev,num_tracer) ! tracers
+  ! heights of mid-point grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! heights of interface grid [m]
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
+  ! thickness centered on interface grid [m]
+  real(rtype), intent(in) :: dz_zi(shcol,nlevi)
   ! Surface sensible heat flux [K m/s]
   real(rtype), intent(in) :: wthl_sfc(shcol)
   ! Surface latent heat flux [kg/kg m/s]
@@ -921,8 +1108,6 @@ subroutine diag_second_shoc_moments(&
   real(rtype), intent(in) :: shoc_mix(shcol,nlev)
 
 ! OUTPUT VARIABLES
-  ! second order vertical velocity [m2/s2]
-  real(rtype), intent(out) :: w_sec(shcol,nlev)
   ! second order liquid wat. potential temp. [K^2]
   real(rtype), intent(out) :: thl_sec(shcol,nlevi)
   ! second order total water mixing rat. [kg^2/kg^2]
@@ -964,10 +1149,6 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
 
-  ! Vertical velocity variance is assumed to be propotional
-  !  to the TKE
-  w_sec = w2tune*(2._rtype/3._rtype)*tke
-
   ! apply the surface conditions to diagnose turbulent
   !  moments at the surface
   do i=1,shcol
@@ -1000,6 +1181,115 @@ subroutine diag_second_shoc_moments(&
     enddo
 
   enddo ! end i loop (column loop)
+  return
+end subroutine diag_second_moments_lbycond
+
+subroutine diag_second_moments(&
+         shcol,nlev,nlevi, &                    ! Input
+         num_tracer,thetal,qw, &                ! Input
+         u_wind,v_wind,tracer,tke, &            ! Input
+         isotropy,tkh,tk,&                      ! Input
+         dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
+         thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Input/Output
+         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
+         wtracer_sec,&                          ! Input/Output
+         w_sec)                                 ! Output
+	 
+  ! Purpose of this subroutine is to diagnose the second
+  !  order moments needed for the SHOC parameterization.
+  !  Namely these are variances of thetal, qw, and vertical
+  !  velocity.  In addition the vertical fluxes of thetal, qw,
+  !  u, v, TKE, and tracers are computed here as well as the
+  !  correlation of qw and thetal.	 
+	 
+  implicit none
+
+! INPUT VARIABLES
+  ! number of SHOC columns
+  integer, intent(in) :: shcol
+  ! number of midpoint levels
+  integer, intent(in) :: nlev
+  ! number of interface levels
+  integer, intent(in) :: nlevi
+  ! number of tracers
+  integer, intent(in) :: num_tracer
+
+  ! liquid water potential temperature [K]
+  real(rtype), intent(in) :: thetal(shcol,nlev)
+  ! total water mixing ratio [kg/kg]
+  real(rtype), intent(in) :: qw(shcol,nlev)
+  ! zonal wind component [m/s]
+  real(rtype), intent(in) :: u_wind(shcol,nlev)
+  ! meridional wind component [m/s]
+  real(rtype), intent(in) :: v_wind(shcol,nlev)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+  ! return to isotropy timescale [s]
+  real(rtype), intent(in) :: isotropy(shcol,nlev)
+  ! eddy coefficient for heat [m2/s]
+  real(rtype), intent(in) :: tkh(shcol,nlev)
+  ! eddy coefficient for momentum [m2/s]
+  real(rtype), intent(in) :: tk(shcol,nlev)
+  ! tracers [varies]
+  real(rtype), intent(in) :: tracer(shcol,nlev,num_tracer) ! tracers
+  ! heights of mid-point grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! heights of interface grid [m]
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
+  ! thickness centered on interface grid [m]
+  real(rtype), intent(in) :: dz_zi(shcol,nlevi)
+  ! Mixing length [m]
+  real(rtype), intent(in) :: shoc_mix(shcol,nlev)
+  
+! INPUT/OUTPUT VARIABLES  
+  ! second order liquid wat. potential temp. [K^2]
+  real(rtype), intent(inout) :: thl_sec(shcol,nlevi)
+  ! second order total water mixing rat. [kg^2/kg^2]
+  real(rtype), intent(inout) :: qw_sec(shcol,nlevi)
+  ! covariance of temp and moisture [K kg/kg]
+  real(rtype), intent(inout) :: qwthl_sec(shcol,nlevi)
+  ! vertical flux of heat [K m/s]
+  real(rtype), intent(inout) :: wthl_sec(shcol,nlevi)
+  ! vertical flux of total water [kg/kg m/s]
+  real(rtype), intent(inout) :: wqw_sec(shcol,nlevi)
+  ! vertical flux of zonal wind [m2/s2]
+  real(rtype), intent(inout) :: uw_sec(shcol,nlevi)
+  ! vertical flux of meridional wind [m2/s2]
+  real(rtype), intent(inout) :: vw_sec(shcol,nlevi)
+  ! vertical flux of tke [m3/s3]
+  real(rtype), intent(inout) :: wtke_sec(shcol,nlevi)
+  ! vertical flux of tracer [varies m/s]
+  real(rtype), intent(inout) :: wtracer_sec(shcol,nlevi,num_tracer)
+
+! OUTPUT VARIABLES
+  ! second order vertical velocity [m2/s2]
+  real(rtype), intent(out) :: w_sec(shcol,nlev)
+
+  ! LOCAL VARIABLES
+  integer :: kb, kt, k, i, p
+  real(rtype) :: grid_dz2,grid_dz,grid_dzw
+  real(rtype) :: gr1,gr2,grw1
+  real(rtype) :: isotropy_zi(shcol,nlevi)
+  real(rtype) :: tkh_zi(shcol,nlevi)
+  real(rtype) :: tk_zi(shcol,nlevi)
+  real(rtype) :: shoc_mix_zi(shcol,nlevi)
+  real(rtype) :: sm ! Mixing coefficient
+  real(rtype) :: ustar2, wstar, uf
+
+  ! Constants to parameterize surface variances
+  real(rtype), parameter :: a_const = 1.8_rtype
+  real(rtype), parameter :: z_const = 1.0_rtype
+  real(rtype), parameter :: ufmin = 0.01_rtype
+
+  ! Interpolate some variables from the midpoint grid to the interface grid
+  call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)
+  call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
+  call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
+  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
+
+  ! Vertical velocity variance is assumed to be propotional
+  !  to the TKE
+  w_sec = w2tune*(2._rtype/3._rtype)*tke
 
   ! Calculate the second moments, which are on the
   !  interface grid.
@@ -1040,6 +1330,53 @@ subroutine diag_second_shoc_moments(&
 
     enddo ! end i loop (column loop)
   enddo  ! end k loop (vertical loop)
+  return
+end subroutine diag_second_moments
+
+subroutine diag_second_moments_ubycond(&
+         shcol,nlevi,num_tracer, &              ! Input
+         thl_sec, qw_sec,&                      ! Input/Output
+         wthl_sec,wqw_sec,&                     ! Input/Output
+         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
+         wtracer_sec)                           ! Input/Output
+	 
+  ! Purpose of this subroutine is to diagnose the upper
+  !  boundary condition for the second order moments 
+  !  needed for the SHOC parameterization.  Currently
+  !  set all to zero. 	 
+	 
+  implicit none
+  
+  ! INPUT VARIABLES
+  ! number of SHOC columns
+  integer, intent(in) :: shcol
+  ! number of interface levels
+  integer, intent(in) :: nlevi
+  ! number of tracers
+  integer, intent(in) :: num_tracer
+
+  ! INPUT/OUTPUT VARIABLES
+  ! second order liquid wat. potential temp. [K^2]
+  real(rtype), intent(inout) :: thl_sec(shcol,nlevi)
+  ! second order total water mixing rat. [kg^2/kg^2]
+  real(rtype), intent(inout) :: qw_sec(shcol,nlevi)
+  ! covariance of temp and moisture [K kg/kg]
+  real(rtype), intent(inout) :: qwthl_sec(shcol,nlevi)
+  ! vertical flux of heat [K m/s]
+  real(rtype), intent(inout) :: wthl_sec(shcol,nlevi)
+  ! vertical flux of total water [kg/kg m/s]
+  real(rtype), intent(inout) :: wqw_sec(shcol,nlevi)
+  ! vertical flux of zonal wind [m2/s2]
+  real(rtype), intent(inout) :: uw_sec(shcol,nlevi)
+  ! vertical flux of meridional wind [m2/s2]
+  real(rtype), intent(inout) :: vw_sec(shcol,nlevi)
+  ! vertical flux of tke [m3/s3]
+  real(rtype), intent(inout) :: wtke_sec(shcol,nlevi)
+  ! vertical flux of tracer [varies m/s]
+  real(rtype), intent(inout) :: wtracer_sec(shcol,nlevi,num_tracer)
+
+  ! LOCAL VARIABLES
+  integer :: i
 
   ! apply the upper boundary condition
   do i=1,shcol
@@ -1054,10 +1391,8 @@ subroutine diag_second_shoc_moments(&
     qw_sec(i,1) = 0._rtype
     qwthl_sec(i,1) = 0._rtype
   enddo ! end i loop (column loop)
-
   return
-
-end subroutine diag_second_shoc_moments
+end subroutine diag_second_moments_ubycond
 
 !==============================================================
 ! SHOC Diagnose the third order moment of vertical velocity
@@ -1341,7 +1676,7 @@ subroutine shoc_assumed_pdf(&
          wqw_sec,qwthl_sec,w3,pres, &       ! Input
          zt_grid,zi_grid,&                  ! Input
          shoc_cldfrac,shoc_ql,&             ! Output
-         wqls,wthv_sec)                     ! Output
+         wqls,wthv_sec,shoc_ql2)            ! Output
 
   ! Purpose of this subroutine is calculate the
   !  double Gaussian PDF of SHOC, which is the centerpiece
@@ -1397,6 +1732,8 @@ subroutine shoc_assumed_pdf(&
   real(rtype), intent(out) :: wthv_sec(shcol,nlev)
   ! SGS liquid water flux [kg/kg m/s]
   real(rtype), intent(out) :: wqls(shcol,nlev)
+  ! SGS liquid water mixing ratio variance [kg/kg]
+  real(rtype), intent(out) :: shoc_ql2(shcol,nlev)
 
 ! LOCAL VARIABLES
   integer i,j,k,dothis,nmicro_fields
@@ -1446,6 +1783,7 @@ subroutine shoc_assumed_pdf(&
   ! Initialize cloud variables to zero
   shoc_cldfrac(:,:)=0._rtype
   shoc_ql(:,1)=0._rtype
+  shoc_ql2(:,:) = 0._rtype
 
   ! Interpolate many variables from interface grid to themo grid
   call linear_interp(zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,shcol,largeneg)
@@ -1719,6 +2057,12 @@ subroutine shoc_assumed_pdf(&
       ! Compute SGS liquid water mixing ratio
       shoc_ql(i,k) = max(0._rtype,a*ql1+(1._rtype-a)*ql2)
 
+! +++ JShpund: Add cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based on Peter B.)
+!              * Please double check this *
+      shoc_ql2(i,k) = a * ( s1*ql1 + C1*std_s1**2.0 )                  &
+                    + ( 1._rtype-a ) * ( s2*ql2 + C2*std_s2**2.0 ) - shoc_ql(i,k)**2.0
+      shoc_ql2(i,k) = max( 0._rtype, shoc_ql2(i,k) )
+
       ! Compute liquid water flux
       wqls(i,k)=a*((w1_1-w_first)*ql1)+(1._rtype-a)*((w1_2-w_first)*ql2)
       ! Compute the SGS buoyancy flux
@@ -1739,9 +2083,8 @@ subroutine shoc_tke(&
          shcol,nlev,nlevi,dtime,&    ! Input
          wthv_sec,shoc_mix,&         ! Input
          dz_zi,dz_zt,pres,&          ! Input
-         u_wind,v_wind,brunt,&       ! Input
-         uw_sfc,vw_sfc,&             ! Input
-         zt_grid,zi_grid,&           ! Input
+         u_wind,v_wind,brunt,obklen,&! Input
+         zt_grid,zi_grid,pblh,&      ! Input
          tke,tk,tkh, &               ! Input/Output
          isotropy)                   ! Output
 
@@ -1767,10 +2110,8 @@ subroutine shoc_tke(&
   real(rtype), intent(in) :: u_wind(shcol,nlev)
   ! Zonal wind [m/s]
   real(rtype), intent(in) :: v_wind(shcol,nlev)
-  ! Zonal momentum flux at sfc [m2/s2]
-  real(rtype), intent(in) :: uw_sfc(shcol)
-  ! Meridional momentum flux at sfc [m2/s2]
-  real(rtype), intent(in) :: vw_sfc(shcol)
+  ! Obukov length
+  real(rtype), intent(in) :: obklen(shcol)
   ! thickness on interface grid [m]
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
   ! thickness on thermodynamic grid [m]
@@ -1783,6 +2124,8 @@ subroutine shoc_tke(&
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m]
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
+  ! PBLH height
+  real(rtype), intent(in) :: pblh(shcol)
 
 ! INPUT/OUTPUT VARIABLES
   ! turbulent kinetic energy [m2/s2]
@@ -1798,14 +2141,17 @@ subroutine shoc_tke(&
 
 ! LOCAL VARIABLES
   real(rtype) :: shear_prod(shcol,nlevi)
+  real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
   real(rtype) :: shear_prod_zt(shcol,nlev), tk_zi(shcol,nlevi)
-  real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce,Ces,Ce1,Ce2,smix,Cee,Cs
+  real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce
+  real(rtype) :: Ckh_s,Ckm_s,Ces,Ce1,Ce2,smix,Cee,Cs
   real(rtype) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
   real(rtype) :: lstarn, lstarp, bbb, omn, omp, ustar
   real(rtype) :: qsatt,dqsat,tk_in, u_grad, v_grad
   real(rtype) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
   real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
-  real(rtype) :: brunt_int(shcol)
+  real(rtype) :: brunt_int(shcol), z_over_L
+  real(rtype) :: zL_crit_val, pbl_trans
   integer i,j,k,kc,kb,kt
 
   lambda_low=0.001_rtype
@@ -1813,11 +2159,21 @@ subroutine shoc_tke(&
   lambda_slope=0.65_rtype
   brunt_low=0.02_rtype
 
+  ! Critical value of dimensionless Monin-Obukhov length
+  zL_crit_val = 100.0_rtype 
+  ! Transition depth [m] above PBL top to allow 
+  !   stability diffusivities
+  pbl_trans = 200.0_rtype 
+
   ! Turbulent coefficients
   Cs=0.15_rtype
   Ck=0.1_rtype
+  ! eddy coefficients for diffusivities 
   Ckh=0.1_rtype
   Ckm=0.1_rtype
+  ! eddy coefficients for stable PBL diffusivities
+  Ckh_s=1.0_rtype 
+  Ckm_s=1.0_rtype 
   Ce=Ck**3/Cs**4
 
   Ce1=Ce/0.7_rtype*0.19_rtype
@@ -1835,9 +2191,6 @@ subroutine shoc_tke(&
     enddo
   enddo
 
-  ! Interpolate tk onto interface grid
-  call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._rtype)
-
   ! Compute shear production term, which is on interface levels
   ! This follows the methods of Bretheron and Park (2010)
   do k=2,nlev
@@ -1850,7 +2203,7 @@ subroutine shoc_tke(&
       ! calculate vertical gradient of u&v wind
       u_grad=grid_dz*(u_wind(i,kt)-u_wind(i,k))
       v_grad=grid_dz*(v_wind(i,kt)-v_wind(i,k))
-      shear_prod(i,k)=tk_in*(u_grad**2+v_grad**2)
+      sterm(i,k)=u_grad**2+v_grad**2
     enddo
   enddo
 
@@ -1858,11 +2211,11 @@ subroutine shoc_tke(&
   ! Note that the lower bound for shear production has already
   !  been taken into account for the TKE boundary condition,
   !  thus zero out here
-  shear_prod(:,1) = 0._rtype
-  shear_prod(:,nlevi) = 0._rtype
+  sterm(:,1) = 0._rtype
+  sterm(:,nlevi) = 0._rtype
 
-  ! Interpolate shear production from interface to thermo grid
-  call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
+  ! Interpolate shear term from interface to thermo grid
+  call linear_interp(zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,shcol,0._rtype)
 
   do k=1,nlev
     do i=1,shcol
@@ -1873,8 +2226,9 @@ subroutine shoc_tke(&
 
       tke(i,k)=max(0._rtype,tke(i,k))
 
-      ! Shear production term
-      a_prod_sh=shear_prod_zt(i,k)
+      ! Shear production term, use diffusivity from
+      !  previous timestep 
+      a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
       ! Dissipation term
       a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
@@ -1884,27 +2238,43 @@ subroutine shoc_tke(&
 
       tke(i,k)=min(tke(i,k),maxtke)
 
-      ! Now compute the return to isotropic timescale as per
-      ! Canuto et al. 2004.  This is used to define the
-      ! eddy coefficients as well as to diagnose higher
-      ! moments in SHOC
+      ! Dimensionless Okukhov length considering only 
+      !  the lowest model grid layer height to scale
+      z_over_L = zt_grid(i,nlev)/obklen(i)
 
-      ! define the time scale
-      tscale1=(2.0_rtype*tke(i,k))/a_diss
+      if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+        ! If surface layer is moderately to very stable, based on near surface 
+        !  dimensionless Monin-Obukov use modified coefficients of 
+        !  tkh and tk that are primarily based on shear production 
+        !  and SHOC length scale, to promote mixing within the PBL
+        !  and to a height slighty above to ensure smooth transition.
+        tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+        tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+      else
+	! Default definition of eddy diffusivity
+	
+	! Compute the return to isotropic timescale as per
+        ! Canuto et al. 2004.  This is used to define the
+        ! eddy coefficients as well as to diagnose higher
+        ! moments in SHOC
 
-      ! define a damping term "lambda" based on column stability
-      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-      lambda=max(lambda_low,min(lambda_high,lambda))
+        ! define the time scale
+        tscale1=(2.0_rtype*tke(i,k))/a_diss
 
-      buoy_sgs_save=brunt(i,k)
-      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+        ! define a damping term "lambda" based on column stability
+        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+        lambda=max(lambda_low,min(lambda_high,lambda))
 
-      ! Compute the return to isotropic timescale
-      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
+        buoy_sgs_save=brunt(i,k)
+        if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
-      ! Define the eddy coefficients for heat and momentum
-      tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
-      tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+        ! Compute the return to isotropic timescale
+        isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))  
+      
+        ! Define the eddy coefficients for heat and momentum
+        tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
+        tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+      endif
 
       tke(i,k) = max(mintke,tke(i,k))
 

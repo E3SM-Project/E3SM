@@ -2,7 +2,6 @@
 #define P3_FUNCTIONS_ICE_RELAXATION_TIMESCALE_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "p3_functions_math_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -26,7 +25,7 @@ void Functions<S,D>
    const auto any_if = qitot_incld_ge_small && t_is_negative;
 
    /*!-----------------------------
-    * calcualte total inverse ice relaxation timescale combined for all ice categories
+    * calculate total inverse ice relaxation timescale combined for all ice categories
     * note 'f1pr' values are normalized, so we need to multiply by N
     */
    epsi.set(any_if,

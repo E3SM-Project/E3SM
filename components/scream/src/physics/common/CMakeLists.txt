@@ -12,6 +12,12 @@ set(PHYSICS_COMMON_SRCS
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 
+# Add ETI source files if not on CUDA
+if (NOT CUDA_BUILD)
+  list(APPEND P3_SRCS
+  physics_saturation.cpp)
+endif()
+
 add_library(physics_common ${PHYSICS_COMMON_SRCS})
 target_include_directories(physics_common PUBLIC ${SCREAM_INCLUDE_DIRS})
 target_include_directories(physics_common SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)

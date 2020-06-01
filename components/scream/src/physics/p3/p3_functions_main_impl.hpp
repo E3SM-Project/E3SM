@@ -2,6 +2,8 @@
 #define P3_FUNCTIONS_MAIN_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics_functions.hpp" // also for ETI not on GPUs
+#include "physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -136,6 +138,10 @@ void Functions<S,D>
   bool& log_nucleationPossible,
   bool& log_hydrometeorsPresent)
 {
+
+  // Get access to saturation functions
+  using physics = scream::physics::Functions<Scalar, Device>;
+
   // load constants into local vars
   constexpr Scalar g            = C::gravit;
   constexpr Scalar rhosur       = C::RHOSUR;
@@ -168,8 +174,8 @@ void Functions<S,D>
 
     rho(k)     = opdel(k)/odzq(k) / g;
     inv_rho(k) = 1 / rho(k);
-    qvs(k)     = qv_sat(t(k), opres(k), 0);
-    qvi(k)     = qv_sat(t(k), opres(k), 1);
+    qvs(k)     = physics::qv_sat(t(k), opres(k), 0);
+    qvi(k)     = physics::qv_sat(t(k), opres(k), 1);
 
     sup(k)  = oqv(k) / qvs(k) - 1;
     supi(k) = oqv(k) / qvi(k) - 1;
@@ -269,6 +275,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& inv_icldm,
   const uview_1d<const Spack>& inv_rcldm,
   const uview_1d<const Spack>& onaai,
+  const uview_1d<const Spack>& oqc_relvar,
   const uview_1d<const Spack>& oicldm,
   const uview_1d<const Spack>& olcldm,
   const uview_1d<const Spack>& orcldm,
@@ -533,7 +540,7 @@ void Functions<S,D>
       // TODO: needs smask protection
       // contact and immersion freezing droplets
       cldliq_immersion_freezing(
-        t(k), olamc(k), omu_c(k), cdist1(k), qc_incld(k),
+	t(k), olamc(k), omu_c(k), cdist1(k), qc_incld(k), oqc_relvar(k),
         qcheti, ncheti);
 
       // TODO: needs smask protection
@@ -584,7 +591,7 @@ void Functions<S,D>
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
-      rho(k), qc_incld(k), nc_incld(k),
+      rho(k), qc_incld(k), nc_incld(k), oqc_relvar(k),
       qcaut, ncautc, ncautr);
 
     // TODO: needs smask protection
@@ -596,7 +603,7 @@ void Functions<S,D>
     // TODO: needs smask protection
     // accretion of cloud by rain
     cloud_rain_accretion(
-      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k),
+      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k),oqc_relvar(k), 
       qcacc, ncacc);
 
     // TODO: needs smask protection
@@ -955,6 +962,7 @@ void Functions<S,D>
   const view_2d<const Spack>& dzq,           // vertical grid spacing                m
   const view_2d<const Spack>& npccn,         // IN ccn activated number tendency     kg-1 s-1
   const view_2d<const Spack>& naai,          // IN actived ice nuclei concentration  1/kg
+  const view_2d<const Spack>& qc_relvar,     // Assumed SGS 1/(var(qc)/mean(qc))     kg2/kg2
   const Real&                 dt,            // model time step                      s
   const Int&                  ni,            // num columns
   const Int&                  nk,            // column size
@@ -1098,6 +1106,7 @@ void Functions<S,D>
     const auto odzq              = util::subview(dzq, i);
     const auto onpccn            = util::subview(npccn, i);
     const auto onaai             = util::subview(naai, i);
+    const auto oqc_relvar        = util::subview(qc_relvar, i);
     const auto opdel             = util::subview(pdel, i);
     const auto oexner            = util::subview(exner, i);
     const auto oicldm            = util::subview(icldm, i);
@@ -1169,7 +1178,7 @@ void Functions<S,D>
     p3_main_main_loop(
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
-      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oicldm, olcldm, orcldm,
+      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_cld_exchange, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
       log_hydrometeorsPresent);
 
