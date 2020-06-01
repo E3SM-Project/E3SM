@@ -144,7 +144,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     const Real cond_num = (3.*relvar_info[s] + 4.)/(std::pow(relvar_info[s],2.0) +3*relvar_info[s]+2.0);
     const Real max_tol = tol*cond_num;
     
-    if ( std::abs(targ - c_scaling[0])/targ > max_tol){
+    if ( std::abs(targ - c_scaling[0]) > max_tol * targ ){
       printf("When expon=3, subgrid_variance_scaling doesn't match analytic expectation. "
 	     "Val = %e, expected = %e, rel diff = %e, tol = %e\n",
 	     c_scaling[0],targ, (targ-c_scaling[0])/targ, max_tol);
