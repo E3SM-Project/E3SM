@@ -80,7 +80,7 @@ contains
     read(981,'(A)') case_title
     read(981,'(2I8)') ncol, nlev
     if (ncol.gt.pcols.or.nlev.gt.pver) then
-       print *, 'ERROR (P3-Init): inconsistentcy between array dimensions'
+       print *, 'ERROR (P3-Init): inconsistency between array dimensions'
        close(981)
        return
     end if
@@ -159,7 +159,7 @@ contains
     real(kind=c_real) :: vap_liq_exchange(pcols,pver) ! sum of vap-liq phase change tendenices
     real(kind=c_real) :: vap_ice_exchange(pcols,pver) ! sum of vap-ice phase change tendenices
     real(kind=c_real) :: vap_cld_exchange(pcols,pver) ! sum of vap-cld phase change tendenices
-
+    real(kind=c_real) :: qc_relvar(pcols,pver)        ! 1/(var(qc)/mean(qc)**2) for P3 subgrid qc.
     real(kind=c_real) :: inv_cp
 
     real(kind=c_real) :: col_location(pcols,3) 
@@ -236,7 +236,7 @@ contains
 !          pdel(icol,k)  = (1e3_rtype-0.1)/real(pver) ! should be changed to come from model state.
        end do
     end do
-    ! Initialize the raidation dependent variables.
+    ! Initialize the radiation dependent variables.
     mu      = mucon
     lambdac = (mucon + 1._rtype)/dcon
     dei     = deicon
@@ -244,9 +244,13 @@ contains
     call get_cloud_fraction(its,ite,kts,kte,ast(its:ite,kts:kte),cldliq(its:ite,kts:kte), &
             rain(its:ite,kts:kte),ice(its:ite,kts:kte),precip_frac_method, &
             icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
-!    icldm(:,:) = 1.0_rtype
-!    lcldm(:,:) = 1.0_rtype
-!    rcldm(:,:) = 1.0_rtype
+    !    icldm(:,:) = 1.0_rtype
+    !    lcldm(:,:) = 1.0_rtype
+    !    rcldm(:,:) = 1.0_rtype
+
+    ! Hack qc_relvar (should get more thoughtful value later):
+    qc_relvar(:,:) = 1.0_rtype
+    
     ! CALL P3
     !==============
     call p3_main( &
@@ -265,6 +269,7 @@ contains
          dzq(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
          npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
          naai(its:ite,kts:kte),       & ! IN activated ice nuclei concentration kg-1
+         qc_relvar(its:ite,kts:kte),  & ! IN 1/(var(qc)/mean(qc)**2) used in P3.
          it,                          & ! IN     time step counter NOTE: starts at 1 for first time step
          prt_liq(its:ite),            & ! OUT    surface liquid precip rate       m s-1
          prt_sol(its:ite),            & ! OUT    surface frozen precip rate       m s-1

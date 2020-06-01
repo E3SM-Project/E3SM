@@ -43,28 +43,29 @@ static void run_bfb()
   constexpr Scalar lamc1 = 0.1, lamc2 = 0.2, lamc3 = 0.3, lamc4 = 0.4;
   constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.4, mu_c3 = 0.6, mu_c4 = 0.8;
   constexpr Scalar cdist11 = 0.25, cdist12 = 0.5, cdist13 = 0.75, cdist14 = 1.0;
+  constexpr Scalar qc_relvar_val = 1;
 
   CldliqImmersionFreezingData cldliq_imm_freezing_data[max_pack_size] = {
-    // t, lamc, mu_c, cdist1, qc_incld
-    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small},
-    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small},
-    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small},
-    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_small},
+    // t, lamc, mu_c, cdist1, qc_incld, qc_relvar
+    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small,qc_relvar_val},
+    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small,qc_relvar_val},
+    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small,qc_relvar_val},
+    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_small,qc_relvar_val},
 
-    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small},
-    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small},
-    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small},
-    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small},
+    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,qc_relvar_val},
+    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,qc_relvar_val},
+    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,qc_relvar_val},
+    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,qc_relvar_val},
 
-    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_small},
-    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_small},
-    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_small},
-    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_small},
+    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_small,qc_relvar_val},
+    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_small,qc_relvar_val},
+    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_small,qc_relvar_val},
+    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_small,qc_relvar_val},
 
-    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small},
-    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small},
-    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small},
-    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small}
+    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,qc_relvar_val},
+    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,qc_relvar_val},
+    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,qc_relvar_val},
+    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,qc_relvar_val}
   };
 
   // Sync to device
@@ -82,19 +83,20 @@ static void run_bfb()
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     // Init pack inputs
-    Spack t, lamc, mu_c, cdist1, qc_incld;
+      Spack t, lamc, mu_c, cdist1, qc_incld,qc_relvar;
     for (Int s = 0; s < Spack::n; ++s) {
       t[s]        = device_data(s).t;
       lamc[s]     = device_data(s).lamc;
       mu_c[s]     = device_data(s).mu_c;
       cdist1[s]   = device_data(s).cdist1;
       qc_incld[s] = device_data(s).qc_incld;
+      qc_relvar[s]= device_data(s).qc_relvar;
     }
 
     Spack qcheti{0.0};
     Spack ncheti{0.0};
 
-    Functions::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld,
+    Functions::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qc_relvar,
                                          qcheti, ncheti);
 
     // Copy results back into views

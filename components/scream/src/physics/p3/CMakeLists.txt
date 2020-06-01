@@ -32,7 +32,6 @@ if (NOT CUDA_BUILD)
     p3_functions_table_ice.cpp
     p3_functions_dsd2.cpp
     p3_functions_find.cpp
-    p3_functions_math.cpp
     p3_functions_update_prognostics.cpp
     p3_functions_get_time_space_phys_variables.cpp
     p3_functions_autoconversion.cpp
@@ -57,6 +56,7 @@ if (NOT CUDA_BUILD)
     p3_functions_get_latent_heat.cpp
     p3_functions_check_values.cpp
     p3_functions_incloud_mixingratios.cpp
+    p3_functions_subgrid_variance_scaling.cpp
     p3_functions_main.cpp)
 endif()
 

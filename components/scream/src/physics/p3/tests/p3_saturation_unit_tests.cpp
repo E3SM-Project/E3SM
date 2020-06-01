@@ -7,6 +7,8 @@
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
+#include "physics/common/physics_functions.hpp"
+#include "physics/common/physics_saturation_impl.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -27,6 +29,9 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
   KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure, const Scalar& correct_sat_ice_p,
     const Scalar& correct_sat_liq_p, const Scalar&  correct_mix_ice_r, const Scalar& correct_mix_liq_r, int& errors ){
 
+    //Allow usage of saturation functions
+    using physics = scream::physics::Functions<Scalar, Device>;
+    
     //Convert Scalar inputs to Spacks because that's what polysvp1 and qv_sat expect as inputs.
     //--------------------------------------
     const Spack temps(temperature);
@@ -34,10 +39,10 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
 
     //Get values from polysvp1 and qv_sat to test against "correct" values
     //--------------------------------------
-    Spack sat_ice_p = Functions::polysvp1(temps, true);
-    Spack sat_liq_p = Functions::polysvp1(temps, false);
-    Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
-    Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
+    Spack sat_ice_p = physics::polysvp1(temps, true);
+    Spack sat_liq_p = physics::polysvp1(temps, false);
+    Spack mix_ice_r = physics::qv_sat(temps, pres, true);
+    Spack mix_liq_r = physics::qv_sat(temps, pres, false);
 
     //Set error tolerances
     //--------------------------------------
@@ -55,10 +60,6 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     const Scalar RhoIce = C::RhoIce;
     const Scalar LatVap = C::LatVap;
     const Scalar LatIce = C::LatIce;
-
-    printf("===============================\n");
-    printf("Checking T = %f and Pres = %e\n",temperature,pressure);
-    printf("===============================\n");
 
     //PMC note: original version looped over pack dimension, testing each entry. This isn't
     //necessary b/c packs were created by copying a scalar up to pack size. Thus just evaluating
@@ -81,10 +82,10 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     // ---------------------------------------------------------      
     // Now check that computed vs expected values are small enough.     
     if ( std::abs(sat_ice_p[0] - correct_sat_ice_p ) > Cond_ice_p*tol ) {
-      printf("  esi: abs(calc-expected),cond*tol=%e %e\n",std::abs(sat_ice_p[0] - correct_sat_ice_p ),tol*Cond_ice_p );
+      printf("esi for T = %f abs diff is %e but max allowed is %e\n",temperature,std::abs(sat_ice_p[0] - correct_sat_ice_p ),tol*Cond_ice_p );
       errors++;}
     if (std::abs(sat_liq_p[0] - correct_sat_liq_p) > Cond_liq_p*tol)  {
-      printf("  esl: abs(calc-expected),cond*tol=%e %e\n",std::abs(sat_liq_p[0] - correct_sat_liq_p ),tol*Cond_liq_p);
+      printf("esl  for T = %f abs diff is %e but max allowed is %e\n",temperature,std::abs(sat_liq_p[0] - correct_sat_liq_p ),tol*Cond_liq_p);
       errors++;}
 
     //==========================================================
