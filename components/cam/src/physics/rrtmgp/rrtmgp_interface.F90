@@ -26,7 +26,6 @@ module rrtmgp_interface
   use mo_fluxes_byband, only: ty_fluxes_byband
   use mo_rte_lw, only: base_rte_lw => rte_lw
   use mo_rte_sw, only: base_rte_sw => rte_sw
-  use assertions, only: assert
   implicit none
   private
   public :: &
