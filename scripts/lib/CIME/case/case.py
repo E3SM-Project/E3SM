@@ -459,17 +459,17 @@ class Case(object):
 
         self.set_lookup_value("COMP_INTERFACE", driver)
         if self._cime_model == 'ufs':
-             config = {}
-             if 'ufsatm' in compset_name:
-                 config['component']='nems'
-             else:
-                 config['component']='cpl'
-             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
+            config = {}
+            if 'ufsatm' in compset_name:
+                config['component']='nems'
+            else:
+                config['component']='cpl'
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
 
         if self._cime_model == 'cesm':
             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
         if self._cime_model in ('cesm','ufs'):
-             self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
+            self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order

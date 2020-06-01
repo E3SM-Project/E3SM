@@ -37,12 +37,12 @@ class Files(EntryID):
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         if vid == "COMP_ROOT_DIR_CPL":
-             if self._cpl_comp:
-                 attribute = self._cpl_comp
-             elif attribute:
-                 self._cpl_comp = attribute
-             else:
-                 self._cpl_comp['component'] = 'cpl'
+            if self._cpl_comp:
+                attribute = self._cpl_comp
+            elif attribute:
+                self._cpl_comp = attribute
+            else:
+                self._cpl_comp['component'] = 'cpl'
         if "COMP_ROOT_DIR" in vid:
             if vid in self.COMP_ROOT_DIR:
                 if attribute is not None:
