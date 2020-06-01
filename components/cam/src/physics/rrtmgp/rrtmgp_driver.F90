@@ -11,14 +11,12 @@
 ! Use and duplication is permitted under the terms of the
 !    BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
 !
-
 !
 ! This module provides an interface to RRTMGP for a common use case --
 !   users want to start from gas concentrations, pressures, and temperatures,
 !   and compute clear-sky (aerosol plus gases) and all-sky fluxes.
 ! The routines here have the same names as those in mo_rrtmgp_[ls]w; normally users
 !   will use either this module or the underling modules, but not both
-!
 module rrtmgp_driver
   use mo_rte_kind,   only: wp
   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
@@ -28,14 +26,136 @@ module rrtmgp_driver
   use mo_fluxes_byband, only: ty_fluxes_byband
   use mo_rte_lw, only: base_rte_lw => rte_lw
   use mo_rte_sw, only: base_rte_sw => rte_sw
+  use assertions, only: assert
   implicit none
   private
-  public :: rte_lw, rte_sw
+  public :: &
+     rrtmgp_initialize, rrtmgp_finalize, &
+     rte_lw, rte_sw, &
+     get_nband, get_ngpt, get_band_lims_wavenumber, get_band_midpoints, &
+     get_temp_min, get_temp_max, get_gpoint_bands
 
   public :: k_dist_lw, k_dist_sw
   type(ty_gas_optics_rrtmgp) :: k_dist_lw, k_dist_sw
+  integer, parameter :: ERROR_MSG_LEN = 128
 
 contains
+   !----------------------------------------------------------------------------
+   function rrtmgp_initialize(coefficients_file_sw, coefficients_file_lw, active_gases) result(error_msg)
+      use rrtmgp_coefficients, only: load_and_init
+      use mo_gas_concentrations, only: ty_gas_concs
+      character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
+      character(len=*), dimension(:), intent(in) :: active_gases
+      character(len=ERROR_MSG_LEN) :: error_msg
+      ! ty_gas_concs object that would normally hold volume mixing ratios for
+      ! radiatively-important gases. Here, this is just used to provide the names
+      ! of gases that are available in the model (needed by the kdist
+      ! initialization routines that are called within the load_coefficients
+      ! methods).
+      type(ty_gas_concs) :: available_gases
+
+      ! Need to initialize available_gases here! The only field of the
+      ! available_gases type that is used in the kdist initialize is
+      ! available_gases%gas_name, which gives the name of each gas that would be
+      ! present in the ty_gas_concs object. So, we can just set this here, rather
+      ! than trying to fully populate the ty_gas_concs object here, which would be
+      ! impossible from this initialization routine because I do not think the
+      ! rad_cnst objects are setup yet.
+      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
+      ! the other tasks!
+      error_msg = set_available_gases(active_gases, available_gases)
+      if (error_msg /= '') return
+
+      ! Read coefficients from file and populate k-dist objects
+      call load_and_init(k_dist_sw, coefficients_file_sw, available_gases)
+      call load_and_init(k_dist_lw, coefficients_file_lw, available_gases)
+   end function rrtmgp_initialize
+   !----------------------------------------------------------------------------
+   function set_available_gases(gases, gas_concentrations) result(error_msg)
+
+      use mo_gas_concentrations, only: ty_gas_concs
+      use mo_rrtmgp_util_string, only: lower_case
+
+      type(ty_gas_concs), intent(inout) :: gas_concentrations
+      character(len=*), intent(in) :: gases(:)
+      character(len=32), dimension(size(gases)) :: gases_lowercase
+      character(len=ERROR_MSG_LEN) :: error_msg
+      integer :: igas
+
+      error_msg = ''
+      ! Initialize with lowercase gas names; we should work in lowercase
+      ! whenever possible because we cannot trust string comparisons in RRTMGP
+      ! to be case insensitive
+      do igas = 1,size(gases)
+         gases_lowercase(igas) = trim(lower_case(gases(igas)))
+      end do
+      error_msg = gas_concentrations%init(gases_lowercase)
+
+   end function set_available_gases
+   !----------------------------------------------------------------------------
+   function rrtmgp_finalize() result(error_msg)
+      character(len=ERROR_MSG_LEN) :: error_msg
+      error_msg = ''
+   end function rrtmgp_finalize
+   !----------------------------------------------------------------------------
+   function get_nband(band) result(nband)
+      character(len=*), intent(in) :: band
+      integer :: nband
+      if (trim(band) == 'sw') then
+         nband = k_dist_sw%get_nband()
+      else if (trim(band) == 'lw') then
+         nband = k_dist_lw%get_nband()
+      else
+         nband = -1
+      end if
+   end function get_nband
+   !----------------------------------------------------------------------------
+   function get_ngpt(band) result(ngpt)
+      character(len=*), intent(in) :: band
+      integer :: ngpt
+      if (trim(band) == 'sw') then
+         ngpt = k_dist_sw%get_ngpt()
+      else if (trim(band) == 'lw') then
+         ngpt = k_dist_lw%get_ngpt()
+      else
+         ngpt = -1
+      end if
+   end function get_ngpt
+   !----------------------------------------------------------------------------
+   function get_band_lims_wavenumber(band, nband) result(band_limits)
+      character(len=*), intent(in) :: band
+      integer, intent(in) :: nband
+      real(wp), dimension(2,nband) :: band_limits
+      if (trim(band) == 'sw') then
+         band_limits = k_dist_sw%get_band_lims_wavenumber()
+      else if (trim(band) == 'lw') then
+         band_limits = k_dist_lw%get_band_lims_wavenumber()
+      else
+         band_limits = -1
+      end if
+   end function get_band_lims_wavenumber
+   !----------------------------------------------------------------------------
+   real(wp) function get_temp_min()
+      get_temp_min = min(k_dist_sw%get_temp_min(), k_dist_lw%get_temp_min())
+   end function get_temp_min
+   !----------------------------------------------------------------------------
+   real(wp) function get_temp_max()
+      get_temp_max = max(k_dist_sw%get_temp_max(), k_dist_lw%get_temp_max())
+   end function get_temp_max
+   !----------------------------------------------------------------------------
+   function get_gpoint_bands(band, ngpt)
+      character(len=*), intent(in) :: band
+      integer, intent(in) :: ngpt
+      integer, dimension(ngpt) :: get_gpoint_bands
+      if (trim(band) == 'sw') then
+         get_gpoint_bands = k_dist_sw%get_gpoint_bands()
+      else if (trim(band) == 'lw') then
+         get_gpoint_bands = k_dist_lw%get_gpoint_bands()
+      else
+         get_gpoint_bands = -1
+      end if
+   end function
+   !----------------------------------------------------------------------------
   ! --------------------------------------------------
   !
   ! Interfaces using clear (gas + aerosol) and all-sky categories, starting from
@@ -281,5 +401,32 @@ contains
                                  allsky_fluxes)
   
    end function rte_sw
+
+   !----------------------------------------------------------------------------
+   ! Function to calculate band midpoints from kdist band limits
+   function get_band_midpoints(band, band_midpoints) result(error_msg)
+      character(len=*), intent(in) :: band
+      real(wp), intent(inout) :: band_midpoints(:)
+      character(len=ERROR_MSG_LEN) :: error_msg
+      real(wp) :: band_limits(2,size(band_midpoints))
+      character(len=128), parameter :: subname = 'get_band_midpoints'
+      integer :: i
+      ! Get band limits
+      error_msg = ''
+      if (trim(band) == 'sw') then
+         band_limits = k_dist_sw%get_band_lims_wavelength()
+      else if (trim(band) == 'lw') then
+         band_limits = k_dist_lw%get_band_lims_wavelength()
+      else
+         error_msg = trim(subname) // ': band ' // trim(band) // ' not known.'
+         return
+      end if
+      ! Compute midpoints from band limits
+      band_midpoints(:) = 0._wp
+      do i = 1,size(band_midpoints)
+         band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._wp
+      end do
+   end function get_band_midpoints
+   !----------------------------------------------------------------------------
 
 end module rrtmgp_driver

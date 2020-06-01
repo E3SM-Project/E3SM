@@ -19,11 +19,6 @@ module radiation
    use radconstants,     only: &
       set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds
 
-   ! RRTMGP gas optics object to store coefficient information. This is imported
-   ! here so that we can make the k_dist objects module data and only load them
-   ! once.
-   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
-
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
 
@@ -35,7 +30,9 @@ module radiation
    ! RRTMGP coefficients files, specified by coefficients_file_sw and
    ! coefficients_file_lw in the radiation namelist. They exist as module data
    ! because we only want to load those files once.
-   use rrtmgp_driver, only: k_dist_lw, k_dist_sw
+   use rrtmgp_driver, only: &
+      get_band_lims_wavenumber, get_band_midpoints, &
+      get_nband, get_ngpt, get_gpoint_bands
 
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
@@ -142,22 +139,8 @@ module radiation
    ! Set name for this module (for purpose of writing output and log files)
    character(len=*), parameter :: module_name = 'radiation'
 
-   ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
-   ! This information will be stored in the k_dist_sw and k_dist_lw objects and
-   ! may
-   ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
-   ! methods, but I think we need to save these as private module data so that
-   ! we
-   ! can automatically allocate arrays later in subroutine headers, i.e.:
-   !
-   !     real(r8) :: cld_tau(pcols,pver,nswbands)
-   !
-   ! and so forth. Previously some of this existed in radconstants.F90, but I do
-   ! not think we need to use that.
-   ! EDIT: maybe these JUST below in radconstants.F90?
+   ! Number of shortwave and longwave bands and gpoints in use by the RRTMGP.
    integer :: nswbands, nlwbands
-
-   ! Also, save number of g-points as private module data
    integer :: nswgpts, nlwgpts
 
    ! Gases that we want to use in the radiative calculations. These need to be set
@@ -437,8 +420,7 @@ contains
       use physics_types,      only: physics_state
 
       ! RRTMGP modules
-      use rrtmgp_coefficients, only: rrtmgp_load_coefficients=>load_and_init
-      use mo_gas_concentrations, only: ty_gas_concs
+      use rrtmgp_driver, only: rrtmgp_initialize, get_band_midpoints
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -465,16 +447,6 @@ contains
       integer :: cldfsnow_idx = 0 
 
       logical :: use_MMF  ! MMF flag
-
-      character(len=128) :: error_message
-
-      ! ty_gas_concs object that would normally hold volume mixing ratios for
-      ! radiatively-important gases. Here, this is just used to provide the names
-      ! of gases that are available in the model (needed by the kdist
-      ! initialization routines that are called within the load_coefficients
-      ! methods).
-      type(ty_gas_concs) :: available_gases
-
       real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
@@ -496,30 +468,21 @@ contains
       call perturbation_growth_init()
 
       ! Read gas optics coefficients from file
-      ! Need to initialize available_gases here! The only field of the
-      ! available_gases type that is used int he kdist initialize is
-      ! available_gases%gas_name, which gives the name of each gas that would be
-      ! present in the ty_gas_concs object. So, we can just set this here, rather
-      ! than trying to fully populate the ty_gas_concs object here, which would be
-      ! impossible from this initialization routine because I do not thing the
-      ! rad_cnst objects are setup yet.
-      call set_available_gases(active_gases, available_gases)
-      call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
-      call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+      call handle_error(rrtmgp_initialize(coefficients_file_sw, coefficients_file_lw, active_gases))
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
-      nswbands = k_dist_sw%get_nband()
-      nlwbands = k_dist_lw%get_nband()
+      nswbands = get_nband('sw')
+      nlwbands = get_nband('lw')
 
       ! Set number of g-points for used for correlated-k. These are determined
       ! by the absorption coefficient data.
-      nswgpts = k_dist_sw%get_ngpt()
-      nlwgpts = k_dist_lw%get_ngpt()
+      nswgpts = get_ngpt('sw')
+      nlwgpts = get_ngpt('lw')
 
       ! Set values in radconstants
-      call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
-      call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
+      call set_sw_spectral_boundaries(get_band_lims_wavenumber('sw', nswbands))
+      call set_lw_spectral_boundaries(get_band_lims_wavenumber('lw', nlwbands))
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -589,8 +552,8 @@ contains
       
       ! Register new dimensions
       allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
-      sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
-      lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
+      call handle_error(get_band_midpoints('sw', sw_band_midpoints))
+      call handle_error(get_band_midpoints('lw', lw_band_midpoints))
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
@@ -1050,36 +1013,6 @@ contains
       call handle_error(gas_concentrations%init(gases_lowercase))
 
    end subroutine set_available_gases
-
-
-   ! Function to calculate band midpoints from kdist band limits
-   function get_band_midpoints(nbands, kdist) result(band_midpoints)
-      integer, intent(in) :: nbands
-      type(ty_gas_optics_rrtmgp), intent(in) :: kdist
-      real(r8) :: band_midpoints(nbands)
-      real(r8) :: band_limits(2,nbands)
-      integer :: i
-      character(len=32) :: subname = 'get_band_midpoints'
-
-      call assert(kdist%get_nband() == nbands, trim(subname) // ': kdist%get_nband() /= nbands')
-
-      band_limits = kdist%get_band_lims_wavelength()
-
-      call assert(size(band_limits, 1) == size(kdist%get_band_lims_wavelength(), 1), &
-                  subname // ': band_limits and kdist inconsistently sized')
-      call assert(size(band_limits, 2) == size(kdist%get_band_lims_wavelength(), 2), &
-                  subname // ': band_limits and kdist inconsistently sized')
-      call assert(size(band_limits, 2) == size(band_midpoints), &
-                  subname // ': band_limits and band_midpoints inconsistently sized')
-      call assert(all(band_limits > 0), subname // ': negative band limit wavelengths!')
-
-      band_midpoints(:) = 0._r8
-      do i = 1,nbands
-         band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._r8
-      end do
-      call assert(all(band_midpoints > 0), subname // ': negative band_midpoints!')
-
-   end function get_band_midpoints
 
 
    !===============================================================================
@@ -1566,7 +1499,7 @@ contains
                            liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
                         )
                         call sample_cloud_optics_sw( &
-                           ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
+                           ncol, pver, nswgpts, get_gpoint_bands('sw', nswgpts), &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
@@ -1591,7 +1524,7 @@ contains
                            cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
                         )
                         call sample_cloud_optics_lw( &
-                           ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
+                           ncol, pver, nlwgpts, get_gpoint_bands('lw', nlwgpts), &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
@@ -2388,7 +2321,7 @@ contains
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
-      wavenumber_limits = k_dist_sw%get_band_lims_wavenumber()
+      wavenumber_limits = get_band_lims_wavenumber('sw', nswbands)
 
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")
