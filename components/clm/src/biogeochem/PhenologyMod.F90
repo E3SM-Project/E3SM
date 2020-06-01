@@ -551,8 +551,11 @@ contains
          
          season_decid                        =>    veg_vp%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
          woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         crit_gdd1                           =>    veg_vp%crit_gdd1                                  , & ! Input:  [real(r8) (:) ] critical GDD intercept (at t = 0)
+         crit_gdd2                           =>    veg_vp%crit_gdd2                                  , & ! Input:  [real(r8) (:) ] critical GDD slope (funtion of MAT)
          
          t_soisno                            =>    col_es%t_soisno                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         t_ref2m                             =>    veg_es%t_ref2m                          , & ! Input:  [real(r8) (:) ]  2 m height surface air temperature (K)
          
          annavg_t2m                          =>    cnstate_vars%annavg_t2m_patch                         , & ! Input:  [real(r8)  (:)   ]  annual average 2m air temperature (K)             
          dormant_flag                        =>    cnstate_vars%dormant_flag_patch                       , & ! Output: [real(r8)  (:)   ]  dormancy flag                                     
@@ -561,6 +564,8 @@ contains
          onset_counter                       =>    cnstate_vars%onset_counter_patch                      , & ! Output: [real(r8)  (:)   ]  onset counter (seconds)                           
          onset_gddflag                       =>    cnstate_vars%onset_gddflag_patch                      , & ! Output: [real(r8)  (:)   ]  onset freeze flag                                 
          onset_gdd                           =>    cnstate_vars%onset_gdd_patch                          , & ! Output: [real(r8)  (:)   ]  onset growing degree days                         
+         onset_chil                          =>    cnstate_vars%onset_chil_patch                         , & 
+         dayl_temp                           =>    cnstate_vars%dayl_temp                         , &
          offset_flag                         =>    cnstate_vars%offset_flag_patch                        , & ! Output: [real(r8)  (:)   ]  offset flag                                       
          offset_counter                      =>    cnstate_vars%offset_counter_patch                     , & ! Output: [real(r8)  (:)   ]  offset counter (seconds)                          
          bglfr_leaf                          =>    cnstate_vars%bglfr_leaf_patch                         , & ! Output: [real(r8)  (:)   ]  background leaf litterfall rate (1/s)                  
@@ -669,8 +674,8 @@ contains
             lgsf(p) = 0._r8
 
             ! onset gdd sum from Biome-BGC, v4.1.2
-            crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(annavg_t2m(p) - SHR_CONST_TKFRZ))
-
+            crit_onset_gdd = exp(crit_gdd1(ivt(p)) + crit_gdd2(ivt(p))*(annavg_t2m(p) - SHR_CONST_TKFRZ))
+            !crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(annavg_t2m(p) - SHR_CONST_TKFRZ))
             ! set flag for solstice period (winter->summer = 1, summer->winter = 0)
             if (dayl(g) >= prev_dayl(g)) then
                ws_flag = 1._r8
@@ -767,6 +772,8 @@ contains
                if (onset_gddflag(p) == 0._r8 .and. ws_flag == 1._r8) then
                   onset_gddflag(p) = 1._r8
                   onset_gdd(p) = 0._r8
+                  onset_chil(p) = 0._r8
+                  dayl_temp(p) = 0._r8
                end if
 
                ! Test to turn off growing degree-day sum, if on.
@@ -783,9 +790,32 @@ contains
                ! if the gdd flag is set, and if the soil is above freezing
                ! then accumulate growing degree days for onset trigger
 
-               soilt = t_soisno(c,3)
-               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               !soilt = t_soisno(c,3)
+               !if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
+               !   onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               if (ivt(p)==3) then!DN (3)
+                 !forcing
+                 if (onset_gddflag(p) == 1.0_r8 .and. t_ref2m(p) > 279.50_r8 .and. ws_flag == 1._r8) then
+                   onset_gdd(p) = onset_gdd(p)+(t_ref2m(p)-279.50_r8)*fracday
+                 end if
+                 !then accumulate chilling days for onset trigger
+                 if (onset_gddflag(p) == 1.0_r8 .and. t_ref2m(p) < 279.50_r8 .and. ws_flag == 1._r8) then
+                   onset_chil(p) = onset_chil(p) + fracday
+                 end if
+                 crit_onset_gdd = 9._r8 +2112._r8 * exp(-0.04_r8 * onset_chil(p))
+               else if (ivt(p)==11) then !SH (11)
+                 if (onset_gddflag(p) == 1.0_r8 .and. t_ref2m(p) > 279.05_r8 .and. ws_flag == 1._r8) then
+                   onset_gdd(p) = onset_gdd(p) +(t_ref2m(p)-279.05_r8)*fracday
+                 end if
+                 if (onset_gddflag(p) == 1.0_r8 .and. t_ref2m(p) < 279.05_r8 .and. ws_flag == 1._r8) then
+                   onset_chil(p) = onset_chil(p) + fracday
+                 end if
+                 crit_onset_gdd = 33._r8 + 1388._r8 * exp(-0.02_r8 * onset_chil(p))
+               else
+                 soilt = t_soisno(c,3)
+                 if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
+                   onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+                 end if
                end if
 
                ! set onset_flag if critical growing degree-day sum is exceeded
@@ -794,6 +824,8 @@ contains
                   dormant_flag(p) = 0.0_r8
                   onset_gddflag(p) = 0.0_r8
                   onset_gdd(p) = 0.0_r8
+                  onset_chil(p) = 0.0_r8
+                  dayl_temp(p) = 0.0_r8
                   onset_counter(p) = ndays_on * secspday
 
                   ! move all the storage pools into transfer pools,
@@ -836,12 +868,38 @@ contains
                ! test for switching from growth period to offset period
             else if (offset_flag(p) == 0.0_r8) then
                ! only begin to test for offset daylength once past the summer sol
-               if (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) then
+
+              if (ivt(p) == 3) then
+                if(ws_flag == 0._r8 .and. dayl(g) < 46800.0_r8 .and. t_ref2m(p) < 294.5_r8) then
+                  dayl_temp(p) =dayl_temp(p) + ((294.5_r8 - t_ref2m(p))**2 * (dayl(g)/46800.0_r8 )) * fracday
+                end if
+
+                if(ws_flag == 0._r8 .and. dayl_temp(p)> 1750.0_r8) then
+                  offset_flag(p) = 1._r8
+                  dayl_temp(p) = 0._r8
+                  offset_counter(p) = ndays_off * secspday
+                  prev_leafc_to_litter(p) = 0._r8
+                  prev_frootc_to_litter(p) = 0._r8
+                end if
+              else if (ivt(p) == 11) then
+                if(ws_flag == 0._r8 .and. dayl(g) < 54600.0_r8 .and. t_ref2m(p) < 290.15_r8) then
+                  dayl_temp(p) =dayl_temp(p) +( (290.15_r8 - t_ref2m(p))**2 *(dayl(g)/54600.0_r8))*fracday
+                end if
+                if(ws_flag == 0._r8 .and. dayl_temp(p)> 1600.0_r8) then
+                  offset_flag(p) = 1._r8
+                  dayl_temp(p) = 0._r8
+                  offset_counter(p) = ndays_off * secspday
+                  prev_leafc_to_litter(p) = 0._r8
+                  prev_frootc_to_litter(p) = 0._r8
+                end if
+              else
+                if (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) then
                   offset_flag(p) = 1._r8
                   offset_counter(p) = ndays_off * secspday
                   prev_leafc_to_litter(p) = 0._r8
                   prev_frootc_to_litter(p) = 0._r8
-               end if
+                 end if
+              end if
             end if
 
          end if ! end if seasonal deciduous

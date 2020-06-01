@@ -449,7 +449,7 @@ contains
 
          hui                          => crop_vars%gddplant_patch                              , & ! Input:  [real(r8) (:)   ]  =gdd since planting (gddplant)          
          leafout                      => crop_vars%gddtsoi_patch                               , & ! Input:  [real(r8) (:)   ]  =gdd from top soil layer temperature    
-
+         cpool                        => veg_cs%cpool                         , & ! Input:  [real(r8) (:)   ]  =photosynthate pool
          xsmrpool                     => veg_cs%xsmrpool                       , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool  
          leafc                        => veg_cs%leafc                          , & ! Input:  [real(r8) (:)   ]                                          
          frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]                                          
@@ -772,14 +772,26 @@ contains
             ! Determine rate of recovery for xsmrpool deficit
 
             xsmrpool_recover(p) = -xsmrpool(p)/(dayscrecover*secspday)
-            if (xsmrpool_recover(p) < availc(p)) then
-               ! available carbon reduced by amount for xsmrpool recovery
-               availc(p) = availc(p) - xsmrpool_recover(p)
-            else
-               ! all of the available carbon goes to xsmrpool recovery
-               xsmrpool_recover(p) = availc(p)
-               availc(p) = 0.0_r8
-            end if
+            !if (xsmrpool_recover(p) < availc(p)) then
+            !   ! available carbon reduced by amount for xsmrpool recovery
+            !   availc(p) = availc(p) - xsmrpool_recover(p)
+            !else
+            !   ! all of the available carbon goes to xsmrpool recovery
+            !   xsmrpool_recover(p) = availc(p)
+            !   availc(p) = 0.0_r8
+            if (cpool(p) < 10.0_r8 * xsmrpool_recover(p)*dt) then 
+              !Take xsmr recovery from existing cpool, if cpool too small then
+              !use availc
+              if (xsmrpool_recover(p) < availc(p)) then
+                ! available carbon reduced by amount for xsmrpool recovery
+                 availc(p) = availc(p) - xsmrpool_recover(p)
+              else
+                 ! all of the available carbon goes to xsmrpool recovery
+                 xsmrpool_recover(p) = availc(p)
+                 availc(p) = 0.0_r8
+              end if
+
+            end if 
             cpool_to_xsmrpool(p) = xsmrpool_recover(p)
          end if
 

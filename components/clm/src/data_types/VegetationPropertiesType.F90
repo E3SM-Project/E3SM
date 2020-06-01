@@ -142,6 +142,8 @@ module VegetationPropertiesType
      real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
      real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
      real(r8), allocatable :: br_xr(:)            !Base rate for excess respiration
+     real(r8), allocatable :: crit_gdd1(:)        !Deciduous pheonlogy critical GDD intercept
+     real(r8), allocatable :: crit_gdd2(:)        !Deciduous pheonlogy critical GDD slope
      real(r8)              :: tc_stress           !Critial temperature for moisture stress
 
 
@@ -180,7 +182,7 @@ contains
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
     use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
-    use pftvarcon , only : bbbopt, mbbopt, nstor, br_xr, tc_stress, lmrhd 
+    use pftvarcon , only : bbbopt, mbbopt, nstor, br_xr, tc_stress, lmrhd, crit_gdd1, crit_gdd2
     !
     
     class (vegetation_properties_type) :: this
@@ -290,7 +292,8 @@ contains
     allocate( this%mbbopt(0:numpft))                             ; this%mbbopt(:)                =nan
     allocate( this%nstor(0:numpft))                              ; this%nstor(:)                 =nan
     allocate( this%br_xr(0:numpft))                              ; this%br_xr(:)                 =nan
-
+    allocate( this%crit_gdd1(0:numpft))                          ; this%crit_gdd1(:)             =nan
+    allocate( this%crit_gdd2(0:numpft))                          ; this%crit_gdd2(:)             =nan
     do m = 0,numpft
 
        if (m <= ntree) then
@@ -377,7 +380,8 @@ contains
        this%mbbopt(m)       = mbbopt(m)
        this%nstor(m)        = nstor(m)
        this%br_xr(m)        = br_xr(m)
- 
+       this%crit_gdd1(m)    = crit_gdd1(m)
+       this%crit_gdd2(m)    = crit_gdd2(m)
     end do
     
     do m = 0,numpft

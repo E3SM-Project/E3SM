@@ -116,6 +116,8 @@ module CNStateType
      real(r8), pointer :: onset_gddflag_patch          (:)     ! patch onset flag for growing degree day sum
      real(r8), pointer :: onset_fdd_patch              (:)     ! patch onset freezing degree days counter
      real(r8), pointer :: onset_gdd_patch              (:)     ! patch onset growing degree days
+     real(r8), pointer :: onset_chil_patch             (:)
+     real(r8), pointer :: dayl_temp                    (:)
      real(r8), pointer :: onset_swi_patch              (:)     ! patch onset soil water index
      real(r8), pointer :: offset_flag_patch            (:)     ! patch offset flag
      real(r8), pointer :: offset_counter_patch         (:)     ! patch offset days counter
@@ -303,6 +305,8 @@ contains
     allocate(this%onset_gddflag_patch         (begp:endp)) ;    this%onset_gddflag_patch         (:) = nan
     allocate(this%onset_fdd_patch             (begp:endp)) ;    this%onset_fdd_patch             (:) = nan
     allocate(this%onset_gdd_patch             (begp:endp)) ;    this%onset_gdd_patch             (:) = nan
+    allocate(this%onset_chil_patch            (begp:endp)) ;    this%onset_chil_patch            (:) = nan
+    allocate(this%dayl_temp                   (begp:endp)) ;    this%dayl_temp                   (:) = nan
     allocate(this%onset_swi_patch             (begp:endp)) ;    this%onset_swi_patch             (:) = nan
     allocate(this%offset_flag_patch           (begp:endp)) ;    this%offset_flag_patch           (:) = nan
     allocate(this%offset_counter_patch        (begp:endp)) ;    this%offset_counter_patch        (:) = nan
@@ -544,6 +548,11 @@ contains
     call hist_addfld1d (fname='ONSET_GDDFLAG', units='none', &
          avgflag='A', long_name='onset flag for growing degree day sum', &
          ptr_patch=this%onset_gddflag_patch, default='inactive')
+
+    this%onset_chil_patch(begp:endp) = spval
+    call hist_addfld1d (fname='ONSET_CHIL', units='none', &
+         avgflag='A', long_name='onset chilling day sum', &
+         ptr_patch=this%onset_chil_patch, default='inactive')
 
     this%onset_fdd_patch(begp:endp) = spval
     call hist_addfld1d (fname='ONSET_FDD', units='C degree-days', &

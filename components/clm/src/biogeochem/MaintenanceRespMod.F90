@@ -131,6 +131,7 @@ contains
          livecroot_mr   =>    veg_cf%livecroot_mr    , & ! Output: [real(r8) (:)   ]                                                    
          grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]                                                    
          xr             =>    veg_cf%xr              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
+         totvegc        =>    veg_cs%totvegc         , &
 
          frootn         =>    veg_ns%frootn       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
          livestemn      =>    veg_ns%livestemn    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
@@ -194,7 +195,9 @@ contains
             grain_mr(p) = grainn(p)*br_mr*tc
          end if
          if (br_xr(ivt(p)) .gt. 1e-9_r8) then
-            xr(p) = cpool(p) * br_xr(ivt(p)) * tc
+            !xr(p) = cpool(p) * br_xr(ivt(p)) * tc
+            ! this is to limit the size of cpool
+            xr(p) = cpool(p) * br_xr(ivt(p)) * exp((min(cpool(p) / totvegc(p),0.3335_r8) - 0.1_r8)/0.02_r8) * tc 
             !xr_above(p) = xr(p) * (leafn(p) + livestemn(p)) / &
             !          (leafn(p) + livestemn(p) + frootn(p))
             !xr_below(p) = xr(p) - xr_above(p)
