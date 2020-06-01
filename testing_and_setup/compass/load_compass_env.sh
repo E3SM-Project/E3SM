@@ -1,4 +1,4 @@
-version=0.1.5
+version=0.1.6
 
 # The rest of the script should not need to be modified
 if [[ $HOSTNAME = "cori"* ]] || [[ $HOSTNAME = "dtn"* ]]; then
