@@ -20,14 +20,11 @@ module radiation
       set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds, &
       get_band_index_sw, get_band_index_lw, test_get_band_index
 
-   use mo_rte_kind, only: wp
-
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
 
    use radiation_state, only: ktop, kbot, nlev_rad
-   use radiation_utils, only: compress_day_columns, expand_day_columns, &
-                              handle_error
+   use radiation_utils, only: compress_day_columns, expand_day_columns
 
    ! RRTMGP interface codes
    use rrtmgp_interface, only: &
@@ -457,7 +454,9 @@ contains
 
       logical :: use_MMF  ! SPCAM flag
 
-      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
+      real(r8), allocatable :: &
+         sw_band_midpoints(:), lw_band_midpoints(:), &
+         sw_band_limits(:,:), lw_band_limits(:,:)
       character(len=32) :: subname = 'radiation_init'
 
       !-----------------------------------------------------------------------
@@ -476,7 +475,7 @@ contains
       call perturbation_growth_init()
 
       ! Read gas optics coefficients from file
-      call handle_error(rrtmgp_initialize(coefficients_file_sw, coefficients_file_lw, active_gases))
+      call handle_error(rrtmgp_initialize(coefficients_file_sw, coefficients_file_lw, active_gases), 'rrtmgp_initialize')
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -488,8 +487,12 @@ contains
       nlwgpts = get_ngpt('lw')
 
       ! Set values in radconstants
-      call set_sw_spectral_boundaries(get_band_lims_wavenumber('sw', nswbands))
-      call set_lw_spectral_boundaries(get_band_lims_wavenumber('lw', nlwbands))
+      allocate(sw_band_limits(2,nswbands), lw_band_limits(2,nlwbands))
+      call handle_error(get_band_lims_wavenumber('sw', sw_band_limits), 'get_band_lims_wavenumber_sw')
+      call handle_error(get_band_lims_wavenumber('lw', lw_band_limits), 'get_band_lims_wavenumber_lw')
+      call set_sw_spectral_boundaries(sw_band_limits)
+      call set_lw_spectral_boundaries(lw_band_limits)
+      deallocate(sw_band_limits, lw_band_limits)
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -559,8 +562,8 @@ contains
       
       ! Register new dimensions
       allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
-      call handle_error(get_band_midpoints('sw', sw_band_midpoints))
-      call handle_error(get_band_midpoints('lw', lw_band_midpoints))
+      call handle_error(get_band_midpoints('sw', sw_band_midpoints), 'get_band_midpoints_sw')
+      call handle_error(get_band_midpoints('lw', lw_band_midpoints), 'get_band_midpoints_lw')
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
@@ -1117,6 +1120,9 @@ contains
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
 
+      ! Map from gpoints to bands
+      integer :: gpoint_bands_sw(nswgpts), gpoint_bands_lw(nlwgpts)
+
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
       logical :: conserve_energy = .true.
@@ -1216,8 +1222,9 @@ contains
             cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
             liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
          )
+         call handle_error(get_gpoint_bands('sw', gpoint_bands_sw), 'get_gpoint_bands_sw')
          call sample_cloud_optics_sw( &
-            ncol, pver, nswgpts, get_gpoint_bands('sw', nswgpts), &
+            ncol, pver, nswgpts, gpoint_bands_sw, &
             state%pmid, cld, cldfsnow, &
             cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
             cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
@@ -1302,8 +1309,9 @@ contains
             lambdac, mu, dei, des, rei, &
             cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
          )
+         call handle_error(get_gpoint_bands('lw', gpoint_bands_lw), 'get_gpoint_bands_lw')
          call sample_cloud_optics_lw( &
-            ncol, pver, nlwgpts, get_gpoint_bands('lw', nlwgpts), &
+            ncol, pver, nlwgpts, gpoint_bands_lw, &
             state%pmid, cld, cldfsnow, &
             cld_tau_bnd_lw, cld_tau_gpt_lw &
          )
@@ -1417,7 +1425,7 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
-      use rrtmgp_interface, only: rte_sw
+      use rrtmgp_interface, only: rrtmgp_run_sw
       use mo_rrtmgp_util_string, only: lower_case
       use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
@@ -1602,7 +1610,7 @@ contains
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_rte_sw')
-      call handle_error(rte_sw( &
+      call handle_error(rrtmgp_run_sw( &
          gas_names_lower, gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
@@ -1619,7 +1627,7 @@ contains
          fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, &
          fluxes_clrsky_day%bnd_flux_dn_dir, &
          tsi_scaling=tsi_scaling &
-      ))
+      ), 'rrtmgp_run_sw')
       call t_stopf('rad_rte_sw')
       deallocate(gas_names_lower, gas_vmr_rad)
 
@@ -1726,7 +1734,7 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
       use perf_mod, only: t_startf, t_stopf
-      use rrtmgp_interface, only: rte_lw
+      use rrtmgp_interface, only: rrtmgp_run_lw
       use mo_rrtmgp_util_string, only: lower_case
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values
@@ -1796,7 +1804,7 @@ contains
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_calculations_lw')
-      call handle_error(rte_lw( &
+      call handle_error(rrtmgp_run_lw( &
          gas_names_lower, gas_vmr_rad(:,1:ncol,1:nlev_rad), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
          pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
@@ -1808,7 +1816,7 @@ contains
          fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net, &
          t_lev=tint(1:ncol,1:nlev_rad+1), &
          n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
-      ))
+      ), 'rrtmgp_run_lw')
       call t_stopf('rad_calculations_lw')
       deallocate(gas_vmr_rad, gas_names_lower)
 
@@ -2126,7 +2134,7 @@ contains
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
-      wavenumber_limits(:,:) = get_band_lims_wavenumber('sw', nswbands)
+      call handle_error(get_band_lims_wavenumber('sw', wavenumber_limits), 'set_albedo: get_band_lims_wavenumber')
 
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")
@@ -2170,13 +2178,11 @@ contains
    ! Function to check if a wavenumber is in the visible or IR
    logical function is_visible(wavenumber)
 
-      use mo_rte_kind, only: wp
-      
       ! Input wavenumber; this needs to be input in inverse cm (cm^-1)
-      real(wp), intent(in) :: wavenumber
+      real(r8), intent(in) :: wavenumber
 
       ! Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1
-      real(wp), parameter :: visible_wavenumber_threshold = 14286._wp  ! cm^-1
+      real(r8), parameter :: visible_wavenumber_threshold = 14286._r8  ! cm^-1
 
       ! Wavenumber is in the visible if it is above the visible threshold
       ! wavenumber, and in the infrared if it is below the threshold
@@ -2500,7 +2506,6 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)
-      use mo_rte_kind, only: wp
       type(rad_fluxes), intent(in) :: daytime_fluxes
       type(rad_fluxes), intent(inout) :: expanded_fluxes
       integer, intent(in) :: day_indices(:)
@@ -2535,8 +2540,9 @@ contains
          end if
 
       end do
-
    end subroutine expand_day_fluxes
+
+   !----------------------------------------------------------------------------
 
    ! Should we do snow optics? Check for existence of "cldfsnow" variable
    logical function do_snow_optics()
@@ -2554,5 +2560,16 @@ contains
 
       return
    end function do_snow_optics 
+
+   !----------------------------------------------------------------------------
+
+   subroutine handle_error(error_code, error_msg)
+      use cam_abortutils, only: endrun
+      integer, intent(in) :: error_code
+      character(len=*), intent(in) :: error_msg 
+      if (error_code /= 0) then
+         call endrun(trim(error_msg))
+      end if
+   end subroutine
 
 end module radiation
