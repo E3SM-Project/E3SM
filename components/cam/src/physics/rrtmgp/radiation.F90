@@ -30,7 +30,7 @@ module radiation
                               handle_error
 
    ! RRTMGP interface codes
-   use rrtmgp_driver, only: &
+   use rrtmgp_interface, only: &
       get_band_lims_wavenumber, get_temp_min, get_temp_max, get_gpoint_bands
 
    implicit none
@@ -427,7 +427,7 @@ contains
       use physics_types, only: physics_state
 
       ! RRTMGP modules
-      use rrtmgp_driver, only: &
+      use rrtmgp_interface, only: &
          rrtmgp_initialize, get_band_midpoints, get_band_lims_wavenumber, &
          get_nband, get_ngpt
 
@@ -1417,7 +1417,7 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
-      use rrtmgp_driver, only: rte_sw
+      use rrtmgp_interface, only: rte_sw
       use mo_rrtmgp_util_string, only: lower_case
       use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
@@ -1726,7 +1726,7 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
     
       use perf_mod, only: t_startf, t_stopf
-      use rrtmgp_driver, only: rte_lw
+      use rrtmgp_interface, only: rte_lw
       use mo_rrtmgp_util_string, only: lower_case
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate, clip_values

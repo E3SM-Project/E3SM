@@ -17,7 +17,7 @@
 !   and compute clear-sky (aerosol plus gases) and all-sky fluxes.
 ! The routines here have the same names as those in mo_rrtmgp_[ls]w; normally users
 !   will use either this module or the underling modules, but not both
-module rrtmgp_driver
+module rrtmgp_interface
   use mo_rte_kind,   only: wp
   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
   use mo_gas_concentrations, only: ty_gas_concs
@@ -429,4 +429,4 @@ contains
    end function get_band_midpoints
    !----------------------------------------------------------------------------
 
-end module rrtmgp_driver
+end module rrtmgp_interface

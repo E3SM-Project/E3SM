@@ -30,7 +30,7 @@ module radiation
    ! RRTMGP coefficients files, specified by coefficients_file_sw and
    ! coefficients_file_lw in the radiation namelist. They exist as module data
    ! because we only want to load those files once.
-   use rrtmgp_driver, only: &
+   use rrtmgp_interface, only: &
       get_band_lims_wavenumber, get_band_midpoints, &
       get_nband, get_ngpt, get_gpoint_bands
 
@@ -420,7 +420,7 @@ contains
       use physics_types,      only: physics_state
 
       ! RRTMGP modules
-      use rrtmgp_driver, only: rrtmgp_initialize, get_band_midpoints
+      use rrtmgp_interface, only: rrtmgp_initialize, get_band_midpoints
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -1067,7 +1067,7 @@ contains
       use mo_gas_concentrations, only: ty_gas_concs
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_rrtmgp_util_string, only: lower_case
-      use rrtmgp_driver, only: rte_lw
+      use rrtmgp_interface, only: rte_lw
 
       ! CAM history module provides subroutine to send output data to the history
       ! buffer to be aggregated and written to disk
@@ -1848,7 +1848,7 @@ contains
       use perf_mod, only: t_startf, t_stopf
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_rrtmgp_util_string, only: lower_case
-      use rrtmgp_driver, only: rte_sw
+      use rrtmgp_interface, only: rte_sw
 
       character(len=*), intent(in) :: gas_names(:)
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
