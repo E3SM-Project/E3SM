@@ -295,6 +295,11 @@
    </compset>
 
    <compset>
+     <alias>ICB20TRCRDCTCBC</alias>
+     <lname>20TR_SATM_CLM45%CRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
      <alias>ICB20TRCNRDCTCBC</alias>
      <lname>20TR_SATM_ELM%CNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
