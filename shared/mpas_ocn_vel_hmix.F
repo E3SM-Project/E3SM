@@ -151,16 +151,10 @@ contains
       call ocn_vel_hmix_del2_tend(meshPool, divergence, relativeVorticity, viscosity, tend, err1)
       err = ior(err1, err)
 
-      call ocn_vel_hmix_del2_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err1)
-      err = ior(err1, err)
-
       call ocn_vel_hmix_leith_tend(meshPool, divergence, relativeVorticity, viscosity, tend, err1)
       err = ior(err1, err)
 
       call ocn_vel_hmix_del4_tend(meshPool, scratchPool, divergence, relativeVorticity, tend, err1)
-      err = ior(err1, err)
-
-      call ocn_vel_hmix_del4_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err1)
       err = ior(err1, err)
 
       call mpas_timer_stop("vel hmix")
