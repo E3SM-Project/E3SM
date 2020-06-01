@@ -1325,10 +1325,10 @@ subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
       if (w3(i,k) .lt. 0) tsign = -1._rtype
       if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
 
-    enddo !mend i loop (column loop)
+    enddo !end i loop (column loop)
   enddo ! end k loop (vertical loop)
 
-end subroutine 
+end subroutine clipping_diag_third_shoc_momnets
 
 !==============================================================
 ! Assumed PDF closure for the SHOC scheme
