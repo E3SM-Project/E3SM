@@ -39,12 +39,28 @@
 		<var name="velocityMeridionalTimesTemperature" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
 			description="cell-wise product of component of horizontal velocity in the northward direction and temperature"
 		/>
-                <var name="velocityZonalTimesTemperature_GM" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
-                        description="cell-wise product of component of horizontal bolus velocity in the eastward direction and temperature"
-                />
-                <var name="velocityMeridionalTimesTemperature_GM" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
-                        description="cell-wise product of component of horizontal bolus velocity in the northward direction and temperature"
-                />
+		<var name="normalVelocitySquared" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
+			description="edge based square of normal velocity"
+		/>
+		<var name="normalVelocityTimesTemperature" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1} C"
+			description="edge based product of normal velocity and temperature"
+		/>
+		<var name="velocityZonalTimesTemperature_GM" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
+			description="cell-wise product of component of horizontal bolus velocity in the eastward direction and temperature"
+			 packages="gm"
+		/>
+		<var name="velocityMeridionalTimesTemperature_GM" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} C"
+			description="cell-wise product of component of horizontal bolus velocity in the northward direction and temperature"
+			 packages="gm"
+		/>
+		<var name="normalGMBolusVelocitySquared" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
+			description="edge based square of normal velocity"
+			 packages="gm"
+		/>
+		<var name="normalGMBolusVelocityTimesTemperature" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1} C"
+			description="edge based product of normal velocity and temperature"
+			 packages="gm"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="eddyProductVariablesOutput" type="output"
@@ -62,7 +78,9 @@
 			<var name="velocityMeridionalSquared"/>
 			<var name="velocityZonalTimesTemperature"/>
 			<var name="velocityMeridionalTimesTemperature"/>
-                        <var name="velocityZonalTimesTemperature_GM"/>
-                        <var name="velocityMeridionalTimesTemperature_GM"/>
+			<var name="velocityZonalTimesTemperature_GM"/>
+			<var name="velocityMeridionalTimesTemperature_GM"/>
+			<var name="normalVelocityTimesTemperature"/>
+			<var name="normalVelocitySquared"/>
 		</stream>
 	</streams>
