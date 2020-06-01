@@ -250,7 +250,10 @@ contains
     integer :: drv_inst
     character(len=8) :: c_drv_inst      ! driver instance number
     character(len=8) :: c_driver_numpes ! number of pes in driver
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
     character(len=16):: c_comm_name     ! comm. name
+=======
+>>>>>>> a7b4b52c7... merge mct driver updates into moab:cime/src/drivers/moab/shr/seq_comm_mct.F90
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
@@ -263,7 +266,12 @@ contains
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+=======
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, &
+         info_taskmap_model
+>>>>>>> a7b4b52c7... merge mct driver updates into moab:cime/src/drivers/moab/shr/seq_comm_mct.F90
 
     namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
@@ -276,7 +284,11 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
          iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
          info_taskmap_model, info_taskmap_comp, info_mprof, info_mprof_dt
+=======
+         info_taskmap_model, info_taskmap_comp
+>>>>>>> a7b4b52c7... merge mct driver updates into moab:cime/src/drivers/moab/shr/seq_comm_mct.F90
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -347,8 +359,11 @@ contains
        call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
        info_taskmap_model = 0
        info_taskmap_comp  = 0
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
        info_mprof         = 0
        info_mprof_dt      = 86400
+=======
+>>>>>>> a7b4b52c7... merge mct driver updates into moab:cime/src/drivers/moab/shr/seq_comm_mct.F90
 
        ! Read namelist if it exists
 
@@ -388,8 +403,11 @@ contains
 
     call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
     call shr_mpi_bcast(info_taskmap_comp, DRIVER_COMM,'info_taskmap_comp' )
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
     call shr_mpi_bcast(info_mprof,   DRIVER_COMM,'info_mprof')
     call shr_mpi_bcast(info_mprof_dt,DRIVER_COMM,'info_mprof_dt')
+=======
+>>>>>>> a7b4b52c7... merge mct driver updates into moab:cime/src/drivers/moab/shr/seq_comm_mct.F90
 
 #ifdef TIMING
     if (info_taskmap_model > 0) then
@@ -421,6 +439,7 @@ contains
           call shr_sys_flush(logunit)
        endif
 
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
        if (info_mprof > 2) then
           allocate( driver_task_node_map(0:global_numpes-1), stat=ierr)
           if (ierr /= 0) call shr_sys_abort(trim(subname)//' allocate driver_task_node_map failed ')
@@ -441,6 +460,16 @@ contains
        else
           call shr_taskmap_write(logunit, DRIVER_COMM, &
                                  c_comm_name, &
+=======
+       call t_startf("shr_taskmap_write")
+       if (drv_inst == 0) then
+          call shr_taskmap_write(logunit, DRIVER_COMM, &
+                                 'GLOBAL', &
+                                 verbose=verbose_taskmap_output)
+       else
+          call shr_taskmap_write(logunit, DRIVER_COMM, &
+                                 'DRIVER #'//trim(adjustl(c_drv_inst)), &
+>>>>>>> a7b4b52c7... merge mct driver updates into moab:cime/src/drivers/moab/shr/seq_comm_mct.F90
                                  verbose=verbose_taskmap_output)
        endif
        call t_stopf("shr_taskmap_write")
