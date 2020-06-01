@@ -20,6 +20,9 @@ extern "C" {
 void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
                  Real zvir, Real latvap, Real latice, Real karman,
                  Real* pref_mid, int nbot_shoc, int ntop_shoc);
+
+void shoc_grid_c(int shcol, int nlev, int nlevi, Real* zt_grid, Real* zi_gri,
+                 Real* pdel, Real* dz_dt, Real*, Real* rho_zt);
 }
 
 namespace scream {
