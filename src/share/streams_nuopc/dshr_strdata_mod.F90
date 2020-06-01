@@ -70,8 +70,8 @@ module dshr_strdata_mod
      type(ESMF_RouteHandle)              :: routehandle                     ! stream n -> model mesh mapping
      character(CS), allocatable          :: fldlist_stream(:)               ! names of stream file fields
      character(CS), allocatable          :: fldlist_model(:)                ! names of stream model fields
-     integer                             :: stream_lb
-     integer                             :: stream_ub
+     integer                             :: stream_lb                       ! index of the Lowerbound (LB) in fldlist_stream
+     integer                             :: stream_ub                       ! index of the Upperbound (UB) in fldlist_stream
      type(ESMF_Field)                    :: field_stream                    ! a field on the stream data domain
      type(ESMF_Field)                    :: stream_vector                   ! a vector field on the stream data domain
      type(ESMF_FieldBundle), allocatable :: fldbun_data(:)                  ! stream field bundle interpolated to model grid
@@ -823,124 +823,7 @@ contains
           call t_stopf(trim(lstr)//trim(timname)//'_readLBUB')
 
        enddo ! end of loop over streams
-#ifdef DOTHIS
-       ! ---------------------------------------------------------
-       ! remap with vectors if needed
-       ! ---------------------------------------------------------
 
-       do m = 1,sdat%nvectors
-          if(trim(sdat%stream(m)%stream_vectors) .eq. 'null') cycle
-          nu = sdat%pstrm(m)%ustrm ! nu is the stream index that contains the u vector
-          nv = sdat%pstrm(m)%vstrm ! nv is the stream index that contains the v vector
-          print *,__FILE__,__LINE__,m,nu,nv
-          ! TODO: this is not correct logic - need to change it
-          if ((nu > 0 .or. nv > 0) .and. (newdata(nu) .or. newdata(nv))) then
-
-             call t_startf(trim(lstr)//trim(timname)//'_vect')
-
-             ! get lon and lat of stream nu
-             call ESMF_MeshGet(sdat%pstrm(nu)%stream_mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             allocate(nu_coords(spatialDim*numOwnedElements))
-             call ESMF_MeshGet(sdat%pstrm(nu)%stream_mesh, ownedElemCoords=nu_coords)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-             ! get lon and lat of stream nv
-             call ESMF_MeshGet(sdat%pstrm(nv)%stream_mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             allocate(nv_coords(spatialDim*numOwnedElements))
-             call ESMF_MeshGet(sdat%pstrm(nv)%stream_mesh, ownedElemCoords=nv_coords)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-             ! create source field and destination fields
-             ! TODO: assume that the two meshes are idential - but need to confirm this
-             field_src = ESMF_FieldCreate(sdat%pstrm(nu)%stream_mesh, ESMF_TYPEKIND_r8, name='field_src', &
-                  ungriddedLbound=(/1/), ungriddedUbound=(/2/), gridToFieldMap=(/2/), meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             field_dst = ESMF_FieldCreate(sdat%model_mesh, ESMF_TYPEKIND_r8, name='field_dst', &
-                  ungriddedLbound=(/1/), ungriddedUbound=(/2/), gridToFieldMap=(/2/), meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-             ! set pointers to source and destination data that will be filled in with rotation to cart3d
-             call ESMF_FieldGet(field_src, farrayPtr=data2d_src, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_FieldGet(field_dst, farrayPtr=data2d_dst, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-             ! get names of vector field pairs
-             call shr_string_listGetName(sdat%stream(m)%stream_vectors, 1, uname)
-             call shr_string_listGetName(sdat%stream(m)%stream_vectors, 2, vname)
-
-             ! map lower bs: rotate source data, regrid, then rotate back
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_data(sdat%pstrm(nu)%stream_lb), trim(uname), data_u_src, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_data(sdat%pstrm(nu)%stream_lb), trim(uname), data_u_dst, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_data(sdat%pstrm(nv)%stream_lb), trim(vname), data_v_src, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_data(sdat%pstrm(nv)%stream_lb), trim(vname), data_v_dst, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             do i = 1,size(data_u_src)
-                lon = nu_coords(2*i-1)
-                lat = nu_coords(2*i)
-                sinlon = sin(lon*deg2rad); coslon = cos(lon*deg2rad)
-                sinlat = sin(lat*deg2rad); coslat = cos(lat*deg2rad)
-                data2d_src(1,i) = coslon * data_u_src(i) - sinlon * data_v_src(i)
-                data2d_src(2,i) = sinlon * data_u_src(i) + coslon * data_v_src(i)
-             enddo
-             call ESMF_FieldRegrid(field_src, field_dst, sdat%pstrm(nu)%routehandle, &
-                  termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, zeroregion=ESMF_REGION_TOTAL, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             do i = 1,size(data_u_dst)
-                lon = sdat%model_lon(i)
-                lat = sdat%model_lat(i)
-                sinlon = sin(lon*deg2rad); coslon = cos(lon*deg2rad)
-                sinlat = sin(lat*deg2rad); coslat = cos(lat*deg2rad)
-                ux = data2d_dst(1,i)
-                uy = data2d_dst(2,i)
-                data_u_dst(i) =  coslon * data_u_dst(i) + sinlon * data_v_dst(i)
-                data_v_dst(i) = -sinlon * data_u_dst(i) + coslon * data_v_dst(i)
-             enddo
-
-             ! map upper bs: rotate source data, regrid, then rotate back
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_data(sdat%pstrm(nu)%stream_ub), trim(uname), data_u_src, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nu)%fldbun_data(sdat%pstrm(nu)%stream_ub), trim(uname), data_u_dst, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_data(sdat%pstrm(nv)%stream_ub), trim(vname), data_v_src, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             call dshr_fldbun_getFldPtr(sdat%pstrm(nv)%fldbun_data(sdat%pstrm(nv)%stream_ub), trim(vname), data_v_dst, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             do i = 1,size(data_u_src)
-                lon = nu_coords(2*i-1)
-                lat = nu_coords(2*i)
-                sinlon = sin(lon*deg2rad); coslon = cos(lon*deg2rad)
-                sinlat = sin(lat*deg2rad); coslat = cos(lat*deg2rad)
-                data2d_src(1,i) = coslon * data_u_src(i) - sinlon * data_v_src(i)
-                data2d_src(2,i) = sinlon * data_u_src(i) + coslon * data_v_src(i)
-             enddo
-             call ESMF_FieldRegrid(field_src, field_dst, sdat%pstrm(nu)%routehandle, &
-                  termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, zeroregion=ESMF_REGION_TOTAL, rc=rc)
-             if (chkerr(rc,__LINE__,u_FILE_u)) return
-             do i = 1,size(data_u_dst)
-                lon = sdat%model_lon(i)
-                lat = sdat%model_lat(i)
-                sinlon = sin(lon*deg2rad); coslon = cos(lon*deg2rad)
-                sinlat = sin(lat*deg2rad); coslat = cos(lat*deg2rad)
-                ux = data2d_dst(1,i)
-                uy = data2d_dst(2,i)
-                data_u_dst(i) =  coslon * data_u_dst(i) + sinlon * data_v_dst(i)
-                data_v_dst(i) = -sinlon * data_u_dst(i) + coslon * data_v_dst(i)
-             enddo
-
-             deallocate(nu_coords)
-             deallocate(nv_coords)
-
-             call t_stopf(trim(lstr)//trim(timname)//'_vect')
-
-          endif ! end block nu > 0 or nv>0
-       enddo
-#endif
        ! ---------------------------------------------------------
        ! Do time interpolation to create fldbun_model
        ! ---------------------------------------------------------
