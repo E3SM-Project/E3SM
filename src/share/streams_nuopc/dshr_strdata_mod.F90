@@ -364,7 +364,6 @@ contains
     integer                      :: nfld            ! loop stream field index
     integer                      :: nflds           ! total number of fields in a given stream
     type(ESMF_Field)             :: lfield          ! temporary
-    type(ESMF_Field)             :: lfield_src      ! temporary
     type(ESMF_Field)             :: lfield_dst      ! temporary
     integer                      :: srcTermProcessing_Value = 0 ! should this be a module variable?
     integer , pointer            :: stream_gindex(:)
@@ -465,17 +464,15 @@ contains
 
        !sdat%stream(ns)%mapalgo = "redist"
        if (trim(sdat%stream(ns)%mapalgo) == "bilinear") then
-          call ESMF_FieldRegridStore(lfield_src, lfield_dst, &
+          call ESMF_FieldRegridStore(sdat%pstrm(ns)%field_stream, lfield_dst, &
                routehandle=sdat%pstrm(ns)%routehandle, &
                regridmethod=ESMF_REGRIDMETHOD_BILINEAR,  &
                polemethod=ESMF_POLEMETHOD_ALLAVG, &
-             ! polemethod=ESMF_POLEMETHOD_NONE, &
-             ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
                dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
                srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        else if (trim(sdat%stream(ns)%mapalgo) == 'redist') then
-          call ESMF_FieldRedistStore(lfield_src, lfield_dst, &
+          call ESMF_FieldRedistStore(sdat%pstrm(ns)%field_stream, lfield_dst, &
                routehandle=sdat%pstrm(ns)%routehandle, &
                ignoreUnmatchedIndices = .true., rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -483,12 +480,6 @@ contains
           call shr_sys_abort('ERROR: only bilinear regrid or redist is supported for now')
        end if
 
-       call ESMF_FieldRegridStore(sdat%pstrm(ns)%field_stream, lfield_dst, &
-            routehandle=sdat%pstrm(ns)%routehandle, &
-            regridmethod=regridmethod,  polemethod=polemethod, &
-            dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
-            srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
     end do ! end of loop over streams
     !
     ! Check for vector pairs in the stream - both ucomp and vcomp must be in the same stream
