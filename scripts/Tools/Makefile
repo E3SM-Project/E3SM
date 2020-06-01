@@ -961,7 +961,23 @@ install_lib: $(COMPLIB)
 	$(CP) -p $(COMPLIB) $(CSMSHARELIB)
 	$(CP) -p *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
 
+# This rule writes the include flags and the link flags used in the $(EXEC_SE) rule below
+# It expects the variable OUTPUT_FILE to be defined
+# Set MODEL=driver to get the same flags as are used when building the driver
+.PHONY: write_include_and_link_flags
+write_include_and_link_flags:
+	@$(RM) -f $(OUTPUT_FILE)
+	@echo CIME_CSM_SHR_INCLUDE = $(CSM_SHR_INCLUDE) >> $(OUTPUT_FILE)
+	@echo CIME_ESMF_F90COMPILEPATHS = $(ESMF_F90COMPILEPATHS) >> $(OUTPUT_FILE)
+	@echo CIME_INCLDIR = $(INCLDIR) >> $(OUTPUT_FILE)
+	@echo CIME_INCS = $(INCS) >> $(OUTPUT_FILE)
+	@echo CIME_CLIBS = $(CLIBS) >> $(OUTPUT_FILE)
+	@echo CIME_ULIBS = $(ULIBS) >> $(OUTPUT_FILE)
+	@echo CIME_SLIBS = $(SLIBS) >> $(OUTPUT_FILE)
+	@echo CIME_MLIBS = $(MLIBS) >> $(OUTPUT_FILE)
+	@echo CIME_F90_LDFLAGS = $(F90_LDFLAGS) >> $(OUTPUT_FILE)
 
+# If variables are added to this rule, similar changes should be made in the write_link_flags rule above
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
 
