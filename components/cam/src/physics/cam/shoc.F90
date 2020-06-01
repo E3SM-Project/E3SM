@@ -1228,10 +1228,10 @@ subroutine compute_diag_third_shoc_moment(&
   w3(:,nlevi) = 0._rtype
 
   do k=2,nlev
-    do i=1,shcol
 
-     kb=k+1
-     kc=k-1
+    kb=k+1
+    kc=k-1
+    do i=1,shcol
 
      thedz=dz_zi(i,k)
      thedz2=dz_zt(i,k)+dz_zt(i,kc)
