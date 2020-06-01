@@ -22,6 +22,20 @@
 	<!--**********************************-->
 	<!-- Namelists for init run mode only -->
 	<!--**********************************-->
+	<nml_record name="partial_bottom_cells" mode="init">
+		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
+					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_pbc_alteration_type" type="character" default_value="full_cell" units="unitless"
+					description="Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
+					possible_values="'full_cell' or 'partial_cell'"
+		/>
+		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
+					description="Determines the minimum fraction of a cell altering the initial conditions can create."
+					possible_values="Any real between 0 and 1."
+		/>
+	</nml_record>
 	<nml_record name="init_setup" mode="init">
 		<nml_option name="config_vert_levels" type="integer" default_value="-1" units="unitless"
 					description="Number of vertical levels to create within the configuration."

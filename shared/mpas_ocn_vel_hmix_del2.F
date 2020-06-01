@@ -26,7 +26,6 @@ module ocn_vel_hmix_del2
    use mpas_threading
    use mpas_vector_operations
    use mpas_matrix_operations
-   use mpas_tensor_operations
    use ocn_constants
 
    implicit none
@@ -46,7 +45,6 @@ module ocn_vel_hmix_del2
    !--------------------------------------------------------------------
 
    public :: ocn_vel_hmix_del2_tend, &
-             ocn_vel_hmix_del2_tensor_tend, &
              ocn_vel_hmix_del2_init
 
    !-------------------------------------------------------------------
@@ -192,180 +190,6 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_hmix_del2_tend!}}}
-
-!***********************************************************************
-!
-!  routine ocn_vel_hmix_del2_tensor_tend
-!
-!> \brief   Computes tendency term for Laplacian horizontal momentum mixing
-!> \author  Mark Petersen
-!> \date    July 2013
-!> \details
-!>  This routine computes the horizontal mixing tendency for momentum
-!>  using tensor operations,
-!>  based on a Laplacian form for the mixing, \f$\nabla\cdot( \nu_2 \nabla(u))\f$
-!>  where \f$\nu_2\f$ is a viscosity.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_vel_hmix_del2_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity     !< Input: velocity normal to an edge
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         tangentialVelocity     !< Input: velocity, tangent to an edge
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool            !< Input: mesh information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         viscosity       !< Input/Output: viscosity
-
-      type (mpas_pool_type), intent(inout) :: &
-         scratchPool !< Input/Output: Scratch structure
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend             !< Input/Output: velocity tendency
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: iEdge, k, nEdges
-      integer, pointer :: nVertLevels
-      integer, dimension(:), pointer :: nEdgesArray
-      integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: edgeMask, edgeSignOnCell
-
-      real (kind=RKIND) :: visc2
-      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2
-      real (kind=RKIND), dimension(:,:), pointer :: normalVectorEdge, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:,:), pointer :: &
-         strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, outerProductEdge
-
-      type (field2DReal), pointer :: normalVectorEdgeField
-      type (field3DReal), pointer :: strainRateR3CellField, strainRateR3EdgeField, divTensorR3CellField, outerProductEdgeField
-
-      logical, pointer :: config_use_mom_del2_tensor
-      real (kind=RKIND), pointer :: config_mom_del2_tensor
-
-      !-----------------------------------------------------------------
-      !
-      ! exit if this mixing is not selected
-      !
-      !-----------------------------------------------------------------
-
-      err = 0
-      call mpas_pool_get_config(ocnConfigs, 'config_use_mom_del2_tensor', config_use_mom_del2_tensor)
-
-      if ( .not. config_use_mom_del2_tensor ) return
-
-      call mpas_timer_start("vel del2_tensor")
-
-      call mpas_pool_get_config(ocnConfigs, 'config_mom_del2_tensor ', config_mom_del2_tensor )
-
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
-      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-      call mpas_pool_get_array(meshPool, 'edgeTangentVectors', edgeTangentVectors)
-
-      call mpas_pool_get_field(scratchPool, 'strainRateR3Cell',strainRateR3CellField)
-      call mpas_pool_get_field(scratchPool, 'strainRateR3Edge',strainRateR3EdgeField)
-      call mpas_pool_get_field(scratchPool, 'divTensorR3Cell', divTensorR3CellField)
-      call mpas_pool_get_field(scratchPool, 'outerProductEdge',outerProductEdgeField)
-      call mpas_pool_get_field(scratchPool, 'normalVectorEdge',normalVectorEdgeField)
-
-      call mpas_allocate_scratch_field(strainRateR3CellField, .true.)
-      call mpas_allocate_scratch_field(strainRateR3EdgeField, .true.)
-      call mpas_allocate_scratch_field(divTensorR3CellField, .true.)
-      call mpas_allocate_scratch_field(outerProductEdgeField, .true.)
-      call mpas_allocate_scratch_field(normalVectorEdgeField, .true.)
-
-      strainRateR3Cell => strainRateR3CellField % array
-      strainRateR3Edge => strainRateR3EdgeField % array
-      divTensorR3Cell  => divTensorR3CellField % array
-      outerProductEdge => outerProductEdgeField % array
-      normalVectorEdge => normalVectorEdgeField % array
-
-      call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-         meshPool, edgeSignOnCell, edgeTangentVectors, .true., &
-         outerProductEdge, strainRateR3Cell)
-
-      call mpas_matrix_cell_to_edge(strainRateR3Cell, meshPool, .true., strainRateR3Edge)
-
-      ! Need to compute strain rate and viscosity for all edges.
-      nEdges = nEdgesArray( size(nEdgesArray) )
-
-      ! The following loop could possibly be reduced to nEdgesSolve
-      !$omp do schedule(runtime) private(visc2, k)
-      do iEdge = 1, nEdges
-         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
-         do k = 1, maxLevelEdgeTop(iEdge)
-            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge)
-            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
-         end do
-         ! Impose zero strain rate at land boundaries
-         do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
-         end do
-      end do
-      !$omp end do
-
-      ! may change boundaries to false later
-      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .true., divTensorR3Cell)
-
-      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, meshPool, .true., normalVectorEdge)
-
-      ! Only need tendency on owned edges
-      nEdges = nEdgesArray( 1 )
-
-      ! The following loop could possibly be reduced to nEdgesSolve
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-         do k = 1, maxLevelEdgeTop(iEdge)
-            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
-         end do
-      end do
-      !$omp end do
-
-      call mpas_deallocate_scratch_field(strainRateR3CellField, .true.)
-      call mpas_deallocate_scratch_field(strainRateR3EdgeField, .true.)
-      call mpas_deallocate_scratch_field(divTensorR3CellField, .true.)
-      call mpas_deallocate_scratch_field(outerProductEdgeField, .true.)
-      call mpas_deallocate_scratch_field(normalVectorEdgeField, .true.)
-
-      call mpas_timer_stop("vel del2_tensor")
-
-   !--------------------------------------------------------------------
-
-   end subroutine ocn_vel_hmix_del2_tensor_tend!}}}
 
 !***********************************************************************
 !
