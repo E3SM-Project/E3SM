@@ -1212,16 +1212,17 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype) :: zvar, x5var, iso, thedz, thedz2
   real(rtype) :: theterm, cond, tsign
   real(rtype) :: isosqrt, dthl2, dwthl, dtke, dw2, aw2
-  real(rtype) :: a0, a1, a2, a3, a4, a5
-  real(rtype) :: buoy_sgs2, c, grd, bet2, bet
+  real(rtype) :: buoy_sgs2,  grd, bet2, bet
   real(rtype) :: f0, f1, f2, f3, f4, f5
-  c=7.0_rtype
-  a0=(0.52_rtype*c**(-2))/(c-2._rtype)
-  a1=0.87_rtype/(c**2)
-  a2=0.5_rtype/c
-  a3=0.6_rtype/(c*(c-2._rtype))
-  a4=2.4_rtype/(3._rtype*c+5._rtype)
-  a5=0.6_rtype/(c*(3._rtype+5._rtype*c))
+  
+  !LOCAL PARAMETERS
+  real(rtype), parameter :: c=7.0_rtype
+  real(rtype), parameter :: a0=(0.52_rtype*c**(-2))/(c-2._rtype)
+  real(rtype), parameter :: a1=0.87_rtype/(c**2)
+  real(rtype), parameter :: a2=0.5_rtype/c
+  real(rtype), parameter :: a3=0.6_rtype/(c*(c-2._rtype))
+  real(rtype), parameter :: a4=2.4_rtype/(3._rtype*c+5._rtype)
+  real(rtype), parameter :: a5=0.6_rtype/(c*(3._rtype+5._rtype*c))
 
   ! set lower condition
   w3(:,nlevi) = 0._rtype
