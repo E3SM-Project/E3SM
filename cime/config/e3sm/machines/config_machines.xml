@@ -2143,7 +2143,7 @@
     <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
@@ -2152,7 +2152,6 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -2193,6 +2192,10 @@
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
     </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
+    </environment_variables>
+
   </machine>
 
   <machine MACH="titan">
