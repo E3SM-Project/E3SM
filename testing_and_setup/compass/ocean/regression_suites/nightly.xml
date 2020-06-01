@@ -1,4 +1,7 @@
 <regression_suite name="nightly_ocean_test_suite">
+	<test name="Baroclinic Channel 10km - Default Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="default">
+		<script name="run_test.py"/>
+	</test>
 	<test name="Global Ocean 240km - Init Test" core="ocean" configuration="global_ocean" resolution="QU240" test="init">
 		<script name="run.py"/>
 	</test>
