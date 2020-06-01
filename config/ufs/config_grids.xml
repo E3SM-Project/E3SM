@@ -151,19 +151,5 @@
   </required_gridmaps>
 
   <gridmaps driver="nuopc">
-    <gridmap atm_grid="T62" ocn_grid="Atlantic8">
-    <map name="ATM2OCN_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_T62_TO_Atlantic8_aave.200423.nc</map>
-    <map name="ATM2OCN_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_T62_TO_Atlantic8_blin.200423.nc</map>
-    <map name="ATM2OCN_VMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_T62_TO_Atlantic8_blin.200423.nc</map>
-    <map name="OCN2ATM_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_T62_aave.200423.nc</map>
-    <map name="OCN2ATM_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_T62_aave.200423.nc</map>
-    </gridmap>
-    <gridmap atm_grid="TL319" ocn_grid="Atlantic8">
-    <map name="ATM2OCN_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_TL319_TO_Atlantic8_aave.200527.nc</map>
-    <map name="ATM2OCN_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_TL319_TO_Atlantic8_blin.200527.nc</map>
-    <map name="ATM2OCN_VMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_TL319_TO_Atlantic8_blin.200527.nc</map>
-    <map name="OCN2ATM_FMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_TL319_aave.200527.nc</map>
-    <map name="OCN2ATM_SMAPNAME">$DIN_LOC_ROOT/hafs/mapping/maps/map_Atlantic8_TO_TL319_aave.200527.nc</map>
-    </gridmap>
   </gridmaps>
 </grid_data>
