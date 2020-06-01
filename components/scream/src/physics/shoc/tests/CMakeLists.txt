@@ -3,6 +3,7 @@ INCLUDE (ScreamUtils)
 SET (NEED_LIBS shoc physics_common scream_control scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
+    shoc_grid_tests.cpp
     shoc_unit_tests.cpp)
 
 CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
