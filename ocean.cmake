@@ -177,6 +177,7 @@ list(APPEND RAW_SOURCES
   core_ocean/analysis_members/mpas_ocn_transect_transport.F
   core_ocean/analysis_members/mpas_ocn_eddy_product_variables.F
   core_ocean/analysis_members/mpas_ocn_moc_streamfunction.F
+  core_ocean/analysis_members/mpas_ocn_ocean_heat_content.F
   core_ocean/analysis_members/mpas_ocn_analysis_driver.F
 )
 
