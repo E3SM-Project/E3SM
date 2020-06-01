@@ -485,7 +485,8 @@ contains
           call ESMF_FieldRegridStore(lfield_src, lfield_dst, &
                routehandle=sdat%pstrm(ns)%routehandle, &
                regridmethod=ESMF_REGRIDMETHOD_BILINEAR,  &
-               polemethod=ESMF_POLEMETHOD_NONE, &
+               polemethod=ESMF_POLEMETHOD_ALLAVG, &
+             ! polemethod=ESMF_POLEMETHOD_NONE, &
              ! extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
                dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
                srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
