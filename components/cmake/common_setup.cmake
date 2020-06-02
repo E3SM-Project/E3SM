@@ -235,7 +235,7 @@ if (COMP_INTERFACE STREQUAL "moab")
     message(FATAL_ERROR "MOAB_PATH must be defined when USE_MOAB is TRUE")
   endif()
 
-  find_package(MOAB)
+ include(${MOAB_PATH}/lib/cmake/MOAB/MOABConfig.cmake)
 endif()
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
@@ -325,7 +325,7 @@ else()
   list(APPEND INCLDIR "${INC_NETCDF_C}" "${INC_NETCDF_FORTRAN}")
 endif()
 
-foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY) # INC_MOAB)
+foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY INC_MOAB)
   if (${ITEM})
     list(APPEND INCLDIR "${${ITEM}}")
   endif()
@@ -410,10 +410,10 @@ if (USE_ALBANY)
   set(SLIBS "${SLIBS} ${ALBANY_LINK_LIBS}")
 endif()
 
-# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
-# if (USE_MOAB)
-#   set(SLIBS "${SLIBS} ${IMESH_LIBS}")
-# endif()
+# Add MOAB libraries.
+if (COMP_INTERFACE STREQUAL "moab")
+  set(SLIBS "${SLIBS} ${IMESH_LIBRARIES}")
+endif()
 
 # Add libraries and flags that we need on the link line when C++ code is included
 # We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
