@@ -27,11 +27,9 @@ include(EkatMpiUtils)
 DisableMpiCxxBindings()
 
 if (KOKKOS_ENABLE_CUDA)
-  SetMpiCxxBackendCompilerVarName("MPI_CXX_BACKEND_COMPILER_VAR_NAME")
-  # Before starting the project, wrap mpicxx in the scream_mpicxx script, which
-  # takes care of setting OMPI_CXX to point to nvcc_wrapper
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/scream_mpicxx.in ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx @ONLY)
-  set(CMAKE_CXX_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx CACHE STRING "" FORCE)
+  set (KOKKOS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
+  include (EkatSetNvccWrapper)
+  EkatSetNvccWrapper()
 endif()
 
 set (CMAKE_CXX_STANDARD 11)
