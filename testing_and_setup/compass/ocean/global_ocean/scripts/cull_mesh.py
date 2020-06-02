@@ -24,11 +24,11 @@ to be opened. Otherwise, steps 2, 5 and 9 are skipped
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-import os
 from optparse import OptionParser
 import xarray
 
-from geometric_features import GeometricFeatures
+from geometric_features import GeometricFeatures, FeatureCollection, \
+    read_feature_collection
 from mpas_tools import conversion
 from mpas_tools.io import write_netcdf
 from mpas_tools.ocean.coastline_alteration import widen_transect_edge_masks, \
@@ -45,15 +45,28 @@ parser.add_option("--with_critical_passages", action="store_true",
                   help="Whether the mesh should open the standard critical "
                        "passages and close land blockages from "
                        "geometric_features")
+parser.add_option("--custom_critical_passages", dest="custom_critical_passages",
+                  help="A geojson file with critical passages to open.  This "
+                       "file may be supplied in addition to or instead of "
+                       "the default passages (--with_critical_passages)")
+parser.add_option("--custom_land_blockages", dest="custom_land_blockages",
+                  help="A geojson file with critical land blockages to close. "
+                       "This file may be supplied in addition to or instead of "
+                       "the default blockages (--with_critical_passages)")
 parser.add_option("--preserve_floodplain", action="store_true",
                   dest="preserve_floodplain", default=False,
-                  help="Whether to to use the cullCells field in the base "
+                  help="Whether to to use the cellSeedMask field in the base "
                        "mesh to preserve a floodplain at elevations above z=0")
-parse
 options, args = parser.parse_args()
 
 # required for compatibility with MPAS
 netcdfFormat = 'NETCDF3_64BIT'
+
+critical_passages = options.with_critical_passages or \
+    (options.custom_critical_passages is not None)
+
+land_blockages = options.with_critical_passages or \
+    (options.custom_land_blockages is not None)
 
 gf = GeometricFeatures()
 
@@ -96,10 +109,37 @@ dsLandMask = add_land_locked_cells_to_mask(dsLandMask, dsBaseMesh,
 fcSeed = gf.read(componentName='ocean', objectType='point',
                  tags=['seed_point'])
 
-if options.with_critical_passages:
-    # merge transects for critical passages into critical_passages.geojson
-    fcCritPassages = gf.read(componentName='ocean', objectType='transect',
-                             tags=['Critical_Passage'])
+if land_blockages:
+    if options.with_critical_passages:
+        # merge transects for critical land blockages into
+        # critical_land_blockages.geojson
+        fcCritBlockages = gf.read(componentName='ocean', objectType='transect',
+                                  tags=['Critical_Land_Blockage'])
+    else:
+        fcCritBlockages = FeatureCollection()
+
+    if options.custom_land_blockages is not None:
+        fcCritBlockages.merge(read_feature_collection(
+            options.custom_land_blockages))
+
+    # create masks from the transects
+    dsCritBlockMask = conversion.mask(dsBaseMesh, fcMask=fcCritBlockages)
+
+    dsLandMask = add_critical_land_blockages(dsLandMask, dsCritBlockMask)
+
+fcCritPassages = FeatureCollection()
+dsPreserve = []
+
+if critical_passages:
+    if options.with_critical_passages:
+        # merge transects for critical passages into critical_passages.geojson
+        fcCritPassages.merge(gf.read(componentName='ocean',
+                                     objectType='transect',
+                                     tags=['Critical_Passage']))
+
+    if options.custom_critical_passages is not None:
+        fcCritPassages.merge(read_feature_collection(
+            options.custom_critical_passages))
 
     # create masks from the transects
     dsCritPassMask = conversion.mask(dsBaseMesh, fcMask=fcCritPassages)
@@ -109,33 +149,15 @@ if options.with_critical_passages:
     dsCritPassMask = widen_transect_edge_masks(dsCritPassMask, dsBaseMesh,
                                                latitude_threshold=43.0)
 
-    # merge transects for critical land blockages into
-    # critical_land_blockages.geojson
-    fcCritBlockages = gf.read(componentName='ocean', objectType='transect',
-                              tags=['Critical_Land_Blockage'])
+    dsPreserve.append(dsCritPassMask)
 
-    # create masks from the transects for critical land blockages
-    dsCritBlockMask = conversion.mask(dsBaseMesh, fcMask=fcCritBlockages)
+if options.preserve_floodplain:
+    dsPreserve.append(dsBaseMesh)
 
-    dsLandMask = add_critical_land_blockages(dsLandMask, dsCritBlockMask)
 
-    # Cull the mesh based on the land mask while keeping critical passages open
-    if options.preserve_floodplain:
-        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
-                                       dsPreserve=[dsCritPassMask, dsBaseMesh])
-    else:
-        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
-                                       dsPreserve=dsCritPassMask)
-
-else:
-
-    # cull the mesh based on the land mask
-    if options.preserve_floodplain:
-        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
-                                       dsPreserve=dsBaseMesh)
-    else:
-        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask)
-    fcCritPassages = None
+# cull the mesh based on the land mask
+dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
+                               dsPreserve=dsPreserve)
 
 # create a mask for the flood fill seed points
 dsSeedMask = conversion.mask(dsCulledMesh, fcSeed=fcSeed)
@@ -145,7 +167,7 @@ dsCulledMesh = conversion.cull(dsCulledMesh, dsInverse=dsSeedMask,
                                graphInfoFileName='culled_graph.info')
 write_netcdf(dsCulledMesh, 'culled_mesh.nc', format=netcdfFormat)
 
-if options.with_critical_passages:
+if critical_passages:
     # make a new version of the critical passages mask on the culled mesh
     dsCritPassMask = conversion.mask(dsCulledMesh, fcMask=fcCritPassages)
     write_netcdf(dsCritPassMask, 'critical_passages_mask_final.nc',
@@ -175,4 +197,3 @@ if options.with_cavities:
                 variable_list=['allOnCells'],
                 filename_pattern='no_ISC_culled_mesh.nc',
                 out_dir='no_ISC_culled_mesh_vtk')
-
