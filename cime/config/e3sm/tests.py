@@ -21,7 +21,7 @@ _TESTS = {
             "ERS.f19_g16.I1850CNECACNTBC.clm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.clm-eca",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-force_netcdf_pio",
-            "ERS_Ld3.f45_f45.ICLM45ED.clm-fates",
+            "ERS_Ld20.f45_f45.ICLM45ED.clm-fates",
             "ERS.f19_g16.I1850CLM45.clm-betr",
             "ERS.f19_g16.I1850CLM45.clm-vst",
             "ERS.f09_g16.I1850CLM45CN.clm-bgcinterface",
@@ -131,8 +131,8 @@ _TESTS = {
             "HOMME_P24.f19_g16_rx1.A",
             "HOMMEBFB_P24.f19_g16_rx1.A",
             )
-        },    
-    
+        },
+
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
@@ -336,7 +336,7 @@ _TESTS = {
     "e3sm_bench_lores_g" : {
         "share"    : True,
         "time"     : "01:00:00",
-        "tests"    : ( 
+        "tests"    : (
                  "PFS_P320.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P480.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P640.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
