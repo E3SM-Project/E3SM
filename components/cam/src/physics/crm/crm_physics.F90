@@ -71,12 +71,16 @@ subroutine crm_physics_register()
    use phys_control,        only: phys_getopts
    use crmdims,             only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, &
                                   crm_nx_rad, crm_ny_rad
+#ifdef MMF_SAMXX
    use cpp_interface_mod,   only: setparm
+   use gator_mod, only: gator_init
+#elif defined(MMF_SAM)
+   use setparm_mod      ,   only: setparm
+#endif
    use crm_history,         only: crm_history_register
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
 #endif
-   use gator_mod, only: gator_init
    !----------------------------------------------------------------------------
    ! local variables
    integer idx
@@ -91,7 +95,9 @@ subroutine crm_physics_register()
    integer, dimension(5) :: dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
 #endif
    !----------------------------------------------------------------------------
+#ifdef MMF_SAMXX
    call gator_init()
+#endif
    call phys_getopts( use_ECPP_out = use_ECPP)
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
@@ -204,7 +210,9 @@ subroutine crm_physics_init(species_class)
 !---------------------------------------------------------------------------------------------------
    use physics_buffer,        only: pbuf_get_index
    use phys_control,          only: phys_getopts
-   !use accelerate_crm_mod,    only: crm_accel_init
+#ifdef MMF_SAM
+   use accelerate_crm_mod,    only: crm_accel_init
+#endif
    use crm_history,           only: crm_history_init
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
@@ -232,7 +240,9 @@ subroutine crm_physics_init(species_class)
 
    call crm_history_init(species_class)
 
-   !call crm_accel_init()
+#ifdef MMF_SAM
+   call crm_accel_init()
+#endif
 
    prec_dp_idx  = pbuf_get_index('PREC_DP')
    snow_dp_idx  = pbuf_get_index('SNOW_DP')
@@ -270,7 +280,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
    use physconst,       only: cpair, latvap, latice, gravit, cappa
    use constituents,    only: pcnst, cnst_get_ind
+#ifdef MMF_SAMXX
    use cpp_interface_mod, only: crm
+#elif defined(MMF_SAM)
+   use crm_module       , only: crm
+#endif
    use params,          only: crm_rknd
    use phys_control,    only: phys_getopts
    use crm_history,     only: crm_history_out
@@ -575,101 +589,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field (pbuf, crm_snw_idx, crm_snw)
 #endif
 
-   ! if (masterproc) then
-   ! write(*,*) "DEBUG: ncol                               : " , ncol
-   ! write(*,*) "DEBUG: shape( crm_rad%qrad               ): " , shape( crm_rad%qrad               ) 
-   ! write(*,*) "DEBUG: shape( crm_rad%temperature        ): " , shape( crm_rad%temperature        ) 
-   ! write(*,*) "DEBUG: shape( crm_rad%qv                 ): " , shape( crm_rad%qv                 ) 
-   ! write(*,*) "DEBUG: shape( crm_rad%qc                 ): " , shape( crm_rad%qc                 ) 
-   ! write(*,*) "DEBUG: shape( crm_rad%qi                 ): " , shape( crm_rad%qi                 ) 
-   ! write(*,*) "DEBUG: shape( crm_rad%cld                ): " , shape( crm_rad%cld                ) 
-   ! write(*,*) "DEBUG: shape( crm_state%u_wind           ): " , shape( crm_state%u_wind           )
-   ! write(*,*) "DEBUG: shape( crm_state%v_wind           ): " , shape( crm_state%v_wind           )
-   ! write(*,*) "DEBUG: shape( crm_state%w_wind           ): " , shape( crm_state%w_wind           )
-   ! write(*,*) "DEBUG: shape( crm_state%temperature      ): " , shape( crm_state%temperature      )
-   ! write(*,*) "DEBUG: shape( crm_state%qt               ): " , shape( crm_state%qt               )
-   ! write(*,*) "DEBUG: shape( crm_state%qp               ): " , shape( crm_state%qp               )
-   ! write(*,*) "DEBUG: shape( crm_state%qn               ): " , shape( crm_state%qn               )
-   ! write(*,*) "DEBUG: shape( crm_input%bflxls           ): " , shape( crm_input%bflxls           )
-   ! write(*,*) "DEBUG: shape( crm_input%wndls            ): " , shape( crm_input%wndls            )
-   ! write(*,*) "DEBUG: shape( crm_input%zmid             ): " , shape( crm_input%zmid             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%zint             ): " , shape( crm_input%zint             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%pmid             ): " , shape( crm_input%pmid             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%pint             ): " , shape( crm_input%pint             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%pdel             ): " , shape( crm_input%pdel             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%ul               ): " , shape( crm_input%ul               ) 
-   ! write(*,*) "DEBUG: shape( crm_input%vl               ): " , shape( crm_input%vl               ) 
-   ! write(*,*) "DEBUG: shape( crm_input%tl               ): " , shape( crm_input%tl               ) 
-   ! write(*,*) "DEBUG: shape( crm_input%qccl             ): " , shape( crm_input%qccl             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%qiil             ): " , shape( crm_input%qiil             ) 
-   ! write(*,*) "DEBUG: shape( crm_input%ql               ): " , shape( crm_input%ql               ) 
-   ! write(*,*) "DEBUG: shape( crm_input%tau00            ): " , shape( crm_input%tau00            ) 
-   ! write(*,*) "DEBUG: shape( crm_output%timing_factor   ): " , shape( crm_output%timing_factor   )
-   ! write(*,*) "DEBUG: shape( crm_output%prectend        ): " , shape( crm_output%prectend        )
-   ! write(*,*) "DEBUG: shape( crm_output%precstend       ): " , shape( crm_output%precstend       )
-   ! write(*,*) "DEBUG: shape( crm_output%cld             ): " , shape( crm_output%cld             )
-   ! write(*,*) "DEBUG: shape( crm_output%cldtop          ): " , shape( crm_output%cldtop          )
-   ! write(*,*) "DEBUG: shape( crm_output%gicewp          ): " , shape( crm_output%gicewp          )
-   ! write(*,*) "DEBUG: shape( crm_output%gliqwp          ): " , shape( crm_output%gliqwp          )
-   ! write(*,*) "DEBUG: shape( crm_output%mctot           ): " , shape( crm_output%mctot           )
-   ! write(*,*) "DEBUG: shape( crm_output%mcup            ): " , shape( crm_output%mcup            )
-   ! write(*,*) "DEBUG: shape( crm_output%mcdn            ): " , shape( crm_output%mcdn            )
-   ! write(*,*) "DEBUG: shape( crm_output%mcuup           ): " , shape( crm_output%mcuup           )
-   ! write(*,*) "DEBUG: shape( crm_output%mcudn           ): " , shape( crm_output%mcudn           )
-   ! write(*,*) "DEBUG: shape( crm_output%qc_mean         ): " , shape( crm_output%qc_mean         )
-   ! write(*,*) "DEBUG: shape( crm_output%qi_mean         ): " , shape( crm_output%qi_mean         )
-   ! write(*,*) "DEBUG: shape( crm_output%qs_mean         ): " , shape( crm_output%qs_mean         )
-   ! write(*,*) "DEBUG: shape( crm_output%qg_mean         ): " , shape( crm_output%qg_mean         )
-   ! write(*,*) "DEBUG: shape( crm_output%qr_mean         ): " , shape( crm_output%qr_mean         )
-   ! write(*,*) "DEBUG: shape( crm_output%mu_crm          ): " , shape( crm_output%mu_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%md_crm          ): " , shape( crm_output%md_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%eu_crm          ): " , shape( crm_output%eu_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%du_crm          ): " , shape( crm_output%du_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%ed_crm          ): " , shape( crm_output%ed_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%flux_qt         ): " , shape( crm_output%flux_qt         )
-   ! write(*,*) "DEBUG: shape( crm_output%flux_u          ): " , shape( crm_output%flux_u          )
-   ! write(*,*) "DEBUG: shape( crm_output%flux_v          ): " , shape( crm_output%flux_v          )
-   ! write(*,*) "DEBUG: shape( crm_output%fluxsgs_qt      ): " , shape( crm_output%fluxsgs_qt      )
-   ! write(*,*) "DEBUG: shape( crm_output%tkez            ): " , shape( crm_output%tkez            )
-   ! write(*,*) "DEBUG: shape( crm_output%tkesgsz         ): " , shape( crm_output%tkesgsz         )
-   ! write(*,*) "DEBUG: shape( crm_output%tkz             ): " , shape( crm_output%tkz             )
-   ! write(*,*) "DEBUG: shape( crm_output%flux_qp         ): " , shape( crm_output%flux_qp         )
-   ! write(*,*) "DEBUG: shape( crm_output%precflux        ): " , shape( crm_output%precflux        )
-   ! write(*,*) "DEBUG: shape( crm_output%qt_trans        ): " , shape( crm_output%qt_trans        )
-   ! write(*,*) "DEBUG: shape( crm_output%qp_trans        ): " , shape( crm_output%qp_trans        )
-   ! write(*,*) "DEBUG: shape( crm_output%qp_fall         ): " , shape( crm_output%qp_fall         )
-   ! write(*,*) "DEBUG: shape( crm_output%qp_evp          ): " , shape( crm_output%qp_evp          )
-   ! write(*,*) "DEBUG: shape( crm_output%qp_src          ): " , shape( crm_output%qp_src          )
-   ! write(*,*) "DEBUG: shape( crm_output%qt_ls           ): " , shape( crm_output%qt_ls           )
-   ! write(*,*) "DEBUG: shape( crm_output%t_ls            ): " , shape( crm_output%t_ls            )
-   ! write(*,*) "DEBUG: shape( crm_output%jt_crm          ): " , shape( crm_output%jt_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%mx_crm          ): " , shape( crm_output%mx_crm          )
-   ! write(*,*) "DEBUG: shape( crm_output%cltot           ): " , shape( crm_output%cltot           )
-   ! write(*,*) "DEBUG: shape( crm_output%clhgh           ): " , shape( crm_output%clhgh           )
-   ! write(*,*) "DEBUG: shape( crm_output%clmed           ): " , shape( crm_output%clmed           )
-   ! write(*,*) "DEBUG: shape( crm_output%cllow           ): " , shape( crm_output%cllow           )
-   ! write(*,*) "DEBUG: shape( crm_output%sltend          ): " , shape( crm_output%sltend          )
-   ! write(*,*) "DEBUG: shape( crm_output%qltend          ): " , shape( crm_output%qltend          )
-   ! write(*,*) "DEBUG: shape( crm_output%qcltend         ): " , shape( crm_output%qcltend         )
-   ! write(*,*) "DEBUG: shape( crm_output%qiltend         ): " , shape( crm_output%qiltend         )
-   ! write(*,*) "DEBUG: shape( crm_output%tk              ): " , shape( crm_output%tk              )
-   ! write(*,*) "DEBUG: shape( crm_output%tkh             ): " , shape( crm_output%tkh             )
-   ! write(*,*) "DEBUG: shape( crm_output%qcl             ): " , shape( crm_output%qcl             )
-   ! write(*,*) "DEBUG: shape( crm_output%qci             ): " , shape( crm_output%qci             )
-   ! write(*,*) "DEBUG: shape( crm_output%qpl             ): " , shape( crm_output%qpl             )
-   ! write(*,*) "DEBUG: shape( crm_output%qpi             ): " , shape( crm_output%qpi             )
-   ! write(*,*) "DEBUG: shape( crm_output%z0m             ): " , shape( crm_output%z0m             )
-   ! write(*,*) "DEBUG: shape( crm_output%taux            ): " , shape( crm_output%taux            )
-   ! write(*,*) "DEBUG: shape( crm_output%tauy            ): " , shape( crm_output%tauy            )
-   ! write(*,*) "DEBUG: shape( crm_output%precc           ): " , shape( crm_output%precc           )
-   ! write(*,*) "DEBUG: shape( crm_output%precl           ): " , shape( crm_output%precl           )
-   ! write(*,*) "DEBUG: shape( crm_output%precsc          ): " , shape( crm_output%precsc          )
-   ! write(*,*) "DEBUG: shape( crm_output%precsl          ): " , shape( crm_output%precsl          )
-   ! write(*,*) "DEBUG: shape( crm_output%prec_crm        ): " , shape( crm_output%prec_crm        )
-   ! endif
-   ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
-   ! stop
-
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
 
@@ -896,6 +815,17 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if (.not.allocated(ptend%q)) write(*,*) '=== ptend%q not allocated ==='
       if (.not.allocated(ptend%s)) write(*,*) '=== ptend%s not allocated ==='
 
+#ifdef MMF_SAM
+
+      call t_startf ('crm_call')
+
+      call crm(lchnk, ncol, ztodt, pver, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output)
+
+      call t_stopf('crm_call')
+
+#elif defined(MMF_SAMXX)
+
+      ! Load latitude, longitude, and unique column ID for all CRMs
       allocate(longitude0(ncol))
       allocate(latitude0 (ncol))
       allocate(gcolp     (ncol))
@@ -904,21 +834,22 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
         longitude0(icrm) = get_rlon_p(lchnk,icrm) * 57.296_r8
         gcolp     (icrm) = get_gcol_p(lchnk,icrm)
       enddo
+      ! Load the MSA parameters
       use_crm_accel = .false.
       crm_accel_factor = 0.
       crm_accel_uv = .false.
-      call phys_getopts(use_crm_accel_out = use_crm_accel_tmp, &
+      call phys_getopts(use_crm_accel_out    = use_crm_accel_tmp, &
                         crm_accel_factor_out = crm_accel_factor, &
-                        crm_accel_uv_out = crm_accel_uv_tmp)
+                        crm_accel_uv_out     = crm_accel_uv_tmp)
       use_crm_accel = use_crm_accel_tmp
       crm_accel_uv = crm_accel_uv_tmp
+      ! Load the nstep
       igstep = get_nstep()
 
       call t_startf ('crm_call')
-      !call crm( lchnk, ncol, ztodt, pver,       &
-      !          crm_input, crm_state, crm_rad,  &
-      !          crm_ecpp_output, crm_output )
 
+      ! Fortran classes don't translate to C++ classes, we we have to separate
+      ! this stuff out when calling the C++ routinte crm(...)
       call crm(ncol, pcols, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
@@ -938,12 +869,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm, latitude0, longitude0, gcolp, igstep, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
-      
+
       call t_stopf('crm_call')
 
       deallocate(longitude0)
       deallocate(latitude0 )
-      deallocate(gcolp )
+      deallocate(gcolp     )
+      
+#endif
 
       !---------------------------------------------------------------------------------------------
       ! Copy tendencies from CRM output to ptend

@@ -11,11 +11,11 @@ unset NCRMS
 
 export NCHOME=${OLCF_NETCDF_ROOT}
 export NFHOME=${OLCF_NETCDF_FORTRAN_ROOT}
-export NCRMS=230
+export NCRMS=42
 export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
-export FFLAGS=-O3
+export FFLAGS="-O3 -ffree-line-length-none"
 export CXXFLAGS=-O3
 export ARCH="CUDA"
 export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math -D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr"

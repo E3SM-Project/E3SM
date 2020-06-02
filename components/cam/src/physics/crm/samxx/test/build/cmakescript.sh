@@ -55,11 +55,11 @@ else
 fi
 PLEV=`$NCHOME/bin/ncdump -h $1  | grep "nlev =" | awk '{print $3}'`
 if [[ "$NCRMS" != "" ]]; then
-  if [[ $NCRMS -gt $NCRMS_FILE ]]; then
-    printf "ERROR: NCRMS environment variable is larger than the available samples in the 2D input NetCDF file\n\n"
-    exit -1
-  fi
   NCRMS2D=$NCRMS
+  if [[ $NCRMS -gt $NCRMS_FILE ]]; then
+    printf "WARNING: NCRMS environment variable is larger than the available samples in the 2D input NetCDF file\n\n"
+    NCRMS2D=$NCRMS_FILE
+  fi
 else
   NCRMS2D=$NCRMS_FILE
 fi
@@ -130,7 +130,7 @@ printf "NetCDF Flags: $NCFLAGS\n\n"
 ############################################################################
 ## RUN THE CONFIGURE
 ############################################################################
-FFLAGS="$FFLAGS -ffree-line-length-none -I$NCHOME/include -I$NFHOME/include"
+FFLAGS="$FFLAGS -I$NCHOME/include -I$NFHOME/include"
 CXXFLAGS="$CXXFLAGS -std=c++14 -I$NCHOME/include -I$NFHOME/include"
 CUDAFLAGS="$CUDAFLAGS ${CUDA_ARCH} -std=c++14"
 

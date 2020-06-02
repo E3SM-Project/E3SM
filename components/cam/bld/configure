@@ -1900,8 +1900,8 @@ if (defined $opts{'use_MMF'}) {
     $cfg_cppdefs .= " -DYES3DVAL=$yes3Dval";
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
-    if (defined $opts{'crm_adv'}) { $cfg_cppdefs .= " -D_$opts{'crm_adv'}";}
-    if (defined $opts{'MMF_microphysics_scheme'}) { $cfg_cppdefs .= " -D_$opts{'MMF_microphysics_scheme'}";}
+    if (defined $opts{'crm_adv'}) { $cfg_cppdefs .= " -D$opts{'crm_adv'}";}
+    if (defined $opts{'MMF_microphysics_scheme'}) { $cfg_cppdefs .= " -D$opts{'MMF_microphysics_scheme'}";}
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
     if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
     if (defined $opts{'crm_nx_rad'}) { 
@@ -1913,6 +1913,17 @@ if (defined $opts{'use_MMF'}) {
         $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
     } else {
         $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
+    }
+    if (defined $opts{'crm'}) {
+      if ($opts{'crm'} eq 'sam') {
+        $cfg_cppdefs .= " -DMMF_SAM";
+      } elsif ($opts{'crm'} eq 'samxx') {
+        $cfg_cppdefs .= " -DMMF_SAMXX";
+      } else {
+        die "$opts{'crm'} unsupported.";
+      }
+    } else {
+      die "-crm [sam|samxx] must be specified.";
     }
 }
 

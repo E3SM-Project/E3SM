@@ -10,7 +10,7 @@ program driver
   use dmdf
   use mpi
   use iso_c_binding, only: c_bool, c_double
-  use gator_mod, only: gator_init
+  use gator_mod, only: gator_init, gator_finalize
   implicit none
   integer :: ncrms
   type(crm_input_type)         :: crm_input
@@ -300,6 +300,7 @@ program driver
     call mpi_barrier(mpi_comm_world,ierr)
   enddo
 
+  call gator_finalize()
   call mpi_finalize(ierr)
 
 

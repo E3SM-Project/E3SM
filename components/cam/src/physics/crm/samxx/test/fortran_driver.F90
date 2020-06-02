@@ -47,6 +47,7 @@ program driver
   real(crm_rknd), allocatable :: read_crm_rad_qi           (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_rad_cld          (:,:,:,:)
   character(len=64) :: fprefix = 'fortran_output'
+  integer(8) :: t1, t2, tr
 
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
@@ -194,8 +195,13 @@ program driver
 
   call crm_accel_init()
 
+  call system_clock(t1)
+
   ! Run the code
   call crm( ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_output, lat0, long0 )
+
+  call system_clock(t2,tr)
+  write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
 
   if (masterTask) then
     write(*,*) 'Writing output data'
