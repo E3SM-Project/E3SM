@@ -2055,7 +2055,7 @@ subroutine shoc_tke(&
 ! LOCAL VARIABLES
   real(rtype) :: shear_prod(shcol,nlevi)
   real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
-  real(rtype) :: shear_prod_zt(shcol,nlev), tk_zi(shcol,nlevi)
+  real(rtype) :: shear_prod_zt(shcol,nlev)
   real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce
   real(rtype) :: Ckh_s,Ckm_s,Ces,Ce1,Ce2,smix,Cee,Cs
   real(rtype) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
@@ -2112,7 +2112,6 @@ subroutine shoc_tke(&
       kt=k-1
       grid_dz = 1._rtype/dz_zi(i,k)
 
-      tk_in=tk_zi(i,k)
       ! calculate vertical gradient of u&v wind
       u_grad=grid_dz*(u_wind(i,kt)-u_wind(i,k))
       v_grad=grid_dz*(v_wind(i,kt)-v_wind(i,k))
@@ -2150,6 +2149,24 @@ subroutine shoc_tke(&
       tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
 
       tke(i,k)=min(tke(i,k),maxtke)
+      
+      ! Compute the return to isotropic timescale as per
+      ! Canuto et al. 2004.  This is used to define the
+      ! eddy coefficients as well as to diagnose higher
+      ! moments in SHOC
+
+      ! define the time scale
+      tscale1=(2.0_rtype*tke(i,k))/a_diss
+
+      ! define a damping term "lambda" based on column stability
+      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+      lambda=max(lambda_low,min(lambda_high,lambda))
+
+      buoy_sgs_save=brunt(i,k)
+      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+
+      ! Compute the return to isotropic timescale
+      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
 
       ! Dimensionless Okukhov length considering only 
       !  the lowest model grid layer height to scale
@@ -2164,27 +2181,8 @@ subroutine shoc_tke(&
         tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
       else
-	! Default definition of eddy diffusivity
-	
-	! Compute the return to isotropic timescale as per
-        ! Canuto et al. 2004.  This is used to define the
-        ! eddy coefficients as well as to diagnose higher
-        ! moments in SHOC
-
-        ! define the time scale
-        tscale1=(2.0_rtype*tke(i,k))/a_diss
-
-        ! define a damping term "lambda" based on column stability
-        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-        lambda=max(lambda_low,min(lambda_high,lambda))
-
-        buoy_sgs_save=brunt(i,k)
-        if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
-
-        ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))  
+        ! Default definition of eddy diffusivity for heat and momentum  
       
-        ! Define the eddy coefficients for heat and momentum
         tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
         tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
       endif
@@ -2733,12 +2731,91 @@ subroutine shoc_energy_fixer(&
   real(rtype), intent(inout) :: host_dse(shcol,nlev)
 
   ! LOCAL VARIABLES
+  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
+  integer :: shoctop(shcol)
+
+  call shoc_energy_total_fixer(&
+         shcol,nlev,nlevi,dtime,nadv,&  ! Input
+         zt_grid,zi_grid,&              ! Input
+         se_b,ke_b,wv_b,wl_b,&          ! Input
+         se_a,ke_a,wv_a,wl_a,&          ! Input
+         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         te_a, te_b)                    ! Output
+
+  call shoc_energy_threshold_fixer(&
+         shcol,nlev,nlevi,&             ! Input
+         pint,tke,te_a,te_b,&           ! Input
+         se_dis,shoctop)                ! Output
+
+  call shoc_energy_dse_fixer(&
+         shcol,nlev,&                  ! Input
+         se_dis,shoctop,   &           ! Input
+         host_dse)                     ! Input/Output
+
+  return
+
+end subroutine shoc_energy_fixer
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_total_fixer(&
+         shcol,nlev,nlevi,dtime,nadv,&  ! Input
+         zt_grid,zi_grid,&              ! Input
+         se_b,ke_b,wv_b,wl_b,&          ! Input
+         se_a,ke_a,wv_a,wl_a,&          ! Input
+         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         te_a, te_b)                    ! Output
+
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+  ! number of levels on interface grid
+  integer, intent(in) :: nlevi
+  ! SHOC timestep
+  real(rtype), intent(in) :: dtime
+  ! number of SHOC iterations
+  integer, intent(in) :: nadv
+  ! integrated static energy before
+  real(rtype), intent(in) :: se_b(shcol)
+  ! integrated kinetic energy before
+  real(rtype), intent(in) :: ke_b(shcol)
+  ! integrated water vapor before
+  real(rtype), intent(in) :: wv_b(shcol)
+  ! integrated liquid water before
+  real(rtype), intent(in) :: wl_b(shcol)
+  ! integrated static energy after
+  real(rtype), intent(in) :: se_a(shcol)
+  ! integrated kinetic energy after
+  real(rtype), intent(in) :: ke_a(shcol)
+  ! integrated water vapor after
+  real(rtype), intent(in) :: wv_a(shcol)
+  ! integrated liquid water after
+  real(rtype), intent(in) :: wl_a(shcol)
+  ! Surface sensible heat flux [K m/s]
+  real(rtype), intent(in) :: wthl_sfc(shcol)
+  ! Surface latent heat flux [kg/kg m/s]
+  real(rtype), intent(in) :: wqw_sfc(shcol)
+  ! heights on midpoint grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! heights on interface grid [m]
+  real(rtype), intent(in) :: zi_grid(shcol,nlev)
+  ! density on midpoint grid [kg/m^3]
+  real(rtype), intent(in) :: rho_zt(shcol,nlev)
+
+  ! INPUT VARIABLES
+  real(rtype), intent(out) :: te_a(shcol)
+  real(rtype), intent(out) :: te_b(shcol)
+
+  ! LOCAL VARIABLES
   ! density on interface grid [kg/m^3]
   real(rtype) :: rho_zi(shcol,nlevi)
   ! sensible and latent heat fluxes [W/m^2]
   real(rtype) :: shf, lhf, hdtime
-  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
-  integer :: shoctop(shcol)
   integer :: i, k
 
   ! compute the host timestep
@@ -2746,7 +2823,8 @@ subroutine shoc_energy_fixer(&
 
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
 
-  ! Based on these integrals, compute the total energy before and after SHOC call
+  ! Based on these integrals, compute the total energy before and after SHOC
+  ! call
   do i=1,shcol
     ! convert shf and lhf to W/m^2
     shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)
@@ -2755,6 +2833,46 @@ subroutine shoc_energy_fixer(&
     te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)
     te_b(i) = te_b(i)+(shf+(lhf)*(lcond+lice))*hdtime
   enddo
+
+  return
+
+end subroutine shoc_energy_total_fixer
+
+
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_threshold_fixer(&
+         shcol,nlev,nlevi,&             ! Input
+         pint,tke,te_a,te_b,&           ! Input
+         se_dis,shoctop)                ! Output
+
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+  ! number of levels on interface grid
+  integer, intent(in) :: nlevi
+  ! pressure on interface grid [Pa]
+  real(rtype), intent(in) :: pint(shcol,nlevi)
+  !turbulent kinetic energy [m^2/s^2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+
+  real(rtype), intent(in) :: te_a(shcol)
+  real(rtype), intent(in) :: te_b(shcol)
+
+
+  ! INPUT VARIABLES
+  real(rtype), intent(out) :: se_dis(shcol)
+  integer, intent(out) :: shoctop(shcol)
+
+  ! LOCAL VARIABLES
+  ! sensible and latent heat fluxes [W/m^2]
+  integer :: i, k
 
   ! Limit the energy fixer to find highest layer where SHOC is active
   ! Find first level where wp2 is higher than lowest threshold
@@ -2768,6 +2886,37 @@ subroutine shoc_energy_fixer(&
     se_dis(i) = (te_a(i) - te_b(i))/(pint(i,nlevi)-pint(i,shoctop(i)))
   enddo
 
+  return
+
+end subroutine shoc_energy_threshold_fixer
+
+
+!==============================================================
+! Subroutine foe SHOC energy fixer with host model temp
+
+subroutine shoc_energy_dse_fixer(&
+         shcol,nlev,&                  ! Input
+         se_dis,shoctop,   &           ! Input
+         host_dse)                     ! Input/Output
+
+  implicit none
+
+  ! INPUT VARIABLES
+  ! number of columns
+  integer, intent(in) :: shcol
+  ! number of levels
+  integer, intent(in) :: nlev
+
+  ! INPUT VARIABLES
+  real(rtype), intent(in) :: se_dis(shcol)
+  integer, intent(in) :: shoctop(shcol)
+
+  !host temperature [K]
+  real(rtype), intent(inout) :: host_dse(shcol,nlev)
+
+  ! LOCAL VARIABLES
+  integer :: i, k
+
   do i=1,shcol
     do k=shoctop(i),nlev
       host_dse(i,k) = host_dse(i,k) - se_dis(i)*ggr
@@ -2776,7 +2925,8 @@ subroutine shoc_energy_fixer(&
 
   return
 
-end subroutine shoc_energy_fixer
+end subroutine shoc_energy_dse_fixer
+
 
 
 
