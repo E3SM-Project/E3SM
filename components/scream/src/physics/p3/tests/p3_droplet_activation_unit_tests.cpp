@@ -27,9 +27,6 @@ struct UnitWrap::UnitTest<D>::TestDropletActivation {
   {
     using KTH = KokkosTypes<HostDevice>;
 
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
-
     constexpr bool   log_predictNc = false;
     constexpr Scalar odt = 9.558E-04;
 
@@ -57,44 +54,46 @@ struct UnitWrap::UnitTest<D>::TestDropletActivation {
     };
 
     // Sync to device
-    KTH::view_1d<DropletActivationData> self_host("self_host", Spack::n);
-    view_1d<DropletActivationData> self_device("self_host", Spack::n);
-    std::copy(&self[0], &self[0] + Spack::n, self_host.data());
+    KTH::view_1d<DropletActivationData> self_host("self_host", max_pack_size);
+    view_1d<DropletActivationData> self_device("self_host", max_pack_size);
+    std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       droplet_activation(self[i]);
      }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, qcnuc, ncnuc;
-      for (Int s = 0; s < Spack::n; ++s) {
-        temp[s]          = self_device(s).temp;
-        pres[s]          = self_device(s).pres;
-        qv[s]            = self_device(s).qv;
-        qc[s]            = self_device(s).qc;
-        inv_rho[s]       = self_device(s).inv_rho;
-        sup[s]           = self_device(s).sup;
-        xxlv[s]          = self_device(s).xxlv;
-        npccn[s]         = self_device(s).npccn;
-        qcnuc[s]         = self_device(s).qcnuc;
-        ncnuc[s]         = self_device(s).ncnuc;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        temp[s]          = self_device(vs).temp;
+        pres[s]          = self_device(vs).pres;
+        qv[s]            = self_device(vs).qv;
+        qc[s]            = self_device(vs).qc;
+        inv_rho[s]       = self_device(vs).inv_rho;
+        sup[s]           = self_device(vs).sup;
+        xxlv[s]          = self_device(vs).xxlv;
+        npccn[s]         = self_device(vs).npccn;
+        qcnuc[s]         = self_device(vs).qcnuc;
+        ncnuc[s]         = self_device(vs).ncnuc;
       }
       Functions::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc, self_device(0).odt,
                                     qcnuc, ncnuc);
 
-      for (Int s = 0; s < Spack::n; ++s) {
-        self_device(s).qcnuc = qcnuc[s];
-        self_device(s).ncnuc = ncnuc[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        self_device(vs).qcnuc = qcnuc[s];
+        self_device(vs).ncnuc = ncnuc[s];
       }
     });
 
     Kokkos::deep_copy(self_host, self_device);
 
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].qcnuc == self_host(s).qcnuc);
       REQUIRE(self[s].ncnuc == self_host(s).ncnuc);
     }
