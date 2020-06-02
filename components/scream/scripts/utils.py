@@ -291,28 +291,13 @@ def get_current_branch(repo=None):
 ###############################################################################
     """
     Return the name of the current branch for a repository
-
-    >>> if "GIT_BRANCH" in os.environ:
-    ...     get_current_branch() is not None
-    ... else:
-    ...     os.environ["GIT_BRANCH"] = "foo"
-    ...     get_current_branch() == "foo"
-    True
+    If in detached HEAD state, returns None
     """
-    if ("GIT_BRANCH" in os.environ):
-        # This approach works better for Jenkins jobs because the Jenkins
-        # git plugin does not use local tracking branches, it just checks out
-        # to a commit
-        branch = os.environ["GIT_BRANCH"]
-        if (branch.startswith("origin/")):
-            branch = branch.replace("origin/", "", 1)
-        return branch
-    else:
-        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo)
-        if (stat != 0):
-            return None
-        else:
-            return output.replace("refs/heads/", "")
+
+    stat, output, err = run_cmd("git rev-parse --abbrev-ref HEAD", from_dir=repo)
+    expect (stat==0, "Error! The command 'git rev-parse --abbrev-ref HEAD' failed with error: {}".format(err))
+
+    return None if output=="HEAD" else output
 
 ###############################################################################
 def get_current_commit(short=False, repo=None, tag=False, commit=None):
