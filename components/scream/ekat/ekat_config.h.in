@@ -30,4 +30,4 @@
 // Whether fp model is strict
 #cmakedefine EKAT_STRICT_FP
 
-#endif // EKAT_CONFIG_H
+#endif
