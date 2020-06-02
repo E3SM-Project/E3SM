@@ -16,18 +16,8 @@
 namespace scream {
 namespace shoc {
 
-struct SHOCGridData
-{
-    static constexpr size_t NUM_ARRAYS = 14;
 
-    //input
-    int shcol, nlev, nlevi;
-    Real* zt_grid, zi_grid; 
-
-    //output
-};
 ///////////////////////////////////////////////////////////////////////////////
-
 // Converted subroutine helpers go here.
 
 }  // namespace shoc
