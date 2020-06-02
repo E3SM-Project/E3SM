@@ -279,10 +279,6 @@ contains
     use physical_constants, only : dd_pi
     ! --------------------------------
 
-#ifdef HAVE_MOAB
-    use semoab_mod,         only :  create_moab_mesh_fine
-#endif
-
     implicit none
     !
     ! Locals
@@ -698,6 +694,10 @@ contains
     use dimensions_mod,     only : max_corner_elem
     use compose_mod,        only : compose_query_bufsz, compose_set_bufs
 #endif
+#ifdef HAVE_MOAB
+    use semoab_mod,         only :  create_moab_mesh_fine
+#endif
+
     !
     ! Inputs
     !
