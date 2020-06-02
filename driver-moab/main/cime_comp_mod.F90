@@ -2323,7 +2323,7 @@ contains
        call shr_sys_flush(logunit)
     endif
 
-    #ifdef MOABDEBUGMCT
+#ifdef MOABDEBUGMCT
     if (iamroot_CPLID )then
        write(logunit,*) ' '
        write(logunit,F00) ' start output mct data with MOAB '
