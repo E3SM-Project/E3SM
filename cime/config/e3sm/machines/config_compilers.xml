@@ -1818,7 +1818,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </FFLAGS>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
@@ -1826,35 +1826,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-  </SLIBS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpiCC </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> gcc </SCC>
-  <SCXX> g++ </SCXX>
-  <SFC> gfortran </SFC>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler MACH="summit-cpu" COMPILER="gnu">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
-  </LDFLAGS>
-  <SLIBS>
-    <append>-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </SLIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -1900,30 +1871,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="summit-cpu" COMPILER="ibm">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
-  </FFLAGS>
-  <SLIBS>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib64 -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
-  </SLIBS>
-  <MPICC> mpixlc </MPICC>
-  <MPICXX> mpixlC </MPICXX>
-  <MPIFC> mpixlf </MPIFC>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <SCC> xlc_r </SCC>
-  <SFC> xlf_r </SFC>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
-</compiler>
-
 <compiler MACH="summit" COMPILER="pgi">
   <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -1958,44 +1908,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler MACH="summit-cpu" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI </append>
-  </FFLAGS>
-  <CPPDEFS>
-    <append> -DGPU </append>
-  </CPPDEFS>
-  <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
-  <LDFLAGS>
-    <append>-ta=tesla:cc70,pinned</append>
-  </LDFLAGS>
-  <SLIBS>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
-  </SLIBS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CXX_LIBS>
-    <base>-lstdc++</base>
-  </CXX_LIBS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpiCC </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <SCC> pgcc </SCC>
-  <SFC> pgfortran </SFC>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
 </compiler>
 
 <compiler MACH="summit" COMPILER="pgigpu">
@@ -2083,52 +1995,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SCC> xlc_r </SCC>
   <SFC> xlf_r </SFC>
-</compiler>
-
-<compiler MACH="summitdev" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
-  </FFLAGS>
-  <SLIBS>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-  </SLIBS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpiCC </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SCC> pgcc </SCC>
-  <SFC> pgfortran </SFC>
-</compiler>
-
-<compiler MACH="summitdev" COMPILER="pgiacc">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <!-- Specifying cc60 implies cuda8.0, just making sure -->
-    <append>-ta=tesla:cc60,cuda8.0,pinned</append>
-  </LDFLAGS>
-  <SLIBS>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-  </SLIBS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpiCC </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SCC> pgcc </SCC>
-  <SFC> pgfortran </SFC>
 </compiler>
 
 <compiler MACH="syrah" COMPILER="intel">
