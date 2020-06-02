@@ -25,7 +25,9 @@ module micro_p3_utils
        inv_rhow,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
-       clbfact_dep
+       clbfact_dep, &
+       p3_QcAutoCon_Expon, p3_QcAccret_Expon
+
     real(rtype),dimension(16), public :: dnu
 
     real(rtype), public, parameter :: mu_r_constant = 1.0_rtype

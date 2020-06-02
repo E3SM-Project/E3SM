@@ -402,7 +402,7 @@ struct Functions
   // Computes contact and immersion freezing droplets
   KOKKOS_FUNCTION
   static void cldliq_immersion_freezing(const Spack& t, const Spack& lamc,
-    const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld,
+    const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld, const Spack& qc_relvar,
     Spack& qcheti, Spack& ncheti);
 
   // Computes the immersion freezing of rain
@@ -420,12 +420,13 @@ struct Functions
   // Computes the accretion of clouds by rain
   KOKKOS_FUNCTION
   static void cloud_rain_accretion(const Spack& rho, const Spack& inv_rho,
-    const Spack& qc_incld, const Spack& nc_incld, const Spack& qr_incld,
+    const Spack& qc_incld, const Spack& nc_incld, const Spack& qr_incld, const Spack& qc_relvar,
     Spack& qcacc, Spack& ncacc);
 
   // Computes cloud water autoconversion process rate
   KOKKOS_FUNCTION
-  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
+  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld,
+    const Spack& nc_incld, const Spack& qc_relvar,
     Spack& qcaut, Spack& ncautc, Spack& ncautr);
 
   // Computes rain self collection process rate
@@ -500,6 +501,7 @@ struct Functions
                                   const Spack& nitot_incld, Spack& nislf);
 
   // TODO (comments)
+  KOKKOS_FUNCTION
   static void evaporate_sublimate_precip(const Spack& qr_incld, const Spack& qc_incld,
 					 const Spack& nr_incld, const Spack& qitot_incld,
 					 const Spack& lcldm, const Spack& rcldm,
@@ -557,6 +559,9 @@ struct Functions
                                  const bool& log_predictNc, const Scalar& odt,
                                  Spack& qcnuc, Spack& ncnuc);
 
+  KOKKOS_FUNCTION
+  static Spack subgrid_variance_scaling(const Spack& relvar, const Scalar& expon);
+  
   KOKKOS_FUNCTION
   static void ice_cldliq_wet_growth(const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
                                     const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
@@ -690,6 +695,7 @@ struct Functions
     const uview_1d<const Spack>& inv_icldm,
     const uview_1d<const Spack>& inv_rcldm,
     const uview_1d<const Spack>& onaai,
+    const uview_1d<const Spack>& oqc_relvar,
     const uview_1d<const Spack>& oicldm,
     const uview_1d<const Spack>& olcldm,
     const uview_1d<const Spack>& orcldm,
@@ -834,6 +840,7 @@ struct Functions
     const view_2d<const Spack>& dzq,           // vertical grid spacing                m
     const view_2d<const Spack>& npccn,         // IN ccn activated number tendency     kg-1 s-1
     const view_2d<const Spack>& naai,          // IN actived ice nuclei concentration  1/kg
+    const view_2d<const Spack>& qc_relvar,     // assumed SGS 1/(var(qc)/mean(qc))     kg2/kg2
     const Real&                 dt,            // model time step                      s
     const Int&                  ni,            // num columns
     const Int&                  nk,            // column size
@@ -936,6 +943,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_get_latent_heat_impl.hpp"
 # include "p3_functions_check_values_impl.hpp"
 # include "p3_functions_incloud_mixingratios_impl.hpp"
+# include "p3_functions_subgrid_variance_scaling_impl.hpp"
 # include "p3_functions_main_impl.hpp"
 #endif
 

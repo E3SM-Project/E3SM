@@ -30,26 +30,30 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   REQUIRE(Spack::n <= max_pack_size);
 
   CloudWaterAutoconversionData cwadc[max_pack_size] = {
-    // rho, qc_incld, nc_incld
-    {9.703E-01, 5.100E-03, 2.061E+08},
-    {1.006E+00,  5.100E-03, 1.988E+08},
-    {1.139E+00 },
-    {1.151E+00,  1.000E-06, 1.737E+08},
+    // rho, qc_incld, nc_incld, qc_relvar
+    {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
+    {1.006E+00,  5.100E-03, 1.988E+08,1.0},
+    //{1.139E+00 },
+    {1.139E+00,  0.0,       0.0,      1.0},
+    {1.151E+00,  1.000E-06, 1.737E+08,1.0},
 
-    {9.703E-01, 5.100E-03, 2.061E+08},
-    {1.006E+00,  5.100E-03, 1.988E+08},
-    {1.139E+00 },
-    {1.151E+00,  1.000E-06, 1.737E+08},
+    {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
+    {1.006E+00,  5.100E-03, 1.988E+08,1.0},
+    //{1.139E+00 },
+    {1.139E+00,  0.0,       0.0,      1.0},
+    {1.151E+00,  1.000E-06, 1.737E+08,1.0},
 
-    {9.703E-01, 5.100E-03, 2.061E+08},
-    {1.006E+00,  5.100E-03, 1.988E+08},
-    {1.139E+00 },
-    {1.151E+00,  1.000E-06, 1.737E+08},
+    {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
+    {1.006E+00,  5.100E-03, 1.988E+08,1.0},
+    //{1.139E+00 },
+    {1.139E+00,  0.0,       0.0,      1.0},
+    {1.151E+00,  1.000E-06, 1.737E+08,1.0},
 
-    {9.703E-01, 5.100E-03, 2.061E+08},
-    {1.006E+00,  5.100E-03, 1.988E+08},
-    {1.139E+00 },
-    {1.151E+00,  1.000E-06, 1.737E+08},
+    {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
+    {1.006E+00,  5.100E-03, 1.988E+08,1.0},
+    //{1.139E+00 },
+    {1.139E+00,  0.0,       0.0,      1.0},
+    {1.151E+00,  1.000E-06, 1.737E+08,1.0},
   };
 
   // Sync to device
@@ -68,23 +72,26 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr;
+    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr, qc_relvar;
     for (Int s = 0; s < Spack::n; ++s) {
       rho[s] = cwadc_device(s).rho;
       qc_incld[s] = cwadc_device(s).qc_incld;
       nc_incld[s] = cwadc_device(s).nc_incld;
+      qc_relvar[s] = cwadc_device(s).qc_relvar;
       qcaut[s] = cwadc_device(s).qcaut;
       ncautc[s] = cwadc_device(s).ncautc;
       ncautr[s] = cwadc_device(s).ncautr;
     }
 
     Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
-      qcaut, ncautc, ncautr);
+      qc_relvar, qcaut, ncautc, ncautr);
+    
     // Copy results back into views
     for (Int s = 0; s < Spack::n; ++s) {
       cwadc_device(s).rho = rho[s];
       cwadc_device(s).qc_incld = qc_incld[s];
       cwadc_device(s).nc_incld = nc_incld[s];
+      cwadc_device(s).qc_relvar = qc_relvar[s];
       cwadc_device(s).qcaut = qcaut[s];
       cwadc_device(s).ncautc = ncautc[s];
       cwadc_device(s).ncautr = ncautr[s];
@@ -100,6 +107,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
        REQUIRE(cwadc[s].rho == cwadc_host(s).rho);
        REQUIRE(cwadc[s].qc_incld == cwadc_host(s).qc_incld);
        REQUIRE(cwadc[s].nc_incld == cwadc_host(s).nc_incld);
+       REQUIRE(cwadc[s].qc_relvar == cwadc_host(s).qc_relvar);
        REQUIRE(cwadc[s].qcaut == cwadc_host(s).qcaut);
        REQUIRE(cwadc[s].ncautc == cwadc_host(s).ncautc);
        REQUIRE(cwadc[s].ncautr == cwadc_host(s).ncautr);
@@ -112,12 +120,12 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
   KOKKOS_FUNCTION  static void autoconversion_is_positive(const Int &i, Int &errors){
 
-    const Spack rho(1.0);
+    const Spack rho(1.0), qc_relvar(1.0);
     Spack qc_incld, nc_incld(1e7), qcaut(0.0), ncautc(0.0), ncautr(0.0);
     for(int si=0; si<Spack::n; ++si){
         qc_incld[si] = 1e-6 * i * Spack::n + si;
       }
-        Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
+    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, qc_relvar, qcaut, ncautc, ncautr);
         if((qcaut < 0.0).any()){errors++;}
     }
 

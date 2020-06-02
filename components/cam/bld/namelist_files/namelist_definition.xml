@@ -2173,6 +2173,18 @@ Output microphysics tendencies in standard atm output file.
 Default: TRUE
 </entry>
 
+<!-- micro_p3 -->
+<entry id="p3_QcAutoCon_Expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 qc in autoconversion 
+Default: 2.47_rtype
+</entry>
+
+<entry id="p3_QcAccret_Expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 qc in accretion 
+Default: 1.15_rtype
+</entry>
 
 <!-- micro_mg -->
 <entry id="micro_do_nccons" type="logical" category="microphys"
