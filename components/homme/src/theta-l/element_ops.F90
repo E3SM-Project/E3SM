@@ -398,7 +398,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,ps,temperature,hvcoord,Q1)
+  subroutine set_thermostate(elem,ps,temperature,hvcoord,qv)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -412,7 +412,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: ps(np,np)
-  real (kind=real_kind), intent(in), optional :: Q1(np,np,nlev)
+  real (kind=real_kind), intent(in), optional :: qv(np,np,nlev)  ! water vapor mixing ratio
   
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
@@ -435,8 +435,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   elem%state%ps_v(:,:,nt)=ps
 
 
-  if (present(Q1)) then
-     call get_R_star(dp,Q1(:,:,:))  ! compute Rstar, store in dp
+  if (present(qv)) then
+     call get_R_star(dp,qv(:,:,:))! get ideal gas constant for moist air
      elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*dp(:,:,:)/Rgas
   endif
 
