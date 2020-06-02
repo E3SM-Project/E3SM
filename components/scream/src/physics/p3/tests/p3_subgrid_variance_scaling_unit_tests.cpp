@@ -122,7 +122,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar3_test(int& errors){
   //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
 
-  Scalar tol = C::Tol * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
+  Scalar tol = C::Tol * 5; //5 is a fudge factor. Tests *barely* passed on known machines without it. Added for some security.
   
   Real relvar_info[16] = {0.1,0.5,1.0,2.0,
 			  3.0,4.0,5.0,6.0,
