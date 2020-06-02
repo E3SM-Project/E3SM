@@ -436,7 +436,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   if (present(qv)) then
-     call get_R_star(dp,qv(:,:,:))! get ideal gas constant for moist air
+     ! get ideal gas constant for moist air, store in variable "dp"
+     call get_R_star(dp,qv(:,:,:))
      elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*dp(:,:,:)/Rgas
   endif
 
