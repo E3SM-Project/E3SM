@@ -14,5 +14,5 @@ EkatCreateUnitTest(array_io "${ARRAY_IO_SRCS}"
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
 EkatCreateUnitTest(yaml_parser yaml_parser.cpp
   LIBS ekat
-  INCLUDE_DIRS "${EKAT_INCLUDE_DIRS} ${YAMLCPP_INCLUDE_DIRS}"
+  INCLUDE_DIRS ${EKAT_INCLUDE_DIRS}
 )
