@@ -412,7 +412,7 @@ endif()
 
 # Add MOAB libraries.
 if (COMP_INTERFACE STREQUAL "moab")
-  set(SLIBS "${SLIBS} ${IMESH_LIBRARIES}")
+  set(SLIBS "${SLIBS} ${IMESH_LIBRARIES} -lTempestRemap -lstdc++")
 endif()
 
 # Add libraries and flags that we need on the link line when C++ code is included
