@@ -656,14 +656,7 @@ contains
     integer :: edgesz, sendsz, recvsz, n, den
 
 #ifdef HAVE_MOAB
-    allocate(dom_mt(0:hthreads-1))
-    do ith=0,hthreads-1
-       dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
-    end do
-    ith=0
-    nets=1
-    nete=nelemd
-    call create_moab_mesh_fine(par, elem, nets, nete)
+    call create_moab_mesh_fine(par, elem)
 #endif
 
     call prim_advance_init1(par,elem,integration)

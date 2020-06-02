@@ -9,7 +9,7 @@ module semoab_mod
 !  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
 !       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
 
-  use dimensions_mod, only: nelem, ne, np, nlev
+  use dimensions_mod, only: nelem, ne, np, nelemd, nlev
   use element_mod, only : element_t
   use parallel_mod, only : parallel_t
 
@@ -30,16 +30,13 @@ module semoab_mod
   
 contains
 
-  subroutine create_moab_mesh_fine(par, elem, nets, nete)
+  subroutine create_moab_mesh_fine(par, elem)
 
     use ISO_C_BINDING
     use coordinate_systems_mod, only :  cartesian3D_t,  spherical_to_cart
+
     type (element_t), intent(inout) :: elem(:)
-
     type (parallel_t)      , intent(in) :: par
-
-    integer, intent(in)                     :: nets  ! starting thread element number (private)
-    integer, intent(in)                     :: nete
 
     integer ierr, i, j, ie, iv, block_ID, k, numvals
     integer icol, irow, je, linx ! local indices in fine el connect
@@ -91,21 +88,21 @@ contains
      enddo
      local_map(np, np) = ((np-1)*(np-1)-1)*4 + 3
 
-     nelemd2 = (nete-nets+1)*(np-1)*(np-1)
-     moab_dim_cquads = (nete-nets+1)*4*(np-1)*(np-1)
+     nelemd2 = (nelemd)*(np-1)*(np-1)
+     moab_dim_cquads = (nelemd)*4*(np-1)*(np-1)
 
      if(par%masterproc) then
-       write (iulog, *) " MOAB: semoab_mod module: create_moab_mesh_fine;  on processor " , par%rank ," elements: " ,  nets, nete
+       write (iulog, *) " MOAB: semoab_mod module: create_moab_mesh_fine;  on processor " , par%rank ," elements: " ,  1, nelemd
      endif
 
      allocate(gdofv(moab_dim_cquads))
      allocate(elemids(nelemd2))
 
      k=0 !   will be the index for element global dofs
-     do ie=nets,nete
+     do ie=1,nelemd
        do j=1,np-1
          do i=1,np-1
-           ix = (ie-nets)*(np-1)*(np-1)+(j-1)*(np-1)+i-1
+           ix = (ie-1)*(np-1)*(np-1)+(j-1)*(np-1)+i-1
            gdofv(ix*4+1) = elem(ie)%gdofP(i,j)
            gdofv(ix*4+2) = elem(ie)%gdofP(i+1,j)
            gdofv(ix*4+3) = elem(ie)%gdofP(i+1,j+1)
@@ -149,7 +146,7 @@ contains
      do ix=1,moab_dim_cquads
         idx = indx(ix)   ! index in initial array, vertices in all fine quads
         k = (idx-1)/(4*(np-1)*(np-1))  ! index of coarse quad, locally, starts at 0
-        ie = nets + k  ! this is the element number; starts at nets
+        ie = 1 + k  ! this is the element number; starts at nets=1
         je = ( idx -1 -k*(np-1)*(np-1)*4 ) / 4 + 1 ! local fine quad in coarse, 1 to (np-1) ^ 2
         irow = (je-1)/(np-1)+1
         icol = je - (np-1)*(irow-1)
@@ -221,7 +218,7 @@ contains
       ierr = iMOAB_DefineTagStorage(MHFID, newtagg, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
         call endrun('Error: fail to create new GDOF tag')
-      do ie=nets,nete
+      do ie=1,nelemd
         do ii=1,elem(ie)%idxp%NumUniquePts
           i=elem(ie)%idxp%ia(ii)
           j=elem(ie)%idxp%ja(ii)
@@ -289,13 +286,13 @@ contains
 
 
 !    now create the coarse mesh, but the global dofs will come from fine mesh, after solving
-     nelemd2 = nete-nets+1
-     moab_dim_cquads = (nete-nets+1)*4
+     nelemd2 = nelemd
+     moab_dim_cquads = (nelemd)*4
 
      allocate(gdofel(nelemd2*np*np))
      k=0 !   will be the index for element global dofs
-     do ie=nets,nete
-       ix = ie-nets
+     do ie=1,nelemd
+       ix = ie-1
        !
        gdofv(ix*4+1) = elem(ie)%gdofP(1,1)
        gdofv(ix*4+2) = elem(ie)%gdofP(np,1)
@@ -336,7 +333,7 @@ contains
 
      do ix=1,moab_dim_cquads
         i = indx(ix)   ! index in initial array
-        ie = nets+ (i-1)/4 ! this is the element number
+        ie = 1+ (i-1)/4 ! this is the element number
         j = i - ( i-1)/4*4 ! local index of vertex in element i
         iv = moabvh_c(ix)
         if (vdone_c(iv) .eq. 0) then
@@ -354,7 +351,7 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create MOAB vertices ')
 
-      num_el = nete-nets+1
+      num_el = nelemd
       mbtype = 3 !  quadrilateral
       nve = 4;
       block_ID = 100 ! this will be for coarse mesh
@@ -380,7 +377,7 @@ contains
       ierr = iMOAB_SetIntTagStorage ( MHID, tagname, nverts_c , ent_type, vdone_c)
       if (ierr > 0 )  &
         call endrun('Error: fail to set GDOFV tag for vertices')
-      ! set global id tag for coarse elements, too; they will start at nets, end at nete
+      ! set global id tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
       ent_type = 1 ! now set the global id tag on elements
       ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd2 , ent_type, elemids)
       if (ierr > 0 )  &
@@ -398,7 +395,7 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create global DOFS tag')
       ! now set the values
-      ! set global dofs tag for coarse elements, too; they will start at nets, end at nete
+      ! set global dofs tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
       ent_type = 1 ! now set the global id tag on elements
       numvals = nelemd2*np*np ! input is the total number of values
       ! form gdofel from vgids

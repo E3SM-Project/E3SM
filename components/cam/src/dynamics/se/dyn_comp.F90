@@ -121,7 +121,7 @@ CONTAINS
 
 #ifdef HAVE_MOAB
     integer, external :: iMOAB_RegisterFortranApplication
-    integer :: ierr, ATM_ID1
+    integer :: ATM_ID1
     character*32  appname
 #endif
 
