@@ -37,11 +37,19 @@ from mpas_tools.viz.paraview_extractor import extract_vtk
 
 
 parser = OptionParser()
-parser.add_option("--with_cavities", action="store_true", dest="with_cavities")
+parser.add_option("--with_cavities", action="store_true", dest="with_cavities",
+                  help="Whether the mesh should include Antarctic ice-shelf"
+                       " cavities")
 parser.add_option("--with_critical_passages", action="store_true",
-                  dest="with_critical_passages")
+                  dest="with_critical_passages",
+                  help="Whether the mesh should open the standard critical "
+                       "passages and close land blockages from "
+                       "geometric_features")
 parser.add_option("--preserve_floodplain", action="store_true",
-                  dest="preserve_floodplain", default=False)
+                  dest="preserve_floodplain", default=False,
+                  help="Whether to to use the cullCells field in the base "
+                       "mesh to preserve a floodplain at elevations above z=0")
+parse
 options, args = parser.parse_args()
 
 # required for compatibility with MPAS
