@@ -525,17 +525,23 @@ ifneq ($(wildcard $(PIO_LIB)/libgptl\.*), )
 endif
 
 ifneq "$(NETCDF)" ""
+ifneq ($(wildcard $(NETCDF)/lib), )
+	NETCDFLIBLOC = lib
+endif
+ifneq ($(wildcard $(NETCDF)/lib64), )
+	NETCDFLIBLOC = lib64
+endif
 	CPPINCLUDES += -I$(NETCDF)/include
 	FCINCLUDES += -I$(NETCDF)/include
-	LIBS += -L$(NETCDF)/lib
+	LIBS += -L$(NETCDF)/$(NETCDFLIBLOC)
 	NCLIB = -lnetcdf
 	NCLIBF = -lnetcdff
-	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
+	ifneq ($(wildcard $(NETCDF)/$(NETCDFLIBLOC)/libnetcdff.*), ) # CHECK FOR NETCDF4
 		LIBS += $(NCLIBF)
 	endif # CHECK FOR NETCDF4
 	ifneq "$(NETCDFF)" ""
 		FCINCLUDES += -I$(NETCDFF)/include
-		LIBS += -L$(NETCDFF)/lib
+		LIBS += -L$(NETCDFF)/$(NETCDFLIBLOC)
 		LIBS += $(NCLIBF)
 	endif
 	LIBS += $(NCLIB)
@@ -543,9 +549,15 @@ endif
 
 
 ifneq "$(PNETCDF)" ""
+ifneq ($(wildcard $(PNETCDF)/lib), )
+	PNETCDFLIBLOC = lib
+endif
+ifneq ($(wildcard $(PNETCDF)/lib64), )
+	PNETCDFLIBLOC = lib64
+endif
 	CPPINCLUDES += -I$(PNETCDF)/include
 	FCINCLUDES += -I$(PNETCDF)/include
-	LIBS += -L$(PNETCDF)/lib -lpnetcdf
+	LIBS += -L$(PNETCDF)/$(PNETCDFLIBLOC) -lpnetcdf
 endif
 
 RM = rm -f
