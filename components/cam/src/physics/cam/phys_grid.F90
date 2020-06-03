@@ -1548,9 +1548,11 @@ logical function phys_grid_initialized ()
                  pcols,                                          &
                  '  .'
               write(iulog,*)                                     &
-                 '  Must compile without -DPPCOLS to enable runtime'
+                 '  Must compile without -pcols option in'
               write(iulog,*)                                     &
-                 '  option. Ignoring and using PCOLS parameter.'
+                 '  CAM_CONFIG_OPTS in env_build.xml to enable'
+              write(iulog,*)                                     &
+                 '  runtime option. Ignoring and using PCOLS parameter.'
            endif
         endif
 #else
