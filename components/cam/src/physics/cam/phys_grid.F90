@@ -91,7 +91,7 @@ module phys_grid
 !-----------------------------------------------------------------------
    use shr_kind_mod,     only: r8 => shr_kind_r8, r4 => shr_kind_r4
    use physconst,        only: pi
-   use ppgrid,           only: pcols, pver, begchunk, endchunk
+   use ppgrid,           only: ppcols, pcols, pver, begchunk, endchunk
 #if ( defined SPMD )
    use spmd_dyn,         only: block_buf_nrecs, chunk_buf_nrecs, &
                                local_dp_map
@@ -276,6 +276,10 @@ module phys_grid
    integer, dimension(:), allocatable, private :: npthreads
                                        ! number of OpenMP threads available to each process
                                        !  (deallocated at end of phys_grid_init)
+
+! Physics fields data structure (chunk) first dimension:
+   integer, private, parameter :: min_pcols = 1
+   integer, private, parameter :: def_pcols = ppcols               ! default 
 
 ! Physics grid decomposition options:  
 ! -1: each chunk is a dynamics block
@@ -909,6 +913,7 @@ contains
        allocate( lchunks(lcid)%wght(pcols) )
     enddo
     lchunks(:)%cost = 0.0_r8
+
     do cid=1,nchunks
        if (chunks(cid)%owner == iam) then
           lcid = chunks(cid)%lcid
@@ -1241,11 +1246,15 @@ contains
       deallocate(process_ncols)
 
       write(iulog,*) 'PHYS_GRID_INIT:  Using'
-      write(iulog,*) '  PCOLS=              ',pcols
-      write(iulog,*) '  phys_loadbalance=   ',lbal_opt
-      write(iulog,*) '  phys_twin_algorithm=',twin_alg
-      write(iulog,*) '  phys_alltoall=      ',phys_alltoall
-      write(iulog,*) '  chunks_per_thread=  ',chunks_per_thread
+#ifdef PPCOLS
+      write(iulog,*) '  PCOLS (compile-time parameter)=',pcols
+#else
+      write(iulog,*) '  phys_chnk_fdim (pcols)= ',pcols
+#endif
+      write(iulog,*) '  phys_loadbalance=       ',lbal_opt
+      write(iulog,*) '  phys_twin_algorithm=    ',twin_alg
+      write(iulog,*) '  phys_alltoall=          ',phys_alltoall
+      write(iulog,*) '  chunks_per_thread=      ',chunks_per_thread
       write(iulog,*) 'PHYS_GRID_INIT:  Decomposition Statistics:'
       write(iulog,*) '  total number of physics columns=   ',ngcols_p
       write(iulog,*) '  total number of chunks=            ',nchunks
@@ -1449,7 +1458,8 @@ logical function phys_grid_initialized ()
 !
 !========================================================================
 !
-   subroutine phys_grid_defaultopts(phys_loadbalance_out, &
+   subroutine phys_grid_defaultopts(phys_chnk_fdim_out, &
+                                    phys_loadbalance_out, &
                                     phys_twin_algorithm_out, &
                                     phys_alltoall_out, &
                                     phys_chnk_per_thd_out, &
@@ -1460,6 +1470,8 @@ logical function phys_grid_initialized ()
 !-----------------------------------------------------------------------
    use dycore, only: dycore_is
 !------------------------------Arguments--------------------------------
+     ! physic data structures declared first dimension
+     integer, intent(out), optional :: phys_chnk_fdim_out
      ! physics load balancing option
      integer, intent(out), optional :: phys_loadbalance_out
      ! algorithm to use when determining column pairs to assign to chunks
@@ -1471,6 +1483,9 @@ logical function phys_grid_initialized ()
      ! flag whether to write out estimated and actual cost per chunk
      logical, intent(out), optional :: phys_chnk_cost_write_out
 !-----------------------------------------------------------------------
+     if ( present(phys_chnk_fdim_out) ) then
+       phys_chnk_fdim_out = def_pcols
+     endif
      if ( present(phys_loadbalance_out) ) then
        phys_loadbalance_out = def_lbal_opt
      endif
@@ -1494,7 +1509,8 @@ logical function phys_grid_initialized ()
 !
 !========================================================================
 !
-   subroutine phys_grid_setopts(phys_loadbalance_in, &
+   subroutine phys_grid_setopts(phys_chnk_fdim_in, &
+                                phys_loadbalance_in, &
                                 phys_twin_algorithm_in, &
                                 phys_alltoall_in,    &
                                 phys_chnk_per_thd_in, &
@@ -1508,6 +1524,8 @@ logical function phys_grid_initialized ()
    use mod_comm, only: phys_transpose_mod
 #endif
 !------------------------------Arguments--------------------------------
+     ! physic data structures declared first dimension
+     integer, intent(in), optional :: phys_chnk_fdim_in
      ! physics load balancing option
      integer, intent(in), optional :: phys_loadbalance_in
      ! option to use load balanced column pairs
@@ -1519,6 +1537,37 @@ logical function phys_grid_initialized ()
      ! flag whether to write out estimated and actual cost per chunk
      logical, intent(in), optional :: phys_chnk_cost_write_in
 !-----------------------------------------------------------------------
+     if ( present(phys_chnk_fdim_in) ) then
+#ifdef PPCOLS
+        if (phys_chnk_fdim_in /= pcols) then
+           if (masterproc) then
+              write(iulog,*)                                     &
+                 'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim=',  &
+                 phys_chnk_fdim_in,                              &
+                 '  differs from compile-time PCOLS parameter=', &
+                 pcols,                                          &
+                 '  .'
+              write(iulog,*)                                     &
+                 '  Must compile without -DPPCOLS to enable runtime'
+              write(iulog,*)                                     &
+                 '  option. Ignoring and using PCOLS parameter.'
+           endif
+        endif
+#else
+        pcols = phys_chnk_fdim_in
+        if (pcols < min_pcols) then
+           if (masterproc) then
+              write(iulog,*)                                          &
+                 'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim=', &
+                 phys_chnk_fdim_in,                             &
+                 '  is out of range.  It must be at least as large as ',      &
+                 min_pcols
+           endif
+           call endrun
+        endif
+#endif
+     endif
+!
      if ( present(phys_loadbalance_in) ) then
         lbal_opt = phys_loadbalance_in
         if ((lbal_opt < min_lbal_opt).or.(lbal_opt > max_lbal_opt)) then
