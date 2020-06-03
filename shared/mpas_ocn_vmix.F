@@ -128,7 +128,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3, err4, err5
+      integer :: err1, err2
       integer :: timeLevel
 
       integer :: iEdge, iCell, nEdges, nCells
@@ -172,10 +172,10 @@ contains
       end do
       !$omp end do
 
-      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, diagnosticsPool, err4, timeLevel)
-      call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err5, timeLevel)
+      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, diagnosticsPool, err1, timeLevel)
+      call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
 
-      err = ior(ior(ior(err1, ior(err2, err3)), err4), err5)
+      err = ior(err1, err2)
 
    !--------------------------------------------------------------------
 

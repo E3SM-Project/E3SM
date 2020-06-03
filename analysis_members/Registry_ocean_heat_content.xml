@@ -30,10 +30,10 @@
 		<var name="oceanHeatContentSfcTo700m" type="real" dimensions="nCells Time" units="J"
 			description="Integrated heat content from the surface to 700m"
 		/>
-		<var name="oceanHeatContent700mto2000m" type="real" dimensions="nCells Time" units="J"
+		<var name="oceanHeatContent700mTo2000m" type="real" dimensions="nCells Time" units="J"
 			description="Integrated heat content from the 700m to 2000m"
 		/>
-		<var name="oceanHeatContent2000mtoBot" type="real" dimensions="nCells Time" units="J"
+		<var name="oceanHeatContent2000mToBot" type="real" dimensions="nCells Time" units="J"
 			description="Integrated heat content from the 2000m to bottom"
 		/>
 </var_struct>
@@ -50,7 +50,7 @@
 			<var name="xtime"/>
 			<var name="oceanHeatContentSfcToBot"/>
 			<var name="oceanHeatContentSfcTo700m"/>
-			<var name="oceanHeatContent700mto2000m"/>
-			<var name="oceanHeatContent2000mtoBot"/>
+			<var name="oceanHeatContent700mTo2000m"/>
+			<var name="oceanHeatContent2000mToBot"/>
 		</stream>
 	</streams>
