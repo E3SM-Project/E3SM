@@ -73,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_mixed_layer_heat_budget(domain, err)
+   subroutine ocn_init_mixed_layer_heat_budget(domain, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,7 +87,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -106,16 +106,16 @@ contains
       logical, pointer :: dThresholdFlag, mldON
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_Dthreshold', dThresholdFlag)
-      call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_enable', mldON)
+      call mpas_pool_get_config(domain%configs, 'config_AM_mixedLayerDepths_Dthreshold', dThresholdFlag)
+      call mpas_pool_get_config(domain%configs, 'config_AM_mixedLayerDepths_enable', mldON)
 
-      if (.not. mldON .and. .not. dThresholdFlag) THEN 
-        call mpas_log_write("ML Heat Budget AM requires config_AM_mixedLayerDepths_enable and " &
-          //"config_AM_mixedLayerDepths_Dthreshold to both be true", MPAS_LOG_CRIT)
-        err = 1
+      if (.not. mldON .and. .not. dThresholdFlag) THEN
+         call mpas_log_write("ML Heat Budget AM requires config_AM_mixedLayerDepths_enable and " &
+                             //"config_AM_mixedLayerDepths_Dthreshold to both be true", MPAS_LOG_CRIT)
+         err = 1
       endif
 
-   end subroutine ocn_init_mixed_layer_heat_budget
+   end subroutine ocn_init_mixed_layer_heat_budget !}}}
 
 !***********************************************************************
 !
@@ -130,7 +130,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_mixed_layer_heat_budget(domain, timeLevel, err)
+   subroutine ocn_compute_mixed_layer_heat_budget(domain, timeLevel, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -146,7 +146,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -162,161 +162,161 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: mixedLayerHeatBudgetAMPool
-      type (mpas_pool_type), pointer :: mixedLayerDepthsAMPool
-      type (dm_info) :: dminfo
-      type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: statePool
-      type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: tracersPool
+      type(mpas_pool_type), pointer :: mixedLayerHeatBudgetAMPool
+      type(mpas_pool_type), pointer :: mixedLayerDepthsAMPool
+      type(dm_info) :: dminfo
+      type(block_type), pointer :: block
+      type(mpas_pool_type), pointer :: statePool
+      type(mpas_pool_type), pointer :: meshPool
+      type(mpas_pool_type), pointer :: scratchPool
+      type(mpas_pool_type), pointer :: diagnosticsPool
+      type(mpas_pool_type), pointer :: tracersPool
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve
       integer :: iTracer, k, iCell, num_tracers
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerSurfaceFluxTendency, &
-        activeTracerHorMixTendency, activeTracerNonLocalTendency, activeTracerVerticalAdvectionTendency, &
-        activeTracerHorizontalAdvectionTendency, activeTracerVertMixTendency, tracers
-      real (kind=RKIND), dimension(:,:), pointer :: activeTracerForcingMLTend, &
-        activeTracerNonLocalMLTend, activeTracerHorMixMLTend, activeTracerVertMixMLTend, &
-        activeTracerHorAdvectionMLTend, activeTracerVertAdvectionMLTend, activeTracersML, &
-        temperatureShortWaveTendency, layerThickness, BruntVaisalaFreqTop
-      real (kind=RKIND), dimension(:), pointer ::  dThreshMLD, bruntVaisalaFreqML
-      real (kind=RKIND) :: depth, difference
+      real(kind=RKIND), dimension(:, :, :), pointer :: activeTracerSurfaceFluxTendency, &
+          activeTracerHorMixTendency, activeTracerNonLocalTendency, activeTracerVerticalAdvectionTendency, &
+          activeTracerHorizontalAdvectionTendency, activeTracerVertMixTendency, tracers
+      real(kind=RKIND), dimension(:, :), pointer :: activeTracerForcingMLTend, &
+          activeTracerNonLocalMLTend, activeTracerHorMixMLTend, activeTracerVertMixMLTend, &
+          activeTracerHorAdvectionMLTend, activeTracerVertAdvectionMLTend, activeTracersML, &
+          temperatureShortWaveTendency, layerThickness, BruntVaisalaFreqTop
+      real(kind=RKIND), dimension(:), pointer ::  dThreshMLD, bruntVaisalaFreqML
+      real(kind=RKIND) :: depth, difference
       err = 0
 
-      dminfo = domain % dminfo
+      dminfo = domain%dminfo
 
-      block => domain % blocklist
+      block => domain%blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'mixedLayerHeatBudgetAM', mixedLayerHeatBudgetAMPool)
-         call mpas_pool_get_subpool(block % structs, 'mixedLayerDepthsAM', mixedLayerDepthsAMPool)
+         call mpas_pool_get_subpool(block%structs, 'state', statePool)
+         call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block%structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block%structs, 'mixedLayerHeatBudgetAM', mixedLayerHeatBudgetAMPool)
+         call mpas_pool_get_subpool(block%structs, 'mixedLayerDepthsAM', mixedLayerDepthsAMPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(block%dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block%dimensions, 'nCellsSolve', nCellsSolve)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
          call mpas_pool_get_array(diagnosticsPool, 'activeTracerSurfaceFluxTendency', &
-           activeTracerSurfaceFluxTendency)
+                                  activeTracerSurfaceFluxTendency)
          call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorMixTendency', &
-           activeTracerHorMixTendency)
+                                  activeTracerHorMixTendency)
          call mpas_pool_get_array(diagnosticsPool, 'activeTracerNonLocalTendency', &
-           activeTracerNonLocalTendency)
+                                  activeTracerNonLocalTendency)
          call mpas_pool_get_array(diagnosticsPool, 'activeTracerVerticalAdvectionTendency', &
-           activeTracerVerticalAdvectionTendency)
+                                  activeTracerVerticalAdvectionTendency)
          call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorizontalAdvectionTendency', &
-           activeTracerHorizontalAdvectionTendency)
+                                  activeTracerHorizontalAdvectionTendency)
          call mpas_pool_get_array(diagnosticsPool, 'activeTracerVertMixTendency', &
-           activeTracerVertMixTendency)
+                                  activeTracerVertMixTendency)
          call mpas_pool_get_array(diagnosticsPool, 'temperatureShortWaveTendency', &
-           temperatureShortWaveTendency)
+                                  temperatureShortWaveTendency)
          call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)
 
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerForcingMLTend', &
-           activeTracerForcingMLTend)
+                                  activeTracerForcingMLTend)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerNonLocalMLTend', &
-           activeTracerNonLocalMLTend)
+                                  activeTracerNonLocalMLTend)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerHorMixMLTend', &
-           activeTracerHorMixMLTend)
+                                  activeTracerHorMixMLTend)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerVertMixMLTend', &
-           activeTracerVertMixMLTend)
+                                  activeTracerVertMixMLTend)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerHorAdvectionMLTend', &
-           activeTracerHorAdvectionMLTend)
+                                  activeTracerHorAdvectionMLTend)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerVertAdvectionMLTend', &
-           activeTracerVertAdvectionMLTend)
+                                  activeTracerVertAdvectionMLTend)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracersML', activeTracersML)
-         call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'bruntVaisalaFreqML',bruntVaisalaFreqML)
+         call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'bruntVaisalaFreqML', bruntVaisalaFreqML)
          call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD', dThreshMLD)
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, 1)
 
-         num_tracers = size(activeTracerVertMixTendency,dim=1)
+         num_tracers = size(activeTracerVertMixTendency, dim=1)
 
-         do iCell = 1,nCellsSolve
-            activeTracerHorAdvectionMLTend(:,iCell) = 0.0_RKIND
-            activeTracerNonLocalMLTend(:,iCell) = 0.0_RKIND
-            activeTracerHorMixMLTend(:,iCell) = 0.0_RKIND
-            activeTracerVertMixMLTend(:,iCell) = 0.0_RKIND
-            activeTracerVertAdvectionMLTend(:,iCell) = 0.0_RKIND
-            activeTracerForcingMLTend(:,iCell) = 0.0_RKIND
-            activeTracersML(:,iCell) = 0.0_RKIND
+         do iCell = 1, nCellsSolve
+            activeTracerHorAdvectionMLTend(:, iCell) = 0.0_RKIND
+            activeTracerNonLocalMLTend(:, iCell) = 0.0_RKIND
+            activeTracerHorMixMLTend(:, iCell) = 0.0_RKIND
+            activeTracerVertMixMLTend(:, iCell) = 0.0_RKIND
+            activeTracerVertAdvectionMLTend(:, iCell) = 0.0_RKIND
+            activeTracerForcingMLTend(:, iCell) = 0.0_RKIND
+            activeTracersML(:, iCell) = 0.0_RKIND
             k = 1
-            depth = layerThickness(k,iCell)
+            depth = layerThickness(k, iCell)
             do while (depth <= dThreshMLD(iCell) .and. k < maxLevelCell(iCell))
                do iTracer = 1, num_tracers
-                  activeTracerHorAdvectionMLTend(iTracer,iCell) = activeTracerHorAdvectionMLTend(iTracer,iCell) + &
-                    activeTracerHorizontalAdvectionTendency(iTracer,k,iCell)*layerThickness(k,iCell)
-                  activeTracerHorMixMLTend(iTracer,iCell) = activeTracerHorMixMLTend(iTracer,iCell) + &
-                    activeTracerHorMixTendency(iTracer,k,iCell)*layerThickness(k,iCell)
-                  activeTracerForcingMLTend(iTracer,iCell) = activeTracerForcingMLTend(iTracer,iCell) + &
-                    activeTracerSurfaceFluxTendency(iTracer,k,iCell)*layerThickness(k,iCell)
-                  activeTracerVertMixMLTend(iTracer,iCell) = activeTracerVertMixMLTend(iTracer,iCell) + &
-                    activeTracerVertMixTendency(iTracer,k,iCell)*layerThickness(k,iCell)
-                  activeTracerNonLocalMLTend(iTracer,iCell) = activeTracerNonLocalMLTend(iTracer,iCell) + &
-                    activeTracerNonLocalTendency(iTracer,k,iCell)*layerThickness(k,iCell)
-                  activeTracerVertAdvectionMLTend(iTracer,iCell) = activeTracerVertAdvectionMLTend(iTracer,iCell) + &
-                    activeTracerVerticalAdvectionTendency(iTracer,k,iCell)*layerThickness(k,iCell)
-                  if(iTracer == 1) THEN
-                    activeTracerForcingMLTend(iTracer,iCell) = activeTracerForcingMLTend(iTracer,iCell) + &
-                      temperatureShortWaveTendency(k,iCell)*layerThickness(k,iCell)
+                  activeTracerHorAdvectionMLTend(iTracer, iCell) = activeTracerHorAdvectionMLTend(iTracer, iCell) + &
+                                                 activeTracerHorizontalAdvectionTendency(iTracer, k, iCell)*layerThickness(k, iCell)
+                  activeTracerHorMixMLTend(iTracer, iCell) = activeTracerHorMixMLTend(iTracer, iCell) + &
+                                                             activeTracerHorMixTendency(iTracer, k, iCell)*layerThickness(k, iCell)
+                  activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
+                                                         activeTracerSurfaceFluxTendency(iTracer, k, iCell)*layerThickness(k, iCell)
+                  activeTracerVertMixMLTend(iTracer, iCell) = activeTracerVertMixMLTend(iTracer, iCell) + &
+                                                             activeTracerVertMixTendency(iTracer, k, iCell)*layerThickness(k, iCell)
+                  activeTracerNonLocalMLTend(iTracer, iCell) = activeTracerNonLocalMLTend(iTracer, iCell) + &
+                                                            activeTracerNonLocalTendency(iTracer, k, iCell)*layerThickness(k, iCell)
+                  activeTracerVertAdvectionMLTend(iTracer, iCell) = activeTracerVertAdvectionMLTend(iTracer, iCell) + &
+                                                   activeTracerVerticalAdvectionTendency(iTracer, k, iCell)*layerThickness(k, iCell)
+                  if (iTracer == 1) THEN
+                     activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
+                                                                 temperatureShortWaveTendency(k, iCell)*layerThickness(k, iCell)
                   endif
-                  activeTracersML(iTracer,iCell) = activeTracersML(iTracer,iCell) +  &
-                    tracers(iTracer,k,iCell)*layerThickness(k,iCell)
+                  activeTracersML(iTracer, iCell) = activeTracersML(iTracer, iCell) + &
+                                                    tracers(iTracer, k, iCell)*layerThickness(k, iCell)
                end do
-               bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) + BruntVaisalaFreqTop(k,iCell)*layerThickness(k,iCell)
+               bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) + BruntVaisalaFreqTop(k, iCell)*layerThickness(k, iCell)
                k = k + 1
-               depth = depth + layerThickness(k,iCell)
+               depth = depth + layerThickness(k, iCell)
             end do
             !need the clearn up of how much is left to get to MLD mld - depth
-            depth = depth - layerThickness(k,iCell)
+            depth = depth - layerThickness(k, iCell)
             difference = dThreshMLD(iCell) - depth
             do iTracer = 1, num_tracers
-               activeTracerHorAdvectionMLTend(iTracer,iCell) = activeTracerHorAdvectionMLTend(iTracer,iCell) + &
-                 activeTracerHorizontalAdvectionTendency(iTracer,k,iCell)*difference
-               activeTracerHorMixMLTend(iTracer,iCell) = activeTracerHorMixMLTend(iTracer,iCell) + &
-                 activeTracerHorMixTendency(iTracer,k,iCell)*difference
-               activeTracerForcingMLTend(iTracer,iCell) = activeTracerForcingMLTend(iTracer,iCell) + &
-                 activeTracerSurfaceFluxTendency(iTracer,k,iCell)*difference
-               activeTracerVertMixMLTend(iTracer,iCell) = activeTracerVertMixMLTend(iTracer,iCell) + &
-                 activeTracerVertMixTendency(iTracer,k,iCell)*difference
-               activeTracerNonLocalMLTend(iTracer,iCell) = activeTracerNonLocalMLTend(iTracer,iCell) + &
-                 activeTracerNonLocalTendency(iTracer,k,iCell)*difference
-               activeTracerVertAdvectionMLTend(iTracer,iCell) = activeTracerVertAdvectionMLTend(iTracer,iCell) + &
-                 activeTracerVerticalAdvectionTendency(iTracer,k,iCell)*difference
-               if(iTracer == 1) THEN
-                 activeTracerForcingMLTend(iTracer,iCell) = activeTracerForcingMLTend(iTracer,iCell) + &
-                   temperatureShortWaveTendency(k,iCell)*difference
+               activeTracerHorAdvectionMLTend(iTracer, iCell) = activeTracerHorAdvectionMLTend(iTracer, iCell) + &
+                                                               activeTracerHorizontalAdvectionTendency(iTracer, k, iCell)*difference
+               activeTracerHorMixMLTend(iTracer, iCell) = activeTracerHorMixMLTend(iTracer, iCell) + &
+                                                          activeTracerHorMixTendency(iTracer, k, iCell)*difference
+               activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
+                                                           activeTracerSurfaceFluxTendency(iTracer, k, iCell)*difference
+               activeTracerVertMixMLTend(iTracer, iCell) = activeTracerVertMixMLTend(iTracer, iCell) + &
+                                                           activeTracerVertMixTendency(iTracer, k, iCell)*difference
+               activeTracerNonLocalMLTend(iTracer, iCell) = activeTracerNonLocalMLTend(iTracer, iCell) + &
+                                                            activeTracerNonLocalTendency(iTracer, k, iCell)*difference
+               activeTracerVertAdvectionMLTend(iTracer, iCell) = activeTracerVertAdvectionMLTend(iTracer, iCell) + &
+                                                                 activeTracerVerticalAdvectionTendency(iTracer, k, iCell)*difference
+               if (iTracer == 1) THEN
+                  activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
+                                                              temperatureShortWaveTendency(k, iCell)*difference
                endif
-               activeTracersML(iTracer,iCell) = activeTracersML(iTracer,iCell) + tracers(iTracer,k,iCell)* &
-                 layerThickness(k,iCell)
+               activeTracersML(iTracer, iCell) = activeTracersML(iTracer, iCell) + tracers(iTracer, k, iCell)* &
+                                                 layerThickness(k, iCell)
 
-               activeTracersML(iTracer,iCell) = activeTracersML(iTracer,iCell) / dThreshMLD(iCell)
-               activeTracerHorAdvectionMLTend(iTracer,iCell) = activeTracerHorAdvectionMLTend(iTracer,iCell) / dThreshMLD(iCell)
-               activeTracerHorMixMLTend(iTracer,iCell) = activeTracerHorMixMLTend(iTracer,iCell) / dThreshMLD(iCell)
-               activeTracerForcingMLTend(iTracer,iCell) = activeTracerForcingMLTend(iTracer,iCell) / dThreshMLD(iCell)
-               activeTracerVertMixMLTend(iTracer,iCell) = activeTracerVertMixMLTend(iTracer,iCell) / dThreshMLD(iCell)
-               activeTracerNonLocalMLTend(iTracer,iCell) = activeTracerNonLocalMLTend(iTracer,iCell) / dThreshMLD(iCell)
-               activeTracerVertAdvectionMLTend(iTracer,iCell) = activeTracerVertAdvectionMLTend(iTracer,iCell) / dThreshMLD(iCell)
+               activeTracersML(iTracer, iCell) = activeTracersML(iTracer, iCell)/dThreshMLD(iCell)
+               activeTracerHorAdvectionMLTend(iTracer, iCell) = activeTracerHorAdvectionMLTend(iTracer, iCell)/dThreshMLD(iCell)
+               activeTracerHorMixMLTend(iTracer, iCell) = activeTracerHorMixMLTend(iTracer, iCell)/dThreshMLD(iCell)
+               activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell)/dThreshMLD(iCell)
+               activeTracerVertMixMLTend(iTracer, iCell) = activeTracerVertMixMLTend(iTracer, iCell)/dThreshMLD(iCell)
+               activeTracerNonLocalMLTend(iTracer, iCell) = activeTracerNonLocalMLTend(iTracer, iCell)/dThreshMLD(iCell)
+               activeTracerVertAdvectionMLTend(iTracer, iCell) = activeTracerVertAdvectionMLTend(iTracer, iCell)/dThreshMLD(iCell)
             end do
-            bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) + BruntVaisalaFreqTop(k,iCell)*layerThickness(k,iCell)
-            bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) / dThreshMLD(iCell)
+            bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) + BruntVaisalaFreqTop(k, iCell)*layerThickness(k, iCell)
+            bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell)/dThreshMLD(iCell)
          end do
 
-         block => block % next
+         block => block%next
       end do
 
-   end subroutine ocn_compute_mixed_layer_heat_budget
+   end subroutine ocn_compute_mixed_layer_heat_budget !}}}
 
 !***********************************************************************
 !
@@ -331,7 +331,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_mixed_layer_heat_budget(domain, err)
+   subroutine ocn_restart_mixed_layer_heat_budget(domain, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -345,7 +345,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -363,7 +363,7 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_mixed_layer_heat_budget
+   end subroutine ocn_restart_mixed_layer_heat_budget !}}}
 
 !***********************************************************************
 !
@@ -378,7 +378,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_mixed_layer_heat_budget(domain, err)
+   subroutine ocn_finalize_mixed_layer_heat_budget(domain, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -392,7 +392,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type(domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -410,7 +410,7 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_mixed_layer_heat_budget
+   end subroutine ocn_finalize_mixed_layer_heat_budget !}}}
 
 end module ocn_mixed_layer_heat_budget
 
