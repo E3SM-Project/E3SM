@@ -20,10 +20,10 @@
 			<attribute name="type">output</attribute>
 			<add_contents>
 				<member name="xtime" type="var"/>
-				<member name="oceanHeatContentSfctoBot" type="var"/>
-				<member name="oceanHeatContentSfcto700m" type="var"/>
-				<member name="oceanHeatContent700mto2000m" type="var"/>
-				<member name="oceanHeatContent2000mtoBot" type="var"/>
+				<member name="oceanHeatContentSfcToBot" type="var"/>
+				<member name="oceanHeatContentSfcTo700m" type="var"/>
+				<member name="oceanHeatContent700mTo2000m" type="var"/>
+				<member name="oceanHeatContent2000mToBot" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
