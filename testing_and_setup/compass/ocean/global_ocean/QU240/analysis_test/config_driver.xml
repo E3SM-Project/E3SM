@@ -61,6 +61,11 @@
 			<field name="oceanHeatContent700mTo2000m" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
 			<field name="oceanHeatContent2000mToBot" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
 		</compare_fields>
+		<compare_fields file1="forward/analysis_members/mixedLayerHeatBudget.0001-01-01_00.00.00.nc">
+			<field name="temperatureML" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="salinityML" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="bruntVaisalaFreqML" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
 
 		<compare_timers rundir1="forward">
 			<timer name="compute_globalStats"/>
@@ -84,11 +89,13 @@
 			<timer name="compute_waterMassCensus"/>
 			<timer name="write_waterMassCensus"/>
 			<timer name="compute_zonalMean"/>
-			<timer name="write_eddyProductVariables"/>
-			<timer name="compute_eddyProductVariables"/>
 			<timer name="write_zonalMean"/>
+			<timer name="compute_eddyProductVariables"/>
+			<timer name="write_eddyProductVariables"/>
 			<timer name="compute_oceanHeatContent"/>
 			<timer name="write_oceanHeatContent"/>
+			<timer name="compute_mixedLayerHeatBudget"/>
+			<timer name="write_mixedLayerHeatBudget"/>
 		</compare_timers>
 	</validation>
 </driver_script>
