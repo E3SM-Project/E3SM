@@ -325,7 +325,7 @@ contains
           ! obtain model mask from separate model_maskfile (assume mask name on mask file)
           rcode = pio_openfile(pio_subsystem, pioid, io_type, trim(model_maskfile), pio_nowrite)
           call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-          rcode = pio_inq_varid(pioid, 'mask', varid) 
+          rcode = pio_inq_varid(pioid, 'mask', varid)
           if ( rcode /= PIO_NOERR ) then
              call shr_sys_abort(' ERROR: variable mask not found in file '//trim(model_maskfile))
           end if
@@ -1077,10 +1077,9 @@ contains
     endif
     call shr_mpi_bcast(exists, mpicom, 'exists')
     if (exists) then
-       if (my_task == master_task) write(logunit, F00) ' reading data mdoel restart ', trim(rest_filem)
+       if (my_task == master_task) write(logunit, F00) ' reading data model restart ', trim(rest_filem)
        if (present(fld) .and. present(fldname)) then
           rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_nowrite)
-          call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
           call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%model_gsize/), sdat%model_gindex, pio_iodesc)
           rcode = pio_inq_varid(pioid, trim(fldname), varid)
           call pio_read_darray(pioid, varid, pio_iodesc, fld, rcode)

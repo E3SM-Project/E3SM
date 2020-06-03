@@ -111,7 +111,7 @@ module dshr_stream_mod
   end type shr_stream_streamType
 
   !----- parameters -----
-  integer          , save      :: debug = 0            ! edit/turn-on for debug write statements
+  integer          , save      :: debug = 2            ! edit/turn-on for debug write statements
   real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
   character(len=*) , parameter :: sourcefile = &
        __FILE__
@@ -1385,7 +1385,7 @@ contains
     end do
 
     ! write restart data
-    open(nUnit,file=trim(fileName),form="unformatted",action="write")
+    open(newunit=nUnit,file=trim(fileName),form="unformatted",action="write")
     write(nUnit) nStreams
     do k = 1,nStreams
        write(nUnit) strm(k)%init                  ! has stream been initialized?
@@ -1484,7 +1484,6 @@ contains
     endif
     nStreams = nstrms
     write(logunit,F01) "Number of streams on restart ",nStreams
-
     ! loop over streams
     do k = 1,nStreams
        ! has stream been initialized?
@@ -1497,7 +1496,7 @@ contains
 
        ! don't overwrite these from input - make local variables fo rinput
        read(nUnit) nFiles
-       write(logunit,F02) "Number of files on stream ",n," is ",nStreams
+       write(logunit,F02) "Number of files on stream ",k," is ",nFiles
        do n = 1,nFiles
           read(nUnit) name       ! the file name
           read(nUnit) haveData   ! has t-coord data been read in?
