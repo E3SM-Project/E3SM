@@ -302,7 +302,6 @@ contains
 
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
-         print *, poolItr % memberName(1:nameLength)
          if ( config_AM_enable ) then
             timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName)
