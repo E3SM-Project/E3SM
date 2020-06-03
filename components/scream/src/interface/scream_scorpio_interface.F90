@@ -48,7 +48,7 @@ module scream_scorpio_interface
                       pio_init, var_desc_t, pio_unlimited, pio_int, pio_def_dim,& 
                       pio_def_var, pio_enddef, pio_noerr, pio_closefile, pio_inq_dimid, &
                       pio_real, pio_double, pio_initdecomp, pio_inq_dimlen, pio_setframe, &
-                      pio_offset_kind, pio_write_darray
+                      pio_offset_kind, pio_write_darray, pio_syncfile
 
   implicit none
   save
@@ -263,9 +263,9 @@ contains
     ! Distribute responsibility for writing cores over all PIO ranks
     ! i.e. compute the degrees of freedom that this rank will contribute to PIO
     if (has_t_dim) then
-      total_dimlen = size(hist_var%dimlen(:length-1))
+      total_dimlen = product(hist_var%dimlen(:length-1))
     else
-      total_dimlen = size(hist_var%dimlen)
+      total_dimlen = product(hist_var%dimlen)
     end if
     extra_procs = mod(total_dimlen,pio_ntasks)
     my_dof_len   = total_dimlen/pio_ntasks
@@ -274,8 +274,9 @@ contains
     istop  = istart +  my_dof_len - 1
     if (pio_myrank == pio_ntasks-1) then
       istop = total_dimlen
-      my_dof_len = istop-istart
+      my_dof_len = istop-istart+1
     end if
+    write(*,*) "ASD compdof", pio_myrank, pio_ntasks, total_dimlen, extra_procs, istart, istop, my_dof_len
     allocate( hist_var%compdof(my_dof_len) )
     hist_var%compdof(:my_dof_len) = (/ (ii, ii=istart,istop, 1) /)
 
@@ -308,8 +309,7 @@ contains
         nullify(curr%next)  ! Extra step to ensure clean iodesc
       end if
       allocate(curr%iodesc)
-      curr%tag = tag
-      write(*,*) "ASD def_iodesc", hist_var%dtype, hist_var%dimlen
+      curr%tag = trim(tag)
       if (has_t_dim) then
         call pio_initdecomp(pio_subsystem, hist_var%dtype, hist_var%dimlen(:length-1), hist_var%compdof, curr%iodesc, &
              rearr=pio_rearranger)
@@ -317,8 +317,11 @@ contains
         call pio_initdecomp(pio_subsystem, hist_var%dtype, hist_var%dimlen, hist_var%compdof, curr%iodesc, &
              rearr=pio_rearranger)
       end if
+      write(*,*) "ASD def_iodesc", trim(curr%tag), hist_var%dtype, hist_var%dimlen, curr%iodesc
       hist_var%iodesc => curr%iodesc 
     end if
+
+    write(*,*) "ASD def variable DONE: ", trim(hist_var%name), hist_var%iodesc, hist_var%compdof
 
     return
   end subroutine register_variable
@@ -331,32 +334,34 @@ contains
     type(pio_atm_output),pointer :: pio_atm_file
     type(hist_var_t), pointer :: var 
     integer :: ivar, ierr
-    integer :: my_dummy_value
+    integer :: my_dummy_value, mylen
     integer, allocatable :: fdata_int(:)
     real(rtype), allocatable :: fdata_real(:)
 
     pio_atm_file => atm_output_files(1)
     ! Cycle through all variables in this specific output.
     do ivar = 1,pio_atm_file%numvar
-      my_dummy_value = pio_myrank
+      my_dummy_value = 100*pio_myrank
       var => pio_atm_file%variables(ivar)
       if (present(step)) then
         call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,step)
         my_dummy_value = my_dummy_value + step
       end if
       if (var%dtype == PIO_int) then
-        write(*,*) "Writing variable: ", var%name, step, pio_atm_file%filename
-        allocate(fdata_int(var%dimlen(1)))
-        fdata_int(:) = my_dummy_value
+        write(*,*) "Writing variable: ", var%name, step, pio_atm_file%filename, var%dimlen(1)
+        mylen = var%dimlen(1)
+        allocate(fdata_int(mylen))
+        fdata_int = my_dummy_value
         call PIO_write_darray(pio_atm_file%pioFileDesc, &
                               var%piovar, &
                               var%iodesc, &
-                              fdata_int, &   ! TODO, make this actually variable specific, i.e. FIX THIS
+                              fdata_int(var%compdof), &   ! TODO, make this actually variable specific, i.e. FIX THIS
                               ierr)
 !      else
 !
       end if
       call errorHandle("PIO ERROR: could not write variable "//trim(var%name),pio_atm_file%pioFileDesc,ierr)
+      call PIO_syncfile(pio_atm_file%pioFileDesc)
 
     end do
     
@@ -414,7 +419,10 @@ contains
   end subroutine eam_h_define
 !=====================================================================!
   subroutine eam_h_finalize()
+!    type(pio_atm_output),pointer :: pio_atm_file
 
+!    pio_atm_file => atm_output_files(1)
+!    call PIO_syncfile(pio_atm_file%pioFileDesc)
 !    call eam_pio_finalize()
 
   end subroutine eam_h_finalize
