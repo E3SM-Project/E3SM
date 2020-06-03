@@ -177,6 +177,11 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.ARRM60to10'
         decomp_date += '180723'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oARRM60to10_ICG':
+        grid_date += '200422'
+        grid_prefix += 'seaice.ARRM60to10.restart_grizzly'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-cice.graph.info.'
     elif ice_grid == 'oARRM60to6':
         grid_date += '180803'
         grid_prefix += 'seaice.ARRM60to6'
