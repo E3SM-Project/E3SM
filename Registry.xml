@@ -2194,15 +2194,15 @@
 		</var_array>
 		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
 				 description="potential temperature tendency due to penetrating shortwave"
-         />
-       <var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-        <var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorMixTendency"
-          description="potential temperature tendency due to horizontal mixing (including Redi)"
-          />
-        <var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="PSU per second" name_in_code="salinityHorMixTendency"
-          description="salinity tendency due to horizontal mixing (including Redi)"
-          />
-       </var_array>
+		/>
+		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorMixTendency"
+				description="potential temperature tendency due to horizontal mixing (including Redi)"
+			/>
+			<var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="PSU per second" name_in_code="salinityHorMixTendency"
+				description="salinity tendency due to horizontal mixing (including Redi)"
+			/>
+		</var_array>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			  <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"
