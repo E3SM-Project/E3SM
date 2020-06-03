@@ -363,6 +363,15 @@ def merge_git_ref(git_ref, repo=None, verbose=False):
     """
     Merge given git ref into the current branch, and updates submodules
     """
+
+    # Even thoguh it can allow some extra corner cases (dirty repo, but ahead of git_ref),
+    # this check is mostly for debugging purposes, as it will inform that no merge occurred
+    out = get_common_ancestor(git_ref)
+    if out==get_current_commit(commit=git_ref):
+        if verbose:
+            print ("Merge of '{}' not necessary. Current HEAD is already ahead.".format(git_ref))
+        return
+
     expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
     run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
     update_submodules(repo=repo)
