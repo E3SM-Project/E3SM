@@ -1514,10 +1514,10 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">tool/netcdf/4.7.4/gnu/9.3.0</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-	<command name="load">openmpi/4.0.3/gnu-9.3.0</command>
+	<command name="load">openmpi/4.0.3/gnu/9.3.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich2">
-	<command name="load">mpi/2.3.3/gnu-9.3.0</command>
+	<command name="load">mpi/2.3.3/gnu/9.3.0</command>
       </modules>
     </module_system>
     <environment_variables>
