@@ -93,7 +93,7 @@ contains
        call ESMF_FieldBundleGet(fldbun_model, fieldCount=fieldCount, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        allocate(lfieldnamelist(fieldCount))
-       call ESMF_FieldBundleGet(fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
+       call ESMF_FieldBundleGet(fldbun_model, fieldNameList=lfieldnamelist, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        ! if strm_fld is in the field bundle of stream ns then set the field index of the field with
@@ -168,23 +168,35 @@ contains
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
-
-    allocate(dfield_new, stat=status)
-    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-    if (status /= 0) call shr_sys_abort(msgstr)
-    dfield_new%next => dfields
-    dfields => dfield_new
+    if(associated(dfields)) then
+       dfield_new => dfields
+       do while(associated(dfield_new%next))
+          dfield_new => dfield_new%next
+       enddo
+       allocate(dfield_new%next, stat=status)
+       dfield_new => dfield_new%next
+    else
+       allocate(dfields, stat=status)
+       dfield_new => dfields
+    endif
+    if (status /= 0) then
+       write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+       call shr_sys_abort(msgstr)
+    endif
 
     ! determine stream fldnames array
     nflds = size(strm_flds)
 
     allocate(dfield_new%stream_indices(nflds), stat=status)
-    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-    if (status /= 0) call shr_sys_abort(msgstr)
-
+    if (status /= 0) then
+       write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+       call shr_sys_abort(msgstr)
+    endif
     allocate(dfield_new%fldbun_indices(nflds), stat=status)
-    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
-    if (status /= 0) call shr_sys_abort(msgstr)
+    if (status /= 0) then
+       write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+       call shr_sys_abort(msgstr)
+    endif
 
     ! loop through the field names in strm_flds
     do nf = 1, nflds
@@ -199,12 +211,10 @@ contains
           if (ispresent) then
              ! if field is present in stream - determine the index in the field bundle of this field
              dfield_new%stream_indices(nf) = ns
-             fldbun_model = shr_strdata_get_stream_fieldbundle(sdat, ns, 'model')
-
              call ESMF_FieldBundleGet(fldbun_model, fieldCount=fieldCount, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              allocate(lfieldnamelist(fieldCount))
-             call ESMF_FieldBundleGet(fldbun_model, fieldNameList=lfieldnamelist, rc=rc)
+             call ESMF_FieldBundleGet(fldbun_model, fieldNameList=lfieldnamelist, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
 
              do n = 1,fieldcount

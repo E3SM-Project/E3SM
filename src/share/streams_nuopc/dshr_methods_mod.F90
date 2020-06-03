@@ -200,13 +200,13 @@ contains
     call ESMF_FieldBundleGet(FBsrc, fieldCount=fieldCount_src, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     allocate(lfieldNameList_src(fieldCount_src))
-    call ESMF_FieldBundleGet(FBsrc, fieldNameList=lfieldNameList_src, rc=rc)
+    call ESMF_FieldBundleGet(FBsrc, fieldNameList=lfieldNameList_src, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_FieldBundleGet(FBdst, fieldCount=fieldCount_dst, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     allocate(lfieldNameList_dst(fieldCount_dst))
-    call ESMF_FieldBundleGet(FBdst, fieldNameList=lfieldNameList_dst, rc=rc)
+    call ESMF_FieldBundleGet(FBdst, fieldNameList=lfieldNameList_dst, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! check that input and output field bundles have identical number of fields
@@ -296,7 +296,7 @@ contains
     endif
 
     allocate(lfieldnamelist(fieldCount))
-    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
+    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     fieldname = lfieldnamelist(fieldnum)
@@ -427,7 +427,7 @@ contains
     allocate(lfieldnamelist(fieldCount))
 
     ! Get the fields in the field bundle
-    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
+    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! For each field in the bundle, get its memory location and print out the field
@@ -534,7 +534,7 @@ contains
           call ESMF_MeshGet(lmesh, numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
           if (nnodes == 0 .and. nelements == 0) lrank = 0
-       else  
+       else
           call ESMF_LogWrite(trim(subname)//": ERROR geomtype not supported ", &
                ESMF_LOGMSG_INFO, rc=rc)
           rc = ESMF_FAILURE
