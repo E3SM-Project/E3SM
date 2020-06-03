@@ -2359,115 +2359,47 @@ subroutine shoc_length(&
   ! virtual potential temperature [K]
   real(rtype), intent(in) :: thv(shcol,nlev)
 
-! OUTPUT VARIABLES
-  ! brunt vailsailla frequency [/s]
+  ! OUTPUT VARIABLES
+  ! Brunt-Vaisala frequency [/s]
   real(rtype), intent(out) :: brunt(shcol,nlev)
   ! SHOC mixing length [m]
   real(rtype), intent(out) :: shoc_mix(shcol,nlev)
 
-! LOCAL VARIABLES
-  integer i, j, k, kk, kt
-  integer kl, ku, kb, kc, dothis, kli, kui
-  real(rtype) :: deep_thresh, deep_thick, cloud_thick, lstarn, thresh
-  real(rtype) :: cldmix, thedel, depth
-  real(rtype) :: omn, betdz, bbb, term, qsatt, dqsat, bet
-  real(rtype) :: thv_up, thv_dn, thedz, thefac, thecoef, thegam, norm
-  real(rtype) :: stabterm, conv_var, tkes, mmax
-  logical lf, indexr
+  ! LOCAL VARIABLES
   real(rtype) :: conv_vel(shcol), tscale(shcol)
   real(rtype) :: thv_zi(shcol,nlevi)
-
-  real(rtype) :: numer(shcol)
-  real(rtype) :: denom(shcol)
   real(rtype) :: l_inf(shcol)
-  real(rtype) :: brunt2(shcol,nlev)
-
-  brunt2(:,:) = 0._rtype
-  numer(:) = 0._rtype
-  denom(:) = 0._rtype
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._rtype)
 
   ! Define the brunt vaisalia frequency
-  do k=1,nlev
-    do i=1,shcol
-      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k)
-    enddo
-  enddo
+  call compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt)
 
   ! Find L_inf
-  do k=1,nlev
-    do i=1,shcol
+  call  compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
-        tkes=sqrt(tke(i,k))
-        numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
-        denom(i)=denom(i)+tkes*dz_zt(i,k)
-
-    enddo
-  enddo
-
-  do i=1,shcol
-    if (denom(i) .gt. 0._rtype) then
-      l_inf(i)=0.1_rtype*(numer(i)/denom(i))
-    else
-      l_inf(i)=100._rtype
-    endif
-  enddo
-
+  !=========================================================
   ! determine the convective velocity scale of
   !   the planetary boundary layer
-  conv_vel(:)=0._rtype
-
-  do k=nlev,1,-1
-    do i=1,shcol
-      if (zt_grid(i,k) .lt. pblh(i)) then
-        conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
-      endif
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
-
+  call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
+  
   ! computed quantity above is wstar3
   ! clip, to avoid negative values and take the cubed
   !   root to get the convective velocity scale
-  do i=1,shcol
-    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
 
-    ! Compute eddy turnover timescale.  If
-    !  convective velocity scale is zero then
-    !  set to a minimum threshold
-    if (conv_vel(i) .gt. 0._rtype) then
-      tscale(i)=pblh(i)/conv_vel(i)
-    else
-      tscale(i)=100._rtype
-    endif
-  enddo
+  ! Compute eddy turnover timescale.  If
+  !  convective velocity scale is zero then
+  !  set to a minimum threshold
+  call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
 
-  do k=1,nlev
-    do i=1,shcol
-
-      tkes=sqrt(tke(i,k))
-
-      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
-
-      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k))) &
-        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
-
-    enddo  ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
+  ! compute mixing-length
+  call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,shoc_mix)
 
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
-  do k=1,nlev
-    do i=1,shcol
-
-      shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
-      shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
-      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
-
-    enddo
-  enddo
-
+  call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
+  
   return
 
 end subroutine shoc_length
@@ -3366,7 +3298,183 @@ real(rtype) function esatw_shoc(t)
    end if
 end
 
-end module shoc
+
+subroutine compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt) 
+
+  !=========================================================
+  !
+  ! Computes the brunt_visala frequency 
+
+  implicit none
+  integer, intent(in) :: nlev, shcol  
+  ! Grid difference centereted on thermo grid [m]
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  ! virtual potential temperature [K]
+  real(rtype), intent(in) :: thv(shcol,nlev)
+  ! virtual potential temperature [K] at interface 
+  real(rtype), intent(in) :: thv_zi(shcol,nlev) 
+  ! brunt vaisala frequency [s-1]
+  real(rtype), intent(out) :: brunt(shcol, nlev)
+  integer k, i
+
+  do k=1,nlev
+    do i=1,shcol
+      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k)
+    enddo
+  enddo
+
+end subroutine compute_brunt_shoc_length
+
+subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+
+  !=========================================================
+  !
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  real(rtype), intent(in) :: zt_grid(shcol,nlev), dz_zt(shcol,nlev), tke(shcol,nlev)
+  real(rtype), intent(inout) :: l_inf(shcol)
+  real(rtype) :: tkes, numer(shcol), denom(shcol) 
+  integer k, i
+  
+  numer(:) = 0._rtype 
+  denom(:) = 0._rtype
+
+  do k=1,nlev
+    do i=1,shcol
+        tkes=sqrt(tke(i,k))
+        numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
+        denom(i)=denom(i)+tkes*dz_zt(i,k)
+    enddo
+  enddo
+
+
+  do i=1,shcol
+    if (denom(i) .gt. 0._rtype) then
+      l_inf(i)=0.1_rtype*(numer(i)/denom(i))
+    else
+      l_inf(i)=100._rtype
+    endif
+  enddo
+
+end subroutine compute_l_inf_shoc_length
+
+subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
+
+  !=========================================================
+  ! determine the convective velocity scale of
+  !   the planetary boundary layer
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+! Planetary boundary layer (PBL) height [m]
+  real(rtype), intent(in) :: pblh(shcol)
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  real(rtype), intent(in) :: dz_zt(shcol,nlev)
+  real(rtype), intent(in) :: thv(shcol,nlev)
+  real(rtype), intent(in) :: wthv_sec(shcol,nlev)
+  real(rtype), intent(inout) :: conv_vel(shcol)
+  integer k, i
+  conv_vel(:) = 0._rtype
+
+  do k=nlev,1,-1
+    do i=1,shcol
+      if (zt_grid(i,k) .lt. pblh(i)) then
+        conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
+      endif
+    enddo ! end i loop (column loop)
+  enddo ! end k loop (vertical loop)
+
+end subroutine compute_conv_vel_shoc_length
+
+subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
+  ! Compute eddy turnover timescale.  If
+  !  convective velocity scale is zero then
+  !  set to a minimum threshold
+
+  implicit none
+  integer, intent(in) :: shcol
+! Planetary boundary layer (PBL) height [m]
+  real(rtype), intent(in) :: pblh(shcol)
+  ! Convective velocity scale
+  real(rtype), intent(inout) :: conv_vel(shcol)
+  ! Convective time scale
+  real(rtype), intent(inout) ::  tscale(shcol) 
+
+  integer i 
+
+  do i=1,shcol
+    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
+
+    if (conv_vel(i) .gt. 0._rtype) then
+      tscale(i)=pblh(i)/conv_vel(i)
+    else
+      tscale(i)=100._rtype
+    endif
+  enddo
+
+end subroutine compute_conv_time_shoc_length
+
+subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,shoc_mix)
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  ! turbulent kinetic energy [m^2/s^2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+  ! brunt vaisala frequency [s-1]
+  real(rtype), intent(in) :: brunt(shcol,nlev)
+  ! convective time scale 
+  real(rtype), intent(in) :: tscale(shcol)
+  ! heights, for thermo grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  real(rtype), intent(in) :: l_inf(shcol)
+
+  ! Turbulent length scale [m]
+  real(rtype), intent(inout) :: shoc_mix(shcol,nlev)
+
+  !  LOCAL VARIABLES
+  real(rtype) :: brunt2(shcol,nlev)
+  integer k, i
+  real(rtype) :: tkes
+
+  brunt2(:,:) = 0.0
+
+  do k=1,nlev
+    do i=1,shcol
+
+      tkes = sqrt(tke(i,k))
+
+      if(brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
+
+      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k)))&
+        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
+    enddo ! end i loop (column loop) 
+  enddo ! end k loop (vertical loop)
+
+end subroutine compute_shoc_mix_shoc_length
+
+subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
+  ! Do checks on the length scale.  Make sure it is not
+  !  larger than the grid mesh of the host model.
+
+  implicit none
+  integer, intent(in) :: nlev, shcol
+  real(rtype), intent(in) :: host_dx(shcol), host_dy(shcol)  
+  ! Turbulent length scale [m]  
+  real(rtype), intent(inout) :: shoc_mix(shcol, nlev)
+  integer k, i
+
+  do k=1,nlev
+    do i=1,shcol
+      shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
+      shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
+      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
+    enddo
+  enddo
+
+end subroutine check_length_scale_shoc_length
+
+end module
 
 !==============================================================
 ! This is the end of the SHOC parameterization
