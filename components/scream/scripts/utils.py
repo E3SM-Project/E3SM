@@ -358,7 +358,7 @@ def update_submodules(repo=None):
     run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
-def merge_git_ref(git_ref, repo=None):
+def merge_git_ref(git_ref, repo=None, verbose=False):
 ###############################################################################
     """
     Merge given git ref into the current branch, and updates submodules
@@ -367,6 +367,9 @@ def merge_git_ref(git_ref, repo=None):
     run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
     update_submodules(repo=repo)
     expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
+    if verbose:
+        print ("merged {} successfully merged.".format(git_ref))
+        print_last_commit()
 
 ###############################################################################
 def print_last_commit(git_ref=None, repo=None):
