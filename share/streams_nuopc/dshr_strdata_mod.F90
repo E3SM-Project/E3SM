@@ -54,7 +54,7 @@ module dshr_strdata_mod
   private :: shr_strdata_readLBUB
 
   ! public data members:
-  integer                              :: debug    = 0  ! local debug flag
+  integer                              :: debug    = 2  ! local debug flag
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
   integer          ,parameter          :: master_task = 0
@@ -68,8 +68,8 @@ module dshr_strdata_mod
      logical                             :: stream_pio_iodesc_set =.false.  ! true=>pio iodesc has been set
      integer                             :: stream_pio_iovartype = PIO_REAL ! stream pio variable type
      type(ESMF_RouteHandle)              :: routehandle                     ! stream n -> model mesh mapping
-     character(CS), allocatable          :: fldlist_stream(:)               ! names of stream file fields
-     character(CS), allocatable          :: fldlist_model(:)                ! names of stream model fields
+     character(CL), allocatable          :: fldlist_stream(:)               ! names of stream file fields
+     character(CL), allocatable          :: fldlist_model(:)                ! names of stream model fields
      integer                             :: stream_lb                       ! index of the Lowerbound (LB) in fldlist_stream
      integer                             :: stream_ub                       ! index of the Upperbound (UB) in fldlist_stream
      type(ESMF_Field)                    :: field_stream                    ! a field on the stream data domain
@@ -773,6 +773,7 @@ contains
 
 !          call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
           call t_startf(trim(lstr)//trim(timname)//'_readLBUB')
+
           select case(sdat%stream(ns)%readmode)
           case ('single')
              call shr_strdata_readLBUB(sdat, ns, &
@@ -956,9 +957,7 @@ contains
     character(len=*)       ,intent(in)    :: filename
     !-------------------------------------------------------------------------------
 
-    if (sdat%masterproc) then
-       call shr_stream_restRead(sdat%stream, trim(filename), shr_strdata_get_stream_count(sdat))
-    endif
+    call shr_stream_restRead(sdat%stream, trim(filename), shr_strdata_get_stream_count(sdat))
 
   end subroutine shr_strdata_restRead
 
@@ -1081,7 +1080,6 @@ contains
 !    fldbun_stream_ub => sdat%pstrm(ns)%fldbun_stream(sdat%pstrm(ns)%stream_ub)
 !    fldbun_stream_lb => sdat%pstrm(ns)%fldbun_stream(sdat%pstrm(ns)%stream_lb)
     pio_iovartype = sdat%pstrm(ns)%stream_pio_iovartype
-
     call t_startf(trim(istr)//'_setup')
     ! allocate streamdat instance on all tasks
     call ESMF_VMGetCurrent(vm, rc=rc)
@@ -1111,7 +1109,6 @@ contains
 
        call t_stopf(trim(istr)//'_fbound')
     endif
-
     if (sdat%pstrm(ns)%ymdLB /= oDateLB .or. sdat%pstrm(ns)%todLB /= oSecLB) then
        newdata = .true.
        if (sdat%pstrm(ns)%ymdLB == oDateUB .and. sdat%pstrm(ns)%todLB == oSecUB) then
@@ -1161,6 +1158,7 @@ contains
        pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
        filename, nt, istr, boundstr, rc)
     use shr_const_mod         , only : r8fill => SHR_CONST_SPVAL
+    use shr_infnan_mod        , only : shr_infnan_isnan
 
     ! Read the stream data and initialize the strea pio_iodesc the first time
     ! the stream is read
@@ -1226,6 +1224,7 @@ contains
 
     ! Get current file and determine if it is open
     call shr_stream_getCurrFile(stream, fileopen=fileopen, currfile=currfile, currpioid=pioid)
+
     if (fileopen .and. currfile==filename) then
        ! don't reopen file, all good
     else
@@ -1302,7 +1301,7 @@ contains
           end if
           if(handlefill) then
              do n=1,size(dataptr)
-                if(data_real(n) .ne. fillvalue_r4) then
+                if(.not. shr_infnan_isnan(data_real(n)) .and. data_real(n) .ne. fillvalue_r4) then
                    dataptr(n) = real(data_real(n), kind=r8)
                 else
                    dataptr(n) = r8fill
@@ -1318,7 +1317,7 @@ contains
           end if
           if(handlefill) then
              do n=1,size(dataptr)
-                if(dataptr(n).eq.fillvalue_r8) then
+                if(.not. shr_infnan_isnan(dataptr(n)) .and. dataptr(n).eq.fillvalue_r8) then
                    dataptr(n) = r8fill
                 endif
              enddo
@@ -1426,8 +1425,11 @@ contains
     character(*), parameter       :: F01  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,a)"
     character(*), parameter       :: F02  = "('(shr_strdata_set_stream_iodesc) ',a,i8,2x,i8,2x,i8,2x,a)"
     !-------------------------------------------------------------------------------
+    integer :: old_error_handle
 
     rc = ESMF_SUCCESS
+
+    call pio_seterrorhandling(pioid, PIO_BCAST_ERROR, old_error_handle)
 
     ! query the first field in the stream dataset
     rcode = pio_inq_varid(pioid, trim(fldname), varid)
@@ -1435,6 +1437,7 @@ contains
 
     allocate(dimids(ndims))
     allocate(dimlens(ndims))
+
     rcode = pio_inq_vardimid(pioid, varid, dimids(1:ndims))
 
     do n = 1, ndims
@@ -1481,6 +1484,7 @@ contains
        write(6,*)'ERROR: dimlens= ',dimlens
        call shr_sys_abort(trim(subname)//' only dimlen of 2 and 3 are currently supported')
     end if
+    call pio_seterrorhandling(pioid, old_error_handle)
 
     deallocate(compdof)
     deallocate(dimids)
