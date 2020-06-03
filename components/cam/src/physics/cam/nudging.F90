@@ -715,7 +715,7 @@ contains
    call mpibcast(Nudge_File_Ntime,1,mpiint,0,mpicom)
 #endif
 
-   if ( (Nudge_File_Ntime .ne. Nudge_Times_Per_Day) .and. (Nudge_File_Ntime .ne. 1) ) then
+   if ( Nudge_ON .eq. .true. .and. (Nudge_File_Ntime .ne. Nudge_Times_Per_Day) .and. (Nudge_File_Ntime .ne. 1) ) then
      write(iulog,*) 'NUDGING: Nudge_File_Ntime=',Nudge_File_Ntime
      write(iulog,*) 'NUDGING: Nudge_File_Ntime must equal to Nudge_Times_Per_Day or 1'
      call endrun('nudging_readnl:: ERROR in namelist')
