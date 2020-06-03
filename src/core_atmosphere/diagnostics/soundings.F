@@ -54,8 +54,8 @@ module soundings
         use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config, &
                                        mpas_pool_get_error_level, mpas_pool_set_error_level
         use mpas_io_units, only :  mpas_new_unit, mpas_release_unit
-        use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
-                                     MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
+        use mpas_derived_types, only : MPAS_Time_type, MPAS_TimeInterval_type, MPAS_NOW
+        use mpas_timekeeping, only : MPAS_set_timeInterval, MPAS_get_clock_time, MPAS_add_clock_alarm
         use mpas_dmpar, only : IO_NODE, mpas_dmpar_bcast_int, mpas_dmpar_bcast_logical, mpas_dmpar_bcast_char
 
         implicit none
@@ -229,8 +229,8 @@ module soundings
 
         use mpas_derived_types, only : MPAS_pool_type
         use mpas_pool_routines, only : MPAS_pool_get_dimension, MPAS_pool_get_array
-        use mpas_timekeeping, only : MPAS_time_type, MPAS_is_alarm_ringing, MPAS_reset_clock_alarm, MPAS_get_clock_time, &
-                                     MPAS_get_time, MPAS_NOW
+        use mpas_derived_types, only : MPAS_Time_type, MPAS_NOW
+        use mpas_timekeeping, only : MPAS_is_alarm_ringing, MPAS_reset_clock_alarm, MPAS_get_clock_time, MPAS_get_time
         use mpas_constants, only : rvord
 
         implicit none
