@@ -169,9 +169,9 @@ module phys_grid
 ! chunk data structures
    type chunk
      integer  :: ncols                 ! number of vertical columns
-     integer  :: gcol(pcols)           ! global physics column indices
-     integer  :: lon(pcols)            ! global longitude indices
-     integer  :: lat(pcols)            ! global latitude indices
+     integer, allocatable :: gcol(:)   ! global physics column indices
+     integer, allocatable :: lon(:)    ! global longitude indices
+     integer, allocatable :: lat(:)    ! global latitude indices
      integer  :: owner                 ! id of process where chunk assigned
      integer  :: lcid                  ! local chunk index
      real(r8) :: estcost               ! estimated computational cost (normalized)
@@ -190,9 +190,9 @@ module phys_grid
    type lchunk
      integer  :: ncols                 ! number of vertical columns
      integer  :: cid                   ! global chunk index
-     integer  :: gcol(pcols)           ! global physics column indices
-     real(r8) :: area(pcols)           ! column surface area (from dynamics)
-     real(r8) :: wght(pcols)           ! column integration weight (from dynamics)
+     integer,  allocatable :: gcol(:)  ! global physics column indices
+     real(r8), allocatable :: area(:)  ! column surface area (from dynamics)
+     real(r8), allocatable :: wght(:)  ! column integration weight (from dynamics)
      real(r8) :: cost                  ! measured computational cost (seconds)
    end type lchunk
 
@@ -432,7 +432,7 @@ contains
     integer(iMap),          allocatable :: coord_map(:)
     type(horiz_coord_t),        pointer :: lat_coord
     type(horiz_coord_t),        pointer :: lon_coord
-    integer                             :: gcols(pcols)
+    integer,                allocatable :: gcols(:)
     character(len=hcoord_len),  pointer :: copy_attributes(:)
     character(len=hcoord_len)           :: copy_gridname
     logical                             :: unstructured
@@ -714,6 +714,11 @@ contains
        !
        allocate( cdex(1:maxblksiz) )
        allocate( chunks(1:nchunks) )
+       do cid=1,nchunks
+          allocate( chunks(cid)%gcol(pcols) )
+          allocate( chunks(cid)%lon(pcols) )
+          allocate( chunks(cid)%lat(pcols) )
+       enddo
        chunks(:)%estcost = 0.0_r8
 
        do cid=1,nchunks
@@ -898,6 +903,11 @@ contains
     endchunk = pchunkid(iam+1) + lastblock - 1
     !
     allocate( lchunks(begchunk:endchunk) )
+    do lcid=begchunk,endchunk
+       allocate( lchunks(lcid)%gcol(pcols) )
+       allocate( lchunks(lcid)%area(pcols) )
+       allocate( lchunks(lcid)%wght(pcols) )
+    enddo
     lchunks(:)%cost = 0.0_r8
     do cid=1,nchunks
        if (chunks(cid)%owner == iam) then
@@ -1092,6 +1102,7 @@ contains
       allocate(grid_map(4, pcols * (endchunk - begchunk + 1)))
     end if
     grid_map = 0
+    allocate( gcols(pcols) )
     allocate(latvals(size(grid_map, 2)))
     allocate(lonvals(size(grid_map, 2)))
     p = 0
@@ -1181,6 +1192,7 @@ contains
     nullify(latvals)
     deallocate(lonvals)
     nullify(lonvals)
+    deallocate(gcols)
     ! Cleanup, we are responsible for copy attributes
     if (associated(copy_attributes)) then
       deallocate(copy_attributes)
@@ -4552,6 +4564,11 @@ logical function phys_grid_initialized ()
 ! Allocate chunks and knuhcs data structures
 !
       allocate( chunks(1:nchunks) )
+      do cid=1,nchunks
+         allocate( chunks(cid)%gcol(pcols) )
+         allocate( chunks(cid)%lon(pcols) )
+         allocate( chunks(cid)%lat(pcols) )
+      enddo
       allocate( knuhcs(1:ngcols) )
 !
 ! Initialize chunks and knuhcs data structures
@@ -4775,6 +4792,11 @@ logical function phys_grid_initialized ()
 ! Allocate chunks and knuhcs data structures
 !
       allocate( chunks(1:nchunks) )
+      do cid=1,nchunks
+         allocate( chunks(cid)%gcol(pcols) )
+         allocate( chunks(cid)%lon(pcols) )
+         allocate( chunks(cid)%lat(pcols) )
+      enddo
       allocate( knuhcs(1:ngcols) )
 !
 ! Initialize chunks and knuhcs data structures
