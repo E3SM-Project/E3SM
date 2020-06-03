@@ -1892,6 +1892,7 @@
     <CCSM_CPRNC>/compyfs/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>	  
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>bibi.mathew -at- pnnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
