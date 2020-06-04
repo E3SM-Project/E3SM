@@ -865,7 +865,7 @@ subroutine update_prognostics_implicit( &
 
   ! compute surface fluxes for liq. potential temp, water and tke
   call compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
-       wthl_sfc, wqw_sfc, wtke_flux, & !intent-ins
+       wthl_sfc, wqw_sfc, wtke_flux, &
        thetal, qw, tke)
 
   ! Call decomp for momentum variables
