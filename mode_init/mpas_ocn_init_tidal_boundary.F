@@ -191,10 +191,19 @@ contains
       end if
 
       ! Set refBottomDepth, bottomDepth, and maxLevelCell
-      do k = 1, nVertLevels
-        refBottomDepth(k) = config_tidal_boundary_left_bottom_depth + &
-          (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)* interfaceLocations(k+1)
-      end do
+      if (min(config_tidal_boundary_left_bottom_depth, config_tidal_boundary_right_bottom_depth) < 0.0_RKIND) then
+        ! consider the case where there is wetting / drying and vertical mesh resolution is needed "on land"
+        do k = 1, nVertLevels
+          refBottomDepth(k) = config_tidal_boundary_left_bottom_depth + &
+            (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)* interfaceLocations(k+1)
+        end do
+      else
+        ! assumes we just need to build vertical mesh to deepest point (e.g., no "on land' vertical mesh)
+        do k = 1, nVertLevels
+          refBottomDepth(k) = \
+          max(config_tidal_boundary_left_bottom_depth, config_tidal_boundary_right_bottom_depth) * interfaceLocations(k+1)
+        end do
+      end if
 
       if (config_tidal_boundary_use_distances) then
         yMin = config_tidal_boundary_left_value
