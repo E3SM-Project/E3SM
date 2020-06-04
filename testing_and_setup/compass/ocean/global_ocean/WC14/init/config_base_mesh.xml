@@ -10,6 +10,7 @@
 	<add_link source_path="script_test_dir" source="coastline_CUSP.geojson" dest="coastline_CUSP.geojson"/>
 	<add_link source_path="script_test_dir" source="land_mask_Mexico.geojson" dest="land_mask_Mexico.geojson"/>
 	<add_link source_path="script_test_dir" source="region_Bering_Sea.geojson" dest="region_Bering_Sea.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Bering_Sea_reduced.geojson" dest="region_Bering_Sea_reduced.geojson"/>
 	<add_link source_path="script_test_dir" source="region_Gulf_Stream_extension.geojson" dest="region_Gulf_Stream_extension.geojson"/>
 	<add_link source_path="script_test_dir" source="land_mask_Kamchatka.geojson" dest="land_mask_Kamchatka.geojson"/>
 	<add_link source_path="script_test_dir" source="region_Arctic_Ocean.geojson" dest="region_Arctic_Ocean.geojson"/>

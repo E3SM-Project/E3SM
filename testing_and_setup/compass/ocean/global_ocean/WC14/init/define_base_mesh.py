@@ -99,14 +99,30 @@ def cellWidthVsLatLon():
     transitionWidth = 600.0*km
     fc = read_feature_collection('{}.geojson'.format(fileName))
     signedDistance = signed_distance_from_geojson(fc, lon, lat, max_length=0.25)
-    maskSmooth = 0.5 * (1 + np.tanh((transitionOffset-signedDistance) / (transitionWidth/2.)))
+    maskSmoothEast = 0.5 * (1 + np.tanh((transitionOffset-signedDistance) /
+                                        (transitionWidth/2.)))
 
-    #maskSharp = 0.5 * (1 + np.sign(-signedDistance))
-    #fc = read_feature_collection('land_mask_Kamchatka.geojson')
-    #landMask = mask_from_geojson(fc, lon, lat)
-    #mask = maskSharp * landMask + maskSmooth * (1 - landMask)
+    fc = read_feature_collection('region_Bering_Sea_reduced.geojson')
+    signedDistance = signed_distance_from_geojson(fc, lon, lat, max_length=0.25)
+    maskSmoothWest = 0.5 * (1 + np.tanh((transitionOffset - signedDistance) /
+                                        (transitionWidth / 2.)))
 
-    cellWidth = highRes * maskSmooth + cellWidth * (1 - maskSmooth)
+    fc = read_feature_collection('land_mask_Kamchatka.geojson')
+    maskWest = mask_from_geojson(fc, lon, lat)
+    mask = maskSmoothWest * maskWest + maskSmoothEast * (1 - maskWest)
+    cellWidth = highRes * mask + cellWidth * (1 - mask)
+    ds = xarray.Dataset()
+    ds['maskSmoothEast'] = xarray.DataArray(
+        maskSmoothEast, dims=['y', 'x'], coords={'y': lat, 'x': lon})
+    ds['maskSmoothWest'] = xarray.DataArray(
+        maskSmoothWest, dims=['y', 'x'], coords={'y': lat, 'x': lon})
+    ds['maskWest'] = xarray.DataArray(
+        maskWest, dims=['y', 'x'], coords={'y': lat, 'x': lon})
+    ds['mask'] = xarray.DataArray(
+        mask, dims=['y', 'x'], coords={'y': lat, 'x': lon})
+    ds['cellWidth'] = xarray.DataArray(
+        cellWidth, dims=['y', 'x'], coords={'y': lat, 'x': lon})
+    ds.to_netcdf('bering.nc')
     plot_cartopy(plotFrame, fileName + ' mask', mask, 'Blues')
     plot_cartopy(plotFrame+1, 'cellWidth ', cellWidth, '3Wbgy5')
     plotFrame += 2
@@ -148,7 +164,7 @@ def cellWidthVsLatLon():
     plt.title('Grid cell size [km] versus latitude')
     plt.legend(loc="upper left")
 
-    plt.savefig('mesh_construction.png')
+    plt.savefig('mesh_construction.png', dpi=300)
 
     return cellWidth, lon, lat
 
