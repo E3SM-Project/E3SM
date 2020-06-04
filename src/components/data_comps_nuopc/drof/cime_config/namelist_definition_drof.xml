@@ -66,7 +66,7 @@
 	TODO_FILL_THIS_IN
       </value>
       <value stream="rof.cplhist">
-	TODO_FILL_THIS_IN 
+	TODO_FILL_THIS_IN
       </value>
     </values>
   </entry>
@@ -459,16 +459,6 @@
     <category>drof</category>
     <group>drof_nml</group>
     <desc>Master restart file name for drof model</desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="restfils">
-    <type>char</type>
-    <category>drof</category>
-    <group>drof_nml</group>
-    <desc>Stream restart file name for drof model, needed for branch simulations</desc>
     <values>
       <value>undefined</value>
     </values>

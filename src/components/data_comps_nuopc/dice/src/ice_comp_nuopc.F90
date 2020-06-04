@@ -72,7 +72,6 @@ module ice_comp_nuopc
   logical                      :: flux_Qacc                           ! activates water accumulation/melt wrt Q
   real(R8)                     :: flux_Qacc0                          ! initial water accumulation value
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
-  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
   integer                      :: nx_global
   integer                      :: ny_global
 
@@ -240,7 +239,7 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / dice_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         restfilm, restfils, nx_global, ny_global, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0
+         restfilm, nx_global, ny_global, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0
 
     rc = ESMF_SUCCESS
 
@@ -282,7 +281,6 @@ contains
        write(logunit,F03)' flux_Qacc  = ',flux_Qacc
        write(logunit,F03)' flux_Qacc0 = ',flux_Qacc0
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
 
        ! check that files exists
        if (model_createmesh_fromfile /= nullstr) then
@@ -316,7 +314,6 @@ contains
     call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
     call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
     call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
     call shr_mpi_bcast(flux_swpf                 , mpicom, 'flux_swpf')
     call shr_mpi_bcast(flux_Qmin                 , mpicom, 'flux_Qmin')
     call shr_mpi_bcast(flux_Qacc                 , mpicom, 'flux_Qacc')
@@ -394,7 +391,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
+       call dshr_restart_read(restfilm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, mpicom, sdat, fld=water, fldname='water')
     end if
 

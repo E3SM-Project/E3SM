@@ -24,7 +24,7 @@
       SSTDATA
 
       **********IMPORTANT NOTE: *************
-      In the value matches below, regular expressions are used **** 
+      In the value matches below, regular expressions are used ****
       If two matches are equivalent, the FIRST one will be used, so need to make sure
       that matches are not equivalent if possible
 
@@ -360,7 +360,7 @@
       Copies all fields directly from the input data streams Any required
       fields not found on an input stream will be set to zero.
       ==> dataMode = "ssmi"
-      Is a prognostic mode. It requires data be sent to the ice  model. 
+      Is a prognostic mode. It requires data be sent to the ice  model.
       Ice fraction (extent) data is read from an input stream,
       atmosphere state variables are received from the mediator, and then
       atmosphere-ice surface fluxes are computed and sent to the mediator.
@@ -489,23 +489,8 @@
     <group>dice_nml</group>
     <desc>
       Model restart filename for the data ice model data.  This is optional.
-      If both restfils and restfilm are undefined, the restart filename will
+      If restfilm is undefined, the restart filename will
       be read from the ICE restart pointer file (or files for multiple instances).
-    </desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="restfils">
-    <type>char</type>
-    <category>dice</category>
-    <group>dice_nml</group>
-    <desc>
-      Stream restart filename for the data ice stream data.  This is
-      optional.  If both restfils and restfilm are undefined, the restart
-      filename will be read from the DICE restart pointer file (or files for
-      multiple instances).
     </desc>
     <values>
       <value>undefined</value>

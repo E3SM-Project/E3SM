@@ -92,7 +92,6 @@ module atm_comp_nuopc
   logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
   logical                      :: wiso_datm = .false.                 ! expect isotopic forcing from file?
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
-  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
   integer                      :: nx_global
   integer                      :: ny_global
                                                                       ! config attribute intput
@@ -297,7 +296,7 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / datm_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         nx_global, ny_global, restfilm, restfils, &
+         nx_global, ny_global, restfilm, &
          iradsw, factorFn_data, factorFn_mesh, presaero, bias_correct, &
          anomaly_forcing, force_prognostic_true, wiso_datm
 
@@ -335,7 +334,6 @@ contains
     call shr_mpi_bcast(factorFn_data             , mpicom, 'factorFn_data')
     call shr_mpi_bcast(factorFn_mesh             , mpicom, 'factorFn_mesh')
     call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
     call shr_mpi_bcast(presaero                  , mpicom, 'presaero')
     call shr_mpi_bcast(wiso_datm                 , mpicom, 'wiso_datm')
     call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
@@ -352,13 +350,11 @@ contains
        write(logunit,F01)' nx_global = ',nx_global
        write(logunit,F01)' ny_global = ',ny_global
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F02)' force_prognostic_true = ',force_prognostic_true
        write(logunit,F01)' iradsw = ',iradsw
        write(logunit,F00)' factorFn_data = ',trim(factorFn_data)
        write(logunit,F00)' factorFn_mesh = ',trim(factorFn_mesh)
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F02)' presaero  = ',presaero
        write(logunit,F02)' wiso_datm = ',wiso_datm
     end if
@@ -485,7 +481,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
+       call dshr_restart_read(restfilm, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
     end if
 
     ! Get the time to interpolate the stream data to

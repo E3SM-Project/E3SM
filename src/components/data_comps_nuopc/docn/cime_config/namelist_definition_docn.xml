@@ -504,18 +504,6 @@
     </values>
   </entry>
 
-  <entry id="restfils">
-    <type>char</type>
-    <category>docn</category>
-    <group>docn_nml</group>
-    <desc>
-      Stream restart file name for docn model, needed for branch simulations
-    </desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
   <entry id="force_prognostic_true">
     <type>logical</type>
     <category>docn</category>

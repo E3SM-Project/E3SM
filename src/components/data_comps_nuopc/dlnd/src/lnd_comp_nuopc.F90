@@ -69,7 +69,6 @@ module lnd_comp_nuopc
   character(CL)            :: nlfilename = nullstr                ! filename to obtain namelist info from
   logical                  :: force_prognostic_true = .false.     ! if true set prognostic true
   character(CL)            :: restfilm = nullstr                  ! model restart file namelist
-  character(CL)            :: restfils = nullstr                  ! stream restart file namelist
   integer                  :: nx_global                           ! global nx dimension of model mesh
   integer                  :: ny_global                           ! global ny dimension of model mesh
   character(CL)            :: stream_fracname = nullstr           ! name of fraction field in first stream file
@@ -160,7 +159,7 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / dlnd_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         nx_global, ny_global, restfilm, restfils, force_prognostic_true, stream_fracname
+         nx_global, ny_global, restfilm, force_prognostic_true, stream_fracname
 
     rc = ESMF_SUCCESS
 
@@ -192,7 +191,6 @@ contains
     call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
     call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
     call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
     call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
     call shr_mpi_bcast(stream_fracname           , mpicom, 'stream_fracname')
 
@@ -210,7 +208,6 @@ contains
        write(logunit ,*)' nx_global             = ',nx_global
        write(logunit ,*)' ny_global             = ',ny_global
        write(logunit ,*)' restfilm              = ',trim(restfilm)
-       write(logunit ,*)' restfils              = ',trim(restfils)
        write(logunit ,*)' force_prognostic_true = ',force_prognostic_true
     endif
 
@@ -301,7 +298,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
+       call dshr_restart_read(restfilm, rpfile, inst_suffix, nullstr, logunit, my_task, mpicom, sdat)
     end if
 
     ! get the time to interpolate the stream data to

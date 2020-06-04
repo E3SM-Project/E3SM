@@ -75,7 +75,6 @@ module ocn_comp_nuopc
   real(R8)                     :: sst_constant_value                  ! sst constant value
   integer                      :: aquap_option                        ! if aqua-planet mode, option to use
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
-  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
   logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
   logical                      :: ocn_prognostic
   integer                      :: nx_global
@@ -201,7 +200,7 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / docn_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         restfilm, restfils, force_prognostic_true, sst_constant_value, nx_global, ny_global
+         restfilm,  force_prognostic_true, sst_constant_value, nx_global, ny_global
 
     rc = ESMF_SUCCESS
 
@@ -239,7 +238,6 @@ contains
        write(logunit,F01)' nx_global = ',nx_global
        write(logunit,F01)' ny_global = ',ny_global
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F02)' force_prognostic_true = ',force_prognostic_true
 
        ! check that files exists
@@ -272,7 +270,6 @@ contains
     call shr_mpi_bcast(model_createmesh_fromfile , mpicom, 'model_createmesh_fromfile')
     call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
     call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
-    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
     call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
     call shr_mpi_bcast(sst_constant_value        , mpicom, 'sst_constant_value')
 
@@ -372,7 +369,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
+       call dshr_restart_read(restfilm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, mpicom, sdat, fld=somtp, fldname='somtp')
     end if
 
@@ -600,7 +597,7 @@ contains
     ! -------------------------------------
     ! Determine ocean fraction
     ! -------------------------------------
-    
+
     ! Set pointers to exportState fields that have no corresponding stream field
     call dshr_state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return

@@ -67,7 +67,6 @@ module wav_comp_nuopc
   character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
   logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
-  character(CL)                :: restfils = nullstr                  ! stream restart file namelist
   integer                      :: nx_global
   integer                      :: ny_global
                                                                       ! constants
@@ -154,7 +153,7 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / dwav_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         restfilm, restfils, force_prognostic_true, nx_global, ny_global
+         restfilm, force_prognostic_true, nx_global, ny_global
 
     rc = ESMF_SUCCESS
 
@@ -190,7 +189,6 @@ contains
        write(logunit,F01)' nx_global = ',nx_global
        write(logunit,F01)' ny_global = ',ny_global
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F02)' force_prognostic_true = ',force_prognostic_true
 
        ! check that files exists
@@ -224,7 +222,6 @@ contains
     call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
     call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
     call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils                  , mpicom, 'restfils')
     call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
 
     ! Call advertise phase
@@ -283,7 +280,7 @@ contains
 
     ! Read restart if necessary
     if (read_restart) then
-       call dshr_restart_read(restfilm, restfils, rpfile, inst_suffix, nullstr, &
+       call dshr_restart_read(restfilm, rpfile, inst_suffix, nullstr, &
             logunit, my_task, mpicom, sdat)
     end if
 
