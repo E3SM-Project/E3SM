@@ -201,151 +201,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- ALE_vertical_grid -->
-
-<entry id="config_vert_coord_movement" type="char*1024"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal).
-
-Valid values: 'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_ALE_thickness_proportionality" type="char*1024"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines.
-
-Valid values: 'restingThickness_times_weights' or 'weights_only'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_vert_taper_weight_depth_1" type="real"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-Vertical coordinate taper weight is one above this depth, linearly decreases to zero below.
-
-Valid values: any positive real value, but typically 100 to 1000 m.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_vert_taper_weight_depth_2" type="real"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-Vertical coordinate taper weight is zero below this depth, linearly increases to one above.
-
-Valid values: any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_min_max_thickness" type="logical"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_min_thickness" type="real"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-Minimum thickness allowed.
-
-Valid values: any positive real value, but typically 0.1 to 1 m.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_max_thickness_factor" type="real"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$.
-
-Valid values: any positive real value, but typically 2-4.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_dzdk_positive" type="logical"
-	category="ALE_vertical_grid" group="ALE_vertical_grid">
-Determines if the positive Z axis is aligned with the positive K index direction.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- ALE_frequency_filtered_thickness -->
-
-<entry id="config_use_freq_filtered_thickness" type="logical"
-	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_thickness_filter_timescale" type="real"
-	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$.
-
-Valid values: any positive real value, but typically 5 days.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_highFreqThick_restore" type="logical"
-	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_highFreqThick_restore_time" type="real"
-	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-Restoring time scale for high-frequency thickness, $\tau_{hhf}$.
-
-Valid values: any positive real value, but typically 5-30 days.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_highFreqThick_del2" type="logical"
-	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-If true, high frequency thickness prognostic equation ($h^{hf}$) includes term 3 on the RHS, the diffusion term.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_highFreqThick_del2" type="real"
-	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-Horizonal high frequency thickness diffusion, $\kappa_{hhf}$.
-
-Valid values: any positive real
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- partial_bottom_cells -->
-
-<entry id="config_alter_ICs_for_pbcs" type="logical"
-	category="partial_bottom_cells" group="partial_bottom_cells">
-If true, initial conditions are altered according to the config_pbc_alteration_type flag.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_pbc_alteration_type" type="char*1024"
-	category="partial_bottom_cells" group="partial_bottom_cells">
-Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable.
-
-Valid values: 'full_cell' or 'partial_cell'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_min_pbc_fraction" type="real"
-	category="partial_bottom_cells" group="partial_bottom_cells">
-Determines the minimum fraction of a cell altering the initial conditions can create.
-
-Valid values: Any real between 0 and 1.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- hmix -->
 
 <entry id="config_hmix_scaleWithMesh" type="logical"
@@ -611,44 +466,6 @@ Default: Defined in namelist_defaults.xml
 Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
 
 Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- hmix_del2_tensor -->
-
-<entry id="config_use_mom_del2_tensor" type="logical"
-	category="hmix_del2_tensor" group="hmix_del2_tensor">
-If true, tensor-based Laplacian horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del2 mixing is not fully vetted and not recommended for production simulations.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_mom_del2_tensor" type="real"
-	category="hmix_del2_tensor" group="hmix_del2_tensor">
-Horizonal viscosity, $\nu_h$.
-
-Valid values: any positive real
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- hmix_del4_tensor -->
-
-<entry id="config_use_mom_del4_tensor" type="logical"
-	category="hmix_del4_tensor" group="hmix_del4_tensor">
-If true, tensor-based biharmonic horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del4 mixing is not fully vetted and not recommended for production simulations.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_mom_del4_tensor" type="real"
-	category="hmix_del4_tensor" group="hmix_del4_tensor">
-Coefficient for horizontal biharmonic operator on momentum.
-
-Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1007,170 +824,6 @@ Default: Defined in namelist_defaults.xml
 Option of Langmuir enhanced entrainment parameterization
 
 Valid values: NONE, LWF16, LF17, RWHGK16
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix_const -->
-
-<entry id="config_use_const_visc" type="logical"
-	category="vmix_const" group="vmix_const">
-If true, constant vertical viscosity is included in the momentum equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_const_diff" type="logical"
-	category="vmix_const" group="vmix_const">
-If true, constant vertical diffusion is included in the tracer equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_vert_visc" type="real"
-	category="vmix_const" group="vmix_const">
-Vertical viscosity, applied uniformly throughout domain
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_vert_diff" type="real"
-	category="vmix_const" group="vmix_const">
-Vertical diffusion, applied uniformly throughout domain
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix_rich -->
-
-<entry id="config_use_rich_visc" type="logical"
-	category="vmix_rich" group="vmix_rich">
-If true, Richardson-number based vertical viscosity is included in the momentum equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_rich_diff" type="logical"
-	category="vmix_rich" group="vmix_rich">
-If true, Richardson-number based vertical diffusion is included in the tracer equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_bkrd_vert_visc" type="real"
-	category="vmix_rich" group="vmix_rich">
-Background vertical viscosity for Richardson-number based vertical mixing, $\nu_{bkrd}$
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_bkrd_vert_diff" type="real"
-	category="vmix_rich" group="vmix_rich">
-Background vertical diffusion for Richardson-number based vertical mixing, $\kappa_{bkrd}$
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rich_mix" type="real"
-	category="vmix_rich" group="vmix_rich">
-Coefficient for Richardon-number vertical mixing function, $c_{Ri}$
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix -->
-
-<entry id="config_convective_visc" type="real"
-	category="vmix" group="vmix">
-Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_convective_diff" type="real"
-	category="vmix" group="vmix">
-Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number less than zero)
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix_tanh -->
-
-<entry id="config_use_tanh_visc" type="logical"
-	category="vmix_tanh" group="vmix_tanh">
-If true, tanh-based vertical viscosity is included in the momentum equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_tanh_diff" type="logical"
-	category="vmix_tanh" group="vmix_tanh">
-If true, tanh-based vertical diffusion is included in the tracer equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_max_visc_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-maximum viscosity value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_min_visc_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-minimum viscosity value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_max_diff_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-maximum diffusion value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_min_diff_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-minimum diffusion value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_zMid_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-z-coodinate location of center of tanh function
-
-Valid values: Any real value, typically negative.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_zWidth_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-vertical width parameter for tanh function
-
-Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1803,29 +1456,120 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- testing -->
+<!-- ALE_vertical_grid -->
 
-<entry id="config_conduct_tests" type="logical"
-	category="testing" group="testing">
-If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test.
+<entry id="config_vert_coord_movement" type="char*1024"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal).
+
+Valid values: 'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ALE_thickness_proportionality" type="char*1024"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines.
+
+Valid values: 'restingThickness_times_weights' or 'weights_only'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_taper_weight_depth_1" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Vertical coordinate taper weight is one above this depth, linearly decreases to zero below.
+
+Valid values: any positive real value, but typically 100 to 1000 m.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_taper_weight_depth_2" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Vertical coordinate taper weight is zero below this depth, linearly increases to one above.
+
+Valid values: any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_min_max_thickness" type="logical"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_test_tensors" type="logical"
-	category="testing" group="testing">
-If true, tensor operations are tested upon start-up.
+<entry id="config_min_thickness" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Minimum thickness allowed.
+
+Valid values: any positive real value, but typically 0.1 to 1 m.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_thickness_factor" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$.
+
+Valid values: any positive real value, but typically 2-4.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_dzdk_positive" type="logical"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Determines if the positive Z axis is aligned with the positive K index direction.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_tensor_test_function" type="char*1024"
-	category="testing" group="testing">
-Character string to choose tensor test fuction
 
-Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
+<!-- ALE_frequency_filtered_thickness -->
+
+<entry id="config_use_freq_filtered_thickness" type="logical"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
+If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_thickness_filter_timescale" type="real"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
+Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$.
+
+Valid values: any positive real value, but typically 5 days.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_highFreqThick_restore" type="logical"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
+If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_highFreqThick_restore_time" type="real"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
+Restoring time scale for high-frequency thickness, $\tau_{hhf}$.
+
+Valid values: any positive real value, but typically 5-30 days.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_highFreqThick_del2" type="logical"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
+If true, high frequency thickness prognostic equation ($h^{hf}$) includes term 3 on the RHS, the diffusion term.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_highFreqThick_del2" type="real"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
+Horizonal high frequency thickness diffusion, $\kappa_{hhf}$.
+
+Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2053,6 +1797,33 @@ Default: Defined in namelist_defaults.xml
 This flag is intended for the expert user.  If false, forward model will error out if time given by config_start_time (or Restart_timestamp file if config_start_time='file') does not match any xtime strings in the restart file.  If true, forward model will read in record with xtime nearest to config_start_time.  Note that the restart file name is still given by config_start_time (or Restart_timestamp file), regardless of the state of this flag.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- testing -->
+
+<entry id="config_conduct_tests" type="logical"
+	category="testing" group="testing">
+If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_test_tensors" type="logical"
+	category="testing" group="testing">
+If true, tensor operations are tested upon start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_tensor_test_function" type="char*1024"
+	category="testing" group="testing">
+Character string to choose tensor test fuction
+
+Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5246,6 +5017,49 @@ Default: Defined in namelist_defaults.xml
 The name of the transect group that holds the boundaries for the regions in the region group, configured in 'config_AM_mocStreamfunction_region_group'. Please note, that these two should have the same amount of entries.
 
 Valid values: Any valid transect group name.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_oceanHeatContent -->
+
+<entry id="config_AM_oceanHeatContent_enable" type="logical"
+	category="AM_oceanHeatContent" group="AM_oceanHeatContent">
+If true, ocean analysis member ocean heat content is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_oceanHeatContent_compute_interval" type="char*1024"
+	category="AM_oceanHeatContent" group="AM_oceanHeatContent">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_oceanHeatContent_output_stream" type="char*1024"
+	category="AM_oceanHeatContent" group="AM_oceanHeatContent">
+Name of the stream that the oceanHeatContent analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_oceanHeatContent_compute_on_startup" type="logical"
+	category="AM_oceanHeatContent" group="AM_oceanHeatContent">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_oceanHeatContent_write_on_startup" type="logical"
+	category="AM_oceanHeatContent" group="AM_oceanHeatContent">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

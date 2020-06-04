@@ -3,9 +3,6 @@ my @groups = qw(run_modes
                 io
                 decomposition
                 time_integration
-                ale_vertical_grid
-                ale_frequency_filtered_thickness
-                partial_bottom_cells
                 hmix
                 hmix_del2
                 hmix_del4
@@ -13,14 +10,8 @@ my @groups = qw(run_modes
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
                 mesoscale_eddy_parameterizations
-                hmix_del2_tensor
-                hmix_del4_tensor
                 rayleigh_damping
                 cvmix
-                vmix_const
-                vmix_rich
-                vmix
-                vmix_tanh
                 forcing
                 coupling
                 shortwaveradiation
@@ -33,8 +24,10 @@ my @groups = qw(run_modes
                 eos
                 eos_linear
                 split_explicit_ts
-                testing
+                ale_vertical_grid
+                ale_frequency_filtered_thickness
                 debug
+                testing
                 constrain_haney_number
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
@@ -70,4 +63,5 @@ my @groups = qw(run_modes
                 am_transecttransport
                 am_eddyproductvariables
                 am_mocstreamfunction
+                am_oceanheatcontent
                 );
