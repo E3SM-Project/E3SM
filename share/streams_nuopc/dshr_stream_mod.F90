@@ -53,9 +53,7 @@ module dshr_stream_mod
   public :: shr_stream_getData           ! get stream data from target file
   public :: shr_stream_setCurrFile       ! set the currfile, fileopen, and currpioid
   public :: shr_stream_dataDump          ! internal stream data for debugging
-  public :: shr_stream_restWrite         ! write a streams restart file
-  public :: shr_stream_restRead          ! read  a streams restart file
-  public :: shr_stream_restIO
+  public :: shr_stream_restIO            ! read or write to netcdf restart file
 
   character(CS),parameter,public :: shr_stream_taxis_cycle  = 'cycle'
   character(CS),parameter,public :: shr_stream_taxis_extend = 'extend'
@@ -1341,16 +1339,16 @@ contains
     use pio, only : pio_def_dim, pio_def_var, pio_put_var, pio_get_var, file_desc_t, var_desc_t
     use pio, only : pio_int, pio_char
     type(file_desc_t), intent(inout) :: pioid
-    type(shr_stream_streamType), intent(in) :: streams(:)
+    type(shr_stream_streamType), intent(inout) :: streams(:)
     character(len=*), intent(in) :: mode  ! read, write, define
 
-    type(var_desc_t) :: varid, tvarid, dvarid
+    type(var_desc_t) :: varid, tvarid, dvarid, ntvarid
     integer :: rcode
     integer :: dimid_stream, dimid_files,dimid_nt, dimid_str
     integer :: nt, n, k, maxnfiles=0
     integer :: maxnt = 0
     integer, allocatable :: tmp(:)
-
+    character(len=CL) :: fname
 
     if (mode .eq. 'define') then
        rcode = pio_def_dim(pioid, 'strlen',   CL, dimid_str)
@@ -1367,7 +1365,7 @@ contains
        rcode = pio_def_dim(pioid, 'nt',   maxnt, dimid_nt)
        rcode = pio_def_dim(pioid, 'nfiles',   maxnfiles, dimid_files)
        rcode = pio_def_dim(pioid, 'nstreams', size(streams), dimid_stream)
-
+       rcode = pio_def_var(pioid, 'nt'    , PIO_INT, (/dimid_files, dimid_stream/), varid)
        rcode = pio_def_var(pioid, 'nfiles',   PIO_INT, (/dimid_stream/), varid)
        rcode = pio_def_var(pioid, 'filename', PIO_CHAR, (/dimid_str, dimid_files, dimid_stream/), varid)
        rcode = pio_def_var(pioid, 'date',     PIO_INT, (/dimid_nt, dimid_files, dimid_stream/), varid)
@@ -1419,9 +1417,12 @@ contains
        rcode = pio_inq_varid(pioid, 'filename', varid)
        rcode = pio_inq_varid(pioid, 'date', dvarid)
        rcode = pio_inq_varid(pioid, 'timeofday', tvarid)
+       rcode = pio_inq_varid(pioid, 'nt', ntvarid)
+
        do k=1,size(streams)
           do n=1,streams(k)%nfiles
-             rcode = pio_put_var(pioid, varid, (/n,k,1/), streams(k)%file(n)%name)
+             rcode = pio_put_var(pioid, varid, (/1,n,k/), streams(k)%file(n)%name)
+             rcode = pio_put_var(pioid, ntvarid, (/n,k/), streams(k)%file(n)%nt)
              if (allocated(streams(k)%file(n)%date)) then
                 rcode = pio_put_var(pioid, dvarid, (/1,n,k/), (/streams(k)%file(n)%nt,1,1/),streams(k)%file(n)%date)
              endif
@@ -1430,237 +1431,97 @@ contains
              endif
           enddo
        enddo
-       print *,__FILE__,__LINE__
+    else if (mode .eq. 'read') then
+       rcode = pio_inq_varid(pioid, 'nfiles', varid)
+       allocate(tmp(size(streams)))
+       rcode = pio_get_var(pioid, varid, tmp)
+       do k=1,size(streams)
+          if (streams(k)%nFiles /= tmp(k)) then
+             call shr_sys_abort('somethin is wrong')
+          endif
+       enddo
+
+       rcode = pio_inq_varid(pioid, 'offset', varid)
+       rcode = pio_get_var(pioid, varid, tmp)
+       do k=1,size(streams)
+          if (streams(k)%offset /= tmp(k)) then
+             call shr_sys_abort('somethin is wrong')
+          endif
+       enddo
+
+       rcode = pio_inq_varid(pioid, 'k_lvd', varid)
+       rcode = pio_get_var(pioid, varid, tmp)
+       do k=1,size(streams)
+          streams(k)%k_lvd = tmp(k)
+          if (streams(k)%k_lvd /= tmp(k)) then
+             call shr_sys_abort('somethin is wrong')
+          endif
+       enddo
+
+       rcode = pio_inq_varid(pioid, 'n_lvd', varid)
+       rcode = pio_get_var(pioid, varid, tmp)
+       do k=1,size(streams)
+          streams(k)%n_lvd = tmp(k)
+          if (streams(k)%n_lvd /= tmp(k)) then
+             call shr_sys_abort('somethin is wrong')
+          endif
+       enddo
+
+       rcode = pio_inq_varid(pioid, 'k_gvd', varid)
+       rcode = pio_get_var(pioid, varid, tmp)
+       do k=1,size(streams)
+          streams(k)%k_gvd = tmp(k)
+          if (streams(k)%k_gvd /= tmp(k)) then
+             call shr_sys_abort('somethin is wrong')
+          endif
+       enddo
+
+       rcode = pio_inq_varid(pioid, 'n_gvd', varid)
+       rcode = pio_get_var(pioid, varid, tmp)
+       do k=1,size(streams)
+          streams(k)%n_gvd = tmp(k)
+          if (streams(k)%n_gvd /= tmp(k)) then
+             call shr_sys_abort('somethin is wrong')
+          endif
+       enddo
+       deallocate(tmp)
+
+       rcode = pio_inq_varid(pioid, 'filename', varid)
+       rcode = pio_inq_varid(pioid, 'date', dvarid)
+       rcode = pio_inq_varid(pioid, 'timeofday', tvarid)
+       rcode = pio_inq_varid(pioid, 'nt', ntvarid)
+       do k=1,size(streams)
+          do n=1,streams(k)%nfiles
+             rcode = pio_get_var(pioid, varid, (/1,n,k/), fname)
+             if(fname .ne. streams(k)%file(n)%name) Then
+                call shr_sys_abort('somethin is wrong')
+             endif
+             allocate(tmp(1))
+             rcode = pio_get_var(pioid, ntvarid, (/n,k/), tmp(1))
+             streams(k)%file(n)%nt = tmp(1)
+             if(tmp(1) /= streams(k)%file(n)%nt) then
+                call shr_sys_abort('somethin is wrong')
+             endif
+             deallocate(tmp)
+             allocate(tmp(streams(k)%file(n)%nt))
+             rcode = pio_get_var(pioid, dvarid, (/1,n,k/), (/streams(k)%file(n)%nt,1,1/),tmp)
+             streams(k)%file(n)%date = tmp
+             if (.not. allocated(streams(k)%file(n)%date) .or. &
+                  any(tmp .ne. streams(k)%file(n)%date) ) then
+                   call shr_sys_abort('somethin is wrong')
+             endif
+             rcode = pio_get_var(pioid, tvarid, (/1,n,k/), (/streams(k)%file(n)%nt,1,1/),tmp)
+             streams(k)%file(n)%secs = tmp
+             if (.not. allocated(streams(k)%file(n)%secs) .or. &
+                  any(tmp .ne. streams(k)%file(n)%secs) ) then
+                   call shr_sys_abort('somethin is wrong')
+             endif
+             deallocate(tmp)
+          enddo
+       enddo
     endif
 
   end subroutine shr_stream_restIO
-
-
-  !===============================================================================
-  subroutine shr_stream_restWrite(strm, fileName, caseName, nstrms)
-
-    ! Write stream data to a restart file.
-
-    ! input/output parameters:
-    type(shr_stream_streamType) ,intent(in)  :: strm(:)    ! data streams
-    character(*)                ,intent(in)  :: fileName   ! name of restart file
-    character(*)                ,intent(in)  :: caseName   ! case name
-    integer, optional           ,intent(in)  :: nstrms     ! number of streams
-
-    ! local variables
-    integer       :: nStreams    ! number of streams
-    integer       :: k,n         ! generic loop index
-    character( 8) :: dStr        ! F90 wall clock date str yyyymmdd
-    character(10) :: tStr        ! F90 wall clock time str hhmmss.sss
-    character(CS) :: str         ! generic text string
-    integer       :: nUnit       ! a file unit number
-    integer       :: nt          ! number of time samples
-    integer       :: logunit
-    character(*),parameter :: subName = '(shr_stream_restWrite) '
-    character(*),parameter :: F00   = "('(shr_stream_restWrite) ',16a) "
-    character(*),parameter :: F01   = "('(shr_stream_restWrite) ',a,i5,a,5a) "
-    character(*),parameter :: F02   = "('(shr_stream_restWrite) ',a,i5,a,5i8) "
-    character(*),parameter :: F03   = "('(shr_stream_restWrite) ',a,i5,a,5l3) "
-    !-------------------------------------------------------------------------------
-
-    ! stdout unit
-    logunit = strm(1)%logunit ! all streams have the same logunit
-
-    ! error checks
-    if (present(nstrms)) then
-       if (size(strm) < nstrms) then
-          write(logunit,F02) "ERROR: nstrms too large for strm",size(strm),nstrms
-          call shr_sys_abort(subname//": ERROR: nstrms too large for strm")
-       endif
-       nStreams = nstrms
-    else
-       nStreams = size(strm)
-    endif
-    do k = 1,nStreams
-       if (.not. strm(k)%init) then  ! has stream been initialized?
-          write(logunit,F01) "ERROR: can't write uninitialized stream to a restart file, k = ",k
-          call shr_sys_abort(subName//": ERROR: given uninitialized stream")
-       end if
-    end do
-
-    open(newunit=nUnit,file=trim(fileName),form="unformatted",action="write")
-    write(nUnit) nStreams
-    do k = 1,nStreams
-       write(nUnit) strm(k)%init                  ! has stream been initialized?
-       write(nUnit) strm(k)%nFiles                ! number of data files for this stream
-       do n = 1,strm(k)%nFiles                    ! data specific to each stream file...
-          write(nUnit) strm(k)%file(n)%name       ! the stream file name
-          write(nUnit) strm(k)%file(n)%haveData   ! has stream t-coord data been read in?
-          write(nUnit) strm(k)%file(n)%nt         ! size of stream time dimension
-          if (strm(k)%file(n)%haveData) then      ! ie. if arrays have been allocated
-             write(nUnit) strm(k)%file(n)%date(:) ! t-coord date: yyyymmdd
-             write(nUnit) strm(k)%file(n)%secs(:) ! t-coord secs: elapsed on date
-          end if
-       end do
-       write(nUnit) strm(k)%offset                ! time axis offset
-       write(nUnit) strm(k)%k_lvd                 ! file        of least valid date
-       write(nUnit) strm(k)%n_lvd                 !      sample of least valid date
-       write(nUnit) strm(k)%found_lvd             ! T <=> k_lvd,n_lvd have been set
-       write(nUnit) strm(k)%k_gvd                 ! file        of greatest valid date
-       write(nUnit) strm(k)%n_gvd                 !      sample of greatest valid date
-       write(nUnit) strm(k)%found_gvd             ! T <=> k_gvd,n_gvd have been set
-    end do
-    close(nUnit)
-
-    ! write diagnostic log output
-    call date_and_time(dStr,tStr)
-    write(logunit,F00) "stream restart file created : ",&
-         dStr(1:4)//'-'//dStr(5:6)//'-'//dStr(7:8)//' '//tStr(1:2)//':'//tStr(3:4)//':'//tStr(5:6)
-    write(logunit,F01) "number of streams ",nStreams
-    do k = 1,nStreams
-       nt = strm(k)%file(1)%nt
-       write(logunit,F02) "* stream ",k," offset               = ",strm(k)%offset
-       write(logunit,F03) "* stream ",k," init                 = ",strm(k)%init
-       write(logunit,F01) "* stream ",k," first file name      = ",trim(strm(k)%file(1)%name)
-       write(logunit,F03) "* stream ",k," first file have data = ",strm(k)%file(1)%haveData
-       write(logunit,F02) "* stream ",k," first file ntimes    = ",strm(k)%file(1)%nt
-       if (strm(k)%file(1)%haveData .and. debug > 0) then
-          write(logunit,F02) "* stream ",k," first file date secs = ", strm(k)%file(1)%date(1), strm(k)%file(1)%secs(1)
-          write(logunit,F02) "* stream ",k," last  file date secs = ", strm(k)%file(1)%date(nt), strm(k)%file(1)%secs(nt)
-       endif
-    end do
-
-  end subroutine  shr_stream_restWrite
-
-  !===============================================================================
-  subroutine shr_stream_restRead(strm, fileName, nstrms)
-
-    ! read stream data from a restart file
-
-    ! input/output parameters:
-    type(shr_stream_streamType) ,intent(inout) :: strm(:)  ! vector of data streams
-    character(*)                ,intent(in)    :: fileName ! name of restart file
-    integer                     ,intent(in)    :: nstrms   ! number of streams in strm
-
-    ! local variables
-    integer         :: rCode                          ! return code
-    integer         :: nStreams                       ! number of streams
-    integer         :: k,n                            ! generic loop index
-    character(CS)   :: str                            ! generic text string
-    integer         :: nUnit                          ! a file unit number
-    integer         :: offset_input                   ! input integer
-    integer         :: nt                             ! size of time dimension
-    character(CS)   :: tInterpAlgo                    ! for backwards compatability
-    character(CL)   :: name                           ! local variables
-    integer         :: nFiles                         ! local variables
-    integer         :: k_lvd, n_lvd, k_gvd, n_gvd     ! local variables
-    logical         :: found_lvd, found_gvd, haveData ! local variables
-    integer,pointer :: date(:),secs(:)                ! local variables
-    logical         :: readok                         ! read of restarts ok
-    integer         :: logunit
-    character(*),parameter :: subName = '(shr_stream_restRead) '
-    character(*),parameter :: F00   = "('(shr_stream_restRead) ',16a) "
-    character(*),parameter :: F01   = "('(shr_stream_restRead) ',a,i5,a,5a) "
-    character(*),parameter :: F02   = "('(shr_stream_restRead) ',a,i5,a,5i8) "
-    character(*),parameter :: F03   = "('(shr_stream_restRead) ',a,i5,a,5l3) "
-    character(*),parameter :: F04   = "('(shr_stream_restRead) ',a,4i8) "
-    character(*),parameter :: F05   = "('(shr_stream_restRead) ',a,2i8,6a) "
-    !-------------------------------------------------------------------------------
-
-    !----------------------------------------------------------------------------
-    ! read the  data
-    !----------------------------------------------------------------------------
-
-    logunit = strm(1)%logunit ! all streams have the same logunit
-
-    open(newunit=nUnit,file=trim(fileName),form="unformatted",status="old",action="read", iostat=rCode)
-    write(logunit,F01)'reading stream restart info from '//trim(filename)
-    if ( rCode /= 0 )then
-       call shr_sys_abort(subName//": ERROR: error opening file: "//trim(fileName) )
-    end if
-
-    ! number of streams
-    read(nUnit) nStreams
-    if (nstrms /= nStreams) then
-       write(logunit,F02) "ERROR: nstrms ne nStreams on restart",nstrms,' ',nStreams
-       call shr_sys_abort(subname//": ERROR: nstrms ne nStreams on restart")
-    endif
-    nStreams = nstrms
-    write(logunit,F01) "Number of streams on restart ",nStreams
-    ! loop over streams
-    do k = 1,nStreams
-       ! has stream been initialized?
-       read(nUnit) strm(k)%init
-       if (.not. strm(k)%init) then
-          write(logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
-          call shr_sys_abort(subName//": ERROR: reading uninitialized stream")
-       end if
-       readok = .true.
-
-       ! don't overwrite these from input - make local variables fo rinput
-       read(nUnit) nFiles
-       write(logunit,F02) "Number of files on stream ",k," is ",nFiles
-       do n = 1,nFiles
-          read(nUnit) name       ! the file name
-          read(nUnit) haveData   ! has t-coord data been read in?
-          read(nUnit) nt         ! size of time dimension
-          if (haveData) then     ! ie. if arrays have been allocated
-             allocate(date(nt))
-             allocate(secs(nt))
-             read(nUnit) date(:) ! t-coord date: yyyymmdd
-             read(nUnit) secs(:) ! t-coord secs: elapsed on date
-             if (strm(k)%nFiles >= n) then
-                if (trim(name) == trim(strm(k)%file(n)%name)) then
-                   allocate(strm(k)%file(n)%date(nt))
-                   allocate(strm(k)%file(n)%secs(nt))
-                   write(logunit,F00) "reading time data for stream file ",trim(name)
-                   strm(k)%file(n)%nt = nt
-                   strm(k)%file(n)%haveData = haveData
-                   strm(k)%file(n)%date(1:nt) = date(1:nt)
-                   strm(k)%file(n)%secs(1:nt) = secs(1:nt)
-                else
-                   write(logunit,F05) "WARNING, skipping reading in time data for stream file ",trim(name)
-                   readok = .false.
-                endif  ! filenames consistent
-             endif  ! strm nfiles
-             deallocate(date)
-             deallocate(secs)
-          end if
-       end do
-       read(nUnit) offset_input ! time axis offset
-       read(nUnit) k_lvd        ! file of least valid date
-       read(nUnit) n_lvd        ! sample of least valid date
-       read(nUnit) found_lvd    ! T <=> k_lvd,n_lvd have been set
-       read(nUnit) k_gvd        ! file of greatest valid date
-       read(nUnit) n_gvd        ! sample of greatest valid date
-       read(nUnit) found_gvd    ! T <=> k_gvd,n_gvd have been set
-
-       if (offset_input /= strm(k)%offset) then
-          write(logunit,F04) " ERROR: offset disagrees ",k,strm(k)%offset,offset_input
-          write(logunit,F00) "ERRORS Detected ABORTING NOW"
-          call shr_sys_abort(subName//": ERRORS Detected ABORTING NOW")
-       endif
-       if (readok) then
-          ! only overwrite if restart read is ok
-          write(logunit,F05) "setting k n and found lvd gvd on restart ",k,n,' ',trim(name)
-          strm(k)%k_lvd     = k_lvd
-          strm(k)%n_lvd     = n_lvd
-          strm(k)%found_lvd = found_lvd
-          strm(k)%k_gvd     = k_gvd
-          strm(k)%n_gvd     = n_gvd
-          strm(k)%found_gvd = found_gvd
-       endif
-
-       if (debug > 0) then
-          write(logunit,F01) "* stream ",k," first file name = ",trim(strm(k)%file(1)%name)
-          write(logunit,F03) "* stream ",k," first have data = ",strm(k)%file(1)%haveData
-          write(logunit,F02) "* stream ",k," first nt        = ",strm(k)%file(1)%nt
-          if (strm(k)%file(1)%haveData) then
-             nt = strm(k)%file(1)%nt
-             write(logunit,F02) "* stream ",k," first date secs = ", strm(k)%file(1)%date(1),strm(k)%file(1)%secs(1)
-             write(logunit,F02) "* stream ",k," last  date secs = ", strm(k)%file(1)%date(nt),strm(k)%file(1)%secs(nt)
-          end if
-       endif
-
-    end do
-    close(nUnit)
-
-  end subroutine shr_stream_restRead
 
   !===============================================================================
   subroutine shr_stream_dataDump(strm)

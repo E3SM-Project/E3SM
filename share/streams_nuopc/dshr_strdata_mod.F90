@@ -19,7 +19,7 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_taxis_cycle, shr_stream_taxis_extend, shr_stream_findBounds
   use dshr_stream_mod  , only : shr_stream_getCurrFile, shr_stream_setCurrFile, shr_stream_getMeshFilename
   use dshr_stream_mod  , only : shr_stream_init_from_xml, shr_stream_init_from_inline
-  use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
+!  use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getData
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
   use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_getfieldN, dshr_fldbun_fldchk, chkerr
@@ -41,8 +41,8 @@ module dshr_strdata_mod
   public  :: shr_strdata_type
   public  :: shr_strdata_init_from_xml
   public  :: shr_strdata_init_from_inline
-  public  :: shr_strdata_restRead
-  public  :: shr_strdata_restWrite
+!  public  :: shr_strdata_restRead
+!  public  :: shr_strdata_restWrite
   public  :: shr_strdata_setOrbs
   public  :: shr_strdata_advance
   public  :: shr_strdata_get_stream_domain  ! public since needed by dshr_mod
@@ -938,29 +938,6 @@ contains
 
   !===============================================================================
 
-  subroutine shr_strdata_restWrite(sdat, filename, str1)
-
-    type(shr_strdata_type) ,intent(inout) :: sdat
-    character(len=*)       ,intent(in)    :: filename
-    character(len=*)       ,intent(in)    :: str1
-    !-------------------------------------------------------------------------------
-
-    call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), shr_strdata_get_stream_count(sdat))
-
-  end subroutine shr_strdata_restWrite
-
-  !===============================================================================
-  subroutine shr_strdata_restRead(sdat, filename)
-
-    type(shr_strdata_type) ,intent(inout) :: sdat
-    character(len=*)       ,intent(in)    :: filename
-    !-------------------------------------------------------------------------------
-
-    call shr_stream_restRead(sdat%stream, trim(filename), shr_strdata_get_stream_count(sdat))
-
-  end subroutine shr_strdata_restRead
-
-  !===============================================================================
   subroutine shr_strdata_setOrbs(sdat,eccen,mvelpp,lambm0,obliqr,modeldt)
 
     type(shr_strdata_type),intent(inout) :: sdat
