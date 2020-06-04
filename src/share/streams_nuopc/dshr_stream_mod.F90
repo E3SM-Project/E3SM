@@ -111,7 +111,7 @@ module dshr_stream_mod
   end type shr_stream_streamType
 
   !----- parameters -----
-  integer          , save      :: debug = 2            ! edit/turn-on for debug write statements
+  integer          , save      :: debug = 0            ! edit/turn-on for debug write statements
   real(R8)         , parameter :: spd = shr_const_cday ! seconds per day
   character(len=*) , parameter :: sourcefile = &
        __FILE__
@@ -426,7 +426,6 @@ contains
   !===============================================================================
   subroutine shr_stream_findBounds(strm, mDateIn, secIn, &
        mDateLB, dDateLB, secLB, n_lb, fileLB,  mDateUB, dDateUB, secUB, n_ub, fileUB)
-
     ! Given a stream and a model date, find time coordinates of the upper and
     ! lower time bounds surrounding the models date.  Returns the model date,
     ! data date, elasped seconds, time index, and file names associated with
