@@ -468,7 +468,9 @@ contains
                routehandle=sdat%pstrm(ns)%routehandle, &
                regridmethod=ESMF_REGRIDMETHOD_BILINEAR,  &
                polemethod=ESMF_POLEMETHOD_ALLAVG, &
+               extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
                dstMaskValues = (/0/), &  ! ignore destination points where the mask is 0
+               srcMaskValues = (/0/), &  ! ignore source points where the mask is 0
                srcTermProcessing=srcTermProcessing_Value, ignoreDegenerate=.true., rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        else if (trim(sdat%stream(ns)%mapalgo) == 'redist') then
