@@ -945,9 +945,7 @@ contains
     character(len=*)       ,intent(in)    :: str1
     !-------------------------------------------------------------------------------
 
-    if (sdat%masterproc) then
-       call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), shr_strdata_get_stream_count(sdat))
-    endif
+    call shr_stream_restWrite(sdat%stream, trim(filename), trim(str1), shr_strdata_get_stream_count(sdat))
 
   end subroutine shr_strdata_restWrite
 
