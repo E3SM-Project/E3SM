@@ -463,13 +463,13 @@ void Functions<S,D>
         lookup_rain(qitot_gt_small, qr_incld(k), nr_incld(k), table_rain);
 
         // call to lookup table interpolation subroutines to get process rates
-        f1pr02.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 1,  itab, table_ice));
-        f1pr03.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 2,  itab, table_ice));
-        f1pr04.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 3,  itab, table_ice));
-        f1pr05.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 4,  itab, table_ice));
-        f1pr09.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 8,  itab, table_ice));
-        f1pr10.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 9,  itab, table_ice));
-        f1pr14.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 13, itab, table_ice));
+        f1pr02.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 1, itab, table_ice));
+        f1pr03.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 2, itab, table_ice));
+        f1pr04.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 3, itab, table_ice));
+        f1pr05.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 4, itab, table_ice));
+        f1pr09.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 6, itab, table_ice));
+        f1pr10.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 7, itab, table_ice));
+        f1pr14.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 9, itab, table_ice));
 
         // ice-rain collection processes
         const auto qr_gt_small = qr_incld(k) >= qsmall && qitot_gt_small;

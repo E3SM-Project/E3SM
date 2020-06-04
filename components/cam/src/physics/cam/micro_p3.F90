@@ -476,7 +476,7 @@ contains
        prctot, p3_tend_out, log_hydrometeorsPresent)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    !use micro_p3_iso_f, only: p3_main_main_loop_f
+    use micro_p3_iso_f, only: p3_main_main_loop_f
 #endif
 
     implicit none
@@ -574,8 +574,14 @@ contains
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      ! call p3_main_main_loop_f(
-      ! return
+      call p3_main_main_loop_f(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+           pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
+           t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
+           qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
+           nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
+           nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+           prctot, log_hydrometeorsPresent)
+      return
    endif
 #endif
 

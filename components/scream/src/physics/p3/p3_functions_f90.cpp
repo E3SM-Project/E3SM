@@ -182,7 +182,7 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
 void get_latent_heat_c(Int its, Int ite, Int kts, Int kte, Real* s, Real* v, Real* f);
 
 Real subgrid_variance_scaling_c(Real relvar, Real expon);
-  
+
 void check_values_c(Real* qv, Real* temp, Int kts, Int kte, Int timestepcount,
                     Int force_abort, Int source_ind, Real* col_loc);
 
@@ -200,6 +200,15 @@ void p3_main_pre_main_loop_c(
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
+
+void p3_main_main_loop_c(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
+  Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld, Real* nc_incld, Real* nr_incld,
+  Real* nitot_incld, Real* birim_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* prain,
+  Real* nevapr, Real* prer_evap, Real* vap_cld_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* prctot, bool* log_hydrometeorsPresent);
 
 }
 
@@ -361,7 +370,7 @@ LatentHeatData::LatentHeatData(const LatentHeatData& rhs) :
   init_ptrs();
 }
 
-LatentHeatData& LatentHeatData::operator=(const LatentHeatData& rhs) 
+LatentHeatData& LatentHeatData::operator=(const LatentHeatData& rhs)
 {
   its     = rhs.its;
   ite     = rhs.ite;
@@ -1008,6 +1017,77 @@ void p3_main_pre_main_loop(P3MainPreLoopData& d)
     d.qirim_incld, d.nc_incld, d.nr_incld, d.nitot_incld, d.birim_incld,
     &d.log_nucleationPossible, &d.log_hydrometeorsPresent);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+P3MainMainLoopData::P3MainMainLoopData(
+  Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  bool log_predictNc_, Real dt_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
+  log_predictNc(log_predictNc_), dt(dt_), odt(1 / dt),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &naai, &qc_relvar, &icldm, &lcldm, &rcldm,
+    &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci, &acn,
+    &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &xxlv, &xxls, &xlf, &qc_incld, &qr_incld,
+    &qitot_incld, &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
+    &cdistr, &mu_r, &lamr, &logn0r, &cmeiout, &prain, &nevapr, &prer_evap, &vap_cld_exchange, &vap_liq_exchange,
+    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot
+  };
+
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite invs
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k]   = 1 / rho[k];
+    inv_exner[k] = 1 / exner[k];
+    inv_lcldm[k] = 1 / lcldm[k];
+    inv_icldm[k] = 1 / icldm[k];
+    inv_rcldm[k] = 1 / rcldm[k];
+  }
+}
+
+P3MainMainLoopData::P3MainMainLoopData(const P3MainMainLoopData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
+  log_predictNc(rhs.log_predictNc), dt(rhs.dt), odt(rhs.odt),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &naai, &qc_relvar, &icldm, &lcldm, &rcldm,
+    &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci, &acn,
+    &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &xxlv, &xxls, &xlf, &qc_incld, &qr_incld,
+    &qitot_incld, &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
+    &cdistr, &mu_r, &lamr, &logn0r, &cmeiout, &prain, &nevapr, &prer_evap, &vap_cld_exchange, &vap_liq_exchange,
+    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot
+  };
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void p3_main_main_loop(P3MainMainLoopData& d)
+{
+  p3_init(true);
+  p3_main_main_loop_c(
+    d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.log_predictNc, d.dt, d.odt,
+    d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,
+    d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot,
+    d.qirim, d.birim, d.xxlv, d.xxls, d.xlf, d.qc_incld, d.qr_incld, d.qitot_incld, d.qirim_incld, d.nc_incld, d.nr_incld,
+    d.nitot_incld, d.birim_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.cmeiout, d.prain,
+    d.nevapr, d.prer_evap, d.vap_cld_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
+    d.prctot, &d.log_hydrometeorsPresent);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
@@ -2775,13 +2855,13 @@ Real subgrid_variance_scaling_f(Real relvar_, Real expon_)
       Spack relvar(relvar_);
       Scalar expon(expon_);
       Spack out;
-	
+
       out=P3F::subgrid_variance_scaling(relvar,expon);
       t_d(0) = out[0];
-      
+
     });
   Kokkos::deep_copy(t_h, t_d);
-  
+
   return t_h[0];
 }
 
@@ -3144,7 +3224,6 @@ void p3_main_pre_main_loop_f(
       unitot_incld_d (temp_d[38]),
       ubirim_incld_d (temp_d[39]);
 
-    bool log_nucleationPossible_local, log_hydrometeorsPresent_local;
     P3F::p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
       upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
@@ -3170,6 +3249,222 @@ void p3_main_pre_main_loop_f(
 
   *log_nucleationPossible  = bools_h(0);
   *log_hydrometeorsPresent = bools_h(1);
+}
+
+void p3_main_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
+  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
+  Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld, Real* nc_incld, Real* nr_incld,
+  Real* nitot_incld, Real* birim_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* prain,
+  Real* nevapr, Real* prer_evap, Real* vap_cld_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* prctot, bool* log_hydrometeorsPresent)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using bview_1d   = typename P3F::view_1d<bool>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts  -= 1;
+  kte  -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
+
+  // Set up views
+  Kokkos::Array<view_1d, P3MainMainLoopData::NUM_ARRAYS> temp_d;
+
+  pack::host_to_device({pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,
+        t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn,
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld,
+        qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1,
+        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange,
+        vap_ice_exchange, liq_ice_exchange, pratot, prctot
+        },
+    nk, temp_d);
+
+  view_1d
+    pres_d             (temp_d[0]),
+    pdel_d             (temp_d[1]),
+    dzq_d              (temp_d[2]),
+    npccn_d            (temp_d[3]),
+    exner_d            (temp_d[4]),
+    inv_exner_d        (temp_d[5]),
+    inv_lcldm_d        (temp_d[6]),
+    inv_icldm_d        (temp_d[7]),
+    inv_rcldm_d        (temp_d[8]),
+    naai_d             (temp_d[9]),
+    qc_relvar_d        (temp_d[10]),
+    icldm_d            (temp_d[11]),
+    lcldm_d            (temp_d[12]),
+    rcldm_d            (temp_d[13]),
+    t_d                (temp_d[14]),
+    rho_d              (temp_d[15]),
+    inv_rho_d          (temp_d[16]),
+    qvs_d              (temp_d[17]),
+    qvi_d              (temp_d[18]),
+    sup_d              (temp_d[19]),
+    supi_d             (temp_d[20]),
+    rhofacr_d          (temp_d[21]),
+    rhofaci_d          (temp_d[22]),
+    acn_d              (temp_d[23]),
+    qv_d               (temp_d[24]),
+    th_d               (temp_d[25]),
+    qc_d               (temp_d[26]),
+    nc_d               (temp_d[27]),
+    qr_d               (temp_d[28]),
+    nr_d               (temp_d[29]),
+    qitot_d            (temp_d[30]),
+    nitot_d            (temp_d[31]),
+    qirim_d            (temp_d[32]),
+    birim_d            (temp_d[33]),
+    xxlv_d             (temp_d[34]),
+    xxls_d             (temp_d[35]),
+    xlf_d              (temp_d[36]),
+    qc_incld_d         (temp_d[37]),
+    qr_incld_d         (temp_d[38]),
+    qitot_incld_d      (temp_d[39]),
+    qirim_incld_d      (temp_d[40]),
+    nc_incld_d         (temp_d[41]),
+    nr_incld_d         (temp_d[42]),
+    nitot_incld_d      (temp_d[43]),
+    birim_incld_d      (temp_d[44]),
+    mu_c_d             (temp_d[45]),
+    nu_d               (temp_d[46]),
+    lamc_d             (temp_d[47]),
+    cdist_d            (temp_d[48]),
+    cdist1_d           (temp_d[49]),
+    cdistr_d           (temp_d[50]),
+    mu_r_d             (temp_d[51]),
+    lamr_d             (temp_d[52]),
+    logn0r_d           (temp_d[53]),
+    cmeiout_d          (temp_d[54]),
+    prain_d            (temp_d[55]),
+    nevapr_d           (temp_d[56]),
+    prer_evap_d        (temp_d[57]),
+    vap_cld_exchange_d (temp_d[58]),
+    vap_liq_exchange_d (temp_d[59]),
+    vap_ice_exchange_d (temp_d[60]),
+    liq_ice_exchange_d (temp_d[61]),
+    pratot_d           (temp_d[62]),
+    prctot_d           (temp_d[63]);
+
+  // Call core function from kernel
+  const auto dnu         = P3GlobalForFortran::dnu();
+  const auto itab        = P3GlobalForFortran::itab();
+  const auto itabcol     = P3GlobalForFortran::itabcol();
+  const auto revap_table = P3GlobalForFortran::revap_table();
+  bview_1d bools_d("bools", 1);
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    view_1d
+      upres_d             (temp_d[0]),
+      updel_d             (temp_d[1]),
+      udzq_d              (temp_d[2]),
+      unpccn_d            (temp_d[3]),
+      uexner_d            (temp_d[4]),
+      uinv_exner_d        (temp_d[5]),
+      uinv_lcldm_d        (temp_d[6]),
+      uinv_icldm_d        (temp_d[7]),
+      uinv_rcldm_d        (temp_d[8]),
+      unaai_d             (temp_d[9]),
+      uqc_relvar_d        (temp_d[10]),
+      uicldm_d            (temp_d[11]),
+      ulcldm_d            (temp_d[12]),
+      urcldm_d            (temp_d[13]),
+      ut_d                (temp_d[14]),
+      urho_d              (temp_d[15]),
+      uinv_rho_d          (temp_d[16]),
+      uqvs_d              (temp_d[17]),
+      uqvi_d              (temp_d[18]),
+      usup_d              (temp_d[19]),
+      usupi_d             (temp_d[20]),
+      urhofacr_d          (temp_d[21]),
+      urhofaci_d          (temp_d[22]),
+      uacn_d              (temp_d[23]),
+      uqv_d               (temp_d[24]),
+      uth_d               (temp_d[25]),
+      uqc_d               (temp_d[26]),
+      unc_d               (temp_d[27]),
+      uqr_d               (temp_d[28]),
+      unr_d               (temp_d[29]),
+      uqitot_d            (temp_d[30]),
+      unitot_d            (temp_d[31]),
+      uqirim_d            (temp_d[32]),
+      ubirim_d            (temp_d[33]),
+      uxxlv_d             (temp_d[34]),
+      uxxls_d             (temp_d[35]),
+      uxlf_d              (temp_d[36]),
+      uqc_incld_d         (temp_d[37]),
+      uqr_incld_d         (temp_d[38]),
+      uqitot_incld_d      (temp_d[39]),
+      uqirim_incld_d      (temp_d[40]),
+      unc_incld_d         (temp_d[41]),
+      unr_incld_d         (temp_d[42]),
+      unitot_incld_d      (temp_d[43]),
+      ubirim_incld_d      (temp_d[44]),
+      umu_c_d             (temp_d[45]),
+      unu_d               (temp_d[46]),
+      ulamc_d             (temp_d[47]),
+      ucdist_d            (temp_d[48]),
+      ucdist1_d           (temp_d[49]),
+      ucdistr_d           (temp_d[50]),
+      umu_r_d             (temp_d[51]),
+      ulamr_d             (temp_d[52]),
+      ulogn0r_d           (temp_d[53]),
+      ucmeiout_d          (temp_d[54]),
+      uprain_d            (temp_d[55]),
+      unevapr_d           (temp_d[56]),
+      uprer_evap_d        (temp_d[57]),
+      uvap_cld_exchange_d (temp_d[58]),
+      uvap_liq_exchange_d (temp_d[59]),
+      uvap_ice_exchange_d (temp_d[60]),
+      uliq_ice_exchange_d (temp_d[61]),
+      upratot_d           (temp_d[62]),
+      uprctot_d           (temp_d[63]);
+
+    P3F::p3_main_main_loop(
+      team, nk, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
+      upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, unaai_d, uqc_relvar_d, uicldm_d, ulcldm_d, urcldm_d,
+      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d, uacn_d,
+      uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uxxlv_d, uxxls_d, uxlf_d, uqc_incld_d, uqr_incld_d,
+      uqitot_incld_d, uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d, umu_c_d, unu_d, ulamc_d, ucdist_d, ucdist1_d,
+      ucdistr_d, umu_r_d, ulamr_d, ulogn0r_d, ucmeiout_d, uprain_d, unevapr_d, uprer_evap_d, uvap_cld_exchange_d, uvap_liq_exchange_d,
+      uvap_ice_exchange_d, uliq_ice_exchange_d, upratot_d, uprctot_d,
+      bools_d(0));
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 50> inout_views = {
+    t_d, rho_d, inv_rho_d, qvs_d, qvi_d, sup_d, supi_d, rhofacr_d, rhofaci_d, acn_d,
+    qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d, xlf_d, qc_incld_d, qr_incld_d,
+    qitot_incld_d, qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d, mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d,
+    cdistr_d, mu_r_d, lamr_d, logn0r_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, vap_cld_exchange_d, vap_liq_exchange_d,
+    vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d
+  };
+
+  pack::device_to_host({t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn,
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld,
+        qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1,
+        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange,
+        vap_ice_exchange, liq_ice_exchange, pratot, prctot},
+    nk, inout_views);
+
+  const auto bools_h = Kokkos::create_mirror_view(bools_d);
+  Kokkos::deep_copy(bools_h, bools_d);
+
+  *log_hydrometeorsPresent = bools_h(0);
 }
 
 } // namespace p3
