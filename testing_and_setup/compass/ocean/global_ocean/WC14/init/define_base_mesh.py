@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import jigsaw_to_MPAS.mesh_definition_tools as mdt
 from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
-    mask_from_geojson
+    mask_from_geojson, distance_from_geojson
 from geometric_features import read_feature_collection
 import xarray
 import matplotlib
@@ -100,12 +100,13 @@ def cellWidthVsLatLon():
     fc = read_feature_collection('{}.geojson'.format(fileName))
     signedDistance = signed_distance_from_geojson(fc, lon, lat, max_length=0.25)
     maskSmooth = 0.5 * (1 + np.tanh((transitionOffset-signedDistance) / (transitionWidth/2.)))
-    maskSharp = 0.5 * (1 + np.sign(-signedDistance))
-    fc = read_feature_collection('land_mask_Kamchatka.geojson')
-    signedDistance = signed_distance_from_geojson(fc, lon, lat, max_length=0.25)
-    landMask = 0.5 * (1 + np.sign(-signedDistance))
-    mask = maskSharp * landMask + maskSmooth * (1-landMask)
-    cellWidth = highRes * mask + cellWidth * (1 - mask)
+
+    #maskSharp = 0.5 * (1 + np.sign(-signedDistance))
+    #fc = read_feature_collection('land_mask_Kamchatka.geojson')
+    #landMask = mask_from_geojson(fc, lon, lat)
+    #mask = maskSharp * landMask + maskSmooth * (1 - landMask)
+
+    cellWidth = highRes * maskSmooth + cellWidth * (1 - maskSmooth)
     plot_cartopy(plotFrame, fileName + ' mask', mask, 'Blues')
     plot_cartopy(plotFrame+1, 'cellWidth ', cellWidth, '3Wbgy5')
     plotFrame += 2
