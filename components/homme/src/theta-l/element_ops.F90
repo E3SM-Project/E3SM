@@ -417,6 +417,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: Rstar(np,np,nlev)
   integer :: k, nt
 
   nt = 1
@@ -436,9 +437,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   if (present(qv)) then
-     ! get ideal gas constant for moist air, store in variable "dp"
-     call get_R_star(dp,qv(:,:,:))
-     elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*dp(:,:,:)/Rgas
+     call get_R_star(Rstar,qv)
+     elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*Rstar(:,:,:)/Rgas
   endif
 
 !set phi, copy from 1st timelevel to all
