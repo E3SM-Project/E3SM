@@ -66,7 +66,7 @@ void calc_rime_density_c(Real t, Real rhofaci, Real f1pr02, Real acn,
                          Real* vtrmi1, Real* rhorime_c);
 
 void cldliq_immersion_freezing_c(Real t, Real lamc, Real mu_c, Real cdist1,
-                                 Real qc_incld, Real* qcheti, Real* ncheti);
+                                 Real qc_incld, Real qc_relvar, Real* qcheti, Real* ncheti);
 
 void rain_immersion_freezing_c(Real t, Real lamr, Real mu_r, Real cdistr,
                                Real qr_incld, Real* qrheti, Real* nrheti);
@@ -75,9 +75,9 @@ void droplet_self_collection_c(Real rho, Real inv_rho, Real qc_incld, Real mu_c,
                                Real nu, Real ncautc, Real* ncacc);
 
 void cloud_rain_accretion_c(Real rho, Real inv_rho, Real qc_incld, Real nc_incld,
-                            Real qr_incld, Real* qcacc, Real* ncacc);
+                            Real qr_incld, Real qc_relvar, Real* qcacc, Real* ncacc);
 
-void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
+void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real qc_relvar, Real* qcaut, Real* ncautc, Real* ncautr);
 
 void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
 
@@ -181,6 +181,8 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
 
 void get_latent_heat_c(Int its, Int ite, Int kts, Int kte, Real* s, Real* v, Real* f);
 
+Real subgrid_variance_scaling_c(Real relvar, Real expon);
+  
 void check_values_c(Real* qv, Real* temp, Int kts, Int kte, Int timestepcount,
                     Int force_abort, Int source_ind, Real* col_loc);
 
@@ -339,7 +341,7 @@ void calc_rime_density(CalcRimeDensityData& d)
 void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
 {
   p3_init(true);
-  cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld,
+  cldliq_immersion_freezing_c(d.t, d.lamc, d.mu_c, d.cdist1, d.qc_incld, d.qc_relvar,
                               &d.qcheti, &d.ncheti);
 }
 
@@ -422,7 +424,7 @@ void rain_immersion_freezing(RainImmersionFreezingData& d)
 void cloud_rain_accretion(CloudRainAccretionData& d)
 {
   p3_init(true);
-  cloud_rain_accretion_c(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld,
+  cloud_rain_accretion_c(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld, d.qc_relvar,
                          &d.qcacc, &d.ncacc);
 }
 
@@ -445,7 +447,8 @@ void ice_water_conservation(IceWaterConservationData& d){
 
 void cloud_water_autoconversion(CloudWaterAutoconversionData& d){
   p3_init(true);
-  cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, &d.qcaut, &d.ncautc, &d.ncautr);
+  cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, d.qc_relvar,
+    &d.qcaut, &d.ncautc, &d.ncautr);
 }
 
 void rain_self_collection(RainSelfCollectionData& d){
@@ -933,6 +936,11 @@ void ice_melting(IceMeltingData& d){
   ice_melting_c(d.rho,d.t,d.pres,d.rhofaci,d.f1pr05,d.f1pr14,
 		d.xxlv,d.xlf,d.dv,d.sc,d.mu,d.kap,
 		d.qv,d.qitot_incld,d.nitot_incld,&d.qimlt,&d.nimlt);
+}
+
+Real subgrid_variance_scaling(SubgridVarianceScalingData& d){
+  p3_init(true);
+  return subgrid_variance_scaling_c(d.relvar,d.expon);
 }
 
 void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
@@ -2074,7 +2082,7 @@ void calc_rime_density_f(
 }
 
 void cldliq_immersion_freezing_f(
-  Real t_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_,
+  Real t_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_, Real qc_relvar_,
   Real* qcheti_, Real* ncheti_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -2085,9 +2093,9 @@ void cldliq_immersion_freezing_f(
   Real local_ncheti = *ncheti_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack t(t_), lamc(lamc_), mu_c(mu_c_), cdist1(cdist1_),
-                          qc_incld(qc_incld_), qcheti(local_qcheti), ncheti(local_ncheti);
-      P3F::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld,
+      typename P3F::Spack t(t_), lamc(lamc_), mu_c(mu_c_), cdist1(cdist1_),qc_incld(qc_incld_),
+	                  qc_relvar(qc_relvar_),qcheti(local_qcheti), ncheti(local_ncheti);
+      P3F::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qc_relvar,
                                      qcheti, ncheti);
 
       t_d(0) = qcheti[0];
@@ -2152,7 +2160,7 @@ void droplet_self_collection_f(
 }
 
 void cloud_rain_accretion_f(
-  Real rho_, Real inv_rho_, Real qc_incld_, Real nc_incld_, Real qr_incld_,
+  Real rho_, Real inv_rho_, Real qc_incld_, Real nc_incld_, Real qr_incld_, Real qc_relvar_,
   Real* qcacc_, Real* ncacc_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -2165,8 +2173,8 @@ void cloud_rain_accretion_f(
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       typename P3F::Spack rho(rho_), inv_rho(inv_rho_), qc_incld(qc_incld_),
                           nc_incld(nc_incld_), qr_incld(qr_incld_),
-                          qcacc(local_qcacc), ncacc(local_ncacc);
-      P3F::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
+	                  qcacc(local_qcacc), ncacc(local_ncacc), qc_relvar(qc_relvar_);
+      P3F::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar,
                                 qcacc, ncacc);
 
       t_d(0) = qcacc[0];
@@ -2180,7 +2188,8 @@ void cloud_rain_accretion_f(
 }
 
 void cloud_water_autoconversion_f(
-  Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_)
+     Real rho_, Real qc_incld_, Real nc_incld_, Real qc_relvar_,
+     Real* qcaut_, Real* ncautc_, Real* ncautr_)
 {
   using P3F = Functions<Real, DefaultDevice>;
 
@@ -2191,8 +2200,9 @@ void cloud_water_autoconversion_f(
   Real local_ncautr = *ncautr_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack rho(rho_), qc_incld(qc_incld_), nc_incld(nc_incld_), qcaut(local_qcaut), ncautc(local_ncautc), ncautr(local_ncautr);
-      P3F::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
+      typename P3F::Spack rho(rho_), qc_incld(qc_incld_), nc_incld(nc_incld_), qcaut(local_qcaut),
+	ncautc(local_ncautc), ncautr(local_ncautr), qc_relvar(qc_relvar_);
+      P3F::cloud_water_autoconversion(rho, qc_incld, nc_incld, qc_relvar, qcaut, ncautc, ncautr);
 
       t_d(0) = qcaut[0];
       t_d(1) = ncautc[0];
@@ -2745,6 +2755,34 @@ void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Rea
   std::copy(temp.v, temp.v+total, v);
   std::copy(temp.s, temp.s+total, s);
   std::copy(temp.f, temp.f+total, f);
+}
+
+Real subgrid_variance_scaling_f(Real relvar_, Real expon_)
+{
+  //The fortran version calling this function operates on scalar inputs
+  //and expects scalar output. The C++ version expects relvar to be a Spack
+  //and expon to be a scalar and returns a Spack.
+
+  using P3F = Functions<Real, DefaultDevice>;
+  using Spack = typename P3F::Spack;
+  using Scalar = typename P3F::Scalar;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  view_1d t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      Spack relvar(relvar_);
+      Scalar expon(expon_);
+      Spack out;
+	
+      out=P3F::subgrid_variance_scaling(relvar,expon);
+      t_d(0) = out[0];
+      
+    });
+  Kokkos::deep_copy(t_h, t_d);
+  
+  return t_h[0];
 }
 
 void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,

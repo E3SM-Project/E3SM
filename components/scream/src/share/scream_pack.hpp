@@ -12,7 +12,7 @@ namespace scream {
 namespace pack {
 
 /* API for using "packed" data in scream. Packs are just bundles of N
-   scalars wthin a single object. Using packed data makes it much easier
+   scalars within a single object. Using packed data makes it much easier
    to get good vectorization with C++.
 
    Pack is a vectorization pack, and Mask is a conditional mask for Pack::set
