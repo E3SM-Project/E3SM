@@ -24,63 +24,63 @@
 		<package name="mixedLayerHeatBudgetAMPKG" description="This package includes variables required for the mixedLayerHeatBudget analysis member."/>
 	</packages>
 	<var_struct name="mixedLayerHeatBudgetAM" time_levs="1" packages="mixedLayerHeatBudgetAMPKG">
-		<var_array name="activeTracerHorAdvectionMLTend" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorAdvectionMLTend"
+		<var_array name="activeTracerHorAdvectionMLTend" type="real" dimensions="nCells Time">
+			<var name="temperatureHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="degrees Celsius per second"
 				description="ML average horizontal advection tendency for temperature"
 			/>
-			<var name="salinityHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="PSU per second" name_in_code="salinityHorAdvectionMLTend"
+			<var name="salinityHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="PSU per second"
 				description="ML average horizontal advection tendency for salinity"
 			/>
 		</var_array>
-		<var_array name="activeTracerVertAdvectionMLTend" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertAdvectionMLTend"
+		<var_array name="activeTracerVertAdvectionMLTend" type="real" dimensions="nCells Time">
+			<var name="temperatureVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="degrees Celsius per second"
 				description="ML average vertical advection tendency for temperature"
 			/>
-			<var name="salinityVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="PSU per second" name_in_code="salinityVertAdvectionMLTend"
+			<var name="salinityVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="PSU per second"
 				description="ML average vertical advection tendency for salinity"
 			/>
 		</var_array>
-		<var_array name="activeTracerVertMixMLTend" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureVertMixMLTend" array_group="activeTracerVMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertAdvectionMLTend"
+		<var_array name="activeTracerVertMixMLTend" type="real" dimensions="nCells Time">
+			<var name="temperatureVertMixMLTend" array_group="activeTracerVMixTendGroup" units="degrees Celsius per second"
 				description="ML average vertical mixing tendency for temperature"
 			/>
-			<var name="salinityVertMixMLTend" array_group="activeTracerVMixTendGroup" units="PSU per second" name_in_code="salinityVertMixMLTend"
+			<var name="salinityVertMixMLTend" array_group="activeTracerVMixTendGroup" units="PSU per second"
 				description="ML average vertical mxiing tendency for salinity"
 			/>
 		</var_array>
-		<var_array name="activeTracerHorMixMLTend" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureHorMixMLTend" array_group="activeTracerHMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorMixMLTend"
+		<var_array name="activeTracerHorMixMLTend" type="real" dimensions="nCells Time">
+			<var name="temperatureHorMixMLTend" array_group="activeTracerHMixTendGroup" units="degrees Celsius per second"
 				description="ML average horizontal mixing tendency for temperature"
 			/>
-			<var name="salinityHorMixMLTend" array_group="activeTracerHMixTendGroup" units="PSU per second" name_in_code="salinityHorMixMLTend"
+			<var name="salinityHorMixMLTend" array_group="activeTracerHMixTendGroup" units="PSU per second"
 				description="ML average horizontal mxiing tendency for salinity"
 			/>
 		</var_array>
-		<var_array name="activeTracerNonLocalMLTend" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureNonLocalMLTend" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalMLTend"
+		<var_array name="activeTracerNonLocalMLTend" type="real" dimensions="nCells Time">
+			<var name="temperatureNonLocalMLTend" array_group="activeTracerNLTendGroup" units="degrees Celsius per second"
 				description="ML average non local kpp tendency for temperature"
 			/>
-			<var name="salinityNonLocalMLTend" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalMLTend"
+			<var name="salinityNonLocalMLTend" array_group="activeTracerNLTendGroup" units="PSU per second"
 				description="ML average nonlocal KPP tendency for salinity"
 			/>
 		</var_array>
-		<var_array name="activeTracerForcingMLTend" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureForcingMLTend" array_group="activeTracerFTendGroup" units="degrees Celsius per second" name_in_code="temperatureForcingMLTend"
+		<var_array name="activeTracerForcingMLTend" type="real" dimensions="nCells Time">
+			<var name="temperatureForcingMLTend" array_group="activeTracerFTendGroup" units="degrees Celsius per second"
 				description="ML average forcing tendency (including shortwave) for temperature"
 			/>
-			<var name="salinityForcingMLTend" array_group="activeTracerFTendGroup" units="PSU per second" name_in_code="salinityForcingMLTend"
+			<var name="salinityForcingMLTend" array_group="activeTracerFTendGroup" units="PSU per second"
 				description="ML average forcing tendency (non thickness flux changes) for salinity"
 			/>
 		</var_array>
-		<var_array name="activeTracersML" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG">
-			<var name="temperatureML" array_group="activeTracerFTendGroup" units="degrees Celsius" name_in_code="temperatureML"
+		<var_array name="activeTracersML" type="real" dimensions="nCells Time">
+			<var name="temperatureML" array_group="activeTracerFTendGroup" units="degrees Celsius"
 				description="ML average temperature"
 			/>
-			<var name="salinityML" array_group="activeTracerFTendGroup" units="PSU per second" name_in_code="salinityML"
+			<var name="salinityML" array_group="activeTracerFTendGroup" units="PSU per second"
 				description="ML average salinity"
 			/>
 		</var_array>
-		<var name="bruntVaisalaFreqML" type="real" dimensions="nCells Time" packages="mixedLayerHeatBudgetAMPKG"
+		<var name="bruntVaisalaFreqML" type="real" dimensions="nCells Time"
 			description="ML average BVF"
 		/>
 	</var_struct>
