@@ -101,5 +101,7 @@
 			<var_array name="activeTracerVertAdvectionMLTend"/>
 			<var_array name="activeTracerHorAdvectionMLTend"/>
 			<var_array name="activeTracerVertMixMLTend"/>
+			<var_array name="activeTracersML"/>
+			<var_array name="bruntVaisalaFreqML"/>
 		</stream>
 	</streams>

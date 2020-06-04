@@ -62,6 +62,8 @@
 			<field name="oceanHeatContent2000mToBot" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
 		</compare_fields>
 		<compare_fields file1="forward/analysis_members/mixedLayerHeatBudget.0001-01-01_00.00.00.nc">
+			<field name="temperatureHorAdvectionMLTend" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="salinityHorAdvectionMLTend" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
 			<field name="temperatureML" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
 			<field name="salinityML" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
 			<field name="bruntVaisalaFreqML" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
