@@ -192,8 +192,7 @@
 <!-- Worked, and used to generate the inic below for northamerica:  ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >/global/cscratch1/sd/wlin/northamericax4v1/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_northamericax4v1_topoadj_L72.nc</ncdata-->
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 
-<!--IC file from Wuyin, need to update -->
-<ncdata dyn="se" hgrid="ne0np4_antarcticax4v1" nlev="72"    >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_antarcticax4v1_topoadj_L72.c20191127.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_antarcticax4v1" nlev="72"    >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
 
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
