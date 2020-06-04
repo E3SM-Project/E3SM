@@ -81,7 +81,7 @@ def build_mesh(
             plt.colorbar(im, shrink=.60)
             fig.canvas.draw()
             plt.tight_layout()
-            plt.savefig('cellWidthGlobal.png', bbox_inches='tight')
+            plt.savefig('cellWidthGlobal.png', bbox_inches='tight', dpi=300)
             plt.close()
 
     else:
