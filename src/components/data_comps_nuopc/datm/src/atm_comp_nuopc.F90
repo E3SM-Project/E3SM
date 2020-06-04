@@ -158,6 +158,7 @@ module atm_comp_nuopc
   real(r8), pointer :: Faxa_swvdr(:)        => null()
   real(r8), pointer :: Faxa_swvdf(:)        => null()
   real(r8), pointer :: Faxa_swnet(:)        => null()
+  real(r8), pointer :: Faxa_swdn(:)         => null()
   real(r8), pointer :: Sa_co2prog(:)        => null() ! co2
   real(r8), pointer :: Sa_co2diag(:)        => null() ! co2
   real(r8), pointer :: Faxa_bcph(:,:)       => null() ! prescribed aerosols
@@ -886,6 +887,7 @@ contains
     call dshr_fldList_add(fldsExport, 'Sa_pbot'    )
     call dshr_fldList_add(fldsExport, 'Sa_shum'    )
     call dshr_fldList_add(fldsExport, 'Faxa_lwdn'  )
+    call dshr_fldList_add(fldsExport, 'Faxa_swdn'  )
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
        call dshr_fldList_add(fldsExport, 'Sa_co2prog')
        call dshr_fldList_add(fldsExport, 'Sa_co2diag')
@@ -1094,6 +1096,10 @@ contains
     call dshr_dfield_add( dfields, sdat, state_fld='Faxa_lwdn' , strm_fld='lwdn', &
          state=exportState, state_ptr=Faxa_lwdn, strm_ptr=strm_lwdn, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add( dfields, sdat, state_fld='Faxa_swdn'  , strm_fld='swdn'  , &
+         state=exportState, state_ptr=Faxa_swdn, strm_ptr=strm_swdn, logunit=logunit, masterproc=masterproc, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
        call dshr_dfield_add( dfields, sdat, state_fld='Sa_co2prog', strm_fld='co2prog', &
             state=exportState, state_ptr=Sa_co2prog, logunit=logunit, masterproc=masterproc, rc=rc)

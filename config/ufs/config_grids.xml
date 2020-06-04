@@ -43,6 +43,17 @@
       <grid name="atm">C768</grid>
     </model_grid>
 
+    <model_grid alias="T62_Atlantic8">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">Atlantic8</grid>      
+    </model_grid>
+
+    <model_grid alias="TL319_Atlantic8">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">Atlantic8</grid>
+    </model_grid>
   </grids>
 
   <!-- ======================================================== -->
@@ -50,7 +61,6 @@
   <!-- ======================================================== -->
 
   <domains>
-
     <domain name="null">
       <!-- null grid -->
       <nx>0</nx> <ny>0</ny>
@@ -59,7 +69,6 @@
     </domain>
 
     <!-- fvcubed domains-->
-
     <domain name="C96">
       <nx>55296</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.C96_gx1v6.181018.nc</file>
@@ -87,6 +96,32 @@
       <desc>C768 is a fvcubed 13 km resolution grid:</desc>
       <support>Experimental for fv3 dycore</support>
     </domain>
+
+    <!-- domains for data atmosphere -->
+    <domain name="T62">
+      <nx>192</nx> <ny>94</ny>
+      <file grid="atm|lnd" mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.lnd.T62_Atlantic8.200423.nc</file>
+      <file grid="ocnice"  mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.T62_Atlantic8.200423.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/T62_040121_ESMFmesh.nc</mesh>
+      <desc>T62 is Gaussian grid:</desc>
+    </domain>
+
+    <domain name="TL319">
+      <nx>640</nx> <ny>320</ny>
+      <file grid="atm|lnd" mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.lnd.TL319_Atlantic8.200527.nc</file>
+      <file grid="ocnice"  mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.TL319_Atlantic8.200527.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc</mesh>
+      <desc>TL319 grid for JRA55</desc>
+    </domain>
+
+    <!-- domains for regional ocean (HYCOM) -->
+    <domain name="Atlantic8">
+      <nx>1135</nx> <ny>633</ny>
+      <file grid="ocnice">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.Atlantic8.2004123.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/hafs/share/meshes/Atlantic8_SCRIP_230420_ESMFmesh.nc</mesh>
+      <desc>Atlantic8 is a Atlantic grid for Dorian case at 7-8 km HYCOM grid:</desc>
+      <support>For regional HYCOM experiments</support>
+    </domain>    
   </domains>
 
   <!-- ======================================================== -->
@@ -117,5 +152,4 @@
 
   <gridmaps driver="nuopc">
   </gridmaps>
-
 </grid_data>

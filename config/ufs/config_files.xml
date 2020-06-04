@@ -122,7 +122,8 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value>$SRCROOT/src/model/NEMS</value>
+      <value component="nems">$SRCROOT/src/model/NEMS/cime</value>
+      <value component="cpl" >$CIMEROOT/src/drivers/nuopc</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -137,6 +138,7 @@
       <value component="pop"       >$SRCROOT/components/pop/</value>
       <value component="mom"       >$SRCROOT/components/mom/</value>
       <value component="nemo"      >$SRCROOT/components/nemo/</value>
+      <value component="hycom"     >$SRCROOT/src/model/HYCOM/</value>
       <value component="docn"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/docn</value>
       <value component="socn"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/socn</value>
       <value component="xocn"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xocn</value>
@@ -254,7 +256,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/config_compsets.xml</value>
+      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_compsets.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
@@ -262,7 +264,8 @@
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
-      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
+      <value component="nemo"     >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
+      <value component="hycom"    >$COMP_ROOT_DIR_OCN/cime/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -275,7 +278,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$SRCROOT/cime_config/config_pes.xml</value>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/config_pes.xml</value>
+      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_pes.xml</value>
       <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_pes.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_pes.xml</value>
@@ -283,7 +286,8 @@
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_pes.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
-      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
+      <value component="nemo"     >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
+      <value component="hycom"    >$COMP_ROOT_DIR_OCN/cime/cime_config/config_pes.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -295,7 +299,7 @@
     <type>char</type>
     <values>
       <value>$CIMEROOT/config/$MODEL/config_archive.xml</value>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/config_archive.xml</value>
+      <value component="drv" >$COMP_ROOT_DIR_CPL/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="datm">$COMP_ROOT_DIR_ATM/cime_config/config_archive.xml</value>
@@ -310,7 +314,8 @@
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_archive.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
-      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
+      <value component="nemo"     >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
+      <value component="hycom"    >$COMP_ROOT_DIR_OCN/cime/cime_config/config_archive.xml</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_archive.xml</value>
@@ -344,7 +349,8 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/testlist.xml</value>
+      <value component="ufsatm">$COMP_ROOT_DIR_ATM/cime/cime_config/testlist.xml</value>
+      <value component="hycom" >$COMP_ROOT_DIR_OCN/cime/cime_config/testlist.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -357,7 +363,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$SRCROOT/cime_config/testmods_dirs</value>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/testdefs/testmods_dirs</value>
+      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/testdefs/testmods_dirs</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testmods_dirs</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/testdefs/testmods_dirs</value>
@@ -366,7 +372,7 @@
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
-      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
+      <value component="nemo"     >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -378,7 +384,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$SRCROOT/cime_config/usermods_dirs</value>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/usermods_dirs</value>
+      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/usermods_dirs</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/usermods_dirs</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/usermods_dirs</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/usermods_dirs</value>
@@ -399,7 +405,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/namelist_definition_drv.xml</value>
+      <value component="drv" >$COMP_ROOT_DIR_CPL/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/drof/cime_config/namelist_definition_drof.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/datm/cime_config/namelist_definition_datm.xml</value>
@@ -431,7 +437,7 @@
   <entry id="CONFIG_CPL_FILE">
     <type>char</type>
     <values>
-      <value>$COMP_ROOT_DIR_CPL/cime/cime_config/config_component.xml</value>
+      <value>$COMP_ROOT_DIR_CPL/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -443,7 +449,7 @@
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
     <values>
-      <value>$SRCROOT/src/model/NEMS/cime/cime_config/config_component_$MODEL.xml</value>
+      <value>$COMP_ROOT_DIR_CPL/cime_config/config_component_$MODEL.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -506,6 +512,7 @@
     <type>char</type>
     <values>
       <value>$COMP_ROOT_DIR_OCN/cime_config/config_component.xml</value>
+      <value component="hycom">$COMP_ROOT_DIR_OCN/cime/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
