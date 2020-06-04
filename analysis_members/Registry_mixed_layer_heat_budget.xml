@@ -76,11 +76,11 @@
 			<var name="temperatureML" array_group="activeTracerFTendGroup" units="degrees Celsius"
 				description="ML average temperature"
 			/>
-			<var name="salinityML" array_group="activeTracerFTendGroup" units="PSU per second"
+			<var name="salinityML" array_group="activeTracerFTendGroup" units="PSU"
 				description="ML average salinity"
 			/>
 		</var_array>
-		<var name="bruntVaisalaFreqML" type="real" dimensions="nCells Time"
+    <var name="bruntVaisalaFreqML" type="real" dimensions="nCells Time" units="s^{-2}"
 			description="ML average BVF"
 		/>
 	</var_struct>
