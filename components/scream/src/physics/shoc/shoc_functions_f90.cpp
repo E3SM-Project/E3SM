@@ -53,5 +53,12 @@ void shoc_subroutine(SHOCSubroutineData& d) // example wrapper function
   // shoc_subroutine_c(d.in1, d.in2, d.in3, &d.out1, &d.out2, &d.out3);
 }
 
+
+void shoc_grid(Int nlev, SHOCGridData& d)
+{
+  shoc_init(nlev, true);
+  shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
+}
+
 } // namespace shoc
 } // namespace scream

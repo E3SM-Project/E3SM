@@ -19,6 +19,16 @@ namespace shoc {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Converted subroutine helpers go here.
+struct SHOCGridData{
+ // Inputs 
+ Int shcol, nlev, nlevi;
+ Real *zt_grid, *zi_grid, *pdel;
+
+ // In/out
+ Real *dz_zt, *dz_zi, *rho_zt;
+
+};
+void shoc_grid(Int nlev, SHOCGridData& d);
 
 }  // namespace shoc
 }  // namespace scream
