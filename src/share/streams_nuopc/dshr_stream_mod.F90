@@ -55,6 +55,7 @@ module dshr_stream_mod
   public :: shr_stream_dataDump          ! internal stream data for debugging
   public :: shr_stream_restWrite         ! write a streams restart file
   public :: shr_stream_restRead          ! read  a streams restart file
+  public :: shr_stream_restIO
 
   character(CS),parameter,public :: shr_stream_taxis_cycle  = 'cycle'
   character(CS),parameter,public :: shr_stream_taxis_extend = 'extend'
@@ -1336,6 +1337,105 @@ contains
 
   end subroutine shr_stream_getNFiles
 
+  subroutine shr_stream_restIO(pioid, streams, mode)
+    use pio, only : pio_def_dim, pio_def_var, pio_put_var, pio_get_var, file_desc_t, var_desc_t
+    use pio, only : pio_int, pio_char
+    type(file_desc_t), intent(inout) :: pioid
+    type(shr_stream_streamType), intent(in) :: streams(:)
+    character(len=*), intent(in) :: mode  ! read, write, define
+
+    type(var_desc_t) :: varid, tvarid, dvarid
+    integer :: rcode
+    integer :: dimid_stream, dimid_files,dimid_nt, dimid_str
+    integer :: nt, n, k, maxnfiles=0
+    integer :: maxnt = 0
+    integer, allocatable :: tmp(:)
+
+
+    if (mode .eq. 'define') then
+       rcode = pio_def_dim(pioid, 'strlen',   CL, dimid_str)
+       do k=1,size(streams)
+          if (streams(k)%nfiles > maxnfiles) then
+             maxnfiles = streams(k)%nfiles
+          endif
+          do n=1,streams(k)%nFiles
+             if( streams(k)%file(n)%nt > maxnt) then
+                maxnt = streams(k)%file(n)%nt
+             endif
+          enddo
+       enddo
+       rcode = pio_def_dim(pioid, 'nt',   maxnt, dimid_nt)
+       rcode = pio_def_dim(pioid, 'nfiles',   maxnfiles, dimid_files)
+       rcode = pio_def_dim(pioid, 'nstreams', size(streams), dimid_stream)
+
+       rcode = pio_def_var(pioid, 'nfiles',   PIO_INT, (/dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'filename', PIO_CHAR, (/dimid_str, dimid_files, dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'date',     PIO_INT, (/dimid_nt, dimid_files, dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'timeofday',PIO_INT, (/dimid_nt, dimid_files, dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'offset',   PIO_INT, (/dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'k_lvd',    PIO_INT, (/dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'n_lvd',    PIO_INT, (/dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'k_gvd',    PIO_INT, (/dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'n_gvd',    PIO_INT, (/dimid_stream/), varid)
+    else if (mode .eq. 'write') then
+       rcode = pio_inq_varid(pioid, 'nfiles', varid)
+       allocate(tmp(size(streams)))
+       do k=1,size(streams)
+          tmp(k) = streams(k)%nFiles
+       enddo
+       rcode = pio_put_var(pioid, varid, tmp)
+
+       rcode = pio_inq_varid(pioid, 'offset', varid)
+       do k=1,size(streams)
+          tmp(k) = streams(k)%offset
+       enddo
+       rcode = pio_put_var(pioid, varid, tmp)
+
+       rcode = pio_inq_varid(pioid, 'k_lvd', varid)
+       do k=1,size(streams)
+          tmp(k) = streams(k)%k_lvd
+       enddo
+       rcode = pio_put_var(pioid, varid, tmp)
+
+       rcode = pio_inq_varid(pioid, 'n_lvd', varid)
+       do k=1,size(streams)
+          tmp(k) = streams(k)%n_lvd
+       enddo
+       rcode = pio_put_var(pioid, varid, tmp)
+
+       rcode = pio_inq_varid(pioid, 'k_gvd', varid)
+       do k=1,size(streams)
+          tmp(k) = streams(k)%k_gvd
+       enddo
+       rcode = pio_put_var(pioid, varid, tmp)
+
+       rcode = pio_inq_varid(pioid, 'n_gvd', varid)
+       do k=1,size(streams)
+          tmp(k) = streams(k)%n_gvd
+       enddo
+       rcode = pio_put_var(pioid, varid, tmp)
+       deallocate(tmp)
+
+       rcode = pio_inq_varid(pioid, 'filename', varid)
+       rcode = pio_inq_varid(pioid, 'date', dvarid)
+       rcode = pio_inq_varid(pioid, 'timeofday', tvarid)
+       do k=1,size(streams)
+          do n=1,streams(k)%nfiles
+             rcode = pio_put_var(pioid, varid, (/n,k,1/), streams(k)%file(n)%name)
+             if (allocated(streams(k)%file(n)%date)) then
+                rcode = pio_put_var(pioid, dvarid, (/1,n,k/), (/streams(k)%file(n)%nt,1,1/),streams(k)%file(n)%date)
+             endif
+             if (allocated(streams(k)%file(n)%secs)) then
+                rcode = pio_put_var(pioid, tvarid, (/1,n,k/), (/streams(k)%file(n)%nt,1,1/),streams(k)%file(n)%secs)
+             endif
+          enddo
+       enddo
+       print *,__FILE__,__LINE__
+    endif
+
+  end subroutine shr_stream_restIO
+
+
   !===============================================================================
   subroutine shr_stream_restWrite(strm, fileName, caseName, nstrms)
 
@@ -1383,7 +1483,6 @@ contains
        end if
     end do
 
-    ! write restart data
     open(newunit=nUnit,file=trim(fileName),form="unformatted",action="write")
     write(nUnit) nStreams
     do k = 1,nStreams

@@ -1095,7 +1095,7 @@ contains
   !===============================================================================
   subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
        logunit, mpicom, my_task, sdat, fld, fldname)
-
+    use dshr_stream_mod, only : shr_stream_restIO
     ! input/output variables
     character(len=*)            , intent(in)    :: rpfile
     character(len=*)            , intent(in)    :: case_name
@@ -1138,21 +1138,23 @@ contains
      endif
 
      ! write data model restart data
+     rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_file_model), pio_clobber)
+     rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
      if (present(fld) .and. present(fldname)) then
-        rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_file_model), pio_clobber)
-        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-        rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
         rcode = pio_def_dim(pioid, 'gsize', sdat%model_gsize, dimid(1))
         rcode = pio_def_var(pioid, trim(fldname), PIO_DOUBLE, dimid, varid)
-        rcode = pio_enddef(pioid)
+     endif
+     call shr_stream_restIO(pioid, sdat%stream, 'define')
+     rcode = pio_enddef(pioid)
+     call shr_stream_restIO(pioid, sdat%stream, 'write')
+     if (present(fld) .and. present(fldname)) then
         call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%model_gsize/), sdat%model_gindex, pio_iodesc)
         call pio_write_darray(pioid, varid, pio_iodesc, fld, rcode, fillval=shr_const_spval)
-        call pio_closefile(pioid)
+     endif
+     call pio_closefile(pioid)
+     if (present(fld) .and. present(fldname)) then
         call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-     end if
-
-     ! write stream restart data
-     call shr_strdata_restWrite(sdat, trim(rest_file_stream), trim(case_name))
+     endif
 
   end subroutine dshr_restart_write
 
