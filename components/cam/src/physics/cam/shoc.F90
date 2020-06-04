@@ -2379,7 +2379,6 @@ subroutine shoc_length(&
   ! Find L_inf
   call  compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
-  !=========================================================
   ! determine the convective velocity scale of
   !   the planetary boundary layer
   call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
@@ -3333,7 +3332,7 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
   implicit none
   integer, intent(in) :: nlev, shcol
   real(rtype), intent(in) :: zt_grid(shcol,nlev), dz_zt(shcol,nlev), tke(shcol,nlev)
-  real(rtype), intent(inout) :: l_inf(shcol)
+  real(rtype), intent(out) :: l_inf(shcol)
   real(rtype) :: tkes, numer(shcol), denom(shcol) 
   integer k, i
   
@@ -3348,13 +3347,8 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
     enddo
   enddo
 
-
   do i=1,shcol
-    if (denom(i) .gt. 0._rtype) then
-      l_inf(i)=0.1_rtype*(numer(i)/denom(i))
-    else
-      l_inf(i)=100._rtype
-    endif
+    l_inf(i)=0.1_rtype*(numer(i)/denom(i))
   enddo
 
 end subroutine compute_l_inf_shoc_length
@@ -3399,7 +3393,7 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   ! Convective velocity scale
   real(rtype), intent(inout) :: conv_vel(shcol)
   ! Convective time scale
-  real(rtype), intent(inout) ::  tscale(shcol) 
+  real(rtype), intent(out) ::  tscale(shcol) 
 
   integer i 
 
@@ -3430,7 +3424,7 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
   real(rtype), intent(in) :: l_inf(shcol)
 
   ! Turbulent length scale [m]
-  real(rtype), intent(inout) :: shoc_mix(shcol,nlev)
+  real(rtype), intent(out) :: shoc_mix(shcol,nlev)
 
   !  LOCAL VARIABLES
   real(rtype) :: brunt2(shcol,nlev)
