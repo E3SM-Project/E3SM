@@ -4,7 +4,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "region for CUSP mesh",
+        "name": "Bering West",
         "component": "ocean",
         "object": "region",
         "author": "Mark Petersen, Xylar Asay-Davis"
@@ -60,7 +60,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "region for CUSP mesh",
+        "name": "Bering East",
         "component": "ocean",
         "object": "region",
         "author": "Mark Petersen"
