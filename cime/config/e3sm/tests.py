@@ -32,6 +32,7 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.clm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
+            "ERS.f09_g16.I1850GSWCNPRDCTCBC.clm-vstrd",
             "SMS.r05_r05.I1850CLM45CN",
             )
         },
