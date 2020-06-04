@@ -132,7 +132,11 @@ if __name__ == '__main__':
 
   # Interpolation of u and v velocities
   lon_grid,lat_grid,u_interp,lon_data,lat_data,u_data,xtime = interpolate_data_to_grid(grid_file,wind_file,'U_GRD_L103')
+  # Write to NetCDF file
+  subprocess.call(['rm',forcing_file])
+  write_forcing_file.write_to_file(forcing_file,u_interp,'windSpeedU',xtime)
   lon_grid,lat_grid,v_interp,lon_data,lat_data,v_data,xtime = interpolate_data_to_grid(grid_file,wind_file,'V_GRD_L103')
+  write_forcing_file.write_to_file(forcing_file,v_interp,'windSpeedV',xtime)
 
   # Calculate and plot velocity magnitude
   if args.plot:
@@ -146,8 +150,13 @@ if __name__ == '__main__':
 
         plot_interp_data(lon_data,lat_data,data,lon_grid,lat_grid,interp_data,'velocity magnitude','vel',xtime[i])
 
+  del u_interp
+  del u_data
+  del v_interp
+  del v_data
   # Interpolation of atmospheric pressure
   lon_grid,lat_grid,p_interp,lon_data,lat_data,p_data,xtime = interpolate_data_to_grid(grid_file,pres_file,'PRMSL_L101')
+  write_forcing_file.write_to_file(forcing_file,p_interp,'atmosPressure',xtime)
 
   # Plot atmopheric pressure
   if args.plot:
@@ -157,10 +166,6 @@ if __name__ == '__main__':
         print('Plotting pres: '+str(i))
 
         plot_interp_data(lon_data,lat_data,p_data[i,:,:],lon_grid,lat_grid,p_interp[i,:],'atmospheric pressure','pres',xtime[i])
-
-  # Write to NetCDF file
-  subprocess.call(['rm',forcing_file])
-  write_forcing_file.write_to_file(forcing_file,u_interp,'windSpeedU',xtime)
-  write_forcing_file.write_to_file(forcing_file,v_interp,'windSpeedV',xtime)
-  write_forcing_file.write_to_file(forcing_file,p_interp,'atmosPressure',xtime)
+  del p_interp
+  del p_data
 
