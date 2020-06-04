@@ -54,7 +54,7 @@ module dshr_strdata_mod
   private :: shr_strdata_readLBUB
 
   ! public data members:
-  integer                              :: debug    = 2  ! local debug flag
+  integer                              :: debug    = 0  ! local debug flag
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
   character(len=*) ,parameter          :: shr_strdata_unset = 'NOT_SET'
   integer          ,parameter          :: master_task = 0
@@ -66,7 +66,6 @@ module dshr_strdata_mod
      type(ESMF_Mesh)                     :: stream_mesh                     ! stream mesh created from stream mesh file
      type(io_desc_t)                     :: stream_pio_iodesc               ! stream pio descriptor
      logical                             :: stream_pio_iodesc_set =.false.  ! true=>pio iodesc has been set
-     integer                             :: stream_pio_iovartype = PIO_REAL ! stream pio variable type
      type(ESMF_RouteHandle)              :: routehandle                     ! stream n -> model mesh mapping
      character(CL), allocatable          :: fldlist_stream(:)               ! names of stream file fields
      character(CL), allocatable          :: fldlist_model(:)                ! names of stream model fields
@@ -568,7 +567,7 @@ contains
 
     ! Create the pio iodesc for fldname
     call shr_strdata_set_stream_iodesc(sdat, sdat%pio_subsystem, pioid, &
-         trim(fldname), sdat%pstrm(stream_index)%stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
+         trim(fldname), sdat%pstrm(stream_index)%stream_mesh, pio_iodesc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Now read in the data for fldname
@@ -1050,7 +1049,6 @@ contains
     integer                ,intent(out)   :: rc
 
     ! local variables
-    integer                             :: pio_iovartype
     type(shr_stream_streamType),pointer :: stream
     type(ESMF_Mesh), pointer            :: stream_mesh
     type(ESMF_FieldBundle)        ,pointer :: fldbun_stream_lb
@@ -1079,9 +1077,7 @@ contains
     rc = ESMF_SUCCESS
     stream => sdat%stream(ns)
     stream_mesh => sdat%pstrm(ns)%stream_mesh
-!    fldbun_stream_ub => sdat%pstrm(ns)%fldbun_stream(sdat%pstrm(ns)%stream_ub)
-!    fldbun_stream_lb => sdat%pstrm(ns)%fldbun_stream(sdat%pstrm(ns)%stream_lb)
-    pio_iovartype = sdat%pstrm(ns)%stream_pio_iovartype
+
     call t_startf(trim(istr)//'_setup')
     ! allocate streamdat instance on all tasks
     call ESMF_VMGetCurrent(vm, rc=rc)
@@ -1108,7 +1104,6 @@ contains
        call shr_stream_findBounds(stream, mDate, mSec,  &
             sdat%pstrm(ns)%ymdLB, dDateLB, sdat%pstrm(ns)%todLB, n_lb, filename_lb, &
             sdat%pstrm(ns)%ymdUB, dDateUB, sdat%pstrm(ns)%todUB, n_ub, filename_ub)
-
        call t_stopf(trim(istr)//'_fbound')
     endif
     if (sdat%pstrm(ns)%ymdLB /= oDateLB .or. sdat%pstrm(ns)%todLB /= oSecLB) then
@@ -1118,12 +1113,15 @@ contains
           i = sdat%pstrm(ns)%stream_ub
           sdat%pstrm(ns)%stream_ub = sdat%pstrm(ns)%stream_lb
           sdat%pstrm(ns)%stream_lb = i
+!          i = sdat%pstrm(ns)%n_ub
+!          sdat%pstrm(ns)%n_lb = sdat%pstrm(ns)%n_ub
+!          sdat%pstrm(ns)%n_ub = i
        else
           ! read lower bound of data
           call shr_strdata_readstrm(sdat, ns, stream, stream_mesh, &
                sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
                sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_lb), &
-               sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, pio_iovartype, &
+               sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, &
                filename_lb, n_lb, istr=trim(istr)//'_LB', boundstr='lb', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -1134,7 +1132,7 @@ contains
        call shr_strdata_readstrm(sdat, ns, stream, stream_mesh, &
             sdat%pstrm(ns)%fldlist_stream, sdat%pstrm(ns)%fldlist_model, &
             sdat%pstrm(ns)%fldbun_data(sdat%pstrm(ns)%stream_ub), &
-            sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, pio_iovartype, &
+            sdat%pio_subsystem, sdat%io_type, sdat%pstrm(ns)%stream_pio_iodesc_set, sdat%pstrm(ns)%stream_pio_iodesc, &
             filename_ub, n_ub, istr=trim(istr)//'_UB', boundstr='ub', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -1157,7 +1155,7 @@ contains
   !===============================================================================
   subroutine shr_strdata_readstrm(sdat, ns, stream, stream_mesh, &
        fldlist_stream, fldlist_model, fldbun_model, &
-       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, pio_iovartype, &
+       pio_subsystem, pio_iotype, pio_iodesc_set, pio_iodesc, &
        filename, nt, istr, boundstr, rc)
     use shr_const_mod         , only : r8fill => SHR_CONST_SPVAL
     use shr_infnan_mod        , only : shr_infnan_isnan
@@ -1177,7 +1175,6 @@ contains
     integer                     , intent(in)            :: pio_iotype
     logical                     , intent(inout)         :: pio_iodesc_set
     type(io_desc_t)             , intent(inout)         :: pio_iodesc
-    integer                     , intent(inout)         :: pio_iovartype
     character(len=*)            , intent(in)            :: filename
     integer                     , intent(in)            :: nt
     character(len=*)            , intent(in)            :: istr
@@ -1202,6 +1199,7 @@ contains
     real(r8), pointer             :: dataptr2d_src(:,:) => null(), dataptr2d_dst(:,:) => null()
     integer                       :: lsize, n
     integer                       :: spatialDim, numOwnedElements
+    integer                       :: pio_iovartype
     real(r8), pointer             :: nv_coords(:), nu_coords(:), data_u_dst(:), data_v_dst(:)
     real(r8)                      :: lat, lon, sinlat, sinlon, coslat, coslon
     character(CS)                 :: uname, vname
@@ -1246,7 +1244,7 @@ contains
 
     if (.not. pio_iodesc_set) then
        call shr_strdata_set_stream_iodesc(sdat, pio_subsystem, pioid, &
-            trim(fldlist_stream(1)), stream_mesh, pio_iodesc, pio_iovartype, rc=rc)
+            trim(fldlist_stream(1)), stream_mesh, pio_iodesc, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        pio_iodesc_set = .true.
     end if
@@ -1261,7 +1259,6 @@ contains
        write(sdat%logunit,F02) 'file ' // trim(boundstr) //': ',trim(filename), nt
     endif
 
-    call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     call dshr_field_getfldptr(sdat%pstrm(ns)%field_stream, fldptr1=dataptr, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     if(sdat%pstrm(ns)%ucomp > 0 .and. sdat%pstrm(ns)%vcomp > 0) then
@@ -1272,13 +1269,16 @@ contains
     endif
 
     lsize = size(dataptr)
-    if (pio_iovartype == PIO_REAL) then
-       allocate(data_real(lsize))
-    endif
     do nf = 1,size(fldlist_stream)
        call dshr_fldbun_getfieldN(fldbun_model, nf, field_dst, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        rcode = pio_inq_varid(pioid, trim(fldlist_stream(nf)), varid)
+       ! determine type of the variable
+       rcode = pio_inq_vartype(pioid, varid, pio_iovartype)
+
+       if (pio_iovartype == PIO_REAL .and. .not. allocated(data_real)) then
+          allocate(data_real(lsize))
+       endif
 
        handlefill = .false.
        call PIO_seterrorhandling(pioid, PIO_BCAST_ERROR, old_error_handle)
@@ -1398,7 +1398,7 @@ contains
 
   !===============================================================================
   subroutine shr_strdata_set_stream_iodesc(sdat, &
-       pio_subsystem, pioid, fldname, stream_mesh, pio_iodesc, pio_iovartype, rc)
+       pio_subsystem, pioid, fldname, stream_mesh, pio_iodesc, rc)
 
     ! input/output variables
     type(shr_strdata_type) , intent(in)    :: sdat
@@ -1407,10 +1407,10 @@ contains
     character(len=*)      , intent(in)            :: fldname
     type(ESMF_Mesh)       , intent(in)            :: stream_mesh
     type(io_desc_t)       , intent(inout)         :: pio_iodesc
-    integer               , intent(out)           :: pio_iovartype
     integer               , intent(out)           :: rc
 
     ! local variables
+    integer                       :: pio_iovartype
     integer                       :: n
     type(var_desc_t)              :: varid
     integer                       :: ndims
