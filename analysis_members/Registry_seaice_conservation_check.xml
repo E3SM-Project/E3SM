@@ -128,6 +128,29 @@
 			description=""
 		/>
 	</var_struct>
+	<var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialCarbon" type="real" dimensions="Time" units="mmol"
+			description="Total initial carbon of ice and snow"
+		/>
+		<var name="finalCarbon" type="real" dimensions="Time" units="mmol"
+			description="Total final carbon of ice and snow"
+		/>
+		<var name="carbonChange" type="real" dimensions="Time" units="mmol"
+			description="Total carbon change of ice and snow during time step"
+		/>
+		<var name="netCarbonFlux" type="real" dimensions="Time" units="mmol/s"
+			description="Net carbon flux to sea ice"
+		/>
+		<var name="absoluteCarbonError" type="real" dimensions="Time" units="mmol"
+			description="Absolute carbon conservation error"
+		/>
+		<var name="relativeCarbonError" type="real" dimensions="Time" units="None"
+			description="Relative carbon conservation error"
+		/>
+		<var name="accumulatedOceanCarbonFlux" type="real" dimensions="Time" units="mmol/s"
+			description="Total ocean carbon flux, positive into the ocean"
+		/>
+	</var_struct>
 	<streams>
 		<stream name="conservationCheckOutput" type="output"
 				filename_template="analysis_members/conservationCheck.nc"
@@ -167,6 +190,13 @@
 			<var name="netSaltFlux"/>
 			<var name="absoluteSaltError"/>
 			<var name="relativeSaltError"/>
+			<var name="initialCarbon"/>
+			<var name="finalCarbon"/>
+			<var name="carbonChange"/>
+			<var name="accumulatedOceanCarbonFlux"/>
+			<var name="netCarbonFlux"/>
+			<var name="absoluteCarbonError"/>
+			<var name="relativeCarbonError"/>
 		</stream>
 
 		<stream name="conservationCheckRestart"
@@ -195,5 +225,7 @@
 			<var name="initialSalt"/>
 			<var name="accumulatedOceanSaltFlux"/>
 			<var name="accumulatedFrazilSaltFlux"/>
+			<var name="initialCarbon"/>
+			<var name="accumulatedOceanCarbonFlux"/>
 		</stream>
 	</streams>

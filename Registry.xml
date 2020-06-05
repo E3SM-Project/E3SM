@@ -3846,6 +3846,16 @@
 		<var name="snowIceBioFluxes"			type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="snowIceBioFluxes"/>
 		<var name="atmosBlackCarbonFlux"		type="real"	dimensions="maxBCType nCells Time"			name_in_code="atmosBlackCarbonFlux"/>
 		<var name="atmosDustFlux"			type="real"	dimensions="maxDustType nCells Time"			name_in_code="atmosDustFlux"/>
+		<var name="totalCarbonContentCell"		type="real"	dimensions="nCells Time"			name_in_code="totalCarbonContentCell"
+			units="mmol/m^2"
+			description="Concentration of carbon in the ice column"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="totalOceanCarbonFlux"		type="real"	dimensions="nCells Time"			name_in_code="totalOceanCarbonFlux"
+			units="mmol/m^2/s"
+			description="Total ocean carbon flux (positive into the ocean)"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
 		<var name="oceanBioFluxes"			type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioFluxes"
 			units="mmol/m2/s"
 			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"

@@ -73,7 +73,10 @@
          ksno   = 0.30_dbl_kind  ,&! thermal conductivity of snow  (W/m/deg)
          zref   = 10._dbl_kind   ,&! reference height for stability (m)
          hs_min = 1.e-4_dbl_kind ,&! min snow thickness for computing zTsn (m)
-         snowpatch = 0.02_dbl_kind ! parameter for fractional snow area (m)
+         snowpatch = 0.02_dbl_kind, & ! parameter for fractional snow area (m)
+
+         ! biogeochemistry
+         sk_l = 0.03_dbl_kind      ! (m) skeletal layer thickness
 
       integer (kind=int_kind), parameter, public :: & 
          nspint = 3              ,& ! number of solar spectral intervals

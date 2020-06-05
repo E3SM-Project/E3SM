@@ -1035,7 +1035,8 @@
                              nt_apnd, nt_hpnd, nt_fbri, tr_brine, nt_bgc_S, &
                              bio_index
       use ice_colpkg_shared, only:  solve_zsal, skl_bgc, z_tracers, min_salin, &
-                             sk_l, rhosi
+                             rhosi
+      use ice_constants_colpkg, only: sk_l
       use ice_zbgc_shared, only: zap_small_bgc
 
       integer (kind=int_kind), intent(in) :: &

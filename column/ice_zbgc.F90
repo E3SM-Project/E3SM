@@ -670,9 +670,9 @@
                                upNH,      grow_net,        &
                                grow_alg,  totalChla)
 
-      use ice_constants_colpkg, only: c1, secday, puny
+      use ice_constants_colpkg, only: c1, secday, puny, sk_l
       use ice_colpkg_tracers, only: nt_bgc_N
-      use ice_colpkg_shared, only: sk_l, R_C2N, fr_resp, R_chl2N
+      use ice_colpkg_shared, only: R_C2N, fr_resp, R_chl2N
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr   , & ! number of cells with aicen > puny
