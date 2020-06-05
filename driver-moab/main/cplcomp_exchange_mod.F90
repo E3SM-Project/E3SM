@@ -15,6 +15,7 @@ module cplcomp_exchange_mod
 
   use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid  ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
+  use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use shr_mpi_mod,  only: shr_mpi_max
 
   implicit none
@@ -996,12 +997,15 @@ contains
     integer                  :: mpigrp_old   !  component group pes
     integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
     integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo
-    integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers
+    integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
     integer                  :: ierr, context_id
     character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO, maxMLID ! max pids for moab apps atm, ocn, lnd
     integer                  :: tagtype, numco,  tagindex, partMethod
     integer                  :: rank, ent_type
+    integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
+                                                           ! and atm spectral on coupler
+
 #ifdef MOABDEBUG
     integer , dimension(1:3) :: nverts, nelem, nblocks, nsbc, ndbc
     integer, dimension(:), allocatable ::  vgids
@@ -1064,9 +1068,39 @@ contains
       if (mhid .ge. 0) then  ! we are on component atm pes
          ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
       endif
-      ! now we have the spectral atm on coupler pes, and we want to send some data from
-      ! atm physics mesh to atm spectral on coupler side; compute a par comm graph
 
+!  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
+!  context of ocean intx;; or directly to land on coupler, for projection to land
+      ! now we have the spectral atm on coupler pes, and we want to send some data from
+      ! atm physics mesh to atm spectral on coupler side; compute a par comm graph between
+      ! atm phys and spectral atm mesh on coupler PEs
+      ! ierr = iMOAB_ComputeCommGraph(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
+      !    &typeA, &typeB, &cmpatm, &physatm);
+      ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
+      ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
+      !!typeA = 2 ! point cloud
+      !!typeB = 1 ! spectral elements
+      !!ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
+                                  ! components/cam/src/cpl/atm_comp_mct.F90
+      !!ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+      !!    typeA, typeB, ATM_PHYS_CID, id_join)
+!  comment out this above part
+
+      !  we also need to define the tags for receiving the physics data, on atm on coupler pes
+      ! corresponding to 'T_ph;u_ph;v_ph';
+      ! we can receive those tags only on coupler pes, when mbaxid exists
+      ! we have to check that before we can define the tag
+      if (mbaxid .ge. 0 ) then
+        tagnameProj = 'T_ph16'//CHAR(0)
+        tagtype = 1  ! dense, double
+        numco = 16 !  hard coded, 16 values per cell!
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        ! define more tags
+        tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        tagnameProj = 'v_ph16'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+      endif
     endif
     ! ocean
     if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
