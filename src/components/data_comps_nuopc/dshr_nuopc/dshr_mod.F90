@@ -1050,6 +1050,8 @@ contains
     character(*), parameter :: F00   = "('(dshr_restart_read) ',8a)"
     character(*), parameter :: subName = "(dshr_restart_read) "
     !-------------------------------------------------------------------------------
+    ! no streams means no restart file is read.
+    if(shr_strdata_get_stream_count(sdat) <= 0) return
 
     if (trim(rest_filem) == trim(nullstr)) then
        if (my_task == master_task) then
