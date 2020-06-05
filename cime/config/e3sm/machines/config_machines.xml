@@ -2605,7 +2605,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,pgigpu,pgiacc,gnu</COMPILERS>
+    <COMPILERS>ibm,pgi,pgigpu,gnu</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -2683,9 +2683,6 @@
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
       </modules>
-      <modules compiler="pgiacc">
-        <command name="load">cuda/10.1.168</command>
-      </modules>
 
       <modules>
         <command name="load">netcdf/4.6.1</command>
@@ -2694,13 +2691,13 @@
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
-	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-	<command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
 
       <modules>
@@ -2743,7 +2740,7 @@
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
-    <environment_variables mpilib="!mpi-serial" compiler="pgiacc">
+    <environment_variables mpilib="!mpi-serial" compiler="pgigpu">
       <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env>
     </environment_variables>
   </machine>
