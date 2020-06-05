@@ -310,6 +310,54 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
 !***********************************************************************
 !
+!  routine ocn_init_routines_area_weights
+!
+!> \brief  set up area weighting
+!> \author Mark Petersen
+!> \date   June 2020
+!> \details
+!>  This routine initializes edgeAreaFractionOfCell
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)!{{{
+
+      type (mpas_pool_type), intent(in) :: meshPool
+      real (kind=RKIND), dimension(:,:), intent(inout) :: edgeAreaFractionOfCell
+
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
+
+      integer, pointer :: nCells, nEdges
+      integer :: iCell, iEdge, i, j, k
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+      do iCell = 1, nCells
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            ! edgeAreaFractionOfCell is the fractional area of cell iCell
+            ! encompassed by the triangle with edge iEdge connected to the cell
+            ! center of cell iCell. On a perfect planar hex mesh this is always
+            ! 1/6. This weighting is used to interpolate scalars from edges to
+            ! cell centers. Use 2*edgeAreaFractionOfCell to interpolate normal
+            ! vectors at edges to vector norms at cell centers."
+            edgeAreaFractionOfCell(i, iCell) = &
+               0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) / areaCell(iCell)
+         end do
+      end do
+
+   end subroutine ocn_init_routines_area_weights!}}}
+
+!***********************************************************************
+!
 !  routine ocn_init_routines_compute_mesh_scaling
 !
 !> \brief   set up mesh scaling variables
@@ -563,6 +611,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalGMBolusVelocity, edgeTangentVectors
       real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: edgeAreaFractionOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
@@ -612,6 +661,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
       call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
       call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -624,6 +674,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
 
       call ocn_init_routines_setup_sign_and_index_fields(meshPool)
+      call ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
       call mpas_tracer_advection_coefficients(meshPool, &
           config_horiz_tracer_adv_order, derivTwo, advCoefs, &
