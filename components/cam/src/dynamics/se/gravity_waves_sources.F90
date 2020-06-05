@@ -130,11 +130,10 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: gradth_fv(fv_nphys,fv_nphys,nlev,2) ! grad(theta)
     real(kind=real_kind) :: p(np,np)        ! pressure at mid points
     real(kind=real_kind) :: theta(np,np)    ! potential temperature at mid points
     real(kind=real_kind) :: temperature(np,np,nlev)  ! Temperature
-    real(kind=real_kind) :: C(np,np,2)     
+    real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
     !---------------------------------------------------------------------------
 
     do ie = nets,nete
@@ -180,14 +179,14 @@ CONTAINS
         end if
       end do ! k
       if (fv_nphys > 0) then
-        call gfr_g2f_scalar(ie, elem(ie)%metdet, frontgf_gll(:,:,:,ie), &
-             frontgf(:,:,:,ie))
+        call gfr_g2f_scalar(ie, elem(ie)%metdet, frontgf_gll(:,:,:,ie), wf1)
+        frontgf(:,:,:,ie) = reshape(wf1, (/nphys,nphys,nlev/))
         call gfr_g2f_vector(ie, elem, &
              gradth_gll(:,:,1,:,ie), gradth_gll(:,:,2,:,ie), &
-             gradth_fv(:,:,:,1), gradth_fv(:,:,:,2))
-        frontga(:fv_nphys,:fv_nphys,:,ie) = &
-             atan2(gradth_fv(:,:,:,2) , &
-                   gradth_fv(:,:,:,1) + 1.e-10_real_kind)
+             wf1, wf2)
+        frontga(:,:,:,ie) = reshape( &
+             atan2(wf2, wf1 + 1.e-10_real_kind), &
+             (/nphys,nphys,nlev/))
       end if
     end do ! ie
 

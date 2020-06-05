@@ -101,7 +101,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
-  if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
+  if (qsize<6) call abortmp('ERROR: test requires qsize>=6')
 
   ! set initial conditions
   do ie = nets,nete
@@ -620,7 +620,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, lon, dz_top(np,np),zi(np,np,nlevp),zi_c(nlevp), ps(np,np), &
-       wrk(np,np), rd, wrk3(np,np,nlev), wrk4(np,np,nlev,2)
+       wrk(np,np), rd, wrk3(np,np,nlev), wrk4(np,np,nlev,2), wf(np*np,1)
 
   integer :: nf, ncol
   real(rl), dimension(np,np,nlev) :: dp_fv, p_fv, u_fv, v_fv, T_fv, exner_kess_fv, &
@@ -751,7 +751,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
 
      ! These gfr calls are special to this routine, to handle
      ! DCMIP-specific precl.
-     call gfr_f2g_scalar(ie, elem(ie)%metdet, precl_fv, wrk3(:,:,:1))
+     wf(:ncol,1) = reshape(precl_fv(:nf,:nf,1), (/ncol/))
+     call gfr_f2g_scalar(ie, elem(ie)%metdet, wf(:,:1), wrk3(:,:,:1))
      call gfr_g_make_nonnegative(elem(ie)%metdet, wrk3(:,:,:1))
      precl(:,:,ie) = wrk3(:,:,1)
 

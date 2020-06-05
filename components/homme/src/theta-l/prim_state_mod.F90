@@ -206,7 +206,11 @@ contains
        enddo
        qvmax_p(q) = ParallelMax(tmp1,hybrid)
        do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q))
+          global_shared_buf(ie,1) = 0
+          do k=1,nlev
+             global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
+                  SUM(elem(ie)%spheremp*elem(ie)%state%Qdp(:,:,k,q,n0q))
+          enddo
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        qvsum_p(q) = global_shared_sum(1)
@@ -417,7 +421,7 @@ contains
        endif
 
        do q=1,qsize
-          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+          write(iulog,102) "qv(",q,")= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
        enddo
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,'mb     '
@@ -425,6 +429,7 @@ contains
     end if
  
 100 format (A10,3(E23.15))
+102 format (A4,I3,A3,3(E24.16))
 108 format (A10,E23.15,A6,E23.15,A6,E23.15)
 109 format (A10,E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
 110 format (A33,E23.15,A2,I3,A1)
