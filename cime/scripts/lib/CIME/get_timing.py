@@ -63,7 +63,7 @@ class _TimingParser:
                 self.write(" {label:<{width1}} {minv:8.3f}:{maxv:8.3f} \n".format(label=label, width1=zoff, minv=mind, maxv=maxd))
 
     def gettime2(self, heading_padded):
-        if self._driver == 'mct':
+        if self._driver == 'mct'or self._driver == 'moab':
             return self._gettime2_mct(heading_padded)
         elif self._driver == 'nuopc':
             return self._gettime2_nuopc()
@@ -102,7 +102,7 @@ class _TimingParser:
         return (0, 0)
 
     def gettime(self, heading_padded):
-        if self._driver == 'mct':
+        if self._driver == 'mct' or self._driver == 'moab':
             return self._gettime_mct(heading_padded)
         elif self._driver == 'nuopc':
             return self._gettime_nuopc(heading_padded)
@@ -301,7 +301,7 @@ class _TimingParser:
             inst_label = '_{:04d}'.format(inst)
         else:
             inst_label = ''
-        if self._driver == 'mct':
+        if self._driver == 'mct' or self._driver == 'moab':
             binfilename = os.path.join(rundir, "timing", "model_timing{}_stats" . format(inst_label))
             finfilename = os.path.join(self.caseroot, "timing",
                                        "{}_timing{}_stats.{}".format(cime_model, inst_label, self.lid))
@@ -346,7 +346,7 @@ class _TimingParser:
 
 
         # at this point the routine becomes driver specific
-        if self._driver == 'mct':
+        if self._driver == 'mct' or self._driver == 'moab':
             nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
             nsteps = ncount / nprocs
         elif self._driver == 'nuopc':
@@ -418,7 +418,7 @@ class _TimingParser:
             fmax = self.gettime("[ensemble] FinalizePhase1")[1]
             xmax = self.getCOMMtime(inst_label[1:])
 
-        if self._driver == 'mct':
+        if self._driver == 'mct' or self._driver == 'moab':
             for k in components:
                 if k != "CPL":
                     m = self.models[k]
@@ -479,7 +479,7 @@ class _TimingParser:
         self.write("    Final Time  :  {:10.3f} seconds \n".format(fmax))
 
         self.write("\n")
-        if self._driver == 'mct':
+        if self._driver == 'mct' or self._driver == 'moab':
             self.write("    Actual Ocn Init Wait Time     :  {:10.3f} seconds \n".format(ocnwaittime))
             self.write("    Estimated Ocn Init Run Time   :  {:10.3f} seconds \n".format(ocnrunitime))
             self.write("    Estimated Run Time Correction :  {:10.3f} seconds \n".format(correction))
