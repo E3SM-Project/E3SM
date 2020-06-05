@@ -493,12 +493,6 @@
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>
-     <directives compiler="!pgiacc">
-       <directive>-alloc_flags smt2</directive>
-     </directives>
-     <directives compiler="pgiacc">
-       <directive>-alloc_flags "gpumps smt2"</directive>
-     </directives>
      <directives compiler="!pgigpu">
        <directive>-alloc_flags smt2</directive>
      </directives>
