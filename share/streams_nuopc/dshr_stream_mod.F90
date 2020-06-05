@@ -915,6 +915,7 @@ contains
     deallocate(dids)
 
     ! allocate memory for date and secs
+
     allocate(strm%file(k)%date(nt), strm%file(k)%secs(nt))
     strm%file(k)%nt = nt
 
@@ -1517,6 +1518,7 @@ contains
                    call shr_sys_abort('somethin is wrong')
              endif
              deallocate(tmp)
+             streams(k)%file(n)%havedata = .true.
           enddo
        enddo
     endif
