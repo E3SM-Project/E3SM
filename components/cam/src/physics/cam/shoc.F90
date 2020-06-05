@@ -2374,10 +2374,10 @@ subroutine shoc_length(&
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._rtype)
 
   ! Define the brunt vaisalia frequency
-  call compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt)
+  call compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
 
   ! Find L_inf
-  call  compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+  call compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
   !=========================================================
   ! determine the convective velocity scale of
@@ -3299,20 +3299,20 @@ real(rtype) function esatw_shoc(t)
 end
 
 
-subroutine compute_brunt_shoc_length(nlev, shcol, dz_zt, thv, thv_zi, brunt) 
+subroutine compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt) 
 
   !=========================================================
   !
   ! Computes the brunt_visala frequency 
 
   implicit none
-  integer, intent(in) :: nlev, shcol  
+  integer, intent(in) :: nlev, nlevi, shcol  
   ! Grid difference centereted on thermo grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! virtual potential temperature [K]
   real(rtype), intent(in) :: thv(shcol,nlev)
   ! virtual potential temperature [K] at interface 
-  real(rtype), intent(in) :: thv_zi(shcol,nlev) 
+  real(rtype), intent(in) :: thv_zi(shcol,nlevi) 
   ! brunt vaisala frequency [s-1]
   real(rtype), intent(out) :: brunt(shcol, nlev)
   integer k, i
