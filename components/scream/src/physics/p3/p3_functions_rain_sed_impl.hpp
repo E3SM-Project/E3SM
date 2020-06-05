@@ -24,13 +24,15 @@ void Functions<S,D>
   get_rain_dsd2(qr_gt_small, qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, rcldm);
   nr.set(qr_gt_small, nr_incld*rcldm);
 
-  lookup(qr_gt_small, mu_r, lamr, table);
-  // mass-weighted fall speed:
-  V_qr.set(qr_gt_small,
-           apply_table(qr_gt_small, vm_table, table) * rhofacr);
-  // number-weighted fall speed:
-  V_nr.set(qr_gt_small,
-           apply_table(qr_gt_small, vn_table, table) * rhofacr);
+  if (qr_gt_small.any()) {
+    lookup(qr_gt_small, mu_r, lamr, table);
+    // mass-weighted fall speed:
+    V_qr.set(qr_gt_small,
+             apply_table(qr_gt_small, vm_table, table) * rhofacr);
+    // number-weighted fall speed:
+    V_nr.set(qr_gt_small,
+             apply_table(qr_gt_small, vn_table, table) * rhofacr);
+  }
 }
 
 template <typename S, typename D>

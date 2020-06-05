@@ -64,12 +64,10 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 	
 	RangePolicy my_policy(0,1);
 	Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int i){
-	    
 	    Spack scalings = Functions::subgrid_variance_scaling(Spack(relvar),expon );
 
 	    //all elements of scalings are identical. just copy 1 back to host.
 	    scaling_device(0) = scalings[0];
-	    
 	  });
 
 	// Copy results back to host
@@ -124,10 +122,10 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
   Scalar tol = C::Tol * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
   
-  Real relvar_info[16] = {0.1,0.5,1.0,2.0,
-			  3.0,4.0,5.0,6.0,
-			  6.5,7.0,8.0,9.0,
-			  9.1,9.5,9.8,10.};
+  Real relvar_info[max_pack_size] = {0.1,0.5,1.0,2.0,
+                                     3.0,4.0,5.0,6.0,
+                                     6.5,7.0,8.0,9.0,
+                                     9.1,9.5,9.8,10.};
 
   for (Int s = 0; s < 16; ++s) {
     Spack relvars=Spack(relvar_info[s]);
@@ -163,9 +161,6 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     int nerr = 0;
 
     //functions below use Spack size <16 but can't deal w/ exceptions on GPU, so do it here.
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
-
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("SGSvarScaling::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
 	errors = 0;

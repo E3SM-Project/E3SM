@@ -817,7 +817,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    res = subgrid_variance_scaling(relvar,expon)
    return
  end function subgrid_variance_scaling_c
- 
+
  subroutine check_values_c(qv, temp, kts, kte, timestepcount, &
                            force_abort, source_ind, col_loc) bind(C)
    use micro_p3, only: check_values
