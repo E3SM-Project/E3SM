@@ -2606,7 +2606,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,pgigpu,gnu</COMPILERS>
+    <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -2631,6 +2631,18 @@
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="spectrum-mpi" compiler="ibmgpu">
+      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+      <arguments>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="spectrum-mpi" compiler="pgigpu">
+      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+      <arguments>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
+      </arguments>
+    </mpirun>
     <mpirun mpilib="spectrum-mpi">
       <!-- Use a helper script to tweak jsrun options -->
       <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
@@ -2639,13 +2651,6 @@
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
       </arguments>
     </mpirun>
-      <mpirun mpilib="spectrum-mpi" compiler="pgigpu" >
-        <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
-        <arguments>
-          <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
-          <arg name="gpu"> -gpu </arg>
-        </arguments>
-      </mpirun>
     <module_system type="module" allow_error="true">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/sh</init_path>
@@ -2675,16 +2680,17 @@
         <command name="load">pgi/19.9</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">pgi/19.9</command>
         <command name="load">cuda/10.1.243</command>
       </modules>
-      <modules compiler="ibm">
-        <command name="load">xl/16.1.1-5</command>
+      <modules compiler="ibm.*">
+        <command name="load">xl/16.1.1-7</command>
+      </modules>
+      <modules compiler="ibmgpu">
+        <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.1.1</command>
       </modules>
-
       <modules>
         <command name="load">netcdf/4.6.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
