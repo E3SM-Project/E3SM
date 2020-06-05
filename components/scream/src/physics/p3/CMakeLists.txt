@@ -56,6 +56,7 @@ if (NOT CUDA_BUILD)
     p3_functions_get_latent_heat.cpp
     p3_functions_check_values.cpp
     p3_functions_incloud_mixingratios.cpp
+    p3_functions_subgrid_variance_scaling.cpp
     p3_functions_main.cpp)
 endif()
 

@@ -57,6 +57,9 @@ struct UnitWrap {
     using Table3             = typename Functions::Table3;
     using C                  = typename Functions::C;
 
+    static constexpr Int max_pack_size = 16;
+    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+
     // Put struct decls here
     struct TestTableIce;
     struct TestTable3;
@@ -83,6 +86,7 @@ struct UnitWrap {
     struct TestEvapSublPrecip;
     struct TestRainSelfCollection;
     struct TestP3IceMelting;
+    struct TestP3SubgridVarianceScaling;
     struct TestP3UpdatePrognosticLiq;
     struct TestP3IceDepSublimation;
     struct TestP3FunctionsImposeMaxTotalNi;

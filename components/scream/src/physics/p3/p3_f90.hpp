@@ -27,7 +27,8 @@ struct FortranData {
   // In
   Real dt;
   Int it;
-  Array2 qv, th, pres, dzq, npccn, naai, qc, nc, qr, nr,  qitot, nitot, qirim, birim, pdel, exner;
+  Array2 qv, th, pres, dzq, npccn, naai, qc_relvar, qc, nc, qr, nr,  qitot,
+    nitot, qirim, birim, pdel, exner;
   // Out
   Array1 prt_liq, prt_sol;
   Array2 diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, cmeiout, prain, nevapr, prer_evap, rflx, sflx, rcldm, lcldm, icldm;
