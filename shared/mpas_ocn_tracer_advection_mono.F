@@ -231,17 +231,17 @@ module ocn_tracer_advection_mono
 
       ! allocate temporary arrays
       !$omp master
-      allocate(tracerCur   (nVertLevels  ,nCells), &
+      allocate(tracerCur   (nVertLevels  ,nCells+1), &
                tracerMin   (nVertLevels  ,nCells), &
                tracerMax   (nVertLevels  ,nCells), &
                hNewInv     (nVertLevels  ,nCells), &
                hProv       (nVertLevels  ,nCells), &
                hProvInv    (nVertLevels  ,nCells), &
-               flxIn       (nVertLevels  ,nCells), &
-               flxOut      (nVertLevels  ,nCells), &
-               workTend    (nVertLevels  ,nCells), &
-               lowOrderFlx (nVertLevels+1,max(nCells,nEdges)), &
-               highOrderFlx(nVertLevels+1,max(nCells,nEdges)))
+               flxIn       (nVertLevels  ,nCells+1), &
+               flxOut      (nVertLevels  ,nCells+1), &
+               workTend    (nVertLevels  ,nCells+1), &
+               lowOrderFlx (nVertLevels+1,max(nCells,nEdges)+1), &
+               highOrderFlx(nVertLevels+1,max(nCells,nEdges)+1))
       !$omp end master
       !$omp barrier
 
@@ -291,7 +291,7 @@ module ocn_tracer_advection_mono
 
         ! Extract current tracer and change index order to improve locality
         !$omp do schedule(runtime)
-        do iCell = 1, nCells
+        do iCell = 1, nCells+1
         do k=1, nVertLevels
            tracerCur(k,iCell) = tracers(iTracer,k,iCell)
         end do ! k loop
@@ -390,12 +390,11 @@ module ocn_tracer_advection_mono
         call mpas_timer_stop('horiz flux')
         call mpas_timer_start('scale factor build')
 #endif
-        ! Need one halo of cells around owned cells
-        nCells = nCellsArray( 2 )
+        ! Initialize flux arrays for all cells
+        nCells = nCellsArray(size(nCellsArray))
 
-        ! Initialize flux arrays
         !$omp do schedule(runtime)
-        do iCell = 1, nCells
+        do iCell = 1, nCells+1
         do k=1, nVertLevels
            workTend(k, iCell) = 0.0_RKIND
            flxIn   (k, iCell) = 0.0_RKIND
@@ -403,6 +402,9 @@ module ocn_tracer_advection_mono
         end do ! k loop
         end do ! iCell loop
         !$omp end do
+
+        ! Need one halo of cells around owned cells
+        nCells = nCellsArray( 2 )
 
         !$omp do schedule(runtime)
         do iCell = 1, nCells
