@@ -622,6 +622,32 @@ contains
 
     call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
 
+<<<<<<< HEAD:driver-mct/shr/seq_comm_mct.F90
+=======
+    ierr = iMOAB_InitializeFortran()
+    if (ierr /= 0) then
+       write(logunit,*) trim(subname),' ERROR initialize MOAB '
+    endif
+#ifdef MOABDDD
+!   write the global_mype , for easier debugging with ddd
+!   will never use ddd for more than 10 processes
+    if (global_mype .le. 10) then
+       write(logunit,*) trim(subname), ' global_mype=', global_mype
+    endif
+#endif
+    mhid = -1     ! iMOAB id for atm comp, coarse mesh
+    mhfid = -1    ! iMOAB id for atm, fine mesh
+    mpoid = -1    ! iMOAB id for ocn comp
+    mlnid = -1    ! iMOAB id for land comp
+    mphaid = -1   ! iMOAB id for phys grid on atm pes
+    mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
+    mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
+    mblxid = -1   ! iMOAB id for land on coupler pes
+    mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
+    num_moab_exports = 0 ! mostly used in debugging
+
+>>>>>>> 9f1898ff7... add iulian787/compute_graph changes:cime/src/drivers/moab/shr/seq_comm_mct.F90
     deallocate(comps,comms)
 
 
