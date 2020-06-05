@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<config case="base_mesh">
+	<get_file dest_path="bathymetry_database" file_name="SRTM15_plus_earth_relief_15s.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/bathymetry_database/"/>
+	</get_file>
+
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
+	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
+	<copy_file source_path="script_test_dir" source="define_base_mesh.py" dest="define_base_mesh.py"/>
+	<add_link source_path="script_test_dir" source="coastline_CUSP.geojson" dest="coastline_CUSP.geojson"/>
+	<add_link source_path="script_test_dir" source="land_mask_Mexico.geojson" dest="land_mask_Mexico.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Bering_Sea.geojson" dest="region_Bering_Sea.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Bering_Sea_reduced.geojson" dest="region_Bering_Sea_reduced.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Gulf_Stream_extension.geojson" dest="region_Gulf_Stream_extension.geojson"/>
+	<add_link source_path="script_test_dir" source="land_mask_Kamchatka.geojson" dest="land_mask_Kamchatka.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Arctic_Ocean.geojson" dest="region_Arctic_Ocean.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Gulf_of_Mexico.geojson" dest="region_Gulf_of_Mexico.geojson"/>
+	<add_link source_path="script_test_dir" source="region_Central_America.geojson" dest="region_Central_America.geojson"/>
+
+	<run_script name="run.py">
+		<step executable="python">
+			<argument flag="-m">jigsaw_to_MPAS.build_mesh</argument>
+		</step>
+	</run_script>
+
+</config>

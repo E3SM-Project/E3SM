@@ -1,0 +1,13 @@
+<template>
+	<namelist>
+		<option name="config_dt">'00:12:00'</option>
+		<option name="config_btr_dt">'00:00:30'</option>
+		<option name="config_pio_num_iotasks">20</option>
+		<option name="config_pio_stride">36</option>
+		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_hmix_scaleWithMesh">.true.</option>
+		<option name="config_mom_del2">400</option>
+		<option name="config_mom_del4">7.7e9</option>
+		<option name="config_use_GM">.true.</option>
+	</namelist>
+</template>

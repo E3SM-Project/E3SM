@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "region for CUSP mesh",
+        "component": "ocean",
+        "object": "region",
+        "author": "Mark Petersen"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -118.828125,
+              43.51668853502906
+            ],
+            [
+              -182.8125,
+              35.746512259918504
+            ],
+            [
+              -116.3671875,
+              -31.95216223802496
+            ],
+            [
+              -61.87499999999999,
+              3.162455530237848
+            ],
+            [
+              -118.828125,
+              43.51668853502906
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
