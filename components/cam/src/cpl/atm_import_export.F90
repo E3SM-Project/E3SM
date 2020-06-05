@@ -278,5 +278,68 @@ contains
     end do
     
   end subroutine atm_export 
+#ifdef HAVE_MOAB
+  subroutine cam_moab_phys_export(cam_out)
+  !-------------------------------------------------------------------
+    use camsrfexch, only: cam_out_t
+    use phys_grid , only: get_ncols_p, get_nlcols_p
+    use ppgrid    , only: begchunk, endchunk
+    use seq_comm_mct, only: mphaid ! imoab pid for atm physics
+    use seq_comm_mct, only : num_moab_exports !
+    use cam_abortutils       , only: endrun
+    !
+    ! Arguments
+    !
+    type(cam_out_t), intent(in)    :: cam_out(begchunk:endchunk)
 
+    real(r8), dimension(:), allocatable :: tbot, ubot, vbot  ! temporary
+    integer tagtype, numco, ent_type
+    character*100 outfile, wopts, tagname, lnum
+
+    integer ierr, c, nlcols, ig, i, ncols
+    integer , external :: iMOAB_WriteMesh,  iMOAB_SetDoubleTagStorage
+
+    ! load temp, u, and v on atm phys moab mesh, that is
+
+    nlcols = get_nlcols_p()
+
+    allocate(tbot(nlcols))
+    allocate(ubot(nlcols))
+    allocate(vbot(nlcols))
+
+
+    ig=1
+    do c=begchunk, endchunk
+       ncols = get_ncols_p(c)
+       do i=1,ncols
+
+          ubot(ig) = cam_out(c)%ubot(i)
+          vbot(ig) = cam_out(c)%vbot(i)
+          tbot(ig) = cam_out(c)%tbot(i)
+          ig = ig+1
+       enddo
+    enddo
+
+    tagname='T_ph'//CHAR(0)
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, tbot)
+    tagname ='u_ph'//CHAR(0)
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, ubot)
+    tagname ='v_ph'//CHAR(0)
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, vbot)
+#ifdef MOABDEBUG
+    num_moab_exports = num_moab_exports +1
+    write(lnum,"(I0.2)")num_moab_exports
+    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//CHAR(0)
+    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the atm phys mesh file with data')
+#endif
+    deallocate(tbot)
+    deallocate(ubot)
+    deallocate(vbot)
+
+  end subroutine cam_moab_phys_export
+#endif
 end module atm_import_export

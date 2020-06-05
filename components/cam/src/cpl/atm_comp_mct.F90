@@ -23,7 +23,9 @@ module atm_comp_mct
   use shr_taskmap_mod  , only: shr_taskmap_write
 
   use cam_cpl_indices
+  ! it has atm_import, atm_export and cam_moab_phys_export
   use atm_import_export
+  !   we defined cam_moab_export in cam_comp; it has cam_init, cam_run1, 2, 3, 4, cam_final
   use cam_comp
   use cam_instance     , only: cam_instance_init, inst_index, inst_suffix
   use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
@@ -594,6 +596,12 @@ CONTAINS
 #ifdef HAVE_MOAB
     ! move method out of the  do while (.not. do send) loop; do not send yet
     call cam_moab_export()
+
+    ! method to load temp, u and v on moab atm phys grd;
+    ! it will be moved then to Atm Spectral mesh on coupler ; just to show how to move it to atm spectral
+    ! on coupler
+    call cam_moab_phys_export(cam_out)
+
 #endif
 
     ! Get time of next radiation calculation - albedos will need to be 
@@ -973,7 +981,7 @@ CONTAINS
 #ifdef HAVE_MOAB
   subroutine initialize_moab_atm_phys( cdata_a )
 
-    use seq_comm_mct, only: mphaid ! imoab pid for atm physics
+    use seq_comm_mct, only: mphaid, num_moab_exports ! imoab pid for atm physics
     use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
     use shr_const_mod, only: SHR_CONST_PI
 !-------------------------------------------------------------------
@@ -989,7 +997,7 @@ CONTAINS
 
     integer , external :: iMOAB_RegisterFortranApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities
+         iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from mct
@@ -1011,8 +1019,6 @@ CONTAINS
 
     character*100 outfile, wopts, tagname
     character*32 appname
-
-    !dims  =3 ! store as 3d mesh
 
 
     call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
@@ -1112,6 +1118,25 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
+    ! create some tags for T, u, v bottoms
+
+    tagname='T_ph'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create temp on phys tag ')
+    tagname='u_ph'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create u velo on phys tag ')
+    tagname='v_ph'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create v velo on phys tag ')
+
+    ! need to identify that the mesh is indeed point cloud
+    !  this call will set the point_cloud to true inside iMOAB appData structure
+    ierr = iMOAB_UpdateMeshInfo(mphaid)
+
 !    tagname='area'//CHAR(0)
 !    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
 !    if (ierr > 0 )  &
@@ -1132,6 +1157,7 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to write the atm phys mesh file')
 #endif
+    num_moab_exports = 0 ! will be used for counting number of calls
     deallocate(moab_vert_coords)
     deallocate(vgids)
     deallocate(areavals)
