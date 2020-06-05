@@ -459,15 +459,15 @@ contains
                                   boundaryCellTmp)
 
          allocate ( &
-            edgeMask(nVertLevels, nEdgesAll), &
-            cellMask(nVertLevels, nCellsAll), &
-            vertexMask(nVertLevels, nVerticesAll), &
-            boundaryEdge(nVertLevels, nEdgesAll), &
-            boundaryCell(nVertLevels, nCellsAll), &
-            boundaryVertex(nVertLevels, nVerticesAll), &
-            edgeSignOnCell(maxEdges, nCellsAll), &
-            edgeSignOnVertex(maxEdges, nVerticesAll), &
-            highOrderAdvectionMask(nVertLevels, nEdgesAll))
+            edgeMask(nVertLevels, nEdgesAll+1), &
+            cellMask(nVertLevels, nCellsAll+1), &
+            vertexMask(nVertLevels, nVerticesAll+1), &
+            boundaryEdge(nVertLevels, nEdgesAll+1), &
+            boundaryCell(nVertLevels, nCellsAll+1), &
+            boundaryVertex(nVertLevels, nVerticesAll+1), &
+            edgeSignOnCell(maxEdges, nCellsAll+1), &
+            edgeSignOnVertex(maxEdges, nVerticesAll+1), &
+            highOrderAdvectionMask(nVertLevels, nEdgesAll+1))
 
          do n = 1, nCellsAll
          do k = 1, nVertLevels
