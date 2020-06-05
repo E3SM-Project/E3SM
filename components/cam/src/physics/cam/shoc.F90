@@ -3099,8 +3099,7 @@ subroutine pblintd(&
            check,rino,pblh)         ! Output
 
     !
-    ! PBL height calculation:  Scan upward until the Richardson number between
-    ! the first level and the current level exceeds the "critical" value.
+    ! PBL height calculation
     !
     call pblintd_height(&
        shcol,nlev,nlevi,&             ! Input
@@ -3127,33 +3126,14 @@ subroutine pblintd(&
        thv,tlv,&                ! Input
        check,rino,pblh)         ! Output
     !
-    ! PBL height must be greater than some minimum mechanical mixing depth
-    ! Several investigators have proposed minimum mechanical mixing depth
-    ! relationships as a function of the local friction velocity, u*.  We
-    ! make use of a linear relationship of the form h = c u* where c=700.
-    ! The scaling arguments that give rise to this relationship most often
-    ! represent the coefficient c as some constant over the local coriolis
-    ! parameter.  Here we make use of the experimental results of Koracin
-    ! and Berkowicz (1988) [BLM, Vol 43] for wich they recommend 0.07/f
-    ! where f was evaluated at 39.5 N and 52 N.  Thus we use a typical mid
-    ! latitude value for f so that c = 0.07/f = 700.  Also, do not allow
-    ! PBL to exceed some maximum (npbl) number of allowable points
+    ! Check PBL height
     !
     call pblintd_pblh(&
        shcol,nlev,nlevi,&             ! Input
        z,ustar,check,&                ! Input
        pblh)                          ! Output
     !
-    ! Final requirement on PBL heightis that it must be greater than the depth
-    ! of the lowest model level over ocean if there is any cloud diagnosed in
-    ! the lowest model level.  This is to deal with the inadequacies of the
-    ! current "dry" formulation of the boundary layer, where this test is
-    ! used to identify circumstances where there is marine stratus in the
-    ! lowest level, and to provide a weak ventilation of the layer to avoid
-    ! a pathology in the cloud scheme (locking in low-level stratiform cloud)
-    ! If over an ocean surface, and any cloud is diagnosed in the
-    ! lowest level, set pblh to 50 meters higher than top interface of lowest
-    ! level
+    ! PBL check over ocean
     !
     call pblintd_ocncldcheck(      &
                    shcol,nlev,nlevi, &                  ! Input
