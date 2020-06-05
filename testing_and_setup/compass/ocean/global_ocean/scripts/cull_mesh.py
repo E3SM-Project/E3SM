@@ -45,17 +45,21 @@ parser.add_option("--with_critical_passages", action="store_true",
                   help="Whether the mesh should open the standard critical "
                        "passages and close land blockages from "
                        "geometric_features")
-parser.add_option("--custom_critical_passages", dest="custom_critical_passages",
-                  help="A geojson file with critical passages to open.  This "
-                       "file may be supplied in addition to or instead of "
-                       "the default passages (--with_critical_passages)")
-parser.add_option("--custom_land_blockages", dest="custom_land_blockages",
-                  help="A geojson file with critical land blockages to close. "
-                       "This file may be supplied in addition to or instead of "
-                       "the default blockages (--with_critical_passages)")
+parser.add_option(
+    "--custom_critical_passages",
+    dest="custom_critical_passages",
+    help="A geojson file with critical passages to open.  This "
+    "file may be supplied in addition to or instead of "
+    "the default passages (--with_critical_passages)")
+parser.add_option(
+    "--custom_land_blockages",
+    dest="custom_land_blockages",
+    help="A geojson file with critical land blockages to close. "
+    "This file may be supplied in addition to or instead of "
+    "the default blockages (--with_critical_passages)")
 parser.add_option("--preserve_floodplain", action="store_true",
                   dest="preserve_floodplain", default=False,
-                  help="Whether to to use the cellSeedMask field in the base "
+                  help="Whether to use the cellSeedMask field in the base "
                        "mesh to preserve a floodplain at elevations above z=0")
 options, args = parser.parse_args()
 
