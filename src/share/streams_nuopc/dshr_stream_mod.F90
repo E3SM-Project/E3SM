@@ -915,8 +915,13 @@ contains
     deallocate(dids)
 
     ! allocate memory for date and secs
+    if(.not. allocated(strm%file(k)%date)) then
+       allocate(strm%file(k)%date(nt), strm%file(k)%secs(nt))
+    else if(size(strm%file(k)%date) .ne. nt) then
+       deallocate(strm%file(k)%date, strm%file(k)%secs)
+       allocate(strm%file(k)%date(nt), strm%file(k)%secs(nt))
+    endif
 
-    allocate(strm%file(k)%date(nt), strm%file(k)%secs(nt))
     strm%file(k)%nt = nt
 
     ! get time units
@@ -1343,7 +1348,7 @@ contains
     type(shr_stream_streamType), intent(inout) :: streams(:)
     character(len=*), intent(in) :: mode  ! read, write, define
 
-    type(var_desc_t) :: varid, tvarid, dvarid, ntvarid
+    type(var_desc_t) :: varid, tvarid, dvarid, ntvarid, hdvarid
     integer :: rcode
     integer :: dimid_stream, dimid_files,dimid_nt, dimid_str
     integer :: nt, n, k, maxnfiles=0
@@ -1376,6 +1381,7 @@ contains
        rcode = pio_def_var(pioid, 'n_lvd',    PIO_INT, (/dimid_stream/), varid)
        rcode = pio_def_var(pioid, 'k_gvd',    PIO_INT, (/dimid_stream/), varid)
        rcode = pio_def_var(pioid, 'n_gvd',    PIO_INT, (/dimid_stream/), varid)
+       rcode = pio_def_var(pioid, 'haveData', PIO_INT, (/dimid_files, dimid_stream/), varid)
     else if (mode .eq. 'write') then
        rcode = pio_inq_varid(pioid, 'nfiles', varid)
        allocate(tmp(size(streams)))
@@ -1419,7 +1425,7 @@ contains
        rcode = pio_inq_varid(pioid, 'date', dvarid)
        rcode = pio_inq_varid(pioid, 'timeofday', tvarid)
        rcode = pio_inq_varid(pioid, 'nt', ntvarid)
-
+       rcode = pio_inq_varid(pioid, 'haveData', hdvarid)
        do k=1,size(streams)
           do n=1,streams(k)%nfiles
              rcode = pio_put_var(pioid, varid, (/1,n,k/), streams(k)%file(n)%name)
@@ -1429,6 +1435,11 @@ contains
              endif
              if (allocated(streams(k)%file(n)%secs)) then
                 rcode = pio_put_var(pioid, tvarid, (/1,n,k/), (/streams(k)%file(n)%nt,1,1/),streams(k)%file(n)%secs)
+             endif
+             if(streams(k)%file(n)%haveData) then
+                rcode = pio_put_var(pioid, hdvarid, (/n,k/), 1)
+             else
+                rcode = pio_put_var(pioid, hdvarid, (/n,k/), 0)
              endif
           enddo
        enddo
@@ -1491,6 +1502,7 @@ contains
        rcode = pio_inq_varid(pioid, 'date', dvarid)
        rcode = pio_inq_varid(pioid, 'timeofday', tvarid)
        rcode = pio_inq_varid(pioid, 'nt', ntvarid)
+       rcode = pio_inq_varid(pioid, 'haveData', hdvarid)
        do k=1,size(streams)
           do n=1,streams(k)%nfiles
              rcode = pio_get_var(pioid, varid, (/1,n,k/), fname)
@@ -1517,8 +1529,14 @@ contains
                   any(tmp .ne. streams(k)%file(n)%secs) ) then
                    call shr_sys_abort('somethin is wrong')
              endif
+             rcode = pio_get_var(pioid, hdvarid, (/n,k/), tmp(1))
+             if(tmp(1)==1) then
+                streams(k)%file(n)%havedata = .true.
+             else
+                streams(k)%file(n)%havedata = .false.
+             endif
+
              deallocate(tmp)
-             streams(k)%file(n)%havedata = .true.
           enddo
        enddo
     endif

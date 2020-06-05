@@ -574,6 +574,7 @@ contains
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
     lsize = size(flddata)
     rcode = pio_inq_varid(pioid, trim(fldname), varid)
+    rcode = pio_inq_vartype(pioid, varid, pio_iovartype)
     if (pio_iovartype == PIO_REAL) then
        allocate(data_real(lsize))
        call pio_read_darray(pioid, varid, pio_iodesc, data_real, rcode)
@@ -585,7 +586,7 @@ contains
        flddata(:) = data_double(:)
        deallocate(data_double)
     else
-       call shr_sys_abort(subName//"ERROR: only real and double types are subborted for stream domain read")
+       call shr_sys_abort(subName//"ERROR: only real and double types are supported for stream domain read")
     end if
 
     ! Free the memory associate with the iodesc and close the file
@@ -800,11 +801,15 @@ contains
           ! ---------------------------------------------------------
 
           if (newData(ns)) then
-
+             if(sdat%pstrm(ns)%ymdLB <= 0 ) then
+                call shr_sys_abort('time out of bounds')
+             endif
              ! Reset time bounds if newdata read in
              call shr_cal_date2ymd(sdat%pstrm(ns)%ymdLB,year,month,day)
-             call shr_cal_timeSet(timeLB,sdat%pstrm(ns)%ymdLB,0,sdat%stream(ns)%calendar)
-             call shr_cal_timeSet(timeUB,sdat%pstrm(ns)%ymdUB,0,sdat%stream(ns)%calendar)
+             call shr_cal_timeSet(timeLB,sdat%pstrm(ns)%ymdLB,0,sdat%stream(ns)%calendar,rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_cal_timeSet(timeUB,sdat%pstrm(ns)%ymdUB,0,sdat%stream(ns)%calendar,rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
              timeint = timeUB-timeLB
              call ESMF_TimeIntervalGet(timeint,StartTimeIn=timeLB,d=dday)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return

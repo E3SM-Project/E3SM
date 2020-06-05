@@ -37,7 +37,7 @@ module dshr_mod
   use shr_cal_mod      , only : shr_cal_datetod2string
   use shr_const_mod    , only : shr_const_spval
   use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml, SHR_STRDATA_GET_STREAM_COUNT
   use dshr_methods_mod , only : chkerr
   use perf_mod         , only : t_startf, t_stopf
   use pio
@@ -1119,9 +1119,10 @@ contains
     type(io_desc_t)   :: pio_iodesc
     integer           :: rcode
     integer           :: yy, mm, dd
-    character(*), parameter :: F00   = "('(dshr_restart_write) ',8a,2(i0,2x))"
+    character(*), parameter :: F00   = "('(dshr_restart_write) ',2a,2(i0,2x))"
     !-------------------------------------------------------------------------------
-
+    ! no streams means no restart file is written.
+     if(shr_strdata_get_stream_count(sdat) <= 0) return
      call shr_cal_datetod2string(date_str, ymd, tod)
      write(rest_file_model ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.', trim(date_str),'.nc'
 
@@ -1130,7 +1131,7 @@ contains
         open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
         write(nu,'(a)') rest_file_model
         close(nu)
-        write(logunit,F00)' (dshr_restart_write) writing ',trim(rest_file_model), ymd, tod
+        write(logunit,F00)' writing ',trim(rest_file_model), ymd, tod
      endif
 
      ! write data model restart data
