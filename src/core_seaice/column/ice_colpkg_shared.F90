@@ -455,9 +455,7 @@
       !-----------------------------------------------------------------
 
       real (kind=dbl_kind), parameter, public :: &
-         rhosi     = 940.0_dbl_kind, & ! average sea ice density
-                                       ! Cox and Weeks, 1982: 919-974 kg/m^2
-         sk_l      = 0.03_dbl_kind     ! skeletal layer thickness (m)
+         rhosi     = 940.0_dbl_kind
 
       real (kind=dbl_kind), dimension(max_algae), public :: &
          R_C2N     ,      & ! algal C to N (mole/mole) 

@@ -177,7 +177,7 @@
          kperm       , & ! average ice permeability (m^2)
          bphi_min        ! surface porosity
 
-      real (kind=dbl_kind), intent(inout) :: &
+      real (kind=dbl_kind), intent(in) :: &
          hbr_old           ! previous timestep brine height (m)
 
       real (kind=dbl_kind), dimension (nblyr+1), &
@@ -256,7 +256,6 @@
 
       ! map Sin and qin (cice) profiles to bgc grid 
       surface_S = min_salin
-      hbr_old   = min(hbr_old, maxhbr*hice_old)
       hinc_old  = hice_old
       hbrc_old  = hbr_old 
 

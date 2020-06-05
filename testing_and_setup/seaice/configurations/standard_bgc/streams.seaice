@@ -167,7 +167,7 @@
         filename_interval="none"
         clobber_mode="replace_files"
         packages="conservationCheckAMPKG"
-        output_interval="00-00-00_01:00:00" >
+        output_interval="00-00-00_00:01:00" >
 
 	<var name="xtime"/>
 	<var name="daysSinceStartOfSim"/>
@@ -189,6 +189,13 @@
 	<var name="netSaltFlux"/>
 	<var name="absoluteSaltError"/>
 	<var name="relativeSaltError"/>
+	<var name="initialCarbon"/>
+	<var name="finalCarbon"/>
+	<var name="carbonChange"/>
+	<var name="accumulatedOceanCarbonFlux"/>
+	<var name="netCarbonFlux"/>
+	<var name="relativeCarbonError"/>
+	<var name="absoluteCarbonError"/>
 </stream>
 
 
