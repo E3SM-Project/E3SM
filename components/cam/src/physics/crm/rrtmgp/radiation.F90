@@ -481,7 +481,7 @@ contains
       call perturbation_growth_init()
 
       ! Read gas optics coefficients from file
-      call handle_error(rrtmgp_initialize(coefficients_file_sw, coefficients_file_lw, active_gases), 'rrtmgp_initialize')
+      call handle_error(rrtmgp_initialize(size(active_gases), coefficients_file_sw, coefficients_file_lw, active_gases), 'rrtmgp_initialize')
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -495,8 +495,8 @@ contains
 
       ! Set values in radconstants
       allocate(sw_band_limits(2,nswbands), lw_band_limits(2,nlwbands))
-      call handle_error(get_band_lims_wavenumber('sw', sw_band_limits), 'get_band_lims_wavenumber_sw')
-      call handle_error(get_band_lims_wavenumber('lw', lw_band_limits), 'get_band_lims_wavenumber_lw')
+      call handle_error(get_band_lims_wavenumber(nswbands, 'sw', sw_band_limits), 'get_band_lims_wavenumber_sw')
+      call handle_error(get_band_lims_wavenumber(nlwbands, 'lw', lw_band_limits), 'get_band_lims_wavenumber_lw')
       call set_sw_spectral_boundaries(sw_band_limits)
       call set_lw_spectral_boundaries(lw_band_limits)
       deallocate(sw_band_limits, lw_band_limits)
@@ -569,8 +569,8 @@ contains
       
       ! Register new dimensions
       allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
-      call handle_error(get_band_midpoints('sw', sw_band_midpoints), 'get_band_midpoints_sw')
-      call handle_error(get_band_midpoints('lw', lw_band_midpoints), 'get_band_midpoints_lw')
+      call handle_error(get_band_midpoints(nswbands, 'sw', sw_band_midpoints), 'get_band_midpoints_sw')
+      call handle_error(get_band_midpoints(nlwbands, 'lw', lw_band_midpoints), 'get_band_midpoints_lw')
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
@@ -1495,7 +1495,7 @@ contains
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
                         )
-                        call handle_error(get_gpoint_bands('sw', gpoint_bands_sw), 'get_gpoint_bands_sw')
+                        call handle_error(get_gpoint_bands(nswgpts, 'sw', gpoint_bands_sw), 'get_gpoint_bands_sw')
                         call sample_cloud_optics_sw( &
                            ncol, pver, nswgpts, gpoint_bands_sw, &
                            state%pmid, cld, cldfsnow, &
@@ -1521,7 +1521,7 @@ contains
                            lambdac, mu, dei, des, rei, &
                            cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
                         )
-                        call handle_error(get_gpoint_bands('lw', gpoint_bands_lw), 'get_gpoint_bands_lw')
+                        call handle_error(get_gpoint_bands(nlwgpts, 'lw', gpoint_bands_lw), 'get_gpoint_bands_lw')
                         call sample_cloud_optics_lw( &
                            ncol, pver, nlwgpts, gpoint_bands_lw, &
                            state%pmid, cld, cldfsnow, &
@@ -1696,6 +1696,7 @@ contains
                ! Do longwave radiative transfer calculations
                call t_startf('rad_rrtmgp_run_lw')
                call handle_error(rrtmgp_run_lw( &
+                  size(active_gases), ncol_tot, nlev_rad, nlwbands, nlwgpts, &
                   gas_names_lower, vmr_all(:,1:ncol_tot,1:nlev_rad), &
                   pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
                   pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,nlev_rad+1), &
@@ -1937,6 +1938,7 @@ contains
       ! Compute fluxes
       call t_startf('rad_rrtmgp_run_sw')
       call handle_error(rrtmgp_run_sw( &
+         size(active_gases), nday, nlev_rad, nswbands, nswgpts, &
          gas_names_lower, gas_vmr_day(:,1:nday,:), &
          pmid_day(1:nday,1:nlev), &
          tmid_day(1:nday,1:nlev), &
@@ -2313,7 +2315,7 @@ contains
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
-      call handle_error(get_band_lims_wavenumber('sw', wavenumber_limits), 'get_band_lims_wavenumber')
+      call handle_error(get_band_lims_wavenumber(nswbands, 'sw', wavenumber_limits), 'get_band_lims_wavenumber')
 
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")
