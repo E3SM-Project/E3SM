@@ -2740,9 +2740,9 @@
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
-    <environment_variables mpilib="!mpi-serial" compiler="pgigpu">
-      <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env>
-    </environment_variables>
+    <!-- <environment_variables mpilib="!mpi-serial" compiler="pgigpu"> -->
+      <!-- <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env> -->
+    <!-- </environment_variables> -->
   </machine>
 
   <machine MACH="modex">
