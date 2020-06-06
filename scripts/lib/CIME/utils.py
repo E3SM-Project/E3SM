@@ -197,7 +197,6 @@ def _read_cime_config_file():
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
-    logger.debug("wpc2d. in _read_cime_config_file() cime_config_file is = {}".format(cime_config_file))
     cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
@@ -218,7 +217,6 @@ def _read_cime_config_file():
 _CIMECONFIG = None
 def get_cime_config():
     global _CIMECONFIG
-    logger.debug("wpc4. in get_cime_config() _CIMECONFIG is = {}".format(_CIMECONFIG))
     if (not _CIMECONFIG):
         _CIMECONFIG = _read_cime_config_file()
 
@@ -276,8 +274,8 @@ def get_cime_default_driver():
     return driver
 
 def get_all_cime_models():
-    modelroot = os.path.join(get_cime_root(), "config")
-    models = os.walk( os.path.join(modelroot,'.')).next()[1]
+    modelsroot = os.path.join(get_cime_root(), "config")
+    models = os.walk( os.path.join(modelsroot,'.')).next()[1]
     models.remove('xml_schemas')
     return models
 
@@ -289,7 +287,7 @@ def set_model(model):
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
     cime_models = get_all_cime_models()
-    expect(model in cime_models,"wpc1.model {} not recognized".format(model))
+    expect(model in cime_models,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -314,13 +312,11 @@ def get_model():
     """
     model = os.environ.get("CIME_MODEL")
     cime_models = get_all_cime_models()
-    logger.debug("wpc2a. CIME_MODEL from env is = {}".format(model))
     if model in cime_models:
         logger.debug("Setting CIME_MODEL={} from environment".format(model))
     else:
-        expect(model is None,"wpc2.model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
+        expect(model is None,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
         cime_config = get_cime_config()
-        logger.debug("wpc2b. cime_config is = {}".format(cime_config))
         if (cime_config.has_option('main','CIME_MODEL')):
             model = cime_config.get('main','CIME_MODEL')
             if model is not None:
@@ -343,22 +339,9 @@ def get_model():
             model = 'e3sm'
         # This message interfers with the correct operation of xmlquery
         # logger.debug("Guessing CIME_MODEL={}, set environment variable if this is incorrect".format(model))
-    print("wpc1a. cime_models val is = {}".format(cime_models)) 
-    '''
-    modelroot = os.path.join(get_cime_root(), "config")
-    models = os.listdir(modelroot)
-    msg = ".cime/config or environment variable CIME_MODEL must be set to one of: "
-    msg += ", ".join([model for model in models
-                      if os.path.isdir(os.path.join(modelroot,model))
-                      and model != "xml_schemas"])
-    print("wpc0a. models is = {}".format(models))   
-    print("wpc5a. msg is = {}".format(msg))   
-    logger.debug("wpc5. msg is = {}".format(msg))                  
-    '''
 
     if model is not None:
         set_model(model)
-        logger.debug("wpc7. FINISHED get_model(). return val model is = {}".format(model))
         return model
 
     modelroot = os.path.join(get_cime_root(), "config")
@@ -368,7 +351,6 @@ def get_model():
                       if os.path.isdir(os.path.join(modelroot,model))
                       and model != "xml_schemas"])
     expect(False, msg)
-    logger.debug("wpc8. cant reach here. FINISHED get_model(). model is = {}".format(model))
 
 def _get_path(filearg, from_dir):
     if not filearg.startswith("/") and from_dir is not None:
