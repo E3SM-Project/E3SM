@@ -284,9 +284,9 @@ def set_model(model):
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    cime_models = get_all_cime_models()
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
-    cime_models = get_all_cime_models()
     expect(model in cime_models,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
     cime_config.set('main','CIME_MODEL',model)
 
