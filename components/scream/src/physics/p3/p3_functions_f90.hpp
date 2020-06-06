@@ -1,8 +1,8 @@
 #ifndef SCREAM_P3_FUNCTIONS_F90_HPP
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
 
 #include "p3_functions.hpp"
 

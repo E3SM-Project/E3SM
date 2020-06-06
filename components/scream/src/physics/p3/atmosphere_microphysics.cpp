@@ -1,4 +1,4 @@
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_standalone_field_initializer.hpp"
@@ -7,7 +7,7 @@
 
 namespace scream
 {
-/* 
+/*
  * P3 Microphysics routines
 */
 

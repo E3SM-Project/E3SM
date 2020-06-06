@@ -1,8 +1,8 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 
-#include "share/util/scream_std_utils.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
 
 namespace scream {
 

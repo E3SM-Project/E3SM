@@ -3,9 +3,9 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_initializer.hpp"
-#include "share/scream_assert.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/string_utils.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/string_utils.hpp"
 
 namespace scream {
 

@@ -1,7 +1,7 @@
 #ifndef SCREAM_COMBO_REMAPPER_HPP
 #define SCREAM_COMBO_REMAPPER_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "ekat/grid/remap/abstract_remapper.hpp"
 
 namespace scream
 {

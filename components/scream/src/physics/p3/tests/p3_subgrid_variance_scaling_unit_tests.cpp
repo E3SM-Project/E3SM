@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_kokkos.hpp"
 #include "share/scream_pack.hpp"

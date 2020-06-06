@@ -4,9 +4,9 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_tracking.hpp"
 #include "share/field/field_alloc_prop.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/time_stamp.hpp"
-#include "share/util/scream_std_any.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/time_stamp.hpp"
+#include "ekat/util/scream_std_any.hpp"
 
 #include <vector>
 #include <memory>   // For std::shared_ptr and std::weak_ptr
