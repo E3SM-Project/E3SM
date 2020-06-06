@@ -47,11 +47,12 @@ module rrtmgp_interface
 
 contains
    !----------------------------------------------------------------------------
-   integer function rrtmgp_initialize(coefficients_file_sw, coefficients_file_lw, active_gases) result(error)
+   integer function rrtmgp_initialize(ngas, coefficients_file_sw, coefficients_file_lw, active_gases) result(error)
       use rrtmgp_coefficients, only: load_and_init
       use mo_gas_concentrations, only: ty_gas_concs
+      integer, intent(in) :: ngas
       character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
-      character(len=*), dimension(:), intent(in) :: active_gases
+      character(len=*), dimension(ngas), intent(in) :: active_gases
       ! ty_gas_concs object that would normally hold volume mixing ratios for
       ! radiatively-important gases. Here, this is just used to provide the names
       ! of gases that are available in the model (needed by the kdist
@@ -71,7 +72,7 @@ contains
       ! rad_cnst objects are setup yet.
       ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
       ! the other tasks!
-      if (set_available_gases(active_gases, available_gases) /= 0) then
+      if (set_available_gases(ngas, active_gases, available_gases) /= 0) then
          error = 1
          return
       end if
@@ -82,14 +83,15 @@ contains
 
    end function rrtmgp_initialize
    !----------------------------------------------------------------------------
-   integer function set_available_gases(gases, gas_concentrations) result(error)
+   integer function set_available_gases(ngas, gases, gas_concentrations) result(error)
 
       use mo_gas_concentrations, only: ty_gas_concs
       use mo_rrtmgp_util_string, only: lower_case
 
+      integer, intent(in) :: ngas
       type(ty_gas_concs), intent(inout) :: gas_concentrations
-      character(len=*), intent(in) :: gases(:)
-      character(len=32), dimension(size(gases)) :: gases_lowercase
+      character(len=*), intent(in) :: gases(ngas)
+      character(len=32), dimension(ngas) :: gases_lowercase
       integer :: igas
 
       ! Initialize error status to 0
@@ -98,7 +100,7 @@ contains
       ! Initialize with lowercase gas names; we should work in lowercase
       ! whenever possible because we cannot trust string comparisons in RRTMGP
       ! to be case insensitive
-      do igas = 1,size(gases)
+      do igas = 1,ngas
          gases_lowercase(igas) = trim(lower_case(gases(igas)))
       end do
       handle_error(gas_concentrations%init(gases_lowercase))
@@ -131,9 +133,10 @@ contains
       end if
    end function get_ngpt
    !----------------------------------------------------------------------------
-   integer function get_band_lims_wavenumber(band, band_limits) result(error)
+   integer function get_band_lims_wavenumber(nbnd, band, band_limits) result(error)
+      integer, intent(in) :: nbnd
       character(len=*), intent(in) :: band
-      real(wp), dimension(:,:), intent(out) :: band_limits
+      real(wp), dimension(2,nbnd), intent(out) :: band_limits
 
       ! Initialize error status to 0
       error = 0
@@ -157,9 +160,10 @@ contains
       get_temp_max = max(k_dist_sw%get_temp_max(), k_dist_lw%get_temp_max())
    end function get_temp_max
    !----------------------------------------------------------------------------
-   integer function get_gpoint_bands(band, gpoint_bands) result(error)
+   integer function get_gpoint_bands(ngpt, band, gpoint_bands) result(error)
+      integer, intent(in) :: ngpt
       character(len=*), intent(in) :: band
-      integer, dimension(:), intent(out) :: gpoint_bands
+      integer, dimension(ngpt), intent(out) :: gpoint_bands
 
       ! Initialize error status to 0
       error = 0
@@ -178,10 +182,11 @@ contains
    !----------------------------------------------------------------------------
 
    ! Function to calculate band midpoints from kdist band limits
-   integer function get_band_midpoints(band, band_midpoints) result(error)
+   integer function get_band_midpoints(nband, band, band_midpoints) result(error)
+      integer, intent(in) :: nband
       character(len=*), intent(in) :: band
-      real(wp), intent(inout) :: band_midpoints(:)
-      real(wp) :: band_limits(2,size(band_midpoints))
+      real(wp), intent(inout) :: band_midpoints(nband)
+      real(wp) :: band_limits(2,nband)
       character(len=128), parameter :: subname = 'get_band_midpoints'
       integer :: i
 
@@ -201,7 +206,7 @@ contains
 
       ! Compute midpoints from band limits
       band_midpoints(:) = 0._wp
-      do i = 1,size(band_midpoints)
+      do i = 1,nband
          band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._wp
       end do
    end function get_band_midpoints
@@ -209,6 +214,7 @@ contains
    !----------------------------------------------------------------------------
 
    integer function rrtmgp_run_lw( &
+        ngas, ncol, nlay, nbnd, ngpt, &
         gas_names, gas_vmr, p_lay, t_lay, p_lev,    &
         t_sfc, sfc_emis, cld_tau, aer_tau,          &
         allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
@@ -216,27 +222,28 @@ contains
         clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
         clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, &
         col_dry, t_lev, inc_flux, n_gauss_angles) result(error)
-      character(len=*), dimension(:), intent(in) :: gas_names
-      real(wp), dimension(:,:,:),    intent(in   ) :: gas_vmr
-      real(wp), dimension(:,:),    intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
-      real(wp), dimension(:,:),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
-      real(wp), dimension(:),      intent(in   ) :: t_sfc     !< surface temperature           [K]  (ncol)
-      real(wp), dimension(:,:),    intent(in   ) :: sfc_emis  !< emissivity at surface         []   (nband, ncol)
-      real(wp), dimension(:,:,:),  intent(in   ) :: cld_tau   ! cloud absorption optical depth (ncol,nlay,ngpt)
-      real(wp), dimension(:,:,:),  intent(in   ) :: aer_tau   ! cloud absorption optical depth (ncol,nlay,nband)
-      real(wp), dimension(:,:), intent(inout), target :: &
+      integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
+      character(len=*), dimension(ngas), intent(in) :: gas_names
+      real(wp), dimension(ngas,ncol,nlay), intent(in   ) :: gas_vmr
+      real(wp), dimension(ncol,nlay),      intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
+      real(wp), dimension(ncol,nlay+1),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
+      real(wp), dimension(ncol),           intent(in   ) :: t_sfc     !< surface temperature           [K]  (ncol)
+      real(wp), dimension(nbnd,ncol),      intent(in   ) :: sfc_emis  !< emissivity at surface         []   (nband, ncol)
+      real(wp), dimension(ncol,nlay,ngpt), intent(in   ) :: cld_tau   ! cloud absorption optical depth (ncol,nlay,ngpt)
+      real(wp), dimension(ncol,nlay,nbnd),  intent(in   ) :: aer_tau   ! cloud absorption optical depth (ncol,nlay,nband)
+      real(wp), dimension(ncol,nlay+1), intent(inout), target :: &
          allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
          clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net
-      real(wp), dimension(:,:,:), intent(inout), target :: &
+      real(wp), dimension(ncol,nlay+1,nbnd), intent(inout), target :: &
          allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, &
          clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net
 
       ! Optional inputs
-      real(wp), dimension(:,:), &
+      real(wp), dimension(ncol,nlay), &
                 optional,       intent(in ) :: col_dry !< Molecular number density (ncol, nlay)
-      real(wp), dimension(:,:), target, &
+      real(wp), dimension(ncol,nlay+1), target, &
                 optional,       intent(in ) :: t_lev     !< temperature at levels [K] (ncol, nlay+1)
-      real(wp), dimension(:,:), target, &
+      real(wp), dimension(ncol,ngpt), target, &
                 optional,       intent(in ) :: inc_flux   !< incident flux at domain top [W/m2] (ncol, ngpts)
       integer,  optional,       intent(in ) :: n_gauss_angles ! Number of angles used in Gaussian quadrature (no-scattering solution)
   
@@ -245,18 +252,12 @@ contains
       type(ty_optical_props_1scl) :: optical_props, cld_props, aer_props
       type(ty_source_func_lw) :: sources
       type(ty_fluxes_byband) :: allsky_fluxes, clrsky_fluxes
-      integer :: ncol, nlay, ngpt, nband, nstr, igas
+      integer :: igas
       logical :: top_at_1
       character(128) :: error_msg
 
       ! Initialize error status to 0
       error = 0
-  
-      ! Problem sizes
-      ncol  = size(p_lay, 1)
-      nlay  = size(p_lay, 2)
-      ngpt  = k_dist_lw%get_ngpt()
-      nband = k_dist_lw%get_nband()
   
       ! Flag for TOA->SFC or SFC->TOA
       top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
@@ -277,7 +278,7 @@ contains
   
       ! Setup gas concentrations
       handle_error(gas_concs%init(gas_names))
-      do igas = 1,size(gas_names)
+      do igas = 1,ngas
          handle_error(gas_concs%set_vmr(gas_names(igas), gas_vmr(igas,:,:)))
       end do
   
@@ -323,6 +324,7 @@ contains
    end function rrtmgp_run_lw
    ! --------------------------------------------------
    integer function rrtmgp_run_sw( &
+          ngas, ncol, nlay, nbnd, ngpt, &
           gas_names, gas_vmr, p_lay, t_lay, p_lev, &
           mu0, sfc_alb_dir, sfc_alb_dif,  &
           cld_tau, cld_ssa, cld_asm,      &
@@ -332,26 +334,28 @@ contains
           clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
           clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
           col_dry, inc_flux, tsi_scaling  ) result(error)
-      character(len=*), dimension(:), intent(in   ) :: gas_names
-      real(wp), dimension(:,:,:),  intent(in   ) :: gas_vmr
-      real(wp), dimension(:,:),    intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
-      real(wp), dimension(:,:),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
-      real(wp), dimension(:  ),    intent(in   ) :: mu0          !< cosine of solar zenith angle
+      integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
+      character(len=*), dimension(ngas), intent(in   ) :: gas_names
+      real(wp), dimension(ngas,ncol,nlay), intent(in   ) :: gas_vmr
+      real(wp), dimension(ncol,nlay),      intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
+      real(wp), dimension(ncol,nlay+1),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
+      real(wp), dimension(ncol),           intent(in   ) :: mu0          !< cosine of solar zenith angle
       !  surface albedo for direct and diffuse radiation (band, col)
-      real(wp), dimension(:,:),    intent(in   ) :: sfc_alb_dir, sfc_alb_dif
-      real(wp), dimension(:,:,:),  intent(in   ) :: cld_tau, cld_ssa, cld_asm
-      real(wp), dimension(:,:,:),  intent(in   ) :: aer_tau, aer_ssa, aer_asm
-      real(wp), dimension(:,:),    intent(inout), target :: &
+      real(wp), dimension(nbnd,ncol),      intent(in   ) :: sfc_alb_dir, sfc_alb_dif
+      real(wp), dimension(ncol,nlay,ngpt), intent(in   ) :: cld_tau, cld_ssa, cld_asm
+      real(wp), dimension(ncol,nlay,nbnd), intent(in   ) :: aer_tau, aer_ssa, aer_asm
+      real(wp), dimension(ncol,nlay+1),      intent(inout), target :: &
          allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
          clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net
-      real(wp), dimension(:,:,:), intent(inout), target :: &
+      real(wp), dimension(ncol,nlay+1,nbnd), intent(inout), target :: &
          allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
          clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir
 
       ! Optional inputs
-      real(wp), dimension(:,:), &
-                optional,       intent(in ) :: col_dry, &  !< Molecular number density (ncol, nlay)
-                                               inc_flux    !< incident flux at domain top [W/m2] (ncol, ngpts)
+      real(wp), dimension(ncol,nlay), &
+                optional,       intent(in ) :: col_dry     !< Molecular number density (ncol, nlay)
+      real(wp), dimension(ncol,ngpt), &
+                optional,       intent(in ) :: inc_flux    !< incident flux at domain top [W/m2] (ncol, ngpts)
       real(wp), optional,       intent(in ) :: tsi_scaling !< Optional scaling for total solar irradiance
 
       ! Local variables
@@ -359,19 +363,13 @@ contains
       type(ty_gas_concs) :: gas_concs    !< derived type encapsulating gas concentrations
       type(ty_fluxes_byband) :: allsky_fluxes, clrsky_fluxes
       real(wp), dimension(:,:), allocatable :: toa_flux
-      integer :: ncol, nlay, ngpt, nband, nstr, igas
+      integer :: igas
       logical :: top_at_1
       character(len=128) :: error_msg
 
       ! Initialize error status to 0
       error = 0
 
-      ! Problem sizes
-      ncol  = size(p_lay, 1)
-      nlay  = size(p_lay, 2)
-      ngpt  = k_dist_sw%get_ngpt()
-      nband = k_dist_sw%get_nband()
-  
       ! Flag for TOA->SFC or SFC->TOA
       top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
 
@@ -393,7 +391,7 @@ contains
 
       ! Setup gas concentrations
       handle_error(gas_concs%init(gas_names))
-      do igas = 1,size(gas_names)
+      do igas = 1,ngas
          handle_error(gas_concs%set_vmr(gas_names(igas), gas_vmr(igas,:,:)))
       end do
 
