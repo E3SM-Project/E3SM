@@ -4,7 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import convert_to_unknown_type, get_cime_config
+from CIME.utils import convert_to_unknown_type, get_cime_config, get_all_cime_models
 
 import socket
 
@@ -30,12 +30,16 @@ class Machines(GenericXML):
         self.machines_dir = None
         self.custom_settings = {}
         schema = None
+        supported_models = []
         if files is None:
             files = Files()
+        logger.debug("wc1. in machines.py  files is = {}".format(files))
+        logger.debug("wc1b. in machines.py  infile is = {}".format(infile))
         if infile is None:
             infile = files.get_value("MACHINES_SPEC_FILE")
         schema = files.get_schema("MACHINES_SPEC_FILE")
         logger.debug("Verifying using schema {}".format(schema))
+        logger.debug("wc1c. in machines.py  infile is = {}".format(infile))
 
         self.machines_dir = os.path.dirname(infile)
 
@@ -66,8 +70,22 @@ class Machines(GenericXML):
                     machine = cime_config.get("main", "machine")
                 if machine is None:
                     machine = self.probe_machine_name()
+                    if machine is None:
+                        for potential_model in get_all_cime_models():
+                            local_infile = os.path.join(get_cime_root(), "config",potential_model,"machines","config_machines.xml")
+                            if local_infile != infile:
+                                logger.debug("wc2a. in machines.py. for loop. local_infile is = {}".format(local_infile))
+                                print(self.tree)
+                                GenericXML.read(self, local_infile, schema)
+                                print(self.tree)
+                                potential_machine = self.probe_machine_name()
+                                if self.probe_machine_name() is not None:
+                                    supported_models.append(potential_model)
+                                GenericXML.change_file(self, infile, schema)
 
-        expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
+        print(machine)
+        print(supported_models)
+        expect(machine is not None, "Could not initialize machine object from {} or {}. This machine is not available for the target CIME_MODEL. The supported CIME_MODELS that can be used are: {}".format(infile, local_infile, supported_models))
         self.set_machine(machine)
 
     def get_child(self, name=None, attributes=None, root=None, err_msg=None):
