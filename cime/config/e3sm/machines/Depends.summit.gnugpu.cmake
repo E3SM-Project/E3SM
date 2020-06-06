@@ -1,5 +1,18 @@
 
 set(FILES_DECLARE_CUDA
+components/cam/src/physics/rrtmgp/external/cpp/examples/all-sky/mo_garand_atmos_io.cpp
+components/cam/src/physics/rrtmgp/external/cpp/examples/all-sky/mo_load_cloud_coefficients.cpp
+components/cam/src/physics/rrtmgp/external/cpp/examples/all-sky/rrtmgp_allsky.cpp
+components/cam/src/physics/rrtmgp/external/cpp/examples/mo_load_coefficients.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels/mo_gas_optics_kernels.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rrtmgp/mo_rrtmgp_constants.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rrtmgp/mo_rrtmgp_util_reorder.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rte/expand_and_transpose.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_fluxes_broadband_kernels.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_optical_props_kernels.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rte/mo_rte_lw.cpp
+components/cam/src/physics/rrtmgp/external/cpp/rte/mo_rte_sw.cpp
 cam/src/physics/crm/samxx/abcoefs.cpp
 cam/src/physics/crm/samxx/accelerate_crm.cpp
 cam/src/physics/crm/samxx/adams.cpp
