@@ -3,8 +3,6 @@
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
-		<option name="config_use_mom_del2">.true.</option>
-		<option name="config_use_mom_del4">.true.</option>
 		<option name="config_use_cvmix">.true.</option>
 		<option name="config_use_cvmix_background">.true.</option>
 		<option name="config_use_cvmix_convection">.true.</option>
