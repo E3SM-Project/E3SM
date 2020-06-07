@@ -1972,9 +1972,6 @@
 		<var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
 			 description="Coefficient to biharmonic mixing terms in momentum and tracer equations, so that biharmonic viscosity and diffusion coefficients scale with mesh."
 		/>
-		<var name="meshScaling" type="real" dimensions="nEdges" units="unitless"
-			 description="Coefficient used for mesh scaling, such as the Leith parameter."
-		/>
 		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
 			 description="List of cells that straddle each edge."
 		/>

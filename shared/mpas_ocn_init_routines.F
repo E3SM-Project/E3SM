@@ -316,8 +316,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This routine initializes meshScaling, meshScalingDel2, and
-!>   meshScalingDel4
+!>  This routine initializes meshScalingDel2 and meshScalingDel4
 !
 !-----------------------------------------------------------------------
    subroutine ocn_init_routines_compute_mesh_scaling(meshPool, scaleHmixWithMesh, maxMeshDensity)!{{{
@@ -334,7 +333,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
       call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
-      call mpas_pool_get_array(meshPool, 'meshScaling', meshScaling)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -347,7 +345,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       meshScalingDel2(:) = 1.0_RKIND
       meshScalingDel4(:) = 1.0_RKIND
-      meshScaling(:)     = 1.0_RKIND
 
       if (scaleHmixWithMesh) then
          do iEdge = 1, nEdges
@@ -357,8 +354,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                                    / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)  ! goes as dc**1
             meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
                                    / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
-            meshScaling(iEdge)     = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
-                                   / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)
          end do
       end if
 
