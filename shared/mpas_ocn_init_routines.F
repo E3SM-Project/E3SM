@@ -319,42 +319,62 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !>  This routine initializes meshScalingDel2 and meshScalingDel4
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_init_routines_compute_mesh_scaling(meshPool, scaleHmixWithMesh, maxMeshDensity)!{{{
+   subroutine ocn_init_routines_compute_mesh_scaling(meshPool, & !{{{
+                 config_hmix_scaleWithMesh, config_maxMeshDensity, &
+                 config_hmix_use_ref_cell_width, config_hmix_ref_cell_width)
 
       type (mpas_pool_type), intent(inout) :: meshPool
-      logical, intent(in) :: scaleHmixWithMesh
-      real (kind=RKIND), intent(in) :: maxMeshDensity
+      logical, intent(in) :: config_hmix_scaleWithMesh
+      real (kind=RKIND), intent(in) :: config_maxMeshDensity
+      logical, intent(in) :: config_hmix_use_ref_cell_width
+      real (kind=RKIND), intent(in) :: config_hmix_ref_cell_width
 
       integer :: iEdge, cell1, cell2
       integer, pointer :: nEdges
       integer, dimension(:,:), pointer :: cellsOnEdge
+      real (kind=RKIND) :: cellWidth
       real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4, meshScaling
+      real (kind=RKIND), dimension(:), pointer :: areaCell
 
       call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
       call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      !
-      ! Compute the scaling factors to be used in the del2 and del4 dissipation
-      !
-      ! Typical use cases have the minval(meshScaling)==1.
-      ! meshScaling values of approximately 1 indicate the highest resolution of the domain.
-
-      meshScalingDel2(:) = 1.0_RKIND
-      meshScalingDel4(:) = 1.0_RKIND
-
-      if (scaleHmixWithMesh) then
-         do iEdge = 1, nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
-                                   / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)  ! goes as dc**1
-            meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
-                                   / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
-         end do
+      if (config_hmix_scaleWithMesh) then
+         if (config_hmix_use_ref_cell_width) then
+            ! Mesh scaling is set by areaCell and config_hmix_ref_cell_width
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               ! Effective cell width at edge iEdge, assuming neighboring cells
+               ! are circles for this calculation.
+               cellWidth = 2.0_RKIND * sqrt((areaCell(cell1) + areaCell(cell2) ) / 2.0_RKIND / pii)
+               meshScalingDel2(iEdge) = cellWidth / config_hmix_ref_cell_width
+               meshScalingDel4(iEdge) = ( cellWidth / config_hmix_ref_cell_width )**3
+            end do
+         else
+            ! Mesh scaling is set by meshDensity. This is both confusing and
+            ! inconvenient, as the flags like config_mom_del2 need to be reset
+            ! for every resolution. It is kept for backwards compatibility, but
+            ! should become defunct.
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                      / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)  ! goes as dc**1
+               meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                      / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
+            end do
+         end if
+      else
+         ! If config_hmix_scaleWithMesh is false, hmix coefficients do not vary with
+         ! cell size but remain constant across the domain.
+         meshScalingDel2(:) = 1.0_RKIND
+         meshScalingDel4(:) = 1.0_RKIND
       end if
 
    end subroutine ocn_init_routines_compute_mesh_scaling!}}}
@@ -567,7 +587,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       logical, pointer :: config_hmix_scaleWithMesh, config_do_restart
       logical, pointer :: config_use_GM
       logical, pointer :: config_use_Redi
+      logical, pointer :: config_hmix_use_ref_cell_width
       real (kind=RKIND), pointer :: config_maxMeshDensity
+      real (kind=RKIND), pointer :: config_hmix_ref_cell_width
 
       type (mpas_pool_iterator_type) :: groupItr
 
@@ -614,6 +636,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
+      call mpas_pool_get_config(block % configs, 'config_hmix_use_ref_cell_width', config_hmix_use_ref_cell_width)
+      call mpas_pool_get_config(block % configs, 'config_hmix_ref_cell_width', config_hmix_ref_cell_width)
       call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
       call mpas_pool_get_config(block % configs, 'config_use_Redi', config_use_Redi)
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
@@ -671,7 +695,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       ! End: Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
 
-      call ocn_init_routines_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
+      call ocn_init_routines_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity, &
+              config_hmix_use_ref_cell_width, config_hmix_ref_cell_width)
 
       call mpas_rbf_interp_initialize(meshPool)
       call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
