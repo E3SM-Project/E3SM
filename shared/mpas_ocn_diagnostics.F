@@ -114,7 +114,7 @@ contains
 
       real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2, coef_3rd_order, r_tmp, &
         invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, invLength, layerThicknessVertex, coef, &
-        shearMean, shearSquared, factor, delU2, sumSurfaceLayer, surfaceLayerDepth, rSurfaceLayer
+        shearMean, shearSquared, delU2, sumSurfaceLayer, surfaceLayerDepth, rSurfaceLayer
 
       real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
@@ -129,7 +129,7 @@ contains
         normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, density, displacedDensity, potentialDensity, &
         temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, vertVelocityTop, vertTransportVelocityTop, &
         vertGMBolusVelocityTop, BruntVaisalaFreqTop, vorticityGradientNormalComponent, vorticityGradientTangentialComponent, &
-        RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+        RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, derivTwo
       character :: c1*6
@@ -214,6 +214,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
       call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'pressureAdjustedSSH', pressureAdjustedSSH)
+      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
@@ -726,19 +727,18 @@ contains
       !
 
       nCells = nCellsArray(3)
-      !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, factor, delU2, shearMean)
+      !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
          do k=2,maxLevelCell(iCell)
            shearSquared = 0.0_RKIND
            do i = 1, nEdgesOnCell(iCell)
              iEdge = edgesOnCell(i, iCell)
-             factor = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
              delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
-             shearSquared = shearSquared + factor * delU2
+             shearSquared = shearSquared + edgeAreaFractionOfCell(i,iCell) * delU2
            enddo
-           !Note that the factor of two is from averaging dot product to cell center on a C-grid
-           shearMean = sqrt(2.0_RKIND*shearSquared / areaCell(iCell))
+           ! Note that the factor of two is from averaging dot product to cell center on a C-grid
+           shearMean = sqrt(2.0_RKIND*shearSquared )
            shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
            RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
           end do
@@ -1367,7 +1367,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, densitySurfaceDisplaced, density, &
            normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff, &
-           activeTracersSurfaceFluxRunoff, nonLocalSurfaceTracerFlux
+           activeTracersSurfaceFluxRunoff, nonLocalSurfaceTracerFlux, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth
@@ -1382,7 +1382,7 @@ contains
       integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
       real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
-      real (kind=RKIND) :: factor, deltaVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND) :: deltaVelocitySquared, delU2, invAreaCell
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
 
@@ -1421,6 +1421,7 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
+      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
@@ -1512,16 +1513,12 @@ contains
         deltaVelocitySquared = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
-          factor = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
           delU2 =  (surfaceStress(iEdge))**2
-          deltaVelocitySquared = deltaVelocitySquared + factor * delU2
+          deltaVelocitySquared = deltaVelocitySquared + edgeAreaFractionOfCell(i,iCell) * delU2
         enddo
        ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
-        surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * deltaVelocitySquared / areaCell(iCell))
-
-       ! compute surface friction velocity
+        surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * deltaVelocitySquared )
         surfaceFrictionVelocity(iCell) = surfaceStressMagnitude(iCell) / rho_sw
-
 
       enddo
       !$omp end do
