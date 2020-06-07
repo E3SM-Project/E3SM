@@ -130,7 +130,7 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
 
       real (kind=RKIND) :: u_diffusion, invLength_dc, invLength_dv, visc2
-      real (kind=RKIND), dimension(:), pointer :: meshScaling, &
+      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, &
               dcEdge, dvEdge
 
       real (kind=RKIND), pointer :: config_leith_parameter, config_leith_dx, config_leith_visc2_max
@@ -156,7 +156,7 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-      call mpas_pool_get_array(meshPool, 'meshScaling', meshScaling)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -185,7 +185,7 @@ contains
             ! Here the first line is (\delta x)^3
             ! the second line is |\nabla \omega|
             ! and u_diffusion is \nabla^2 u (see formula for $\bf{D}$ above).
-            visc2 = ( config_leith_parameter * config_leith_dx * meshScaling(iEdge) / pii)**3 &
+            visc2 = ( config_leith_parameter * config_leith_dx * meshScalingDel2(iEdge) / pii)**3 &
                      * abs( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength_dc * sqrt(3.0_RKIND)
             visc2 = min(visc2, config_leith_visc2_max)
 
