@@ -847,17 +847,22 @@ subroutine update_prognostics_implicit( &
   ! compute 1/dp term, needed in diffusion solver
   call dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
-  ! compute terms needed for the implicit surface stress (ksrf)
-  ksrf(1:shcol)      = compute_impli_srf_stress_term(shcol, nlevi, rho_zi, &
-       uw_sfc, vw_sfc, u_wind, v_wind)
+  ! define terms needed for the implicit surface stress
+  do i=1,shcol
+    taux(i) = rho_zi(i,nlevi)*uw_sfc(i) ! stress in N/m2
+    tauy(i) = rho_zi(i,nlevi)*vw_sfc(i) ! stress in N/m2
+    ! compute the wind speed
+    ws(i) = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
+    tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
+    ksrf(i) = max(tau(i) / ws(i), ksrfmin)
+    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
+    wtke_flux(i) = ustar**3
+  enddo
 
-  !compute term needed for tke flux calc (wtke_flux)
-  wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
-
-  ! compute surface fluxes for liq. potential temp, water and tke
-  call compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
-       wthl_sfc, wqw_sfc, wtke_flux, &
-       thetal, qw, tke)
+  ! Apply the surface fluxes explicitly for temperature and moisture
+  thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wthl_sfc(:)
+  qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
+  tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
