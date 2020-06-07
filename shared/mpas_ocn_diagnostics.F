@@ -1512,15 +1512,15 @@ contains
         deltaVelocitySquared = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
-          factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+          factor = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
           delU2 =  (surfaceStress(iEdge))**2
           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
         enddo
-        surfaceStressMagnitude(iCell) = sqrt(deltaVelocitySquared / areaCell(iCell))
+       ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
+        surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * deltaVelocitySquared / areaCell(iCell))
 
        ! compute surface friction velocity
-       ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
-         surfaceFrictionVelocity(iCell) = sqrt(2.0_RKIND*surfaceStressMagnitude(iCell) / rho_sw)
+        surfaceFrictionVelocity(iCell) = surfaceStressMagnitude(iCell) / rho_sw
 
 
       enddo
