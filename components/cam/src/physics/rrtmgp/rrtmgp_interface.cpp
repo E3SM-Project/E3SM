@@ -46,6 +46,8 @@ extern "C" void gas_names_to_string1d() {
 // TODO: Make a fortran wrapper to transform character arrays into c-style
 extern "C" void rrtmgp_initialize_cpp(char *coefficients_file_sw, char *coefficients_file_lw) {
   GasConcs gas_concentrations;
+  // PCOLS and PLEV don't actually matter here. This GasConcs object is only telling us which gas names are available
+  // There is no set_vmr or get_vmr called on the object called gas_names in this scope.
   gas_concentrations.init(gas_names , PCOLS , PLEV+1);
   void load_and_init(k_dist_sw , coefficients_file_sw , gas_concentrations);
   void load_and_init(k_dist_lw , coefficients_file_lw , gas_concentrations);
@@ -145,9 +147,8 @@ extern "C" void rrtmgp_run_lw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
                                   real *aer_tau_p, real *allsky_flux_up_p, real *allsky_flux_dn_p, real *allsky_flux_net_p,
                                   real *allsky_bnd_flux_up_p, real *allsky_bnd_flux_dn_p, real *allsky_bnd_flux_net_p,
                                   real *clrsky_flux_up_p, real *clrsky_flux_dn_p, real *clrsky_flux_net_p,
-                                  real *clrsky_bnd_flux_up_p, real *clrsky_bnd_flux_dn_p, real *clrsky_bnd_flux_net_p,
-                                  real *col_dry_p = nullptr, real *t_lev_p = nullptr, real *inc_flux_p = nullptr,
-                                  int n_gauss_angles = -1) {
+                                  real *clrsky_bnd_flux_up_p, real *clrsky_bnd_flux_dn_p, real *clrsky_bnd_flux_net_p, real *t_lev_p,
+                                  int n_gauss_angles) {
   // Wrap pointers in YAKL Arrays
   real3d gas_vmr             = realHost3d("gas_vmr            ",gas_vmr_p            ,ngas,ncol,nlay  ).createDeviceCopy();       
   real2d p_lay               = realHost2d("p_lay              ",p_lay_p              ,ncol,nlay       ).createDeviceCopy();       
@@ -169,13 +170,7 @@ extern "C" void rrtmgp_run_lw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   real3d clrsky_bnd_flux_up  = realHost3d("clrsky_bnd_flux_up ",clrsky_bnd_flux_up_p ,ncol,nlay+1,nbnd).createDeviceCopy();       
   real3d clrsky_bnd_flux_dn  = realHost3d("clrsky_bnd_flux_dn ",clrsky_bnd_flux_dn_p ,ncol,nlay+1,nbnd).createDeviceCopy();       
   real3d clrsky_bnd_flux_net = realHost3d("clrsky_bnd_flux_net",clrsky_bnd_flux_net_p,ncol,nlay+1,nbnd).createDeviceCopy();       
-  // Wrap the optional arrays
-  real2d col_dry ;
-  real2d t_lev   ;
-  real2d inc_flux;
-  if (col_dry_p  != nullptr) col_dry  = realHost2d("col_dry ",col_dry_p ,ncol,nlay  ).createDeviceCopy();
-  if (t_lev_p    != nullptr) t_lev    = realHost2d("t_lev   ",t_lev_p   ,ncol,nlay+1).createDeviceCopy();
-  if (inc_flux_p != nullptr) inc_flux = realHost2d("inc_flux",inc_flux_p,ncol,ngpt  ).createDeviceCopy();
+  real2d t_lev               = realHost2d("t_lev              ",t_lev_p              ,ncol,nlay+1     ).createDeviceCopy();
 
   // Flag for TOA->SFC or SFC->TOA
   real2d p_lay_host = p_lay.createHostCopy();
@@ -227,15 +222,15 @@ extern "C" void rrtmgp_run_lw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   sources.alloc(ncol, nlay);
 
   // Gas optical depth -- pressure need to be expressed as Pa
-  k_dist_lw.gas_optics(p_lay, p_lev, t_lay, t_sfc, gas_concs, optical_props, sources, col_dry, t_lev );
+  k_dist_lw.gas_optics(p_lay, p_lev, t_lay, t_sfc, gas_concs, optical_props, sources, real2d(), t_lev );
 
   // Clear sky fluxes (gases + aerosols)
   aer_props.increment(optical_props);
-  rte_lw( optical_props, top_at_1, sources, sfc_emis, clrsky_fluxes, inc_flux, n_gauss_angles );
+  rte_lw( optical_props, top_at_1, sources, sfc_emis, clrsky_fluxes, real2d(), n_gauss_angles );
 
   // All-sky fluxes (clear skies + clouds)
   cld_props.increment(optical_props);
-  rte_lw( optical_props, top_at_1, sources, sfc_emis, allsky_fluxes, inc_flux, n_gauss_angles );
+  rte_lw( optical_props, top_at_1, sources, sfc_emis, allsky_fluxes, real2d(), n_gauss_angles );
 
   // Clean up
   sources.finalize();
@@ -249,7 +244,7 @@ extern "C" void rrtmgp_run_sw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
                                   real *allsky_flux_net_p, real *allsky_bnd_flux_up_p, real *allsky_bnd_flux_dn_p, real *allsky_bnd_flux_net_p,
                                   real *allsky_bnd_flux_dn_dir_p, real *clrsky_flux_up_p, real *clrsky_flux_dn_p, real *clrsky_flux_net_p,
                                   real *clrsky_bnd_flux_up_p, real *clrsky_bnd_flux_dn_p, real *clrsky_bnd_flux_net_p, real *clrsky_bnd_flux_dn_dir_p,
-                                  real *col_dry_p = nullptr, real *inc_flux_p = nullptr, real tsi_scaling=-999  ) {
+                                  real tsi_scaling ) {
   // Wrap pointers in YAKL Arrays
   real3d gas_vmr                = realHost3d("gas_vmr               ",gas_vmr_p               ,ngas,ncol,nlay  ).createDeviceCopy();  
   real2d p_lay                  = realHost2d("p_lay                 ",p_lay_p                 ,ncol,nlay       ).createDeviceCopy();  
@@ -278,11 +273,6 @@ extern "C" void rrtmgp_run_sw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   real3d clrsky_bnd_flux_dn     = realHost3d("clrsky_bnd_flux_dn    ",clrsky_bnd_flux_dn_p    ,ncol,nlay+1,nbnd).createDeviceCopy();  
   real3d clrsky_bnd_flux_net    = realHost3d("clrsky_bnd_flux_net   ",clrsky_bnd_flux_net_p   ,ncol,nlay+1,nbnd).createDeviceCopy();  
   real3d clrsky_bnd_flux_dn_dir = realHost3d("clrsky_bnd_flux_dn_dir",clrsky_bnd_flux_dn_dir_p,ncol,nlay+1,nbnd).createDeviceCopy();  
-  // Wrap the optional arrays
-  real2d col_dry;
-  real2d inc_flux;
-  if (col_dry_p  != nullptr) col_dry  = realHost2d("col_dry ",col_dry_p ,ncol,nlay).createDeviceCopy();  
-  if (inc_flux_p != nullptr) inc_flux = realHost2d("inc_flux",inc_flux_p,ncol,nlay).createDeviceCopy();  
 
   // Flag for TOA->SFC or SFC->TOA
   realHost2d p_lay_host = p_lay.createHostCopy();
@@ -343,15 +333,11 @@ extern "C" void rrtmgp_run_sw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   real2d toa_flux("toa_flux",ncol,ngpt);
 
   // Gas optical depth -- pressure need to be expressed as Pa
-  k_dist_sw.gas_optics(p_lay, p_lev, t_lay, gas_concs, optical_props, toa_flux, col_dry);
+  k_dist_sw.gas_optics(p_lay, p_lev, t_lay, gas_concs, optical_props, toa_flux);
 
-  // If users have supplied an incident flux, use that
-  if (allocated(inc_flux)           ) inc_flux.deep_copy_to(toa_flux);
-  if (allocated(tsi_scaling != -999)) {
-    parallel_for( Bounds<2>(ngpt,ncol) , YAKL_LAMBDA(int igpt, int icol) {
-      toa_flux(icol,igpt) = toa_flux(icol,igpt) * tsi_scaling;
-    });
-  }
+  parallel_for( Bounds<2>(ngpt,ncol) , YAKL_LAMBDA(int igpt, int icol) {
+    toa_flux(icol,igpt) = toa_flux(icol,igpt) * tsi_scaling;
+  });
 
   // Clear sky is gases + aerosols (if they're supplied)
   aer_props.increment(optical_props);
