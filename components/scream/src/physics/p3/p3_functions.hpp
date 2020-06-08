@@ -148,7 +148,7 @@ struct Functions
                                    const Spack& icldm, Spack& qcacc, Spack& qrevp,
                                    Spack& qcaut, Spack& ncacc, Spack& ncslf,
                                    Spack& ncautc, Spack& nrslf, Spack& nrevp,
-                                   Spack& ncautr, Spack& qcnuc, Spack& ncnuc,
+                                   Spack& ncautr, 
                                    Spack& qisub, Spack& nrshdr, Spack& qcheti,
                                    Spack& qrcol, Spack& qcshd, Spack& qimlt,
                                    Spack& qccol, Spack& qrheti, Spack& nimlt,
@@ -368,7 +368,7 @@ struct Functions
     bool& log_present);
 
   KOKKOS_FUNCTION
-  static void cloud_water_conservation(const Spack& qc, const Spack& qcnuc,const Scalar dt,
+  static void cloud_water_conservation(const Spack& qc, const Scalar dt,
    Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep);
 
   KOKKOS_FUNCTION
@@ -519,7 +519,7 @@ struct Functions
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
   static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
-    const Spack& qcaut,const Spack& ncautc, const Spack& qcnuc, const Spack& ncautr,
+    const Spack& qcaut,const Spack& ncautc, const Spack& ncautr,
     const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
     const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
     const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
@@ -552,12 +552,6 @@ struct Functions
                              const Spack& supi, const Scalar& odt,
                              const bool& log_predictNc,
                              Spack& qinuc, Spack& ninuc);
-
-  KOKKOS_FUNCTION
-  static void droplet_activation(const Spack& temp, const Spack& pres, const Spack& qv, const Spack& qc,
-                                 const Spack& inv_rho,const Spack& sup, const Spack& xxlv, const Spack& npccn,
-                                 const bool& log_predictNc, const Scalar& odt,
-                                 Spack& qcnuc, Spack& ncnuc);
 
   KOKKOS_FUNCTION
   static Spack subgrid_variance_scaling(const Spack& relvar, const Scalar& expon);
@@ -634,7 +628,7 @@ struct Functions
     const uview_1d<const Spack>& opres,
     const uview_1d<const Spack>& opdel,
     const uview_1d<const Spack>& odzq,
-    const uview_1d<const Spack>& onpccn,
+    const uview_1d<const Spack>& oncnuc,
     const uview_1d<const Spack>& oexner,
     const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& inv_lcldm,
@@ -648,7 +642,6 @@ struct Functions
     const uview_1d<Spack>& inv_rho,
     const uview_1d<Spack>& qvs,
     const uview_1d<Spack>& qvi,
-    const uview_1d<Spack>& sup,
     const uview_1d<Spack>& supi,
     const uview_1d<Spack>& rhofacr,
     const uview_1d<Spack>& rhofaci,
@@ -688,7 +681,7 @@ struct Functions
     const uview_1d<const Spack>& opres,
     const uview_1d<const Spack>& opdel,
     const uview_1d<const Spack>& odzq,
-    const uview_1d<const Spack>& onpccn,
+    const uview_1d<const Spack>& oncnuc,
     const uview_1d<const Spack>& oexner,
     const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& inv_lcldm,
@@ -765,7 +758,7 @@ struct Functions
     const uview_1d<const Spack>& opres,
     const uview_1d<const Spack>& opdel,
     const uview_1d<const Spack>& odzq,
-    const uview_1d<const Spack>& onpccn,
+    const uview_1d<const Spack>& oncnuc,
     const uview_1d<const Spack>& oexner,
     const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& inv_lcldm,
@@ -838,7 +831,7 @@ struct Functions
     // inputs
     const view_2d<const Spack>& pres,          // pressure                             Pa
     const view_2d<const Spack>& dzq,           // vertical grid spacing                m
-    const view_2d<const Spack>& npccn,         // IN ccn activated number tendency     kg-1 s-1
+    const view_2d<const Spack>& ncnuc,         // IN ccn activated number tendency     kg-1 s-1
     const view_2d<const Spack>& naai,          // IN actived ice nuclei concentration  1/kg
     const view_2d<const Spack>& qc_relvar,     // assumed SGS 1/(var(qc)/mean(qc))     kg2/kg2
     const Real&                 dt,            // model time step                      s
@@ -937,7 +930,6 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_functions_ice_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_nucleation_impl.hpp"
 # include "p3_functions_ice_melting_impl.hpp"
-# include "p3_functions_droplet_activation_impl.hpp"
 # include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
 # include "p3_functions_ice_cldliq_wet_growth_impl.hpp"
 # include "p3_functions_get_latent_heat_impl.hpp"

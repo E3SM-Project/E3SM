@@ -55,7 +55,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto nondim = m/m;
   m_required_fields.emplace("ast",    scalar3d_layout_mid,   nondim, grid_name);
   m_required_fields.emplace("naai",   scalar3d_layout_mid,     1/kg, grid_name);
-  m_required_fields.emplace("npccn",  scalar3d_layout_mid, 1/(kg*s), grid_name);
+  m_required_fields.emplace("ncnuc",  scalar3d_layout_mid, 1/(kg*s), grid_name);
   m_required_fields.emplace("pmid",   scalar3d_layout_mid,       Pa, grid_name);
   m_required_fields.emplace("dp",     scalar3d_layout_mid,       Pa, grid_name);
   m_required_fields.emplace("zi",     scalar3d_layout_int,        m, grid_name);
@@ -82,7 +82,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
   if (m_p3_params.get<bool>("Standalone", false)) {
     // Loop over required fields. If no provider/initializer is found for a field,
     // assume P3StandAloneInit will init it.
-    std::array<std::string,9> inputs = {"q","T","FQ","ast","naai","npccn","pmid","dp","zi"};
+    std::array<std::string,9> inputs = {"q","T","FQ","ast","naai","ncnuc","pmid","dp","zi"};
     bool all_inited = true, all_uninited = true;
     for (auto name : inputs) {
       const auto& f = m_p3_fields_in.at(name);
@@ -106,7 +106,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 // =========================================================================================
 void P3Microphysics::run (const Real dt)
 {
-  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
+  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "pdel", "ast", "naai", "ncnuc"};
 
   std::vector<const Real*> in;
   std::vector<Real*> out;
@@ -120,7 +120,7 @@ void P3Microphysics::run (const Real dt)
   }
 
   // Call f90 routine
-  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["npccn"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
+  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["ncnuc"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
 
   // Copy outputs back to device
   for (auto& it : m_p3_fields_out) {

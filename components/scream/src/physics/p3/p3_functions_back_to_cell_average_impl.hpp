@@ -18,7 +18,7 @@ void Functions<S,D>
                        const Spack& icldm, Spack& qcacc, Spack& qrevp,
                        Spack& qcaut, Spack& ncacc, Spack& ncslf,
                        Spack& ncautc, Spack& nrslf, Spack& nrevp,
-                       Spack& ncautr, Spack& qcnuc, Spack& ncnuc,
+                       Spack& ncautr, 
                        Spack& qisub, Spack& nrshdr, Spack& qcheti,
                        Spack& qrcol, Spack& qcshd, Spack& qimlt,
                        Spack& qccol, Spack& qrheti, Spack& nimlt,
@@ -47,10 +47,6 @@ void Functions<S,D>
   nrslf *= rcldm;    // Self collection occurs locally in rain cloud
   nrevp *= rcldm;    // Change in rain number due to evaporation
   ncautr *= lr_cldm; // Autoconversion of rain drops within rain/liq cloud
-
-  // AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
-  qcnuc *= lcldm;    // Impact on liq. from nucleation
-  ncnuc *= lcldm;    // Number change due to aerosol activation
 
   // map ice-phase  process rates to cell-avg
   qisub *= icldm;    // Sublimation of ice in ice cloud

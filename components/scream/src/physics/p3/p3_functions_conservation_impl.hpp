@@ -10,11 +10,11 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::cloud_water_conservation(const Spack& qc, const Spack& qcnuc,const Scalar dt,
+::cloud_water_conservation(const Spack& qc, const Scalar dt,
    Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep)
 {
   const auto sinks = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt; // Sinks of cloud water
-  const auto sources = qc + (qcnuc)*dt; // Source of cloud water
+  const auto sources = qc; // Source of cloud water
   Spack ratio;
 
   constexpr Scalar qtendsmall = scream::physics::Constants<Scalar>::QTENDSMALL;
