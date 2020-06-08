@@ -1,5 +1,10 @@
 .SUFFIXES: .F .o
 
+ifeq "$(EXCLUDE_INIT_MODE)" "true"
+CPPLOCALFLAGS = "-DEXCLUDE_INIT_MODE"
+$(info "EXCLUDE_INIT_MODE found")
+endif
+
 OBJS = mpas_ocn_core.o \
        mpas_ocn_core_interface.o
 
@@ -23,7 +28,7 @@ endif
 .F.o:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
+	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINCLUDES) $< > $*.f90
 	$(FC) $(FFLAGS_noSMP) -c $*.f90 $(FCINCLUDES)
 else
 	$(FC) $(CPPFLAGS) $(FFLAGS_noSMP) -c $*.F $(CPPINCLUDES) $(FCINCLUDES)
