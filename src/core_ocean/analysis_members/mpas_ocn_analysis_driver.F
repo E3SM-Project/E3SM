@@ -179,7 +179,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'lagrPartTrack', 1)
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
-      call mpas_pool_add_config(analysisMemberList, 'mixesLayerHeatBudget', 1)
+      call mpas_pool_add_config(analysisMemberList, 'mixedLayerHeatBudget', 1)
       call mpas_pool_add_config(analysisMemberList, 'rpnCalculator', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
@@ -197,7 +197,6 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'eddyProductVariables', 1)
       call mpas_pool_add_config(analysisMemberList, 'mocStreamfunction', 1)
       call mpas_pool_add_config(analysisMemberList, 'oceanHeatContent', 1)
-      call mpas_pool_add_config(analysisMemberList, 'mixedLayerHeatBudget', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
