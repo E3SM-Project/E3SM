@@ -472,9 +472,9 @@ subroutine shoc_main ( &
   call update_host_dse(&
      shcol,nlev,thetal,&                   ! Input
      shoc_ql,exner,zt_grid,phis,&          ! Input
-     host_dse)                           ! Output
+     host_dse)                             ! Output
 
-  call shoc_energy_integrals(&                 ! Input
+  call shoc_energy_integrals(&             ! Input
      shcol,nlev,host_dse,pdel,&            ! Input
      qw,shoc_ql,u_wind,v_wind,&            ! Input
      se_a,ke_a,wv_a,wl_a)                  ! Output
@@ -2825,7 +2825,7 @@ subroutine shoc_energy_total_fixer(&
   ! density on midpoint grid [kg/m^3]
   real(rtype), intent(in) :: rho_zt(shcol,nlev)
 
-  ! INPUT VARIABLES
+  ! OUTPUT VARIABLES
   real(rtype), intent(out) :: te_a(shcol)
   real(rtype), intent(out) :: te_b(shcol)
 
