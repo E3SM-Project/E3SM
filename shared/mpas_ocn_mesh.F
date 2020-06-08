@@ -469,20 +469,20 @@ contains
             edgeSignOnVertex(maxEdges, nVerticesAll+1), &
             highOrderAdvectionMask(nVertLevels, nEdgesAll+1))
 
-         do n = 1, nCellsAll
+         do n = 1, nCellsAll+1
          do k = 1, nVertLevels
             cellMask(k, n) = real(cellMaskTmp(k, n), RKIND)
             boundaryCell(k, n) = real(boundaryCellTmp(k, n), RKIND)
          end do
          end do
 
-         do n = 1, nCellsAll
+         do n = 1, nCellsAll+1
          do k = 1, maxEdges
             edgeSignOnCell(k, n) = real(edgeSignOnCellTmp(k, n), RKIND)
          end do
          end do
 
-         do n = 1, nEdgesAll
+         do n = 1, nEdgesAll+1
          do k = 1, nVertLevels
             edgeMask(k, n) = real(edgeMaskTmp(k, n), RKIND)
             boundaryEdge(k, n) = real(boundaryEdgeTmp(k, n), RKIND)
@@ -491,14 +491,14 @@ contains
          end do
          end do
 
-         do n = 1, nVerticesAll
+         do n = 1, nVerticesAll+1
          do k = 1, nVertLevels
             vertexMask(k, n) = real(vertexMaskTmp(k, n), RKIND)
             boundaryVertex(k, n) = real(boundaryVertexTmp(k, n), RKIND)
          end do
          end do
 
-         do n = 1, nVerticesAll
+         do n = 1, nVerticesAll+1
          do k = 1, vertexDegree
             edgeSignOnVertex(k, n) = real(edgeSignOnVertexTmp(k, n), RKIND)
          end do
