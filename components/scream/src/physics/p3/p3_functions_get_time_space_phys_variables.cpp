@@ -1,5 +1,5 @@
 #include "p3_functions_get_time_space_phys_variables_impl.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 namespace scream {
 namespace p3 {

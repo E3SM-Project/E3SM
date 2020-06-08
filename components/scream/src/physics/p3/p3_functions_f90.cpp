@@ -1,10 +1,10 @@
 #include "p3_functions_f90.hpp"
-
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
-#include "share/scream_pack_kokkos.hpp"
 #include "p3_f90.hpp"
+
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/scream_pack_kokkos.hpp"
 
 #include <random>
 
@@ -182,7 +182,7 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
 void get_latent_heat_c(Int its, Int ite, Int kts, Int kte, Real* s, Real* v, Real* f);
 
 Real subgrid_variance_scaling_c(Real relvar, Real expon);
-  
+
 void check_values_c(Real* qv, Real* temp, Int kts, Int kte, Int timestepcount,
                     Int force_abort, Int source_ind, Real* col_loc);
 
@@ -361,7 +361,7 @@ LatentHeatData::LatentHeatData(const LatentHeatData& rhs) :
   init_ptrs();
 }
 
-LatentHeatData& LatentHeatData::operator=(const LatentHeatData& rhs) 
+LatentHeatData& LatentHeatData::operator=(const LatentHeatData& rhs)
 {
   its     = rhs.its;
   ite     = rhs.ite;
@@ -2775,13 +2775,13 @@ Real subgrid_variance_scaling_f(Real relvar_, Real expon_)
       Spack relvar(relvar_);
       Scalar expon(expon_);
       Spack out;
-	
+
       out=P3F::subgrid_variance_scaling(relvar,expon);
       t_d(0) = out[0];
-      
+
     });
   Kokkos::deep_copy(t_h, t_d);
-  
+
   return t_h[0];
 }
 

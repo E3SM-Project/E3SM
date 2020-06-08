@@ -2,10 +2,10 @@
 #define SCREAM_FIELD_TRACKING_HPP
 
 #include "share/field/field_utils.hpp"
-#include "share/util/time_stamp.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_utils.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/util/time_stamp.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
