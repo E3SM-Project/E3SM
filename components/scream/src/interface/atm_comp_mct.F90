@@ -173,7 +173,7 @@ CONTAINS
     ! Initialize pio
     !----------------------------------------------------------------------------
     print *, 'EAM_INIT_PIO'
-    call eam_init_pio(mpicom_atm,compid,2,2)
+    call eam_init_pio(mpicom_atm,compid,2,4)
 !    call eam_h_define(2, (/ 20, 0 /), (/ "x", "t" /))
  
     call pioExInst%init(mpicom_atm)
