@@ -26,6 +26,318 @@
 
 module rrtmgp_interface
   use mo_rte_kind,   only: wp
+#ifdef RRTMGPXX
+
+  interface
+
+    subroutine clear_gas_names() bind(C,name="clear_gas_names")
+    end subroutine
+
+    subroutine push_gas_name(gas_name) bind(C,name="push_gas_name")
+      use iso_c_binding
+      character(c_char), dimension(*), intent(in) :: gas_name
+    end subroutine
+
+    subroutine gas_names_to_string1d() bind(C,name="gas_names_to_string1d")
+    end subroutine
+
+    subroutine rrtmgp_initialize_cpp(coefficients_file_sw, coefficients_file_lw) bind(C,name="rrtmgp_initialize_cpp")
+      use iso_c_binding
+      character(c_char), dimension(*), intent(in) :: coefficients_file_sw
+      character(c_char), dimension(*), intent(in) :: coefficients_file_lw
+    end subroutine
+
+    ! Called directly from radiation.F90
+    function rrtmgp_finalize() result(ret) bind(C,name="rrtmgp_finalize")
+      integer :: ret
+    end function
+
+    function get_nband_sw() result(ret) bind(C,name="get_nband_sw")
+      integer :: ret
+    end function
+
+    function get_nband_lw() result(ret) bind(C,name="get_nband_lw")
+      integer :: ret
+    end function
+
+    function get_ngpt_sw() result(ret) bind(C,name="get_ngpt_sw")
+      integer :: ret
+    end function
+
+    function get_ngpt_lw() result(ret) bind(C,name="get_ngpt_lw")
+      integer :: ret
+    end function
+
+    subroutine get_band_lims_wavenumber_sw(nbnd, band_limits_p) bind(C,name="get_band_lims_wavenumber_sw")
+      integer, value :: nbnd
+      real(8), dimension(*) :: band_limits_p
+    end subroutine
+
+    subroutine get_band_lims_wavenumber_lw(nbnd, band_limits_p) bind(C,name="get_band_lims_wavenumber_lw")
+      integer, value :: nbnd
+      real(8), dimension(*) :: band_limits_p
+    end subroutine
+
+    ! Called directly from radiation.F90
+    function get_temp_min() result(ret) bind(C,name="get_temp_min")
+      real(8) :: ret
+    end function
+
+    ! Called directly from radiation.F90
+    function get_temp_max() result(ret) bind(C,name="get_temp_max")
+      real(8) :: ret
+    end function
+
+    subroutine get_gpoint_bands_sw(nbnd, band_limits_p) bind(C,name="get_gpoint_bands_sw")
+      integer, value :: nbnd
+      integer, dimension(*) :: band_limits_p
+    end subroutine
+
+    subroutine get_gpoint_bands_lw(nbnd, band_limits_p) bind(C,name="get_gpoint_bands_lw")
+      integer, value :: nbnd
+      integer, dimension(*) :: band_limits_p
+    end subroutine
+
+    subroutine get_band_midpoints_sw(nbnd, band_midpoints_p) bind(C,name="get_band_midpoints_sw")
+      integer, value :: nbnd
+      real(8), dimension(*) :: band_midpoints_p
+    end subroutine
+
+    subroutine get_band_midpoints_lw(nbnd, band_midpoints_p) bind(C,name="get_band_midpoints_lw")
+      integer, value :: nbnd
+      real(8), dimension(*) :: band_midpoints_p
+    end subroutine
+
+    subroutine rrtmgp_run_lw_cpp(ngas, ncol, nlay, nbnd, ngpt, gas_vmr_p, p_lay_p, t_lay_p, p_lev_p, t_sfc_p,             &
+                                 sfc_emis_p, cld_tau_p, aer_tau_p, allsky_flux_up_p, allsky_flux_dn_p, allsky_flux_net_p, &
+                                 allsky_bnd_flux_up_p, allsky_bnd_flux_dn_p, allsky_bnd_flux_net_p, clrsky_flux_up_p,     &
+                                 clrsky_flux_dn_p, clrsky_flux_net_p, clrsky_bnd_flux_up_p, clrsky_bnd_flux_dn_p,         &
+                                 clrsky_bnd_flux_net_p, t_lev_p, n_gauss_angles) bind(C,name="rrtmgp_run_lw_cpp")
+      integer, value :: ngas, ncol, nlay, nbnd, ngpt, n_gauss_angles
+      real(8), dimension(*) :: gas_vmr_p, p_lay_p, t_lay_p, p_lev_p, t_sfc_p, sfc_emis_p, cld_tau_p, aer_tau_p,      &
+                               allsky_flux_up_p, allsky_flux_dn_p, allsky_flux_net_p, allsky_bnd_flux_up_p,          &
+                               allsky_bnd_flux_dn_p, allsky_bnd_flux_net_p, clrsky_flux_up_p, clrsky_flux_dn_p,      &
+                               clrsky_flux_net_p, clrsky_bnd_flux_up_p, clrsky_bnd_flux_dn_p, clrsky_bnd_flux_net_p, &
+                               t_lev_p
+    end subroutine
+
+
+    subroutine rrtmgp_run_sw_cpp(ngas, ncol, nlay, nbnd, ngpt, gas_vmr_p, p_lay_p, t_lay_p, p_lev_p,                          &
+                                 mu0_p, sfc_alb_dir_p, sfc_alb_dif_p, cld_tau_p, cld_ssa_p, cld_asm_p,                        &
+                                 aer_tau_p, aer_ssa_p, aer_asm_p, allsky_flux_up_p, allsky_flux_dn_p,                         &
+                                 allsky_flux_net_p, allsky_bnd_flux_up_p, allsky_bnd_flux_dn_p, allsky_bnd_flux_net_p,        &
+                                 allsky_bnd_flux_dn_dir_p, clrsky_flux_up_p, clrsky_flux_dn_p, clrsky_flux_net_p,             &
+                                 clrsky_bnd_flux_up_p, clrsky_bnd_flux_dn_p, clrsky_bnd_flux_net_p, clrsky_bnd_flux_dn_dir_p, &
+                                 tsi_scaling) bind(C,name="rrtmgp_run_sw_cpp")
+      integer, value :: ngas, nlay, nbnd, ngpt
+      real(8), value :: tsi_scaling
+      real(8), dimension(*) :: gas_vmr_p, p_lay_p, t_lay_p, p_lev_p, mu0_p, sfc_alb_dir_p, sfc_alb_dif_p, cld_tau_p, cld_ssa_p, &
+                               cld_asm_p, aer_tau_p, aer_ssa_p, aer_asm_p, allsky_flux_up_p, allsky_flux_dn_p,                  &
+                               allsky_flux_net_p, allsky_bnd_flux_up_p, allsky_bnd_flux_dn_p, allsky_bnd_flux_net_p,            &
+                               allsky_bnd_flux_dn_dir_p, clrsky_flux_up_p, clrsky_flux_dn_p, clrsky_flux_net_p,                 &
+                               clrsky_bnd_flux_up_p, clrsky_bnd_flux_dn_p, clrsky_bnd_flux_net_p, clrsky_bnd_flux_dn_dir_p
+    end subroutine
+
+  end interface
+
+contains
+
+  function to_c_char(str) result(ret)
+    use iso_c_binding
+    character(len=*) :: str
+    character(kind=c_char,len=len_trim(str)+1) :: ret
+    ret = trim(str)//char(0)
+  end function
+
+  integer function rrtmgp_initialize(ngas, coefficients_file_sw, coefficients_file_lw, active_gases) result(error)
+    integer, intent(in) :: ngas
+    character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
+    character(len=*), dimension(ngas), intent(in) :: active_gases
+    integer :: igas
+    call clear_gas_names()
+    do igas = 1 , ngas
+      call push_gas_name(to_c_char(active_gases(igas)))
+    enddo
+    call gas_names_to_string1d()
+    call rrtmgp_initialize_cpp(to_c_char(coefficients_file_sw), to_c_char(coefficients_file_lw))
+    error = 0
+  end function
+
+  integer function get_nband(band)
+    character(len=*), intent(in) :: band
+    if (trim(band) == 'sw') then
+      get_nband = get_nband_sw()
+    else if (trim(band) == 'lw') then
+      get_nband = get_nband_lw()
+    else
+      get_nband = -1
+    end if
+  end function get_nband
+
+  integer function get_ngpt(band)
+    character(len=*), intent(in) :: band
+    if (trim(band) == 'sw') then
+      get_ngpt = get_ngpt_sw()
+    else if (trim(band) == 'lw') then
+      get_ngpt = get_ngpt_lw()
+    else
+      get_ngpt = -1
+    end if
+  end function get_ngpt
+
+  integer function get_band_lims_wavenumber(nbnd, band, band_limits) result(error)
+    integer, intent(in) :: nbnd
+    character(len=*), intent(in) :: band
+    real(wp), dimension(2,nbnd), intent(out) :: band_limits
+
+    ! Initialize error status to 0
+    error = 0
+
+    if (trim(band) == 'sw') then
+       call get_band_lims_wavenumber_sw(nbnd, band_limits)
+    else if (trim(band) == 'lw') then
+       call get_band_lims_wavenumber_lw(nbnd, band_limits)
+    else
+       band_limits = -1
+       error = 1
+       return
+    end if
+  end function get_band_lims_wavenumber
+
+  integer function get_gpoint_bands(ngpt, band, gpoint_bands) result(error)
+    integer, intent(in) :: ngpt
+    character(len=*), intent(in) :: band
+    integer, dimension(ngpt), intent(out) :: gpoint_bands
+
+    ! Initialize error status to 0
+    error = 0
+
+    if (trim(band) == 'sw') then
+      call get_gpoint_bands_sw(ngpt, gpoint_bands)
+    else if (trim(band) == 'lw') then
+      call get_gpoint_bands_lw(ngpt, gpoint_bands)
+    else
+      gpoint_bands = -1
+      error = 1
+      return
+    end if
+  end function
+
+  integer function get_band_midpoints(nband, band, band_midpoints) result(error)
+    integer, intent(in) :: nband
+    character(len=*), intent(in) :: band
+    real(wp), intent(inout) :: band_midpoints(nband)
+    real(wp) :: band_limits(2,nband)
+    character(len=128), parameter :: subname = 'get_band_midpoints'
+    integer :: i
+
+    ! Initialize error status to 0
+    error = 0
+
+    ! Get band limits
+    if (trim(band) == 'sw') then
+       call get_band_midpoints_sw(nband, band_midpoints)
+    else if (trim(band) == 'lw') then
+       call get_band_midpoints_lw(nband, band_midpoints)
+    else
+       print *, trim(subname) // ': band ' // trim(band) // ' not known.'
+       error = 1
+       return
+    end if
+  end function get_band_midpoints
+
+  integer function rrtmgp_run_lw(ngas, ncol, nlay, nbnd, ngpt, &
+                                 gas_names, gas_vmr, p_lay, t_lay, p_lev,    &
+                                 t_sfc, sfc_emis, cld_tau, aer_tau,          &
+                                 allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+                                 allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, &
+                                 clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
+                                 clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, &
+                                 col_dry, t_lev, inc_flux, n_gauss_angles) result(error)
+    integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
+    character(len=*), dimension(ngas), intent(in) :: gas_names
+    real(wp), dimension(ngas,ncol,nlay), intent(in   ) :: gas_vmr
+    real(wp), dimension(ncol,nlay),      intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
+    real(wp), dimension(ncol,nlay+1),    intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
+    real(wp), dimension(ncol),           intent(in   ) :: t_sfc     !< surface temperature           [K]  (ncol)
+    real(wp), dimension(nbnd,ncol),      intent(in   ) :: sfc_emis  !< emissivity at surface         []   (nband, ncol)
+    real(wp), dimension(ncol,nlay,ngpt), intent(in   ) :: cld_tau   ! cloud absorption optical depth (ncol,nlay,ngpt)
+    real(wp), dimension(ncol,nlay,nbnd), intent(in   ) :: aer_tau   ! cloud absorption optical depth (ncol,nlay,nband)
+    real(wp), dimension(ncol,nlay+1), intent(inout), target :: allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+                                                               clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net
+    real(wp), dimension(ncol,nlay+1,nbnd), intent(inout), target :: allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, &
+                                                                    clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net
+    ! Optional inputs
+    real(wp), dimension(ncol,nlay)          , optional, intent(in ) :: col_dry !< Molecular number density (ncol, nlay)
+    real(wp), dimension(ncol,nlay+1), target, optional, intent(in ) :: t_lev     !< temperature at levels [K] (ncol, nlay+1)
+    real(wp), dimension(ncol,ngpt)  , target, optional, intent(in ) :: inc_flux   !< incident flux at domain top [W/m2] (ncol, ngpts)
+    integer                                 , optional, intent(in ) :: n_gauss_angles ! Number of angles used in Gaussian quadrature (no-scattering solution)
+    integer :: igas
+    call clear_gas_names()
+    do igas = 1 , ngas
+      call push_gas_name(to_c_char(gas_names(igas)))
+    enddo
+    call gas_names_to_string1d()
+    call rrtmgp_run_lw_cpp(ngas, ncol, nlay, nbnd, ngpt, gas_vmr, p_lay, t_lay, p_lev, t_sfc,           &
+                           sfc_emis, cld_tau, aer_tau, allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+                           allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, clrsky_flux_up, &
+                           clrsky_flux_dn, clrsky_flux_net, clrsky_bnd_flux_up, clrsky_bnd_flux_dn,     &
+                           clrsky_bnd_flux_net, t_lev, n_gauss_angles)
+
+    error = 0;
+  end function rrtmgp_run_lw
+
+  integer function rrtmgp_run_sw(ngas, ncol, nlay, nbnd, ngpt, &
+                                 gas_names, gas_vmr, p_lay, t_lay, p_lev, &
+                                 mu0, sfc_alb_dir, sfc_alb_dif,  &
+                                 cld_tau, cld_ssa, cld_asm,      &
+                                 aer_tau, aer_ssa, aer_asm,      &
+                                 allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+                                 allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
+                                 clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
+                                 clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
+                                 col_dry, inc_flux, tsi_scaling  ) result(error)
+    integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
+    character(len=*), dimension(ngas),     intent(in   ) :: gas_names
+    real(wp), dimension(ngas,ncol,nlay),   intent(in   ) :: gas_vmr
+    real(wp), dimension(ncol,nlay),        intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
+    real(wp), dimension(ncol,nlay+1),      intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
+    real(wp), dimension(ncol),             intent(in   ) :: mu0          !< cosine of solar zenith angle
+    !  surface albedo for direct and diffuse radiation (band, col)
+    real(wp), dimension(nbnd,ncol),        intent(in   ) :: sfc_alb_dir, sfc_alb_dif
+    real(wp), dimension(ncol,nlay,ngpt),   intent(in   ) :: cld_tau, cld_ssa, cld_asm
+    real(wp), dimension(ncol,nlay,nbnd),   intent(in   ) :: aer_tau, aer_ssa, aer_asm
+    real(wp), dimension(ncol,nlay+1),      intent(inout), target :: allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
+                                                                    clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net
+    real(wp), dimension(ncol,nlay+1,nbnd), intent(inout), target :: allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
+                                                                    clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir
+    ! Optional inputs
+    real(wp), dimension(ncol,nlay), optional, intent(in ) :: col_dry     !< Molecular number density (ncol, nlay)
+    real(wp), dimension(ncol,ngpt), optional, intent(in ) :: inc_flux    !< incident flux at domain top [W/m2] (ncol, ngpts)
+    real(wp)                      , optional, intent(in ) :: tsi_scaling !< Optional scaling for total solar irradiance
+    integer :: igas
+    call clear_gas_names()
+    do igas = 1 , ngas
+      call push_gas_name(to_c_char(gas_names(igas)))
+    enddo
+    call gas_names_to_string1d()
+    call rrtmgp_run_sw_cpp(ngas, ncol, nlay, nbnd, ngpt, gas_vmr, p_lay, t_lay, p_lev,                          &
+                           mu0, sfc_alb_dir, sfc_alb_dif, cld_tau, cld_ssa, cld_asm,                            &
+                           aer_tau, aer_ssa, aer_asm, allsky_flux_up, allsky_flux_dn,                           &
+                           allsky_flux_net, allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net,        &
+                           allsky_bnd_flux_dn_dir, clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net,             &
+                           clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
+                           tsi_scaling)
+
+    error = 0
+  end function rrtmgp_run_sw 
+
+
+
+#else  /*ifdef RRTMGPXX*/
+
+
+
   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
   use mo_gas_concentrations, only: ty_gas_concs
   use mo_optical_props, only: ty_optical_props_1scl, ty_optical_props_2str
@@ -444,5 +756,7 @@ contains
       )
       handle_error(error_msg)
    end function rrtmgp_run_sw 
+
+#endif  /*ifdef RRTMGPXX*/
 
 end module rrtmgp_interface

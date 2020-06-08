@@ -6,12 +6,11 @@
 #include <vector>
 #include "mo_rrtmgp_util_string.h"
 #include "mo_gas_concentrations.h"
-#include "mo_garand_atmos_io.h"
 #include "mo_gas_optics_rrtmgp.h"
 #include "const_rrtmgpxx.h"
 #include "mo_load_coefficients.h"
-#include "mo_load_cloud_coefficients.h"
 #include "mo_fluxes.h"
+#include "mo_fluxes_byband.h"
 #include "mo_rte_lw.h"
 #include "mo_rte_sw.h"
 
@@ -22,7 +21,7 @@ GasOpticsRRTMGP k_dist_lw;
 GasOpticsRRTMGP k_dist_sw;
 
 
-extern "C" void clear_gas_names(char *gas_name) {
+extern "C" void clear_gas_names() {
   gas_names_vec = std::vector<std::string>();
   gas_names = string1d();
 }
@@ -49,8 +48,8 @@ extern "C" void rrtmgp_initialize_cpp(char *coefficients_file_sw, char *coeffici
   // PCOLS and PLEV don't actually matter here. This GasConcs object is only telling us which gas names are available
   // There is no set_vmr or get_vmr called on the object called gas_names in this scope.
   gas_concentrations.init(gas_names , PCOLS , PLEV+1);
-  void load_and_init(k_dist_sw , coefficients_file_sw , gas_concentrations);
-  void load_and_init(k_dist_lw , coefficients_file_lw , gas_concentrations);
+  load_and_init(k_dist_sw , coefficients_file_sw , gas_concentrations);
+  load_and_init(k_dist_lw , coefficients_file_lw , gas_concentrations);
 }
 
 
@@ -63,40 +62,35 @@ extern "C" int rrtmgp_finalize() {
 }
 
 
-extern "C" int get_nband(char *band) {
-  if        (band[0] == 's') {
-    return k_dist_sw.get_nband();
-  } else if (band[0] == 'l') {
-    return k_dist_lw.get_nband();
-  } else {
-    stoprun("ERROR: Invalid band specified. Must be lw or sw");
-  }
-  return -1;
+extern "C" int get_nband_sw() {
+  return k_dist_sw.get_nband();
 }
 
 
-extern "C" int get_ngpt(char *band) {
-  if        (band[0] == 's') {
-    return k_dist_sw.get_ngpt();
-  } else if (band[0] == 'l') {
-    return k_dist_lw.get_ngpt();
-  } else {
-    stoprun("ERROR: Invalid band specified. Must be lw or sw");
-  }
-  return -1;
+extern "C" int get_nband_lw() {
+  return k_dist_lw.get_nband();
 }
 
 
-extern "C" int get_band_lims_wavenumber(int nbnd, char *band, real *band_limits_p) {
+extern "C" int get_ngpt_sw() {
+  return k_dist_sw.get_ngpt();
+}
+
+
+extern "C" int get_ngpt_lw() {
+  return k_dist_lw.get_ngpt();
+}
+
+
+extern "C" void get_band_lims_wavenumber_sw(int nbnd, real *band_limits_p) {
   realHost2d band_limits("band_limits",band_limits_p,2,nbnd);
-  if        (band[0] == 's') {
-    k_dist_sw.get_band_lims_wavenumber().deep_copy_to(band_limits);
-  } else if (band[0] == 'l') {
-    k_dist_lw.get_band_lims_wavenumber().deep_copy_to(band_limits);
-  } else {
-    stoprun("ERROR: Invalid band specified. Must be lw or sw");
-  }
-  return 0;
+  k_dist_sw.get_band_lims_wavenumber().deep_copy_to(band_limits);
+}
+
+
+extern "C" void get_band_lims_wavenumber_lw(int nbnd, real *band_limits_p) {
+  realHost2d band_limits("band_limits",band_limits_p,2,nbnd);
+  k_dist_lw.get_band_lims_wavenumber().deep_copy_to(band_limits);
 }
 
 
@@ -106,38 +100,45 @@ extern "C" real get_temp_min() { return min(k_dist_sw.get_temp_min() , k_dist_lw
 extern "C" real get_temp_max() { return max(k_dist_sw.get_temp_max() , k_dist_lw.get_temp_max()); }
 
 
-extern "C" int get_gpoint_bands(int ngpt, char *band, int *gpoint_bands_p) {
+extern "C" void get_gpoint_bands_sw(int ngpt, int *gpoint_bands_p) {
   intHost1d gpoint_bands("gpoint_bands",gpoint_bands_p,ngpt);
-  if        (band[0] == 's') {
-    k_dist_sw.get_gpoint_bands().deep_copy_to(gpoint_bands);
-  } else if (band[0] == 'l') {
-    k_dist_lw.get_gpoint_bands().deep_copy_to(gpoint_bands);
-  } else {
-    stoprun("ERROR: Invalid band specified. Must be lw or sw");
-  }
-  return 0;
+  k_dist_sw.get_gpoint_bands().deep_copy_to(gpoint_bands);
 }
 
 
-extern "C" int get_band_midpoints(int nband, char *band, real *band_midpoints) {
+extern "C" void get_gpoint_bands_lw(int ngpt, int *gpoint_bands_p) {
+  intHost1d gpoint_bands("gpoint_bands",gpoint_bands_p,ngpt);
+  k_dist_lw.get_gpoint_bands().deep_copy_to(gpoint_bands);
+}
+
+
+extern "C" void get_band_midpoints_sw(int nband, real *band_midpoints_p) {
   realHost2d band_midpoints("band_midpoints",band_midpoints_p,nband);
   realHost2d band_limits;
 
   // Get band limits
-  if        (band[0] == 's') {
-    k_dist_sw.get_band_lims_wavelength().deep_copy_to(band_limits);
-  } else if (band[0] == 'l') {
-    k_dist_lw.get_band_lims_wavelength().deep_copy_to(band_limits);
-  } else {
-    stoprun("ERROR: Invalid band specified. Must be lw or sw");
-  }
+  k_dist_sw.get_band_lims_wavelength().deep_copy_to(band_limits);
 
   // Compute midpoints from band limits
   memset( band_midpoints , 0._wp );
   for (int i=1 ; i <= nband ; i++) {
-    band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._wp
+    band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._wp;
   };
-  return 0;
+}
+
+
+extern "C" void get_band_midpoints_lw(int nband, real *band_midpoints_p) {
+  realHost2d band_midpoints("band_midpoints",band_midpoints_p,nband);
+  realHost2d band_limits;
+
+  // Get band limits
+  k_dist_lw.get_band_lims_wavelength().deep_copy_to(band_limits);
+
+  // Compute midpoints from band limits
+  memset( band_midpoints , 0._wp );
+  for (int i=1 ; i <= nband ; i++) {
+    band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._wp;
+  };
 }
 
 
@@ -173,7 +174,7 @@ extern "C" void rrtmgp_run_lw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   real2d t_lev               = realHost2d("t_lev              ",t_lev_p              ,ncol,nlay+1     ).createDeviceCopy();
 
   // Flag for TOA->SFC or SFC->TOA
-  real2d p_lay_host = p_lay.createHostCopy();
+  auto p_lay_host = p_lay.createHostCopy();
   bool top_at_1 = p_lay_host(1,1) < p_lay_host(1,nlay);
 
   // Assign Arrays to the fluxes objects
@@ -195,11 +196,11 @@ extern "C" void rrtmgp_run_lw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
 
   // Setup gas concentrations
   GasConcs gas_concs;
-  gas_concs.init(gas_names);
+  gas_concs.init(gas_names,ncol,nlay);
   for (int igas = 1 ; igas <= ngas ; igas++) {
     real2d vmrtmp("vmrtmp",ncol,nlay);
     parallel_for( Bounds<2>(nlay,ncol) , YAKL_LAMBDA (int ilay, int icol) {
-      vrmtmp(icol,ilay) = gas_vmr(igas,icol,ilay);
+      vmrtmp(icol,ilay) = gas_vmr(igas,icol,ilay);
     });
     gas_concs.set_vmr(gas_names(igas),vmrtmp);
   }
@@ -222,15 +223,37 @@ extern "C" void rrtmgp_run_lw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   sources.alloc(ncol, nlay);
 
   // Gas optical depth -- pressure need to be expressed as Pa
-  k_dist_lw.gas_optics(p_lay, p_lev, t_lay, t_sfc, gas_concs, optical_props, sources, real2d(), t_lev );
+  // The "real2d()" argument will be interpreted as a missing optional parameter
+  k_dist_lw.gas_optics(top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optical_props, sources, real2d(), t_lev );
+
+  // Weights and angle secants for first order (k=1) Gaussian quadrature.
+  //   Values from Table 2, Clough et al, 1992, doi:10.1029/92JD01419
+  //   after Abramowitz & Stegun 1972, page 921
+  int constexpr max_gauss_pts = 4;
+  realHost2d gauss_Ds_host ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
+  gauss_Ds_host(1,1) = 1.66_wp      ; gauss_Ds_host(2,1) =         0._wp; gauss_Ds_host(3,1) =         0._wp; gauss_Ds_host(4,1) =         0._wp;
+  gauss_Ds_host(1,2) = 1.18350343_wp; gauss_Ds_host(2,2) = 2.81649655_wp; gauss_Ds_host(3,2) =         0._wp; gauss_Ds_host(4,2) =         0._wp;
+  gauss_Ds_host(1,3) = 1.09719858_wp; gauss_Ds_host(2,3) = 1.69338507_wp; gauss_Ds_host(3,3) = 4.70941630_wp; gauss_Ds_host(4,3) =         0._wp;
+  gauss_Ds_host(1,4) = 1.06056257_wp; gauss_Ds_host(2,4) = 1.38282560_wp; gauss_Ds_host(3,4) = 2.40148179_wp; gauss_Ds_host(4,4) = 7.15513024_wp;
+
+  realHost2d gauss_wts_host("gauss_wts",max_gauss_pts,max_gauss_pts);
+  gauss_wts_host(1,1) = 0.5_wp         ; gauss_wts_host(2,1) = 0._wp          ; gauss_wts_host(3,1) = 0._wp          ; gauss_wts_host(4,1) = 0._wp          ;
+  gauss_wts_host(1,2) = 0.3180413817_wp; gauss_wts_host(2,2) = 0.1819586183_wp; gauss_wts_host(3,2) = 0._wp          ; gauss_wts_host(4,2) = 0._wp          ;
+  gauss_wts_host(1,3) = 0.2009319137_wp; gauss_wts_host(2,3) = 0.2292411064_wp; gauss_wts_host(3,3) = 0.0698269799_wp; gauss_wts_host(4,3) = 0._wp          ;
+  gauss_wts_host(1,4) = 0.1355069134_wp; gauss_wts_host(2,4) = 0.2034645680_wp; gauss_wts_host(3,4) = 0.1298475476_wp; gauss_wts_host(4,4) = 0.0311809710_wp;
+
+  real2d gauss_Ds ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
+  real2d gauss_wts("gauss_wts",max_gauss_pts,max_gauss_pts);
+  gauss_Ds_host .deep_copy_to(gauss_Ds );
+  gauss_wts_host.deep_copy_to(gauss_wts);
 
   // Clear sky fluxes (gases + aerosols)
   aer_props.increment(optical_props);
-  rte_lw( optical_props, top_at_1, sources, sfc_emis, clrsky_fluxes, real2d(), n_gauss_angles );
+  rte_lw( max_gauss_pts , gauss_Ds , gauss_wts , optical_props, top_at_1, sources, sfc_emis, clrsky_fluxes, real2d(), n_gauss_angles );
 
   // All-sky fluxes (clear skies + clouds)
   cld_props.increment(optical_props);
-  rte_lw( optical_props, top_at_1, sources, sfc_emis, allsky_fluxes, real2d(), n_gauss_angles );
+  rte_lw( max_gauss_pts , gauss_Ds , gauss_wts , optical_props, top_at_1, sources, sfc_emis, allsky_fluxes, real2d(), n_gauss_angles );
 
   // Clean up
   sources.finalize();
@@ -299,7 +322,7 @@ extern "C" void rrtmgp_run_sw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
 
   // Setup gas concentrations
   GasConcs gas_concs;
-  gas_concs.init(gas_names);
+  gas_concs.init(gas_names,ncol,nlay);
   for (int igas=1 ; igas <= ngas ; igas++) {
     real2d vmrtmp("vmrtmp",ncol,nlay);
     parallel_for( Bounds<2>(nlay,ncol) , YAKL_LAMBDA (int ilay, int icol) {
@@ -333,7 +356,7 @@ extern "C" void rrtmgp_run_sw_cpp(int ngas, int ncol, int nlay, int nbnd, int ng
   real2d toa_flux("toa_flux",ncol,ngpt);
 
   // Gas optical depth -- pressure need to be expressed as Pa
-  k_dist_sw.gas_optics(p_lay, p_lev, t_lay, gas_concs, optical_props, toa_flux);
+  k_dist_sw.gas_optics(top_at_1, p_lay, p_lev, t_lay, gas_concs, optical_props, toa_flux);
 
   parallel_for( Bounds<2>(ngpt,ncol) , YAKL_LAMBDA(int igpt, int icol) {
     toa_flux(icol,igpt) = toa_flux(icol,igpt) * tsi_scaling;

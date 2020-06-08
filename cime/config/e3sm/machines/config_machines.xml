@@ -2989,6 +2989,7 @@
       <modules compiler="gnugpu">
         <command name="load">gcc/8.1.1</command>
         <command name="load">cuda/10.1.105</command>
+        <command name="load">netcdf-cxx4</command>
       </modules>
       <modules compiler="pgiacc">
         <command name="load">cuda/10.1.168</command>
