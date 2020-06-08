@@ -1485,9 +1485,9 @@ subroutine diag_third_shoc_moments(&
 
 
   ! perform clipping to prevent unrealistically large values from occuring
-  call clipping_diag_third_shoc_momnets(&
+  call clipping_diag_third_shoc_moments(&
           nlevi,shcol,w_sec_zi,&    !Input 
-          w3)                       !Output
+          w3)                       !Input/Output
   
   return
 
@@ -1634,7 +1634,7 @@ subroutine compute_diag_third_shoc_moment(&
 
 end subroutine compute_diag_third_shoc_moment
  
-subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
+subroutine clipping_diag_third_shoc_moments(nlevi,shcol,w_sec_zi,w3)
 
   ! perform clipping to prevent unrealistically large values from occuring
 
@@ -1664,7 +1664,7 @@ subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
     enddo !end i loop (column loop)
   enddo ! end k loop (vertical loop)
 
-end subroutine clipping_diag_third_shoc_momnets
+end subroutine clipping_diag_third_shoc_moments
 
 !==============================================================
 ! Assumed PDF closure for the SHOC scheme
