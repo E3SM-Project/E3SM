@@ -335,8 +335,6 @@ contains
       !$omp end do
       !$omp barrier
 
-      if ( config_Redi_apply_flux_limiter ) then
-
       !loop over cells and check for out of bounds
       if (isActiveTracer) then
          minimumVal(1) = -2.0_RKIND
@@ -375,8 +373,6 @@ contains
       end do ! iCell
       !$omp end do
       !$omp barrier
-
-      endif
 
       !now go back and reapply all tendencies
       !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
