@@ -1517,8 +1517,8 @@ contains
           deltaVelocitySquared = deltaVelocitySquared + edgeAreaFractionOfCell(i,iCell) * delU2
         enddo
        ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
-        surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * deltaVelocitySquared )
-        surfaceFrictionVelocity(iCell) = surfaceStressMagnitude(iCell) / rho_sw
+        surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * deltaVelocitySquared)
+        surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
 
       enddo
       !$omp end do
