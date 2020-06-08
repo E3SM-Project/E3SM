@@ -99,7 +99,7 @@ static void run_bfb_calc_bulk_rhime()
     }
 
     Smask gt_small(qi_tot > qsmall);
-    Spack rho_rime = Functions::calc_bulk_rho_rime(gt_small, qi_tot, qi_rim, bi_rim);
+    Spack rho_rime = Functions::calc_bulk_rho_rime(qi_tot, qi_rim, bi_rim, gt_small);
 
     // Copy results back into views
     for (Int s = 0; s < Spack::n; ++s) {

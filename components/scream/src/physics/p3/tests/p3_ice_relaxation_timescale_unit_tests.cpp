@@ -51,19 +51,19 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
       {1.002E+01, 9.321E+02, 1.069E+00, 0.174E+00, 1.201E+00, 1.221E-02, 6.952E-06, 6.596E-05, 6.982E-02, 1.734E+04},
       {1.152E+01, 1.023E+03, 1.069E+00, 0.374E+00, 1.678E+00, 1.221E-02, 3.952E-06, 6.596E-05, 9.234E-02, 1.734E+04},
       {1.252E+01, 2.012E+03, 1.069E+00, 0.123E+00, 2.312E+00, 1.221E-02, 1.952E-06, 6.596E-05, 2.345E-01, 1.734E+04},
-      {1.352E+01, 3.210E+03, 1.069E+00, 0.123E+00, 3.456E+00, 1.221E-02, 9.952E-07, 6.596E-05, 4.532E-01, 1.734E+04}     
+      {1.352E+01, 3.210E+03, 1.069E+00, 0.123E+00, 3.456E+00, 1.221E-02, 9.952E-07, 6.596E-05, 4.532E-01, 1.734E+04}
     };
     // Get data from fortran
     for (Int i = 0; i < Spack::n; ++i) {
       ice_relaxation_timescale(self[i]);
      }
-    
+
     // Sync to device
     KTH::view_1d<IceRelaxationData> self_host("self_host", Spack::n);
     view_1d<IceRelaxationData> self_device("self_host", Spack::n);
     std::copy(&self[0], &self[0] + Spack::n, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
-   
+
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
     // Init pack inputs
@@ -85,8 +85,8 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
       Spack epsi{0.0};
       Spack epsi_tot{0.0};
       Functions::ice_relaxation_timescale(rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld,
-                                          epsi, epsi_tot); 
-   
+                                          epsi, epsi_tot);
+
       for (Int s = 0; s < Spack::n; ++s) {
         self_device(s).epsi     = epsi[s];
         self_device(s).epsi_tot = epsi_tot[s];

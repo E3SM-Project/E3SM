@@ -25,7 +25,8 @@ void Functions<S,D>
                        Spack& nccol, Spack& ncshdc, Spack& ncheti,
                        Spack& nrcol, Spack& nislf, Spack& qidep,
                        Spack& nrheti, Spack& nisub, Spack& qinuc,
-                       Spack& ninuc, Spack& qiberg)
+                       Spack& ninuc, Spack& qiberg,
+                       const Smask& context)
 {
   Spack ir_cldm, il_cldm, lr_cldm;
   ir_cldm = min(icldm,rcldm); // Intersection of ICE and RAIN cloud
@@ -38,39 +39,39 @@ void Functions<S,D>
   // cell-average quantities where applicable.
 
   // map warm-phase process rates to cell-avg
-  qcacc *= lr_cldm;  // Accretion of liquid to rain
-  qrevp *= rcldm;    // Evaporation of rain
-  qcaut *= lcldm;    // Autoconversion of liquid
-  ncacc *= lr_cldm;  // Number change due to accretion
-  ncslf *= lcldm;    // Self collection occurs locally in liq. cloud
-  ncautc *= lcldm;   // Impact of autoconversion on number
-  nrslf *= rcldm;    // Self collection occurs locally in rain cloud
-  nrevp *= rcldm;    // Change in rain number due to evaporation
-  ncautr *= lr_cldm; // Autoconversion of rain drops within rain/liq cloud
+  qcacc.set(context, qcacc * lr_cldm);  // Accretion of liquid to rain
+  qrevp.set(context, qrevp * rcldm);    // Evaporation of rain
+  qcaut.set(context, qcaut * lcldm);    // Autoconversion of liquid
+  ncacc.set(context, ncacc * lr_cldm);  // Number change due to accretion
+  ncslf.set(context, ncslf * lcldm);    // Self collection occurs locally in liq. cloud
+  ncautc.set(context, ncautc * lcldm);   // Impact of autoconversion on number
+  nrslf.set(context, nrslf * rcldm);    // Self collection occurs locally in rain cloud
+  nrevp.set(context, nrevp * rcldm);    // Change in rain number due to evaporation
+  ncautr.set(context, ncautr * lr_cldm); // Autoconversion of rain drops within rain/liq cloud
 
   // AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
-  qcnuc *= lcldm;    // Impact on liq. from nucleation
-  ncnuc *= lcldm;    // Number change due to aerosol activation
+  qcnuc.set(context, qcnuc * lcldm);    // Impact on liq. from nucleation
+  ncnuc.set(context, ncnuc * lcldm);    // Number change due to aerosol activation
 
   // map ice-phase  process rates to cell-avg
-  qisub *= icldm;    // Sublimation of ice in ice cloud
-  nrshdr *= il_cldm; // Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
-  qcheti *= il_cldm; // Immersion freezing of cloud drops
-  qrcol *= ir_cldm;  // Collection of rain mass by ice
-  qcshd *= il_cldm;  // Rain mass growth due to shedding of fain drops after collisions with ice, occurs when ice and liquid interact
-  qimlt *= icldm;    // Melting of ice
-  qccol *= il_cldm;  // Collection of water by ice
-  qrheti *= rcldm;   // Immersion freezing of rain
-  nimlt *= icldm;    // Change in number due to melting
-  nccol *= il_cldm;  // Cloud # change due to collection of cld water by ice
-  ncshdc *= il_cldm; // Number change due to shedding, occurs when ice and liquid interact
-  ncheti *= lcldm;   // Number change associated with freexzing of cld drops
-  nrcol *= ir_cldm;  // Rain number change due to collection from ice
-  nislf *= icldm;    // Ice self collection
-  qidep *= icldm;    // Vapor deposition to ice phase
-  nrheti *= rcldm;   // Change in number due to immersion freezing of rain
-  nisub *= icldm;    // Number change due to sublimation of ice
-  qiberg *= il_cldm; // Bergeron process
+  qisub.set(context, qisub * icldm);    // Sublimation of ice in ice cloud
+  nrshdr.set(context, nrshdr * il_cldm); // Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
+  qcheti.set(context, qcheti * il_cldm); // Immersion freezing of cloud drops
+  qrcol.set(context, qrcol * ir_cldm);  // Collection of rain mass by ice
+  qcshd.set(context, qcshd * il_cldm);  // Rain mass growth due to shedding of fain drops after collisions with ice, occurs when ice and liquid interact
+  qimlt.set(context, qimlt * icldm);    // Melting of ice
+  qccol.set(context, qccol * il_cldm);  // Collection of water by ice
+  qrheti.set(context, qrheti * rcldm);   // Immersion freezing of rain
+  nimlt.set(context, nimlt * icldm);    // Change in number due to melting
+  nccol.set(context, nccol * il_cldm);  // Cloud # change due to collection of cld water by ice
+  ncshdc.set(context, ncshdc * il_cldm); // Number change due to shedding, occurs when ice and liquid interact
+  ncheti.set(context, ncheti * lcldm);   // Number change associated with freexzing of cld drops
+  nrcol.set(context, nrcol * ir_cldm);  // Rain number change due to collection from ice
+  nislf.set(context, nislf * icldm);    // Ice self collection
+  qidep.set(context, qidep * icldm);    // Vapor deposition to ice phase
+  nrheti.set(context, nrheti * rcldm);   // Change in number due to immersion freezing of rain
+  nisub.set(context, nisub * icldm);    // Number change due to sublimation of ice
+  qiberg.set(context, qiberg * il_cldm); // Bergeron process
 
   // AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
   //qinuc = qinuc;           // Deposition and condensation-freezing nucleation, already cell-averaged

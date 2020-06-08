@@ -273,9 +273,11 @@ static void run_bfb_p3_main_main_loop()
   }
 
   for (Int i = 0; i < num_runs; ++i) {
+    //std::cout << "Checking run: " << i << std::endl;
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
+      //std::cout << "  checking itr: " << k << std::endl;
       REQUIRE(isds_fortran[i].t[k]                == isds_cxx[i].t[k]);
       REQUIRE(isds_fortran[i].rho[k]              == isds_cxx[i].rho[k]);
       REQUIRE(isds_fortran[i].inv_rho[k]          == isds_cxx[i].inv_rho[k]);

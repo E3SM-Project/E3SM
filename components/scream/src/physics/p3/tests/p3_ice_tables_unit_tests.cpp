@@ -240,10 +240,10 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       }
 
       Smask qiti_gt_small(qitot > qsmall);
-      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
-      Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
-      Spack ice_result = Functions::apply_table_ice(qiti_gt_small, access_table_index-1, itab, ti);
-      Spack rain_result = Functions::apply_table_coll(qiti_gt_small, access_table_index-1, itabcol, ti, tr);
+      Functions::lookup_ice(qitot, nitot, qirim, rhop, ti, qiti_gt_small);
+      Functions::lookup_rain(qr, nr, tr, qiti_gt_small);
+      Spack ice_result = Functions::apply_table_ice(access_table_index-1, itab, ti, qiti_gt_small);
+      Spack rain_result = Functions::apply_table_coll(access_table_index-1, itabcol, ti, tr, qiti_gt_small);
 
       int_results(0) = ti.dumi;
       int_results(1) = ti.dumjj;
@@ -307,18 +307,16 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
         for (size_t k = 0; k < itab.extent(2); ++k) {
           for (size_t l = 0; l < itab.extent(3); ++l) {
-            Smask qiti_gt_small(true);
-
             // Init packs to same value, TODO: how to pick use values?
             Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4), qr(0.5), nr(0.6);
 
             TableIce ti;
             TableRain tr;
-            Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
-            Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
+            Functions::lookup_ice(qitot, nitot, qirim, rhop, ti);
+            Functions::lookup_rain(qr, nr, tr);
 
-            /*Spack proc1 = */ Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
-            //Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
+            /*Spack proc1 = */ Functions::apply_table_ice(1, itab, ti);
+            //Spack proc2 = Functions::apply_table_coll(1, itabcol, ti, tr);
 
             // TODO: how to test?
           }

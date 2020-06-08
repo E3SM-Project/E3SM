@@ -85,7 +85,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
     Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
       qc_relvar, qcaut, ncautc, ncautr);
-    
+
     // Copy results back into views
     for (Int s = 0; s < Spack::n; ++s) {
       cwadc_device(s).rho = rho[s];

@@ -12,10 +12,11 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_melting(const Spack& rho, const Spack& t, const Spack& pres, const Spack& rhofaci,
-	      const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, 
-	      const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap, 
+	      const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf,
+	      const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
 	      const Spack& qv, const Spack& qitot_incld, const Spack& nitot_incld,
-	      Spack& qimlt, Spack& nimlt)
+	      Spack& qimlt, Spack& nimlt,
+              const Smask& context)
 {
   // Notes Left over from WRF Version:
   // need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
@@ -24,16 +25,15 @@ void Functions<S,D>
   // include RH dependence
 
   using physics = scream::physics::Functions<Scalar, Device>;
-  
+
   const auto Pi = C::Pi;
   const auto QSMALL = C::QSMALL;
   const auto Tmelt = C::Tmelt;
-  
+
   //Find cells above freezing AND which have ice
-  const auto has_melt_qi = (qitot_incld >= QSMALL ) && (t > Tmelt);
+  const auto has_melt_qi = (qitot_incld >= QSMALL ) && (t > Tmelt) && context;
 
-  if (has_melt_qi.any()){
-
+  if (has_melt_qi.any()) {
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
     const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false); //last false means NOT saturation w/ respect to ice.
 
@@ -43,14 +43,12 @@ void Functions<S,D>
 
     //make sure qimlt is always negative
     qimlt = pack::max(qimlt,sp(0.0));
-    
+
     //Reduce ni in proportion to decrease in qi mass. Prev line makes sure it always has the right sign.
     nimlt.set(has_melt_qi, qimlt*(nitot_incld/qitot_incld) );
-   
   }
-  
 }
-  
+
 } // namespace p3
 } // namespace scream
 

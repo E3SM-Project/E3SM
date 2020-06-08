@@ -899,7 +899,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
         cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange, &
         vap_ice_exchange, liq_ice_exchange, pratot, prctot
 
-   logical(kind=c_bool), intent(inout) :: log_hydrometeorsPresent
+   logical(kind=c_bool), intent(out) :: log_hydrometeorsPresent
 
    ! throwaway
    real(kind=c_real), dimension(kts:kte,49) :: p3_tend_out

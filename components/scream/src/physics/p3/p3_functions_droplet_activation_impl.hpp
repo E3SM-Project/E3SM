@@ -17,7 +17,8 @@ void Functions<S,D>
 :: droplet_activation(const Spack& temp, const Spack& pres, const Spack& qv, const Spack& qc,
                       const Spack& inv_rho,const Spack& sup, const Spack& xxlv, const Spack& npccn,
                       const bool& log_predictNc, const Scalar& odt,
-                      Spack& qcnuc, Spack& ncnuc)
+                      Spack& qcnuc, Spack& ncnuc,
+                      const Smask& context)
 {
 
   using physics = scream::physics::Functions<Scalar, Device>;
@@ -27,7 +28,7 @@ void Functions<S,D>
   constexpr Scalar rv     = C::RH2O;
   constexpr Scalar inv_cp = C::INV_CP;
 
-  const auto sup_gt_small   = sup > sp(1.e-6);
+  const auto sup_gt_small   = sup > sp(1.e-6) && context;
   const auto sup_if_log     = sup_gt_small && log_predictNc;
   const auto sup_if_not_log = sup_gt_small && !log_predictNc;
 

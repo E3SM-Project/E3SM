@@ -1118,12 +1118,11 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
   using P3F = Functions<Real, DefaultDevice>;
   using TableIce = typename P3F::TableIce;
 
-  typename P3F::Smask qiti_gt_small(qitot_ > P3F::C::QSMALL);
   typename P3F::Spack qitot(qitot_), nitot(nitot_), qirim(qirim_), rhop(rhop_);
   typename P3F::view_1d<TableIce> t_d("t_h", 1);
   auto t_h = Kokkos::create_mirror_view(t_d);
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t_d(0));
+    P3F::lookup_ice(qitot, nitot, qirim, rhop, t_d(0));
   });
   Kokkos::deep_copy(t_h, t_d);
   auto& t = t_h(0);
@@ -1145,14 +1144,11 @@ void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
   using P3F = Functions<Real, DefaultDevice>;
   using TableRain = typename P3F::TableRain;
 
-  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
-  typename P3F::Smask qiti_gt_small(true);
-
   typename P3F::Spack qr(qr_), nr(nr_);
   typename P3F::view_1d<TableRain> t_d("t_h", 1);
   auto t_h = Kokkos::create_mirror_view(t_d);
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    P3F::lookup_rain(qiti_gt_small, qr, nr, t_d(0));
+    P3F::lookup_rain(qr, nr, t_d(0));
   });
   Kokkos::deep_copy(t_h, t_d);
   auto& t = t_h(0);
@@ -1168,8 +1164,6 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
 {
   using P3F = Functions<Real, DefaultDevice>;
 
-  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
-  typename P3F::Smask qiti_gt_small(true);
   typename P3F::TableIce t;
 
   // Adjust for 0-based indexing
@@ -1186,7 +1180,7 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
   auto itab = P3GlobalForFortran::itab();
   Real result;
   Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
-    value = P3F::apply_table_ice(qiti_gt_small, adjusted_index, itab, t)[0];
+    value = P3F::apply_table_ice(adjusted_index, itab, t)[0];
   }, result);
   *proc = result;
 }
@@ -1195,9 +1189,6 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc)
 {
   using P3F = Functions<Real, DefaultDevice>;
-
-  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
-  typename P3F::Smask qiti_gt_small(true);
 
   typename P3F::TableIce ti;
   typename P3F::TableRain tr;
@@ -1218,7 +1209,7 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   auto itabcol = P3GlobalForFortran::itabcol();
   Real result;
   Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
-    value = P3F::apply_table_coll(qiti_gt_small, adjusted_index, itabcol, ti, tr)[0];
+    value = P3F::apply_table_coll(adjusted_index, itabcol, ti, tr)[0];
   }, result);
   *proc = result;
 }
@@ -1228,7 +1219,6 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
 {
   using P3F = Functions<Real, DefaultDevice>;
 
-  typename P3F::Smask qc_gt_small(qc_ > P3F::C::QSMALL);
   typename P3F::view_1d<Real> t_d("t_d", 6);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
@@ -1238,7 +1228,7 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
     typename P3F::Spack qc(qc_), nc(local_nc), rho(rho_), lcldm(lcldm_);
     typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
 
-    P3F::get_cloud_dsd2(qc_gt_small, qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
+    P3F::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
 
     t_d(0) = nc[0];
     t_d(1) = mu_c[0];
@@ -1261,7 +1251,6 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
 {
   using P3F = Functions<Real, DefaultDevice>;
 
-  typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
   typename P3F::view_1d<Real> t_d("t_d", 5);
   auto t_h = Kokkos::create_mirror_view(t_d);
   Real local_nr = *nr_;
@@ -1270,7 +1259,7 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
     typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(local_nr);
     typename P3F::Spack lamr, mu_r, cdistr, logn0r;
 
-    P3F::get_rain_dsd2(qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+    P3F::get_rain_dsd2(qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
 
     t_d(0) = nr[0];
     t_d(1) = mu_r[0];
@@ -2367,7 +2356,6 @@ void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack   = typename P3F::Spack;
-  using Smask   = typename P3F::Smask;
   using view_1d = typename P3F::view_1d<Real>;
 
   Real local_qi_rim = *qi_rim_, local_bi_rim = *bi_rim_;
@@ -2375,10 +2363,9 @@ void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_
   const auto t_h = Kokkos::create_mirror_view(t_d);
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Smask qi_gt_small(qi_tot_ > P3F::C::QSMALL);
     Spack qi_tot(qi_tot_), qi_rim(local_qi_rim), bi_rim(local_bi_rim);
 
-    const auto result = P3F::calc_bulk_rho_rime(qi_gt_small, qi_tot, qi_rim, bi_rim);
+    const auto result = P3F::calc_bulk_rho_rime(qi_tot, qi_rim, bi_rim);
     t_d(0) = qi_rim[0];
     t_d(1) = bi_rim[0];
     t_d(2) = result[0];
@@ -2472,7 +2459,6 @@ void compute_rain_fall_velocity_f(Real qr_incld_, Real rcldm_, Real rhofacr_,
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack   = typename P3F::Spack;
-  using Smask   = typename P3F::Smask;
   using view_1d = typename P3F::view_1d<Real>;
 
   Real local_nr = *nr_, local_nr_incld = *nr_incld_;
@@ -2482,11 +2468,10 @@ void compute_rain_fall_velocity_f(Real qr_incld_, Real rcldm_, Real rhofacr_,
   const auto vn_table = P3GlobalForFortran::vn_table();
   const auto vm_table = P3GlobalForFortran::vm_table();
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Smask qr_gt_small(qr_incld_ > P3F::C::QSMALL);
     Spack qr_incld(qr_incld_), rcldm(rcldm_), rhofacr(rhofacr_), nr(local_nr), nr_incld(local_nr_incld),
       mu_r, lamr, V_qr, V_nr;
 
-    P3F::compute_rain_fall_velocity(qr_gt_small, vn_table, vm_table,
+    P3F::compute_rain_fall_velocity(vn_table, vm_table,
                                     qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr);
     t_d(0) = nr[0];
     t_d(1) = nr_incld[0];
@@ -3435,7 +3420,7 @@ void p3_main_main_loop_f(
       uprctot_d           (temp_d[63]);
 
     P3F::p3_main_main_loop(
-      team, nk, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
+      team, nk_pack, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
       upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, unaai_d, uqc_relvar_d, uicldm_d, ulcldm_d, urcldm_d,
       ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d, uacn_d,
       uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uxxlv_d, uxxls_d, uxlf_d, uqc_incld_d, uqr_incld_d,
