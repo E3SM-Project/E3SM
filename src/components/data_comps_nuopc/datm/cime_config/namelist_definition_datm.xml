@@ -86,10 +86,10 @@
     CORE2_NYF.NCEP
 
     ========================
-    datmode CORE2_IAF: 
+    datmode CORE2_IAF:
     ========================
     Note for CORE2_IAF:
-    The most current versions of forcing files(those recommended for use) 
+    The most current versions of forcing files(those recommended for use)
     are duplicated below and stored at /ccsm/ocn/iaf/):
       gcgcs.prec.T62.current, giss.lwdn.T62.current,
       giss.swdn.T62.current, giss.swup.T62.current,
@@ -254,7 +254,7 @@
       <value stream="Anomaly.Forcing">
         <!-- TODO: what is this mesh? -->
 	$DIN_LOC_ROOT/atm/datm7/anomaly_forcing/domain.permafrostRCN_P2.c2013.nc
-      </value> 
+      </value>
       <value stream="CLM1PT.1x1_mexicocityMEX">
 	<!-- TODO: generate_mesh_from: $DIN_LOC_ROOT/share/domains/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc -->
       </value>
@@ -2646,21 +2646,7 @@
     <group>datm_nml</group>
     <desc>
       Model restart filename for the data atmosphere model data.  This is
-      optional.  If both restfils and restfilm are undefined, the restart
-      filename will be read from the DATM restart pointer file (or files for multiple instances).
-    </desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="restfils">
-    <type>char</type>
-    <category>datm</category>
-    <group>datm_nml</group>
-    <desc>
-      stream restart filename for the data atmosphere stream data.  This is
-      optional.  If both restfils and restfilm are undefined, the restart
+      optional.  If restfilm is undefined, the restart
       filename will be read from the DATM restart pointer file (or files for multiple instances).
     </desc>
     <values>

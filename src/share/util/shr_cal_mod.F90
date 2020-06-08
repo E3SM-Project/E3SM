@@ -228,7 +228,7 @@ contains
   !
   ! !INTERFACE:  -----------------------------------------------------------------
 
-  subroutine shr_cal_timeSet_int(etime,ymd,sec,calendar)
+  subroutine shr_cal_timeSet_int(etime,ymd,sec,calendar, rc)
 
     implicit none
 
@@ -237,13 +237,13 @@ contains
     type(ESMF_Time),intent(out) :: etime
     integer(SHR_KIND_IN),intent(in ) :: ymd,sec   ! ymd, sec
     character(*)        ,intent(in)  :: calendar  ! calendar type
-
+    integer, intent(out), optional   :: rc
     !EOP
 
     integer(SHR_KIND_IN) :: year,month,day
     type(ESMF_CALKIND_FLAG) :: calkind
     character(len=shr_cal_calMaxLen) :: lcalendar
-    integer :: rc
+    integer :: lrc
     character(*),parameter :: subName = "(shr_cal_timeSet)"
 
     !-------------------------------------------------------------------------------
@@ -259,12 +259,15 @@ contains
     endif
 
     call shr_cal_date2ymd(ymd,year,month,day)
-    call ESMF_TimeSet(etime,yy=year,mm=month,dd=day,s=sec,calkindflag=calkind,rc=rc)
-    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
+    call ESMF_TimeSet(etime,yy=year,mm=month,dd=day,s=sec,calkindflag=calkind,rc=lrc)
+    if (present(rc)) then
+       rc = lrc
+    else if(lrc /= ESMF_SUCCESS) then
+       call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+    endif
   end subroutine shr_cal_timeSet_int
 
-  subroutine shr_cal_timeSet_long(etime,ymd,sec,calendar)
+  subroutine shr_cal_timeSet_long(etime,ymd,sec,calendar, rc)
 
     implicit none
 
@@ -274,13 +277,13 @@ contains
     integer(SHR_KIND_I8),intent(in ) :: ymd ! ymd
     integer(SHR_KIND_IN), intent(in) :: sec   ! ymd
     character(*)        ,intent(in)  :: calendar  ! calendar type
-
+    integer, intent(out), optional   :: rc
     !EOP
 
     integer(SHR_KIND_IN) :: year,month,day
     type(ESMF_CALKIND_FLAG) :: calkind
     character(len=shr_cal_calMaxLen) :: lcalendar
-    integer :: rc
+    integer :: lrc
     character(*),parameter :: subName = "(shr_cal_timeSet_long)"
 
     !-------------------------------------------------------------------------------
@@ -296,9 +299,12 @@ contains
     endif
 
     call shr_cal_date2ymd(ymd,year,month,day)
-    call ESMF_TimeSet(etime,yy=year,mm=month,dd=day,s=sec,calkindflag=calkind,rc=rc)
-    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
+    call ESMF_TimeSet(etime,yy=year,mm=month,dd=day,s=sec,calkindflag=calkind,rc=lrc)
+    if(present(rc)) then
+       rc = lrc
+    else if(rc /= ESMF_SUCCESS) then
+       call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+    endif
   end subroutine shr_cal_timeSet_long
   !===============================================================================
   !BOP ===========================================================================

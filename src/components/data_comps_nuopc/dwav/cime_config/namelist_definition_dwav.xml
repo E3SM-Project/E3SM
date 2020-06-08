@@ -354,18 +354,6 @@
     </values>
   </entry>
 
-  <entry id="restfils">
-    <type>char</type>
-    <category>dwav</category>
-    <group>dwav_nml</group>
-    <desc>
-      Stream restart file name for dwav model, needed for branch simulations
-    </desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
   <entry id="force_prognostic_true">
     <type>logical</type>
     <category>dwav</category>

@@ -37,8 +37,7 @@ module dshr_mod
   use shr_cal_mod      , only : shr_cal_datetod2string
   use shr_const_mod    , only : shr_const_spval
   use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml
-  use dshr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_restRead
+  use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml, SHR_STRDATA_GET_STREAM_COUNT
   use dshr_methods_mod , only : chkerr
   use perf_mod         , only : t_startf, t_stopf
   use pio
@@ -1025,12 +1024,12 @@ contains
   end subroutine dshr_time_init
 
   !===============================================================================
-  subroutine dshr_restart_read(rest_filem, rest_files, rpfile, inst_suffix, nullstr, &
+  subroutine dshr_restart_read(rest_filem, rpfile, inst_suffix, nullstr, &
        logunit, my_task, mpicom, sdat, fld, fldname)
+    use dshr_stream_mod, only : shr_stream_restIO
 
     ! input/output arguments
     character(len=*)            , intent(inout) :: rest_filem
-    character(len=*)            , intent(inout) :: rest_files
     character(len=*)            , intent(in)    :: rpfile
     character(len=*)            , intent(in)    :: inst_suffix
     character(len=*)            , intent(in)    :: nullstr
@@ -1051,10 +1050,12 @@ contains
     character(*), parameter :: F00   = "('(dshr_restart_read) ',8a)"
     character(*), parameter :: subName = "(dshr_restart_read) "
     !-------------------------------------------------------------------------------
+    ! no streams means no restart file is read.
+    if(shr_strdata_get_stream_count(sdat) <= 0) return
 
-    if (trim(rest_filem) == trim(nullstr) .and. trim(rest_files) == trim(nullstr)) then
+    if (trim(rest_filem) == trim(nullstr)) then
        if (my_task == master_task) then
-          write(logunit,F00) ' restart filenames from rpointer'
+          write(logunit,F00) ' restart filename from rpointer'
           inquire(file=trim(rpfile)//trim(inst_suffix), exist=exists)
           if (.not.exists) then
              write(logunit, F00) ' ERROR: rpointer file does not exist'
@@ -1062,40 +1063,40 @@ contains
           endif
           open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
           read(nu, '(a)') rest_filem
-          read(nu, '(a)') rest_files
           close(nu)
-          inquire(file=trim(rest_files), exist=exists)
+          inquire(file=trim(rest_filem), exist=exists)
        endif
        call shr_mpi_bcast(rest_filem, mpicom, 'rest_filem')
-       call shr_mpi_bcast(rest_files, mpicom, 'rest_files')
     else
        ! use namelist already read
        if (my_task == master_task) then
           write(logunit, F00) ' restart filenames from namelist '
-          inquire(file=trim(rest_files), exist=exists)
+          inquire(file=trim(rest_filem), exist=exists)
        endif
     endif
     call shr_mpi_bcast(exists, mpicom, 'exists')
     if (exists) then
        if (my_task == master_task) write(logunit, F00) ' reading data model restart ', trim(rest_filem)
+       rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_nowrite)
+       call shr_stream_restIO(pioid, sdat%stream, 'read')
        if (present(fld) .and. present(fldname)) then
-          rcode = pio_openfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_filem), pio_nowrite)
           call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%model_gsize/), sdat%model_gindex, pio_iodesc)
           rcode = pio_inq_varid(pioid, trim(fldname), varid)
           call pio_read_darray(pioid, varid, pio_iodesc, fld, rcode)
-          call pio_closefile(pioid)
-          call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
        end if
-       call shr_strdata_restRead(sdat, trim(rest_files))
+       call pio_closefile(pioid)
+       if (present(fld) .and. present(fldname)) then
+          call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
+       endif
     else
-       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_files)
+       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_filem)
     endif
   end subroutine dshr_restart_read
 
   !===============================================================================
   subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
        logunit, mpicom, my_task, sdat, fld, fldname)
-
+    use dshr_stream_mod, only : shr_stream_restIO
     ! input/output variables
     character(len=*)            , intent(in)    :: rpfile
     character(len=*)            , intent(in)    :: case_name
@@ -1113,7 +1114,6 @@ contains
     ! local variables
     integer           :: nu
     character(len=CL) :: rest_file_model
-    character(len=CL) :: rest_file_stream
     character(len=CS) :: date_str
     type(file_desc_t) :: pioid
     integer           :: dimid(1)
@@ -1121,38 +1121,39 @@ contains
     type(io_desc_t)   :: pio_iodesc
     integer           :: rcode
     integer           :: yy, mm, dd
-    character(*), parameter :: F00   = "('(dshr_restart_write) ',8a,2(i0,2x))"
+    character(*), parameter :: F00   = "('(dshr_restart_write) ',2a,2(i0,2x))"
     !-------------------------------------------------------------------------------
-
+    ! no streams means no restart file is written.
+     if(shr_strdata_get_stream_count(sdat) <= 0) return
      call shr_cal_datetod2string(date_str, ymd, tod)
-     write(rest_file_model ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rm.', trim(date_str),'.nc'
-     write(rest_file_stream,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs.', trim(date_str),'.bin'
+     write(rest_file_model ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.', trim(date_str),'.nc'
 
      ! write restart info to rpointer file
      if (my_task == master_task) then
         open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
         write(nu,'(a)') rest_file_model
-        write(nu,'(a)') rest_file_stream
         close(nu)
-        write(logunit,F00)' (dshr_restart_write) writing ',trim(rest_file_stream), ymd, tod
+        write(logunit,F00)' writing ',trim(rest_file_model), ymd, tod
      endif
 
      ! write data model restart data
+     rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_file_model), pio_clobber)
+     rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
      if (present(fld) .and. present(fldname)) then
-        rcode = pio_createfile(sdat%pio_subsystem, pioid, sdat%io_type, trim(rest_file_model), pio_clobber)
-        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-        rcode = pio_put_att(pioid, pio_global, "version", "nuopc_data_models_v0")
         rcode = pio_def_dim(pioid, 'gsize', sdat%model_gsize, dimid(1))
         rcode = pio_def_var(pioid, trim(fldname), PIO_DOUBLE, dimid, varid)
-        rcode = pio_enddef(pioid)
+     endif
+     call shr_stream_restIO(pioid, sdat%stream, 'define')
+     rcode = pio_enddef(pioid)
+     call shr_stream_restIO(pioid, sdat%stream, 'write')
+     if (present(fld) .and. present(fldname)) then
         call pio_initdecomp(sdat%pio_subsystem, pio_double, (/sdat%model_gsize/), sdat%model_gindex, pio_iodesc)
         call pio_write_darray(pioid, varid, pio_iodesc, fld, rcode, fillval=shr_const_spval)
-        call pio_closefile(pioid)
+     endif
+     call pio_closefile(pioid)
+     if (present(fld) .and. present(fldname)) then
         call pio_freedecomp(sdat%pio_subsystem, pio_iodesc)
-     end if
-
-     ! write stream restart data
-     call shr_strdata_restWrite(sdat, trim(rest_file_stream), trim(case_name))
+     endif
 
   end subroutine dshr_restart_write
 

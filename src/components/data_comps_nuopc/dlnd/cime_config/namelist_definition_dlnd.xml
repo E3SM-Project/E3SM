@@ -381,18 +381,6 @@
     </values>
   </entry>
 
-  <entry id="restfils">
-    <type>char</type>
-    <category>dlnd</category>
-    <group>dlnd_nml</group>
-    <desc>
-      Stream restart file name for dlnd model, needed for branch simulations
-    </desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
   <entry id="force_prognostic_true">
     <type>logical</type>
     <category>dlnd</category>
