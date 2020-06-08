@@ -1382,7 +1382,7 @@ contains
       integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
       real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
-      real (kind=RKIND) :: deltaVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND) :: sumSurfaceStressSquared
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
 
@@ -1463,62 +1463,59 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-       invAreaCell = 1.0_RKIND / areaCell(iCell)
+         ! compute surface buoyancy forcing based on surface fluxes of mass, temperature, salinity and frazil
+         !                                (frazil to be added later)
+         ! since this computation is confusing, variables, units and sign convention is repeated here
+         ! everything below should be consistent with that specified in Registry
+         ! everything below should be consistent with the CVMix/KPP documentation:
+         !           https://www.dropbox.com/s/6hqgc0rsoa828nf/cvmix_20aug2013.pdf
+         !
+         !    surfaceThicknessFlux: surface mass flux, m/s, positive into ocean
+         !    activeTracersSurfaceFlux(indexTempFlux): non-penetrative temperature flux, C m/s, positive into ocean
+         !    penetrativeTemperatureFlux: penetrative surface temperature flux at ocean surface, positive into ocean
+         !    activeTracersSurfaceFlux(indexSaltFlux): salinity flux, PSU m/s, positive into ocean
+         !    penetrativeTemperatureFluxOBL: penetrative temperature flux computed at z=OBL, positive down
+         !
+         ! note: the following fields used the CVMix/KPP computation of buoyancy forcing are not included here
+         !    1. Tm: temperature associated with surfaceThicknessFlux, C  (here we assume Tm == temperatureSurfaceValue)
+         !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for
+         !           salinity flux in activeTracersSurfaceFlux array)
+         !
 
-       ! compute surface buoyancy forcing based on surface fluxes of mass, temperature, salinity and frazil
-       !                                (frazil to be added later)
-       ! since this computation is confusing, variables, units and sign convention is repeated here
-       ! everything below should be consistent with that specified in Registry
-       ! everything below should be consistent with the CVMix/KPP documentation:
-       !           https://www.dropbox.com/s/6hqgc0rsoa828nf/cvmix_20aug2013.pdf
-       !
-       !    surfaceThicknessFlux: surface mass flux, m/s, positive into ocean
-       !    activeTracersSurfaceFlux(indexTempFlux): non-penetrative temperature flux, C m/s, positive into ocean
-       !    penetrativeTemperatureFlux: penetrative surface temperature flux at ocean surface, positive into ocean
-       !    activeTracersSurfaceFlux(indexSaltFlux): salinity flux, PSU m/s, positive into ocean
-       !    penetrativeTemperatureFluxOBL: penetrative temperature flux computed at z=OBL, positive down
-       !
-       ! note: the following fields used the CVMix/KPP computation of buoyancy forcing are not included here
-       !    1. Tm: temperature associated with surfaceThicknessFlux, C  (here we assume Tm == temperatureSurfaceValue)
-       !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for
-       !           salinity flux in activeTracersSurfaceFlux array)
-       !
+         ! Compute fraction of thickness flux that is in the top model layer
+         fracAbsorbed = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient, -100.0_RKIND) )
+         fracAbsorbedRunoff = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient_runoff, &
+                              -100.0_RKIND) )
+         ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
+         ! transport code.  This includes tracer forcing due to thickness
 
-       ! Compute fraction of thickness flux that is in the top model layer
-       fracAbsorbed = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient, -100.0_RKIND) )
-       fracAbsorbedRunoff = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient_runoff, &
-                            -100.0_RKIND) )
-       ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
-       ! transport code.  This includes tracer forcing due to thickness
+         nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
+                 + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
+                 - fracAbsorbed * (rainFlux(iCell) + evaporationFlux(iCell)) * activeTracers(indexTempFlux,1,iCell)/rho_sw  &
+                 - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) &
+                  * min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)/rho_sw
 
-       nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
-               + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
-               - fracAbsorbed * (rainFlux(iCell) + evaporationFlux(iCell)) * activeTracers(indexTempFlux,1,iCell)/rho_sw  &
-               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) &
-                * min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)/rho_sw
+         nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
+                 - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
+                 - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,1,iCell)
 
-       nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
-               - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
-               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,1,iCell)
+         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
+                * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
+                - salineContractionCoeff(1,iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
 
-       surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
-              * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
-              - salineContractionCoeff(1,iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
-
-       ! at this point, surfaceBuoyancyForcing has units of m/s
-       ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
+         ! at this point, surfaceBuoyancyForcing has units of m/s
+         ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
          surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell) * gravity
 
-       ! compute magnitude of surface stress
-        deltaVelocitySquared = 0.0_RKIND
-        do i = 1, nEdgesOnCell(iCell)
-          iEdge = edgesOnCell(i, iCell)
-          delU2 =  (surfaceStress(iEdge))**2
-          deltaVelocitySquared = deltaVelocitySquared + edgeAreaFractionOfCell(i,iCell) * delU2
-        enddo
-       ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
-        surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * deltaVelocitySquared)
-        surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
+         ! compute magnitude of surface stress
+         sumSurfaceStressSquared = 0.0_RKIND
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            sumSurfaceStressSquared = sumSurfaceStressSquared + edgeAreaFractionOfCell(i,iCell) * surfaceStress(iEdge)**2
+         enddo
+         ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
+         surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * sumSurfaceStressSquared)
+         surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
 
       enddo
       !$omp end do
