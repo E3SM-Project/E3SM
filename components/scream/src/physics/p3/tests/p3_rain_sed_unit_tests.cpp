@@ -201,7 +201,7 @@ static void run_bfb_rain_sed()
 static void run_bfb()
 {
   run_bfb_rain_vel();
-  //run_bfb_rain_sed();
+  run_bfb_rain_sed();
 }
 
 };
