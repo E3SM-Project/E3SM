@@ -848,8 +848,11 @@ subroutine update_prognostics_implicit( &
   call dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
   ! compute terms needed for the implicit surface stress (ksrf)
-  ksrf(1:shcol)      = compute_impli_srf_stress_term(shcol, nlevi, rho_zi, &
-       uw_sfc, vw_sfc, u_wind, v_wind)
+  !ksrf(1:shcol)      = compute_impli_srf_stress_term(shcol, nlevi, rho_zi, &
+  !    uw_sfc, vw_sfc, u_wind, v_wind)
+
+  !compute term needed for tke flux calc (wtke_flux)
+  wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! define terms needed for the implicit surface stress
   do i=1,shcol
@@ -858,9 +861,9 @@ subroutine update_prognostics_implicit( &
     ! compute the wind speed
     ws(i) = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
     tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
-    !ksrf(i) = max(tau(i) / ws(i), ksrfmin)
+    ksrf(i) = max(tau(i) / ws(i), ksrfmin)
     ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
-    wtke_flux(i) = ustar**3
+    !wtke_flux(i) = ustar**3
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
