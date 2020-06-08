@@ -137,7 +137,7 @@ contains
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
         zMid, zTop, density, displacedDensity, potentialDensity, &
         bulkRichardsonNumber, RiTopOfCell, BruntVaisalaFreqTop, &
-        bulkRichardsonNumberBuoy, bulkRichardsonNumberShear, unresolvedShear, normalVelocity
+        bulkRichardsonNumberBuoy, bulkRichardsonNumberShear, unresolvedShear, normalVelocity, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer, pointer :: index_vertNonLocalFluxTemp, config_cvmix_num_ri_smooth_loops
@@ -156,8 +156,8 @@ contains
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
 
-      real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell
-      real (kind=RKIND) :: normalVelocityAv, factor, delU2, areaSum, blTemp
+      real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth
+      real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
@@ -260,6 +260,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy',bulkRichardsonNumberBuoy)
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberShear',bulkRichardsonNumberShear)
       call mpas_pool_get_array(diagnosticsPool, 'indexBoundaryLayerDepth',indexBoundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
 
       !
       ! set pointers for fields related to ocean forcing state
@@ -355,7 +356,6 @@ contains
       do kpp_stage = 1,2
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         invAreaCell = 1.0_RKIND / areaCell(iCell)
 
          ! specify geometry/location
          cvmix_variables % SeaSurfaceHeight = ssh(iCell)
@@ -530,8 +530,6 @@ contains
               ! Build deltaVelocitySquared
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
-                 factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-
                  deltaVelocitySquared(1) = 0.0_RKIND
 
                  normalVelocitySum(1) = normalVelocity(1, iEdge)
@@ -544,7 +542,7 @@ contains
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
                         real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
-                    deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + factor * delU2
+                    deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + edgeAreaFractionOfCell(i,iCell) * delU2
                  end do
               end do
 
@@ -555,7 +553,8 @@ contains
 
               do kIndexOBL = 1, maxLevelCell(iCell)
                 ! !compute shear contribution assuming BLdepth is cell bottom
-                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
+                !Note that the factor of two is from averaging dot products to cell centers on a C-grid
+                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(2.0_RKIND*deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
 
                 bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
                                   - potentialDensitySum(surfaceAverageIndex(kIndexOBL)) &
