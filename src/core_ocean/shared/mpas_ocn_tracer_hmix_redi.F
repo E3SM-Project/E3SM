@@ -192,6 +192,7 @@ contains
          redi_term2(:, :, iCell) = 0.0_RKIND
          redi_term3(:, :, iCell) = 0.0_RKIND
          fluxRediZTop(:, :) = 0.0_RKIND
+        !rediKappaCell(iCell) = 0.0_RKIND
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             ! Check if neighboring cell exists
@@ -264,7 +265,7 @@ contains
                   dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
                   fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                          0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
-                                         *dTracerDx*invAreaCell
+                                         *dTracerDx
                end do
             end do
 
@@ -304,7 +305,7 @@ contains
                dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
                fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                       0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
-                                      *dTracerDx*invAreaCell
+                                      *dTracerDx
             end do
          end do ! nEdgesOnCell(iCell)
 
@@ -313,7 +314,7 @@ contains
          fluxRediZTop(:, maxLevelCell(iCell) + 1) = 0.0_RKIND
          redi_term3_topOfCell(:, 1, iCell) = 0.0_RKIND
          do k = 2, maxLevelCell(iCell)
-            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k)
+            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k) * invAreaCell
          end do
          redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
 
@@ -323,8 +324,9 @@ contains
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
                flux_term3 = RediKappa(iCell)*2.0_RKIND* &
-                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k) - &
-                             kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell)*fluxRediZTop(iTr, k + 1))
+                            (kappaRediSfcTaper(k, iCell)*kappaGMcell(k, iCell)*fluxRediZTop(iTr, k)  &
+                            * invAreaCell - kappaRediSfcTaper(k + 1, iCell)*kappaGMcell(k + 1, iCell) &
+                            *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
             end do
