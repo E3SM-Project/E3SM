@@ -73,10 +73,18 @@
 			/>
 		</var_array>
 		<var_array name="activeTracersML" type="real" dimensions="nCells Time">
-			<var name="temperatureML" array_group="activeTracerFTendGroup" units="degrees Celsius"
+    <var name="temperatureML" array_group="activeTracerMLGroup" units="degrees Celsius"
+      description="ML average temperature"
+    />
+    <var name="salinityML" array_group="activeTracerMLGroup" units="PSU"
+      description="ML average salinity"
+    />
+    </var_array>
+    <var_array name="activeTracersTendML" type="real" dimensions="nCells Time">
+      <var name="temperatureTendML" array_group="activeTracerMLTendGroup" units="degrees Celsius s^{-1}"
 				description="ML average temperature"
 			/>
-			<var name="salinityML" array_group="activeTracerFTendGroup" units="PSU"
+    <var name="salinityTendML" array_group="activeTracerMLTendGroup" units="PSU s^{-1}"
 				description="ML average salinity"
 			/>
 		</var_array>
@@ -101,7 +109,8 @@
 			<var_array name="activeTracerVertAdvectionMLTend"/>
 			<var_array name="activeTracerHorAdvectionMLTend"/>
 			<var_array name="activeTracerVertMixMLTend"/>
-			<var_array name="activeTracersML"/>
+      <var_array name="activeTracersML"/>
+      <var_array name="activeTracersTendML"/>
 			<var_array name="bruntVaisalaFreqML"/>
 		</stream>
 	</streams>
