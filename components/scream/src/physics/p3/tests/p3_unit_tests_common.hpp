@@ -1,9 +1,9 @@
 #ifndef P3_UNIT_TESTS_COMMON_HPP
 #define P3_UNIT_TESTS_COMMON_HPP
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
 #include "physics/p3/p3_functions.hpp"
 
 namespace scream {
@@ -56,6 +56,9 @@ struct UnitWrap {
     using TableRain          = typename Functions::TableRain;
     using Table3             = typename Functions::Table3;
     using C                  = typename Functions::C;
+
+    static constexpr Int max_pack_size = 16;
+    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
 
     // Put struct decls here
     struct TestTableIce;

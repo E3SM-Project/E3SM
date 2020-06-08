@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -34,8 +34,6 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
     constexpr Scalar qsmall = C::QSMALL;
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {
@@ -60,26 +58,28 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       {0.510000E-02, 0.980946E+00, 0.100000E+01, 0.123550E+09}
     };
 
+    // Sync to device
+    view_1d<GetCloudDsd2Data> gcdd_device("gcdd", max_pack_size);
+    const auto gcdd_host = Kokkos::create_mirror_view(gcdd_device);
+    std::copy(&gcdd[0], &gcdd[0] + max_pack_size, gcdd_host.data());
+    Kokkos::deep_copy(gcdd_device, gcdd_host);
+
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       get_cloud_dsd2(gcdd[i]);
     }
 
-    // Sync to device
-    view_1d<GetCloudDsd2Data> gcdd_device("gcdd", Spack::n);
-    const auto gcdd_host = Kokkos::create_mirror_view(gcdd_device);
-    std::copy(&gcdd[0], &gcdd[0] + Spack::n, gcdd_host.data());
-    Kokkos::deep_copy(gcdd_device, gcdd_host);
-
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack qc, rho, lcldm, nc;
-      for (Int s = 0; s < Spack::n; ++s) {
-        qc[s]    = gcdd_device(s).qc;
-        rho[s]   = gcdd_device(s).rho;
-        lcldm[s] = gcdd_device(s).lcldm;
-        nc[s]    = gcdd_device(s).nc_in;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qc[s]    = gcdd_device(vs).qc;
+        rho[s]   = gcdd_device(vs).rho;
+        lcldm[s] = gcdd_device(vs).lcldm;
+        nc[s]    = gcdd_device(vs).nc_in;
       }
 
       Smask gt_small(qc > qsmall);
@@ -87,13 +87,13 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       Functions::get_cloud_dsd2(gt_small, qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
 
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        gcdd_device(s).nc_out = nc[s];
-        gcdd_device(s).mu_c = mu_c[s];
-        gcdd_device(s).nu = nu[s];
-        gcdd_device(s).lamc = lamc[s];
-        gcdd_device(s).cdist = cdist[s];
-        gcdd_device(s).cdist1 = cdist1[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        gcdd_device(vs).nc_out = nc[s];
+        gcdd_device(vs).mu_c = mu_c[s];
+        gcdd_device(vs).nu = nu[s];
+        gcdd_device(vs).lamc = lamc[s];
+        gcdd_device(vs).cdist = cdist[s];
+        gcdd_device(vs).cdist1 = cdist1[s];
       }
     });
 
@@ -101,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(gcdd_host, gcdd_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(gcdd[s].nc_out == gcdd_host(s).nc_out);
       REQUIRE(gcdd[s].mu_c   == gcdd_host(s).mu_c);
       REQUIRE(gcdd[s].nu     == gcdd_host(s).nu);
@@ -121,8 +121,6 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     using KTH = KokkosTypes<HostDevice>;
 
     constexpr Scalar qsmall = C::QSMALL;
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     GetRainDsd2Data grdd[max_pack_size] = {
       {0.100000E-01, 0.100000E+01, 0.124340E+05},
@@ -146,25 +144,27 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       {0.148647E-03, 0.100000E+01, 0.184827E+03}
     };
 
+    // Sync to device
+    KTH::view_1d<GetRainDsd2Data> grdd_host("grdd_host", max_pack_size);
+    view_1d<GetRainDsd2Data> grdd_device("grdd_host", max_pack_size);
+    std::copy(&grdd[0], &grdd[0] + max_pack_size, grdd_host.data());
+    Kokkos::deep_copy(grdd_device, grdd_host);
+
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       get_rain_dsd2(grdd[i]);
     }
 
-    // Sync to device
-    KTH::view_1d<GetRainDsd2Data> grdd_host("grdd_host", Spack::n);
-    view_1d<GetRainDsd2Data> grdd_device("grdd_host", Spack::n);
-    std::copy(&grdd[0], &grdd[0] + Spack::n, grdd_host.data());
-    Kokkos::deep_copy(grdd_device, grdd_host);
-
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack qr, rcldm, nr;
-      for (Int s = 0; s < Spack::n; ++s) {
-        qr[s]    = grdd_device(s).qr;
-        rcldm[s] = grdd_device(s).rcldm;
-        nr[s]    = grdd_device(s).nr_in;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qr[s]    = grdd_device(vs).qr;
+        rcldm[s] = grdd_device(vs).rcldm;
+        nr[s]    = grdd_device(vs).nr_in;
       }
 
       Smask gt_small(qr > qsmall);
@@ -172,12 +172,12 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       Functions::get_rain_dsd2(gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
 
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        grdd_device(s).nr_out = nr[s];
-        grdd_device(s).mu_r = mu_r[s];
-        grdd_device(s).lamr = lamr[s];
-        grdd_device(s).cdistr = cdistr[s];
-        grdd_device(s).logn0r = logn0r[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        grdd_device(vs).nr_out = nr[s];
+        grdd_device(vs).mu_r = mu_r[s];
+        grdd_device(vs).lamr = lamr[s];
+        grdd_device(vs).cdistr = cdistr[s];
+        grdd_device(vs).logn0r = logn0r[s];
       }
     });
 
@@ -185,7 +185,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(grdd_host, grdd_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(grdd[s].nr_out == grdd_host(s).nr_out);
       REQUIRE(grdd[s].mu_r   == grdd_host(s).mu_r);
       REQUIRE(grdd[s].lamr   == grdd_host(s).lamr);

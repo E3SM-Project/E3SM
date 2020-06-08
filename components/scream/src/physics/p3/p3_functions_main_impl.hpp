@@ -603,7 +603,7 @@ void Functions<S,D>
     // TODO: needs smask protection
     // accretion of cloud by rain
     cloud_rain_accretion(
-      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k),oqc_relvar(k), 
+      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k),oqc_relvar(k),
       qcacc, ncacc);
 
     // TODO: needs smask protection

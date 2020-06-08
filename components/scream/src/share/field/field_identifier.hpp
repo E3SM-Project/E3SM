@@ -2,8 +2,8 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_units.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_units.hpp"
 
 #include <vector>
 
@@ -12,7 +12,7 @@ namespace scream
 
 /*
  *  A small class to hold basic info about a field
- *  
+ *
  *  This tiny class is only used to uniquely identify a field, using
  *  the name, and its layout (which containss the rank, the tags,
  *  and possibly the dimensions).
