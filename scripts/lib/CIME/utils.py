@@ -275,7 +275,10 @@ def get_cime_default_driver():
 
 def get_all_cime_models():
     modelsroot = os.path.join(get_cime_root(), "config")
-    models = os.walk( os.path.join(modelsroot,'.')).next()[1]
+    models = []
+    for entry in os.listdir(modelsroot):
+        if os.path.isdir(os.path.join(modelsroot,entry)):
+            models.append(entry)
     models.remove('xml_schemas')
     return models
 
