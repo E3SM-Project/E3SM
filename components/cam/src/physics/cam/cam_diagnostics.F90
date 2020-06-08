@@ -1952,7 +1952,7 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
 
     call outfld('SHFLX',    cam_in%shf,       pcols, lchnk)
     call outfld('LHFLX',    cam_in%lhf,       pcols, lchnk)
-    call outfld('QFLX',     cam_in%cflx,      pcols, lchnk)
+    call outfld('QFLX',     cam_in%cflx(1,1), pcols, lchnk)
 
     call outfld('TAUX',     cam_in%wsx,       pcols, lchnk)
     call outfld('TAUY',     cam_in%wsy,       pcols, lchnk)
