@@ -8,6 +8,10 @@
 		            description="activate subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_ocean_connection_N" type="logical" default_value=".false." units="unitless"
+		            description="Calculate effective pressure assuming perfect connection with the ocean.  This is an alternative to the subglacial hydrology model and requires that config_SGH=.false."
+		            possible_values=".true. or .false."
+		/>
 		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
 		            description="fraction of adaptive CFL timestep to use"
 		            possible_values="positive real number"
