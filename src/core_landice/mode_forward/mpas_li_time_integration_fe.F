@@ -307,6 +307,11 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
       if (trim(config_thickness_advection) == 'none') then
+         if (config_adaptive_timestep) then
+            call mpas_log_write("Adaptive time stepper cannot be used when config_thickness_advection is set to 'none'", &
+                    MPAS_LOG_ERR)
+            err = ior(err,1)
+         endif
          return ! skip this routine
       endif
 
