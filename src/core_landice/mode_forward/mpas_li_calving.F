@@ -1406,7 +1406,9 @@ module li_calving
                               config_default_flowParamA**(-1.0_RKIND / config_flowLawExponent) * &
                               ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(:)))**2 + &
                               (max(0.0_RKIND, eMin(:)))**2) )**(1 / (2 * config_flowLawExponent))
-          
+         
+        
+          calvingVelocity(:) = 0.0_RKIND 
          ! Calculate calving velocity for grounded cells at marine margin
           calvingVelocity(:) = sqrt(xvelmean(:)**2 + yvelmean(:)**2) * &
                                          vonMisesStress(:) / config_von_Mises_threshold_stress
@@ -1541,7 +1543,7 @@ module li_calving
                      inwardNeighbors = inwardNeighbors + 1
                   endif
                enddo
-               ! Now distribute the flux evenly amongst the neighbors
+              ! Now distribute the flux evenly amongst the neighbors
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
                   if ( li_mask_is_dynamic_ice(cellMask(jCell)) &
@@ -1561,7 +1563,7 @@ module li_calving
 
             ! If we didn't calve enough ice, record that to allow assessment of how bad that is.
             if (volumeLeft > 0.0_RKIND) then
-               uncalvedVolume(iCell) = 0.0_RKIND
+               uncalvedVolume(iCell) = volumeLeft 
             endif
 
          endif ! if cell is calving margin

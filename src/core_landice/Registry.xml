@@ -133,7 +133,7 @@
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
 		            possible_values="Any non-positive real value"
 		/>
-		<nml_option name="config_calving_thickness" type="real" default_value="100.0" units="m of ice"
+		<nml_option name="config_calving_thickness" type="real" default_value="0.0" units="m of ice"
 		            description="Defines the ice thickness below which ice calves (for thickness_threshold option)."
 		            possible_values="Any positive real value"
 		/>
@@ -1326,7 +1326,7 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="iceCellMask2" type="integer" dimensions="nCells" units="none"
 	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
 	  <var name="iceCellMask3" type="integer" dimensions="nCells" units="none"
 	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
