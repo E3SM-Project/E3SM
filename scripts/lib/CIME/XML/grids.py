@@ -21,7 +21,8 @@ class Grids(GenericXML):
         try:
             GenericXML.__init__(self, infile, schema)
         except:
-            print "got an exception"
+            expect(False, "Could not initialize Grids")
+
         self._version = self.get_version()
 
         self._comp_gridnames = self._get_grid_names()
