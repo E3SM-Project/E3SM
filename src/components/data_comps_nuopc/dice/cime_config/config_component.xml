@@ -13,10 +13,9 @@
        This file may have ice desc entries.
   -->
   <description modifier_mode='1'>
-    <desc ice="DICE[%SSMI][%IAF][%PRES][%NULL]">dice mode </desc>
+    <desc ice="DICE[%SSMI][%IAF]">dice mode </desc>
     <desc option="SSMI">is ssmi</desc>
     <desc option="IAF"> is siaf</desc>
-    <desc option="NULL"> is null</desc>
   </description>
 
   <entry id="COMP_ICE">
@@ -30,12 +29,11 @@
 
   <entry id="DICE_MODE">
     <type>char</type>
-    <valid_values>ssmi,ssmi_iaf,copyall,null</valid_values>
+    <valid_values>ssmi,ssmi_iaf</valid_values>
     <default_value>ssmi</default_value>
     <values match="last">
       <value compset="DICE%SSMI">ssmi</value>
       <value compset="DICE%IAF">ssmi_iaf</value>
-      <value compset="DICE%NULL">null</value>
     </values>
     <group>run_component_dice</group>
     <file>env_run.xml</file>

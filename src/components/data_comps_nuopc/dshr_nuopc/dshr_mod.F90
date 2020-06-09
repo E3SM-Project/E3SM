@@ -7,7 +7,7 @@ module dshr_mod
   use ESMF             , only : operator(<=), operator(>), operator(==)
   use ESMF             , only : ESMF_METHOD_INITIALIZE
   use ESMF             , only : ESMF_LOGERR_PASSTHRU, ESMF_LogFoundError, ESMF_LOGMSG_ERROR, ESMF_MAXSTR
-  use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FAILURE
+  use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FAILURE, ESMF_LogSetError
   use ESMF             , only : ESMF_State, ESMF_StateGet
   use ESMF             , only : ESMF_Field, ESMF_FieldGet
   use ESMF             , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
@@ -29,13 +29,14 @@ module dshr_mod
   use ESMF             , only : ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast, ESMF_VMGetCurrent
   use ESMF             , only : ESMF_RouteHandle, ESMF_FieldRegrid
   use ESMF             , only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
-  use ESMF             , only : ESMF_Region_Flag, ESMF_REGION_TOTAL, ESMF_MAXSTR
+  use ESMF             , only : ESMF_Region_Flag, ESMF_REGION_TOTAL, ESMF_MAXSTR, ESMF_RC_NOT_VALID
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_sys_mod      , only : shr_sys_abort
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
   use shr_cal_mod      , only : shr_cal_datetod2string
   use shr_const_mod    , only : shr_const_spval
+  use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
   use shr_pio_mod      , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_init_from_xml, SHR_STRDATA_GET_STREAM_COUNT
   use dshr_methods_mod , only : chkerr
@@ -54,6 +55,8 @@ module dshr_mod
   public  :: dshr_log_clock_advance
   public  :: dshr_state_getscalar
   public  :: dshr_state_setscalar
+  public  :: dshr_orbital_update
+  public  :: dshr_orbital_init
 
   private :: dshr_mesh_create_from_grid
   private :: dshr_mesh_create_from_scol
@@ -62,7 +65,17 @@ module dshr_mod
 
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
 
-  ! Module data
+  ! orbital settings
+  character(len=CL)            :: orb_mode                            ! attribute - orbital mode (nuopc attribute)
+  integer                      :: orb_iyear                           ! attribute - orbital year (nuopc attribute)
+  integer                      :: orb_iyear_align                     ! attribute - associated with model year (nuopc attribute)
+  real(R8)                     :: orb_obliq                           ! attribute - obliquity in degrees (nuopc attribute)
+  real(R8)                     :: orb_mvelp                           ! attribute - moving vernal equinox longitude (nuopc attribute)
+  real(R8)                     :: orb_eccen                           ! attribute and update-  orbital eccentricity (nuopc attribute)
+  character(len=*) , parameter :: orb_fixed_year        = 'fixed_year'
+  character(len=*) , parameter :: orb_variable_year     = 'variable_year'
+  character(len=*) , parameter :: orb_fixed_parameters  = 'fixed_parameters'
+
   integer     , parameter :: master_task = 0
   character(*), parameter :: u_FILE_u = &
        __FILE__
@@ -324,7 +337,7 @@ contains
           ! obtain model mask from separate model_maskfile (assume mask name on mask file)
           rcode = pio_openfile(pio_subsystem, pioid, io_type, trim(model_maskfile), pio_nowrite)
           call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-          rcode = pio_inq_varid(pioid, 'mask', varid)
+          rcode = pio_inq_varid(pioid, 'mask', varid) 
           if ( rcode /= PIO_NOERR ) then
              call shr_sys_abort(' ERROR: variable mask not found in file '//trim(model_maskfile))
           end if
@@ -1281,5 +1294,198 @@ contains
     endif
 
   end subroutine dshr_state_setscalar
+
+  !===============================================================================
+  subroutine dshr_orbital_init(gcomp, logunit, mastertask, rc)
+
+    !----------------------------------------------------------
+    ! Initialize orbital related values
+    !----------------------------------------------------------
+
+    ! input/output variables
+    type(ESMF_GridComp)                 :: gcomp
+    integer             , intent(in)    :: logunit
+    logical             , intent(in)    :: mastertask
+    integer             , intent(out)   :: rc              ! output error
+
+    ! local variables
+    character(len=CL) :: msgstr          ! temporary
+    character(len=CL) :: cvalue          ! temporary
+    character(len=*) , parameter :: subname = "(dshr_orbital_init)"
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! Determine orbital attributes from input
+    call NUOPC_CompAttributeGet(gcomp, name="orb_mode", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orb_mode
+    call NUOPC_CompAttributeGet(gcomp, name="orb_iyear", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orb_iyear
+    call NUOPC_CompAttributeGet(gcomp, name="orb_iyear_align", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orb_iyear_align
+    call NUOPC_CompAttributeGet(gcomp, name="orb_obliq", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orb_obliq
+    call NUOPC_CompAttributeGet(gcomp, name="orb_eccen", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orb_eccen
+    call NUOPC_CompAttributeGet(gcomp, name="orb_mvelp", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) orb_mvelp
+
+    ! Error checks
+    if (trim(orb_mode) == trim(orb_fixed_year)) then
+       if (orb_iyear == SHR_ORB_UNDEF_INT) then
+          if (mastertask) then
+             write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
+             write(logunit,*) trim(subname),' ERROR: fixed_year settings = ',orb_iyear
+             write (msgstr, *) ' ERROR: invalid settings for orb_mode '//trim(orb_mode)
+          end if
+          call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+          return  ! bail out
+       else
+          orb_obliq = SHR_ORB_UNDEF_REAL
+          orb_eccen = SHR_ORB_UNDEF_REAL
+          orb_mvelp = SHR_ORB_UNDEF_REAL
+       endif
+    elseif (trim(orb_mode) == trim(orb_variable_year)) then
+       if (orb_iyear == SHR_ORB_UNDEF_INT .or. orb_iyear_align == SHR_ORB_UNDEF_INT) then
+          if (mastertask) then
+             write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
+             write(logunit,*) trim(subname),' ERROR: variable_year settings = ',orb_iyear, orb_iyear_align
+             write (msgstr, *) subname//' ERROR: invalid settings for orb_mode '//trim(orb_mode)
+          end if
+          call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+          return  ! bail out
+       else
+          orb_obliq = SHR_ORB_UNDEF_REAL
+          orb_eccen = SHR_ORB_UNDEF_REAL
+          orb_mvelp = SHR_ORB_UNDEF_REAL
+       endif
+    elseif (trim(orb_mode) == trim(orb_fixed_parameters)) then
+       !-- force orb_iyear to undef to make sure shr_orb_params works properly
+       if (orb_eccen == SHR_ORB_UNDEF_REAL .or. orb_obliq == SHR_ORB_UNDEF_REAL .or. orb_mvelp == SHR_ORB_UNDEF_REAL) then
+          if (mastertask) then
+             write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
+             write(logunit,*) trim(subname),' ERROR: orb_eccen = ',orb_eccen
+             write(logunit,*) trim(subname),' ERROR: orb_obliq = ',orb_obliq
+             write(logunit,*) trim(subname),' ERROR: orb_mvelp = ',orb_mvelp
+             write (msgstr, *) subname//' ERROR: invalid settings for orb_mode '//trim(orb_mode)
+          end if
+          call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+          return  ! bail out
+       else
+          orb_iyear       = SHR_ORB_UNDEF_INT
+          orb_iyear_align = SHR_ORB_UNDEF_INT
+       endif
+    else
+       write (msgstr, *) subname//' ERROR: invalid orb_mode '//trim(orb_mode)
+       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+       rc = ESMF_FAILURE
+       return  ! bail out
+    endif
+
+  end subroutine dshr_orbital_init
+
+  !===============================================================================
+  subroutine dshr_orbital_update(clock, logunit,  mastertask, eccen, obliqr, lambm0, mvelpp, rc)
+
+    !----------------------------------------------------------
+    ! Update orbital settings
+    !----------------------------------------------------------
+
+    ! input/output variables
+    type(ESMF_Clock) , intent(in)    :: clock
+    integer          , intent(in)    :: logunit
+    logical          , intent(in)    :: mastertask
+    real(R8)         , intent(inout) :: eccen  ! orbital eccentricity
+    real(R8)         , intent(inout) :: obliqr ! Earths obliquity in rad
+    real(R8)         , intent(inout) :: lambm0 ! Mean long of perihelion at vernal equinox (radians)
+    real(R8)         , intent(inout) :: mvelpp ! moving vernal equinox longitude of perihelion plus pi (radians)
+    integer          , intent(out)   :: rc     ! output error
+
+    ! local variables
+    type(ESMF_Time)   :: CurrTime ! current time
+    integer           :: year     ! model year at current time
+    integer           :: orb_year ! orbital year for current orbital computation
+    character(len=CL) :: msgstr   ! temporary
+    logical           :: lprint
+    logical           :: first_time = .true.
+    character(len=*) , parameter :: subname = "(dshr_orbital_update)"
+    !-------------------------------------------
+
+    if (trim(orb_mode) == trim(orb_variable_year)) then
+       call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeGet(CurrTime, yy=year, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       orb_year = orb_iyear + (year - orb_iyear_align)
+       lprint = mastertask
+    else
+       orb_year = orb_iyear
+       if (first_time) then
+          lprint = mastertask
+          first_time = .false.
+       else
+          lprint = .false.
+       end if
+    end if
+
+    eccen = orb_eccen
+    call shr_orb_params(orb_year, eccen, orb_obliq, orb_mvelp, obliqr, lambm0, mvelpp, lprint)
+
+    if ( eccen  == SHR_ORB_UNDEF_REAL .or. obliqr == SHR_ORB_UNDEF_REAL .or. &
+         mvelpp == SHR_ORB_UNDEF_REAL .or. lambm0 == SHR_ORB_UNDEF_REAL) then
+       write (msgstr, *) subname//' ERROR: orb params incorrect'
+       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+       return  ! bail out
+    endif
+
+  end subroutine dshr_orbital_update
+
+  !===============================================================================
+  real(R8) function getNextRadCDay_i8( ymd, tod, stepno, dtime, iradsw, calendar )
+
+    !  Return the calendar day of the next radiation time-step.
+    !  General Usage: nextswday = getNextRadCDay(curr_date)
+
+    use shr_kind_mod   , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cs=>shr_kind_cs, cl=>shr_kind_cl
+    use shr_cal_mod    , only : shr_cal_date2julian
+    use shr_const_mod  , only : shr_const_cday
+
+    ! input/output variables
+    integer    , intent(in)    :: ymd
+    integer    , intent(in)    :: tod
+    integer(I8), intent(in)    :: stepno
+    integer    , intent(in)    :: dtime
+    integer    , intent(in)    :: iradsw
+    character(*),intent(in)    :: calendar
+
+    ! local variables
+    real(R8) :: nextsw_cday
+    real(R8) :: julday
+    integer  :: liradsw
+    integer  :: yy,mm,dd
+    character(*),parameter :: subName =  '(getNextRadCDay) '
+    !-------------------------------------------------------------------------------
+
+    liradsw = iradsw
+    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
+    call shr_cal_date2julian(ymd,tod,julday,calendar)
+    if (liradsw > 1) then
+       if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
+          nextsw_cday = julday + 2*dtime/shr_const_cday
+       else
+          nextsw_cday = -1._r8
+       end if
+    else
+       nextsw_cday = julday + dtime/shr_const_cday
+    end if
+    getNextRadCDay_i8 = nextsw_cday
+
+  end function getNextRadCDay_i8
 
 end module dshr_mod

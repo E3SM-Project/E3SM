@@ -6,8 +6,6 @@
 
   <!--
       Values to use by default for creation of DICE model namelists.
-      The element names are the same as the corresponding namelist
-      variables.
 
       strm_year_first is the first year of the stream data that will be used
       strm_year_last  is the last  year of the stream data that will be used
@@ -19,9 +17,7 @@
       %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
 
       Currently the following datamode values are supported
-      NULL
-      COPYALL
-      SSTDATA
+      ssmi, ssmi_iaf
 
       **********IMPORTANT NOTE: *************
       In the value matches below, regular expressions are used ****
@@ -349,24 +345,16 @@
     <type>char</type>
     <category>streams</category>
     <group>dice_nml</group>
-    <valid_values>null,ssmi,ssmi_iaf,copyall</valid_values>
+    <valid_values>ssmi,ssmi_iaf</valid_values>
     <desc>
       general method that operates on the data.
-      ==> datamode = "null"
-      Turns off the data model as a provider of data to the coupler.  The
-      ice_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      ==>  dataMode = "copyall"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      ==> dataMode = "ssmi"
+      ==> dataMode = "ssmi", "ssmi_iaf"
       Is a prognostic mode. It requires data be sent to the ice  model.
       Ice fraction (extent) data is read from an input stream,
       atmosphere state variables are received from the mediator, and then
       atmosphere-ice surface fluxes are computed and sent to the mediator.
     </desc>
     <values>
-      <value dice_mode="null">null</value>
       <value dice_mode="ssmi_iaf">ssmi_iaf</value>
       <value dice_mode="ssmi">ssmi</value>
     </values>

@@ -45,8 +45,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Check for incompatible options.
     expect(ice_grid != "null",
            "ICE_GRID cannot be null")
-    expect(dice_mode != "NULL",
-           "DICE_MODE cannot be NULL")
 
     # Log some settings.
     logger.debug("DICE mode is {}".format(dice_mode))
