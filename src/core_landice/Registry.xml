@@ -100,6 +100,10 @@
 		            description="If true, nonconvergence of the velocity solver results in a fatal error.  If false, it is a warning."
 		            possible_values=".true. or .false."
 		/>
+                <nml_option name="config_effective_pressure_max" type="real" default_value="1.0e36" units="Pa"
+		            description="An optional maximum limit on effective pressure passed to the velocity solver."
+		            possible_values="Any positive, real number."
+		/>
 	</nml_record>
 
 
@@ -1106,6 +1110,8 @@ is the value of that variable from the *previous* time level!
                 <var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
                      description="value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units); differs from beta due to any necessary adjustments made for internal consistency (e.g., zeroed out where the ice is found to be floating)"
                 />
+                <var name="effectivePressureLimited" type="real" dimensions="nCells Time" units="Pa" packages="higherOrderVelocity"
+                     description="effective ice pressure in subglacial hydrology system, limited with min/max for velocity solver" />
                 <var name="drivingStressVert" type="real" dimensions="nVertices Time" units="Pa" default_value="0.0"
                      description="driving stress calculated by Albany, on vertices"
                 />
