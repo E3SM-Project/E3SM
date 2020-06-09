@@ -29,7 +29,7 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   list(APPEND test_libs ${SCREAM_TPL_LIBRARIES})
 
   if (CreateUnitTest_EXCLUDE_MAIN_CPP)
-    EkatCreateUnitTest(${target_name} ${target_srcs}
+    EkatCreateUnitTest(${target_name} "${target_srcs}"
       DEP "${CreateUnitTest_DEP}"
       MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
       MPI_NP_FLAG -np
@@ -47,7 +47,7 @@ function(CreateUnitTest target_name target_srcs scream_libs)
       EXCLUDE_MAIN_CPP
     )
   else ()
-    EkatCreateUnitTest(${target_name} ${target_srcs}
+    EkatCreateUnitTest(${target_name} "${target_srcs}"
       DEP "${CreateUnitTest_DEP}"
       MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
       MPI_NP_FLAG -np
