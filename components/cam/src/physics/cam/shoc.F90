@@ -852,7 +852,7 @@ subroutine update_prognostics_implicit( &
   !    uw_sfc, vw_sfc, u_wind, v_wind)
 
   !compute term needed for tke flux calc (wtke_flux)
-  wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
+  !wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! define terms needed for the implicit surface stress
   do i=1,shcol
@@ -863,13 +863,13 @@ subroutine update_prognostics_implicit( &
     tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
     ksrf(i) = max(tau(i) / ws(i), ksrfmin)
     ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
-    !wtke_flux(i) = ustar**3
+    wtke_flux(i) = ustar**3
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
   !thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wthl_sfc(:)
   !qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
-  tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
+  !tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
 
   ! compute surface fluxes for liq. potential temp, water and tke
   call compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
@@ -1079,7 +1079,7 @@ subroutine compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
 
      thetal(i,nlev) = thetal(i,nlev) + fac * wthl_sfc(i)
      qw(i,nlev)     = qw(i,nlev)     + fac * wqw_sfc(i)
-     !tke(i,nlev)    = tke(i,nlev)    + fac * wtke_flux(i)
+     tke(i,nlev)    = tke(i,nlev)    + fac * wtke_flux(i)
   enddo
 
 end subroutine compute_sfc_fluxes
