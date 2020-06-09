@@ -1347,16 +1347,21 @@ set_horiz_grid("$cfgdir/$horiz_grid_file", $cfg_ref);
 if ($print>=2) { print "Horizontal grid specifier: $hgrid$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Maximum number of columns in a chunk.
+# Maximum number of columns in a chunk. If set as an option, then it is a compile-time parameter
+# (ppcols == 'TRUE'). Otherwise, pcols is just the default value for a runtime parameter.
 if (defined $opts{'pcols'}) {
     $cfg_ref->set('pcols', $opts{'pcols'});
+    $cfg_ref->set('ppcols', 'TRUE');
+} else {
+    $cfg_ref->set('ppcols', 'FALSE');
 }
 my $pcols = $cfg_ref->get('pcols');
 
-# Override PCOLS setting if configuring for SCAM
+# Override PCOLS setting if configuring for SCAM. Also make it a compile-time parameter.
 if ($scam eq 'ON') {
     $pcols = 1;
     $cfg_ref->set('pcols', $pcols);
+    $cfg_ref->set('ppcols', 'TRUE');
 }
 
 # Check valid value of pcols
@@ -1946,6 +1951,11 @@ my $nadv = $cfg_ref->get('nadv');
 my $pcols = $cfg_ref->get('pcols');
 my $psubcols = $cfg_ref->get('psubcols');
 $cfg_cppdefs .= " -DPLEV=$nlev -DPCNST=$nadv -DPCOLS=$pcols -DPSUBCOLS=$psubcols";
+
+# PCOLS is a compile-time parameter if set in CAM_CONFIG_OPTS. Otherwise it is a runtime parameter
+# and PCOLS just specifies the default for the runtime parameter.
+my $ppcols = $cfg_ref->get('ppcols');
+if ($ppcols eq 'TRUE') { $cfg_cppdefs .= " -DPPCOLS"; }
 
 # Radiatively active constituent number
 $cfg_cppdefs .= " -DN_RAD_CNST=$max_n_rad_cnst";
