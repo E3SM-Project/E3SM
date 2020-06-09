@@ -13,11 +13,11 @@
       crop still has precedence over pasture if there isn't enough land
  
  To run this code standalone to compute land cover changes associated with Land-Use Harmonization (LUH) data
- you will need to run the Makefile and then pass the period of interest and the
+ you will need to load the netcdf and hdf5 modules and run the Makefile and then pass the period of interest and the
  directory of input files (and optionally the output path as arg 3) to the land_use_translator as a command-line arguments.
  For example:
  >> make
- >> ./updateannuallanduse_v2 /global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/
+ >> ./land_use_translator historical /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_06082020/
  
  There is also an optional third arugment that is the path to the output files, which will otherwise
  go into a new directory ./output by default.
@@ -52,7 +52,7 @@
  
  	Note that for the standalone version all input files are in a single directory, given as an argument
  
- this is the compile line on my machine:
+ this is the compile command I use on my local desktop machine:
  gcc -g -lnetcdf -L/usr/local/lib -I/usr/local/include -lm updateannuallanduse_v2.c -o ualu_v2
  
  -L and -I need to be changed to reflect the locations of the NetCDF library and header files, respectively.
