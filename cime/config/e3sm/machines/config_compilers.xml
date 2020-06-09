@@ -119,6 +119,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O </append>
     <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace </append>
+    <append DEBUG="FALSE"> -O </append>
+  </CXXFLAGS>
   <CMAKE_OPTS>
     <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
