@@ -2266,7 +2266,7 @@ contains
 
       ! Check values and clip if necessary (albedos should not be larger than 1)
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
-      ! was never checked for RRTMG, so albedos will probably be slight different
+      ! was never checked for RRTMG, so albedos will probably be slightly different
       ! than the implementation in RRTMG!
       call clip_values(albedo_dir, 0._r8, 1._r8, varname='albedo_dir')
       call clip_values(albedo_dif, 0._r8, 1._r8, varname='albedo_dif')
