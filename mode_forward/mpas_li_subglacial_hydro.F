@@ -226,6 +226,7 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! Pools pointers
       logical, pointer :: config_SGH
+      logical, pointer :: config_ocean_connection_N
       logical, pointer :: config_SGH_chnl_active
       character (len=StrKIND), pointer :: config_SGH_basal_melt
       type (block_type), pointer :: block
@@ -278,6 +279,10 @@ module li_subglacial_hydro
 
       call mpas_pool_get_config(liConfigs, 'config_SGH', config_SGH)
       if (.not. config_SGH) then
+         call mpas_pool_get_config(liConfigs, 'config_ocean_connection_N', config_ocean_connection_N)
+         if (config_ocean_connection_N) then
+            call ocean_connection_N(domain)
+         endif
          ! If SGH is not active, skip everything
          return
       endif
@@ -1801,6 +1806,67 @@ module li_subglacial_hydro
 
    !--------------------------------------------------------------------
    end subroutine shmip_timevarying_forcing
+
+
+
+!***********************************************************************
+!
+!  routine ocean_connection_N
+!
+!> \brief   Calculate effective pressure assuming perfect ocean connection
+!> \author  Matt Hoffman
+!> \date    02 June 2020
+!> \details
+!>  This routine calculates effective pressure assuming a perfect hydrologic
+!>  connection with the ocean.  It can be used as a simple alternative to the 
+!>  full subglacial hydrology.
+!-----------------------------------------------------------------------
+   subroutine ocean_connection_N(domain)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: geometryPool
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), pointer :: rhoi, rhoo
+ 
+      ! Calculate N assuming perfect ocean connection
+      call mpas_log_write('Calculating N assuming perfect ocean connection.')
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+         effectivePressure = rhoi * gravity * thickness - rhoi * gravity * max(0.0_RKIND,  -1.0_RKIND * rhoo/rhoi * bedTopography)
+         effectivePressure = max(effectivePressure, 0.0_RKIND) ! This is just to zero out N in the open ocean to avoid confusion
+
+         block => block % next
+      end do
+
+   !--------------------------------------------------------------------
+   end subroutine ocean_connection_N
 
 
 end module li_subglacial_hydro
