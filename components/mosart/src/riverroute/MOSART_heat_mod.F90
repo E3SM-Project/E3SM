@@ -175,21 +175,21 @@ MODULE MOSART_heat_mod
         real(r8) :: Mt  !mass of water (Kg)
         real(r8) :: Ttmp1, Ttmp2  !
         
-            if((TRunoff%wt(iunit,nt_nliq)+TRunoff%wt(iunit,nt_nice)) > TINYVALUE1  .and. THeat%forc_t(iunit) > 200._r8) then
-                Mt = TRunoff%wt(iunit,nt_nliq) * denh2o + TRunoff%wt(iunit,nt_nice) * denice
-                THeat%Tt(iunit) = THeat%Tt(iunit) + (THeat%deltaH_t(iunit)+THeat%deltaM_t(iunit)) / (Mt * cpliq)
+        if((TRunoff%wt(iunit,nt_nliq)+TRunoff%wt(iunit,nt_nice)) > TINYVALUE1  .and. THeat%forc_t(iunit) > 200._r8) then
+            Mt = TRunoff%wt(iunit,nt_nliq) * denh2o + TRunoff%wt(iunit,nt_nice) * denice
+            THeat%Tt(iunit) = THeat%Tt(iunit) + (THeat%deltaH_t(iunit)+THeat%deltaM_t(iunit)) / (Mt * cpliq)
+        else
+            if(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice) > TINYVALUE1) then
+                THeat%Tt(iunit) = THeat%Tqsur(iunit) * (TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)) + THeat%Tqsub(iunit) * (TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
+                THeat%Tt(iunit) = THeat%Tt(iunit)/(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)+TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
             else
-                if(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice) > TINYVALUE1) then
-                    THeat%Tt(iunit) = THeat%Tqsur(iunit) * (TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)) + THeat%Tqsub(iunit) * (TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
-                    THeat%Tt(iunit) = THeat%Tt(iunit)/(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)+TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
-                else
-                    THeat%Tt(iunit) = THeat%Tqsur(iunit)
-                end if
+                THeat%Tt(iunit) = THeat%Tqsur(iunit)
             end if
+        end if
 
-			if(THeat%Tt(iunit) < 273.15_r8) then
-			    THeat%Tt(iunit) = 273.15_r8
-			end if
+        if(THeat%Tt(iunit) < 273.15_r8) then
+            THeat%Tt(iunit) = 273.15_r8
+        end if
         
     end subroutine subnetworkTemp
 
@@ -212,27 +212,23 @@ MODULE MOSART_heat_mod
     
     subroutine mainchannelTemp(iunit)
     ! !DESCRIPTION: calculate the water temperature of subnetwork channel.
-    use shr_sys_mod , only : shr_sys_flush
+        use shr_sys_mod , only : shr_sys_flush
         implicit none
         integer, intent(in) :: iunit
         
         real(r8) :: Mr  !mass of water (Kg)
         real(r8) :: Ttmp1, Ttmp2  !
         
-            if((TRunoff%wr(iunit,nt_nliq)+TRunoff%wr(iunit,nt_nice)) > TINYVALUE1 .and. THeat%forc_t(iunit) > 200._r8) then
-                Mr = TRunoff%wr(iunit,nt_nliq) * denh2o + TRunoff%wr(iunit,nt_nice) * denice
-                THeat%Tr(iunit) = THeat%Tr(iunit) + (THeat%deltaH_r(iunit)+THeat%deltaM_r(iunit)) / (Mr * cpliq)
-            else
-                THeat%Tr(iunit) = THeat%Tt(iunit)
-            end if
-			if(THeat%Tr(iunit) < 273.15_r8) then
-			    THeat%Tr(iunit) = 273.15_r8
-			end if
+        if((TRunoff%wr(iunit,nt_nliq)+TRunoff%wr(iunit,nt_nice)) > TINYVALUE1 .and. THeat%forc_t(iunit) > 200._r8) then
+            Mr = TRunoff%wr(iunit,nt_nliq) * denh2o + TRunoff%wr(iunit,nt_nice) * denice
+            THeat%Tr(iunit) = THeat%Tr(iunit) + (THeat%deltaH_r(iunit)+THeat%deltaM_r(iunit)) / (Mr * cpliq)
+        else
+            THeat%Tr(iunit) = THeat%Tt(iunit)
+        end if
+        if(THeat%Tr(iunit) < 273.15_r8) then
+            THeat%Tr(iunit) = 273.15_r8
+        end if
 
-            if(iunit == 75723) then
-              write(unit=1113,fmt="(i10, f10.4, 5(e14.4))") iunit, THeat%Tr(iunit), THeat%forc_t(iunit), Mr, THeat%deltaH_r(iunit) / (Mr * cpliq), THeat%deltaM_r(iunit) / (Mr * cpliq)
-            end if
-            
     end subroutine mainchannelTemp
 
     subroutine mainchannelTemp_simple(iunit)
@@ -393,7 +389,7 @@ MODULE MOSART_heat_mod
         Ttmp2 = 1._r8 + exp(TPara%t_gamma(iunit_)*(TPara%t_beta(iunit_) - (Ta_-273.15_r8)))
         Tw_ = TPara%t_mu(iunit_) + Ttmp1/Ttmp2 + 273.15_r8
         if(Tw_ < 273.15_r8) then
-               Tw_ = 273.15_r8
+            Tw_ = 273.15_r8
         end if
     
         return

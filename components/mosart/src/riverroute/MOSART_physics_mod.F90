@@ -452,7 +452,7 @@ MODULE MOSART_physics_mod
              call t_startf('mosartr_wrm_ERFlow')
              call ExtractionRegulatedFlow(localDeltaT)
              ! a simple treatment after extracting water from the regulated streamflow. Assuming the extraction won't change the water temperature in the release
-             ! but the heat flux will be changed due to chaning streamflow
+             ! but the heat flux will be changed due to changing streamflow
              if (heatflag) then
                  do iunit=rtmCTL%begr,rtmCTL%endr
                      THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)), THeat%Tr(iunit))
