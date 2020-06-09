@@ -321,7 +321,7 @@ int test_atts_byte(int iosysid, int num_flavors, int *flavor, int my_rank,
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
         char iotype_name[PIO_MAX_NAME + 1];
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         int ncid;
         int ret;    /* Return code. */
 
@@ -433,7 +433,7 @@ int test_atts_int64(int iosysid, int num_flavors, int *flavor, int my_rank,
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
         char iotype_name[PIO_MAX_NAME + 1];
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         int ncid;
         int ret;    /* Return code. */
 
@@ -1917,7 +1917,7 @@ int test_putget(int iosysid, int num_flavors, int *flavor, int my_rank,
              * available ways. */
             for (int fmt = 0; fmt < num_flavors; fmt++)
             {
-                char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+                char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
                 char iotype_name[PIO_MAX_NAME + 1];
                 int ncid;
                 int varid[NUM_NETCDF4_TYPES + 1];
@@ -1926,7 +1926,7 @@ int test_putget(int iosysid, int num_flavors, int *flavor, int my_rank,
                 /* Create a filename. */
                 if ((ret = get_iotype_name(flavor[fmt], iotype_name)))
                     return ret;
-                snprintf(filename, PIO_MAX_NAME, "%s_putget_access_%d_unlim_%d_%s.nc", TEST_NAME,
+                snprintf(filename, PIO_MAX_NAME * 2, "%s_putget_access_%d_unlim_%d_%s.nc", TEST_NAME,
                          access, unlim, iotype_name);
 
                 /* Create test file with dims and vars defined. */

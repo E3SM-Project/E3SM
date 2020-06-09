@@ -1,5 +1,5 @@
 !>
-!! @file 
+!! @file
 !! User interface Module for PIO, this is the only file a user program should 'use'.
 !! @author Jim Edwards
 !<
@@ -33,7 +33,7 @@ module pio
        pio_rearr_opt_t, pio_rearr_comm_fc_opt_t, pio_rearr_comm_fc_2d_enable,&
        pio_rearr_comm_fc_1d_comp2io, pio_rearr_comm_fc_1d_io2comp,&
        pio_rearr_comm_fc_2d_disable, pio_rearr_comm_unlimited_pend_req,&
-       pio_rearr_comm_p2p, pio_rearr_comm_coll,&
+       pio_rearr_comm_p2p, pio_rearr_comm_coll, pio_short, &
        pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
        iotype_pnetcdf,  pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
        pio_iotype_pnetcdf,pio_iotype_netcdf, &
@@ -45,7 +45,7 @@ module pio
        pio_64bit_offset, pio_64bit_data, &
        pio_internal_error, pio_bcast_error, pio_return_error, pio_default
 
-  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
+  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit
 
   use pio_nf, only:        &
        PIO_enddef,            &
@@ -124,11 +124,11 @@ contains
          logical(C_BOOL), intent(out) :: iotask
        end function PIOc_iam_iotask
     end interface
-    
+
     ierr = PIOc_iam_iotask(iosystem%iosysid, ctask)
     task = ctask
   end function pio_iam_iotask
-  
+
   !>
   !! Integer function returns rank of IO task.
   !! @author Jim Edwards
@@ -144,7 +144,7 @@ contains
          integer(C_INT), intent(out) :: rank
        end function PIOc_iotask_rank
     end interface
-    
+
     ierr = PIOc_iotask_rank(iosystem%iosysid, rank)
   end function pio_iotask_rank
 
@@ -172,4 +172,3 @@ contains
   end subroutine pio_iosystem_is_active
 
 end module pio
-

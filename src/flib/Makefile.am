@@ -7,7 +7,7 @@
 # The library we are building.
 lib_LTLIBRARIES = libpiof.la
 
-AM_CPPFLAGS = -D_NETCDF -D_NETCDF4 -D_PETCDF
+AM_CPPFLAGS = -D_NETCDF -D_NETCDF4 -D_PNETCDF
 
 # These linker flags specify libtool version info.
 # See http://www.gnu.org/software/libtool/manual/libtool.html#Libtool-versioning

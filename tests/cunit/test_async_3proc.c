@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             {
                 for (int flv = 0; flv < num_flavors; flv++)
                 {
-                    char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+                    char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
                     int my_comp_idx = 0; /* Index in iosysid array. */
 
                     for (int sample = 0; sample < NUM_SAMPLES; sample++)
