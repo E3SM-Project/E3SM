@@ -88,10 +88,6 @@
 		            description="If true, then apply Albany's grounding line parameterization"
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_beta_use_effective_pressure" type="logical" default_value=".false." units="unitless"
-		            description="If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file."
-		            possible_values=".true. or .false."
-		/>
 		<nml_option name="config_beta_thawed_only" type="logical" default_value=".false." units="unitless"
 		            description="If true, then beta is zeroed wherever the basal temperature is below the pressure-melting temperature"
 		            possible_values=".true. or .false."
