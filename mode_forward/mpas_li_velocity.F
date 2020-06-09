@@ -817,11 +817,9 @@ contains
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: betaSolve, beta
-      real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: basalTemperature, basalPmpTemperature
       integer, dimension(:), pointer :: cellMask
       logical, pointer :: config_use_glp
-      logical, pointer :: config_beta_use_effective_pressure
       logical, pointer :: config_beta_thawed_only
       logical, pointer :: hydroActive
       real (kind=RKIND) :: betaAccum
@@ -835,7 +833,6 @@ contains
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
-      call mpas_pool_get_config(liConfigs, 'config_beta_use_effective_pressure', config_beta_use_effective_pressure)
       call mpas_pool_get_config(liConfigs, 'config_beta_thawed_only', config_beta_thawed_only)
 
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -848,47 +845,6 @@ contains
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       betaSolve = beta
-
-      if (config_beta_use_effective_pressure) then
-         call mpas_pool_get_package(liPackages, 'hydroActive', hydroActive)
-         if (.not. hydroActive) then
-            call mpas_log_write("config_beta_use_effective_pressure can only be used if the subglacial hydrology model " // &
-                 "is active.", MPAS_LOG_ERR)
-            err = ior(err, 1)
-            return
-         endif
-         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
-         call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-         betaSolve = betaSolve * effectivePressure
-
-         ! if using N-based friction with GLP, copy the value of beta across the grounding line
-         ! to the floating side for the GLP to work properly
-         if (config_use_glp) then
-            call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-            call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-            call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-
-            do iCell = 1, nCells
-               if (li_mask_is_floating_ice(cellMask(iCell))) then
-                  nBetaValues = 0
-                  betaAccum = 0.0_RKIND
-                  do iCell2 = 1, nEdgesOnCell(iCell)
-                     neighbor = cellsOnCell(iCell2, iCell)
-                     if (li_mask_is_grounded_ice(cellMask(neighbor))) then
-                        betaAccum = betaAccum + betaSolve(neighbor)
-                        nBetaValues = nBetaValues + 1
-                     endif
-                  enddo
-                  if (nBetaValues > 0) then
-                     betaSolve(iCell) = betaAccum / real(nBetaValues, kind=RKIND)  ! take average of neighboring betas
-                     ! <  TODO: could do this in log space
-                  endif
-               endif ! if iCell is floating
-            enddo ! cell loop
-         endif ! is using GLP with hydro friction law
-         ! TODO: not sure if halo update needed here.
-
-      end if ! if config_beta_use_effective_pressure
 
       if (config_beta_thawed_only) then
          call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
