@@ -2985,6 +2985,7 @@
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.1.1</command>
+        <command name="load">netcdf-cxx4</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">gcc/8.1.1</command>

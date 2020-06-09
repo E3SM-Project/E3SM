@@ -4,6 +4,7 @@ cam/src/physics/rrtmgp/external/cpp/examples/all-sky/mo_garand_atmos_io.cpp
 cam/src/physics/rrtmgp/external/cpp/examples/all-sky/mo_load_cloud_coefficients.cpp
 cam/src/physics/rrtmgp/external/cpp/examples/all-sky/rrtmgp_allsky.cpp
 cam/src/physics/rrtmgp/external/cpp/examples/mo_load_coefficients.cpp
+cam/src/physics/rrtmgp/external/cpp/extensions/mo_fluxes_byband_kernels.cpp
 cam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels/mo_gas_optics_kernels.cpp
 cam/src/physics/rrtmgp/external/cpp/rrtmgp/mo_rrtmgp_constants.cpp
 cam/src/physics/rrtmgp/external/cpp/rrtmgp/mo_rrtmgp_util_reorder.cpp
@@ -13,6 +14,7 @@ cam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_optical_props_kernels.cpp
 cam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
 cam/src/physics/rrtmgp/external/cpp/rte/mo_rte_lw.cpp
 cam/src/physics/rrtmgp/external/cpp/rte/mo_rte_sw.cpp
+cam/src/physics/rrtmgp/rrtmgp_interface.cpp
 cam/src/physics/crm/samxx/abcoefs.cpp
 cam/src/physics/crm/samxx/accelerate_crm.cpp
 cam/src/physics/crm/samxx/adams.cpp
@@ -70,4 +72,6 @@ foreach(ITEM IN LISTS FILES_DECLARE_CUDA)
   e3sm_add_flags("${ITEM}" "--expt-extended-lambda --expt-relaxed-constexpr -arch sm_70 -O3 --use_fast_math -std=c++14 -D__USE_CUDA__ -I${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/cub")
   e3sm_declare_cuda("${ITEM}")
 endforeach()
+
+
 

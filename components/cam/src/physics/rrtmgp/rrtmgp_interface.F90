@@ -28,6 +28,8 @@ module rrtmgp_interface
   use mo_rte_kind,   only: wp
 #ifdef RRTMGPXX
 
+  implicit none
+
   interface
 
     subroutine clear_gas_names() bind(C,name="clear_gas_names")
@@ -129,7 +131,7 @@ module rrtmgp_interface
                                  allsky_bnd_flux_dn_dir_p, clrsky_flux_up_p, clrsky_flux_dn_p, clrsky_flux_net_p,             &
                                  clrsky_bnd_flux_up_p, clrsky_bnd_flux_dn_p, clrsky_bnd_flux_net_p, clrsky_bnd_flux_dn_dir_p, &
                                  tsi_scaling) bind(C,name="rrtmgp_run_sw_cpp")
-      integer, value :: ngas, nlay, nbnd, ngpt
+      integer, value :: ngas, ncol, nlay, nbnd, ngpt
       real(8), value :: tsi_scaling
       real(8), dimension(*) :: gas_vmr_p, p_lay_p, t_lay_p, p_lev_p, mu0_p, sfc_alb_dir_p, sfc_alb_dif_p, cld_tau_p, cld_ssa_p, &
                                cld_asm_p, aer_tau_p, aer_ssa_p, aer_asm_p, allsky_flux_up_p, allsky_flux_dn_p,                  &

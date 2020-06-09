@@ -35,8 +35,8 @@ extern "C" void push_gas_name(char *gas_name) {
 extern "C" void gas_names_to_string1d() {
   int ngas = gas_names_vec.size();
   gas_names = string1d("gas_names",ngas);
-  for (int i=0; i < ngas; i++) {
-    gas_names(i) = gas_names_vec[i];
+  for (int i=1; i <= ngas; i++) {
+    gas_names(i) = gas_names_vec[i-1];
   }
 }
 
@@ -113,8 +113,8 @@ extern "C" void get_gpoint_bands_lw(int ngpt, int *gpoint_bands_p) {
 
 
 extern "C" void get_band_midpoints_sw(int nband, real *band_midpoints_p) {
-  realHost2d band_midpoints("band_midpoints",band_midpoints_p,nband);
-  realHost2d band_limits;
+  realHost1d band_midpoints("band_midpoints",band_midpoints_p,nband);
+  realHost2d band_limits("band_limits",2,nband);
 
   // Get band limits
   k_dist_sw.get_band_lims_wavelength().deep_copy_to(band_limits);
@@ -128,8 +128,8 @@ extern "C" void get_band_midpoints_sw(int nband, real *band_midpoints_p) {
 
 
 extern "C" void get_band_midpoints_lw(int nband, real *band_midpoints_p) {
-  realHost2d band_midpoints("band_midpoints",band_midpoints_p,nband);
-  realHost2d band_limits;
+  realHost1d band_midpoints("band_midpoints",band_midpoints_p,nband);
+  realHost2d band_limits("band_limits",2,nband);
 
   // Get band limits
   k_dist_lw.get_band_lims_wavelength().deep_copy_to(band_limits);
