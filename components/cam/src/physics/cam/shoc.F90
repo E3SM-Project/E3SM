@@ -868,7 +868,7 @@ subroutine update_prognostics_implicit( &
 
   ! Apply the surface fluxes explicitly for temperature and moisture
   !thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wthl_sfc(:)
-  qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
+  !qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
   tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
 
   ! compute surface fluxes for liq. potential temp, water and tke
@@ -1078,7 +1078,7 @@ subroutine compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
      fac       =  dtime * (ggr * rho_zi(i,nlevi) * rdp_zt(i,nlev)) !a common factor for the following 3 equations
 
      thetal(i,nlev) = thetal(i,nlev) + fac * wthl_sfc(i)
-     !qw(i,nlev)     = qw(i,nlev)     + fac * wqw_sfc(i)
+     qw(i,nlev)     = qw(i,nlev)     + fac * wqw_sfc(i)
      !tke(i,nlev)    = tke(i,nlev)    + fac * wtke_flux(i)
   enddo
 
