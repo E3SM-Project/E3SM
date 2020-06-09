@@ -9,7 +9,7 @@ if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
   do
-    if [ "$label" == "AT: SKIP TESTING" ]; then
+    if [ "$label" == "CI: Integrate Without Testing" ]; then
       skip_testing=1
     fi
   done
@@ -29,5 +29,5 @@ if [ $skip_testing -eq 0 ]; then
 
   ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream \$compiler -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
 else
-  echo "Tests were skipped, since the Github label 'AT: SKIP TESTING' was found.\n"
+  echo "Tests were skipped, since the Github label 'CI: Integrate Without Testing' was found.\n"
 fi
