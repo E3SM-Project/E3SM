@@ -1353,12 +1353,12 @@ contains
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
                if (rrtmgp_clip_optics) then
-                  call clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', warn=.true.)
-                  call clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', warn=.true.)
-                  call clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', warn=.true.)
-                  call clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', warn=.true.)
-                  call clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', warn=.true.)
-                  call clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', warn=.true.)
+                  call clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', warn=.true., tolerance=1e-10_r8)
+                  call clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', warn=.true., tolerance=1e-10_r8)
+                  call clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', warn=.true., tolerance=1e-10_r8)
+                  call clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', warn=.true., tolerance=1e-10_r8)
+                  call clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', warn=.true., tolerance=1e-10_r8)
+                  call clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', warn=.true., tolerance=1e-10_r8)
                end if
 
                ! Call the shortwave radiation driver
@@ -1438,8 +1438,8 @@ contains
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
                if (rrtmgp_clip_optics) then
-                  call clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ' cld_tau_gpt_lw', warn=.true.)
-                  call clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ' aer_tau_bnd_lw', warn=.true.)
+                  call clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ' cld_tau_gpt_lw', warn=.true., tolerance=1e-10_r8)
+                  call clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ' aer_tau_bnd_lw', warn=.true., tolerance=1e-10_r8)
                end if
 
                ! Call the longwave radiation driver to calculate fluxes and heating rates
