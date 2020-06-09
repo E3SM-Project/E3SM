@@ -136,7 +136,14 @@ module radiation
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
-   character(len=cl) :: coefficients_file_sw, coefficients_file_lw
+   character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
+
+   ! Should we clip temperatures when out of bounds of absorption coefficient
+   ! look-up table data?
+   logical :: rrtmgp_clip_temperatures = .false.
+
+   ! Likewise clip optical properties when outside expected range
+   logical :: rrtmgp_clip_optics = .false.
 
    ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
    ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
@@ -212,11 +219,12 @@ contains
       integer :: unitn, ierr
       integer :: dtime  ! timestep size
       character(len=*), parameter :: subroutine_name = 'radiation_readnl'
-      character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
                               rrtmgp_coefficients_file_sw,     &
+                              rrtmgp_clip_temperatures   ,     &
+                              rrtmgp_clip_optics         ,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad, fixed_total_solar_irradiance
@@ -241,6 +249,8 @@ contains
       ! Broadcast namelist variables
       call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
+      call mpibcast(rrtmgp_clip_temperatures   ,  1, mpi_logical  , mstrid, mpicom, ierr) 
+      call mpibcast(rrtmgp_clip_optics         ,  1, mpi_logical  , mstrid, mpicom, ierr) 
       call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
@@ -249,10 +259,6 @@ contains
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
 #endif
-
-      ! Set module data
-      coefficients_file_lw = rrtmgp_coefficients_file_lw
-      coefficients_file_sw = rrtmgp_coefficients_file_sw
 
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
       if (present(dtime_in)) then
@@ -267,7 +273,7 @@ contains
       ! Print runtime options to log.
       if (masterproc) then
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
-         write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
+         write(iulog,10) trim(rrtmgp_coefficients_file_lw), trim(rrtmgp_coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux, &
                          do_aerosol_rad, fixed_total_solar_irradiance
@@ -500,8 +506,8 @@ contains
       ! the other tasks!
       ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
       call set_available_gases(active_gases, available_gases)
-      call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
-      call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+      call rrtmgp_load_coefficients(k_dist_sw, rrtmgp_coefficients_file_sw, available_gases)
+      call rrtmgp_load_coefficients(k_dist_lw, rrtmgp_coefficients_file_lw, available_gases)
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -1208,7 +1214,7 @@ contains
       logical :: active_calls(0:N_DIAG)
 
       ! Everyone needs a name
-      character(*), parameter :: subroutine_name = 'radiation_tend'
+      character(*), parameter :: subname = 'radiation_tend'
 
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
@@ -1251,16 +1257,21 @@ contains
             pmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1) &
          )
 
-         ! Make sure temperatures are within range for aqua planets
-         if (aqua_planet) then
+         ! Check temperatures to make sure they are within the bounds of the
+         ! absorption coefficient look-up tables. If out of bounds, optionally clip
+         ! values to min/max specified (depending on value of
+         ! rrtmgp_clip_temperatures)
+         if (rrtmgp_clip_temperatures .or. aqua_planet) then
+            call t_startf('rrtmgp_check_temperatures')
             call clip_values( &
-               tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               varname='tmid', warn=.true. &
+               tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+               trim(subname) // ' tmid', warn=.true. &
             )
             call clip_values( &
                tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               varname='tint', warn=.true. &
+               trim(subname) // ' tint', warn=.true. &
             )
+            call t_stopf('rrtmgp_check_temperatures')
          end if
       end if
      
@@ -1289,6 +1300,9 @@ contains
 
          ! Do shortwave cloud optics calculations
          call t_startf('rad_cld_optics_sw')
+         cld_tau_gpt_sw = 0._r8
+         cld_ssa_gpt_sw = 0._r8
+         cld_asm_gpt_sw = 0._r8
          call get_cloud_optics_sw( &
             ncol, pver, nswbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rel, rei, &
@@ -1321,6 +1335,9 @@ contains
                ! Get aerosol optics
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_sw')
+                  aer_tau_bnd_sw = 0._r8
+                  aer_ssa_bnd_sw = 0._r8
+                  aer_asm_bnd_sw = 0._r8
                   call set_aerosol_optics_sw( &
                      icall, state, pbuf, &
                      night_indices(1:nnight), &
@@ -1332,6 +1349,16 @@ contains
                   aer_tau_bnd_sw = 0
                   aer_ssa_bnd_sw = 0
                   aer_asm_bnd_sw = 0
+               end if
+
+               ! Check (and possibly clip) values before passing to RRTMGP driver
+               if (rrtmgp_clip_optics) then
+                  call clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', warn=.true.)
+                  call clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', warn=.true.)
+                  call clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', warn=.true.)
+                  call clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', warn=.true.)
+                  call clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', warn=.true.)
+                  call clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', warn=.true.)
                end if
 
                ! Call the shortwave radiation driver
@@ -1377,6 +1404,7 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
 
          call t_startf('rad_cld_optics_lw')
+         cld_tau_gpt_lw = 0._r8
          call get_cloud_optics_lw( &
             ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rei, &
@@ -1401,11 +1429,19 @@ contains
                ! Get aerosol optics
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_lw')
+                  aer_tau_bnd_lw = 0._r8
                   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau_bnd_lw)
                   call t_stopf('rad_aer_optics_lw')
                else
                   aer_tau_bnd_lw = 0
                end if
+
+               ! Check (and possibly clip) values before passing to RRTMGP driver
+               if (rrtmgp_clip_optics) then
+                  call clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ' cld_tau_gpt_lw', warn=.true.)
+                  call clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ' aer_tau_bnd_lw', warn=.true.)
+               end if
+
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw( &
                   ncol, active_gases, gas_vmr, &

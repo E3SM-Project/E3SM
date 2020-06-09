@@ -20,7 +20,7 @@ module radiation_utils
    end interface expand_day_columns
 
    interface clip_values
-      module procedure clip_values_1d, clip_values_2d
+      module procedure clip_values_1d, clip_values_2d, clip_values_3d
    end interface clip_values
 
    ! Name of this module for error messages
@@ -222,7 +222,7 @@ contains
          end where
       end if
    end subroutine clip_values_1d
-
+   !-------------------------------------------------------------------------------
    subroutine clip_values_2d(x, min_x, max_x, varname, warn)
       real(r8), intent(inout) :: x(:,:)
       real(r8), intent(in) :: min_x
@@ -278,9 +278,63 @@ contains
       end if
 
    end subroutine clip_values_2d
+   !-------------------------------------------------------------------------------
+   subroutine clip_values_3d(x, min_x, max_x, varname, warn)
+      real(r8), intent(inout) :: x(:,:,:)
+      real(r8), intent(in) :: min_x
+      real(r8), intent(in) :: max_x
+      character(len=*), intent(in), optional :: varname
+      logical, intent(in), optional :: warn
 
-   !----------------------------------------------------------------------------
+      logical :: warn_local
 
+      warn_local = .false.
+      if (present(warn)) then
+         warn_local = warn
+      end if
+
+      ! look for values less than threshold
+      if (any(x < min_x)) then
+         ! Raise warning?
+         if (warn_local) then
+            if (present(varname)) then
+               print *, module_name // ' warning: ', &
+                        count(x < min_x), ' values are below threshold for variable ', &
+                        trim(varname), '; min = ', minval(x)
+            else
+               print *, module_name // ' warning: ', &
+                        count(x < min_x), ' values are below threshold; min = ', minval(x)
+            end if
+         end if
+
+         ! Clip values
+         where (x < min_x)
+            x = min_x
+         endwhere
+      end if
+
+      ! Look for values greater than threshold
+      if (any(x > max_x)) then
+         ! Raise warning?
+         if (warn_local) then
+            if (present(varname)) then
+               print *, module_name // ' warning: ', &
+                        count(x > max_x), ' values are above threshold for variable ', &
+                        trim(varname), '; max = ', maxval(x)
+            else
+               print *, module_name // ' warning: ', &
+                        count(x > max_x), ' values are above threshold; max = ', maxval(x)
+            end if
+         end if
+
+         ! Clip values
+         where (x > max_x)
+            x = max_x
+         end where
+      end if
+
+   end subroutine clip_values_3d
+   !-------------------------------------------------------------------------------
    subroutine handle_error(error_message, stop_on_error)
       use cam_abortutils, only: endrun
       character(len=*), intent(in) :: error_message
