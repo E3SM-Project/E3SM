@@ -34,12 +34,11 @@ my $outfile;
 #                foo(1, bar), foo(2, bar), foo(3, bar), ...
 
 # defaults
-my @types = qw(text real double int short);
+my @types = qw(text real double int);
 my $vtype = {'text' => 'character(len=*)',
 	     'real' => 'real(r4)',
 	     'double' => 'real(r8)',
 	     'int'    => 'integer(i4)',
-	     'short'  => 'integer(i2)',
 	     'long'   => 'integer(i8)',
              'logical' => 'logical' };
 my $itype = {'text' => 100,
@@ -47,32 +46,27 @@ my $itype = {'text' => 100,
 	     'double' => 102,
 	     'int'    => 103,
 	     'long'   => 104,
-             'logical' => 105,
-             'short'  => 106};
+             'logical' => 105};
 my $itypename = {'text' => 'TYPETEXT',
 	     'real' =>  'TYPEREAL',
 	     'double' => 'TYPEDOUBLE',
 	     'int'    => 'TYPEINT',
-	     'short'  => 'TYPESHORT',
 	     'long'   =>  'TYPELONG',
              'logical' => 'TYPELOGICAL'};
 my $mpitype = {'text' => 'MPI_CHARACTER',
 	       'real' => 'MPI_REAL4',
-	       'short' => 'MPI_SHORT',
 	       'double' => 'MPI_REAL8',
 	       'int' => 'MPI_INTEGER'};
 # Netcdf C datatypes
 my $nctype = {'text' => 'text',
 	      'real' => 'float',
-	      'short' => 'short',
 	      'double' => 'double',
 	      'int' => 'int'};
 # C interoperability types
 my $ctype = {'text' => 'character(C_CHAR)',
 	     'real' => 'real(C_FLOAT)',
 	     'double' => 'real(C_DOUBLE)',
-	     'int' => 'integer(C_INT)',
-             'short' => 'integer(C_SHORT)'};
+	     'int' => 'integer(C_INT)'};
 
 
 
