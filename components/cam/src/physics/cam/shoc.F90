@@ -848,8 +848,8 @@ subroutine update_prognostics_implicit( &
   call dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
   ! compute terms needed for the implicit surface stress (ksrf)
-  !ksrf(1:shcol)      = compute_impli_srf_stress_term(shcol, nlevi, rho_zi, &
-  !    uw_sfc, vw_sfc, u_wind, v_wind)
+  ksrf(1:shcol)      = compute_impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, &
+      uw_sfc, vw_sfc, u_wind, v_wind)
 
   !compute term needed for tke flux calc (wtke_flux)
   !wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
@@ -861,7 +861,7 @@ subroutine update_prognostics_implicit( &
     ! compute the wind speed
     ws(i) = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
     tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
-    ksrf(i) = max(tau(i) / ws(i), ksrfmin)
+    !ksrf(i) = max(tau(i) / ws(i), ksrfmin)
     ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
     wtke_flux(i) = ustar**3
   enddo
@@ -962,11 +962,11 @@ subroutine dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
 end subroutine dp_inverse
 
-pure function compute_impli_srf_stress_term(shcol, nlevi, rho_zi, uw_sfc, &
+pure function compute_impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, uw_sfc, &
      vw_sfc, u_wind, v_wind) result (ksrf)
 
   !intent-ins
-  integer,     intent(in) :: shcol, nlevi
+  integer,     intent(in) :: shcol, nlev, nlevi
 
   !air density at interfaces [kg/m3]
   real(rtype), intent(in) :: rho_zi(shcol,nlevi)
@@ -975,9 +975,9 @@ pure function compute_impli_srf_stress_term(shcol, nlevi, rho_zi, uw_sfc, &
   !vertical meridional momentum flux at surface [m3/s3]
   real(rtype), intent(in) :: vw_sfc(shcol)
   !zonal wind [m/s]
-  real(rtype), intent(in) :: u_wind(shcol)
+  real(rtype), intent(in) :: u_wind(shcol,nlev)
   !meridional wind [m/s]
-  real(rtype), intent(in) :: v_wind(shcol)
+  real(rtype), intent(in) :: v_wind(shcol,nlev)
 
   !function return value
   real(rtype) :: ksrf(shcol)
@@ -1003,7 +1003,7 @@ pure function compute_impli_srf_stress_term(shcol, nlevi, rho_zi, uw_sfc, &
      taux         = rho*uw ! stress in N/m2
      tauy         = rho*vw ! stress in N/m2
      ! compute the wind speed
-     ws           = max(sqrt(u_wind(i)**2._rtype + v_wind(i)**2._rtype), wsmin)
+     ws           = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
      tau          = sqrt( taux**2._rtype + tauy**2._rtype )
      ksrf(i)      = max(tau/ws, ksrfmin)
   enddo
