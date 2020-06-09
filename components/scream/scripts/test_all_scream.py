@@ -8,6 +8,7 @@ check_minimum_python_version(3, 4)
 
 import os, shutil, pathlib
 import concurrent.futures as threading3
+import itertools
 
 ###############################################################################
 class TestAllScream(object):
@@ -211,9 +212,14 @@ class TestAllScream(object):
     ###############################################################################
     def get_taskset_id(self, test):
     ###############################################################################
-        myid = self._tests.index(test)
-        start = myid * self._compile_res_count[test]
-        end   = (myid+1) * self._compile_res_count[test] - 1
+        # Note: we need to loop through the whole list, since the compile_res_count
+        #       might not be the same for all test.
+
+        it = itertools.takewhile(lambda name: name!=test, self._tests)
+        offset = sum(self._compile_res_count[prevs] for prevs in it)
+
+        start = offset
+        end   = offset + self._compile_res_count[test] - 1
 
         return start, end
 
