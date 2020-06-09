@@ -1,4 +1,5 @@
 include(CMakeParseArguments) # Needed for backwards compatibility
+include(EkatCreateUnitTest)
 
 # This function takes the following arguments:
 #    - target_name: the name of the executable
@@ -13,127 +14,55 @@ include(CMakeParseArguments) # Needed for backwards compatibility
 function(CreateUnitTest target_name target_srcs scream_libs)
   set(options OPTIONAL EXCLUDE_MAIN_CPP)
   set(oneValueArgs EXE_ARGS DEP)
-  set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS LABELS)
+  set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS COMPILER_FLAGS LABELS)
   cmake_parse_arguments(CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-  # Set link directories (must be done BEFORE add_executable is called)
-  link_directories(${SCREAM_TPL_LIBRARY_DIRS})
-
-  # Create the executable
-  set (SRC_MAIN ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp)
-  if (CreateUnitTest_EXCLUDE_MAIN_CPP)
-    set (SRC_MAIN)
-  endif ()
-  add_executable (${target_name} ${target_srcs} ${SRC_MAIN})
 
   set (TEST_INCLUDE_DIRS
        ${SCREAM_INCLUDE_DIRS}
-       ${CATCH_INCLUDE_DIR}
        ${CMAKE_CURRENT_SOURCE_DIR}
        ${CMAKE_CURRENT_BINARY_DIR}
        ${SCREAM_F90_MODULES}
        ${CreateUnitTest_INCLUDE_DIRS}
   )
 
-  # Set all target properties
-  target_link_libraries(${target_name} ${scream_libs} ${SCREAM_TPL_LIBRARIES})
-  target_include_directories(${target_name} PUBLIC ${TEST_INCLUDE_DIRS})
-  set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${SCREAM_LINK_FLAGS}")
-  set_target_properties(${target_name} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${target_name}_modules)
-  if (CreateUnitTest_CONFIG_DEFS)
-    set_target_properties(${target_name} PROPERTIES COMPILE_DEFINITIONS "${CreateUnitTest_CONFIG_DEFS}")
-  endif()
+  set (test_libs ${scream_libs})
+  list(APPEND test_libs ${SCREAM_TPL_LIBRARIES})
 
-  list(LENGTH CreateUnitTest_MPI_RANKS NUM_MPI_RANK_ARGS)
-  list(LENGTH CreateUnitTest_THREADS   NUM_THREAD_ARGS)
-
-  if (NUM_MPI_RANK_ARGS GREATER 3)
-    message(FATAL_ERROR "Too many mpi arguments for ${target_name}")
-  endif()
-  if (NUM_THREAD_ARGS GREATER 3)
-    message(FATAL_ERROR "Too many thread arguments for ${target_name}")
-  endif()
-
-  set(MPI_START_RANK 1)
-  set(MPI_END_RANK 1)
-  set(MPI_INCREMENT 1)
-
-  set(THREAD_START 1)
-  set(THREAD_END 1)
-  set(THREAD_INCREMENT 1)
-
-  if (NUM_MPI_RANK_ARGS EQUAL 0)
-  elseif(NUM_MPI_RANK_ARGS EQUAL 1)
-    list(GET CreateUnitTest_MPI_RANKS 0 RETURN_VAL)
-    set(MPI_START_RANK ${RETURN_VAL})
-    set(MPI_END_RANK ${RETURN_VAL})
-  elseif(NUM_MPI_RANK_ARGS EQUAL 2)
-    list(GET CreateUnitTest_MPI_RANKS 0 RETURN_VAL)
-    set(MPI_START_RANK ${RETURN_VAL})
-    list(GET CreateUnitTest_MPI_RANKS 1 RETURN_VAL)
-    set(MPI_END_RANK ${RETURN_VAL})
-  else()
-    list(GET CreateUnitTest_MPI_RANKS 0 RETURN_VAL)
-    set(MPI_START_RANK ${RETURN_VAL})
-    list(GET CreateUnitTest_MPI_RANKS 1 RETURN_VAL)
-    set(MPI_END_RANK ${RETURN_VAL})
-    list(GET CreateUnitTest_MPI_RANKS 2 RETURN_VAL)
-    set(MPI_INCREMENT ${RETURN_VAL})
-  endif()
-
-  if (NUM_THREAD_ARGS EQUAL 0)
-  elseif(NUM_THREAD_ARGS EQUAL 1)
-    list(GET CreateUnitTest_THREADS 0 RETURN_VAL)
-    set(THREAD_START ${RETURN_VAL})
-    set(THREAD_END ${RETURN_VAL})
-  elseif(NUM_THREAD_ARGS EQUAL 2)
-    list(GET CreateUnitTest_THREADS 0 RETURN_VAL)
-    set(THREAD_START ${RETURN_VAL})
-    list(GET CreateUnitTest_THREADS 1 RETURN_VAL)
-    set(THREAD_END ${RETURN_VAL})
-  else()
-    list(GET CreateUnitTest_THREADS 0 RETURN_VAL)
-    set(THREAD_START ${RETURN_VAL})
-    list(GET CreateUnitTest_THREADS 1 RETURN_VAL)
-    set(THREAD_END ${RETURN_VAL})
-    list(GET CreateUnitTest_THREADS 2 RETURN_VAL)
-    set(THREAD_INCREMENT ${RETURN_VAL})
-  endif()
-
-  set(CURR_RANKS ${MPI_START_RANK})
-  set(CURR_THREADS ${THREAD_START})
-
-  if (CreateUnitTest_EXE_ARGS)
-    set(invokeExec "./${target_name} ${CreateUnitTest_EXE_ARGS}")
-  else()
-    set(invokeExec "./${target_name}")
-  endif()
-
-  while (NOT CURR_RANKS GREATER ${MPI_END_RANK})
-    while (NOT CURR_THREADS GREATER ${THREAD_END})
-      # Create the test
-      set(FULL_TEST_NAME ${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS})
-      if (${CURR_RANKS} GREATER 1)
-        add_test(NAME ${FULL_TEST_NAME}
-                 COMMAND sh -c "${SCREAM_MPIRUN_EXE} -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${invokeExec}")
-      else()
-        add_test(NAME ${FULL_TEST_NAME}
-                 COMMAND sh -c "${invokeExec}")
-      endif()
-      math(EXPR CURR_CORES "${CURR_RANKS}*${CURR_THREADS}")
-      set_tests_properties(${FULL_TEST_NAME} PROPERTIES ENVIRONMENT OMP_NUM_THREADS=${CURR_THREADS} PROCESSORS ${CURR_CORES} PROCESSOR_AFFINITY True)
-      if (CreateUnitTest_DEP AND NOT CreateUnitTest_DEP STREQUAL "${FULL_TEST_NAME}")
-        set_tests_properties(${FULL_TEST_NAME} PROPERTIES DEPENDS ${CreateUnitTest_DEP})
-      endif()
-
-      if (CreateUnitTest_LABELS)
-        set_tests_properties(${FULL_TEST_NAME} PROPERTIES LABELS "${CreateUnitTest_LABELS}")
-      endif()
-
-      math(EXPR CURR_THREADS "${CURR_THREADS}+${THREAD_INCREMENT}")
-    endwhile()
-    set(CURR_THREADS ${THREAD_START})
-    math(EXPR CURR_RANKS "${CURR_RANKS}+${MPI_INCREMENT}")
-  endwhile()
+  if (CreateUnitTest_EXCLUDE_MAIN_CPP)
+    EkatCreateUnitTest(${target_name} "${target_srcs}"
+      DEP "${CreateUnitTest_DEP}"
+      MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
+      MPI_NP_FLAG -np
+      MPI_RANKS "${CreateUnitTest_MPI_RANKS}"
+      THREADS "${CreateUnitTest_THREADS}"
+      EXE_ARGS "${CreateUnitTest_EXE_ARGS}"
+      MPI_EXTRA_ARGS "${SCREAM_MPI_EXTRA_ARGS}"
+      COMPILER_DEFS "${CreateUnitTest_CONFIG_DEFS}"
+      INCLUDE_DIRS "${TEST_INCLUDE_DIRS}"
+      COMPILER_FLAGS "${CreateUnitTest_COMPILER_FLAGS}"
+      LIBS "${test_libs}"
+      LIBS_DIRS "${SCREAM_TPL_LIBRARY_DIRS}"
+      LINKER_FLAGS "${SCREAM_LINK_FLAGS}"
+      LABELS "${CreateUnitTest_LABELS}"
+      EXCLUDE_MAIN_CPP
+    )
+  else ()
+    EkatCreateUnitTest(${target_name} "${target_srcs}"
+      DEP "${CreateUnitTest_DEP}"
+      MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
+      MPI_NP_FLAG -np
+      MPI_RANKS "${CreateUnitTest_MPI_RANKS}"
+      THREADS "${CreateUnitTest_THREADS}"
+      EXE_ARGS "${CreateUnitTest_EXE_ARGS}"
+      MPI_EXTRA_ARGS "${SCREAM_MPI_EXTRA_ARGS}"
+      COMPILER_DEFS "${CreateUnitTest_CONFIG_DEFS}"
+      INCLUDE_DIRS "${TEST_INCLUDE_DIRS}"
+      COMPILER_FLAGS "${CreateUnitTest_COMPILER_FLAGS}"
+      LIBS "${test_libs}"
+      LIBS_DIRS "${SCREAM_TPL_LIBRARY_DIRS}"
+      LINKER_FLAGS "${SCREAM_LINK_FLAGS}"
+      LABELS "${CreateUnitTest_LABELS}"
+    )
+  endif ()
 
 endfunction(CreateUnitTest)

@@ -3,8 +3,8 @@
 #include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
 
 using scream::Real;
 using scream::Int;

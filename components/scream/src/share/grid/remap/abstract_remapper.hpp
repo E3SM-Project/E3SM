@@ -3,11 +3,11 @@
 
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_factory.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_utils.hpp"
-#include "share/scream_parameter_list.hpp"
 #include "share/grid/abstract_grid.hpp"
+#include "ekat/util/scream_factory.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/scream_parameter_list.hpp"
 
 namespace scream
 {

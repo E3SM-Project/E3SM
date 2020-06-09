@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -63,13 +63,11 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 	Scalar relvar = relvars[j];
 	
 	RangePolicy my_policy(0,1);
-	Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int i){
-	    
+	Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int /* i */){
 	    Spack scalings = Functions::subgrid_variance_scaling(Spack(relvar),expon );
 
 	    //all elements of scalings are identical. just copy 1 back to host.
 	    scaling_device(0) = scalings[0];
-	    
 	  });
 
 	// Copy results back to host
@@ -124,10 +122,10 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
   Scalar tol = C::Tol * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
   
-  Real relvar_info[16] = {0.1,0.5,1.0,2.0,
-			  3.0,4.0,5.0,6.0,
-			  6.5,7.0,8.0,9.0,
-			  9.1,9.5,9.8,10.};
+  Real relvar_info[max_pack_size] = {0.1,0.5,1.0,2.0,
+                                     3.0,4.0,5.0,6.0,
+                                     6.5,7.0,8.0,9.0,
+                                     9.1,9.5,9.8,10.};
 
   for (Int s = 0; s < 16; ++s) {
     Spack relvars=Spack(relvar_info[s]);
@@ -163,26 +161,23 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     int nerr = 0;
 
     //functions below use Spack size <16 but can't deal w/ exceptions on GPU, so do it here.
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
-
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("SGSvarScaling::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
-	errors = 0;
-		
-	//If expon=1, subgrid_variance_scaling should be 1
-	//                            args = relvar,return error count
-	subgrid_variance_scaling_linearity_test(10.,errors); 
-	subgrid_variance_scaling_linearity_test(0.1,errors); 
-	
-	//If relvar=1, subgrid_variance_scaling should be factorial(expon)
-	//                            args = return error count
-	subgrid_variance_scaling_relvar1_test(errors);
-	
-	//If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
-	//                          args = return error count
-	subgrid_variance_scaling_relvar3_test(errors);
-	
+    Kokkos::parallel_reduce("SGSvarScaling::run", policy,
+      KOKKOS_LAMBDA(const MemberType& /* team */, int& errors) {
+        errors = 0;
+          
+        //If expon=1, subgrid_variance_scaling should be 1
+        //                            args = relvar,return error count
+        subgrid_variance_scaling_linearity_test(10.,errors); 
+        subgrid_variance_scaling_linearity_test(0.1,errors); 
+        
+        //If relvar=1, subgrid_variance_scaling should be factorial(expon)
+        //                            args = return error count
+        subgrid_variance_scaling_relvar1_test(errors);
+        
+        //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
+        //                          args = return error count
+        subgrid_variance_scaling_relvar3_test(errors);
       }, nerr);
       
     Kokkos::fence();

@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -52,7 +52,7 @@ static void run_bfb()
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     // Init pack inputs
     Spack lcldm, rcldm, icldm, qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf,
-      nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt,
+      nrevp, ncautr, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt,
       qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti,
       nisub, qinuc, ninuc, qiberg;
     for (Int s = 0; s < Spack::n; ++s) {
@@ -68,8 +68,6 @@ static void run_bfb()
       nrslf[s] = device_data[s].nrslf;
       nrevp[s] = device_data[s].nrevp;
       ncautr[s] = device_data[s].ncautr;
-      qcnuc[s] = device_data[s].qcnuc;
-      ncnuc[s] = device_data[s].ncnuc;
       qisub[s] = device_data[s].qisub;
       nrshdr[s] = device_data[s].nrshdr;
       qcheti[s] = device_data[s].qcheti;
@@ -93,7 +91,7 @@ static void run_bfb()
     }
 
     Functions::back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,
-      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr,
+      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qisub, nrshdr,
       qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti,
       nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc, qiberg);
 
@@ -108,8 +106,6 @@ static void run_bfb()
       device_data(s).nrslf = nrslf[s];
       device_data(s).nrevp = nrevp[s];
       device_data(s).ncautr = ncautr[s];
-      device_data(s).qcnuc = qcnuc[s];
-      device_data(s).ncnuc = ncnuc[s];
       device_data(s).qisub = qisub[s];
       device_data(s).nrshdr = nrshdr[s];
       device_data(s).qcheti = qcheti[s];
@@ -147,8 +143,6 @@ static void run_bfb()
     REQUIRE(back_to_cell_average_data[s].nrslf == host_data[s].nrslf);
     REQUIRE(back_to_cell_average_data[s].nrevp == host_data[s].nrevp);
     REQUIRE(back_to_cell_average_data[s].ncautr == host_data[s].ncautr);
-    REQUIRE(back_to_cell_average_data[s].qcnuc == host_data[s].qcnuc);
-    REQUIRE(back_to_cell_average_data[s].ncnuc == host_data[s].ncnuc);
     REQUIRE(back_to_cell_average_data[s].qisub == host_data[s].qisub);
     REQUIRE(back_to_cell_average_data[s].nrshdr == host_data[s].nrshdr);
     REQUIRE(back_to_cell_average_data[s].qcheti == host_data[s].qcheti);

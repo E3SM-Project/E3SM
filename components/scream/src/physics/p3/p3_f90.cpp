@@ -3,8 +3,8 @@
 #include "physics_constants.hpp"
 #include "p3_ic_cases.hpp"
 
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
 
 using scream::Real;
 using scream::Int;
@@ -17,7 +17,7 @@ extern "C" {
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
-                 Real* dzq, Real* npccn, Real* naai, Real* qc_relvar,
+                 Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar,
 		 Int it, Real* prt_liq, Real* prt_sol, Int its,
                  Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
@@ -53,7 +53,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   th = Array2("potential temperature, K", ncol, nlev);
   pres = Array2("pressure, Pa", ncol, nlev);
   dzq = Array2("vertical grid spacing, m", ncol, nlev);
-  npccn = Array2("ccn activated number tendency, kg-1 s-1", ncol, nlev);
+  ncnuc = Array2("ccn activated number tendency, kg-1 s-1", ncol, nlev);
   naai = Array2("activated nuclei concentration, kg-1", ncol, nlev);
   qc_relvar = Array2("Assumed SGS 1/(var(qc)/mean(qc)), kg2/kg2", ncol, nlev);
   pdel = Array2("pressure thickness, Pa", ncol, nlev);
@@ -100,7 +100,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
         d_->name.data(),                                                \
         d_->name.size()})
   fdipb(qv); fdipb(th); fdipb(pres);
-  fdipb(dzq); fdipb(npccn); fdipb(naai); fdipb(qc_relvar); fdipb(qc); 
+  fdipb(dzq); fdipb(ncnuc); fdipb(naai); fdipb(qc_relvar); fdipb(qc); 
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
@@ -144,7 +144,7 @@ void p3_main (const FortranData& d) {
   p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
             d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
             d.qirim.data(), d.nitot.data(), d.birim.data(),
-            d.pres.data(), d.dzq.data(), d.npccn.data(), d.naai.data(), d.qc_relvar.data(),
+            d.pres.data(), d.dzq.data(), d.ncnuc.data(), d.naai.data(), d.qc_relvar.data(),
 	    d.it, d.prt_liq.data(),
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),

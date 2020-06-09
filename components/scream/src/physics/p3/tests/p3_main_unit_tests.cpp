@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -49,7 +49,7 @@ static void run_bfb_p3_main_pre_loop()
     std::make_pair(0, 1), // pres
     std::make_pair(0, 1), // pdel
     std::make_pair(0, 1), // dzq
-    std::make_pair(0, 1), // npccn
+    std::make_pair(0, 1), // ncnuc
     std::make_pair(0, 1), // exner
     std::make_pair(0, 1), // inv_exner
     std::make_pair(0, 1), // inv_lcldm
@@ -63,7 +63,6 @@ static void run_bfb_p3_main_pre_loop()
     std::make_pair(0, 1), // inv_rho
     std::make_pair(0, 1), // qvs
     std::make_pair(0, 1), // qvi
-    std::make_pair(sup_lower -.05, sup_upper + .05), // sup
     std::make_pair(sup_lower -.05, sup_upper + .05), // supi
     std::make_pair(0, 1), // rhofacr
     std::make_pair(0, 1), // rhofaci
@@ -116,8 +115,8 @@ static void run_bfb_p3_main_pre_loop()
   for (Int i = 0; i < num_runs; ++i) {
     P3MainPreLoopData& d = isds_cxx[i];
     p3_main_pre_main_loop_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.log_predictNc, d.dt,
-                            d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
-                            d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci,
+                            d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
+                            d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci,
                             d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.qc_incld, d.qr_incld, d.qitot_incld,
                             d.qirim_incld, d.nc_incld, d.nr_incld, d.nitot_incld, d.birim_incld,
                             &d.log_nucleationPossible, &d.log_hydrometeorsPresent);
@@ -132,7 +131,6 @@ static void run_bfb_p3_main_pre_loop()
       REQUIRE(isds_fortran[i].inv_rho[k]     == isds_cxx[i].inv_rho[k]);
       REQUIRE(isds_fortran[i].qvs[k]         == isds_cxx[i].qvs[k]);
       REQUIRE(isds_fortran[i].qvi[k]         == isds_cxx[i].qvi[k]);
-      REQUIRE(isds_fortran[i].sup[k]         == isds_cxx[i].sup[k]);
       REQUIRE(isds_fortran[i].supi[k]        == isds_cxx[i].supi[k]);
       REQUIRE(isds_fortran[i].rhofacr[k]     == isds_cxx[i].rhofacr[k]);
       REQUIRE(isds_fortran[i].rhofaci[k]     == isds_cxx[i].rhofaci[k]);

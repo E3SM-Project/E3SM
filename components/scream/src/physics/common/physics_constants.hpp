@@ -1,7 +1,7 @@
 #ifndef PHYSICS_CONSTANTS_HPP
 #define PHYSICS_CONSTANTS_HPP
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 #include <vector>
 

@@ -98,7 +98,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& pres,
   const uview_1d<const Spack>& pdel,
   const uview_1d<const Spack>& dzq,
-  const uview_1d<const Spack>& npccn,
+  const uview_1d<const Spack>& ncnuc,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_lcldm,
@@ -112,7 +112,6 @@ void Functions<S,D>
   const uview_1d<Spack>& inv_rho,
   const uview_1d<Spack>& qvs,
   const uview_1d<Spack>& qvi,
-  const uview_1d<Spack>& sup,
   const uview_1d<Spack>& supi,
   const uview_1d<Spack>& rhofacr,
   const uview_1d<Spack>& rhofaci,
@@ -176,7 +175,6 @@ void Functions<S,D>
     qvs(k)     = physics::qv_sat(t(k), pres(k), 0);
     qvi(k)     = physics::qv_sat(t(k), pres(k), 1);
 
-    sup(k)  = qv(k) / qvs(k) - 1;
     supi(k) = qv(k) / qvi(k) - 1;
 
     rhofacr(k) = pack::pow(rhosur * inv_rho(k), sp(.54));
@@ -184,19 +182,13 @@ void Functions<S,D>
     Spack dum  = sp(1.496e-6) * pack::pow(t(k), sp(1.5)) / (t(k) + 120); // this is mu
     acn(k)     = g * rhow / (18 * dum); // 'a' parameter for droplet fallspeed (Stokes' law)
 
-    // specify cloud droplet number (for 1-moment version)
-    if (!log_predictNc) {
-      nc(k) = nccnst * inv_rho(k);
-    }
-
-    if ( ( (t(k) < zerodegc && supi(k) >= 0.05) ||
-           (t(k) >= zerodegc && sup(k) >= 0.05) ).any() ) {
+    if ( (t(k) < zerodegc && supi(k) >= -0.05).any() ) {
       log_nucleationPossible = true;
     }
 
     // apply mass clipping if dry and mass is sufficiently small
     // (implying all mass is expected to evaporate/sublimate in one time step)
-    auto drymass = (qc(k) < qsmall || (qc(k) < 1.e-8 && sup(k) < -0.1));
+    auto drymass = qc(k) < qsmall;
     auto not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qc(k));
     th(k).set(drymass, th(k) - exner(k) * qc(k) * xxlv(k) * inv_cp);
@@ -204,9 +196,17 @@ void Functions<S,D>
     nc(k).set(drymass, 0);
     if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // updated further down
+      // Apply droplet activation here (before other microphysical processes) for consistency with qc increase by saturation
+      // adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to
+      // prescribe that value
+      if (!log_predictNc) {
+         onc(k).set(not_drymass, nccnst*inv_rho(k));
+      } else {
+         onc(k).set(not_drymass, pack::max(onc(k) + oncnuc(k) * dt,0.0));
+      }
     }
 
-    drymass = (qr(k) < qsmall || (qr(k) < 1.e-8 && sup(k) < -0.1));
+    drymass = qr(k) < qsmall;
     not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qr(k));
     th(k).set(drymass, th(k) - exner(k) * qr(k) * xxlv(k) * inv_cp);
@@ -238,11 +238,6 @@ void Functions<S,D>
 
     t(k) = th(k) * inv_exner(k);
 
-    // Activation of cloud droplets
-    if (log_predictNc) {
-      nc(k) += npccn(k) * dt;
-    }
-
     calculate_incloud_mixingratios(
       qc(k), qr(k), qitot(k), qirim(k), nc(k), nr(k), nitot(k), birim(k),
       inv_lcldm(k), inv_icldm(k), inv_rcldm(k),
@@ -267,7 +262,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& pres,
   const uview_1d<const Spack>& pdel,
   const uview_1d<const Spack>& dzq,
-  const uview_1d<const Spack>& npccn,
+  const uview_1d<const Spack>& ncnuc,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_lcldm,
@@ -570,11 +565,6 @@ void Functions<S,D>
       t(k), inv_rho(k), nitot(k), naai(k), supi(k), odt, log_predictNc,
       qinuc, ninuc, not_skip_all);
 
-    // droplet activation
-    droplet_activation(
-      t(k), pres(k), qv(k), qc(k), inv_rho(k), sup(k), xxlv(k), npccn(k), log_predictNc, odt,
-      qcnuc, ncnuc, not_skip_all);
-
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
@@ -601,7 +591,7 @@ void Functions<S,D>
     // cell-average quantities.
     back_to_cell_average(
       lcldm(k), rcldm(k), icldm(k), qcacc, qrevp, qcaut,
-      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,
+      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qisub, nrshdr, qcheti,
       qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,
       qidep, nrheti, nisub, qinuc, ninuc, qiberg, not_skip_all);
 
@@ -635,7 +625,7 @@ void Functions<S,D>
 
     // cloud
     cloud_water_conservation(
-      qc(k), qcnuc, dt,
+      qc(k), dt,
       qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep, not_skip_all);
 
     // rain
@@ -659,7 +649,7 @@ void Functions<S,D>
 
     //-- warm-phase only processes:
     update_prognostic_liquid(
-      qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf, log_predictNc, inv_rho(k), exner(k), xxlv(k), dt,
+      qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf, log_predictNc, inv_rho(k), exner(k), xxlv(k), dt,
       th(k), qv(k), qc(k), nc(k), qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
@@ -741,7 +731,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& pres,
   const uview_1d<const Spack>& pdel,
   const uview_1d<const Spack>& dzq,
-  const uview_1d<const Spack>& npccn,
+  const uview_1d<const Spack>& ncnuc,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_lcldm,
@@ -935,7 +925,7 @@ void Functions<S,D>
   // inputs
   const view_2d<const Spack>& pres,          // pressure                             Pa
   const view_2d<const Spack>& dzq,           // vertical grid spacing                m
-  const view_2d<const Spack>& npccn,         // IN ccn activated number tendency     kg-1 s-1
+  const view_2d<const Spack>& ncnuc,         // IN ccn activated number tendency     kg-1 s-1
   const view_2d<const Spack>& naai,          // IN actived ice nuclei concentration  1/kg
   const view_2d<const Spack>& qc_relvar,     // Assumed SGS 1/(var(qc)/mean(qc))     kg2/kg2
   const Real&                 dt,            // model time step                      s
@@ -1075,7 +1065,7 @@ void Functions<S,D>
     // after this.
     const auto opres             = util::subview(pres, i);
     const auto odzq              = util::subview(dzq, i);
-    const auto onpccn            = util::subview(npccn, i);
+    const auto oncnuc            = util::subview(ncnuc, i);
     const auto onaai             = util::subview(naai, i);
     const auto oqc_relvar        = util::subview(qc_relvar, i);
     const auto opdel             = util::subview(pdel, i);
@@ -1131,8 +1121,8 @@ void Functions<S,D>
 
     p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
-      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, oxxlv, oxxls, oxlf,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld,
+      opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, oxxlv, oxxls, oxlf,
+      t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld,
       log_nucleationPossible, log_hydrometeorsPresent);
 
     // There might not be any work to do for this team
@@ -1145,7 +1135,7 @@ void Functions<S,D>
     p3_main_main_loop(
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
-      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
+      opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_cld_exchange, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
       log_hydrometeorsPresent);
 
@@ -1198,7 +1188,7 @@ void Functions<S,D>
     p3_main_post_main_loop(
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
-      opres, opdel, odzq, onpccn, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oicldm, olcldm, orcldm,
+      opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oicldm, olcldm, orcldm,
       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_cld_exchange, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, tmparr1);
 
     //

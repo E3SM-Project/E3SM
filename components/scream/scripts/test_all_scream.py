@@ -1,4 +1,4 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head,     \
+from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_current_head,     \
     get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
@@ -306,6 +306,11 @@ class TestAllScream(object):
         test_dir = self.get_test_dir(test)
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
+
+        # This directory might have been used also to build the model to generate baselines.
+        # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
+        # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder)
+        run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
 
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
 

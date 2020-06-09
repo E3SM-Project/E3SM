@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_UTILS_HPP
 
 #include "field_tag.hpp"
-#include "share/util/scream_std_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
 
 namespace scream {
 

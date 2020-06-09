@@ -57,7 +57,7 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_standalone_init_f90 (q,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
+  subroutine p3_standalone_init_f90 (q,T,zi,pmid,pdel,ast,naai,ncnuc) bind(c)
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
@@ -68,7 +68,7 @@ contains
     real(kind=c_real), intent(inout) :: pdel(pcols,pver)     ! 
     real(kind=c_real), intent(inout) :: ast(pcols,pver)      ! 
     real(kind=c_real), intent(inout) :: naai(pcols,pver)     ! ice nucleation number
-    real(kind=c_real), intent(inout) :: npccn(pcols,pver)    ! liquid activation number tendency
+    real(kind=c_real), intent(inout) :: ncnuc(pcols,pver)    ! liquid activation number tendency
 
     character(len=100) :: case_title
 
@@ -87,7 +87,7 @@ contains
     read(981,'(12E16.8)') cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice,cpliq,tmelt,pi
     do i = 1,ncol
       do k = 1,nlev
-        read(981,'(16E16.8)') ast(i,k), naai(i,k), npccn(i,k), pmid(i,k), zi(i,k), T(i,k), &
+        read(981,'(16E16.8)') ast(i,k), naai(i,k), ncnuc(i,k), pmid(i,k), zi(i,k), T(i,k), &
                          q(i,k,1), q(i,k,2), q(i,k,3), q(i,k,4), q(i,k,5), q(i,k,6), &
                          q(i,k,7), q(i,k,8), q(i,k,9), pdel(i,k)
       end do
@@ -101,7 +101,7 @@ contains
     print *, 'P3-Standalone-Init Finished'
   end subroutine p3_standalone_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
+  subroutine p3_main_f90 (dtime,zi,pmid,pdel,ast,naai,ncnuc,q,FQ,T) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
@@ -114,7 +114,7 @@ contains
     real(kind=c_real), intent(in)    :: pdel(pcols,pver)    ! pressure thickness
     real(kind=c_real), intent(in)    :: ast(pcols,pver)     ! cloud fraction 
     real(kind=c_real), intent(in)    :: naai(pcols,pver)    ! ice nucleation number
-    real(kind=c_real), intent(in)    :: npccn(pcols,pver)   ! liquid activation number tendency
+    real(kind=c_real), intent(in)    :: ncnuc(pcols,pver)   ! liquid activation number tendency
     !INTERNAL VARIABLES
     real(kind=c_real) :: th(pcols,pver)         !potential temperature  K
     real(kind=c_real) :: dzq(pcols,pver)        !geometric layer thickness              m
@@ -190,7 +190,7 @@ contains
     ! pdel                   pressure layer thickness, again can be gotten from pres 
     ! lcdlm, icldm, rcldm    cloud fractions
     ! exner                  exner expression.  Can be backed out from pressure.
-    ! npccn and naai         activation arrays.
+    ! ncnuc and naai         activation arrays.
     
 
     ! MAKE LOCAL COPIES OF VARS MODIFIED BY P3
@@ -267,7 +267,7 @@ contains
          rimvol(its:ite,kts:kte),     & ! INOUT  ice, rime volume mixing ratio    m3 kg-1
          pmid(its:ite,kts:kte),       & ! IN     pressure at cell midpoints       Pa
          dzq(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
-         npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
+         ncnuc(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
          naai(its:ite,kts:kte),       & ! IN activated ice nuclei concentration kg-1
          qc_relvar(its:ite,kts:kte),  & ! IN 1/(var(qc)/mean(qc)**2) used in P3.
          it,                          & ! IN     time step counter NOTE: starts at 1 for first time step
@@ -304,7 +304,6 @@ contains
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte),& ! OUT sum of vap-cld phase change tendencies
          col_location(its:ite,3)           & ! IN location of columns
          )
     do i = its,ite

@@ -1,10 +1,10 @@
 #include "p3_functions_f90.hpp"
-
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
-#include "share/scream_pack_kokkos.hpp"
 #include "p3_f90.hpp"
+
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/scream_pack_kokkos.hpp"
 
 #include <random>
 
@@ -35,7 +35,7 @@ void back_to_cell_average_c(Real lcldm_, Real rcldm_, Real icldm_,
                             Real* qcacc_, Real* qrevp_, Real* qcaut_,
                             Real* ncacc_, Real* ncslf_, Real* ncautc_,
                             Real* nrslf_, Real* nrevp_, Real* ncautr_,
-                            Real* qcnuc_, Real* ncnuc_, Real* qisub_,
+                            Real* qisub_,
                             Real* nrshdr_, Real* qcheti_, Real* qrcol_,
                             Real* qcshd_, Real* qimlt_, Real* qccol_,
                             Real* qrheti_, Real* nimlt_, Real* nccol_,
@@ -47,7 +47,7 @@ void back_to_cell_average_c(Real lcldm_, Real rcldm_, Real icldm_,
 void prevent_ice_overdepletion_c(Real pres, Real t, Real qv, Real xxls,
                                  Real odt, Real* qidep, Real* qisub);
 
-void cloud_water_conservation_c(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
+void cloud_water_conservation_c(Real qc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
   Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
 
 void rain_water_conservation_c(Real qr, Real qcaut, Real qcacc, Real qimlt, Real qcshd,
@@ -132,7 +132,7 @@ void evaporate_sublimate_precip_c(Real qr_incld, Real qc_incld, Real nr_incld, R
   Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real* nrevp);
 
 void update_prognostic_liquid_c(
-  Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+  Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real ncautr,
   Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
   Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
@@ -168,11 +168,6 @@ void ice_nucleation_c(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real supi, Real odt, bool log_predictNc,
                       Real* qinuc, Real* ninuc);
 
-void droplet_activation_c(Real temp, Real pres, Real qv, Real qc,
-                          Real inv_rho, Real sup, Real xxlv, Real npccn,
-                          bool log_predictNc, Real odt,
-                          Real* qcnuc, Real* ncnuc);
-
 void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
                              Real f1pr14, Real xxlv, Real xlf, Real dv,
                              Real kap, Real mu, Real sc, Real qv, Real qc_incld,
@@ -195,8 +190,8 @@ void p3_main_pre_main_loop_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
-  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
@@ -327,7 +322,7 @@ void back_to_cell_average(BackToCellAverageData& d)
   p3_init(true);
   back_to_cell_average_c(d.lcldm, d.rcldm, d.icldm, &d.qcacc, &d.qrevp,
     &d.qcaut, &d.ncacc, &d.ncslf, &d.ncautc, &d.nrslf, &d.nrevp, &d.ncautr,
-    &d.qcnuc, &d.ncnuc, &d.qisub, &d.nrshdr, &d.qcheti, &d.qrcol, &d.qcshd,
+    &d.qisub, &d.nrshdr, &d.qcheti, &d.qrcol, &d.qcshd,
     &d.qimlt, &d.qccol, &d.qrheti, &d.nimlt, &d.nccol, &d.ncshdc, &d.ncheti,
     &d.nrcol, &d.nislf, &d.qidep, &d.nrheti, &d.nisub, &d.qinuc, &d.ninuc,
     &d.qiberg);
@@ -439,7 +434,7 @@ void cloud_rain_accretion(CloudRainAccretionData& d)
 
 void cloud_water_conservation(CloudWaterConservationData& d){
   p3_init(true);
-  cloud_water_conservation_c(d.qc, d.qcnuc, d.dt, &d.qcaut, &d.qcacc, &d.qccol, &d.qcheti,
+  cloud_water_conservation_c(d.qc, d.dt, &d.qcaut, &d.qcacc, &d.qccol, &d.qcheti,
   &d.qcshd, &d.qiberg, &d.qisub, &d.qidep);
 }
 
@@ -558,17 +553,6 @@ void ice_nucleation(IceNucleationData& d)
                    d.supi, d.odt, d.log_predictNc,&d.qinuc, &d.ninuc);
 }
 
-void droplet_activation(DropletActivationData& d)
-{
-  p3_init(true);
-
-  droplet_activation_c(d.temp, d.pres, d.qv, d.qc,
-                       d.inv_rho, d.sup, d.xxlv, d.npccn,
-                       d.log_predictNc, d.odt,
-                       &d.qcnuc, &d.ncnuc);
-
-}
-
 void ice_cldliq_wet_growth(IceWetGrowthData& d)
 {
   p3_init(true);
@@ -652,7 +636,7 @@ void evaporate_sublimate_precip(EvapSublimatePrecipData& d)
 
 void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
   p3_init(true);
-  update_prognostic_liquid_c(d.qcacc, d.ncacc, d.qcaut, d.ncautc, d.qcnuc, d.ncautr,
+  update_prognostic_liquid_c(d.qcacc, d.ncacc, d.qcaut, d.ncautc, d.ncautr,
 			      d.ncslf, d. qrevp, d.nrevp, d.nrslf , d.log_predictNc,
 			      d.inv_rho, d.exner, d.xxlv, d.dt, &d.th, &d.qv,
 			      &d.qc, &d.nc, &d.qr, &d.nr);
@@ -969,8 +953,8 @@ P3MainPreLoopData::P3MainPreLoopData(
   m_data( NUM_ARRAYS * m_nk, 0.0)
 {
   std::array<Real**, NUM_ARRAYS> ptrs = {
-    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
-    &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci,
+    &pres, &pdel, &dzq, &ncnuc, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
+    &t, &rho, &inv_rho, &qvs, &qvi, &supi, &rhofacr, &rhofaci,
     &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &qc_incld, &qr_incld, &qitot_incld,
     &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld};
 
@@ -993,8 +977,8 @@ P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
   Real* data_begin = m_data.data();
 
   std::array<Real**, NUM_ARRAYS> ptrs = {
-    &pres, &pdel, &dzq, &npccn, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
-    &t, &rho, &inv_rho, &qvs, &qvi, &sup, &supi, &rhofacr, &rhofaci,
+    &pres, &pdel, &dzq, &ncnuc, &exner, &inv_exner, &inv_lcldm, &inv_icldm, &inv_rcldm, &xxlv, &xxls, &xlf,
+    &t, &rho, &inv_rho, &qvs, &qvi, &supi, &rhofacr, &rhofaci,
     &acn, &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &qc_incld, &qr_incld, &qitot_incld,
     &qirim_incld, &nc_incld, &nr_incld, &nitot_incld, &birim_incld};
 
@@ -1011,8 +995,8 @@ void p3_main_pre_main_loop(P3MainPreLoopData& d)
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
     d.log_predictNc,
     d.dt,
-    d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
-    d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci,
+    d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
+    d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci,
     d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.qc_incld, d.qr_incld, d.qitot_incld,
     d.qirim_incld, d.nc_incld, d.nr_incld, d.nitot_incld, d.birim_incld,
     &d.log_nucleationPossible, &d.log_hydrometeorsPresent);
@@ -1417,7 +1401,7 @@ void evaporate_sublimate_precip_f(Real qr_incld_, Real qc_incld_, Real nr_incld_
   *nrevp_ = t_h(1);
 }
 
-void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncautc_, Real qcnuc_, Real ncautr_,
+void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncautc_, Real ncautr_,
 				Real ncslf_, Real  qrevp_, Real nrevp_, Real nrslf_, bool log_predictNc_,
 				Real inv_rho_, Real exner_, Real xxlv_, Real dt_, Real* th_, Real* qv_,
 				Real* qc_, Real* nc_, Real* qr_, Real* nr_)
@@ -1436,7 +1420,7 @@ void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncau
   Real local_nr = *nr_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack qcacc(qcacc_), ncacc(ncacc_), qcaut(qcaut_), ncautc(ncautc_), qcnuc(qcnuc_),
+      typename P3F::Spack qcacc(qcacc_), ncacc(ncacc_), qcaut(qcaut_), ncautc(ncautc_), 
 	ncautr(ncautr_), ncslf(ncslf_),  qrevp( qrevp_), nrevp(nrevp_), nrslf(nrslf_), inv_rho(inv_rho_),
 	exner(exner_), xxlv(xxlv_);
 
@@ -1446,7 +1430,7 @@ void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncau
 
       typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr), nr(local_nr);
 
-      P3F::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr,
+      P3F::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, ncautr,
 				    ncslf,  qrevp, nrevp, nrslf , log_predictNc,
 				    inv_rho, exner, xxlv, dt, th, qv,
 				    qc, nc, qr, nr);
@@ -1964,7 +1948,7 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
                             Real* qcacc_, Real* qrevp_, Real* qcaut_,
                             Real* ncacc_, Real* ncslf_, Real* ncautc_,
                             Real* nrslf_, Real* nrevp_, Real* ncautr_,
-                            Real* qcnuc_, Real* ncnuc_, Real* qisub_,
+                            Real* qisub_,
                             Real* nrshdr_, Real* qcheti_, Real* qrcol_,
                             Real* qcshd_, Real* qimlt_, Real* qccol_,
                             Real* qrheti_, Real* nimlt_, Real* nccol_,
@@ -1975,7 +1959,7 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
 {
   using P3F = Functions<Real, DefaultDevice>;
 
-  typename P3F::view_1d<Real> t_d("t_h", 31);
+  typename P3F::view_1d<Real> t_d("t_h", 29);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Real local_qcacc = *qcacc_;
@@ -1987,8 +1971,6 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
   Real local_nrslf = *nrslf_;
   Real local_nrevp = *nrevp_;
   Real local_ncautr = *ncautr_;
-  Real local_qcnuc = *qcnuc_;
-  Real local_ncnuc = *ncnuc_;
   Real local_qisub = *qisub_;
   Real local_nrshdr = *nrshdr_;
   Real local_qcheti = *qcheti_;
@@ -2014,7 +1996,7 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
     typename P3F::Spack lcldm(lcldm_), rcldm(rcldm_), icldm(icldm_),
       qcacc(local_qcacc), qrevp(local_qrevp), qcaut(local_qcaut), ncacc(local_ncacc),
       ncslf(local_ncslf), ncautc(local_ncautc), nrslf(local_nrslf), nrevp(local_nrevp),
-      ncautr(local_ncautr), qcnuc(local_qcnuc), ncnuc(local_ncnuc), qisub(local_qisub),
+      ncautr(local_ncautr), qisub(local_qisub),
       nrshdr(local_nrshdr), qcheti(local_qcheti), qrcol(local_qrcol), qcshd(local_qcshd),
       qimlt(local_qimlt), qccol(local_qccol), qrheti(local_qrheti), nimlt(local_nimlt),
       nccol(local_nccol), ncshdc(local_ncshdc), ncheti(local_ncheti), nrcol(local_nrcol),
@@ -2022,7 +2004,7 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
       qinuc(local_qinuc), ninuc(local_ninuc), qiberg(local_qiberg);
 
     P3F::back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,
-      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub,
+      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qisub,
       nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol,
       ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
       qiberg);
@@ -2036,28 +2018,26 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
     t_d(6) = nrslf[0];
     t_d(7) = nrevp[0];
     t_d(8) = ncautr[0];
-    t_d(9) = qcnuc[0];
-    t_d(10) = ncnuc[0];
-    t_d(11) = qisub[0];
-    t_d(12) = nrshdr[0];
-    t_d(13) = qcheti[0];
-    t_d(14) = qrcol[0];
-    t_d(15) = qcshd[0];
-    t_d(16) = qimlt[0];
-    t_d(17) = qccol[0];
-    t_d(18) = qrheti[0];
-    t_d(19) = nimlt[0];
-    t_d(20) = nccol[0];
-    t_d(21) = ncshdc[0];
-    t_d(22) = ncheti[0];
-    t_d(23) = nrcol[0];
-    t_d(24) = nislf[0];
-    t_d(25) = qidep[0];
-    t_d(26) = nrheti[0];
-    t_d(27) = nisub[0];
-    t_d(28) = qinuc[0];
-    t_d(29) = ninuc[0];
-    t_d(30) = qiberg[0];
+    t_d(9) = qisub[0];
+    t_d(10) = nrshdr[0];
+    t_d(11) = qcheti[0];
+    t_d(12) = qrcol[0];
+    t_d(13) = qcshd[0];
+    t_d(14) = qimlt[0];
+    t_d(15) = qccol[0];
+    t_d(16) = qrheti[0];
+    t_d(17) = nimlt[0];
+    t_d(18) = nccol[0];
+    t_d(19) = ncshdc[0];
+    t_d(20) = ncheti[0];
+    t_d(21) = nrcol[0];
+    t_d(22) = nislf[0];
+    t_d(23) = qidep[0];
+    t_d(24) = nrheti[0];
+    t_d(25) = nisub[0];
+    t_d(26) = qinuc[0];
+    t_d(27) = ninuc[0];
+    t_d(28) = qiberg[0];
 
   });
   Kokkos::deep_copy(t_h, t_d);
@@ -2071,28 +2051,26 @@ void back_to_cell_average_f(Real lcldm_, Real rcldm_, Real icldm_,
   *nrslf_ = t_h(6);
   *nrevp_ = t_h(7);
   *ncautr_ = t_h(8);
-  *qcnuc_ = t_h(9);
-  *ncnuc_ = t_h(10);
-  *qisub_ = t_h(11);
-  *nrshdr_ = t_h(12);
-  *qcheti_ = t_h(13);
-  *qrcol_ = t_h(14);
-  *qcshd_ = t_h(15);
-  *qimlt_ = t_h(16);
-  *qccol_ = t_h(17);
-  *qrheti_ = t_h(18);
-  *nimlt_ = t_h(19);
-  *nccol_ = t_h(20);
-  *ncshdc_ = t_h(21);
-  *ncheti_ = t_h(22);
-  *nrcol_ = t_h(23);
-  *nislf_ = t_h(24);
-  *qidep_ = t_h(25);
-  *nrheti_ = t_h(26);
-  *nisub_ = t_h(27);
-  *qinuc_ = t_h(28);
-  *ninuc_ = t_h(29);
-  *qiberg_ = t_h(30);
+  *qisub_ = t_h(9);
+  *nrshdr_ = t_h(10);
+  *qcheti_ = t_h(11);
+  *qrcol_ = t_h(12);
+  *qcshd_ = t_h(13);
+  *qimlt_ = t_h(14);
+  *qccol_ = t_h(15);
+  *qrheti_ = t_h(16);
+  *nimlt_ = t_h(17);
+  *nccol_ = t_h(18);
+  *ncshdc_ = t_h(19);
+  *ncheti_ = t_h(20);
+  *nrcol_ = t_h(21);
+  *nislf_ = t_h(22);
+  *qidep_ = t_h(23);
+  *nrheti_ = t_h(24);
+  *nisub_ = t_h(25);
+  *qinuc_ = t_h(26);
+  *ninuc_ = t_h(27);
+  *qiberg_ = t_h(28);
 }
 
 void prevent_ice_overdepletion_f(
@@ -2684,39 +2662,6 @@ void ice_nucleation_f(Real temp_, Real inv_rho_, Real nitot_, Real naai_,
   *ninuc_         = t_h(1);
 }
 
-void droplet_activation_f(Real temp_, Real pres_, Real qv_, Real qc_,
-                          Real inv_rho_, Real sup_, Real xxlv_, Real npccn_,
-                          bool log_predictNc_, Real odt_,
-                          Real* qcnuc_, Real* ncnuc_)
-{
-  using P3F  = Functions<Real, DefaultDevice>;
-
-  using Spack        = typename P3F::Spack;
-  using view_1d      = typename P3F::view_1d<Real>;
-
-  view_1d t_d("t_d", 2);
-  const auto t_h = Kokkos::create_mirror_view(t_d);
-
-  const Real qcnuc_loc{*qcnuc_}, ncnuc_loc{*ncnuc_};
-
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-
-    Spack temp{temp_}, pres{pres_}, qv{qv_}, qc{qc_}, inv_rho{inv_rho_}, sup{sup_}, xxlv{xxlv_}, npccn{npccn_};
-    Spack qcnuc{qcnuc_loc}, ncnuc{ncnuc_loc};
-
-    P3F::droplet_activation(temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc_, odt_, qcnuc, ncnuc);
-
-    t_d(0) = qcnuc[0];
-    t_d(1) = ncnuc[0];
-  });
-
-  Kokkos::deep_copy(t_h, t_d);
-
-  *qcnuc_  = t_h(0);
-  *ncnuc_  = t_h(1);
-}
-
-
 void ice_cldliq_wet_growth_f(Real rho_, Real temp_, Real pres_, Real rhofaci_, Real f1pr05_,
                              Real f1pr14_, Real xxlv_, Real xlf_, Real dv_,
                              Real kap_, Real mu_, Real sc_, Real qv_, Real qc_incld_,
@@ -3031,16 +2976,16 @@ Real cxx_exp(Real input)
 #endif
 }
 
-void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_,
+void cloud_water_conservation_f(Real qc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_,
   Real* qcheti_, Real* qcshd_, Real* qiberg_, Real* qisub_, Real* qidep_)
 {
   using P3F = Functions<Real, HostDevice>;
   using Spack   = typename P3F::Spack;
 
-  Spack qc(qc_), qcnuc(qcnuc_), qcaut(*qcaut_), qcacc(*qcacc_), qccol(*qccol_), qcheti(*qcheti_);
+  Spack qc(qc_), qcaut(*qcaut_), qcacc(*qcacc_), qccol(*qccol_), qcheti(*qcheti_);
   Spack qcshd(*qcshd_), qiberg(*qiberg_), qisub(*qisub_), qidep(*qidep_);
 
-  P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+  P3F::cloud_water_conservation(qc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
   *qcaut_ = qcaut[0];
   *qcacc_ = qcacc[0];
   *qccol_ = qccol[0];
@@ -3084,8 +3029,8 @@ void p3_main_pre_main_loop_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
-  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent)
@@ -3114,8 +3059,8 @@ void p3_main_pre_main_loop_f(
   // Set up views
   Kokkos::Array<view_1d, P3MainPreLoopData::NUM_ARRAYS> temp_d;
 
-  pack::host_to_device({pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm,
-        t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci,
+  pack::host_to_device({pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm,
+        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci,
         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld,
         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld},
     nk, temp_d);
@@ -3124,7 +3069,7 @@ void p3_main_pre_main_loop_f(
     pres_d        (temp_d[0]),
     pdel_d        (temp_d[1]),
     dzq_d         (temp_d[2]),
-    npccn_d       (temp_d[3]),
+    ncnuc_d       (temp_d[3]),
     exner_d       (temp_d[4]),
     inv_exner_d   (temp_d[5]),
     inv_lcldm_d   (temp_d[6]),
@@ -3135,32 +3080,31 @@ void p3_main_pre_main_loop_f(
     inv_rho_d     (temp_d[11]),
     qvs_d         (temp_d[12]),
     qvi_d         (temp_d[13]),
-    sup_d         (temp_d[14]),
-    supi_d        (temp_d[15]),
-    rhofacr_d     (temp_d[16]),
-    rhofaci_d     (temp_d[17]),
-    acn_d         (temp_d[18]),
-    qv_d          (temp_d[19]),
-    th_d          (temp_d[20]),
-    qc_d          (temp_d[21]),
-    nc_d          (temp_d[22]),
-    qr_d          (temp_d[23]),
-    nr_d          (temp_d[24]),
-    qitot_d       (temp_d[25]),
-    nitot_d       (temp_d[26]),
-    qirim_d       (temp_d[27]),
-    birim_d       (temp_d[28]),
-    xxlv_d        (temp_d[29]),
-    xxls_d        (temp_d[30]),
-    xlf_d         (temp_d[31]),
-    qc_incld_d    (temp_d[32]),
-    qr_incld_d    (temp_d[33]),
-    qitot_incld_d (temp_d[34]),
-    qirim_incld_d (temp_d[35]),
-    nc_incld_d    (temp_d[36]),
-    nr_incld_d    (temp_d[37]),
-    nitot_incld_d (temp_d[38]),
-    birim_incld_d (temp_d[39]);
+    supi_d        (temp_d[14]),
+    rhofacr_d     (temp_d[15]),
+    rhofaci_d     (temp_d[16]),
+    acn_d         (temp_d[17]),
+    qv_d          (temp_d[18]),
+    th_d          (temp_d[19]),
+    qc_d          (temp_d[20]),
+    nc_d          (temp_d[21]),
+    qr_d          (temp_d[22]),
+    nr_d          (temp_d[23]),
+    qitot_d       (temp_d[24]),
+    nitot_d       (temp_d[25]),
+    qirim_d       (temp_d[26]),
+    birim_d       (temp_d[27]),
+    xxlv_d        (temp_d[28]),
+    xxls_d        (temp_d[29]),
+    xlf_d         (temp_d[30]),
+    qc_incld_d    (temp_d[31]),
+    qr_incld_d    (temp_d[32]),
+    qitot_incld_d (temp_d[33]),
+    qirim_incld_d (temp_d[34]),
+    nc_incld_d    (temp_d[35]),
+    nr_incld_d    (temp_d[36]),
+    nitot_incld_d (temp_d[37]),
+    birim_incld_d (temp_d[38]);
 
   // Call core function from kernel
   bview_1d bools_d("bools", 2);
@@ -3171,7 +3115,7 @@ void p3_main_pre_main_loop_f(
       upres_d        (temp_d[0]),
       updel_d        (temp_d[1]),
       udzq_d         (temp_d[2]),
-      unpccn_d       (temp_d[3]),
+      uncnuc_d       (temp_d[3]),
       uexner_d       (temp_d[4]),
       uinv_exner_d   (temp_d[5]),
       uinv_lcldm_d   (temp_d[6]),
@@ -3182,37 +3126,36 @@ void p3_main_pre_main_loop_f(
       uinv_rho_d     (temp_d[11]),
       uqvs_d         (temp_d[12]),
       uqvi_d         (temp_d[13]),
-      usup_d         (temp_d[14]),
-      usupi_d        (temp_d[15]),
-      urhofacr_d     (temp_d[16]),
-      urhofaci_d     (temp_d[17]),
-      uacn_d         (temp_d[18]),
-      uqv_d          (temp_d[19]),
-      uth_d          (temp_d[20]),
-      uqc_d          (temp_d[21]),
-      unc_d          (temp_d[22]),
-      uqr_d          (temp_d[23]),
-      unr_d          (temp_d[24]),
-      uqitot_d       (temp_d[25]),
-      unitot_d       (temp_d[26]),
-      uqirim_d       (temp_d[27]),
-      ubirim_d       (temp_d[28]),
-      uxxlv_d        (temp_d[29]),
-      uxxls_d        (temp_d[30]),
-      uxlf_d         (temp_d[31]),
-      uqc_incld_d    (temp_d[32]),
-      uqr_incld_d    (temp_d[33]),
-      uqitot_incld_d (temp_d[34]),
-      uqirim_incld_d (temp_d[35]),
-      unc_incld_d    (temp_d[36]),
-      unr_incld_d    (temp_d[37]),
-      unitot_incld_d (temp_d[38]),
-      ubirim_incld_d (temp_d[39]);
+      usupi_d        (temp_d[14]),
+      urhofacr_d     (temp_d[15]),
+      urhofaci_d     (temp_d[16]),
+      uacn_d         (temp_d[17]),
+      uqv_d          (temp_d[18]),
+      uth_d          (temp_d[19]),
+      uqc_d          (temp_d[20]),
+      unc_d          (temp_d[21]),
+      uqr_d          (temp_d[22]),
+      unr_d          (temp_d[23]),
+      uqitot_d       (temp_d[24]),
+      unitot_d       (temp_d[25]),
+      uqirim_d       (temp_d[26]),
+      ubirim_d       (temp_d[27]),
+      uxxlv_d        (temp_d[28]),
+      uxxls_d        (temp_d[29]),
+      uxlf_d         (temp_d[30]),
+      uqc_incld_d    (temp_d[31]),
+      uqr_incld_d    (temp_d[32]),
+      uqitot_incld_d (temp_d[33]),
+      uqirim_incld_d (temp_d[34]),
+      unc_incld_d    (temp_d[35]),
+      unr_incld_d    (temp_d[36]),
+      unitot_incld_d (temp_d[37]),
+      ubirim_incld_d (temp_d[38]);
 
     P3F::p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
-      upres_d, updel_d, udzq_d, unpccn_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
-      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usup_d, usupi_d, urhofacr_d, urhofaci_d,
+      upres_d, updel_d, udzq_d, uncnuc_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
+      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usupi_d, urhofacr_d, urhofaci_d,
       uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,
       uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d,
       bools_d(0), bools_d(1));
@@ -3220,11 +3163,11 @@ void p3_main_pre_main_loop_f(
 
   // Sync back to host
   Kokkos::Array<view_1d, 28> inout_views = {
-    t_d, rho_d, inv_rho_d, qvs_d, qvi_d, sup_d, supi_d, rhofacr_d, rhofaci_d,
+    t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d,
     acn_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, qc_incld_d, qr_incld_d, qitot_incld_d,
     qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d};
 
-  pack::device_to_host({t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci,
+  pack::device_to_host({t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci,
         acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld,
         qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld},
     nk, inout_views);

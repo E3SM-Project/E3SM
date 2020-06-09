@@ -26,11 +26,13 @@ void Functions<S,D>
 
   nr.set(context, nr_incld*rcldm);
 
-  lookup(mu_r, lamr, table, context);
-  // mass-weighted fall speed:
-  V_qr.set(context, apply_table(vm_table, table) * rhofacr);
-  // number-weighted fall speed:
-  V_nr.set(context, apply_table(vn_table, table) * rhofacr);
+  if (context.any()) {
+    lookup(mu_r, lamr, table, context);
+    // mass-weighted fall speed:
+    V_qr.set(context, apply_table(vm_table, table) * rhofacr);
+    // number-weighted fall speed:
+    V_nr.set(context, apply_table(vn_table, table) * rhofacr);
+  }
 }
 
 template <typename S, typename D>

@@ -79,11 +79,12 @@ void Functions<S,D>
                                 (qrcol + qccol + qcheti + qrheti - qimlt + qiberg) * xlf * INV_CP) * dt);
 }
 
+
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
-			   const Spack& qcaut,const Spack& ncautc, const Spack& qcnuc, const Spack& ncautr,
+			   const Spack& qcaut,const Spack& ncautc, const Spack& ncautr,
 			   const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
 			   const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
 			   const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
@@ -93,7 +94,7 @@ void Functions<S,D>
   constexpr int IPARAM    = C::IPARAM;
   constexpr Scalar INV_CP = C::INV_CP;
 
-  qc.set(context, qc + (-qcacc-qcaut+qcnuc)*dt);
+  qc.set(context, qc + (-qcacc-qcaut)*dt);
   qr.set(context, qr + (qcacc+qcaut-qrevp)*dt);
 
   if (log_predictNc) {
@@ -110,9 +111,9 @@ void Functions<S,D>
     nr.set(context, nr + (ncautr - nrslf - nrevp) * dt);
   }
 
-  qv.set(context, qv + (-qcnuc+qrevp)*dt);
+  qv.set(context, qv + qrevp *dt);
 
-  th.set(context, th + exner*((qcnuc - qrevp) * xxlv * INV_CP) * dt);
+  th.set(context, th + exner*(-qrevp * xxlv * INV_CP) * dt);
 }
 
 } // namespace p3

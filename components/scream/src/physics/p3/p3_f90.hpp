@@ -1,8 +1,8 @@
 #ifndef SCREAM_P3_F90_HPP
 #define SCREAM_P3_F90_HPP
 
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
 
 #include <memory>
 #include <vector>
@@ -27,7 +27,7 @@ struct FortranData {
   // In
   Real dt;
   Int it;
-  Array2 qv, th, pres, dzq, npccn, naai, qc_relvar, qc, nc, qr, nr,  qitot,
+  Array2 qv, th, pres, dzq, ncnuc, naai, qc_relvar, qc, nc, qr, nr,  qitot,
     nitot, qirim, birim, pdel, exner;
   // Out
   Array1 prt_liq, prt_sol;
