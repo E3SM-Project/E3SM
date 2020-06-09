@@ -15,7 +15,7 @@ endif
 CFLAGS=-lnetcdf -lm -I$(INC_NETCDF) -L$(LIB_NETCDF)
 
 land_use_translator: updateannuallanduse_v2.c
-	$(CC) -o land_use_translator updateannuallanduse_v2.c $(CFLAGS)
+	$(CC) -std=c99 -o land_use_translator updateannuallanduse_v2.c $(CFLAGS)
 
 clean:
 	rm -f land_use_translator
