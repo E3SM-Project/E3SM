@@ -16,14 +16,6 @@
       %y    = year from the range yearfirst to yearlast
       %ym   = year-month from the range yearfirst to yearlast with all 12 months
       %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
-
-      Each mode below, except for presaero, has a set of streams associated with it
-      The presaero stream, is associated with all modes
-
-      Currently the following datamods are supported
-      prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
-      som           SOM         (Slab ocean model)
-      null          NULL        (NULL mode)
   -->
 
   <!-- =========================================  -->
@@ -37,8 +29,6 @@
     <valid_values>sstdata,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,sst_aquap_constant,som,som_aquap,iaf,null</valid_values>
     <desc>
       General method that operates on the data.
-      ==> datamode = "NULL"
-      NULL is always a valid option and means no data will be generated.
       ==> dataMode = "sstdata"
       sstdata mode assumes the only field in the input stream is SST.
       It also assumes the SST is in Celsius and must be converted to Kelvin.
@@ -88,7 +78,6 @@
         compset="_DOCN%AQPCONST_" => docn_mode=sst_aquap_constant  => datamode=sst_aquap_constant
      </desc>
     <values>
-      <value docn_mode="null">null</value>
       <value docn_mode="prescribed">sstdata</value>
       <value docn_mode="som$">som</value>
       <value docn_mode="som_aquap">som_aquap</value>
@@ -318,7 +307,7 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <valid_values>bilinear,nn</valid_values>
     <desc>
       type of mapping from stream mesh -> model mesh
     </desc>

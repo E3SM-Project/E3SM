@@ -21,7 +21,7 @@ module rof_comp_nuopc
   use dshr_strdata_mod , only : shr_strdata_type, shr_strdata_advance, shr_strdata_get_stream_domain
   use dshr_strdata_mod , only : shr_strdata_init_from_xml
   use dshr_mod         , only : dshr_model_initphase, dshr_init
-  use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock, dshr_log_clock_advance
+  use dshr_mod         , only : dshr_state_setscalar, dshr_set_runclock
   use dshr_mod         , only : dshr_restart_read, dshr_restart_write, dshr_mesh_init
   use dshr_dfield_mod  , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
   use dshr_fldlist_mod , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
@@ -31,7 +31,6 @@ module rof_comp_nuopc
   private ! except
 
   public  :: SetServices
-
   private :: InitializeAdvertise
   private :: InitializeRealize
   private :: ModelAdvance
