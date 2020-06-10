@@ -200,9 +200,9 @@ void Functions<S,D>
       // adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to
       // prescribe that value
       if (!log_predictNc) {
-         onc(k).set(not_drymass, nccnst*inv_rho(k));
+         nc(k).set(not_drymass, nccnst*inv_rho(k));
       } else {
-         onc(k).set(not_drymass, pack::max(onc(k) + oncnuc(k) * dt,0.0));
+         nc(k).set(not_drymass, pack::max(nc(k) + ncnuc(k) * dt, 0.0));
       }
     }
 
@@ -1127,7 +1127,7 @@ void Functions<S,D>
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
+      t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
       log_hydrometeorsPresent);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, nitot.  This is not
