@@ -4274,12 +4274,6 @@ File path for RRTMGP longwave gaseous absorption coefficients file.
 File path for RRTMGP shortwave gaseous absorption coefficients file.
 </entry>
 
-<entry id="rrtmgp_clip_temperatures" type="logical"
-       category="radiation" group="radiation_nl" valid_values="">
-Flag to determine whether temperatures should be clipped or limited when
-outside the range of the absorption coefficient look-up table values.
-</entry>
-
 <!-- Rayleigh Friction Parameterization -->
 
 <entry id="rayk0" type="integer" category="rayleigh_friction"

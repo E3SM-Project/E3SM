@@ -138,10 +138,6 @@ module radiation
    ! variables.
    character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
 
-   ! Should we clip temperatures when out of bounds of absorption coefficient
-   ! look-up table data?
-   logical :: rrtmgp_clip_temperatures = .false.
-
    ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
    ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
    ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
@@ -220,7 +216,6 @@ contains
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
                               rrtmgp_coefficients_file_sw,     &
-                              rrtmgp_clip_temperatures   ,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad, fixed_total_solar_irradiance
@@ -245,7 +240,6 @@ contains
       ! Broadcast namelist variables
       call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
-      call mpibcast(rrtmgp_clip_temperatures   ,  1, mpi_logical  , mstrid, mpicom, ierr) 
       call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
@@ -1254,20 +1248,17 @@ contains
 
          ! Check temperatures to make sure they are within the bounds of the
          ! absorption coefficient look-up tables. If out of bounds, optionally clip
-         ! values to min/max specified (depending on value of
-         ! rrtmgp_clip_temperatures)
-         if (rrtmgp_clip_temperatures .or. aqua_planet) then
-            call t_startf('rrtmgp_check_temperatures')
-            call handle_error(clip_values( &
-               tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               trim(subname) // ' tmid' &
-            ), fatal=.false.)
-            call handle_error(clip_values( &
-               tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               trim(subname) // ' tint' &
-            ), fatal=.false.)
-            call t_stopf('rrtmgp_check_temperatures')
-         end if
+         ! values to min/max specified
+         call t_startf('rrtmgp_check_temperatures')
+         call handle_error(clip_values( &
+            tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+            trim(subname) // ' tmid' &
+         ), fatal=.false.)
+         call handle_error(clip_values( &
+            tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+            trim(subname) // ' tint' &
+         ), fatal=.false.)
+         call t_stopf('rrtmgp_check_temperatures')
       end if
      
       ! Do shortwave stuff...
