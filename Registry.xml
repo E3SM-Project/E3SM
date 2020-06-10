@@ -3862,6 +3862,12 @@
 			icepack_name="flux_bio"
 			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
+		<var name="oceanBioFluxesCategory"		type="real"	dimensions="nZBGCTracers nCategories nCells Time"	name_in_code="oceanBioFluxesCategory"
+			units="mmol/m2/s"
+			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
+			icepack_name="flux_bion"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
 		<var name="oceanBioConcentrations"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioConcentrations"
 			units="mmol/m3"
 			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"

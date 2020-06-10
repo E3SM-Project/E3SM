@@ -50,10 +50,10 @@
                                       fbri,     dhbr_top, dhbr_bot,   &
                                       hbr_old,  hin,hsn,  firstice,   &
                                       l_stop,   stop_label)
- 
+
       integer (kind=int_kind), intent(in) :: &
          n_cat           ! category
-                              
+
       real (kind=dbl_kind), intent(in) :: &
          aicen       , & ! concentration of ice
          vicen       , & ! volume per unit area of ice          (m)
@@ -62,9 +62,10 @@
          meltt       , & ! top ice melt                         (m)
          congel      , & ! bottom ice growth                    (m)
          snoice          ! top ice growth from flooding         (m)
-  
+
       real (kind=dbl_kind), intent(out) :: &
-         hbr_old          ! old brine height (m)
+         hbr_old     , & ! old brine height (m)
+         hice_old        ! old ice thickness (m)
 
       real (kind=dbl_kind), intent(inout) :: &
          hin          , & ! ice thickness (m) 
@@ -74,8 +75,7 @@
       real (kind=dbl_kind), intent(inout) :: &
          fbri         , & ! trcrn(nt_fbri)
          dhbr_top     , & ! brine change in top for diagnostics (m)
-         dhbr_bot     , & ! brine change in bottom for diagnostics (m)
-         hice_old         ! old ice thickness (m)
+         dhbr_bot
 
       logical (kind=log_kind), intent(in) :: &
          firstice         ! if true, initialized values should be used     
@@ -102,25 +102,28 @@
          write(warning, *) 'fbri, hice_old', fbri, hice_old
          call add_warning(warning)
          write(warning, *) 'vicen, aicen', vicen, aicen
-         call add_warning(warning)         
+         call add_warning(warning)
          l_stop = .true.
          stop_label = 'ice_brine preflushing: fbri <= c0'
       endif
-
-      hin = vicen / aicen
-      hsn = vsnon / aicen
+      hin = c0
+      hsn = c0
+      if (aicen > puny) then
+         hin = vicen / aicen
+         hsn = vsnon / aicen
+      endif
       hin_old = max(c0, hin + meltb  + meltt - congel - snoice)
       dhice = hin_old - hice_old   ! change due to subl/cond
-      dhbr_top = meltt - snoice - dhice 
+      dhbr_top = meltt - snoice - dhice
       dhbr_bot = congel - meltb
 
-      if ((hice_old < puny) .OR. (hin_old < puny) .OR. firstice) then
-         hice_old   = hin
-         dhbr_top   = c0
-         dhbr_bot   = c0
-         dhice       = c0
-         fbri       = c1 
-      endif
+      !if ((hice_old < puny) .OR. (hin_old < puny) ) then !.OR. firstice) then
+      !   hice_old   = hin
+      !   dhbr_top   = c0
+      !   dhbr_bot   = c0
+      !   dhice       = c0
+      !   fbri       = c1
+      !endif
 
       hbr_old = fbri * hice_old
 
@@ -446,15 +449,15 @@
 
 !=======================================================================
 
-! Changes include brine height increases from ice and snow surface melt, 
+! Changes include brine height increases from ice and snow surface melt,
 ! congelation growth, and upward pressure driven flow from snow loading.
-!  
-! Decreases arise from downward flushing and bottom melt.  
 !
-! NOTE: In this subroutine, trcrn(nt_fbri) is  the volume fraction of ice 
-! with dynamic salinity or the height ratio == hbr/vicen*aicen, where 
-! hbr is the height of the brine surface relative to the bottom of the 
-! ice.  This volume fraction may be > 1 in which case there is brine 
+! Decreases arise from downward flushing and bottom melt.
+!
+! NOTE: In this subroutine, trcrn(nt_fbri) is  the volume fraction of ice
+! with dynamic salinity or the height ratio == hbr/vicen*aicen, where
+! hbr is the height of the brine surface relative to the bottom of the
+! ice.  This volume fraction may be > 1 in which case there is brine
 ! above the ice surface (ponds).
 
       subroutine update_hbrine (meltb,      meltt,       &
@@ -474,7 +477,7 @@
 
       real (kind=dbl_kind), intent(in) :: &
          dt             ! timestep
-           
+
       real (kind=dbl_kind), intent(in):: &
          meltb,       & ! bottom melt over dt (m)
          meltt,       & ! true top melt over dt (m)
@@ -484,29 +487,29 @@
          hin_old,     & ! past timestep ice thickness (m)
          hbr_old,     & ! previous timestep hbr
          phi_snow,    & ! porosity of snow
-         kperm,       & ! avg ice permeability 
-         bphin,       & ! upper brine porosity  
+         kperm,       & ! avg ice permeability
+         bphin,       & ! upper brine porosity
          snoice,      & ! snoice change (m)
          dhS_bottom,  & ! change in bottom hbr initially before darcy flow
          aice0          ! open water area fraction
 
       real (kind=dbl_kind), intent(inout):: &
          darcy_V    , & ! Darcy velocity: m/s
-         darcy_V_chl, & ! Darcy velocity: m/s for bgc 
+         darcy_V_chl, & ! Darcy velocity: m/s for bgc
          dhS_top    , & ! change in top hbr before darcy flow
-         dh_bot_chl , & ! change in bottom for algae  
-         dh_top_chl , & ! change in bottom for algae  
-         hbr        , & ! thickness of brine (m) 
-         fbri       , & ! brine height ratio tracer (hbr/hin) 
-         bphi_min       ! surface porosity   
+         dh_bot_chl , & ! change in bottom for algae
+         dh_top_chl , & ! change in bottom for algae
+         hbr        , & ! thickness of brine (m)
+         fbri       , & ! brine height ratio tracer (hbr/hin)
+         bphi_min       ! surface porosity
 
       real (kind=dbl_kind), intent(out):: &
          dh_direct      ! surface flooding or runoff (m)
- 
+
       ! local variables
 
-      real (kind=dbl_kind) :: &  
-         hbrmin    , & ! thinS or hin 
+      real (kind=dbl_kind) :: &
+         hbrmin    , & ! thinS or hin
          dhbr_hin   , & ! hbr-hin
          hbrocn     , & ! brine height above sea level (m) hbr-h_ocn
          dhbr       , & ! change in brine surface
@@ -519,61 +522,61 @@
       real (kind=dbl_kind), parameter :: &
          dh_min = p001  ! brine remains within dh_min of sea level
                         ! when ice thickness is less than thinS
- 
+
          hbrocn      = c0
          darcy_V     = c0
-         darcy_V_chl = c0  
+         darcy_V_chl = c0
          hbrocn_new  = c0
-         h_ocn = rhosi/rhow*hin + rhos/rhow*hsn 
+         h_ocn = rhosi/rhow*hin + rhos/rhow*hsn
          dh_direct   = c0
-         
+
          if (hbr_old > thinS .AND. hin_old > thinS .AND. hin > thinS ) then
             hbrmin = thinS
-            dhS_top = -max(c0, min(hin_old-hbr_old, meltt)) * rhoi/rhow 
+            dhS_top = -max(c0, min(hin_old-hbr_old, meltt)) * rhoi/rhow
             dhS_top = dhS_top - max(c0, melts) * rhos/rhow
             dh_top_chl = dhS_top
-            dhbr    = dhS_bottom - dhS_top  
-            hbr     = max(puny, hbr_old+dhbr) 
+            dhbr    = dhS_bottom - dhS_top
+            hbr     = max(puny, hbr_old+dhbr)
             hbrocn  = hbr - h_ocn
             darcy_coeff = max(c0, kperm*gravit/(viscos*hbr_old))
 
-            if (hbrocn > c0 .AND. hbr > thinS ) then 
-               bphi_min   = bphin  
+            if (hbrocn > c0 .AND. hbr > thinS ) then
+               bphi_min   = bphin
                dhrunoff  = -dhS_top*aice0
                hbrocn    = max(c0,hbrocn - dhrunoff)
                hbrocn_new = hbrocn*exp(-darcy_coeff/bphi_min*dt)
                hbr = max(hbrmin, h_ocn + hbrocn_new)
                hbrocn_new = hbr-h_ocn
                darcy_V = -SIGN((hbrocn-hbrocn_new)/dt*bphi_min, hbrocn)
-               darcy_V_chl= darcy_V 
+               darcy_V_chl= darcy_V
                dhS_top    = dhS_top - darcy_V*dt/bphi_min + dhrunoff
                dh_top_chl = dh_top_chl - darcy_V_chl*dt/bphi_min + dhrunoff
                dh_direct  = dhrunoff
             elseif (hbrocn < c0 .AND. hbr > thinS) then
                hbrocn_new = hbrocn*exp(-darcy_coeff/bphi_min*dt)
-               dhflood  = max(c0,hbrocn_new - hbrocn)*aice0               
+               dhflood  = max(c0,hbrocn_new - hbrocn)*aice0
                hbr = max(hbrmin, h_ocn + hbrocn_new)
                darcy_V    = -SIGN((hbrocn-hbrocn_new + dhflood)/dt*bphi_min, hbrocn)
-               darcy_V_chl= darcy_V 
+               darcy_V_chl= darcy_V
                dhS_top    = dhS_top - darcy_V*dt/bphi_min - dhflood
                dh_top_chl = dh_top_chl - darcy_V_chl*dt/bphi_min - dhflood
                dh_direct  = -dhflood
             endif
-            
-            dh_bot_chl = dhS_bottom 
-  
-         else    ! very thin brine height 
+
+            dh_bot_chl = dhS_bottom
+
+         else    ! very thin brine height
             hbrmin  = min(thinS, hin)
             hbr = max(hbrmin, hbr_old+dhS_bottom-dhS_top)
             dhbr_hin = hbr - h_ocn
             if (abs(dhbr_hin) > dh_min) &
-               hbr = max(hbrmin, h_ocn + SIGN(dh_min,dhbr_hin)) 
+               hbr = max(hbrmin, h_ocn + SIGN(dh_min,dhbr_hin))
             dhS_top = hbr_old - hbr + dhS_bottom
             dh_top_chl = dhS_top
             dh_bot_chl = dhS_bottom
-         endif 
-        
-         fbri = hbr/hin 
+         endif
+
+         fbri = hbr/hin
 
       end subroutine update_hbrine
 
@@ -624,7 +627,7 @@
          sst               ! ocean temperature (oC)
  
       real (kind=dbl_kind), dimension(ntrcr), intent(inout) :: &
-         trcrn           
+         trcrn
 
       real (kind=dbl_kind), intent(inout) :: &
          hbr_old       , & ! old brine height
