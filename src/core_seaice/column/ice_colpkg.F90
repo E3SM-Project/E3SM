@@ -5325,6 +5325,9 @@
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            aice0, trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
+                           flux_bion, &
+                           carbonInitial, carbonFinal, carbonFlux, &
+                           hbrnInitial, hbrnFinal, &
                            l_stop, stop_label)
 
       use ice_algae, only: zbio, sklbio
@@ -5333,7 +5336,7 @@
       use ice_colpkg_shared, only: solve_zsal, z_tracers, phi_snow
       use ice_colpkg_tracers, only: nt_fbri, tr_brine, &
           nt_bgc_S, nt_qice, nt_sice, nt_zbgc_frac, bio_index 
-      use ice_constants_colpkg, only: c0, c1, puny
+      use ice_constants_colpkg, only: c0, c1, puny, p5
       use ice_zsalinity, only: zsalinity
       use ice_zbgc_shared, only:  zbgc_frac_init
 
@@ -5373,6 +5376,15 @@
                         ! and reappears (e.g. transport) in a grid cell
                         ! during a single time step from ice that was
                         ! there the entire time step (true until ice forms)
+
+      real (kind=dbl_kind), dimension (:), intent(out) :: &
+         carbonInitial, & ! Initial carbon content per category (mmol/m2)
+         carbonFinal,   & ! Final carbon content per category (mmol/m2)
+         carbonFlux, &       ! ice to ocean carbon flux per category (mmol/m2/s)
+         hbrnInitial, hbrnFinal  ! category initial and final brine heights 
+
+      real (kind=dbl_kind), dimension (:,:), intent(out) :: &
+         flux_bion      ! per categeory ice to ocean biogeochemistry flux (mmol/m2/s)
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
          Zoo            , & ! N losses accumulated in timestep (ie. zooplankton/bacteria)
@@ -5468,7 +5480,14 @@
       real (kind=dbl_kind) :: & 
          dh_bot_chl  , & ! Chlorophyll may or may not flush
          dh_top_chl  , & ! Chlorophyll may or may not flush
-         darcy_V_chl     
+         darcy_V_chl
+
+      real (kind=dbl_kind), dimension (nblyr+1) :: &
+         zspace    ! vertical grid spacing
+
+      zspace(:)       = c1/real(nblyr,kind=dbl_kind)
+      zspace(1)       = p5*zspace(1)
+      zspace(nblyr+1) = p5*zspace(nblyr+1)
 
       l_stop = .false.
 
@@ -5477,11 +5496,19 @@
       !-----------------------------------------------------------------
       ! initialize
       !-----------------------------------------------------------------
+         carbonInitial(n) = c0
+         carbonFinal(n) = c0
+         carbonFlux(n) = c0
+         flux_bion(:,n) = c0
          hin_old(n) = c0
-         if (aicen_init(n) > puny) then 
+         hbrnFinal(n) = c0
+         hbrnInitial(n) = c0
+
+         if (aicen_init(n) > puny) then
             hin_old(n) = vicen_init(n) &
                                 / aicen_init(n)
          else
+
             first_ice(n) = .true.
             if (tr_brine) trcrn(nt_fbri,n) = c1
             do mm = 1,nbtrcr
@@ -5491,8 +5518,8 @@
             if (solve_zsal) trcrn(nt_bgc_S:nt_bgc_S+nblyr-1,n) = c0
          endif
 
-         if (aicen(n) > puny) then
-          
+         if (aicen(n) > c0) then
+
             dh_top_chl = c0
             dh_bot_chl = c0
             darcy_V_chl= c0
@@ -5503,7 +5530,7 @@
             kavg       = c0
             bphi_o     = c0
             sloss      = c0
-  
+
       !-----------------------------------------------------------------
       ! brine dynamics
       !-----------------------------------------------------------------
@@ -5511,7 +5538,7 @@
             dhbr_top(n) = c0
             dhbr_bot(n) = c0
 
-            if (tr_brine) then 
+            if (tr_brine) then
                if (trcrn(nt_fbri,n) .le. c0) trcrn(nt_fbri,n) = c1
 
                dhice = c0
@@ -5519,16 +5546,18 @@
                                  vicen   (n), vsnon  (n),   &
                                  meltbn  (n), melttn (n),   &
                                  congeln (n), snoicen(n),   &
-                                 hin_old (n), dhice,        & 
+                                 hin_old (n), dhice,        &
                                  trcrn(nt_fbri,n),          &
                                  dhbr_top(n), dhbr_bot(n),  &
                                  hbr_old,     hin,          &
                                  hsn,         first_ice(n), &
                                  l_stop,      stop_label)
 
+               hbrnInitial(n) = hbr_old
+
                if (l_stop) return
 
-               if (solve_zsal)  then  
+               if (solve_zsal)  then
 
                   call compute_microS (n,         nilyr,       nblyr,             &
                                 bgrid,            cgrid,       igrid,             &
@@ -5542,7 +5571,7 @@
                                 salinz(1:nilyr),  l_stop,      stop_label)
 
                   if (l_stop) return
-               else     
+               else
 
                  ! Requires the average ice permeability = kavg(:)
                  ! and the surface ice porosity = zphi_o(:)
@@ -5553,14 +5582,14 @@
                   call compute_microS_mushy (n,   nilyr,         nblyr,       &
                                    bgrid,         cgrid,         igrid,       &
                                    trcrn(:,n),    hin_old(n),    hbr_old,     &
-                                   sss,           sst,           bTiz(:,n),   & 
+                                   sss,           sst,           bTiz(:,n),   &
                                    iTin(:),       bphi(:,n),     kavg,        &
                                    bphi_o,        phi_snow,      bSin(:),     &
                                    brine_sal(:),  brine_rho(:),  iphin(:),    &
                                    ibrine_rho(:), ibrine_sal(:), sice_rho(n), &
                                    iDi(:,n),      l_stop,        stop_label)
 
-               endif ! solve_zsal  
+               endif ! solve_zsal
 
                call update_hbrine (meltbn  (n), melttn(n),   &
                                    meltsn  (n), dt,          &
@@ -5571,18 +5600,19 @@
                                    trcrn(nt_fbri,n),         &
                                    snoicen(n),               &
                                    dhbr_top(n), dhbr_bot(n), &
-                                   dh_top_chl,  dh_bot_chl,  & 
+                                   dh_top_chl,  dh_bot_chl,  &
                                    kavg,        bphi_o,      &
-                                   darcy_V (n), darcy_V_chl, &  
+                                   darcy_V (n), darcy_V_chl, &
                                    bphi(2,n),   aice0,       &
                                    dh_direct)
-               
-               hbri = hbri + hbrin * aicen(n)  
 
-               if (solve_zsal) then 
+               hbri = hbri + hbrin * aicen(n)
+               hbrnFinal(n) = hbrin
+
+               if (solve_zsal) then
 
                   call zsalinity (n,             dt,                  &
-                                  nilyr,         bgrid,               & 
+                                  nilyr,         bgrid,               &
                                   cgrid,         igrid,               &
                                   trcrn(nt_bgc_S:nt_bgc_S+nblyr-1,n), &
                                   trcrn(nt_qice:nt_qice+nilyr-1,n),   &
@@ -5593,8 +5623,8 @@
                                   iki(:,n),      hbr_old,             &
                                   hbrin,         hin,                 &
                                   hin_old(n),    iDi(:,n),            &
-                                  darcy_V(n),    brine_sal,           & 
-                                  brine_rho,     ibrine_sal,          & 
+                                  darcy_V(n),    brine_sal,           &
+                                  brine_rho,     ibrine_sal,          &
                                   ibrine_rho,    dh_direct,           &
                                   Rayleigh_criteria,                  &
                                   first_ice(n),  sss,                 &
@@ -5602,9 +5632,9 @@
                                   dhbr_bot(n),                        &
                                   l_stop,        stop_label,          &
                                   fzsal,         fzsal_g,             &
-                                  bphi_o,        nblyr,               & 
+                                  bphi_o,        nblyr,               &
                                   vicen(n),      aicen_init(n),       &
-                                  zsal_tot) 
+                                  zsal_tot)
 
                   if (l_stop) return
 
@@ -5616,13 +5646,13 @@
       ! biogeochemistry
       !-----------------------------------------------------------------
 
-            if (z_tracers) then 
- 
+            if (z_tracers) then
+
                call zbio (dt,                    nblyr,                  &
                           nslyr,                 nilyr,                  &
                           melttn(n),                                     &
                           meltsn(n),             meltbn  (n),            &
-                          congeln(n),            snoicen(n),             & 
+                          congeln(n),            snoicen(n),             &
                           nbtrcr,                fsnow,                  &
                           ntrcr,                 trcrn(1:ntrcr,n),       &
                           bio_index(1:nbtrcr),   aicen_init(n),          &
@@ -5635,7 +5665,7 @@
                           n_fed,                 n_fep,                  &
                           n_zaero,               first_ice(n),           &
                           hin_old(n),            ocean_bio(1:nbtrcr),    &
-                          bphi(:,n),             iphin,                  &     
+                          bphi(:,n),             iphin,                  &
                           iDi(:,n),              sss,                    &
                           fswpenln(:,n),                                 &
                           dhbr_top(n),           dhbr_bot(n),            &
@@ -5654,10 +5684,14 @@
                           PP_net,                ice_bio_net (1:nbtrcr), &
                           snow_bio_net(1:nbtrcr),grow_net,               &
                           totalChla,                                     &
+                          flux_bion(1:nbtrcr,n),                         &
+                          carbonInitial(n),                              &
+                          carbonFinal(n),                                &
+                          carbonFlux(n),                                 &
                           l_stop,                stop_label)
-            
+
                if (l_stop) return
-     
+
             elseif (skl_bgc) then
 
                call sklbio (dt,                      ntrcr,               &
@@ -5681,7 +5715,16 @@
             endif  ! skl_bgc
 
             first_ice(n) = .false.
-
+         else
+            do mm = 1, nbtrcr
+               do k  = 1, nblyr+1
+                  flux_bion(mm,n) = flux_bion(mm,n) + trcrn(bio_index(mm) + k-1,n) *  &
+                     hin_old(n) * zspace(k)/dt * trcrn(nt_fbri,n)
+                  flux_bio(mm) = flux_bio(mm) + trcrn(bio_index(mm) + k-1,n) * &
+                     vicen_init(n) * zspace(k)/dt * trcrn(nt_fbri,n)
+                  trcrn(bio_index(mm) + k-1,n) = c0
+                enddo
+            enddo
          endif             ! aicen > puny
       enddo                ! ncat
 

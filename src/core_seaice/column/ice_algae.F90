@@ -62,12 +62,16 @@
                          PP_net,       ice_bio_net, &
                          snow_bio_net, grow_net,    &
                          totalChla,                 &
+                         flux_bion,                 &
+                         carbonInitial,             &
+                         carbonFinal,               &
+                         carbonFlux,                &
                          l_stop,       stop_label)
 
       use ice_aerosol, only: update_snow_bgc
-      use ice_constants_colpkg, only: c0, c1, puny
+      use ice_constants_colpkg, only: c0, c1, puny, p5
       use ice_zbgc, only: merge_bgc_fluxes
- 
+
       integer (kind=int_kind), intent(in) :: &
          nblyr,              & ! number of bio layers
          nslyr,              & ! number of snow layers
@@ -80,7 +84,7 @@
          ntrcr                 ! number of tracers
 
       integer (kind=int_kind), dimension (nbtrcr), intent(in) :: &
-         bio_index       
+         bio_index
 
       real (kind=dbl_kind), intent(in) :: &
          dt,       &  ! time step
@@ -114,7 +118,13 @@
          ice_bio_net, & ! net bio tracer in ice (mmol/m^2)
          fbio_atmice, & ! bio flux from atm to ice (mmol/m^2/s)
          fbio_snoice, & ! bio flux from snow to ice  (mmol/m^2/s)
-         flux_bio       ! total ocean tracer flux (mmol/m^2/s)
+         flux_bio,    & ! total ocean tracer flux (mmol/m^2/s)
+         flux_bion      ! category ocean tracer flux (mmol/m^2/s)
+
+      real (kind=dbl_kind), intent(inout) :: &
+         carbonInitial, & ! initial carbon content (mmol/m2)
+         carbonFinal,   & ! final carbon content (mmol/m2)
+         carbonFlux       ! carbon flux (mmol/m2/s)
 
       real (kind=dbl_kind), intent(in) :: &
          hbri_old       ! brine height  (m)
@@ -181,9 +191,6 @@
          upNHn      , & ! algal ammonium uptake rate (mmol/m^3/s)
          grow_alg       ! algal growth rate          (mmol/m^3/s)
 
-      real (kind=dbl_kind), dimension (nbtrcr) :: &
-         flux_bion       !tracer flux to ocean
-
       real (kind=dbl_kind),dimension(nbtrcr) :: &
          zbgc_snown, & ! aerosol contribution from snow to ice
          zbgc_atmn     ! and atm to ice concentration * volume (mmol/m^3*m)
@@ -194,9 +201,10 @@
          flux_bio_sno !
 
       real (kind=dbl_kind) :: &
-         Tot_Nit, &  !
-         hsnow_i,  & ! initial snow thickness (m)
-         hsnow_f     ! final snow thickness (m)
+         Tot_Nit, & !
+         hsnow_i, & ! initial snow thickness (m)
+         hsnow_f, & ! final snow thickness (m)
+         carbonError ! carbon conservation error (mmol/m2)
 
       logical (kind=log_kind) :: &
          write_flux_diag
@@ -204,8 +212,18 @@
       real (kind=dbl_kind) :: &
          a_ice
 
+      real (kind=dbl_kind), parameter :: &
+         accuracy = 1.0e-14_dbl_kind
+
       character(len=char_len_long) :: &
          warning  
+
+      real (kind=dbl_kind), dimension (nblyr+1) :: &
+         zspace    ! vertical grid spacing
+
+      zspace(:)       = c1/real(nblyr,kind=dbl_kind)
+      zspace(1)       = p5*zspace(1)
+      zspace(nblyr+1) = p5*zspace(nblyr+1)
 
       zbgc_snown(:) = c0
       zbgc_atmn (:) = c0
@@ -217,18 +235,18 @@
       hsnow_i = c0
       hsnow_f = c0
       write_flux_diag = .false.
-    
-      if (write_flux_diag) then
-         if (aice_old > c0) then
-            hsnow_i = vsno_old/aice_old
-            do  mm = 1,nbtrcr
-               call bgc_column_sum (nblyr, nslyr, hsnow_i, hbri_old, &
+
+      call bgc_carbon_sum(nblyr, hbri_old, trcrn(:), carbonInitial,n_doc,n_dic,n_algae,n_don)
+
+      if (aice_old > puny) then
+         hsnow_i = vsno_old/aice_old
+         do  mm = 1,nbtrcr
+            call bgc_column_sum (nblyr, nslyr, hsnow_i, hbri_old, &
                               trcrn(bio_index(mm):bio_index(mm)+nblyr+2), &
                               Tot_BGC_i(mm))
-            enddo
-         endif
+         enddo
       endif
- 
+
       call update_snow_bgc     (dt,        nblyr,        &
                                 nslyr,                   &
                                 meltt,     melts,        &
@@ -268,13 +286,28 @@
                                 Zoo,          meltb,     &
                                 congel,       l_stop,    &
                                 stop_label)
-      
+
       do mm = 1,nbtrcr
          flux_bion(mm) = flux_bion(mm) + flux_bio_sno(mm)
       enddo
 
-      if (write_flux_diag) then
-         if (aicen > c0) then
+      call bgc_carbon_sum(nblyr, hbri, trcrn(:), carbonFinal,n_doc,n_dic,n_algae,n_don)
+      call bgc_carbon_flux(flux_bio_atm,flux_bion,n_doc,n_dic,n_algae,n_don,carbonFlux)
+
+      carbonError = carbonInitial-carbonFlux*dt-carbonFinal
+
+      if (abs(carbonError) > accuracy * maxval ((/carbonInitial, carbonFinal/))) then
+            write(warning,*) 'carbonError:', carbonError
+            call add_warning(warning)
+            write(warning,*) 'carbonInitial:', carbonInitial
+            call add_warning(warning)
+            write(warning,*) 'carbonFinal:', carbonFinal
+            call add_warning(warning)
+            write(warning,*) 'carbonFlux (positive into ocean):', carbonFlux
+            call add_warning(warning)
+            write(warning,*) 'accuracy * maxval ((/carbonInitial, carbonFinal/:)', accuracy * maxval ((/carbonInitial, carbonFinal/))
+            call add_warning(warning)
+            if (aicen > c0) then
             hsnow_f = vsnon/aicen
             write(warning,*) 'after z_biogeochemistry'
             call add_warning(warning)
@@ -284,6 +317,7 @@
                write(warning,*) 'layer mm, Zoo(mm)'
                call add_warning(warning)
                write(warning,*) mm,Zoo(mm)
+               call add_warning(warning)
             end do
             do mm = 1,nbtrcr
                call bgc_column_sum (nblyr, nslyr, hsnow_f, hbri, &
@@ -305,6 +339,8 @@
                call add_warning(warning)
                write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
                call add_warning(warning)
+               l_stop = .true.
+               stop_label = "carbon conservation in ice_algae.F90"
             enddo
          endif
       endif
@@ -313,7 +349,7 @@
 
       call merge_bgc_fluxes   (dt,           nblyr,      &
                                bio_index,    n_algae,    &
-                               nbtrcr,       aicen,      &    
+                               nbtrcr,       aicen,      &
                                vicen,        vsnon,      &
                                ntrcr,        iphin,      &
                                trcrn,                    &
@@ -326,7 +362,7 @@
                                snow_bio_net, grow_alg,   &
                                grow_net,     totalChla,  &
                                nslyr)
- 
+
       if (write_flux_diag) then
          if (aicen > c0) then
             if (n_cat .eq. 1) a_ice = c0
@@ -348,7 +384,7 @@
          endif
       endif
 
-      end subroutine zbio    
+      end subroutine zbio
 
 !=======================================================================
 
@@ -987,6 +1023,9 @@
 
       l_stop = .false.
       zspace = c1/real(nblyr,kind=dbl_kind)
+      dz(:) = zspace
+      dz(1) = zspace/c2
+      dz(nblyr+1) = zspace/c2
       in_init_cons(:,:) = c0
       atm_add_cons(:) = c0
       sum_react(:) = c0
@@ -1007,6 +1046,7 @@
             bphin_N(1) = bphi_min
 
             if (abs(trcrn(bio_index(m) + k-1)) < puny) then
+               flux_bio(m) = flux_bio(m) + trcrn(bio_index(m) + k-1)* hbri_old * dz(k)/dt
                trcrn(bio_index(m) + k-1) = c0
                in_init_cons(k,m) = c0
             else
@@ -1349,16 +1389,19 @@
 
       sum_new = c0
       sum_tot = c0
-      dz(:) = zspace
-      dz(1) = zspace/c2
-      dz(nblyr+1) = zspace/c2
 
       do m = 1,nbtrcr
          do k = 1,nblyr+1                  ! back to bulk quantity
             bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)
             if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp < -puny) then  ! satisfy DIC demands from ocean
-               flux_bio(m) = flux_bio(m) - bio_tmp
-               bio_tmp = c0
+                write(warning, *) 'DIC demand from ocean'
+                call add_warning(warning)
+                write(warning, *) 'm, nlt_bgc_DIC(1), bio_tmp, react(k,m):'
+                call add_warning(warning)
+                write(warning, *) m, nlt_bgc_DIC(1), bio_tmp, react(k,m)
+                call add_warning(warning)
+                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
+                bio_tmp = c0
             end if
             if (m .eq. nlt_bgc_Nit) then
                initcons_mobile(k) = max(c0,(biomat_brine(k,m)-nitrification(k) + &
@@ -1386,6 +1429,7 @@
                 l_stop = .true.
                 stop_label = 'N in algal_dyn not conserved'
             elseif (abs(bio_tmp) < puny) then
+               flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
                bio_tmp = c0
             elseif (bio_tmp > 1.0e6_dbl_kind) then
                 write(warning, *) 'very large bgc value'
@@ -2187,8 +2231,8 @@
               reactb(nlt_bgc_DMS)   = DMS_s   - DMS_r
        endif
        if (tr_bgc_C) then
-       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-10_dbl_kind .or. &
-          abs(dN) > maxval(abs(reactb(:)))*1.0e-10_dbl_kind) then
+       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-14_dbl_kind .or. &
+          abs(dN) > maxval(abs(reactb(:)))*1.0e-14_dbl_kind) then
             conserve_N = .false.
             write(warning, *) 'Conservation error!'
             call add_warning(warning)
@@ -2889,16 +2933,16 @@
 !
 ! author: Nicole Jeffery, LANL
 
-      subroutine bgc_carbon_sum (nblyr, hbrine, xin, xout, n_doc, n_dic, n_algae)
+      subroutine bgc_carbon_sum (nblyr, hbrine, xin, xout, n_doc, n_dic, n_algae, n_don)
 
-      use ice_colpkg_shared, only: hs_ssl, R_C2N
+      use ice_colpkg_shared, only: hs_ssl, R_C2N, R_C2N_DON
       use ice_constants_colpkg, only: p5, c1, c0
       use ice_colpkg_tracers, only: tr_bgc_N, tr_bgc_C, tr_bgc_hum,   &
-          nt_bgc_hum, nt_bgc_N, nt_bgc_DOC, nt_bgc_DIC
+          tr_bgc_DON, nt_bgc_hum, nt_bgc_N, nt_bgc_DOC, nt_bgc_DIC, nt_bgc_DON
 
       integer (kind=int_kind), intent(in) :: &
          nblyr, &         ! number of ice layers
-         n_doc, n_dic, n_algae
+         n_doc, n_dic, n_algae, n_don
 
       real (kind=dbl_kind), dimension(:), intent(in) :: &
          xin              ! input field, all tracers and column
@@ -2952,6 +2996,18 @@
             iBioCount = iBioCount + nblyr+3
          enddo
       endif
+
+      if (tr_bgc_DON) then
+         iBioCount = c0
+         do m = 1, n_don
+            nBGC = nt_bgc_DON(1)
+            do n = 1, nblyr+1
+               iLayer = iBioCount + n-1
+               xout = xout + xin(nBGC+iLayer)*zspace(n)*hbrine*R_C2N_DON(m)
+            enddo
+            iBioCount = iBioCount + nblyr+3
+         enddo
+      endif
       if (tr_bgc_hum) then
          nBGC = nt_bgc_hum
          do n = 1, nblyr+1
@@ -2969,15 +3025,17 @@
 !
 ! author: Nicole Jeffery, LANL
 
-      subroutine bgc_carbon_flux (flux_bio_atm, flux_bion, n_doc, n_dic, n_algae, Tot_Carbon_flux)
+      subroutine bgc_carbon_flux (flux_bio_atm, flux_bion, n_doc, &
+                                  n_dic, n_algae, n_don, Tot_Carbon_flux)
 
-      use ice_colpkg_shared, only: R_C2N
+      use ice_colpkg_shared, only: R_C2N, R_C2N_DON
       use ice_constants_colpkg, only: c0
       use ice_colpkg_tracers, only: tr_bgc_N, tr_bgc_C, tr_bgc_hum,   &
-          nlt_bgc_hum, nlt_bgc_N, nlt_bgc_C, nlt_bgc_DOC, nlt_bgc_DIC
+          tr_bgc_DON, nlt_bgc_hum, nlt_bgc_N, nlt_bgc_C, nlt_bgc_DOC, &
+          nlt_bgc_DIC, nlt_bgc_DON
 
       integer (kind=int_kind), intent(in) :: &
-         n_doc, n_dic, n_algae
+         n_doc, n_dic, n_algae, n_don
 
       real (kind=dbl_kind), dimension(:), intent(in) :: &
          flux_bio_atm, &              ! input field, all tracers and column
@@ -2994,19 +3052,24 @@
 
       if (tr_bgc_N) then
       do m = 1, n_algae
-         Tot_Carbon_flux = Tot_Carbon_flux + (flux_bio_atm(nlt_bgc_N(m)) - flux_bion(nlt_bgc_N(m)))*R_C2N(m)
+         Tot_Carbon_flux = Tot_Carbon_flux  - (flux_bio_atm(nlt_bgc_N(m)) - flux_bion(nlt_bgc_N(m)))*R_C2N(m)
       enddo
       endif
       if (tr_bgc_C) then
       do m = 1, n_doc
-         Tot_Carbon_flux = Tot_Carbon_flux + flux_bio_atm(nlt_bgc_DOC(m)) - flux_bion(nlt_bgc_DOC(m))
+         Tot_Carbon_flux = Tot_Carbon_flux - flux_bio_atm(nlt_bgc_DOC(m)) + flux_bion(nlt_bgc_DOC(m))
       enddo
       do m = 1, n_dic
-         Tot_Carbon_flux = Tot_Carbon_flux + flux_bio_atm(nlt_bgc_DIC(m)) - flux_bion(nlt_bgc_DIC(m))
+         Tot_Carbon_flux = Tot_Carbon_flux - flux_bio_atm(nlt_bgc_DIC(m)) + flux_bion(nlt_bgc_DIC(m))
+      enddo
+      endif
+      if (tr_bgc_DON) then
+      do m = 1, n_don
+         Tot_Carbon_flux = Tot_Carbon_flux - (flux_bio_atm(nlt_bgc_DON(m)) - flux_bion(nlt_bgc_DON(m)))*R_C2N_DON(m)
       enddo
       endif
       if (tr_bgc_hum) &
-         Tot_Carbon_flux = Tot_Carbon_flux + flux_bio_atm(nlt_bgc_hum) - flux_bion(nlt_bgc_hum)
+         Tot_Carbon_flux = Tot_Carbon_flux - flux_bio_atm(nlt_bgc_hum) + flux_bion(nlt_bgc_hum)
 
       end subroutine bgc_carbon_flux
 
