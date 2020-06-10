@@ -4280,12 +4280,6 @@ Flag to determine whether temperatures should be clipped or limited when
 outside the range of the absorption coefficient look-up table values.
 </entry>
 
-<entry id="rrtmgp_clip_optics" type="logical"
-       category="radiation" group="radiation_nl" valid_values="">
-Flag to determine whether optical properties should be clipped or limited when
-outside the expected range.
-</entry>
-
 <!-- Rayleigh Friction Parameterization -->
 
 <entry id="rayk0" type="integer" category="rayleigh_friction"

@@ -142,9 +142,6 @@ module radiation
    ! look-up table data?
    logical :: rrtmgp_clip_temperatures = .false.
 
-   ! Likewise clip optical properties when outside expected range
-   logical :: rrtmgp_clip_optics = .false.
-
    ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
    ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
    ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
@@ -224,7 +221,6 @@ contains
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
                               rrtmgp_coefficients_file_sw,     &
                               rrtmgp_clip_temperatures   ,     &
-                              rrtmgp_clip_optics         ,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad, fixed_total_solar_irradiance
@@ -250,7 +246,6 @@ contains
       call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_clip_temperatures   ,  1, mpi_logical  , mstrid, mpicom, ierr) 
-      call mpibcast(rrtmgp_clip_optics         ,  1, mpi_logical  , mstrid, mpicom, ierr) 
       call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
@@ -1265,11 +1260,11 @@ contains
             call t_startf('rrtmgp_check_temperatures')
             call clip_values( &
                tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               trim(subname) // ' tmid', warn=.true. &
+               trim(subname) // ' tmid' &
             )
             call clip_values( &
                tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-               trim(subname) // ' tint', warn=.true. &
+               trim(subname) // ' tint' &
             )
             call t_stopf('rrtmgp_check_temperatures')
          end if
@@ -1352,14 +1347,12 @@ contains
                end if
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
-               if (rrtmgp_clip_optics) then
-                  call clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', warn=.true., tolerance=1e-10_r8)
-                  call clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', warn=.true., tolerance=1e-10_r8)
-                  call clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', warn=.true., tolerance=1e-10_r8)
-                  call clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', warn=.true., tolerance=1e-10_r8)
-                  call clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', warn=.true., tolerance=1e-10_r8)
-                  call clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', warn=.true., tolerance=1e-10_r8)
-               end if
+               call clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8)
+               call clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8)
+               call clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8)
+               call clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8)
+               call clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8)
+               call clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8)
 
                ! Call the shortwave radiation driver
                call radiation_driver_sw( &
@@ -1437,10 +1430,8 @@ contains
                end if
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
-               if (rrtmgp_clip_optics) then
-                  call clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ' cld_tau_gpt_lw', warn=.true., tolerance=1e-10_r8)
-                  call clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ' aer_tau_bnd_lw', warn=.true., tolerance=1e-10_r8)
-               end if
+               call clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8)
+               call clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8)
 
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw( &
@@ -2213,6 +2204,7 @@ contains
       ! Local namespace
       real(r8) :: wavenumber_limits(2,nswbands)
       integer :: ncol, iband
+      character(len=10) :: subname = 'set_albedo'
 
       ! Check dimension sizes of output arrays.
       ! albedo_dir and albedo_dif should have sizes nswbands,ncol, but ncol
@@ -2268,8 +2260,8 @@ contains
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
       ! was never checked for RRTMG, so albedos will probably be slightly different
       ! than the implementation in RRTMG!
-      call clip_values(albedo_dir, 0._r8, 1._r8, varname='albedo_dir')
-      call clip_values(albedo_dif, 0._r8, 1._r8, varname='albedo_dif')
+      call clip_values(albedo_dir, 0._r8, 1._r8, trim(subname) // ': albedo_dir', tolerance=0.01_r8)
+      call clip_values(albedo_dif, 0._r8, 1._r8, trim(subname) // ': albedo_dif', tolerance=0.01_r8)
 
    end subroutine set_albedo
 

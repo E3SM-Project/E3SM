@@ -178,21 +178,14 @@ contains
    ! warn flag is set *and* the values fall outside the expected range plus the
    ! tolerance. In other words, no warning is issued when clipping values
    ! outside the valid range plus/minus the tolerance.
-   subroutine clip_values_1d(x, min_x, max_x, varname, warn, tolerance)
+   subroutine clip_values_1d(x, min_x, max_x, varname, tolerance)
       real(r8), intent(inout) :: x(:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
-      character(len=*), intent(in), optional :: varname
-      logical, intent(in), optional :: warn
+      character(len=*), intent(in) :: varname
       real(r8), intent(in), optional :: tolerance
-
-      logical :: warn_local
       real(r8) :: tolerance_local
 
-      warn_local = .false.
-      if (present(warn)) then
-         warn_local = warn
-      end if
       tolerance_local = 0._r8
       if (present(tolerance)) then
          tolerance_local = tolerance
@@ -200,18 +193,12 @@ contains
 
       ! look for values less than threshold
       if (any(x < min_x)) then
-         ! Raise warning? Only if we specify to, and only if outside tolerance
-         if (warn_local .and. any(x < (min_x - tolerance_local))) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x < (min_x - tolerance_local)), ' values are below threshold for variable ', &
-                        trim(varname), '; min = ', minval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x < (min_x - tolerance_local)), ' values are below threshold; min = ', minval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x < (min_x - tolerance_local))) then
+            print *, 'WARNING: ' // trim(varname) // ': ', &
+                     count(x < (min_x - tolerance_local)), ' values below threshold ', &
+                     '; min = ', minval(x)
          end if
-
          ! Clip values
          where (x < min_x)
             x = min_x
@@ -220,18 +207,12 @@ contains
 
       ! Look for values greater than threshold
       if (any(x > max_x)) then
-         ! Raise warning? Only if we specify to, and only if outside tolerance
-         if (warn_local .and. any(x > (max_x + tolerance_local))) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x > (max_x + tolerance_local)), ' values are above threshold for variable ', &
-                        trim(varname), '; max = ', maxval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x > (max_x + tolerance_local)), ' values are above threshold; max = ', maxval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x > (max_x + tolerance_local))) then
+            print *, 'WARNING: ' // trim(varname) // ': ', &
+                     count(x > (max_x + tolerance_local)), ' values above threshold ', &
+                     '; max = ', maxval(x)
          end if
-
          ! Clip values
          where (x > max_x)
             x = max_x
@@ -239,21 +220,14 @@ contains
       end if
    end subroutine clip_values_1d
    !-------------------------------------------------------------------------------
-   subroutine clip_values_2d(x, min_x, max_x, varname, warn, tolerance)
+   subroutine clip_values_2d(x, min_x, max_x, varname, tolerance)
       real(r8), intent(inout) :: x(:,:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
-      character(len=*), intent(in), optional :: varname
-      logical, intent(in), optional :: warn
+      character(len=*), intent(in) :: varname
       real(r8), intent(in), optional :: tolerance
-
-      logical :: warn_local
       real(r8) :: tolerance_local
 
-      warn_local = .false.
-      if (present(warn)) then
-         warn_local = warn
-      end if
       tolerance_local = 0._r8
       if (present(tolerance)) then
          tolerance_local = tolerance
@@ -261,18 +235,12 @@ contains
 
       ! look for values less than threshold
       if (any(x < min_x)) then
-         ! Raise warning? Only if we specify to, and only if outside tolerance
-         if (warn_local .and. any(x < (min_x - tolerance_local))) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x < (min_x - tolerance_local)), ' values are below threshold for variable ', &
-                        trim(varname), '; min = ', minval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x < (min_x - tolerance_local)), ' values are below threshold; min = ', minval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x < (min_x - tolerance_local))) then
+            print *, 'WARNING: ' // trim(varname) // ': ', &
+                     count(x < (min_x - tolerance_local)), ' values below threshold ', &
+                     '; min = ', minval(x)
          end if
-
          ! Clip values
          where (x < min_x)
             x = min_x
@@ -281,18 +249,12 @@ contains
 
       ! Look for values greater than threshold
       if (any(x > max_x)) then
-         ! Raise warning? Only if we specify to, and only if outside tolerance
-         if (warn_local .and. any(x > (max_x + tolerance_local))) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x > (max_x + tolerance_local)), ' values are above threshold for variable ', &
-                        trim(varname), '; max = ', maxval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x > (max_x + tolerance_local)), ' values are above threshold; max = ', maxval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x > (max_x + tolerance_local))) then
+            print *, 'WARNING: ' // trim(varname) // ': ', &
+                     count(x > (max_x + tolerance_local)), ' values above threshold ', &
+                     '; max = ', maxval(x)
          end if
-
          ! Clip values
          where (x > max_x)
             x = max_x
@@ -300,21 +262,14 @@ contains
       end if
    end subroutine clip_values_2d
    !-------------------------------------------------------------------------------
-   subroutine clip_values_3d(x, min_x, max_x, varname, warn, tolerance)
+   subroutine clip_values_3d(x, min_x, max_x, varname, tolerance)
       real(r8), intent(inout) :: x(:,:,:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
-      character(len=*), intent(in), optional :: varname
-      logical, intent(in), optional :: warn
+      character(len=*), intent(in) :: varname
       real(r8), intent(in), optional :: tolerance
-
-      logical :: warn_local
       real(r8) :: tolerance_local
 
-      warn_local = .false.
-      if (present(warn)) then
-         warn_local = warn
-      end if
       tolerance_local = 0._r8
       if (present(tolerance)) then
          tolerance_local = tolerance
@@ -322,18 +277,12 @@ contains
 
       ! look for values less than threshold
       if (any(x < min_x)) then
-         ! Raise warning? Only if we specify to, and only if outside tolerance
-         if (warn_local .and. any(x < (min_x - tolerance_local))) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x < (min_x - tolerance_local)), ' values are below threshold for variable ', &
-                        trim(varname), '; min = ', minval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x < (min_x - tolerance_local)), ' values are below threshold; min = ', minval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x < (min_x - tolerance_local))) then
+            print *, 'WARNING: ' // trim(varname) // ': ', &
+                     count(x < (min_x - tolerance_local)), ' values below threshold ', &
+                     '; min = ', minval(x)
          end if
-
          ! Clip values
          where (x < min_x)
             x = min_x
@@ -342,18 +291,12 @@ contains
 
       ! Look for values greater than threshold
       if (any(x > max_x)) then
-         ! Raise warning? Only if we specify to, and only if outside tolerance
-         if (warn_local .and. any(x > (max_x + tolerance_local))) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x > (max_x + tolerance_local)), ' values are above threshold for variable ', &
-                        trim(varname), '; max = ', maxval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x > (max_x + tolerance_local)), ' values are above threshold; max = ', maxval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x > (max_x + tolerance_local))) then
+            print *, 'WARNING: ' // trim(varname) // ': ', &
+                     count(x > (max_x + tolerance_local)), ' values above threshold ', &
+                     '; max = ', maxval(x)
          end if
-
          ! Clip values
          where (x > max_x)
             x = max_x
