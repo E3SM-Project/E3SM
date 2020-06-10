@@ -145,11 +145,6 @@ contains
       call assert_range(liq_tau(1:nbnd,1:ncol,1:nlev), 0._r8, 1e20_r8, &
                         'get_cloud_optics_sw: liq_tau')
 
-      ! Combine all cloud optics from CAM routines
-      cld_tau = ice_tau + liq_tau
-      cld_tau_ssa = ice_tau_ssa + liq_tau_ssa
-      cld_tau_ssa_g = ice_tau_ssa_g + liq_tau_ssa_g
-
       ! Get snow cloud optics
       if (do_snow) then
          call mitchell_ice_optics_sw( &
@@ -165,24 +160,6 @@ contains
                snow_tau_ssa_f(:,icol,ilev) = reordered(snow_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
             end do
          end do
-         call combine_properties( &
-            nbnd, ncol, nlev, &
-            cld(1:ncol,1:nlev), cld_tau(1:nbnd,1:ncol,1:nlev), &
-            cldfsnow(1:ncol,1:nlev), snow_tau(1:nbnd,1:ncol,1:nlev), &
-            combined_tau(1:nbnd,1:ncol,1:nlev) &
-         )
-         call combine_properties( &
-            nbnd, ncol, nlev, &
-            cld(1:ncol,1:nlev), cld_tau_ssa(1:nbnd,1:ncol,1:nlev), &
-            cldfsnow(1:ncol,1:nlev), snow_tau_ssa(1:nbnd,1:ncol,1:nlev), &
-            combined_tau_ssa(1:nbnd,1:ncol,1:nlev) &
-         )
-         call combine_properties( &
-            nbnd, ncol, nlev, &
-            cld(1:ncol,1:nlev), cld_tau_ssa_g(1:nbnd,1:ncol,1:nlev), &
-            cldfsnow(1:ncol,1:nlev), snow_tau_ssa_g(1:nbnd,1:ncol,1:nlev), &
-            combined_tau_ssa_g(1:nbnd,1:ncol,1:nlev) &
-         )
       else
          ! We are not doing snow optics, so set these to zero so we can still use 
          ! the arrays without additional logic
@@ -318,7 +295,6 @@ contains
       ! Get snow optics?
       if (do_snow) then
          call mitchell_ice_optics_lw(ncol, nlev, icswp, des, snow_tau)
-         ! Combined cloud optics
          call combine_properties(nbnd, ncol, nlev, &
             cld(1:ncol,1:nlev), cld_tau(1:nbnd,1:ncol,1:nlev), &
             cldfsnow(1:ncol,1:nlev), snow_tau(1:nbnd,1:ncol,1:nlev), &
