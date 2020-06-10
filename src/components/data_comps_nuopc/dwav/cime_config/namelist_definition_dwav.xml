@@ -19,13 +19,30 @@
               obtained from values of <strm_year_start> -> <strm_year_end> below
      %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
               obtained from values of <strm_year_start> -> <strm_year_end> below
-
-     Currently the following datamodes are supported (other than null)
-       COPYALL
-
-     Currently the following streams are supported
-       climo
    -->
+
+  <!-- =========================================  -->
+  <!--- dwav_nml datamode                         -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>dwav</category>
+    <group>dwav_nml</group>
+    <valid_values>copyall</valid_values>
+    <desc>
+      The wave data is associated with the wave model
+      and is normally on a different grid than the ocean data.
+      datamode = "copyall"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      Set by the following xml variables in env_run.xml DWAV_MODE
+      specifies values for wav mode: copyall,null
+    </desc>
+    <values>
+      <value>copyall</value>
+    </values>
+  </entry>
 
   <!-- ========================================================================================  -->
   <!-- Stream file variables                                                                     -->
@@ -37,7 +54,6 @@
     <group>streams_file</group>
     <desc>List of streams used for the given dwav_mode.</desc>
     <values>
-      <value dwav_mode="NULL">null</value>
       <value dwav_mode="CLIMO">climo</value>
     </values>
   </entry>
@@ -60,7 +76,9 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="climo">$DIN_LOC_ROOT/wav/dwav/waveclim.mon.ww3a.150612.nc</value>
+      <value stream="climo">
+        $DIN_LOC_ROOT/wav/dwav/waveclim.mon.ww3a.150612.nc
+      </value>
     </values>
   </entry>
 
@@ -71,9 +89,9 @@
     <desc>Stream data variable name(s).</desc>
     <values>
       <value stream="climo">
-        lamult  lamult
-        ustokes ustokes
-        vstokes vstokes
+        lamult  Sw_lamult
+        ustokes Sw_ustokes
+        vstokes Sw_vstokes
       </value>
     </values>
   </entry>
@@ -94,7 +112,7 @@
     <group>streams_file</group>
     <desc>Simulation year to align stream to.</desc>
     <values>
-      <value stream="climo">1</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -104,7 +122,7 @@
     <group>streams_file</group>
     <desc>First year of stream.</desc>
     <values>
-      <value stream="climo">1</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -114,7 +132,7 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value   stream="climo">1</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -139,13 +157,10 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <valid_values>bilinear,nn</valid_values>
     <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are copy by index, set to special value,
-      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-      in "j" direction, or bilinear.
-      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      array (up to 30 elements) of fill algorithms associated with the array of streams
+      valid values: nn,bilinear
     </desc>
     <values>
       <value>bilinear</value>
@@ -256,29 +271,6 @@
   <!--- dwav_nml -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
-    <type>char</type>
-    <category>dwav</category>
-    <group>dwav_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
-    <desc>
-      The wave data is associated with the wave model
-      and is normally on a different grid than the ocean data.
-      datamode = "NULL"
-      Is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.
-      datamode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      Set by the following xml variables in env_run.xml DWAV_MODE
-      specifies values for wav mode: copyall,null
-    </desc>
-    <values>
-      <value>COPYALL</value>
-      <value dwav_mode="NULL">NULL</value>
-    </values>
-  </entry>
-
   <entry id="model_meshfile" modify_via_xml="WAV_DOMAIN_MESH">
     <type>char</type>
     <category>streams</category>
@@ -351,16 +343,6 @@
     </desc>
     <values>
       <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>dwav</category>
-    <group>dwav_nml</group>
-    <desc>If TRUE, prognostic is forced to true. </desc>
-    <values>
-      <value>.false.</value>
     </values>
   </entry>
 

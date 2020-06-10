@@ -18,26 +18,32 @@
 
       For strm_datvar - the following substitutions will be made below
       Replace any instance of the following substring indicators with the appropriate values:
-      %glc  => GLC elevation class from the range 0 to GLC_NEC,
-               obtained from the GLC_NEC xml variable
+      %glc  => GLC elevation class from the range 0 to GLC_NEC, obtained from the GLC_NEC xml variable
 
-     Currently the following streams are supported
-         lnd.cplhist
-         sno.cplhist
-
-    **** NOTE: in the value matches below, regular expressions are used ****
+     NOTE: in the value matches below, regular expressions are used
          If two matches are equivalent, the FIRST one will be used
 
-	 As an example, say dlnd_mode=GLC_CPLHIST
-
-         the following will results in the CORRECT set of streams for this dlnd_mode
-             <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
-             <value dlnd_mode="CPLHIST">COPYALL</value>
-
-         the following order would result in an INCORRECT setting of streams for this datm_mode
-             <value dlnd_mode="CPLHIST">COPYALL</value>
-             <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+     The only datamode is copyall - the streams are determined by the xml variable $DROF_MODE
   -->
+
+  <!-- =========================================  -->
+  <!--- dlnd_nml datamode                         -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <valid_values>copyall</valid_values>
+    <desc>
+      datamode = "copyall"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+    </desc>
+    <values>
+      <value>copyall</value>
+    </values>
+  </entry>
 
   <!-- ========================================================================================  -->
   <!-- Stream file variables                                                                     -->
@@ -49,7 +55,6 @@
     <group>streams_file</group>
     <desc>List of streams used for each supported datamode</desc>
     <values>
-      <value dlnd_mode="NULL">NULL</value>
       <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
       <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
     </values>
@@ -86,9 +91,9 @@
     <desc>Stream data variable name(s).</desc>
     <values>
       <value stream="sno.cplhist">
-        l2x1yr_glc_Sl_tsrf%glc     Sl_tsrf_elev%glc
-        l2x1yr_glc_Sl_topo%glc     Sl_topo_elev%glc
-        l2x1yr_glc_Flgl_qice%glc   Flgl_qice_elev%glc
+        lndImp_Sl_tsrf%glc     lndImp_Sl_tsrf_elev%glc
+        lndImp_Sl_topo%glc     lndImp_Sl_topo_elev%glc
+        lndImp_Flgl_qice%glc   lndImp_Flgl_qice_elev%glc
       </value>
     </values>
   </entry>
@@ -153,13 +158,10 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <valid_values>bilinear,nn</valid_values>
     <desc>
-      fill algorithms associated with the array
-      of streams.  valid options are copy by index, set to special value,
-      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-      in "j" direction, or bilinear.
-      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      fill algorithms associated with the array of streams. 
+      valid values: nn,bilinear
     </desc>
     <values>
       <value>bilinear</value>
@@ -215,9 +217,10 @@
     <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
-      reading mode associated with the array of
-      streams.  specifies the mode of reading temporal stream dataset.
-      valid options are "single" (read temporal dataset one at a time) or
+      reading mode associated with the array of streams.  
+      specifies the mode of reading temporal stream dataset.
+      valid options are 
+      "single" (read temporal dataset one at a time) or
       "full_file" (read all entires of temporal dataset in a given netcdf file)
       valid values: single,full_file
     </desc>
@@ -268,31 +271,8 @@
   </entry>
 
   <!-- =========================================  -->
-  <!--- dlnd_nml -->
+  <!--- dlnd_nml variables                        -->
   <!-- =========================================  -->
-
-  <entry id="datamode">
-    <type>char</type>
-    <category>dlnd</category>
-    <group>dlnd_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
-    <desc>
-      datamode = "NULL"
-      NULL is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.  The
-      lnd_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      dataMode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      Set by the DLND_MODE xml variable in env_run.xml
-    </desc>
-    <values>
-      <value dlnd_mode="NULL">NULL</value>
-      <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
-      <value dlnd_mode="CPLHIST">COPYALL</value>
-    </values>
-  </entry>
 
   <entry id="model_meshfile" modify_via_xml="LND_DOMAIN_MESH">
     <type>char</type>
@@ -378,16 +358,6 @@
     </desc>
     <values>
       <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>dlnd</category>
-    <group>dlnd_nml</group>
-    <desc>If TRUE, prognostic is forced to true.</desc>
-    <values>
-      <value>.false.</value>
     </values>
   </entry>
 
