@@ -23,6 +23,9 @@ module radiation_utils
       module procedure clip_values_1d, clip_values_2d, clip_values_3d
    end interface clip_values
 
+   ! Max length for character strings
+   integer, parameter :: max_char_len = 512
+
    ! Name of this module for error messages
    character(len=*), parameter :: module_name = 'radiation_utils'
 
@@ -170,22 +173,23 @@ contains
 
    ! Routines to clip array values if they are outside of an expected range,
    ! defined by min_x and max_x. Allow passing a varname argument, which will be
-   ! appended to warning message, a warn logical flag that determines whether or
-   ! not to issue a warning when values are clipped, and tolerance argument that
-   ! sets a minimum threshold tolerance above which a warning will be issued.
-   ! That is, these routines will *always* clip values outside expected range
-   ! and allow the simulation to continue, but a warning will be issued if the
-   ! warn flag is set *and* the values fall outside the expected range plus the
-   ! tolerance. In other words, no warning is issued when clipping values
-   ! outside the valid range plus/minus the tolerance.
-   subroutine clip_values_1d(x, min_x, max_x, varname, tolerance)
+   ! appended to warning message and tolerance argument that sets a maximum
+   ! tolerance above which a warning or error will be thrown. That is, these 
+   ! routines will *always* clip values outside expected range and allow the 
+   ! simulation to continue, but a warning will be issued if the values fall 
+   ! outside the expected range plus the tolerance. In other words, no warning 
+   ! is issued when clipping values outside the valid range plus/minus the 
+   ! tolerance.
+   function clip_values_1d(x, min_x, max_x, varname, tolerance) result(error_message)
       real(r8), intent(inout) :: x(:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
       character(len=*), intent(in) :: varname
       real(r8), intent(in), optional :: tolerance
       real(r8) :: tolerance_local
+      character(max_char_len) :: error_message
 
+      error_message = ''
       tolerance_local = 0._r8
       if (present(tolerance)) then
          tolerance_local = tolerance
@@ -195,7 +199,7 @@ contains
       if (any(x < min_x)) then
          ! Raise warning? Only if outside tolerance
          if (any(x < (min_x - tolerance_local))) then
-            print *, 'WARNING: ' // trim(varname) // ': ', &
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
                      count(x < (min_x - tolerance_local)), ' values below threshold ', &
                      '; min = ', minval(x)
          end if
@@ -209,7 +213,7 @@ contains
       if (any(x > max_x)) then
          ! Raise warning? Only if outside tolerance
          if (any(x > (max_x + tolerance_local))) then
-            print *, 'WARNING: ' // trim(varname) // ': ', &
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
                      count(x > (max_x + tolerance_local)), ' values above threshold ', &
                      '; max = ', maxval(x)
          end if
@@ -218,16 +222,18 @@ contains
             x = max_x
          end where
       end if
-   end subroutine clip_values_1d
+   end function clip_values_1d
    !-------------------------------------------------------------------------------
-   subroutine clip_values_2d(x, min_x, max_x, varname, tolerance)
+   function clip_values_2d(x, min_x, max_x, varname, tolerance) result(error_message)
       real(r8), intent(inout) :: x(:,:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
       character(len=*), intent(in) :: varname
       real(r8), intent(in), optional :: tolerance
       real(r8) :: tolerance_local
+      character(max_char_len) :: error_message
 
+      error_message = ''
       tolerance_local = 0._r8
       if (present(tolerance)) then
          tolerance_local = tolerance
@@ -237,7 +243,7 @@ contains
       if (any(x < min_x)) then
          ! Raise warning? Only if outside tolerance
          if (any(x < (min_x - tolerance_local))) then
-            print *, 'WARNING: ' // trim(varname) // ': ', &
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
                      count(x < (min_x - tolerance_local)), ' values below threshold ', &
                      '; min = ', minval(x)
          end if
@@ -251,7 +257,7 @@ contains
       if (any(x > max_x)) then
          ! Raise warning? Only if outside tolerance
          if (any(x > (max_x + tolerance_local))) then
-            print *, 'WARNING: ' // trim(varname) // ': ', &
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
                      count(x > (max_x + tolerance_local)), ' values above threshold ', &
                      '; max = ', maxval(x)
          end if
@@ -260,16 +266,18 @@ contains
             x = max_x
          end where
       end if
-   end subroutine clip_values_2d
+   end function clip_values_2d
    !-------------------------------------------------------------------------------
-   subroutine clip_values_3d(x, min_x, max_x, varname, tolerance)
+   function clip_values_3d(x, min_x, max_x, varname, tolerance) result(error_message)
       real(r8), intent(inout) :: x(:,:,:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
       character(len=*), intent(in) :: varname
       real(r8), intent(in), optional :: tolerance
       real(r8) :: tolerance_local
+      character(max_char_len) :: error_message
 
+      error_message = ''
       tolerance_local = 0._r8
       if (present(tolerance)) then
          tolerance_local = tolerance
@@ -279,7 +287,7 @@ contains
       if (any(x < min_x)) then
          ! Raise warning? Only if outside tolerance
          if (any(x < (min_x - tolerance_local))) then
-            print *, 'WARNING: ' // trim(varname) // ': ', &
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
                      count(x < (min_x - tolerance_local)), ' values below threshold ', &
                      '; min = ', minval(x)
          end if
@@ -293,7 +301,7 @@ contains
       if (any(x > max_x)) then
          ! Raise warning? Only if outside tolerance
          if (any(x > (max_x + tolerance_local))) then
-            print *, 'WARNING: ' // trim(varname) // ': ', &
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
                      count(x > (max_x + tolerance_local)), ' values above threshold ', &
                      '; max = ', maxval(x)
          end if
@@ -302,32 +310,32 @@ contains
             x = max_x
          end where
       end if
-   end subroutine clip_values_3d
+   end function clip_values_3d
    !-------------------------------------------------------------------------------
-   subroutine handle_error(error_message, stop_on_error)
+   subroutine handle_error(error_message, fatal)
       use cam_abortutils, only: endrun
       character(len=*), intent(in) :: error_message
-      logical, intent(in), optional :: stop_on_error
-      logical :: stop_on_error_local = .true.
+      logical, intent(in), optional :: fatal
+      logical :: fatal_local = .true.
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
       ! variable exists without failing.
-      if (present(stop_on_error)) then
-         stop_on_error_local = stop_on_error
+      if (present(fatal)) then
+         fatal_local = fatal
       else
-         stop_on_error_local = .true.
+         fatal_local = .true.
       end if
 
       ! If we encounter an error, fail if we require success. Otherwise do
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
-         if (stop_on_error_local) then
-            call endrun(module_name // ': ' // error_message)
+         if (fatal_local) then
+            call endrun(trim(error_message))
+         else
+            print *, trim(error_message)
          end if
       end if
    end subroutine handle_error
-
    !----------------------------------------------------------------------------
-
 end module radiation_utils
