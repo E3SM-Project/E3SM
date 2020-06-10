@@ -852,7 +852,7 @@ subroutine update_prognostics_implicit( &
       uw_sfc, vw_sfc, u_wind, v_wind)
 
   !compute term needed for tke flux calc (wtke_flux)
-  !wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
+  wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! define terms needed for the implicit surface stress
   do i=1,shcol
@@ -863,7 +863,7 @@ subroutine update_prognostics_implicit( &
     tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
     !ksrf(i) = max(tau(i) / ws(i), ksrfmin)
     ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
-    wtke_flux(i) = ustar**3
+    !wtke_flux(i) = ustar**3
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
@@ -1031,9 +1031,10 @@ pure function compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_flux)
   real(rtype), parameter :: ustarmin = 0.01_rtype  ! Minimum ustar
 
   do i = 1, shcol
-     uw           = uw_sfc(i)
-     vw           = vw_sfc(i)
-     ustar        = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
+     !uw           = uw_sfc(i)
+     !vw           = vw_sfc(i)
+     !ustar        = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
+     ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
      wtke_flux(i) = ustar**3
   enddo
 
