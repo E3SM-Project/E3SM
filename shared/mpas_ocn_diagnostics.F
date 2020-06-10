@@ -791,12 +791,14 @@ contains
           end do
       end do
       !$omp end do
+      !$omp end parallel
 
       !
       ! Gradient Richardson number
       !
 
       nCells = nCellsArray(3)
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
