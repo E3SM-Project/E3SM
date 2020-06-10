@@ -35,9 +35,10 @@
 !!
 !! @defgroup PIO_kinds PIO Fortran Type Kinds
 !! PIO supports different kinds of Fortran types.
-!!  - PIO_double : 8-byte reals or double precision
+!!  - PIO_doauble : 8-byte reals or double precision
 !!  - PIO_real : 4-byte reals
 !!  - PIO_int :  4-byte integers
+!!  - PIO_short : 2-byte integers
 !!  - PIO_char : character
 
 module pio_types
@@ -136,6 +137,7 @@ module pio_types
   integer, public, parameter :: PIO_double = nf_double       !< double type
   integer, public, parameter :: PIO_real   = nf_real         !< real type
   integer, public, parameter :: PIO_int    = nf_int          !< int type
+  integer, public, parameter :: PIO_short  = nf_short        !< short int type
   integer, public, parameter :: PIO_char   = nf_char         !< char type
   integer, public, parameter :: PIO_noerr  = nf_noerr        !< no error
   integer, public, parameter :: PIO_WRITE  = nf_write        !< read-write

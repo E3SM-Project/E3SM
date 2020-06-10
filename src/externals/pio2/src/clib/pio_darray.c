@@ -988,8 +988,19 @@ PIOc_read_darray(int ncid, int varid, int ioid, PIO_Offset arraylen,
     {
         if (!(tmparray = malloc(iodesc->piotype_size * iodesc->maplen)))
             return pio_err(ios, NULL, PIO_ENOMEM, __FILE__, __LINE__);
-        for (int m = 0; m < iodesc->maplen; m++)
+	if(iodesc->piotype_size == 1){
+	  for (int m = 0; m < iodesc->maplen; m++)
+            ((signed char *)array)[m] = -1;
+	}else if(iodesc->piotype_size == 2){
+	  for (int m = 0; m < iodesc->maplen; m++)
+            ((short *)array)[m] = -1;
+	}else if(iodesc->piotype_size == 4){
+	  for (int m = 0; m < iodesc->maplen; m++)
             ((int *)array)[m] = -1;
+	}else if(iodesc->piotype_size == 8){
+	  for (int m = 0; m < iodesc->maplen; m++)
+            ((double *)array)[m] = -1;
+	}
     }
     else
         tmparray = array;

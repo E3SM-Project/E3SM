@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 
                 for (int sample = 0; sample < NUM_SAMPLES; sample++)
                 {
-                    char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+                    char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
                     char iotype_name[PIO_MAX_NAME + 1];
 
                     /* Create a filename. */

@@ -24,11 +24,15 @@ int diosysid;
 /** Did we initialize user-defined format? */
 int ncint_initialized = 0;
 
+/** Version of dispatch table. */
+#define DISPATCH_VERSION 2
+
 /* This is the dispatch object that holds pointers to all the
  * functions that make up the NCINT dispatch interface. */
 NC_Dispatch NCINT_dispatcher = {
 
     NC_FORMATX_UDF0,
+    DISPATCH_VERSION,
 
     PIO_NCINT_create,
     PIO_NCINT_open,
@@ -111,7 +115,8 @@ NC_Dispatch NCINT_dispatcher = {
     NC_NOTNC4_def_var_endian,
     NC_NOTNC4_def_var_filter,
     NC_NOTNC4_set_var_chunk_cache,
-    NC_NOTNC4_get_var_chunk_cache
+    NC_NOTNC4_get_var_chunk_cache,
+    NC_NOTNC4_filter_actions
 };
 
 /**
